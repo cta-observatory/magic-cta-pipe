@@ -345,21 +345,24 @@ class IRFGenerator:
         # Computing the migration matrix
         data_ = [
             data['true_energy'].values,
-            data['offcenter'].values,
             data['migra'].values,
+            data['offcenter'].values,
         ]
 
         edges_ = [
             energy_edges,
-            theta_edges,
-            migra_edges
+            migra_edges,
+            theta_edges
         ]
 
         migra_matrix, _ = scipy.histogramdd(data_, bins=edges_)
         
         # Normalizing the matrix
-        migra_matrix_norms = migra_matrix.sum(axis=2)
-        migra_matrix /= migra_matrix_norms[..., None]
+        migra_matrix_norms = migra_matrix.sum(axis=1)
+        migra_matrix /= migra_matrix_norms[:, None, :]
+        
+        isnan = scipy.isnan(migra_matrix)
+        migra_matrix[isnan] = 0
         
         # --------------------------
         # --- Converting to FITS ---
@@ -487,6 +490,27 @@ class IRFGenerator:
         
         return aeff_hdu
     
+    def _generate_background_hdu(self):
+        # columns = [
+        # ]
+
+        # colDefs = pyfits.ColDefs(columns)
+        # bkg_hdu = pyfits.BinTableHDU.from_columns(colDefs)
+        # bkg_hdu.name = 'BACKGROUND'
+        
+        # bkg_hdu.header['HDUDOC'] = 'https://github.com/open-gamma-ray-astro/gamma-astro-data-formats'
+        # bkg_hdu.header['HDUVERS'] = '0.2'
+        # bkg_hdu.header['HDUCLASS'] = 'GADF'
+        # bkg_hdu.header['HDUCLAS1'] = 'RESPONSE'
+        # bkg_hdu.header['HDUCLAS2'] = 'BKG'
+        # bkg_hdu.header['HDUCLAS3'] = 'FULL-ENCLOSURE'
+        # bkg_hdu.header['HDUCLAS4'] = 'BKG_2D'
+
+        with pyfits.open('irf_file.fits') as fin:
+            bkg_hdu = fin['BACKGROUND'].copy()
+
+        return bkg_hdu
+
     def generate_irf(self, output_name):
         info_message('PSF HDU...', prefix='IRFGen')
         psf_hdu = self._generate_psf_hdu()
@@ -497,9 +521,12 @@ class IRFGenerator:
         info_message('AEFF HDU...', prefix='IRFGen')
         aeff_hdu = self._generate_aeff_hdu()
         
+        info_message('BACKGROUND HDU...', prefix='IRFGen')
+        bkg_hdu = self._generate_background_hdu()
+
         primary_hdu = pyfits.PrimaryHDU()
         
-        hdu_list = pyfits.HDUList([primary_hdu, aeff_hdu, psf_hdu, edisp_hdu])
+        hdu_list = pyfits.HDUList([primary_hdu, aeff_hdu, psf_hdu, edisp_hdu, bkg_hdu])
         hdu_list.writeto(output_name, overwrite=True)
 
 
@@ -561,7 +588,7 @@ irf_generator.set_energy_binning(min_energy=0.1, max_energy=30, n_energy_bins=10
 irf_generator.set_theta_binning(min_theta=0.0, max_theta=1.5, n_theta_bins=5)
 irf_generator.set_migra_binning(min_migra=0.2, max_migra=5.0, n_migra_bins=5)
 
-irf_generator.set_cuts('(multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4)')
+irf_generator.set_cuts('(multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4) & (event_class_0 > 0.8)')
 
 irf_generator.generate_irf('crab_irf.fits')
 
