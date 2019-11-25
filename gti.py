@@ -211,7 +211,7 @@ class GTIGenerator:
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
-        if "dc" not in self.config['event_list']['cuts']:
+        if "dc" not in self.config['event_list']['cuts']['quality']:
             raise ValueError("GTI generator: no DC cuts given")
 
         if self.verbose:
@@ -238,7 +238,7 @@ class GTIGenerator:
 
         df = df.sort_values(by=['mjd'])
 
-        cut = self.config['event_list']['cuts']['dc']
+        cut = self.config['event_list']['cuts']['quality']['dc']
            
         selection = df.query(cut)
 
@@ -259,7 +259,7 @@ class GTIGenerator:
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
-        if "l3rate" not in self.config['event_list']['cuts']:
+        if "l3rate" not in self.config['event_list']['cuts']['quality']:
             raise ValueError("GTI generator: no L3 rate cuts given")
 
         if self.verbose:
@@ -286,7 +286,7 @@ class GTIGenerator:
 
         df = df.sort_values(by=['mjd'])
 
-        cut = self.config['event_list']['cuts']['l3rate']
+        cut = self.config['event_list']['cuts']['quality']['l3rate']
            
         selection = df.query(cut)
 
