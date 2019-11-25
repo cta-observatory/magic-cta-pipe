@@ -169,9 +169,7 @@ class GTIGenerator:
         
         self._config = new_config.copy()
 
-    def _itentify_data_taking_time_edges(self, file_mask, max_tdiff=1):
-        file_list = glob.glob(file_mask)
-
+    def _itentify_data_taking_time_edges(self, file_list, max_tdiff=1):
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
@@ -209,9 +207,7 @@ class GTIGenerator:
 
         return time_intervals
 
-    def _itentify_dc_time_edges(self, file_mask):
-        file_list = glob.glob(file_mask)
-
+    def _itentify_dc_time_edges(self, file_list):
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
@@ -259,9 +255,7 @@ class GTIGenerator:
 
         return time_intervals
 
-    def _itentify_l3rate_time_edges(self, file_mask):
-        file_list = glob.glob(file_mask)
-
+    def _itentify_l3rate_time_edges(self, file_list):
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
@@ -310,7 +304,7 @@ class GTIGenerator:
         return time_intervals
         
 
-    def process_files(self, file_mask):
+    def process_files(self, file_list):
         """
         GTI list generator.
 
@@ -421,9 +415,9 @@ class GTIGenerator:
         #     time_intervals_list.append(time_intervals)
 
         time_intervals_list = [
-            self._itentify_data_taking_time_edges(file_mask),
-            self._itentify_dc_time_edges(file_mask),
-            self._itentify_l3rate_time_edges(file_mask)
+            self._itentify_data_taking_time_edges(file_list),
+            self._itentify_dc_time_edges(file_list),
+            self._itentify_l3rate_time_edges(file_list)
         ]
 
         joint_intervals = time_intervals_list[0]
