@@ -656,7 +656,7 @@ irf_generator.set_energy_binning(min_energy=0.1, max_energy=30, n_energy_bins=10
 irf_generator.set_theta_binning(min_theta=0.0, max_theta=1.5, n_theta_bins=5)
 irf_generator.set_migra_binning(min_migra=0.2, max_migra=5.0, n_migra_bins=5)
 
-irf_generator.set_cuts('(multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4) & (event_class_0 > 0.8)')
+irf_generator.set_cuts(config['event_list']['cuts']['selection'])
 
 irf_generator.generate_irf('crab_irf.fits')
 
