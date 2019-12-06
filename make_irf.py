@@ -490,25 +490,92 @@ class IRFGenerator:
         
         return aeff_hdu
     
-    def _generate_background_hdu(self):
-        # columns = [
-        # ]
+    def _generate_bkg_hdu(self):
+        bkg_shower_data = self.bkg_shower_data.query(self.cuts)
 
-        # colDefs = pyfits.ColDefs(columns)
-        # bkg_hdu = pyfits.BinTableHDU.from_columns(colDefs)
-        # bkg_hdu.name = 'BACKGROUND'
+        # Compute elapsed observation time
+        elapsed_time = np.array([])
+        obs_id_list = np.array(bkg_shower_data.index.levels[0])
+
+        for obs_item in obs_id_list:
+            obs_item_events = bkg_shower_data.loc[(obs_item, slice(None), slice(None))]
+            obs_event_mean_arr_time = obs_item_events.groupby(['obs_id', 'event_id'])['mjd'].mean()
+
+            time_diff = np.diff(obs_event_mean_arr_time)*u.day.to(u.s)
+            # excludes gaps of possible technical problems 
+            time_diff = time_diff[np.where(time_diff < 3e-1)]
+
+            elapsed_time = np.append(elapsed_time, np.sum(time_diff))
+
+        elapsed_time = np.sum(elapsed_time)
+
+        # Computing camera off-center angle for background events
+        offcenter = angular_separation(bkg_shower_data['az_reco_mean'].values * u.rad,
+                                       bkg_shower_data['alt_reco_mean'].values * u.rad,
+                                       bkg_shower_data['tel_az'].values * u.rad,
+                                       bkg_shower_data['tel_alt'].values * u.rad)
+        offcenter = offcenter.to(u.deg)
+
+        bkg_shower_data = bkg_shower_data.loc[slice(None), ['energy_reco_mean']]
+        bkg_shower_data['offcenter'] = offcenter
         
-        # bkg_hdu.header['HDUDOC'] = 'https://github.com/open-gamma-ray-astro/gamma-astro-data-formats'
-        # bkg_hdu.header['HDUVERS'] = '0.2'
-        # bkg_hdu.header['HDUCLASS'] = 'GADF'
-        # bkg_hdu.header['HDUCLAS1'] = 'RESPONSE'
-        # bkg_hdu.header['HDUCLAS2'] = 'BKG'
-        # bkg_hdu.header['HDUCLAS3'] = 'FULL-ENCLOSURE'
-        # bkg_hdu.header['HDUCLAS4'] = 'BKG_2D'
+        # Binning in energy
+        energy_edges = scipy.logspace(scipy.log10(self.min_energy), 
+                                      scipy.log10(self.max_energy), 
+                                      self.n_energy_bins+1)
+        energ_lo = energy_edges[:-1]
+        energ_hi = energy_edges[1:]
+        
+        # Binning in off-center distance
+        theta_edges = scipy.linspace(self.min_theta, 
+                                     self.max_theta, 
+                                     self.n_theta_bins+1)
+        theta_lo = theta_edges[:-1]
+        theta_hi = theta_edges[1:]
+        
+        bkg_event_matrix, _, _ = scipy.histogram2d(bkg_shower_data['energy_reco_mean'].values, 
+                                                  bkg_shower_data['offcenter'].values, 
+                                                  bins=[energy_edges, theta_edges])
+        
+        # Compute bin sizes for density
+        theta_area   = np.pi * np.diff(theta_edges**2)
+        energy_width = np.diff(energy_edges)
 
-        with pyfits.open('irf_file.fits') as fin:
-            bkg_hdu = fin['BACKGROUND'].copy()
+        bkg_matrix = bkg_event_matrix / elapsed_time / theta_area / energy_width.reshape((-1, 1))
 
+        # --------------------------
+        # --- Converting to FITS ---
+        col_energ_lo = pyfits.Column(name='ENERG_LO', unit='TeV', format=f'{energ_lo.size}E', array=[energ_lo])
+        col_energ_hi = pyfits.Column(name='ENERG_HI', unit='TeV', format=f'{energ_hi.size}E', array=[energ_hi])
+        col_theta_lo = pyfits.Column(name='THETA_LO', unit='deg', format=f'{theta_lo.size}E', array=[theta_lo])
+        col_theta_hi = pyfits.Column(name='THETA_HI', unit='deg', format=f'{theta_hi.size}E', array=[theta_hi])
+
+        col_bkg_matrix = pyfits.Column(name='BKG', unit='s^-1 MeV^-1 sr^-1', format=f"{bkg_matrix.size}E", 
+                                        array=[bkg_matrix.transpose()],
+                                        dim=str(bkg_matrix.shape))
+        
+        columns = [
+            col_energ_lo, 
+            col_energ_hi,
+            col_theta_lo,
+            col_theta_hi,
+            col_bkg_matrix
+        ]
+
+        # Aeff HDU
+        colDefs = pyfits.ColDefs(columns)
+        bkg_hdu = pyfits.BinTableHDU.from_columns(colDefs)
+        bkg_hdu.name = 'BACKGROUND'
+        
+        bkg_hdu.header['HDUDOC'] = 'https://github.com/open-gamma-ray-astro/gamma-astro-data-formats'
+        bkg_hdu.header['HDUVERS'] = '0.2'
+        bkg_hdu.header['HDUCLASS'] = 'GADF'
+        bkg_hdu.header['HDUCLAS1'] = 'RESPONSE'
+        bkg_hdu.header['HDUCLAS2'] = 'BKG'
+        bkg_hdu.header['HDUCLAS3'] = 'FULL-ENCLOSURE'
+        bkg_hdu.header['HDUCLAS4'] = 'BKG_2D'
+        # --------------------------
+        
         return bkg_hdu
 
     def generate_irf(self, output_name):
@@ -574,7 +641,7 @@ magic_tel_positions = {
 magic_optics = OpticsDescription.from_name('MAGIC')
 magic_cam = CameraGeometry.from_name('MAGICCam')
 magic_tel_description = TelescopeDescription(name='MAGIC', 
-                                             type='MAGIC', 
+                                             tel_type='MAGIC', 
                                              optics=magic_optics, 
                                              camera=magic_cam)
 magic_tel_descriptions = {1: magic_tel_description, 
@@ -582,7 +649,8 @@ magic_tel_descriptions = {1: magic_tel_description,
 # -----------------
 
 mc_file_name = '../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/3.Reco/reco_m1.h5'
-irf_generator = IRFGenerator(mc_file_name)
+bkg_file_name = '/remote/ceph/group/magic/MAGIC-LST/Data/MAGIC/Off/Test_sample/ctapipe/reco/reco_m1_magic_clean_step_20170109.h5'
+irf_generator = IRFGenerator(mc_file_name, bkg_file_name)
 
 irf_generator.set_energy_binning(min_energy=0.1, max_energy=30, n_energy_bins=10)
 irf_generator.set_theta_binning(min_theta=0.0, max_theta=1.5, n_theta_bins=5)
