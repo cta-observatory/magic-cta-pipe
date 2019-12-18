@@ -232,7 +232,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                     # Pixel arrival time map
                     event_pulse_time = event.dl1.tel[tel_id].pulse_time
                     # Camera geometry
-                    camera = event.inst.subarray.tel[tel_id].camera
+                    camera = source.subarray.tel[tel_id].camera
 
                     # ---------------------------
                     # Computing the cleaning mask
@@ -370,7 +370,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 # Pixel arrival time map
                 event_pulse_time = event.dl1.tel[tel_id].pulse_time
                 # Camera geometry
-                camera = event.inst.subarray.tel[tel_id].camera
+                camera = source.subarray.tel[tel_id].camera
 
                 # ---------------------------
                 # Computing the cleaning mask
