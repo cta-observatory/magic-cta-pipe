@@ -24,8 +24,6 @@ from astropy import units as u
 
 from matplotlib import pyplot, colors
 
-from MyFunctions import GetHist2D
-
 
 def info_message(text, prefix='info'):
     """
@@ -43,7 +41,26 @@ def info_message(text, prefix='info'):
 
     date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     print(f"({prefix:s}) {date_str:s}: {text:s}")
-    
+
+
+def GetHist2D(x,y, bins=30, range=None, weights=None):
+    hs, xedges, yedges = scipy.histogram2d(x,y, bins=bins, range=range, weights=weights)
+    xloc = (xedges[1:] + xedges[:-1]) / 2
+    yloc = (yedges[1:] + yedges[:-1]) / 2 
+
+    xxloc, yyloc = scipy.meshgrid( xloc, yloc, indexing='ij' )
+
+    hist = {}
+    hist['Hist'] = hs
+    hist['X'] = xloc
+    hist['Y'] = yloc
+    hist['XX'] = xxloc
+    hist['YY'] = yyloc
+    hist['XEdges'] = xedges
+    hist['YEdges'] = yedges
+
+    return hist
+
 
 def evaluate_performance(data, energy_name):
     valid_data = data.dropna(subset=[energy_name])

@@ -16,8 +16,6 @@ from astropy import units as u
 
 from matplotlib import pyplot, colors
 
-from MyFunctions import GetHist
-
 
 def info_message(text, prefix='info'):
     """
@@ -35,7 +33,19 @@ def info_message(text, prefix='info'):
 
     date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     print(f"({prefix:s}) {date_str:s}: {text:s}")
-    
+
+
+def GetHist(data, bins=30, range=None, weights=None):
+    hs, edges = scipy.histogram(data, bins=bins, range=range, weights=weights)
+    loc = (edges[1:] + edges[:-1]) / 2
+
+    hist = {}
+    hist['Hist'] = hs
+    hist['X'] = loc
+    hist['XEdges'] = edges
+
+    return hist
+
 
 def evaluate_performance(data, class0_name='event_class_0'):
     data = data.dropna()
