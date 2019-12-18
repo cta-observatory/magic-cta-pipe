@@ -25,7 +25,7 @@ from ctapipe.calib import CameraCalibrator
 from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters, leakage
 from ctapipe.image.timing_parameters import timing_parameters
-from ctapipe.image.cleaning import tailcuts_clean
+from ctapipe.image.cleaning import tailcuts_clean     # apply_time_delta_cleaning
 
 from astropy import units as u
 
@@ -47,22 +47,101 @@ def info_message(text, prefix='info'):
     date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     print(f"({prefix:s}) {date_str:s}: {text:s}")
 
+# Added on 06/07/2019
+def magic_clean_step1(geom, charge_map, core_thresh):
+    mask = charge_map <= core_thresh
+    return ~mask
 
+# Added on 06/07/2019
+def magic_clean_step2(geom, mask, charge_map, arrival_times, 
+                      max_time_off, core_thresh, 
+                      usetime=True):
+    
+    pixels_to_remove = []
+
+    neighbors = geom.neighbor_matrix_sparse
+    clean_neighbors = neighbors[mask][:, mask]
+    num_islands, labels = connected_components(clean_neighbors, directed=False)
+
+    island_ids = scipy.zeros(geom.n_pixels)
+    island_ids[mask] = labels + 1
+
+    # Finding the islands "sizes" (total charges)
+    island_sizes = scipy.zeros(num_islands)
+    for i in range(num_islands):
+        island_sizes[i] = charge_map[mask][labels == i].sum()
+      
+    # Disabling pixels for all islands save the brightest one
+    brightest_id = island_sizes.argmax() + 1
+
+    if usetime:
+        brightest_pixel_times = arrival_times[mask & (island_ids == brightest_id)]
+        brightest_pixel_charges = charge_map[mask & (island_ids == brightest_id)]
+
+        brightest_time = np.sum(brightest_pixel_times * brightest_pixel_charges**2) / np.sum(brightest_pixel_charges**2)
+
+        time_diff = np.abs(arrival_times - brightest_time)
+
+        mask[(charge_map > 2*core_thresh) & (time_diff > 2*max_time_off)] = False
+        mask[(charge_map < 2*core_thresh) & (time_diff > max_time_off)] = False
+
+    mask = single_island(geom,mask,charge_map)
+    
+    return mask
+
+# Added on 06/07/2019
+def magic_clean_step3(geom, mask, event_image, arrival_times, 
+                      max_time_diff, boundary_thresh, 
+                      usetime=True):
+
+    thing = []
+    core_mask = mask.copy()
+    
+    pixels_with_picture_neighbors_matrix = geom.neighbor_matrix_sparse
+
+    for pixel in np.where(event_image)[0]:
+        
+        if pixel in np.where(core_mask)[0]:
+            continue
+
+        if event_image[pixel] <= boundary_thresh:
+            continue
+        
+        hasNeighbor = False
+        if usetime:
+            
+            neighbors = geom.neighbor_matrix_sparse[pixel].indices
+            
+            for neighbor in neighbors:
+                if neighbor not in np.where(core_mask)[0]:
+                    continue
+                time_diff = np.abs(arrival_times[neighbor] - arrival_times[pixel])
+                if time_diff < max_time_diff:
+                    hasNeighbor = True
+                    break
+            if not hasNeighbor:
+                continue
+            
+        if not pixels_with_picture_neighbors_matrix.dot(core_mask)[pixel]:
+            continue
+        
+        thing.append(pixel)
+        
+    mask[thing] = True
+
+    return mask
+
+# Added on 02/07/2019
 def apply_time_delta_cleaning(geom, mask, core_mask, arrival_times,
                               min_number_neighbors, time_limit):
     """ Remove all pixels from selection that have less than N
-    neighbors that arrived within a given timeframe. Leave the *core*
-    pixels intact.
-    
+    neighbors that arrived within a given timeframe.
     Parameters
     ----------
     geom: `ctapipe.instrument.CameraGeometry`
         Camera geometry information
     mask: array, boolean
         boolean mask of *clean* pixels before time_delta_cleaning
-    core_mask: array, boolean
-        boolean mask of *clean* *core* pixels before time_delta_cleaning. 
-        These will not be applied the time_delta constraint to.
     arrival_times: array
         pixel timing information
     min_number_neighbors: int
@@ -77,22 +156,28 @@ def apply_time_delta_cleaning(geom, mask, core_mask, arrival_times,
     image size and just set unclean pixels to 0 or similar, use
     `image[~mask] = 0`
     """
-    
     pixels_to_remove = []
-    
     for pixel in np.where(mask)[0]:
         if pixel in np.where(core_mask)[0]:
             continue
-        
         neighbors = geom.neighbor_matrix_sparse[pixel].indices
         time_diff = np.abs(arrival_times[neighbors] - arrival_times[pixel])
         if sum(time_diff < time_limit) < min_number_neighbors:
             pixels_to_remove.append(pixel)
-            
     mask[pixels_to_remove] = False
-    
     return mask
 
+# Added on 02/07/2019
+def single_island(camera, mask, image):
+    pixels_to_remove = []
+    neighbors = camera.neighbor_matrix
+    for pix_id in np.where(mask)[0]:
+        if len(set(np.where(neighbors[pix_id] & mask)[0])) == 0:
+            pixels_to_remove.append(pix_id)
+    mask[pixels_to_remove] = False
+    return mask
+
+    
 def apply_magic_time_off_cleaning(camera, clean_mask, charge_map, arrival_times, max_time_off, picture_thresh):
     # Identifying connected islands
     neighbors = camera.neighbor_matrix_sparse
@@ -200,8 +285,8 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
     time_thresholds = image_cleaning_settings['time_thresholds']
-    core_charge_thresholds = charge_thresholds.copy()
-    core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
+    #core_charge_thresholds = charge_thresholds.copy()
+    #core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
 
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
@@ -235,38 +320,70 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                     # Camera geometry
                     camera = event.inst.subarray.tel[tel_id].camera
 
+                    # Added on 06/07/2019
+                    clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
+
+                    if event_image[clean_mask].sum() == 0:                                                                                                           
+                        # Event did not survive image cleaining                                                                                                      
+                        continue    
+                    
+                    clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time, 
+                               max_time_off=time_thresholds['max_time_off'], 
+                               core_thresh=charge_thresholds['picture_thresh'])
+                               #usetime=usetime)
+
+                    if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining                                                                                                     
+                        continue
+                               
+                    clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time, 
+                               max_time_diff=time_thresholds['max_time_diff'], 
+                               boundary_thresh=charge_thresholds['boundary_thresh'])
+                               #usetime=usetime)
+
+                    if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining                                                                                                   
+                        continue
+
+                               
                     # ---------------------------
                     # Computing the cleaning mask
-                    clean_mask = tailcuts_clean(camera, event_image, 
-                                                **charge_thresholds)
+                    #clean_mask = tailcuts_clean(camera, event_image, 
+                    #                             **charge_thresholds)
+                    #clean_mask_core = tailcuts_clean(camera, event_image,
+                    #                                  **core_charge_thresholds)
+                    #                         
+                    #if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining
+                    #    continue
+
+                    #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core, 
+                    #                                       event_pulse_time,
+                    #                                       time_limit=time_thresholds['time_limit'], 
+                    #                                       min_number_neighbors=time_thresholds['min_number_neighbors'])
+
+                    #if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining
+                    #    continue
+
+                    #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask, 
+                    #                                           event_image, event_pulse_time, 
+                    #                                           max_time_off=time_thresholds['max_time_off'],
+                    #                                           picture_thresh=charge_thresholds['picture_thresh'])
+
+                    #if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining
+                    #    continue
+
+                    ### Added on 02/07/2019
+                    #clean_mask = single_island(camera,clean_mask,event_image)
+
+                    #if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining
+                    #    continue
                     
-                    core_mask = tailcuts_clean(camera, event_image, 
-                                               **core_charge_thresholds)
-                                            
-                    if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining
-                        continue
-
-                    clean_mask = apply_time_delta_cleaning(camera, clean_mask, core_mask,
-                                                           event_pulse_time,
-                                                           time_limit=time_thresholds['time_limit'], 
-                                                           min_number_neighbors=time_thresholds['min_number_neighbors'])
-
-                    if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining
-                        continue
-
-                    clean_mask = apply_magic_time_off_cleaning(camera, clean_mask, 
-                                                               event_image, event_pulse_time, 
-                                                               max_time_off=time_thresholds['max_time_off'],
-                                                               picture_thresh=charge_thresholds['picture_thresh'])
-
-                    if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining
-                        continue
-
                     num_islands = get_num_islands(camera, clean_mask, event_image)
-                    clean_mask = filter_brightest_island(camera, clean_mask, event_image)
+                    #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
                     # ---------------------------
                     
                     event_image_cleaned = event_image.copy()
@@ -346,8 +463,8 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
     time_thresholds = image_cleaning_settings['time_thresholds']
-    core_charge_thresholds = charge_thresholds.copy()
-    core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
+    #core_charge_thresholds = charge_thresholds.copy()
+    #core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
 
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
@@ -376,36 +493,52 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 # ---------------------------
                 # Computing the cleaning mask
-                clean_mask = tailcuts_clean(camera, event_image, 
-                                            **charge_thresholds)
+                #clean_mask = tailcuts_clean(camera, event_image, 
+                #                            **charge_thresholds)
+                #clean_mask_core = tailcuts_clean(camera, event_image,
+                #                                  **core_charge_thresholds)
                 
-                core_mask = tailcuts_clean(camera, event_image, 
-                                               **core_charge_thresholds)
-                                        
-                if event_image[clean_mask].sum() == 0:
-                    # Event did not survive image cleaining
-                    continue
-
-                clean_mask = apply_time_delta_cleaning(camera, clean_mask, core_mask,
-                                                       event_pulse_time,
-                                                       time_limit=time_thresholds['time_limit'], 
-                                                       min_number_neighbors=time_thresholds['min_number_neighbors'])
+                clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
                     continue
 
-                clean_mask = apply_magic_time_off_cleaning(camera, clean_mask, 
-                                                           event_image, event_pulse_time, 
-                                                           max_time_off=time_thresholds['max_time_off'],
-                                                           picture_thresh=charge_thresholds['picture_thresh'])
+                #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core,
+                #                                       event_pulse_time,
+                #                                       time_limit=time_thresholds['time_limit'], 
+                #                                       min_number_neighbors=time_thresholds['min_number_neighbors'])
+
+                clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
+                               max_time_off=time_thresholds['max_time_off'],
+                               core_thresh=charge_thresholds['picture_thresh'])
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
                     continue
 
+                #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask,
+                #                                           event_image, event_pulse_time, 
+                #                                           max_time_off=time_thresholds['max_time_off'],
+                #                                           picture_thresh=charge_thresholds['picture_thresh'])
+
+                clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
+                               max_time_diff=time_thresholds['max_time_diff'],
+                               boundary_thresh=charge_thresholds['boundary_thresh'])
+
+                if event_image[clean_mask].sum() == 0:
+                    # Event did not survive image cleaining
+                    continue
+
+                ### Added on 02/07/2019                                                                                                                      
+                #clean_mask = single_island(camera,clean_mask,event_image)
+
+                #if event_image[clean_mask].sum() == 0:
+                    # Event did not survive image cleaining
+                #    continue
+                
                 num_islands = get_num_islands(camera, clean_mask, event_image)
-                clean_mask = filter_brightest_island(camera, clean_mask, event_image)
+                #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
                 # ---------------------------
                 
                 event_image_cleaned = event_image.copy()
