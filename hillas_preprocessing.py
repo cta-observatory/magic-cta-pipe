@@ -180,7 +180,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
     config = traitlets.config.Config()
     integrator_name = 'LocalPeakWindowSum'
     config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 1
+    config[integrator_name]['window_shift'] = 2
 
     calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
 
@@ -329,7 +329,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
     config = traitlets.config.Config()
     integrator_name = 'LocalPeakWindowSum'
     config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 1
+    config[integrator_name]['window_shift'] = 2
 
     calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
 
