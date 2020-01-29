@@ -265,10 +265,9 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
     config = traitlets.config.Config()
     integrator_name = 'LocalPeakWindowSum'
     config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 1
+    config[integrator_name]['window_shift'] = 2
 
-    calibrator = CameraCalibrator(r1_product="HESSIOR1Calibrator", 
-                                extractor_name=integrator_name, config=config)
+    calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
 
     # Finding available MC files
     input_files = glob.glob(input_mask)
@@ -318,7 +317,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                     # Pixel arrival time map
                     event_pulse_time = event.dl1.tel[tel_id].pulse_time
                     # Camera geometry
-                    camera = event.inst.subarray.tel[tel_id].camera
+                    camera = source.subarray.tel[tel_id].camera
 
                     # Added on 06/07/2019
                     clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
@@ -447,10 +446,9 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
     config = traitlets.config.Config()
     integrator_name = 'LocalPeakWindowSum'
     config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 1
+    config[integrator_name]['window_shift'] = 2
 
-    calibrator = CameraCalibrator(r1_product="HESSIOR1Calibrator", 
-                                extractor_name=integrator_name, config=config)
+    calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
 
     # Now let's loop over the events and perform:
     #  - image cleaning;
@@ -489,7 +487,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 # Pixel arrival time map
                 event_pulse_time = event.dl1.tel[tel_id].pulse_time
                 # Camera geometry
-                camera = event.inst.subarray.tel[tel_id].camera
+                camera = source.subarray.tel[tel_id].camera
 
                 # ---------------------------
                 # Computing the cleaning mask
