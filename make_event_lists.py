@@ -25,7 +25,7 @@ import gti
 # --------------------------
 # Adding the argument parser
 arg_parser = argparse.ArgumentParser(description="""
-This tools prepares IRFs based on the processed "test" MC files.
+This tools produces the FITS event lists out of the earlier processed files.
 """)
 
 arg_parser.add_argument("--config", default="config.yaml",
