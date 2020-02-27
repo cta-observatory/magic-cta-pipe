@@ -10,4 +10,6 @@ A brief description:
 4. `train_direction_rf.py`: trains the direction "disp" RF.
 5. `train_classifier_rf.py`: trains the event classification RF.
 6. `apply_rfs.py`: applies the trained RFs to the "test" event sample.
-7. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
+7. `add_orig_mc_tree.py`: adds the "original MC" tree info to the MC events tree processed earlier.
+8. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
+9. `make_event_lists.py`: produces the FITS event lists with application of the cuts.
