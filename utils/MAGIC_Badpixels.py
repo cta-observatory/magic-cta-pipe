@@ -37,8 +37,11 @@ class MAGICBadPixelsCalc():
         else:
             self.pedestalType = 2
         
-        self.sample_times = [None, None]
-        self.n_samples = [None, None]
+        self.sample_times_hot = [None, None]
+        self.n_samples_hot = np.zeros(2, dtype=np.int16) - 1
+
+        self.sample_ranges_dead = [None, None]
+        self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
         #self.pedestal_info = pedestal_info
         
     def _check_pedestal_rms(self, charge_std):
@@ -118,36 +121,118 @@ class MAGICBadPixelsCalc():
 #         return np.sqrt(self.geom.pix_area[i_pix] / self.geom.pix_area[i_pixzero])
         return 1.
     
-    def get_hotpixels(self, event):
+    def get_hotpixel_mask(self, event):
         hotpixel_mask = [[None],[None]]
         event_time = event.trig.gps_time.unix
-        
-        
+
         for tel_id in event.mon.tels_with_data:
-            
-            try:
-                self.sample_times[tel_id - 1][0]
-            except:
-                self.n_samples[tel_id - 1] = len(event.mon.tel[tel_id].pedestal.sample_time)
-                self.sample_times[tel_id - 1] = np.zeros(self.n_samples[tel_id - 1])
-                for i in range(self.n_samples[tel_id - 1]):
-                    self.sample_times[tel_id - 1][i] = event.mon.tel[tel_id].pedestal.sample_time[i].unix
-             
+
+            if self.n_samples_hot[tel_id - 1] == -1:
+                self.n_samples_hot[tel_id - 1] = len(event.mon.tel[tel_id].pedestal.sample_time)
+                self.sample_times_hot[tel_id - 1] = np.zeros(self.n_samples_hot[tel_id - 1])
+                for i in range(self.n_samples_hot[tel_id - 1]):
+                    self.sample_times_hot[tel_id - 1][i] = event.mon.tel[tel_id].pedestal.sample_time[i].unix
+
             if event.mon.tel[tel_id].pedestal.charge_std_outliers == None or self.is_update[tel_id - 1] == True:
                 # calculate only once the hot pixel array of the monitoring data:
-                print("Update hot pixels for M%d" % tel_id)
+                print("Update hot pixels for M%d..." % tel_id, end =" ")
                 event.mon.tel[tel_id].pedestal.charge_std_outliers = []
-                for i_sample in range(self.n_samples[tel_id - 1]):
+                for i_sample in range(self.n_samples_hot[tel_id - 1]):
                     self.hotpixels = np.zeros(self.n_camera_pixels, dtype=np.bool)
                     charge_std = event.mon.tel[tel_id].pedestal.charge_std[self.pedestalType][i_sample]
                     self._check_pedestal_rms(charge_std)
                     event.mon.tel[tel_id].pedestal.charge_std_outliers.append(self.hotpixels)
                 self.is_update[tel_id - 1] = False
-                    
+                print("done.")
+
             # now interpolate for the event time:
-            times_diff = abs(event_time - self.sample_times[tel_id - 1])
-            min_diff = min(times_diff)
-            i_min = np.where(times_diff == min_diff)[0][0]
+            #times_diff = abs(event_time - self.sample_times_hot[tel_id - 1])
+            #min_diff = min(times_diff)
+            #i_min = np.where(times_diff == min_diff)[0][0]
+            i_min = np.where(event_time > self.sample_times_hot[tel_id - 1])[0][-1]
             hotpixel_mask[tel_id - 1] = event.mon.tel[tel_id].pedestal.charge_std_outliers[i_min]
 
         return hotpixel_mask
+    
+    def get_hotpixel_indices(self, event):
+        hotpixel_indices = [[None],[None]]
+        hotpixel_mask = self.get_hotpixel_mask(self, event)
+        for i, hotpixel_mask_tel_i in enumerate(hotpixel_mask):
+            if hotpixel_mask_tel_i != [None]:
+                hotpixel_indices[i] = np.where(hotpixel_mask_tel_i)[0]
+        return hotpixel_indices
+
+    def get_deadpixel_mask(self, event):
+        deadpixel_mask = [[None],[None]]
+        event_time = event.trig.gps_time.unix
+
+        for tel_id in event.mon.tels_with_data:
+
+            if self.n_samples_dead[tel_id - 1] == -1:
+                self.n_samples_dead[tel_id - 1] = len(event.mon.tel[tel_id].pixel_status.sample_time_range)
+                self.sample_ranges_dead[tel_id - 1] = np.zeros(shape=(self.n_samples_dead[tel_id - 1],2))
+                for i in range(self.n_samples_dead[tel_id - 1]):
+                    self.sample_ranges_dead[tel_id - 1][i,0] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][0].unix
+                    self.sample_ranges_dead[tel_id - 1][i,1] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][1].unix
+
+            # now find sample:
+            i_min_dead = np.where(event_time >= self.sample_ranges_dead[tel_id - 1][:,0])[0][-1]
+
+            deadpixel_mask[tel_id - 1] = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[i_min_dead]
+
+
+        return deadpixel_mask
+    
+#     def get_deadpixel_mask(self, event):
+#         deadpixel_mask = [[None],[None]]
+#         event_time = event.trig.gps_time.unix
+# 
+#         for tel_id in event.mon.tels_with_data:
+# 
+#             if self.n_samples_dead[tel_id - 1] == -1:
+#                 self.n_samples_dead[tel_id - 1] = len(event.mon.tel[tel_id].pixel_status.sample_time_range)
+#                 self.sample_ranges_dead[tel_id - 1] = np.zeros(shape=(self.n_samples_dead[tel_id - 1],2))
+#                 for i in range(self.n_samples_dead[tel_id - 1]):
+#                     self.sample_ranges_dead[tel_id - 1][i,0] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][0].unix
+#                     self.sample_ranges_dead[tel_id - 1][i,1] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][1].unix
+# 
+#             if self.n_samples_hot[tel_id - 1] == -1:
+#                 self.n_samples_hot[tel_id - 1] = len(event.mon.tel[tel_id].pedestal.sample_time)
+#                 self.sample_times_hot[tel_id - 1] = np.zeros(self.n_samples_hot[tel_id - 1])
+#                 for i in range(self.n_samples_hot[tel_id - 1]):
+#                     self.sample_times_hot[tel_id - 1][i] = event.mon.tel[tel_id].pedestal.sample_time[i].unix
+# 
+#             # now find sample:
+#             i_min_dead = np.where(event_time >= self.sample_ranges_dead[tel_id - 1][:,0])[0][-1]
+#             i_min_hot = np.where(event_time > self.sample_times_hot[tel_id - 1])[0][-1]
+#             # find end of hot interval:
+#             try:
+#                 time_hot_max = self.sample_times_hot[tel_id - 1][i_min_hot + 1]
+#                 if i_min_dead ==0 and time_hot_max >= self.sample_ranges_dead[tel_id - 1][i_min_dead, 1]:
+#                     deadpixel_mask[tel_id - 1] = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[i_min_dead + 1]
+#                 elif i_min_dead !=0 and time_hot_max >= (self.sample_ranges_dead[tel_id - 1][i_min_dead, 0] + self.sample_ranges_dead[tel_id - 1][i_min_dead, 1])/2:
+#                     deadpixel_mask[tel_id - 1] = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[i_min_dead + 1]
+#                 else:
+#                     deadpixel_mask[tel_id - 1] = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[i_min_dead]
+#             except:
+#                 deadpixel_mask[tel_id - 1] = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[i_min_dead]
+# 
+# 
+#         return deadpixel_mask
+
+    def get_charge_std(self, event):
+        charge_std = [[None],[None]]
+        event_time = event.trig.gps_time.unix
+
+        for tel_id in event.mon.tels_with_data:
+
+            if self.n_samples_hot[tel_id - 1] == -1:
+                self.n_samples_hot[tel_id - 1] = len(event.mon.tel[tel_id].pedestal.sample_time)
+                self.sample_times_hot[tel_id - 1] = np.zeros(self.n_samples_hot[tel_id - 1])
+                for i in range(self.n_samples_hot[tel_id - 1]):
+                    self.sample_times_hot[tel_id - 1][i] = event.mon.tel[tel_id].pedestal.sample_time[i].unix
+
+            i_min = np.where(event_time > self.sample_times_hot[tel_id - 1])[0][-1]
+            charge_std[tel_id - 1] = event.mon.tel[tel_id].pedestal.charge_std[i_min]
+
+        return charge_std
