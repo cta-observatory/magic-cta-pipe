@@ -303,7 +303,7 @@ for oi in range(len(offset_edges) - 1):
 # ================
 
 pyplot.figure(figsize=(12, 12))
-pyplot.style.use('presentation')
+#pyplot.style.use('presentation')
 
 pyplot.xlabel(r'$\theta^2$, deg$^2$')
 
