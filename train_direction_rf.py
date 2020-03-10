@@ -222,9 +222,9 @@ info_message('Training the RF\n', prefix='DirRF')
 direction_estimator = DirectionEstimatorPandas(config['direction_rf']['features'], 
                                                magic_tel_descriptions, 
                                                **config['direction_rf']['settings'])
-#direction_estimator.fit(shower_data_train)
-#direction_estimator.save(config['direction_rf']['save_name'])
-direction_estimator.load(config['direction_rf']['save_name'])
+direction_estimator.fit(shower_data_train)
+direction_estimator.save(config['direction_rf']['save_name'])
+#direction_estimator.load(config['direction_rf']['save_name'])
 
 # Printing the parameter "importances"
 for kind in direction_estimator.telescope_rfs:
