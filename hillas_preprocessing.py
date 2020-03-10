@@ -614,8 +614,8 @@ if 'data_files' not in config:
     print('Error: the configuration file is missing the "data_files" section. Exiting.')
     exit()
     
-if 'image_cleanining' not in config:
-    print('Error: the configuration file is missing the "image_cleanining" section. Exiting.')
+if 'image_cleaning' not in config:
+    print('Error: the configuration file is missing the "image_cleaning" section. Exiting.')
     exit()
 # ------------------------------
 
@@ -631,7 +631,7 @@ for data_type in config['data_files']:
             except:
                 ValueError(f'Can not recognize the telescope type from name "{telescope}"')
                 
-            if telescope_type not in config['image_cleanining']:
+            if telescope_type not in config['image_cleaning']:
                 raise ValueError(f'Guessed telescope type "{telescope_type}" does not have image cleaning settings')
 
             is_mc = data_type.lower() == "mc"
@@ -639,11 +639,11 @@ for data_type in config['data_files']:
             if is_mc:
                 process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                    output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
-                                   image_cleaning_settings=config['image_cleanining'][telescope_type])
+                                   image_cleaning_settings=config['image_cleaning'][telescope_type])
             else:
                 tel_id = re.findall('.*([_\d]+)', telescope)[0]
                 tel_id = int(tel_id)
                 process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                      tel_id=tel_id,
                                      output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
-                                     image_cleaning_settings=config['image_cleanining'][telescope_type])
+                                     image_cleaning_settings=config['image_cleaning'][telescope_type])
