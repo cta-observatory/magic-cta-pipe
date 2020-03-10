@@ -47,7 +47,7 @@ image_cleaning:
 
         time_thresholds:
             # 1.5 slices x 1.64 GHz
-            time_limit: 2.46
+            max_time_diff: 2.46
             # 4.5 slices x 1.64 GHz
             max_time_off: 7.38
             min_number_neighbors: 1
