@@ -91,7 +91,7 @@ magic_tel_positions = {
 magic_optics = OpticsDescription.from_name('MAGIC')
 magic_cam = CameraGeometry.from_name('MAGICCam')
 magic_tel_description = TelescopeDescription(name='MAGIC', 
-                                             type='MAGIC', 
+                                             tel_type='MAGIC', 
                                              optics=magic_optics, 
                                              camera=magic_cam)
 magic_tel_descriptions = {1: magic_tel_description, 
