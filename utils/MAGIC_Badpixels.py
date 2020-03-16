@@ -253,6 +253,22 @@ class MAGICBadPixelsCalc():
 
         return deadpixel_mask
 
+    def get_badpixel_mask(self, event):
+        """
+        Fetch the union of bad RMS and bad pixels for a given event, that is the event time.
+
+        Returns
+        -------
+        badpixel_mask: has two dimensions: Masks for M1 and/or M2.
+        """
+        badpixel_mask = [[None],[None]]
+        badrmspixel_mask = self.get_badrmspixel_mask(event)
+        deadpixel_mask = self.get_deadpixel_mask(event)
+
+        for tel_id in event.mon.tels_with_data:
+            badpixel_mask[tel_id - 1] = np.logical_or(badrmspixel_mask[tel_id - 1], deadpixel_mask[tel_id - 1])
+
+        return badpixel_mask
 #     def get_charge_std(self, event):
 #         """
 #         Fetch the pedestal RMS pixel values for a given event, that is the event time.
