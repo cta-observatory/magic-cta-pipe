@@ -114,3 +114,18 @@ To run these scripts, taking as example `train_energy_rf.py`, just do:
 ```bash
 $ python train_energy_rf.py --config=config.yaml
 ```
+
+Once the Random Forests are trained, they can be applied to the data. Before this step, another one must be performed using the script
+`add_orig_mc_tree.py`, described in the following paragraph.
+
+### `add_orig_mc_tree.py` ###
+
+The script `add_orig_mc_tree.py` opens the calibrated simulated files (for both train and test samples) to read the `OriginalMC` tree,
+containing the information about the simulated values for each event (e.g. energy, arrival direction of the events).
+The information is then copied to the output files created by `hillas_preprocessing.py`.
+
+Run this script with the command:
+
+```bash
+$ python add_orig_mc_tree.py --config=config.yaml
+```
