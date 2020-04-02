@@ -67,7 +67,7 @@ each of those Random Forests.
 
 Finally, the `event_list` key is used to specify some cuts, `quality` or user `selection` cuts.
 
-### `hillas_preprocessing.py` ###
+### hillas\_preprocessing.py ###
 
 The first script to run the pipeline is `hillas_preprocessing.py`. It takes calibrated files (both simulated and real data) as input and processes them:
 
@@ -92,7 +92,7 @@ where `config.yaml` is the name of the configuration file.
 
 The next step in the pipeline is training the Random Forests for event classification, energy and direction reconstruction.
 
-### `train_energy_rf.py`, `train_direction_rf.py`, `train_classifier_rf.py` ###
+### train\_energy\_rf.py, train\_direction\_rf.py, train\_classifier\_rf.py ###
 
 These scripts take care of training different Random Forests with different purposes:
 
@@ -118,7 +118,7 @@ $ python train_energy_rf.py --config=config.yaml
 Once the Random Forests are trained, they can be applied to the data. Before this step, another one must be performed using the script
 `add_orig_mc_tree.py`, described in the following paragraph.
 
-### `add_orig_mc_tree.py` ###
+### add\_orig\_mc\_tree.py ###
 
 The script `add_orig_mc_tree.py` opens the calibrated simulated files (for both train and test samples) to read the `OriginalMC` tree,
 containing the information about the simulated values for each event (e.g. energy, arrival direction of the events).
@@ -132,9 +132,9 @@ $ python add_orig_mc_tree.py --config=config.yaml
 
 After this step, the Random Forests can be applied to the ON data and simulated data (test sample).
 
-### `apply_RFs.py` ###
+### apply\_rfs.py ###
 
-The script `apply_RFs.py` is responsible for applying the trained Random Forests (energy, event direction and classification) to the ON
+The script `apply_rfs.py` is responsible for applying the trained Random Forests (energy, event direction and classification) to the ON
 and the test sample of simulated data, reconstructing the properties of the events. The result of the reconstruction is saved in a HDF5
 output file, one for the ON and one for the simulated data, as specified by the `reco_output` keys of the configuration file.
 
@@ -144,7 +144,7 @@ To run the script, just do:
 $ python apply_rfs.py --config=config.yaml
 ```
 
-### `make_irf.py` ###
+### make\_irf.py ###
 
 The script `make_irf.py` generates the instrument response functions (IRFs) starting from the test sample of simulated data, after the Random
 Forests have been applied to them. The result is a FITS file containing the following tables (the names are self-explanatory:
@@ -161,7 +161,7 @@ to be passed as command line argument:
 $ python make_irf.py --config=config.yaml
 ```
 
-### `make_event_lists.py` ###
+### make\_event\_lists.py ###
 
 `make_event_lists.py` is the last script of the pipeline and is responsible of creating an event list. First, a list of good time intervals (GTI)
 is created (applying the cuts specified in the configuration file), then event information (ID, time, sky coordinates and reconstructed energy) are
