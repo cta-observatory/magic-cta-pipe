@@ -129,3 +129,46 @@ Run this script with the command:
 ```bash
 $ python add_orig_mc_tree.py --config=config.yaml
 ```
+
+After this step, the Random Forests can be applied to the ON data and simulated data (test sample).
+
+### `apply_RFs.py` ###
+
+The script `apply_RFs.py` is responsible for applying the trained Random Forests (energy, event direction and classification) to the ON
+and the test sample of simulated data, reconstructing the properties of the events. The result of the reconstruction is saved in a HDF5
+output file, one for the ON and one for the simulated data, as specified by the `reco_output` keys of the configuration file.
+
+To run the script, just do:
+
+```bash
+$ python apply_rfs.py --config=config.yaml
+```
+
+### `make_irf.py` ###
+
+The script `make_irf.py` generates the instrument response functions (IRFs) starting from the test sample of simulated data, after the Random
+Forests have been applied to them. The result is a FITS file containing the following tables (the names are self-explanatory:
+
+* `POINT SPREAD FUNCTION`
+* `ENERGY DISPERSION`
+* `EFFECTIVE AREA`
+
+For the time being, the name of the reconstructed test sample simulated data file and of the output FITS file is hardcoded in the script, but
+it will be changed in the future so that they can be set with the YAML configuration file. In any case, the script needs the configuration file
+to be passed as command line argument:
+
+```bash
+$ python make_irf.py --config=config.yaml
+```
+
+### `make_event_lists.py` ###
+
+`make_event_lists.py` is the last script of the pipeline and is responsible of creating an event list. First, a list of good time intervals (GTI)
+is created (applying the cuts specified in the configuration file), then event information (ID, time, sky coordinates and reconstructed energy) are
+extracted. The GTI and the event information are used to create two tables in the resulting FITS files: for each MAGIC run, a FITS file is generated.
+
+To run this script:
+
+```bash
+$ python make_event_lists.py --config=config.yaml
+```
