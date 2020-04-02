@@ -69,7 +69,7 @@ Finally, the `event_list` key is used to specify some cuts, `quality` or user `s
 
 ### `hillas_preprocessing.py` ###
 
-The `hillas_preprocessing.py` script takes calibrated files (both simulated and real data) as input and processes them:
+The first script to run the pipeline is `hillas_preprocessing.py`. It takes calibrated files (both simulated and real data) as input and processes them:
 
 * it performs the image cleaning
 * it calculates the Hillas parameters (using the `ctapipe.image.hillas_parameters` and `ctapipe.image.leakage` functions)
@@ -89,3 +89,28 @@ $ python hillas_preprocessing.py --config=config.yaml
 ```
 
 where `config.yaml` is the name of the configuration file.
+
+The next step in the pipeline is training the Random Forests for event classification, energy and direction reconstruction.
+
+### `train_energy_rf.py`, `train_direction_rf.py`, `train_classifier_rf.py` ###
+
+These scripts take care of training different Random Forests with different purposes:
+
+* `train_energy_rf.py` trains the Random Forest for the energy reconstruction
+* `train_direction_rf.py` trains the Random Forest for the event direction reconstruction
+* `train_classifier_rf.py` trains the Random Forest for the event classification
+
+`train_energy_rf.py` and `train_direction_rf.py` run on simulated data from both the train and test sample. `train_classifier_rf.py`
+instead runs on the test sample of simulated data and on OFF data.
+
+Each scripts saves some performance summary plots as PNG images:
+
+* `train_energy_rf.py` saves the energy migration matrix and the energy bias and RMS
+* `train_direction_rf.py` saves the histogram of theta2 and the PSF as a function of the energy and offset distance
+* `train_classifier_rf.py` saves the event classification histograms
+
+To run these scripts, taking as example `train_energy_rf.py`, just do:
+
+```bash
+$ python train_energy_rf.py --config=config.yaml
+```
