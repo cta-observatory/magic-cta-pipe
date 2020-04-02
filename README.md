@@ -67,4 +67,25 @@ each of those Random Forests.
 
 Finally, the `event_list` key is used to specify some cuts, `quality` or user `selection` cuts.
 
+### `hillas_preprocessing.py` ###
 
+The `hillas_preprocessing.py` script takes calibrated files (both simulated and real data) as input and processes them:
+
+* it performs the image cleaning
+* it calculates the Hillas parameters (using the `ctapipe.image.hillas_parameters` and `ctapipe.image.leakage` functions)
+* it computes the timing parameters (using the `ctapipe.image.timing_parameters.timing_parameters` function)
+
+The settings of the cleaning, as well as the input and output files of the script, are specified in the configuration file. The format of the output files
+is HDF5.
+
+For MAGIC data, its reading is performed through the [`ctapipe_io_magic`](https://gitlab.mpcdf.mpg.de/ievo/ctapipe_io_magic) module. It defines the class
+`MAGICEventSource`, which inherits from the [`EventSource`](https://cta-observatory.github.io/ctapipe/api/ctapipe.io.EventSource.html) class defined in `ctapipe`,
+used to setup classes to read different sources of data.
+
+Running the script is straightforward:
+
+```bash
+$ python hillas_preprocessing.py --config=config.yaml
+```
+
+where `config.yaml` is the name of the configuration file.
