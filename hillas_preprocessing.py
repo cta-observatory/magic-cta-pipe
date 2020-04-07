@@ -17,7 +17,7 @@ import traitlets
 
 import ctapipe
 
-from ctapipe_io_magic import MAGICEventSource, MAGICEventSourceMC
+from ctapipe_io_magic import MAGICEventSource
 
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
@@ -297,7 +297,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
             print(f"-- Working on {file_name:s} --")
             print("")
             # Event source
-            source = MAGICEventSourceMC(input_url=input_file)
+            source = MAGICEventSource(input_url=input_file)
             
             # Looping over the events
             for event in source:
@@ -322,9 +322,9 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                     # Added on 06/07/2019
                     clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
-                    if event_image[clean_mask].sum() == 0:                                                                                                           
-                        # Event did not survive image cleaining                                                                                                      
-                        continue    
+                    if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining
+                        continue
                     
                     clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time, 
                                max_time_off=time_thresholds['max_time_off'], 
