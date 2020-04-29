@@ -123,6 +123,18 @@ This tools adds the "original MC" tree info to the MC events tree processed earl
 
 arg_parser.add_argument("--config", default="config.yaml",
                         help='Configuration file to steer the code execution.')
+arg_parser.add_argument("--usetest",
+                        help='Process only test files.',
+                        action='store_true')
+arg_parser.add_argument("--usetrain",
+                        help='Process only train files.',
+                        action='store_true')
+arg_parser.add_argument("--usem1",
+                        help='Process only M1 files.',
+                        action='store_true')
+arg_parser.add_argument("--usem2",
+                        help='Process only M2 files.',
+                        action='store_true')
 
 parsed_args = arg_parser.parse_args()
 # --------------------------
@@ -168,9 +180,27 @@ magic_subarray = SubarrayDescription('MAGIC',
 
 # ------------------------------
 
+if parsed_args.usetrain and parsed_args.usetest:
+    data_sample_to_process = ['train_sample', 'test_sample']
+elif parsed_args.usetrain:
+    data_sample_to_process = ['train_sample']
+elif parsed_args.usetest:
+    data_sample_to_process = ['test_sample']
+else:
+    data_sample_to_process = ['train_sample', 'test_sample']
+
+if parsed_args.usem1 and parsed_args.usem2:
+    telescope_to_process = ['magic1', 'magic2']
+elif parsed_args.usem1:
+    telescope_to_process = ['magic1']
+elif parsed_args.usem2:
+    telescope_to_process = ['magic2']
+else:
+    telescope_to_process = ['magic1', 'magic2']
+
 for data_type in config['data_files']:
-    for sample in config['data_files'][data_type]:
-        for telescope in config['data_files'][data_type][sample]:
+    for sample in data_sample_to_process:
+        for telescope in telescope_to_process:
             is_mc = data_type.lower() == "mc"
 
             if is_mc:

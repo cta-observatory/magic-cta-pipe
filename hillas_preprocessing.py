@@ -591,6 +591,24 @@ This tools computes the Hillas parameters for the specified data sets.
 
 arg_parser.add_argument("--config", default="config.yaml",
                         help='Configuration file to steer the code execution.')
+arg_parser.add_argument("--usereal",
+                        help='Process only real data files.',
+                        action='store_true')
+arg_parser.add_argument("--usemc",
+                        help='Process only simulated data files.',
+                        action='store_true')
+arg_parser.add_argument("--usetest",
+                        help='Process only test files.',
+                        action='store_true')
+arg_parser.add_argument("--usetrain",
+                        help='Process only train files.',
+                        action='store_true')
+arg_parser.add_argument("--usem1",
+                        help='Process only M1 files.',
+                        action='store_true')
+arg_parser.add_argument("--usem2",
+                        help='Process only M2 files.',
+                        action='store_true')
 
 parsed_args = arg_parser.parse_args()
 # --------------------------
@@ -619,9 +637,36 @@ if 'image_cleaning' not in config:
     exit()
 # ------------------------------
 
-for data_type in config['data_files']:
-    for sample in config['data_files'][data_type]:
-        for telescope in config['data_files'][data_type][sample]:
+if parsed_args.usereal and parsed_args.usemc:
+    data_type_to_process = config['data_files']
+elif parsed_args.usereal:
+    data_type_to_process = ['data']
+elif parsed_args.usemc:
+    data_type_to_process = ['mc']
+else:
+    data_type_to_process = config['data_files']
+
+if parsed_args.usetrain and parsed_args.usetest:
+    data_sample_to_process = ['train_sample', 'test_sample']
+elif parsed_args.usetrain:
+    data_sample_to_process = ['train_sample']
+elif parsed_args.usetest:
+    data_sample_to_process = ['test_sample']
+else:
+    data_sample_to_process = ['train_sample', 'test_sample']
+
+if parsed_args.usem1 and parsed_args.usem2:
+    telescope_to_process = ['magic1', 'magic2']
+elif parsed_args.usem1:
+    telescope_to_process = ['magic1']
+elif parsed_args.usem2:
+    telescope_to_process = ['magic2']
+else:
+    telescope_to_process = ['magic1', 'magic2']
+
+for data_type in data_type_to_process:
+    for sample in data_sample_to_process:
+        for telescope in telescope_to_process:
             
             info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope}"',
                          prefix='Hillas')
