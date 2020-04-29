@@ -244,7 +244,7 @@ def get_num_islands(camera, clean_mask, event_image):
     return num_islands
 
 
-def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
+def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings):
     # Create event metadata container to hold event / observation / telescope IDs 
     # and MC true values for the event energy and direction. We will need it to add 
     # this information to the event Hillas parameters when dumping the results to disk.
@@ -300,7 +300,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
             source = MAGICEventSource(input_url=input_file)
             
             # Looping over the events
-            for event in source:
+            for event in source._mono_event_generator(telescope=f'M{tel_id}'):
                 tels_with_data = event.r1.tels_with_data
 
                 # Calibrating an event
@@ -636,13 +636,15 @@ for data_type in config['data_files']:
 
             is_mc = data_type.lower() == "mc"
 
+            tel_id = re.findall('.*([_\d]+)', telescope)[0]
+            tel_id = int(tel_id)
+
             if is_mc:
                 process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
+                                   tel_id=tel_id,
                                    output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
                                    image_cleaning_settings=config['image_cleaning'][telescope_type])
             else:
-                tel_id = re.findall('.*([_\d]+)', telescope)[0]
-                tel_id = int(tel_id)
                 process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                      tel_id=tel_id,
                                      output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
