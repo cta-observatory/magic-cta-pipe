@@ -1,7 +1,9 @@
 # ICRR-MPP analysis pipeline for MAGIC and LST data
 
 This repository contains the scripts needed to perform MAGIC+LST analysis with ctapipe.
-*It's still under developement.*
+
+### Note: This package is under heavy development. Usage at your own risk, it is recommended to contact one of the latest committers if you plan to use this package.
+
 
 A brief description:
 1. `CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
