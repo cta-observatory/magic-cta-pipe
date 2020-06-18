@@ -17,7 +17,7 @@ import traitlets
 
 import ctapipe
 
-from ctapipe_io_magic import MAGICEventSource, MAGICEventSourceMC
+from ctapipe_io_magic import MAGICEventSource
 
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
@@ -244,7 +244,7 @@ def get_num_islands(camera, clean_mask, event_image):
     return num_islands
 
 
-def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
+def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings):
     # Create event metadata container to hold event / observation / telescope IDs 
     # and MC true values for the event energy and direction. We will need it to add 
     # this information to the event Hillas parameters when dumping the results to disk.
@@ -297,10 +297,10 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
             print(f"-- Working on {file_name:s} --")
             print("")
             # Event source
-            source = MAGICEventSourceMC(input_url=input_file)
+            source = MAGICEventSource(input_url=input_file)
             
             # Looping over the events
-            for event in source:
+            for event in source._mono_event_generator(telescope=f'M{tel_id}'):
                 tels_with_data = event.r1.tels_with_data
 
                 # Calibrating an event
@@ -322,9 +322,9 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                     # Added on 06/07/2019
                     clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
-                    if event_image[clean_mask].sum() == 0:                                                                                                           
-                        # Event did not survive image cleaining                                                                                                      
-                        continue    
+                    if event_image[clean_mask].sum() == 0:
+                        # Event did not survive image cleaining
+                        continue
                     
                     clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time, 
                                max_time_off=time_thresholds['max_time_off'], 
@@ -591,6 +591,24 @@ This tools computes the Hillas parameters for the specified data sets.
 
 arg_parser.add_argument("--config", default="config.yaml",
                         help='Configuration file to steer the code execution.')
+arg_parser.add_argument("--usereal",
+                        help='Process only real data files.',
+                        action='store_true')
+arg_parser.add_argument("--usemc",
+                        help='Process only simulated data files.',
+                        action='store_true')
+arg_parser.add_argument("--usetest",
+                        help='Process only test files.',
+                        action='store_true')
+arg_parser.add_argument("--usetrain",
+                        help='Process only train files.',
+                        action='store_true')
+arg_parser.add_argument("--usem1",
+                        help='Process only M1 files.',
+                        action='store_true')
+arg_parser.add_argument("--usem2",
+                        help='Process only M2 files.',
+                        action='store_true')
 
 parsed_args = arg_parser.parse_args()
 # --------------------------
@@ -614,14 +632,41 @@ if 'data_files' not in config:
     print('Error: the configuration file is missing the "data_files" section. Exiting.')
     exit()
     
-if 'image_cleanining' not in config:
-    print('Error: the configuration file is missing the "image_cleanining" section. Exiting.')
+if 'image_cleaning' not in config:
+    print('Error: the configuration file is missing the "image_cleaning" section. Exiting.')
     exit()
 # ------------------------------
 
-for data_type in config['data_files']:
-    for sample in config['data_files'][data_type]:
-        for telescope in config['data_files'][data_type][sample]:
+if parsed_args.usereal and parsed_args.usemc:
+    data_type_to_process = config['data_files']
+elif parsed_args.usereal:
+    data_type_to_process = ['data']
+elif parsed_args.usemc:
+    data_type_to_process = ['mc']
+else:
+    data_type_to_process = config['data_files']
+
+if parsed_args.usetrain and parsed_args.usetest:
+    data_sample_to_process = ['train_sample', 'test_sample']
+elif parsed_args.usetrain:
+    data_sample_to_process = ['train_sample']
+elif parsed_args.usetest:
+    data_sample_to_process = ['test_sample']
+else:
+    data_sample_to_process = ['train_sample', 'test_sample']
+
+if parsed_args.usem1 and parsed_args.usem2:
+    telescope_to_process = ['magic1', 'magic2']
+elif parsed_args.usem1:
+    telescope_to_process = ['magic1']
+elif parsed_args.usem2:
+    telescope_to_process = ['magic2']
+else:
+    telescope_to_process = ['magic1', 'magic2']
+
+for data_type in data_type_to_process:
+    for sample in data_sample_to_process:
+        for telescope in telescope_to_process:
             
             info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope}"',
                          prefix='Hillas')
@@ -631,19 +676,21 @@ for data_type in config['data_files']:
             except:
                 ValueError(f'Can not recognize the telescope type from name "{telescope}"')
                 
-            if telescope_type not in config['image_cleanining']:
+            if telescope_type not in config['image_cleaning']:
                 raise ValueError(f'Guessed telescope type "{telescope_type}" does not have image cleaning settings')
 
             is_mc = data_type.lower() == "mc"
 
+            tel_id = re.findall('.*([_\d]+)', telescope)[0]
+            tel_id = int(tel_id)
+
             if is_mc:
                 process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
+                                   tel_id=tel_id,
                                    output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
-                                   image_cleaning_settings=config['image_cleanining'][telescope_type])
+                                   image_cleaning_settings=config['image_cleaning'][telescope_type])
             else:
-                tel_id = re.findall('.*([_\d]+)', telescope)[0]
-                tel_id = int(tel_id)
                 process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                      tel_id=tel_id,
                                      output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
-                                     image_cleaning_settings=config['image_cleanining'][telescope_type])
+                                     image_cleaning_settings=config['image_cleaning'][telescope_type])
