@@ -283,7 +283,7 @@ for tel_id in tel_ids:
 # === Plotting ===
 # ================
 
-pyplot.style.use('presentation')
+#pyplot.style.use('presentation')
 
 pyplot.figure(figsize=(20, 10))
 
