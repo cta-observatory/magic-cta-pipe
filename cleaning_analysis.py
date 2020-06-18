@@ -6,6 +6,7 @@ import uproot
 import traitlets
 import itertools
 import copy
+import math
 
 import numpy as np
 np.set_printoptions(threshold=sys.maxsize)
@@ -13,12 +14,10 @@ import pandas as pd
 import scipy
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse import lil_matrix, csr_matrix
+import numpy.ma as ma
 
-# import ctapipe_io_magic
-# import importlib 
-# importlib.reload(ctapipe_io_magic)
 import ctapipe
-from ctapipe_io_magic import MAGICEventSourceMC
+from ctapipe_io_magic import MAGICEventSource
 
 from astropy import units
 
@@ -31,109 +30,113 @@ from ctapipe.image.cleaning import tailcuts_clean, apply_time_delta_cleaning
 from ctapipe.io.eventseeker import EventSeeker
 
 from matplotlib import pyplot, colors
+import pylab as plt
 
-from MAGIC_Cleaning import magic_clean as clean
+import argparse
+
+from utils import MAGIC_Badpixels
+# from utils import bad_pixel_treatment
+from utils import MAGIC_Cleaning
 
 def main():
 
-    plot = True
+    usage = "usage: %(prog)s [options] "
+    description = "Run gtselect and gtmktime on one or more FT1 files.  "
+    "Note that gtmktime will be skipped if no FT2 file is provided."
+    parser = argparse.ArgumentParser(usage=usage, description=description)
+    parser.add_argument('-m','--mc', dest='mc', action='store_true')
 
+    args = parser.parse_args()
+
+    plot = False
     tel_id = 1
-    # mars_file_mask = '/remote/ceph/group/magic/MAGIC-LST/MCs/MAGIC/ST.03.07/za05to35/Train_sample/1.Calibrated/GA_M1*root'
-    mars_file_mask = '/home/iwsatlas1/damgreen/CTA/MAGIC_Cleaning/datafile/*.root'
-    mars_file_list = glob.glob(mars_file_mask)  #  Here makes array which contains files matching the input condition (GA_M1*root).
-
-    file_name = (list(filter(lambda name : '8' in name, mars_file_list)))[0]
-    # file_name = (list(mars_file_list))
-
-    magic_event_source = MAGICEventSourceMC(input_url=file_name)
-    event_generator = magic_event_source._mono_event_generator()
 
     mars_camera = CameraGeometry.from_name("MAGICCamMars")
 
-    config = dict(
-      picture_thresh = 6, 
+    neighbors = mars_camera.neighbor_matrix_sparse
+    outermost = []
+    for pix in range(mars_camera.n_pixels):
+        if neighbors[pix].getnnz() < 5:
+            outermost.append(pix)
+
+    cleaning_config = dict(
+      picture_thresh = 6,
       boundary_thresh = 3.5,
       max_time_off = 4.5 * 1.64,
-      max_time_diff = 1.5 * 1.64, 
+      max_time_diff = 1.5 * 1.64,
       usetime = True,
       usesum = True,
+      findhotpixels=True,
     )
 
-    magic_clean = clean(mars_camera,config)
+    bad_pixels_config = dict(
+        pedestalLevel = 400,
+        pedestalLevelVariance = 4.5,
+        pedestalType = 'FromExtractorRndm'
+    )
 
-    for i, event in enumerate(event_generator):
-        tels_with_data = list(event.r1.tels_with_data)
-       
-        subarray = event.inst.subarray
-        camera = subarray.tel[tel_id].camera
+    magic_clean = MAGIC_Cleaning.magic_clean(mars_camera,cleaning_config)
+    badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
 
-        event_image = event.dl1.tel[tel_id].image
-        event_pulse_time = event.dl1.tel[tel_id].pulse_time
+    tc_cleaned_events = []
+    ma_cleaned_events = []
+    all_events = []
 
-        clean_mask = magic_clean.clean_image(event_image, event_pulse_time)
+    size_cut = 50
+    leakage_cut = 0.15
 
-        event_image_cleaned = event_image.copy()
-        event_image_cleaned[~clean_mask] = 0
+    if args.mc:
+        """ MC FILES"""
+        mars_file_mask = '/remote/ceph/group/magic/MAGIC-LST/MCs/MAGIC/ST.03.07/za05to35/Train_sample/1.Calibrated/GA_M1*root'
+        mars_file_list = glob.glob(mars_file_mask)  #  Here makes array which contains files matching the input condition (GA_M1*root).
+        file_list = (list(filter(lambda name : '123' in name, mars_file_list)))
+        print("Number of files : %s" % len(file_list))
+    else:
+        """DATA FILES"""
+        mars_file_mask = '/home/iwsatlas1/damgreen/CTA/MAGIC_Cleaning/datafile/Calib/*.root'
+        mars_file_list = glob.glob(mars_file_mask)  #  Here makes array which contains files matching the input condition (GA_M1*root).
+        file_list = (list(filter(lambda name : '0' in name, mars_file_list)))
+        print("Number of files : %s" % len(file_list))
 
-        event_pulse_time_cleaned = event_pulse_time.copy()
-        event_pulse_time_cleaned[~clean_mask] = 0
+    for ix, file_name in enumerate(file_list):
 
-        event_image_cleaned = event_image.copy()
-        event_image_cleaned[~clean_mask] = 0
+        magic_event_source = MAGICEventSource(input_url=file_name)
+        event_generator = magic_event_source._mono_event_generator('M1')
 
-        event_pulse_time_cleaned = event_pulse_time.copy()
-        event_pulse_time_cleaned[~clean_mask] = 0
+        for i, event in enumerate(event_generator):
+            if i > 1e30:
+                break
+            if i % 1000 == 0:
+                print("Event %s" % i)
+            tels_with_data = list(event.r1.tels_with_data)
+            if args.mc:
+                all_events.append(event.mc.energy.value)
+            subarray = event.inst.subarray
 
-        if scipy.any(event_image_cleaned):
-            hillas_params = hillas_parameters(mars_camera, event_image_cleaned)
+            badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
+            deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
+            unsuitable_mask = np.logical_or(badrmspixel_mask[0], deadpixel_mask[0])
 
-            print("Event Number : %i, Size : %.2f, Length : %.2f, Width : %.2f" % (i, hillas_params.intensity, hillas_params.length.to(units.mm).value, hillas_params.width.to(units.mm).value))
+            event_image = event.dl1.tel[tel_id].image
+            event_pulse_time = event.dl1.tel[tel_id].pulse_time
 
-            if plot:
+            clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time,unsuitable_mask=unsuitable_mask)
 
-                pyplot.figure(figsize=(10, 8))
-                pyplot.clf()
 
-                # pyplot.style.use('presentation')
+            event_image_cleaned = event_image.copy()
+            event_image_cleaned[~clean_mask] = 0
 
-                pyplot.subplot(221)
-                disp = CameraDisplay(mars_camera, event_image, cmap='jet')
-                pyplot.title('Original image')
-                disp.highlight_pixels(event_image_cleaned > 0,color='red')
-                disp.add_colorbar()
+            event_pulse_time_cleaned = event_pulse_time.copy()
+            event_pulse_time_cleaned[~clean_mask] = 0
 
-                pyplot.subplot(222)
-                disp = CameraDisplay(mars_camera, event_pulse_time, cmap='jet')
-                # disp.set_limits_minmax(20,30)
-                disp.highlight_pixels(event_image_cleaned > 0,color='red')
-                pyplot.title('Original arrival time map')
-                disp.add_colorbar()
+            if scipy.any(event_image_cleaned):
 
-                pyplot.subplot(223)
-                disp = CameraDisplay(mars_camera, event_image_cleaned, cmap='bwr')
-                # disp.overlay_moments(hillas_params, color='red', lw=3)
-                # disp.set_limits_minmax(-20,20)
+                try:
+                    hillas_params = hillas_parameters(mars_camera, event_image_cleaned)
+                except:
+                    continue
 
-                disp.highlight_pixels(event_image_cleaned > 0,color='red')
-
-                pyplot.title('Cleaned image')
-                disp.add_colorbar()
-
-                time_mean = np.mean(event_pulse_time_cleaned[event_image_cleaned > 0])
-                pyplot.subplot(224)
-                disp = CameraDisplay(mars_camera, event_pulse_time_cleaned, cmap='jet')
-                # disp.set_limits_minmax(-5,5)
-                disp.highlight_pixels(event_image_cleaned > 0,color='red')
-                pyplot.title('Cleaned arrival time amp')
-                disp.add_colorbar()
-
-                pyplot.tight_layout()
-
-                pyplot.savefig("plots/event_%04i.pdf" % i)
-
-        # if i >= 17:
-        #     break
+                # print("EvtNum : %i, Size : %f, Core : %i, Used %i" % (event.dl0.event_id, hillas_params.intensity, magic_clean.core_pix, magic_clean.used_pix))
 
 if __name__ == "__main__":
     main()
