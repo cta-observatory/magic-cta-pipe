@@ -51,7 +51,11 @@ def main():
     plot = False
     tel_id = 1
 
+    # when comparing to MARS images
     mars_camera = CameraGeometry.from_name("MAGICCamMars")
+
+    # for consistent usage within ctapipe/with LST - image is mirrored on x=-y axis
+    #ars_camera = CameraGeometry.from_name("MAGICCam")
 
     neighbors = mars_camera.neighbor_matrix_sparse
     outermost = []
@@ -93,7 +97,7 @@ def main():
         print("Number of files : %s" % len(file_list))
     else:
         """DATA FILES"""
-        mars_file_mask = '/home/iwsatlas1/damgreen/CTA/MAGIC_Cleaning/datafile/Calib/*.root'
+        mars_file_mask = '/Users/moritz/Documents/MAGIC-data/Crab/Data/Sorcerer/2020*.root'
         mars_file_list = glob.glob(mars_file_mask)  #  Here makes array which contains files matching the input condition (GA_M1*root).
         file_list = (list(filter(lambda name : '0' in name, mars_file_list)))
         print("Number of files : %s" % len(file_list))
