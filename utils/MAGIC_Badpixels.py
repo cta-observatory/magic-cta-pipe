@@ -15,9 +15,6 @@ class MAGICBadPixelsCalc():
         # self._check_pedvar_fields()
         self.badrmspixel_mask = np.zeros(self.n_camera_pixels, dtype=np.bool)
 
-        # Calculation of RMS outliers is only done when class is initialized
-        self.is_update = np.zeros(2, dtype=np.bool) + 1
-
         self.config = config
 
         if 'pedestalLevel' in config:
@@ -43,6 +40,8 @@ class MAGICBadPixelsCalc():
         else:
             self.pedestalType = 2
 
+        self.current_obs_id = -1
+
         # Pedestal sample times and outlier masks are reduced to the unique
         # outlier masks: In MARS files, mayn duplicate entries are present,
         # and removing them onces significantly speeds up searching the correct
@@ -60,6 +59,24 @@ class MAGICBadPixelsCalc():
         # Allow processing of MCs (do nothing, but also don't crash)
         self.is_mc = False
         self.check_is_mc = False
+
+    def _check_new_run(self, event):
+        """
+        Initializes or resets for each new run subrun-wise dead pixel samples
+        or pedestal info with computed outlier masks.
+        """
+        
+        if event.dl0.obs_id != self.current_obs_id:
+        
+            self.sample_times_ped = [[], []]
+            self.n_samples_ped = np.zeros(2, dtype=np.int16) - 1
+            self.charge_std_outliers = [[], []]
+            #self.charge_std = [[], []]
+    
+            self.sample_ranges_dead = [None, None]
+            self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
+            
+            self.current_obs_id = event.dl0.obs_id
 
     def _check_is_mc(self, event):
         """
@@ -185,6 +202,8 @@ class MAGICBadPixelsCalc():
                 badrmspixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
             return badrmspixel_mask
 
+        self._check_new_run(event)
+
         event_time = event.trig.gps_time.unix
 
         for tel_id in event.trig.tels_with_trigger:
@@ -231,7 +250,7 @@ class MAGICBadPixelsCalc():
          self.sample_times_ped, self.charge_std_outliers
         """
 
-        if self.n_samples_ped[tel_id - 1] == -1 or self.charge_std_outliers[tel_id - 1] == [] or self.is_update[tel_id - 1] == True:
+        if self.n_samples_ped[tel_id - 1] == -1:
 
             self.n_samples_ped[tel_id - 1] = len(event.mon.tel[tel_id].pedestal.sample_time)
 
@@ -255,7 +274,6 @@ class MAGICBadPixelsCalc():
             self.sample_times_ped[tel_id - 1] = np.array(self.sample_times_ped[tel_id - 1])
             self.charge_std_outliers[tel_id - 1] = np.array(self.charge_std_outliers[tel_id - 1], dtype=np.bool)
             #self.charge_std[tel_id - 1] = np.array(self.charge_std[tel_id - 1])
-            self.is_update[tel_id - 1] = False
             print("done.")
 
     def get_deadpixel_mask(self, event):
@@ -274,6 +292,8 @@ class MAGICBadPixelsCalc():
             for tel_id in event.trig.tels_with_trigger:
                 deadpixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
             return deadpixel_mask
+
+        self._check_new_run(event)
 
         event_time = event.trig.gps_time.unix
 
