@@ -147,6 +147,11 @@ for data_type in config['data_files']:
         if data_type == 'mc':
             original_mc_data['multiplicity'] = original_mc_data['true_energy'].groupby(level=['obs_id', 'event_id']).count()
 
+
+        #Added by Lea Heckmann 2020-05-15 for the moment to delete duplicate events
+        info_message(f'Removing duplicate events', prefix='ApplyRF')
+        shower_data = shower_data[~shower_data.index.duplicated()]
+
         # Applying RFs of every kind
         for rf_kind in ['direction_rf', 'energy_rf', 'classifier_rf']:
             info_message(f'Loading RF: {rf_kind}', prefix='ApplyRF')

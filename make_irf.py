@@ -449,8 +449,11 @@ class IRFGenerator:
         sim_events_matrix, _, _ = scipy.histogram2d(sim_shower_data['true_energy'].values, 
                                                     sim_shower_data['offcenter'].values, 
                                                     bins=[energy_edges, theta_edges])
-        
-        efficiency_matrix = trig_events_matrix / sim_events_matrix
+   
+        # add and mod. by Y.Suda on 2020.02.17
+        ntel = self.sim_shower_data['multiplicity'][0]
+        #efficiency_matrix = trig_events_matrix / sim_events_matrix
+        efficiency_matrix = trig_events_matrix / sim_events_matrix * ntel
         
         r_sim = 350.0  # m^2
         aeff_matrix = scipy.pi * r_sim**2 * efficiency_matrix
@@ -588,12 +591,13 @@ class IRFGenerator:
         info_message('AEFF HDU...', prefix='IRFGen')
         aeff_hdu = self._generate_aeff_hdu()
         
-        info_message('BACKGROUND HDU...', prefix='IRFGen')
-        bkg_hdu = self._generate_background_hdu()
+        #info_message('BACKGROUND HDU...', prefix='IRFGen')
+        #bkg_hdu = self._generate_background_hdu()
 
         primary_hdu = pyfits.PrimaryHDU()
         
-        hdu_list = pyfits.HDUList([primary_hdu, aeff_hdu, psf_hdu, edisp_hdu, bkg_hdu])
+        #hdu_list = pyfits.HDUList([primary_hdu, aeff_hdu, psf_hdu, edisp_hdu, bkg_hdu])
+        hdu_list = pyfits.HDUList([primary_hdu, aeff_hdu, psf_hdu, edisp_hdu])
         hdu_list.writeto(output_name, overwrite=True)
 
 
@@ -648,9 +652,8 @@ magic_tel_descriptions = {1: magic_tel_description,
                           2: magic_tel_description}
 # -----------------
 
-mc_file_name = '../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/3.Reco/reco_m1.h5'
-bkg_file_name = '/remote/ceph/group/magic/MAGIC-LST/Data/MAGIC/Off/Test_sample/ctapipe/reco/reco_m1_magic_clean_step_20170109.h5'
-irf_generator = IRFGenerator(mc_file_name, bkg_file_name)
+mc_file_name = config['data_files']['mc']['test_sample']['magic1']['reco_output']
+irf_generator = IRFGenerator(mc_file_name)
 
 irf_generator.set_energy_binning(min_energy=0.1, max_energy=30, n_energy_bins=10)
 irf_generator.set_theta_binning(min_theta=0.0, max_theta=1.5, n_theta_bins=5)
