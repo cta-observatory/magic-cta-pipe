@@ -149,10 +149,8 @@ for data_type in config['data_files']:
 
 
         #Added by Lea Heckmann 2020-05-15 for the moment to delete duplicate events
-        print(shower_data[shower_data.index.duplicated()])
+        info_message(f'Removing duplicate events', prefix='ApplyRF')
         shower_data = shower_data[~shower_data.index.duplicated()]
-        print("dupblicated")
-        print(shower_data[shower_data.index.duplicated()])
 
         # Applying RFs of every kind
         for rf_kind in ['direction_rf', 'energy_rf', 'classifier_rf']:
