@@ -66,7 +66,7 @@ class MAGICBadPixelsCalc():
         or pedestal info with computed outlier masks.
         """
         
-        if event.dl0.obs_id != self.current_obs_id:
+        if event.index.obs_id != self.current_obs_id:
         
             self.sample_times_ped = [[], []]
             self.n_samples_ped = np.zeros(2, dtype=np.int16) - 1
@@ -76,7 +76,7 @@ class MAGICBadPixelsCalc():
             self.sample_ranges_dead = [None, None]
             self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
             
-            self.current_obs_id = event.dl0.obs_id
+            self.current_obs_id = event.index.obs_id
 
     def _check_is_mc(self, event):
         """
@@ -198,15 +198,15 @@ class MAGICBadPixelsCalc():
 
         self._check_is_mc(event)
         if self.is_mc:
-            for tel_id in event.trig.tels_with_trigger:
+            for tel_id in event.trigger.tels_with_trigger:
                 badrmspixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
             return badrmspixel_mask
 
         self._check_new_run(event)
 
-        event_time = event.trig.gps_time.unix
+        event_time = event.trigger.time.unix
 
-        for tel_id in event.trig.tels_with_trigger:
+        for tel_id in event.trigger.tels_with_trigger:
 
             self._check_pedvar_fields(tel_id, event)
 
@@ -289,15 +289,15 @@ class MAGICBadPixelsCalc():
 
         self._check_is_mc(event)
         if self.is_mc:
-            for tel_id in event.trig.tels_with_trigger:
+            for tel_id in event.trigger.tels_with_trigger:
                 deadpixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
             return deadpixel_mask
 
         self._check_new_run(event)
 
-        event_time = event.trig.gps_time.unix
+        event_time = event.trigger.time.unix
 
-        for tel_id in event.trig.tels_with_trigger:
+        for tel_id in event.trigger.tels_with_trigger:
 
             if self.n_samples_dead[tel_id - 1] == -1:
                 self.n_samples_dead[tel_id - 1] = len(event.mon.tel[tel_id].pixel_status.sample_time_range)
@@ -325,14 +325,14 @@ class MAGICBadPixelsCalc():
 
         self._check_is_mc(event)
         if self.is_mc:
-            for tel_id in event.trig.tels_with_trigger:
+            for tel_id in event.trigger.tels_with_trigger:
                 badpixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
             return badpixel_mask
 
         badrmspixel_mask = self.get_badrmspixel_mask(event)
         deadpixel_mask = self.get_deadpixel_mask(event)
 
-        for tel_id in event.trig.tels_with_trigger:
+        for tel_id in event.trigger.tels_with_trigger:
             badpixel_mask[tel_id - 1] = np.logical_or(badrmspixel_mask[tel_id - 1], deadpixel_mask[tel_id - 1])
 
         return badpixel_mask
@@ -346,9 +346,9 @@ class MAGICBadPixelsCalc():
 #         """
 # 
 #         charge_std = [None, None]
-#         event_time = event.trig.gps_time.unix
+#         event_time = event.trigger.time.unix
 # 
-#         for tel_id in event.trig.tels_with_trigger:
+#         for tel_id in event.trigger.tels_with_trigger:
 # 
 #             self._check_pedvar_fields(tel_id, event)
 # 
