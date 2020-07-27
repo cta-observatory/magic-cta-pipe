@@ -115,14 +115,14 @@ def main():
             tels_with_data = list(event.r1.tels_with_data)
             if args.mc:
                 all_events.append(event.mc.energy.value)
-            subarray = event.inst.subarray
+            subarray = magic_event_source.subarray
 
             badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
             deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
             unsuitable_mask = np.logical_or(badrmspixel_mask[0], deadpixel_mask[0])
 
             event_image = event.dl1.tel[tel_id].image
-            event_pulse_time = event.dl1.tel[tel_id].pulse_time
+            event_pulse_time = event.dl1.tel[tel_id].peak_time
 
             clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time,unsuitable_mask=unsuitable_mask)
 
