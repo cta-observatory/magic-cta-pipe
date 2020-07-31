@@ -24,7 +24,7 @@ from ctapipe.core.container import Container, Field
 from ctapipe.calib import CameraCalibrator
 from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters, leakage
-from ctapipe.image.timing_parameters import timing_parameters
+from ctapipe.image.timing import timing_parameters
 from ctapipe.image.cleaning import tailcuts_clean     # apply_time_delta_cleaning
 
 from astropy import units as u
