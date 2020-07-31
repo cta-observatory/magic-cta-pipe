@@ -24,7 +24,7 @@ from ctapipe.core.container import Container, Field
 from ctapipe.calib import CameraCalibrator
 from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters, leakage
-from ctapipe.image.timing_parameters import timing_parameters
+from ctapipe.image.timing import timing_parameters
 from ctapipe.image.cleaning import tailcuts_clean     # apply_time_delta_cleaning
 
 from astropy import units as u
@@ -63,8 +63,8 @@ def get_num_islands(camera, clean_mask, event_image):
 
 
 def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings):
-    # Create event metadata container to hold event / observation / telescope IDs 
-    # and MC true values for the event energy and direction. We will need it to add 
+    # Create event metadata container to hold event / observation / telescope IDs
+    # and MC true values for the event energy and direction. We will need it to add
     # this information to the event Hillas parameters when dumping the results to disk.
 
     class InfoContainer(Container):
@@ -102,7 +102,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
     config[integrator_name]['window_width'] = 5
     config[integrator_name]['window_shift'] = 2
 
-    calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
 
     # Finding available MC files
     input_files = glob.glob(input_mask)
@@ -133,10 +132,11 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
             print("")
             # Event source
             source = MAGICEventSource(input_url=input_file)
+            calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
 
             camera = source.subarray.tel[tel_id].camera
             magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
-            
+
             # Looping over the events
             for event in source._mono_event_generator(telescope=f'M{tel_id}'):
                 tels_with_data = event.r1.tels_with_data
@@ -147,47 +147,47 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                 computed_hillas_params = dict()
                 pointing_alt = dict()
                 pointing_az = dict()
-                
+
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
                     # Obtained image
                     event_image = event.dl1.tel[tel_id].image
                     # Pixel arrival time map
-                    event_pulse_time = event.dl1.tel[tel_id].pulse_time
+                    event_pulse_time = event.dl1.tel[tel_id].peak_time
                     # Camera geometry
                     #camera = source.subarray.tel[tel_id].camera
 
                     clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time)
-                                
+
                     num_islands = get_num_islands(camera, clean_mask, event_image)
 
                     event_image_cleaned = event_image.copy()
                     event_image_cleaned[~clean_mask] = 0
-                    
+
                     event_pulse_time_cleaned = event_pulse_time.copy()
                     event_pulse_time_cleaned[~clean_mask] = 0
                     
 
-                    if scipy.any(event_image_cleaned):
+                    if np.any(event_image_cleaned):
                         try:
 
                             # If event has survived the cleaning, computing the Hillas parameters
                             hillas_params = hillas_parameters(camera, event_image_cleaned)
-                            timing_params = timing_parameters(camera, 
-                                                          event_image_cleaned, 
-                                                          event_pulse_time_cleaned, 
+                            timing_params = timing_parameters(camera,
+                                                          event_image_cleaned,
+                                                          event_pulse_time_cleaned,
                                                           hillas_params)
                             leakage_params = leakage(camera, event_image, clean_mask)
-                        
+
                             # Preparing metadata
-                            event_info = InfoContainer(obs_id=event.dl0.obs_id, 
-                                                   event_id=scipy.int32(event.dl0.event_id),
+                            event_info = InfoContainer(obs_id=event.index.obs_id,
+                                                   event_id=scipy.int32(event.index.event_id),
                                                    tel_id=tel_id,
                                                    true_energy=event.mc.energy,
                                                    true_alt=event.mc.alt.to(u.rad),
                                                    true_az=event.mc.az.to(u.rad),
-                                                   tel_alt=event.pointing[tel_id].altitude.to(u.rad),
-                                                   tel_az=event.pointing[tel_id].azimuth.to(u.rad),
+                                                   tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                                                   tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
                                                    n_islands=num_islands)
 
                             # Storing the result
@@ -199,8 +199,8 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
 
 def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_settings):
-    # Create event metadata container to hold event / observation / telescope IDs 
-    # and MC true values for the event energy and direction. We will need it to add 
+    # Create event metadata container to hold event / observation / telescope IDs
+    # and MC true values for the event energy and direction. We will need it to add
     # this information to the event Hillas parameters when dumping the results to disk.
 
     class InfoContainer(Container):
@@ -237,8 +237,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
     config[integrator_name]['window_width'] = 5
     config[integrator_name]['window_shift'] = 2
 
-    calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
-
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -259,6 +257,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Creating an input source
         source = MAGICEventSource(input_url=input_mask)
+        calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
 
         camera = source.subarray.tel[tel_id].camera
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
@@ -268,10 +267,10 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
         # Looping over the events
         for event in source._mono_event_generator(telescope=f'M{tel_id}'):
 				#Exclude pedestal runs??
-            #print(event.dl0.obs_id, event.dl0.event_id, event.meta['number_subrun'])
-            if previous_event_id == event.dl0.event_id:
+            #print(event.index.obs_id, event.index.event_id, event.meta['number_subrun'])
+            if previous_event_id == event.index.event_id:
                 continue
-            previous_event_id = copy.copy(event.dl0.event_id)
+            previous_event_id = copy.copy(event.index.event_id)
 
 
             tels_with_data = event.r1.tels_with_data
@@ -282,13 +281,13 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
             computed_hillas_params = dict()
             pointing_alt = dict()
             pointing_az = dict()
-            
+
             # Looping over the triggered telescopes
             for tel_id in tels_with_data:
                 # Obtained image
                 event_image = event.dl1.tel[tel_id].image
                 # Pixel arrival time map
-                event_pulse_time = event.dl1.tel[tel_id].pulse_time
+                event_pulse_time = event.dl1.tel[tel_id].peak_time
                 # Camera geometry
                 #camera = source.subarray.tel[tel_id].camera
 
@@ -303,37 +302,37 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 num_islands = get_num_islands(camera, clean_mask, event_image)
                 #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
                 # ---------------------------
-                
+
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
-                
+
                 event_pulse_time_cleaned = event_pulse_time.copy()
                 event_pulse_time_cleaned[~clean_mask] = 0
-                
-                if scipy.any(event_image_cleaned):
+
+                if np.any(event_image_cleaned):
                     try:
 
 
                         # If event has survived the cleaning, computing the Hillas parameters
                         hillas_params = hillas_parameters(camera, event_image_cleaned)
-                        timing_params = timing_parameters(camera, 
-                                                      event_image_cleaned, 
-                                                      event_pulse_time_cleaned, 
+                        timing_params = timing_parameters(camera,
+                                                      event_image_cleaned,
+                                                      event_pulse_time_cleaned,
                                                       hillas_params)
                         leakage_params = leakage(camera, event_image, clean_mask)
-                    
+
                         # Preparing metadata
-                        event_info = InfoContainer(obs_id=event.dl0.obs_id, 
-                                               event_id=scipy.int32(event.dl0.event_id),
+                        event_info = InfoContainer(obs_id=event.index.obs_id,
+                                               event_id=scipy.int32(event.index.event_id),
                                                tel_id=tel_id,
-                                               mjd=event.trig.gps_time.mjd,
-                                               tel_alt=event.pointing[tel_id].altitude.to(u.rad),
-                                               tel_az=event.pointing[tel_id].azimuth.to(u.rad),
+                                               mjd=event.trigger.time.mjd,
+                                               tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                                               tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
                                                n_islands=num_islands)
 
                         # Storing the result
                         writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
-                   
+
                     except ValueError:
                         print("Hillas calculation failed")
 
@@ -382,7 +381,7 @@ Exiting.
 """
 
 try:
-    config = yaml.load(open(parsed_args.config, "r"))
+    config = yaml.safe_load(open(parsed_args.config, "r"))
 except IOError:
     print(file_not_found_message.format(parsed_args.config))
     exit()
@@ -426,15 +425,15 @@ else:
 for data_type in data_type_to_process:
     for sample in data_sample_to_process:
         for telescope in telescope_to_process:
-            
+
             info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope}"',
                          prefix='Hillas')
-            
+
             try:
                 telescope_type = re.findall('(.*)[_\d]+', telescope)[0]
             except:
                 ValueError(f'Can not recognize the telescope type from name "{telescope}"')
-                
+
             if telescope_type not in config['image_cleaning']:
                 raise ValueError(f'Guessed telescope type "{telescope_type}" does not have image cleaning settings')
 
