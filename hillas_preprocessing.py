@@ -314,7 +314,7 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                     # Obtained image
                     event_image = event.dl1.tel[tel_id].image
                     # Pixel arrival time map
-                    event_pulse_time = event.dl1.tel[tel_id].pulse_time
+                    event_pulse_time = event.dl1.tel[tel_id].peak_time
                     # Camera geometry
                     camera = source.subarray.tel[tel_id].camera
 
@@ -406,14 +406,14 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                         #pointing_az[tel_id] = event.pointing[tel_id].azimuth.to(u.rad)
                         
                         # Preparing metadata
-                        event_info = InfoContainer(obs_id=event.dl0.obs_id, 
-                                                   event_id=scipy.int32(event.dl0.event_id),
+                        event_info = InfoContainer(obs_id=event.index.obs_id,
+                                                   event_id=scipy.int32(event.index.event_id),
                                                    tel_id=tel_id,
                                                    true_energy=event.mc.energy,
                                                    true_alt=event.mc.alt.to(u.rad),
                                                    true_az=event.mc.az.to(u.rad),
-                                                   tel_alt=event.pointing[tel_id].altitude.to(u.rad),
-                                                   tel_az=event.pointing[tel_id].azimuth.to(u.rad),
+                                                   tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                                                   tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
                                                    n_islands=num_islands)
 
                         # Storing the result
@@ -483,7 +483,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 # Obtained image
                 event_image = event.dl1.tel[tel_id].image
                 # Pixel arrival time map
-                event_pulse_time = event.dl1.tel[tel_id].pulse_time
+                event_pulse_time = event.dl1.tel[tel_id].peak_time
                 # Camera geometry
                 camera = source.subarray.tel[tel_id].camera
 
@@ -559,12 +559,12 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                     #pointing_az[tel_id] = event.pointing[tel_id].azimuth.to(u.rad)
                     
                     # Preparing metadata
-                    event_info = InfoContainer(obs_id=event.dl0.obs_id, 
-                                               event_id=scipy.int32(event.dl0.event_id),
+                    event_info = InfoContainer(obs_id=event.index.obs_id,
+                                               event_id=scipy.int32(event.index.event_id),
                                                tel_id=tel_id,
-                                               mjd=event.trig.gps_time.mjd,
-                                               tel_alt=event.pointing[tel_id].altitude.to(u.rad),
-                                               tel_az=event.pointing[tel_id].azimuth.to(u.rad),
+                                               mjd=event.trigger.time.mjd,
+                                               tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                                               tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
                                                n_islands=num_islands)
 
                     # Storing the result
