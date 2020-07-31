@@ -53,10 +53,10 @@ def magic_clean_step1(geom, charge_map, core_thresh):
     return ~mask
 
 # Added on 06/07/2019
-def magic_clean_step2(geom, mask, charge_map, arrival_times, 
-                      max_time_off, core_thresh, 
+def magic_clean_step2(geom, mask, charge_map, arrival_times,
+                      max_time_off, core_thresh,
                       usetime=True):
-    
+
     pixels_to_remove = []
 
     neighbors = geom.neighbor_matrix_sparse
@@ -70,7 +70,7 @@ def magic_clean_step2(geom, mask, charge_map, arrival_times,
     island_sizes = np.zeros(num_islands)
     for i in range(num_islands):
         island_sizes[i] = charge_map[mask][labels == i].sum()
-      
+
     # Disabling pixels for all islands save the brightest one
     brightest_id = island_sizes.argmax() + 1
 
@@ -86,32 +86,32 @@ def magic_clean_step2(geom, mask, charge_map, arrival_times,
         mask[(charge_map < 2*core_thresh) & (time_diff > max_time_off)] = False
 
     mask = single_island(geom,mask,charge_map)
-    
+
     return mask
 
 # Added on 06/07/2019
-def magic_clean_step3(geom, mask, event_image, arrival_times, 
-                      max_time_diff, boundary_thresh, 
+def magic_clean_step3(geom, mask, event_image, arrival_times,
+                      max_time_diff, boundary_thresh,
                       usetime=True):
 
     thing = []
     core_mask = mask.copy()
-    
+
     pixels_with_picture_neighbors_matrix = geom.neighbor_matrix_sparse
 
     for pixel in np.where(event_image)[0]:
-        
+
         if pixel in np.where(core_mask)[0]:
             continue
 
         if event_image[pixel] <= boundary_thresh:
             continue
-        
+
         hasNeighbor = False
         if usetime:
-            
+
             neighbors = geom.neighbor_matrix_sparse[pixel].indices
-            
+
             for neighbor in neighbors:
                 if neighbor not in np.where(core_mask)[0]:
                     continue
@@ -121,12 +121,12 @@ def magic_clean_step3(geom, mask, event_image, arrival_times,
                     break
             if not hasNeighbor:
                 continue
-            
+
         if not pixels_with_picture_neighbors_matrix.dot(core_mask)[pixel]:
             continue
-        
+
         thing.append(pixel)
-        
+
     mask[thing] = True
 
     return mask
@@ -177,7 +177,7 @@ def single_island(camera, mask, image):
     mask[pixels_to_remove] = False
     return mask
 
-    
+
 def apply_magic_time_off_cleaning(camera, clean_mask, charge_map, arrival_times, max_time_off, picture_thresh):
     # Identifying connected islands
     neighbors = camera.neighbor_matrix_sparse
@@ -192,24 +192,24 @@ def apply_magic_time_off_cleaning(camera, clean_mask, charge_map, arrival_times,
     island_sizes = np.zeros(num_islands)
     for i in range(num_islands):
         island_sizes[i] = charge_map[clean_mask][labels == i].sum()
-        
+
     # Disabling pixels for all islands save the brightest one
     brightest_id = island_sizes.argmax() + 1
 
     core_pixel_times = arrival_times[clean_mask & (island_ids == brightest_id)]
     core_pixel_charges = charge_map[clean_mask & (island_ids == brightest_id)]
-    
+
     core_pixel_times = core_pixel_times[core_pixel_charges > 6]
     core_pixel_charges = core_pixel_charges[core_pixel_charges > 6]
-    
+
     core_time = np.sum(core_pixel_times * core_pixel_charges**2) / np.sum(core_pixel_charges**2)
     #core_time = core_pixel_times[core_pixel_charges.argmax()]
-    
+
     time_diff = np.abs(arrival_times - core_time)
-    
+
     clean_mask[(charge_map >= 2*picture_thresh) & (time_diff > 2*max_time_off)] = False
     clean_mask[(charge_map < 2*picture_thresh) & (time_diff > max_time_off)] = False
-    
+
     return clean_mask
 
 
@@ -227,7 +227,7 @@ def filter_brightest_island(camera, clean_mask, event_image):
     island_sizes = np.zeros(num_islands)
     for i in range(num_islands):
         island_sizes[i] = event_image[clean_mask][labels == i].sum()
-        
+
     # Disabling pixels for all islands save the brightest one
     brightest_id = island_sizes.argmax() + 1
     clean_mask[island_ids != brightest_id] = False
@@ -308,7 +308,7 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                 computed_hillas_params = dict()
                 pointing_alt = dict()
                 pointing_az = dict()
-                
+
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
                     # Obtained image
@@ -324,29 +324,28 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                     if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
                         continue
-                    
-                    clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time, 
-                               max_time_off=time_thresholds['max_time_off'], 
+
+                    clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
+                               max_time_off=time_thresholds['max_time_off'],
                                core_thresh=charge_thresholds['picture_thresh'])
                                #usetime=usetime)
 
                     if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining                                                                                                     
+                        # Event did not survive image cleaining
                         continue
-                               
-                    clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time, 
-                               max_time_diff=time_thresholds['max_time_diff'], 
+
+                    clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
+                               max_time_diff=time_thresholds['max_time_diff'],
                                boundary_thresh=charge_thresholds['boundary_thresh'])
                                #usetime=usetime)
 
                     if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining                                                                                                   
+                        # Event did not survive image cleaining
                         continue
 
-                               
                     # ---------------------------
                     # Computing the cleaning mask
-                    #clean_mask = tailcuts_clean(camera, event_image, 
+                    #clean_mask = tailcuts_clean(camera, event_image,
                     #                             **charge_thresholds)
                     #clean_mask_core = tailcuts_clean(camera, event_image,
                     #                                  **core_charge_thresholds)
@@ -355,17 +354,17 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                         # Event did not survive image cleaining
                     #    continue
 
-                    #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core, 
+                    #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core,
                     #                                       event_pulse_time,
-                    #                                       time_limit=time_thresholds['time_limit'], 
+                    #                                       time_limit=time_thresholds['time_limit'],
                     #                                       min_number_neighbors=time_thresholds['min_number_neighbors'])
 
                     #if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
                     #    continue
 
-                    #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask, 
-                    #                                           event_image, event_pulse_time, 
+                    #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask,
+                    #                                           event_image, event_pulse_time,
                     #                                           max_time_off=time_thresholds['max_time_off'],
                     #                                           picture_thresh=charge_thresholds['picture_thresh'])
 
@@ -379,32 +378,32 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                     #if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
                     #    continue
-                    
+
                     num_islands = get_num_islands(camera, clean_mask, event_image)
                     #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
                     # ---------------------------
-                    
+
                     event_image_cleaned = event_image.copy()
                     event_image_cleaned[~clean_mask] = 0
-                    
+
                     event_pulse_time_cleaned = event_pulse_time.copy()
                     event_pulse_time_cleaned[~clean_mask] = 0
-                    
+
                     # if event_image_cleaned.sum() > 0:
                     if len(event_image[clean_mask]) > 3:
                         # If event has survived the cleaning, computing the Hillas parameters
                         hillas_params = hillas_parameters(camera, event_image_cleaned)
-                        timing_params = timing_parameters(camera, 
-                                                          event_image_cleaned, 
-                                                          event_pulse_time_cleaned, 
+                        timing_params = timing_parameters(camera,
+                                                          event_image_cleaned,
+                                                          event_pulse_time_cleaned,
                                                           hillas_params)
                         leakage_params = leakage(camera, event_image, clean_mask)
-                        
+
                         #computed_hillas_params[tel_id] = hillas_params
-                        
+
                         #pointing_alt[tel_id] = event.pointing[tel_id].altitude.to(u.rad)
                         #pointing_az[tel_id] = event.pointing[tel_id].azimuth.to(u.rad)
-                        
+
                         # Preparing metadata
                         event_info = InfoContainer(obs_id=event.index.obs_id,
                                                    event_id=scipy.int32(event.index.event_id),
@@ -418,17 +417,16 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                         # Storing the result
                         writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
-                        
+
                 #if len(pointing_alt.keys()) > 1:
                     #stereo_params = hillas_reconstructor.predict(computed_hillas_params, event.inst, pointing_alt, pointing_az)
                     #event_info.tel_id = -1
                     ## Storing the result
                     #writer.write("stereo_params", (event_info, stereo_params))
 
-
 def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_settings):
-    # Create event metadata container to hold event / observation / telescope IDs 
-    # and MC true values for the event energy and direction. We will need it to add 
+    # Create event metadata container to hold event / observation / telescope IDs
+    # and MC true values for the event energy and direction. We will need it to add
     # this information to the event Hillas parameters when dumping the results to disk.
 
     class InfoContainer(Container):
@@ -477,7 +475,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
             computed_hillas_params = dict()
             pointing_alt = dict()
             pointing_az = dict()
-            
+
             # Looping over the triggered telescopes
             for tel_id in tels_with_data:
                 # Obtained image
@@ -489,11 +487,11 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 # ---------------------------
                 # Computing the cleaning mask
-                #clean_mask = tailcuts_clean(camera, event_image, 
+                #clean_mask = tailcuts_clean(camera, event_image,
                 #                            **charge_thresholds)
                 #clean_mask_core = tailcuts_clean(camera, event_image,
                 #                                  **core_charge_thresholds)
-                
+
                 clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
                 if event_image[clean_mask].sum() == 0:
@@ -502,7 +500,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core,
                 #                                       event_pulse_time,
-                #                                       time_limit=time_thresholds['time_limit'], 
+                #                                       time_limit=time_thresholds['time_limit'],
                 #                                       min_number_neighbors=time_thresholds['min_number_neighbors'])
 
                 clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
@@ -514,7 +512,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                     continue
 
                 #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask,
-                #                                           event_image, event_pulse_time, 
+                #                                           event_image, event_pulse_time,
                 #                                           max_time_off=time_thresholds['max_time_off'],
                 #                                           picture_thresh=charge_thresholds['picture_thresh'])
 
@@ -526,38 +524,38 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                     # Event did not survive image cleaining
                     continue
 
-                ### Added on 02/07/2019                                                                                                                      
+                ### Added on 02/07/2019
                 #clean_mask = single_island(camera,clean_mask,event_image)
 
                 #if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
                 #    continue
-                
+
                 num_islands = get_num_islands(camera, clean_mask, event_image)
                 #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
                 # ---------------------------
-                
+
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
-                
+
                 event_pulse_time_cleaned = event_pulse_time.copy()
                 event_pulse_time_cleaned[~clean_mask] = 0
-                
+
                 # if event_image_cleaned.sum() > 0:
                 if len(event_image[clean_mask]) > 3:
                     # If event has survived the cleaning, computing the Hillas parameters
                     hillas_params = hillas_parameters(camera, event_image_cleaned)
-                    timing_params = timing_parameters(camera, 
-                                                      event_image_cleaned, 
-                                                      event_pulse_time_cleaned, 
+                    timing_params = timing_parameters(camera,
+                                                      event_image_cleaned,
+                                                      event_pulse_time_cleaned,
                                                       hillas_params)
                     leakage_params = leakage(camera, event_image, clean_mask)
-                    
+
                     #computed_hillas_params[tel_id] = hillas_params
-                    
+
                     #pointing_alt[tel_id] = event.pointing[tel_id].altitude.to(u.rad)
                     #pointing_az[tel_id] = event.pointing[tel_id].azimuth.to(u.rad)
-                    
+
                     # Preparing metadata
                     event_info = InfoContainer(obs_id=event.index.obs_id,
                                                event_id=scipy.int32(event.index.event_id),
@@ -569,7 +567,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                     # Storing the result
                     writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
-                    
+
             #if len(pointing_alt.keys()) > 1:
                 #stereo_params = hillas_reconstructor.predict(computed_hillas_params, event.inst, pointing_alt, pointing_az)
                 #event_info.tel_id = -1
