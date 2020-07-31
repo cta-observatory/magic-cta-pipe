@@ -63,11 +63,11 @@ def magic_clean_step2(geom, mask, charge_map, arrival_times,
     clean_neighbors = neighbors[mask][:, mask]
     num_islands, labels = connected_components(clean_neighbors, directed=False)
 
-    island_ids = scipy.zeros(geom.n_pixels)
+    island_ids = np.zeros(geom.n_pixels)
     island_ids[mask] = labels + 1
 
     # Finding the islands "sizes" (total charges)
-    island_sizes = scipy.zeros(num_islands)
+    island_sizes = np.zeros(num_islands)
     for i in range(num_islands):
         island_sizes[i] = charge_map[mask][labels == i].sum()
       
@@ -185,11 +185,11 @@ def apply_magic_time_off_cleaning(camera, clean_mask, charge_map, arrival_times,
     num_islands, labels = connected_components(clean_neighbors, directed=False)
 
     # Marking pixels according to their islands
-    island_ids = scipy.zeros(camera.n_pixels)
+    island_ids = np.zeros(camera.n_pixels)
     island_ids[clean_mask] = labels + 1
 
     # Finding the islands "sizes" (total charges)
-    island_sizes = scipy.zeros(num_islands)
+    island_sizes = np.zeros(num_islands)
     for i in range(num_islands):
         island_sizes[i] = charge_map[clean_mask][labels == i].sum()
         
@@ -220,11 +220,11 @@ def filter_brightest_island(camera, clean_mask, event_image):
     num_islands, labels = connected_components(clean_neighbors, directed=False)
 
     # Marking pixels according to their islands
-    island_ids = scipy.zeros(camera.n_pixels)
+    island_ids = np.zeros(camera.n_pixels)
     island_ids[clean_mask] = labels + 1
 
     # Finding the islands "sizes" (total charges)
-    island_sizes = scipy.zeros(num_islands)
+    island_sizes = np.zeros(num_islands)
     for i in range(num_islands):
         island_sizes[i] = event_image[clean_mask][labels == i].sum()
         
