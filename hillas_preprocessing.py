@@ -267,8 +267,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
     config[integrator_name]['window_width'] = 5
     config[integrator_name]['window_shift'] = 2
 
-    calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
-
     # Finding available MC files
     input_files = glob.glob(input_mask)
     input_files.sort()
@@ -298,7 +296,8 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
             print("")
             # Event source
             source = MAGICEventSource(input_url=input_file)
-            
+            calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
+
             # Looping over the events
             for event in source._mono_event_generator(telescope=f'M{tel_id}'):
                 tels_with_data = event.r1.tels_with_data
@@ -448,8 +447,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
     config[integrator_name]['window_width'] = 5
     config[integrator_name]['window_shift'] = 2
 
-    calibrator = CameraCalibrator(image_extractor=integrator_name, config=config)
-
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -468,7 +465,8 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Creating an input source
         source = MAGICEventSource(input_url=input_mask)
-        
+        calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
+
         # Looping over the events
         for event in source._mono_event_generator(telescope=f'M{tel_id}'):
             tels_with_data = event.r1.tels_with_data
