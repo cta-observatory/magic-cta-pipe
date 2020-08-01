@@ -5,7 +5,7 @@ import yaml
 import argparse
 import pandas as pd
 
-import scipy
+import numpy as np
 
 import sklearn
 import sklearn.ensemble
@@ -83,15 +83,15 @@ def compute_separation_angle(shower_data):
 
 
 def get_weights(mc_data, alt_edges, intensity_edges):
-    mc_hist, _, _ = scipy.histogram2d(mc_data['tel_alt'],
+    mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
                                       mc_data['intensity'],
                                       bins=[alt_edges, intensity_edges])
 
-    availability_hist = scipy.clip(mc_hist, 0, 1)
+    availability_hist = np.clip(mc_hist, 0, 1)
 
     # --- MC weights ---
-    mc_alt_bins = scipy.digitize(mc_data['tel_alt'], alt_edges) - 1
-    mc_intensity_bins = scipy.digitize(mc_data['intensity'], intensity_edges) - 1
+    mc_alt_bins = np.digitize(mc_data['tel_alt'], alt_edges) - 1
+    mc_intensity_bins = np.digitize(mc_data['intensity'], intensity_edges) - 1
 
     # Treating the out-of-range events
     mc_alt_bins[mc_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -182,9 +182,9 @@ shower_data_train.sort_index(inplace=True)
 
 # Computing event weights
 info_message('Computing the train sample event weights...', prefix='DirRF')
-sin_edges = scipy.linspace(0, 1, num=51)
-alt_edges = scipy.arcsin(sin_edges)
-intensity_edges = scipy.logspace(1, 5, num=51)
+sin_edges = np.linspace(0, 1, num=51)
+alt_edges = np.lib.scimath.arcsin(sin_edges)
+intensity_edges = np.logspace(1, 5, num=51)
 
 mc_weights = get_weights(shower_data_train, alt_edges, intensity_edges)
 
@@ -247,12 +247,12 @@ separation_df = compute_separation_angle(shower_data_test)
 
 # Energy-dependent resolution
 info_message('Estimating the energy-dependent resolution', prefix='DirRF')
-energy_edges = scipy.logspace(-1, 1.3, num=20)
+energy_edges = np.logspace(-1, 1.3, num=20)
 energy = (energy_edges[1:] * energy_edges[:-1])**0.5
 
 energy_psf = dict()
 for i in range(3):
-    energy_psf[i] = scipy.zeros_like(energy)
+    energy_psf[i] = np.zeros_like(energy)
     
 for ei in range(len(energy_edges) - 1):
     cuts = f'(true_energy>= {energy_edges[ei]:.2e}) & (true_energy < {energy_edges[ei+1]:.2e})'
@@ -267,21 +267,21 @@ for ei in range(len(energy_edges) - 1):
         else:
             tel_id = 1
         selection = query.loc[(slice(None), slice(None), tel_id), f'sep_{pi}'].dropna()
-        energy_psf[pi][ei] = scipy.percentile(selection, 68)
+        energy_psf[pi][ei] = np.percentile(selection, 68)
 
 # Offset-dependent resolution
 info_message('Estimating the offset-dependent resolution', prefix='DirRF')
 offset = angular_separation(separation_df['tel_az'], separation_df['tel_alt'],
                             separation_df['true_az'], separation_df['true_alt'])
 
-separation_df['offset'] = scipy.degrees(offset)
+separation_df['offset'] = np.degrees(offset)
 
-offset_edges = scipy.linspace(0, 1.3, num=10)
+offset_edges = np.linspace(0, 1.3, num=10)
 offset = (offset_edges[1:] * offset_edges[:-1])**0.5
 
 offset_psf = dict()
 for i in range(3):
-    offset_psf[i] = scipy.zeros_like(offset)
+    offset_psf[i] = np.zeros_like(offset)
 
 for oi in range(len(offset_edges) - 1):
     cuts = f'(offset >= {offset_edges[oi]:.2f}) & (offset < {offset_edges[oi+1]:.2f})'
@@ -296,7 +296,7 @@ for oi in range(len(offset_edges) - 1):
         else:
             tel_id = 1
         selection = query.loc[(slice(None), slice(None), tel_id), [f'sep_{pi}']].dropna()
-        offset_psf[pi][oi] = scipy.percentile(selection[f'sep_{pi}'], 68)
+        offset_psf[pi][oi] = np.percentile(selection[f'sep_{pi}'], 68)
 
 # ================
 # === Plotting ===
