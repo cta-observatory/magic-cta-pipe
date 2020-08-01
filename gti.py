@@ -456,7 +456,7 @@ if __name__ == "__main__":
     """
 
     try:
-        config = yaml.load(open(parsed_args.config, "r"))
+        config = yaml.safe_load(open(parsed_args.config, "r"))
     except IOError:
         print(file_not_found_message.format(parsed_args.config))
         exit()
