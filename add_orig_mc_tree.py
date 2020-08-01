@@ -83,8 +83,8 @@ def read_original_mc_tree(file_mask):
             true_alt = shower_coord_in_telescope.altaz.alt.to(u.rad)
             
             offcenter = angular_separation(0 * u.deg, 0 * u.deg,
-                                        shower_coord_in_telescope.delta_az,
-                                        shower_coord_in_telescope.delta_alt)
+                                        shower_coord_in_telescope.fov_lon,
+                                        shower_coord_in_telescope.fov_lat)
             offcenter = offcenter.to(u.deg)
             
             evt_id = scipy.arange(len(tel_az))
