@@ -6,9 +6,9 @@ import argparse
 import yaml
 import datetime
 
-import scipy
 import uproot
 import pandas as pd
+import numpy as np
 
 from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord
@@ -55,10 +55,10 @@ def read_original_mc_tree(file_mask):
             tel_zd = input_data['OriginalMC']['MMcEvtBasic.fTelescopeTheta'].array()
             
             true_energy /= 1e3  # GeV -> TeV
-            tel_alt = scipy.pi/2 - tel_zd
+            tel_alt = np.pi/2 - tel_zd
             
             # # Transformation from Monte Carlo to usual azimuth
-            # tel_az = -1 * (tel_az - scipy.pi + scipy.radians(7))
+            # tel_az = -1 * (tel_az - np.pi + np.radians(7))
 
             cam_x = input_data['OriginalMC']['MSrcPosCam.fX'].array()
             cam_y = input_data['OriginalMC']['MSrcPosCam.fY'].array()
@@ -87,9 +87,9 @@ def read_original_mc_tree(file_mask):
                                         shower_coord_in_telescope.fov_lat)
             offcenter = offcenter.to(u.deg)
             
-            evt_id = scipy.arange(len(tel_az))
-            obs_id = scipy.repeat(run_number, len(tel_az))
-            tel_id = scipy.repeat(telelscope, len(tel_az))
+            evt_id = np.arange(len(tel_az))
+            obs_id = np.repeat(run_number, len(tel_az))
+            tel_id = np.repeat(telelscope, len(tel_az))
             
             data_ = {
                 'obs_id': obs_id, 
