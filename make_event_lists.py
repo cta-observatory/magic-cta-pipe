@@ -5,7 +5,7 @@ import glob
 import argparse
 import pandas
 import yaml
-import scipy
+import numpy as np
 
 import astropy.io.fits as pyfits
 from astropy import units
@@ -61,7 +61,7 @@ for obs_id in obs_ids:
     obs_df = obs_df.reset_index()
 
     # Assiging event IDs
-    obs_df['cta_event_id'] = scipy.int64((obs_id << 32) | obs_df['event_id'].values)
+    obs_df['cta_event_id'] = np.int64((obs_id << 32) | obs_df['event_id'].values)
 
     obs_df = obs_df.query(config['event_list']['cuts']['selection'])
 
@@ -76,8 +76,8 @@ for obs_id in obs_ids:
 
     alt_az_frame = AltAz(obstime=event_times, location=observatory_location)
 
-    event_coord_altaz_ref = SkyCoord(alt=scipy.degrees(obs_df['alt_reco_mean']),
-                                    az=scipy.degrees(obs_df['az_reco_mean']),
+    event_coord_altaz_ref = SkyCoord(alt=np.degrees(obs_df['alt_reco_mean']),
+                                    az=np.degrees(obs_df['az_reco_mean']),
                                     frame=alt_az_frame,
                                     unit='deg')
 
@@ -197,8 +197,8 @@ for obs_id in obs_ids:
     events_hdu.header['IRF'] = 'crab'
     events_hdu.header['CREATOR'] = 'MAGIC-ctapipe converter'
 
-    events_hdu.header['MJDREFI'] = int(scipy.floor(time_ref))
-    events_hdu.header['MJDREFF'] = time_ref - scipy.floor(time_ref)
+    events_hdu.header['MJDREFI'] = int(np.floor(time_ref))
+    events_hdu.header['MJDREFF'] = time_ref - np.floor(time_ref)
     events_hdu.header['TIMEUNIT'] = 's'
     events_hdu.header['TIMESYS'] = 'UTC'
     events_hdu.header['TIMEREF'] = 'LOCAL'
