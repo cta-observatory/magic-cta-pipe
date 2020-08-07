@@ -105,7 +105,7 @@ def process_dataset_mc(input_mask, output_name):
         # Event source
         source = MAGICEventSource(input_url=input_file)
 
-        camera = source.subarray.tel[tel_id].camera
+        camera = source.subarray.tel[1].camera
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
 
         # Looping over the events
@@ -231,7 +231,7 @@ def process_dataset_data(input_mask, output_name):
         # Creating an input source
         source = MAGICEventSource(input_url=input_mask)
 
-        camera = source.subarray.tel[tel_id].camera
+        camera = source.subarray.tel[1].camera
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
 
