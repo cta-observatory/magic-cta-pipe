@@ -57,7 +57,7 @@ def get_num_islands(camera, clean_mask, event_image):
 
     return num_islands
 
-def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
+def process_dataset_mc(input_mask, output_name):
     # Create event metadata container to hold event / observation / telescope IDs
     # and MC true values for the event energy and direction. We will need it to add
     # this information to the event Hillas parameters when dumping the results to disk.
@@ -183,7 +183,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                 # Storing the result
                 writer.write("stereo_params", (event_info, stereo_params))
 
-def process_dataset_data(input_mask, output_name, image_cleaning_settings):
+def process_dataset_data(input_mask, output_name):
     # Create event metadata container to hold event / observation / telescope IDs
     # and MC true values for the event energy and direction. We will need it to add
     # this information to the event Hillas parameters when dumping the results to disk.
@@ -380,6 +380,8 @@ elif parsed_args.usetest:
 else:
     data_sample_to_process = ['train_sample', 'test_sample']
 
+telescope_to_process = ['magic1', 'magic2']
+
 for data_type in data_type_to_process:
     for sample in data_sample_to_process:
         try:
@@ -390,16 +392,11 @@ for data_type in data_type_to_process:
         info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
                     prefix='Hillas')
 
-        if telescope_type not in config['image_cleaning']:
-            raise ValueError(f'Guessed telescope type "{telescope_type}" does not have image cleaning settings')
-
         is_mc = data_type.lower() == "mc"
 
         if is_mc:
             process_dataset_mc(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                               output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'],
-                               image_cleaning_settings=config['image_cleaning'][telescope_type])
+                               output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
         else:
             process_dataset_data(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                                output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'],
-                                image_cleaning_settings=config['image_cleaning'][telescope_type])
+                                output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
