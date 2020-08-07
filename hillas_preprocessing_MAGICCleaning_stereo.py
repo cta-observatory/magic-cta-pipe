@@ -286,6 +286,14 @@ def process_dataset_data(input_mask, output_name):
                         )
                         leakage_params = leakage(camera, event_image, clean_mask)
 
+                        computed_hillas_params[tel_id] = hillas_params
+
+                        telescope_pointings[tel_id] = SkyCoord(
+                            alt=event.pointing.tel[tel_id].altitude,
+                            az=event.pointing.tel[tel_id].azimuth,
+                            frame=horizon_frame,
+                        )
+
                         # Preparing metadata
                         event_info = InfoContainer(
                             obs_id=event.index.obs_id,
