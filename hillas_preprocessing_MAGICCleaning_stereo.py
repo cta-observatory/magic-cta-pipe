@@ -175,7 +175,8 @@ def process_dataset_mc(input_mask, output_name):
                         writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
 
                     except ValueError:
-                        print("Hillas calculation failed")
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; \
+                        telescope ID: {tel_id}): Hillas calculation failed.")
                 else:
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; \
                         telescope ID: {tel_id}) did not pass cleaning.")
