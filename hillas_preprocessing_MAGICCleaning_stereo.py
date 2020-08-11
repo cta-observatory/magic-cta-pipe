@@ -313,7 +313,11 @@ def process_dataset_data(input_mask, output_name):
                         writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
 
                     except ValueError:
-                        print("Hillas calculation failed")
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; \
+                        telescope ID: {tel_id}): Hillas calculation failed.")
+                else:
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; \
+                        telescope ID: {tel_id}) did not pass cleaning.")
 
             if len(computed_hillas_params.keys()) > 1:
                 stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing, telescope_pointings)
