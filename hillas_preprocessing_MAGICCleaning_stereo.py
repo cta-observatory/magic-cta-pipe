@@ -137,7 +137,6 @@ def process_dataset_mc(input_mask, output_name):
                 event_pulse_time_cleaned = event_pulse_time.copy()
                 event_pulse_time_cleaned[~clean_mask] = 0
 
-
                 if np.any(event_image_cleaned):
                     try:
                         # If event has survived the cleaning, computing the Hillas parameters
