@@ -308,6 +308,8 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
@@ -317,6 +319,8 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
@@ -326,11 +330,11 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 num_islands = get_num_islands(camera, clean_mask, event_image)
-                #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
-                # ---------------------------
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -440,6 +444,8 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
@@ -448,6 +454,8 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
@@ -456,11 +464,11 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 num_islands = get_num_islands(camera, clean_mask, event_image)
-                #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
-                # ---------------------------
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
