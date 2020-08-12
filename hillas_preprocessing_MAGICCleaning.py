@@ -196,6 +196,11 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                         except ValueError:
                             print("Hillas calculation failed")
 
+                            print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                                f"telescope ID: {tel_id}): Hillas calculation failed.")
+                    else:
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
 
 
 def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_settings):
@@ -335,6 +340,11 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                     except ValueError:
                         print("Hillas calculation failed")
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}): Hillas calculation failed.")
+                else:
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
 
 
 # =================

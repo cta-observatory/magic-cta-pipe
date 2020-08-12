@@ -323,6 +323,8 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                     if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
                         continue
 
                     clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
@@ -332,6 +334,8 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                     if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
                         continue
 
                     clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
@@ -341,6 +345,8 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                     if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
                         continue
 
                     # ---------------------------
@@ -423,6 +429,9 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                     #event_info.tel_id = -1
                     ## Storing the result
                     #writer.write("stereo_params", (event_info, stereo_params))
+                    else:
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
 
 def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_settings):
     # Create event metadata container to hold event / observation / telescope IDs
@@ -496,6 +505,8 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core,
@@ -509,6 +520,8 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask,
@@ -522,6 +535,8 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
                 ### Added on 02/07/2019
@@ -573,6 +588,9 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 #event_info.tel_id = -1
                 ## Storing the result
                 #writer.write("stereo_params", (event_info, stereo_params))
+                else:
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
 
 
 # =================
