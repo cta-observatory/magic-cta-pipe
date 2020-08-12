@@ -78,15 +78,14 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
 
-
     cleaning_config = dict(
-      picture_thresh = 6,
-      boundary_thresh = 3.5,
-      max_time_off = 4.5 * 1.64,
-      max_time_diff = 1.5 * 1.64,
-      usetime = True,
-      usesum = True,
-      findhotpixels=False,
+        picture_thresh = 6,
+        boundary_thresh = 3.5,
+        max_time_off = 4.5 * 1.64,
+        max_time_diff = 1.5 * 1.64,
+        usetime = True,
+        usesum = True,
+        findhotpixels=False,
     )
 
     bad_pixels_config = dict(
@@ -94,14 +93,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
         pedestalLevelVariance = 4.5,
         pedestalType = 'FromExtractorRndm'
     )
-
-    # Setting up the calibrator class.
-
-    config = traitlets.config.Config()
-    integrator_name = 'LocalPeakWindowSum'
-    config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 2
-
 
     # Finding available MC files
     input_files = glob.glob(input_mask)
@@ -118,8 +109,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
     time_thresholds = image_cleaning_settings['time_thresholds']
-    #core_charge_thresholds = charge_thresholds.copy()
-    #core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
 
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
@@ -141,9 +130,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
             for event in source._mono_event_generator(telescope=f'M{tel_id}'):
                 tels_with_data = event.r1.tels_with_data
 
-                # Calibrating an event
-                # calibrator.calibrate(event)
-
                 computed_hillas_params = dict()
                 pointing_alt = dict()
                 pointing_az = dict()
@@ -154,8 +140,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                     event_image = event.dl1.tel[tel_id].image
                     # Pixel arrival time map
                     event_pulse_time = event.dl1.tel[tel_id].peak_time
-                    # Camera geometry
-                    #camera = source.subarray.tel[tel_id].camera
 
                     clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time)
 
@@ -166,36 +150,36 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                     event_pulse_time_cleaned = event_pulse_time.copy()
                     event_pulse_time_cleaned[~clean_mask] = 0
-                    
 
                     if np.any(event_image_cleaned):
                         try:
-
                             # If event has survived the cleaning, computing the Hillas parameters
                             hillas_params = hillas_parameters(camera, event_image_cleaned)
-                            timing_params = timing_parameters(camera,
-                                                          event_image_cleaned,
-                                                          event_pulse_time_cleaned,
-                                                          hillas_params)
+                            timing_params = timing_parameters(
+                                camera,
+                                event_image_cleaned,
+                                event_pulse_time_cleaned,
+                                hillas_params
+                            )
                             leakage_params = leakage(camera, event_image, clean_mask)
 
                             # Preparing metadata
-                            event_info = InfoContainer(obs_id=event.index.obs_id,
-                                                   event_id=scipy.int32(event.index.event_id),
-                                                   tel_id=tel_id,
-                                                   true_energy=event.mc.energy,
-                                                   true_alt=event.mc.alt.to(u.rad),
-                                                   true_az=event.mc.az.to(u.rad),
-                                                   tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
-                                                   tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
-                                                   n_islands=num_islands)
+                            event_info = InfoContainer(
+                                obs_id=event.index.obs_id,
+                                event_id=scipy.int32(event.index.event_id),
+                                tel_id=tel_id,
+                                true_energy=event.mc.energy,
+                                true_alt=event.mc.alt.to(u.rad),
+                                true_az=event.mc.az.to(u.rad),
+                                tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                                tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
+                                n_islands=num_islands
+                            )
 
                             # Storing the result
                             writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
 
                         except ValueError:
-                            print("Hillas calculation failed")
-
                             print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
                                 f"telescope ID: {tel_id}): Hillas calculation failed.")
                     else:
@@ -218,13 +202,13 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
         n_islands = Field(-1, "Number of image islands")
 
     cleaning_config = dict(
-      picture_thresh = 6,
-      boundary_thresh = 3.5,
-      max_time_off = 4.5 * 1.64,
-      max_time_diff = 1.5 * 1.64,
-      usetime = True,
-      usesum = True,
-      findhotpixels=True,
+        picture_thresh = 6,
+        boundary_thresh = 3.5,
+        max_time_off = 4.5 * 1.64,
+        max_time_diff = 1.5 * 1.64,
+        usetime = True,
+        usesum = True,
+        findhotpixels=True,
     )
 
     bad_pixels_config = dict(
@@ -232,15 +216,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
         pedestalLevelVariance = 4.5,
         pedestalType = 'FromExtractorRndm'
     )
-
-
-
-    # Setting up the calibrator class.
-
-    config = traitlets.config.Config()
-    integrator_name = 'LocalPeakWindowSum'
-    config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 2
 
     # Now let's loop over the events and perform:
     #  - image cleaning;
@@ -253,8 +228,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
     time_thresholds = image_cleaning_settings['time_thresholds']
-    #core_charge_thresholds = charge_thresholds.copy()
-    #core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
 
     previous_event_id = 0
 
@@ -268,7 +241,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
 
-        
         # Looping over the events
         for event in source._mono_event_generator(telescope=f'M{tel_id}'):
 				#Exclude pedestal runs??
@@ -277,11 +249,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 continue
             previous_event_id = copy.copy(event.index.event_id)
 
-
             tels_with_data = event.r1.tels_with_data
-
-            # Calibrating an event
-            # calibrator.calibrate(event)
 
             computed_hillas_params = dict()
             pointing_alt = dict()
@@ -293,9 +261,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 event_image = event.dl1.tel[tel_id].image
                 # Pixel arrival time map
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
-                # Camera geometry
-                #camera = source.subarray.tel[tel_id].camera
-
 
                 badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
                 deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
@@ -303,10 +268,7 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time,unsuitable_mask=unsuitable_mask)
 
-
                 num_islands = get_num_islands(camera, clean_mask, event_image)
-                #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
-                # ---------------------------
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -316,30 +278,31 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 if np.any(event_image_cleaned):
                     try:
-
-
                         # If event has survived the cleaning, computing the Hillas parameters
                         hillas_params = hillas_parameters(camera, event_image_cleaned)
-                        timing_params = timing_parameters(camera,
-                                                      event_image_cleaned,
-                                                      event_pulse_time_cleaned,
-                                                      hillas_params)
+                        timing_params = timing_parameters(
+                            camera,
+                            event_image_cleaned,
+                            event_pulse_time_cleaned,
+                            hillas_params
+                        )
                         leakage_params = leakage(camera, event_image, clean_mask)
 
                         # Preparing metadata
-                        event_info = InfoContainer(obs_id=event.index.obs_id,
-                                               event_id=scipy.int32(event.index.event_id),
-                                               tel_id=tel_id,
-                                               mjd=event.trigger.time.mjd,
-                                               tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
-                                               tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
-                                               n_islands=num_islands)
+                        event_info = InfoContainer(
+                            obs_id=event.index.obs_id,
+                            event_id=scipy.int32(event.index.event_id),
+                            tel_id=tel_id,
+                            mjd=event.trigger.time.mjd,
+                            tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                            tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
+                            n_islands=num_islands
+                        )
 
                         # Storing the result
                         writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
 
                     except ValueError:
-                        print("Hillas calculation failed")
                         print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
                             f"telescope ID: {tel_id}): Hillas calculation failed.")
                 else:
