@@ -176,10 +176,10 @@ def process_dataset_mc(input_mask, output_name):
 
                     except ValueError:
                         print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
-                            "telescope ID: {tel_id}): Hillas calculation failed.")
+                            f"telescope ID: {tel_id}): Hillas calculation failed.")
                 else:
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
-                        "telescope ID: {tel_id}) did not pass cleaning.")
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
 
             if len(computed_hillas_params.keys()) > 1:
                 stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing, telescope_pointings)
@@ -314,10 +314,10 @@ def process_dataset_data(input_mask, output_name):
 
                     except ValueError:
                         print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
-                            "telescope ID: {tel_id}): Hillas calculation failed.")
+                            f"telescope ID: {tel_id}): Hillas calculation failed.")
                 else:
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
-                        "telescope ID: {tel_id}) did not pass cleaning.")
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
 
             if len(computed_hillas_params.keys()) > 1:
                 stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing, telescope_pointings)
