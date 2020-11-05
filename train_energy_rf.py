@@ -17,7 +17,7 @@ from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
 from ctapipe.reco import HillasReconstructor
-from ctapipe.reco.event_processing import EnergyEstimatorPandas
+from event_processing import EnergyEstimatorPandas
 
 from astropy import units as u
 
