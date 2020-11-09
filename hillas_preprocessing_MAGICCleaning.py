@@ -173,10 +173,12 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                             # If event has survived the cleaning, computing the Hillas parameters
                             hillas_params = hillas_parameters(camera, event_image_cleaned)
+                            image_mask = event_image_cleaned > 0
                             timing_params = timing_parameters(camera,
                                                           event_image_cleaned,
                                                           event_pulse_time_cleaned,
-                                                          hillas_params)
+                                                          hillas_params,
+                                                          image_mask)
                             leakage_params = leakage(camera, event_image, clean_mask)
 
                             # Preparing metadata
@@ -315,10 +317,12 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                         # If event has survived the cleaning, computing the Hillas parameters
                         hillas_params = hillas_parameters(camera, event_image_cleaned)
+                        image_mask = event_image_cleaned > 0
                         timing_params = timing_parameters(camera,
                                                       event_image_cleaned,
                                                       event_pulse_time_cleaned,
-                                                      hillas_params)
+                                                      hillas_params,
+                                                      image_mask)
                         leakage_params = leakage(camera, event_image, clean_mask)
 
                         # Preparing metadata
