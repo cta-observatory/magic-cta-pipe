@@ -103,7 +103,7 @@ def process_dataset_mc(input_mask, output_name):
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Event source
-        source = MAGICEventSource(input_url=input_file)
+        source = MAGICEventSource(input_url=input_mask)
 
         camera = source.subarray.tel[1].camera
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
