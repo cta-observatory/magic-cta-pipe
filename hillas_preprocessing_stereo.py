@@ -384,10 +384,17 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
 
             if len(computed_hillas_params.keys()) > 1:
-                stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing, telescope_pointings)
-                event_info.tel_id = -1
-                # Storing the result
-                writer.write("stereo_params", (event_info, stereo_params))
+                if any([computed_hillas_params[tel_id]["width"].value == 0 for tel_id in computed_hillas_params]):
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
+                        f"has an ellipse with width=0: stereo parameters calculation skipped.")
+                elif any([np.isnan(computed_hillas_params[tel_id]["width"].value) for tel_id in computed_hillas_params]):
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
+                        f"has an ellipse with width=NaN: stereo parameters calculation skipped.")
+                else:
+                    stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing, telescope_pointings)
+                    event_info.tel_id = -1
+                    # Storing the result
+                    writer.write("stereo_params", (event_info, stereo_params))
 
 def process_dataset_data(input_mask, output_name, image_cleaning_settings):
     # Create event metadata container to hold event / observation / telescope IDs
