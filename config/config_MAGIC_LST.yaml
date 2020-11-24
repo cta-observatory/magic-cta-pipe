@@ -1,0 +1,28 @@
+LST:
+    tel_ids:
+        - 1
+        - 2
+        - 3
+        - 4
+    cleaning_config:
+        boundary_thresh: 4
+        keep_isolated_pixels: true
+        min_number_picture_neighbors: 0
+        picture_thresh: 8
+    camera_name: "LSTCam"
+    min_pixel: 5
+
+MAGIC:
+    tel_ids:
+        - 5
+        - 6
+    cleaning_config:
+        boundary_thresh: 3.5
+        findhotpixels: false
+        max_time_diff: 2.46
+        max_time_off: 7.38
+        picture_thresh: 6
+        usesum: true
+        usetime: true
+    camera_name: "MAGICCam"
+    min_pixel: 5

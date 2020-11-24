@@ -1,9 +1,10 @@
 import os
 import time
-import argparse
-import matplotlib.pyplot as plt
-import numpy as np
+import yaml
 import scipy
+import argparse
+import numpy as np
+import matplotlib.pyplot as plt
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord, AltAz
@@ -29,6 +30,9 @@ PARSER = argparse.ArgumentParser(
 PARSER.add_argument('-f', '--in_file', type=str, required=True,
                     default='',
                     help='Input file')
+PARSER.add_argument('-cfg', '--config_file', type=str, required=False,
+                    default='./config/config_MAGIC_LST.yaml',
+                    help='Config file')
 PARSER.add_argument('-t', '--telescopes', type=str, required=False,
                     default='1,2,3,4,5,6',
                     help='Telescopes to be analyzed. 1,2,3,4: LST, 5,6: MAGIC')
@@ -40,13 +44,15 @@ PARSER.add_argument('-d', '--display', action='store_true', required=False,
                     help='Display plots')
 
 
-def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
+def stereo_reco_MAGIC_LST(file, config_file, tels, max_events=0, display=False):
     """Stereo Reconstruction MAGIC + LST
 
     Parameters
     ----------
     file : str
         input file, simtel.gz format
+    config_file : str
+        configuration file, .yaml format
     tels : list
         telescopes to be analyzed. 1,2,3,4: LST, 5,6: MAGIC
     max_events : int, optional
@@ -54,8 +60,10 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
     display : bool, optional
         display plots, by default False
     """
-    id_LST = [1, 2, 3, 4]
-    id_MAGIC = [5, 6]
+    with open(config_file, 'r') as f_:
+        cfg = yaml.safe_load(f_)
+
+    id_LST, id_MAGIC = cfg['LST']['tel_ids'], cfg['MAGIC']['tel_ids']
     tels = list(set(tels).intersection(id_LST+id_MAGIC))
     if(len(tels) < 2):
         print("Select at least two telescopes in the MAGIC + LST array")
@@ -63,28 +71,8 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
     consider_LST = any([t_ in id_LST for t_ in tels])
     consider_MAGIC = any([t_ in id_MAGIC for t_ in tels])
 
-    # Define cleaning levels for LST. From lstchain
-    # 1. From reco/tests/test_volume_reducer.py
-    cleaning_config_LST = {
-        'picture_thresh': 8,
-        'boundary_thresh': 4,
-        'keep_isolated_pixels': True,
-        'min_number_picture_neighbors': 0
-    }
-    # 2. standard
-    # cleaning_config_LST = {}
-
-    # Define cleaning level for MAGIC. From magic-cta-pipe
-    # (hillas_preprocessing_MAGICCleaning_stereo.py)
-    cleaning_config_MAGIC = {
-        'picture_thresh': 6,
-        'boundary_thresh': 3.5,
-        'max_time_off': 4.5 * 1.64,
-        'max_time_diff': 1.5 * 1.64,
-        'usetime': True,
-        'usesum': True,
-        'findhotpixels': False,
-    }
+    cleaning_config_LST = cfg['LST']['cleaning_config']
+    cleaning_config_MAGIC = cfg['MAGIC']['cleaning_config']
 
     # Output file
     out_file = '%s.h5' % (file.rstrip('.simtel.gz'))
@@ -141,7 +129,7 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                     peakpos = dl1.peak_time  # == event_pulse_time
 
                     # Cleaning
-                    if geom.camera_name == "LSTCam":
+                    if geom.camera_name == cfg['LST']['camera_name']:
                         # Apply tailcuts clean. From ctapipe
                         clean = tailcuts_clean(
                             geom=geom,
@@ -149,21 +137,21 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                             **cleaning_config_LST
                         )
                         # Ignore images with less than 5 pixels after cleaning
-                        if clean.sum() < 5:
+                        if clean.sum() < cfg['LST']['min_pixel']:
                             continue
                         # Number of islands: LST. From ctapipe
                         num_islands, island_ids = number_of_islands(
                             geom=geom,
                             mask=clean
                         )
-                    elif geom.camera_name == "MAGICCam":
+                    elif geom.camera_name == cfg['LST']['camera_name']:
                         # Apply MAGIC cleaning. From magic-cta-pipe
                         clean, event_image, peakpos = magic_clean.clean_image(
                             event_image=image,
                             event_pulse_time=peakpos
                         )
                         # Ignore images with less than 5 pixels after cleaning
-                        if clean.sum() < 5:
+                        if clean.sum() < cfg['MAGIC']['min_pixel']:
                             continue
                         # Number of islands: MAGIC. From magic-cta-pipe
                         num_islands = get_num_islands_MAGIC(
@@ -283,6 +271,7 @@ if __name__ == '__main__':
     start_time = time.time()
     stereo_reco_MAGIC_LST(
         file=kwargs['in_file'],
+        config_file=kwargs['config_file'],
         tels=[int(t_) for t_ in kwargs['telescopes'].split(',')],
         max_events=kwargs['max_events'],
         display=kwargs['display']
