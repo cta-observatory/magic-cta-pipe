@@ -6,7 +6,7 @@ def check_write_stereo(event, tel_id, computed_hillas_params, hillas_reco,
     """Check hillas parameters and write stero parameters
 
     Parameters
-    ---------- 
+    ----------
     event : ctapipe.containers.EventAndMonDataContainer
         event
     tel_id : int
