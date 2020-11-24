@@ -18,6 +18,8 @@ from ctapipe.visualization import ArrayDisplay
 
 from hillas_preprocessing_MAGICCleaning_stereo import *
 
+from magicctapipe.reco.stereo import *
+
 
 PARSER = argparse.ArgumentParser(
     description="Stereo Reconstruction MAGIC + LST",
@@ -100,7 +102,7 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
         )
 
     horizon_frame = AltAz()
-    reco = HillasReconstructor()
+    hillas_reco = HillasReconstructor()
     params_ = dict(filename=out_file, group_name='dl1', overwrite=True)
 
     with HDF5TableWriter(**params_) as writer:
@@ -115,9 +117,17 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
             if(len(sel_tels) < 2):
                 continue
 
+            telescope_pointings = {}
             computed_hillas_params = {}
             time_gradients = {}
             skip = False
+
+            # Eval pointing
+            array_pointing = SkyCoord(
+                az=event.pointing.array_azimuth,
+                alt=event.pointing.array_altitude,
+                frame=horizon_frame
+            )
 
             # Calibrate event, both for MAGIC and LST
             calibrator(event)
@@ -186,10 +196,12 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                         hillas_parameters=hillas_params
                     )
 
-                    # Store parameters for stereo reconstruction
                     computed_hillas_params[tel_id] = hillas_params
-
-                    # Store timegradients for plotting
+                    telescope_pointings[tel_id] = SkyCoord(
+                        alt=event.pointing.tel[tel_id].altitude,
+                        az=event.pointing.tel[tel_id].azimuth,
+                        frame=horizon_frame,
+                    )
                     time_gradients[tel_id] = timing_params.slope.value
 
                     # Make sure each telescope get's an arrow
@@ -226,17 +238,16 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
             # Ignore events with less than two telescopes
             if(len(computed_hillas_params) < 2):
                 continue
-            # Eval pointing
-            array_pointing = SkyCoord(
-                az=event.pointing.array_azimuth,
-                alt=event.pointing.array_altitude,
-                frame=horizon_frame
-            )
-            # Reconstruct stereo event. From ctapipe
-            stereo = reco.predict(
-                hillas_dict=computed_hillas_params,
+            stereo_params = check_write_stereo(
+                event=event,
+                tel_id=tel_id,
+                computed_hillas_params=computed_hillas_params,
+                hillas_reco=hillas_reco,
                 subarray=source.subarray,
-                array_pointing=array_pointing
+                array_pointing=array_pointing,
+                telescope_pointings=telescope_pointings,
+                event_info=event_info,
+                writer=writer
             )
             # Display plot
             if(display):
@@ -260,7 +271,7 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                 # Estimated and true impact
                 plt.scatter(event.mc.core_x, event.mc.core_y,
                             s=20, c="k", marker="x", label="True Impact")
-                plt.scatter(stereo.core_x, stereo.core_y,
+                plt.scatter(stereo_params.core_x, stereo_params.core_y,
                             s=20, c="r", marker="x", label="Estimated Impact")
                 plt.legend()
                 plt.show()
