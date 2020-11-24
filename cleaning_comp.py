@@ -36,9 +36,9 @@ import pylab as plt
 import argparse
 import csv
 
-from utils import MAGIC_Badpixels
-# from utils import bad_pixel_treatment
-from utils import MAGIC_Cleaning
+from magicctapipe.utils import MAGIC_Badpixels
+# from magicctapipe.utils import bad_pixel_treatment
+from magicctapipe.utils import MAGIC_Cleaning
 
 class bcolors:
     HEADER = '\033[95m'

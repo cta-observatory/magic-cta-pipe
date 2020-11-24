@@ -28,9 +28,9 @@ from ctapipe.image.timing import timing_parameters
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
 
-from utils import MAGIC_Badpixels
-# from utils import bad_pixel_treatment
-from utils import MAGIC_Cleaning
+from magicctapipe.utils import MAGIC_Badpixels
+# from magicctapipe.utils import bad_pixel_treatment
+from magicctapipe.utils import MAGIC_Cleaning
 
 def info_message(text, prefix='info'):
     """
