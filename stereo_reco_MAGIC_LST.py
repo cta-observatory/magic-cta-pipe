@@ -25,7 +25,6 @@ PARSER = argparse.ArgumentParser(
     description="Stereo Reconstruction MAGIC + LST",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-
 PARSER.add_argument('-f', '--in_file', type=str, required=True,
                     default='',
                     help='Input file')
@@ -121,7 +120,6 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
             telescope_pointings = {}
             computed_hillas_params = {}
             time_gradients = {}
-            skip = False
 
             # Eval pointing
             array_pointing = SkyCoord(
@@ -210,7 +208,7 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                         time_gradients[tel_id] = 1
 
                     # Preparing metadata
-                    event_info = _InfoContainer(
+                    event_info = StereoInfoContainer(
                         obs_id=event.index.obs_id,
                         event_id=scipy.int32(event.index.event_id),
                         tel_id=tel_id,
@@ -222,23 +220,18 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                         num_islands=num_islands
                     )
                     # Store results
-                    writer.write(
-                        table_name="hillas_params",
-                        containers=(event_info, hillas_params, leakage_params,
-                                    timing_params)
-                    )
+                    hres_ = (event_info, hillas_params, leakage_params,
+                             timing_params)
+                    writer.write("hillas_params", hres_)
                 except Exception as e:
-                    print("Image not reconstructed")
-                    print(e)
-                    skip = True
+                    print("Image not reconstructed",e)
                     break
 
             # End loop on tel_id
-            if(skip):
-                continue
             # Ignore events with less than two telescopes
             if(len(computed_hillas_params) < 2):
                 continue
+            # Eval stereo parameters and write them
             stereo_params = check_write_stereo(
                 event=event,
                 tel_id=tel_id,
@@ -289,18 +282,6 @@ def _check_kwargs(kwargs):
         print("Select at least two telescopes")
         return False
     return True
-
-
-class _InfoContainer(Container):
-    obs_id = Field(-1, "Observation ID")
-    event_id = Field(-1, "Event ID")
-    tel_id = Field(-1, "Telescope ID")
-    true_energy = Field(-1, "MC event energy", unit=u.TeV)
-    true_alt = Field(-1, "MC event altitude", unit=u.rad)
-    true_az = Field(-1, "MC event azimuth", unit=u.rad)
-    tel_alt = Field(-1, "MC telescope altitude", unit=u.rad)
-    tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
-    num_islands = Field(-1, "Number of image islands")
 
 
 if __name__ == '__main__':
