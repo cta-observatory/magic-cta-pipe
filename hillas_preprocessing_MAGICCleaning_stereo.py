@@ -28,9 +28,9 @@ from ctapipe.image.timing import timing_parameters
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
 
-from magicctapipe.utils import MAGIC_Badpixels
-# from magicctapipe.utils import bad_pixel_treatment
-from magicctapipe.utils import MAGIC_Cleaning
+from utils import MAGIC_Badpixels
+# from utils import bad_pixel_treatment
+from utils import MAGIC_Cleaning
 
 def info_message(text, prefix='info'):
     """
@@ -346,90 +346,90 @@ def process_dataset_data(input_mask, output_name):
 # =================
 # === Main code ===
 # =================
-if __name__ == '__main__':
-    # --------------------------
-    # Adding the argument parser
-    arg_parser = argparse.ArgumentParser(description="""
-    This tools computes the Hillas parameters for the specified data sets.
-    """)
 
-    arg_parser.add_argument("--config", default="config.yaml",
-                            help='Configuration file to steer the code execution.')
-    arg_parser.add_argument("--usereal",
-                            help='Process only real data files.',
-                            action='store_true')
-    arg_parser.add_argument("--usemc",
-                            help='Process only simulated data files.',
-                            action='store_true')
-    arg_parser.add_argument("--usetest",
-                            help='Process only test files.',
-                            action='store_true')
-    arg_parser.add_argument("--usetrain",
-                            help='Process only train files.',
-                            action='store_true')
+# --------------------------
+# Adding the argument parser
+arg_parser = argparse.ArgumentParser(description="""
+This tools computes the Hillas parameters for the specified data sets.
+""")
 
-    parsed_args = arg_parser.parse_args()
-    # --------------------------
+arg_parser.add_argument("--config", default="config.yaml",
+                        help='Configuration file to steer the code execution.')
+arg_parser.add_argument("--usereal",
+                        help='Process only real data files.',
+                        action='store_true')
+arg_parser.add_argument("--usemc",
+                        help='Process only simulated data files.',
+                        action='store_true')
+arg_parser.add_argument("--usetest",
+                        help='Process only test files.',
+                        action='store_true')
+arg_parser.add_argument("--usetrain",
+                        help='Process only train files.',
+                        action='store_true')
 
-    # ------------------------------
-    # Reading the configuration file
+parsed_args = arg_parser.parse_args()
+# --------------------------
 
-    file_not_found_message = """
-    Error: can not load the configuration file {:s}.
-    Please check that the file exists and is of YAML or JSON format.
-    Exiting.
-    """
+# ------------------------------
+# Reading the configuration file
 
-    try:
-        config = yaml.safe_load(open(parsed_args.config, "r"))
-    except IOError:
-        print(file_not_found_message.format(parsed_args.config))
-        exit()
+file_not_found_message = """
+Error: can not load the configuration file {:s}.
+Please check that the file exists and is of YAML or JSON format.
+Exiting.
+"""
 
-    if 'data_files' not in config:
-        print('Error: the configuration file is missing the "data_files" section. Exiting.')
-        exit()
-        
-    if 'image_cleaning' not in config:
-        print('Error: the configuration file is missing the "image_cleaning" section. Exiting.')
-        exit()
-    # ------------------------------
+try:
+    config = yaml.safe_load(open(parsed_args.config, "r"))
+except IOError:
+    print(file_not_found_message.format(parsed_args.config))
+    exit()
 
-    if parsed_args.usereal and parsed_args.usemc:
-        data_type_to_process = config['data_files']
-    elif parsed_args.usereal:
-        data_type_to_process = ['data']
-    elif parsed_args.usemc:
-        data_type_to_process = ['mc']
-    else:
-        data_type_to_process = config['data_files']
+if 'data_files' not in config:
+    print('Error: the configuration file is missing the "data_files" section. Exiting.')
+    exit()
+    
+if 'image_cleaning' not in config:
+    print('Error: the configuration file is missing the "image_cleaning" section. Exiting.')
+    exit()
+# ------------------------------
 
-    if parsed_args.usetrain and parsed_args.usetest:
-        data_sample_to_process = ['train_sample', 'test_sample']
-    elif parsed_args.usetrain:
-        data_sample_to_process = ['train_sample']
-    elif parsed_args.usetest:
-        data_sample_to_process = ['test_sample']
-    else:
-        data_sample_to_process = ['train_sample', 'test_sample']
+if parsed_args.usereal and parsed_args.usemc:
+    data_type_to_process = config['data_files']
+elif parsed_args.usereal:
+    data_type_to_process = ['data']
+elif parsed_args.usemc:
+    data_type_to_process = ['mc']
+else:
+    data_type_to_process = config['data_files']
 
-    telescope_to_process = ['magic1', 'magic2']
+if parsed_args.usetrain and parsed_args.usetest:
+    data_sample_to_process = ['train_sample', 'test_sample']
+elif parsed_args.usetrain:
+    data_sample_to_process = ['train_sample']
+elif parsed_args.usetest:
+    data_sample_to_process = ['test_sample']
+else:
+    data_sample_to_process = ['train_sample', 'test_sample']
 
-    for data_type in data_type_to_process:
-        for sample in data_sample_to_process:
-            try:
-                telescope_type = re.findall('(.*)[_\d]+', telescope_to_process[0])[0]
-            except:
-                ValueError(f'Can not recognize the telescope type from name "{telescope_to_process}"')
+telescope_to_process = ['magic1', 'magic2']
 
-            info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
-                        prefix='Hillas')
+for data_type in data_type_to_process:
+    for sample in data_sample_to_process:
+        try:
+            telescope_type = re.findall('(.*)[_\d]+', telescope_to_process[0])[0]
+        except:
+            ValueError(f'Can not recognize the telescope type from name "{telescope_to_process}"')
 
-            is_mc = data_type.lower() == "mc"
+        info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
+                    prefix='Hillas')
 
-            if is_mc:
-                process_dataset_mc(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
+        is_mc = data_type.lower() == "mc"
+
+        if is_mc:
+            process_dataset_mc(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
+                               output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
+        else:
+            process_dataset_data(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
                                 output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
-            else:
-                process_dataset_data(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                                    output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
