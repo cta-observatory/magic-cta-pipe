@@ -20,7 +20,7 @@ from hillas_preprocessing_MAGICCleaning_stereo import *
 
 from magicctapipe.reco.stereo import *
 
- 
+
 PARSER = argparse.ArgumentParser(
     description="Stereo Reconstruction MAGIC + LST",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
