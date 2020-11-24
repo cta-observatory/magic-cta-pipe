@@ -2,6 +2,8 @@ import os
 import time
 import argparse
 import matplotlib.pyplot as plt
+import numpy as np
+import scipy
 
 import astropy.units as u
 from astropy.coordinates import SkyCoord, AltAz
@@ -11,14 +13,13 @@ from ctapipe.io import HDF5TableWriter
 from ctapipe.calib import CameraCalibrator
 from ctapipe.image.cleaning import tailcuts_clean
 from ctapipe.image.morphology import number_of_islands
-from ctapipe.image import leakage, hillas_parameters
-from ctapipe.image.timing import timing_parameters
+
 from ctapipe.reco import HillasReconstructor
 from ctapipe.visualization import ArrayDisplay
 
-from hillas_preprocessing_MAGICCleaning_stereo import *
-
+from magicctapipe.utils import MAGIC_Cleaning
 from magicctapipe.reco.stereo import *
+from magicctapipe.reco.reco import *
 
 
 PARSER = argparse.ArgumentParser(
@@ -103,9 +104,9 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
 
     horizon_frame = AltAz()
     hillas_reco = HillasReconstructor()
-    params_ = dict(filename=out_file, group_name='dl1', overwrite=True)
+    p_ = dict(filename=out_file, group_name='dl1', overwrite=True)
 
-    with HDF5TableWriter(**params_) as writer:
+    with HDF5TableWriter(**p_) as writer:
         for event in source:
             if(display):
                 print("Event %d" % event.count)
@@ -117,9 +118,7 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
             if(len(sel_tels) < 2):
                 continue
 
-            telescope_pointings = {}
-            computed_hillas_params = {}
-            time_gradients = {}
+            telescope_pointings, hillas_p, time_grad = {}, {}, {}
 
             # Eval pointing
             array_pointing = SkyCoord(
@@ -167,7 +166,7 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                         if clean.sum() < 5:
                             continue
                         # Number of islands: MAGIC. From magic-cta-pipe
-                        num_islands = get_num_islands(
+                        num_islands = get_num_islands_MAGIC(
                             camera=geom,
                             clean_mask=clean,
                             event_image=event_image
@@ -176,36 +175,19 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                         continue
 
                     # Analize cleaned image: Hillas, leakeage, timing
-                    # Hillas parameters, same for LST and MAGIC. From ctapipe
-                    hillas_params = hillas_parameters(
-                        geom=geom[clean],
-                        image=image[clean]
-                    )
-                    # Leakage, same for LST and MAGIC. From ctapipe
-                    leakage_params = leakage(
-                        geom=geom,
-                        image=image,
-                        cleaning_mask=clean
-                    )
-                    # Timing parameters, same for LST and MAGIC. From ctapipe
-                    timing_params = timing_parameters(
-                        geom=geom[clean],
-                        image=image[clean],
-                        peak_time=peakpos[clean],
-                        hillas_parameters=hillas_params
+                    hillas_p[tel_id], leakage_p, timing_p, time_grad[tel_id] = \
+                        clean_image_params(
+                            geom=geom,
+                            image=image,
+                            clean=clean,
+                            peakpos=peakpos
                     )
 
-                    computed_hillas_params[tel_id] = hillas_params
                     telescope_pointings[tel_id] = SkyCoord(
                         alt=event.pointing.tel[tel_id].altitude,
                         az=event.pointing.tel[tel_id].azimuth,
                         frame=horizon_frame,
                     )
-                    time_gradients[tel_id] = timing_params.slope.value
-
-                    # Make sure each telescope get's an arrow
-                    if abs(time_gradients[tel_id]) < 0.2:
-                        time_gradients[tel_id] = 1
 
                     # Preparing metadata
                     event_info = StereoInfoContainer(
@@ -220,22 +202,21 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                         num_islands=num_islands
                     )
                     # Store results
-                    hres_ = (event_info, hillas_params, leakage_params,
-                             timing_params)
-                    writer.write("hillas_params", hres_)
+                    r_ = (event_info, hillas_p[tel_id], leakage_p, timing_p)
+                    writer.write("hillas_params", r_)
                 except Exception as e:
-                    print("Image not reconstructed",e)
+                    print("Image not reconstructed:", e)
                     break
 
             # End loop on tel_id
             # Ignore events with less than two telescopes
-            if(len(computed_hillas_params) < 2):
+            if(len(hillas_p) < 2):
                 continue
             # Eval stereo parameters and write them
-            stereo_params = check_write_stereo(
+            stereo_p = check_write_stereo(
                 event=event,
                 tel_id=tel_id,
-                computed_hillas_params=computed_hillas_params,
+                hillas_p=hillas_p,
                 hillas_reco=hillas_reco,
                 subarray=source.subarray,
                 array_pointing=array_pointing,
@@ -245,33 +226,43 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
             )
             # Display plot
             if(display):
-                fig, ax = plt.subplots()
-                ax.set_xlabel("Distance (m)")
-                ax.set_ylabel("Distance (m)")
-                # Display the top-town view of the MAGIC-LST telescope array
-                disp = ArrayDisplay(
-                    subarray=source.subarray,
-                    axes=ax,
-                    tel_scale=1,
-                    title='MAGIC-LST Monte Carlo'
+                _display_plots(
+                    source=source,
+                    event=event,
+                    hillas_p=hillas_p,
+                    time_grad=time_grad,
+                    stereo_p=stereo_p
                 )
-                # Set the vector angle and length from Hillas parameters
-                disp.set_vector_hillas(
-                    hillas_dict=computed_hillas_params,
-                    time_gradient=time_gradients,
-                    angle_offset=event.pointing.array_azimuth,
-                    length=500,
-                )
-                # Estimated and true impact
-                plt.scatter(event.mc.core_x, event.mc.core_y,
-                            s=20, c="k", marker="x", label="True Impact")
-                plt.scatter(stereo_params.core_x, stereo_params.core_y,
-                            s=20, c="r", marker="x", label="Estimated Impact")
-                plt.legend()
-                plt.show()
         # end loop on event
     # close HDF5TableWriter
     return
+
+
+def _display_plots(source, event, hillas_p, time_grad, stereo_p):
+    fig, ax = plt.subplots()
+    ax.set_xlabel("Distance (m)")
+    ax.set_ylabel("Distance (m)")
+    # Display the top-town view of the MAGIC-LST telescope array
+    disp = ArrayDisplay(
+        subarray=source.subarray,
+        axes=ax,
+        tel_scale=1,
+        title='MAGIC-LST Monte Carlo'
+    )
+    # Set the vector angle and length from Hillas parameters
+    disp.set_vector_hillas(
+        hillas_dict=hillas_p,
+        time_gradient=time_grad,
+        angle_offset=event.pointing.array_azimuth,
+        length=500,
+    )
+    # Estimated and true impact
+    plt.scatter(event.mc.core_x, event.mc.core_y,
+                s=20, c="k", marker="x", label="True Impact")
+    plt.scatter(stereo_p.core_x, stereo_p.core_y,
+                s=20, c="r", marker="x", label="Estimated Impact")
+    plt.legend()
+    plt.show()
 
 
 def _check_kwargs(kwargs):
