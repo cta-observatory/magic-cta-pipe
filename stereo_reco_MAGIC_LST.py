@@ -266,7 +266,6 @@ def stereo_reco_MAGIC_LST(file, tels, max_events=0, display=False):
                 plt.show()
         # end loop on event
     # close HDF5TableWriter
-
     return
 
 
