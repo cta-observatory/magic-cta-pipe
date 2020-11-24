@@ -25,6 +25,7 @@ PARSER = argparse.ArgumentParser(
     description="Stereo Reconstruction MAGIC + LST",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
+
 PARSER.add_argument('-f', '--in_file', type=str, required=True,
                     default='',
                     help='Input file')
