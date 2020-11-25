@@ -4,6 +4,25 @@ import astropy.units as u
 from ctapipe.core.container import Container, Field
 
 
+def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p):
+    """Write
+
+    Parameters
+    ----------
+    writer : ctapipe.io.hdf5tableio.HDF5TableWriter
+        HDF5TableWriter object
+    event_info : magicctapipe.reco.stereo.StereoInfoContainer
+        event info, StereoInfoContainer object
+    hillas_p : ctapipe.containers.HillasParametersContainer
+        hillas parameters
+    leakage_p : ctapipe.containers.HillasParametersContainer
+        leakage parameters
+    timing_p : ctapipe.containers.TimingParametersContainer
+        timing parameters
+    """
+    writer.write("hillas_params", (event_info, hillas_p, leakage_p, timing_p))
+
+
 def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
                        array_pointing, telescope_pointings, event_info, writer):
     """Check hillas parameters and write stero parameters

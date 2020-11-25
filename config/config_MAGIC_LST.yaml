@@ -24,5 +24,9 @@ MAGIC:
         picture_thresh: 6
         usesum: true
         usetime: true
+    bad_pixel_config:
+        pedestalLevel: 400
+        destalLevelVariance: 4.5
+        pedestalType: "FromExtractorRndm"
     camera_name: "MAGICCam"
     min_pixel: 5
