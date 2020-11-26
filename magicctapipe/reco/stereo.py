@@ -56,11 +56,12 @@ def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
     if len(hillas_p.keys()) > 1:
         err_str = ("Event ID %d  (obs ID: %d) has an ellipse with width = %s: "
                    "stereo parameters calculation skipped.")
+        stereo_params = None
         if any([hillas_p[tel_id]["width"].value == 0 for tel_id in hillas_p]):
-            print(err_str % (vent.index.event_id, event.index.obs_id, '0'))
+            print(err_str % (event.index.event_id, event.index.obs_id, '0'))
         elif any([np.isnan(hillas_p[tel_id]["width"].value) for
                   tel_id in hillas_p]):
-            print(err_str % (vent.index.event_id, event.index.obs_id, 'NaN'))
+            print(err_str % (event.index.event_id, event.index.obs_id, 'NaN'))
         else:
             # Reconstruct stereo event. From ctapipe
             stereo_params = hillas_reco.predict(
