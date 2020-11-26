@@ -70,7 +70,11 @@ def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
                 telescopes_pointings=telescope_pointings
             )
             event_info.tel_id = -1
-            # Storing the result
+            stereo_params.tel_ids = \
+                sum([2**a_ for a_ in stereo_params.tel_ids])
+            # How to go back
+            # n = stereo_params.tel_ids
+            # np.where(np.array(list(bin(n)[2:][::-1]))=='1')[0]
             writer.write("stereo_params", (event_info, stereo_params))
     return stereo_params
 

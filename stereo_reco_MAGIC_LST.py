@@ -23,7 +23,7 @@ from ctapipe.visualization import ArrayDisplay
 from magicctapipe.utils import MAGIC_Badpixels
 from magicctapipe.utils import MAGIC_Cleaning
 from magicctapipe.reco.stereo import *
-from magicctapipe.reco.reco import *
+from magicctapipe.reco.image import *
 
 
 PARSER = argparse.ArgumentParser(
@@ -88,6 +88,7 @@ def stereo_reco_MAGIC_LST(file_mask, config_file, tels, max_events=0,
 
     # Opening the output file
     for file in file_list:
+        print("Analyzing file %s" % file)
         # Open simtel file
         source = SimTelEventSource(file, max_events=max_events)
         # Init calibrator, both for MAGIC and LST
@@ -182,15 +183,15 @@ def stereo_reco_MAGIC_LST(file_mask, config_file, tels, max_events=0,
                         )
                     else:
                         continue
-
                     # Analize cleaned image: Hillas, leakeage, timing
-                    hillas_p[tel_id], leakage_p, timing_p, time_grad[tel_id] = \
-                        clean_image_params(
-                            geom=geom,
-                            image=image,
-                            clean=clean,
-                            peakpos=peakpos
+                    hillas_p[tel_id], leakage_p, timing_p = clean_image_params(
+                        geom=geom,
+                        image=image,
+                        clean=clean,
+                        peakpos=peakpos
                     )
+                    # Get time gradients
+                    time_grad[tel_id] = timing_p.slope.value
 
                     telescope_pointings[tel_id] = SkyCoord(
                         alt=event.pointing.tel[tel_id].altitude,

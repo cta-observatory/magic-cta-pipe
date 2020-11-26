@@ -51,8 +51,6 @@ def clean_image_params(geom, image, clean, peakpos):
             leakage_p
         ctapipe.containers.TimingParametersContainer
             timing_p
-        numpy.float64
-            time_grad
     """    
     # Hillas parameters, same for LST and MAGIC. From ctapipe
     hillas_p = hillas_parameters(
@@ -72,11 +70,9 @@ def clean_image_params(geom, image, clean, peakpos):
         peak_time=peakpos[clean],
         hillas_parameters=hillas_p
     )
-    # Get time gradients
-    time_grad = timing_p.slope.value
 
     # Make sure each telescope get's an arrow
     # if abs(time_grad[tel_id]) < 0.2:
     #     time_grad[tel_id] = 1
   
-    return hillas_p, leakage_p, timing_p, time_grad
+    return hillas_p, leakage_p, timing_p
