@@ -39,7 +39,7 @@ PARSER.add_argument('-cfg', '--config_file', type=str, required=False,
 PARSER.add_argument('-t', '--telescopes', type=str, required=False,
                     default='1,2,3,4,5,6',
                     help='Telescopes to be analyzed. 1,2,3,4: LST, 5,6: MAGIC')
-PARSER.add_argument('-max', '--max_events', type=int, required=False,
+PARSER.add_argument('-n', '--max_events', type=int, required=False,
                     default=0,
                     help='Max events, 0 for all')
 PARSER.add_argument('-d', '--display', action='store_true', required=False,
