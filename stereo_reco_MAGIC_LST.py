@@ -31,9 +31,6 @@ PARSER = argparse.ArgumentParser(
     description="Stereo Reconstruction MAGIC + LST",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
-PARSER.add_argument('-f', '--in_file', type=str, required=True,
-                    default='',
-                    help='Input file')
 PARSER.add_argument('-cfg', '--config_file', type=str, required=False,
                     default='./config/config_MAGIC_LST.yaml',
                     help='Config file')
@@ -48,18 +45,13 @@ PARSER.add_argument('-d', '--display', action='store_true', required=False,
                     help='Display plots')
 
 
-def stereo_reco_MAGIC_LST(file_mask, config_file, tels, max_events=0,
-                          display=False):
+def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
     """Stereo Reconstruction MAGIC + LST
 
     Parameters
     ----------
-    file_mask : str
-        input file mask, all simtel.gz format
     config_file : str
         configuration file, .yaml format
-    tels : list
-        telescopes to be analyzed. 1,2,3,4: LST, 5,6: MAGIC
     max_events : int, optional
         max events, 0 for all, by default 0
     display : bool, optional
@@ -69,17 +61,17 @@ def stereo_reco_MAGIC_LST(file_mask, config_file, tels, max_events=0,
         cfg = yaml.safe_load(f_)
 
     id_LST, id_MAGIC = cfg['LST']['tel_ids'], cfg['MAGIC']['tel_ids']
-    tels = list(set(tels).intersection(id_LST+id_MAGIC))
+    tels = list(set(cfg['telescopes']).intersection(id_LST+id_MAGIC))
     if(len(tels) < 2):
         print("Select at least two telescopes in the MAGIC + LST array")
         return
     consider_LST = any([t_ in id_LST for t_ in tels])
     consider_MAGIC = any([t_ in id_MAGIC for t_ in tels])
 
-    file_list = glob.glob(file_mask)
+    file_list = glob.glob(cfg['file']['input_mask'])
 
     # Output file
-    out_file = out_file_h5(file_list[0], 3, 6)
+    out_file = out_file_h5(in_file=file_list[0], li=3, hi=6)
     print("Output file %s" % out_file)
 
     writer = HDF5TableWriter(
@@ -283,26 +275,12 @@ def _display_plots(source, event, hillas_p, time_grad, stereo_p):
     plt.show()
 
 
-def _check_kwargs(kwargs):
-    # if(not os.path.exists(kwargs['in_file'])):
-    #     print("File %s does not exists" % kwargs['in_file'])
-    #     return False
-    if(len(kwargs['telescopes'].split(',')) < 2):
-        print("Select at least two telescopes")
-        return False
-    return True
-
-
 if __name__ == '__main__':
     args = PARSER.parse_args()
     kwargs = args.__dict__
-    if not _check_kwargs(kwargs):
-        exit()
     start_time = time.time()
     stereo_reco_MAGIC_LST(
-        file_mask=kwargs['in_file'],
         config_file=kwargs['config_file'],
-        tels=[int(t_) for t_ in kwargs['telescopes'].split(',')],
         max_events=kwargs['max_events'],
         display=kwargs['display']
     )
