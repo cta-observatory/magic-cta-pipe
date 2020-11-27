@@ -22,6 +22,7 @@ from ctapipe.visualization import ArrayDisplay
 
 from magicctapipe.utils import MAGIC_Badpixels
 from magicctapipe.utils import MAGIC_Cleaning
+from magicctapipe.utils.utils import *
 from magicctapipe.reco.stereo import *
 from magicctapipe.reco.image import *
 
@@ -78,7 +79,8 @@ def stereo_reco_MAGIC_LST(file_mask, config_file, tels, max_events=0,
     file_list = glob.glob(file_mask)
 
     # Output file
-    out_file = '%s.h5' % (file_list[0].rstrip('.simtel.gz'))
+    out_file = out_file_h5(file_list[0], 3, 6)
+    print("Output file %s" % out_file)
 
     writer = HDF5TableWriter(
         filename=out_file, group_name='dl1', overwrite=True
