@@ -68,11 +68,12 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
     consider_LST = any([t_ in id_LST for t_ in tels])
     consider_MAGIC = any([t_ in id_MAGIC for t_ in tels])
 
-    file_list = glob.glob(cfg['file']['input_mask'])
+    file_list = glob.glob(cfg['data_files']['mc']['train_sample']['mask_sim'])
 
     # Output file
-    out_file = out_file_h5(in_file=file_list[0], li=3, hi=6)
-    print("Output file %s" % out_file)
+    # out_file = out_file_h5(in_file=file_list[0], li=3, hi=6)
+    out_file = cfg['data_files']['mc']['train_sample']['hillas_h5']
+    print("Output file:\n%s" % out_file)
 
     writer = HDF5TableWriter(
         filename=out_file, group_name='dl1', overwrite=True
@@ -82,7 +83,7 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
 
     # Opening the output file
     for file in file_list:
-        print("Analyzing file %s" % file)
+        print("Analyzing file:\n%s" % file)
         # Open simtel file
         source = SimTelEventSource(file, max_events=max_events)
         # Init calibrator, both for MAGIC and LST
