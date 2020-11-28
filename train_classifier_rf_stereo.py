@@ -7,13 +7,14 @@ import time
 import pandas as pd
 import numpy as np
 import sklearn.metrics
-from event_processing import EventClassifierPandas
 from astropy import units as u
 from matplotlib import colors
 import matplotlib.pyplot as plt
 
-from magicctapipe.utils.utils import *
 from magicctapipe.utils.plot import *
+from magicctapipe.utils.utils import *
+from magicctapipe.utils.filedir import *
+from magicctapipe.train.event_processing import EventClassifierPandas
 
 PARSER = argparse.ArgumentParser(
     description="This tools fits the event classification random forest on "
@@ -22,12 +23,6 @@ PARSER = argparse.ArgumentParser(
 )
 PARSER.add_argument('-cfg', '--config_file', type=str, required=True,
                     help='Configuration file to steer the code execution')
-
-
-def load_h5_data(file):
-    data = pd.read_hdf(file, key='dl1/hillas_params')
-    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    return data
 
 
 def GetHist(data, bins=30, range=None, weights=None):
@@ -128,24 +123,14 @@ def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
 
     return mc_weight_df, bkg_weight_df
 
+# =================
+# === Main code ===
+# =================
+
 
 def train_classifier_rf_stereo(config_file):
     # --- Reading the configuration file ---
-    file_not_found_message = """
-    Error: can not load the configuration file {:s}.
-    Please check that the file exists and is of YAML or JSON format.
-    Exiting.
-    """
-    try:
-        cfg = yaml.safe_load(open(config_file, "r"))
-    except IOError:
-        print(file_not_found_message.format(config_file))
-        exit()
-
-    if 'classifier_rf' not in cfg:
-        print(('Error: the configuration file is missing the "classifier_rf" '
-               'section. Exiting.'))
-        exit()
+    cfg = load_cfg_file_check(config_file=config_file, label='classifier_rf')
 
     # --- Check output directory ---
     check_folder(cfg['classifier_rf']['save_dir'])
@@ -153,11 +138,11 @@ def train_classifier_rf_stereo(config_file):
     # --- Train sample ---
     f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
     info_message('Loading MC train data...', prefix='ClassifierRF')
-    mc_data = load_h5_data(f_)
+    mc_data = load_dl1_data(f_)
 
     f_ = cfg['data_files']['data']['train_sample']['hillas_h5']
     info_message('Loading "off" train data...', prefix='ClassifierRF')
-    bkg_data = load_h5_data(f_)
+    bkg_data = load_dl1_data(f_)
 
     # True event classes
     mc_data['true_event_class'] = 0
@@ -189,11 +174,11 @@ def train_classifier_rf_stereo(config_file):
     # --- Test sample ---
     f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
     info_message('Loading MC test data...', prefix='ClassifierRF')
-    mc_data = load_h5_data(f_)
+    mc_data = load_dl1_data(f_)
 
     f_ = cfg['data_files']['data']['test_sample']['hillas_h5']
     info_message('Loading "off" test data...', prefix='ClassifierRF')
-    bkg_data = load_h5_data(f_)
+    bkg_data = load_dl1_data(f_)
 
     # True event classes
     mc_data['true_event_class'] = 0
