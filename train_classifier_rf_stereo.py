@@ -13,6 +13,7 @@ from matplotlib import colors
 import matplotlib.pyplot as plt
 
 from magicctapipe.utils.utils import *
+from magicctapipe.utils.plot import *
 
 PARSER = argparse.ArgumentParser(
     description="This tools fits the event classification random forest on "
@@ -58,22 +59,28 @@ def evaluate_performance(data, class0_name='event_class_0'):
         report['gammaness'][event_class] = hist
 
     if 'mean' in class0_name:
-        class_names = list(
-            filter(lambda name: 'event_class_' in name and '_mean' in name, data.columns))
+        class_names = list(filter(lambda name: 'event_class_' in name
+                                  and '_mean' in name, data.columns))
     else:
-        class_names = list(filter(
-            lambda name: 'event_class_' in name and '_mean' not in name, data.columns))
+        class_names = list(filter(lambda name: 'event_class_' in name
+                                  and '_mean' not in name, data.columns))
 
     proba = data[class_names].values
     predicted_class = proba.argmax(axis=1)
 
-    report['metrics']['acc'] = sklearn.metrics.accuracy_score(
-        data['true_event_class'], predicted_class)
+    report['metrics']['acc'] = \
+        sklearn.metrics.accuracy_score(data['true_event_class'],
+                                       predicted_class)
 
     true_class = np.clip(data['true_event_class'], 0, 1)
     true_class = 1 - true_class
-    report['metrics']['auc_roc'] = sklearn.metrics.roc_auc_score(
-        true_class, proba[:, 0])
+    # !!! CHECK NOT WORKING - TO AVOID ERROR !!!
+    try:
+        report['metrics']['auc_roc'] = \
+            sklearn.metrics.roc_auc_score(true_class, proba[:, 0])
+    except Exception as e:
+        print("ERROR: %s -> Setting report['metrics']['auc_roc'] = 0" % e)
+        report['metrics']['auc_roc'] = 0
 
     return report
 
@@ -139,10 +146,9 @@ def train_classifier_rf_stereo(config_file):
         print(('Error: the configuration file is missing the "classifier_rf" '
                'section. Exiting.'))
         exit()
-    
-    # --- Check output directory ---
-    check_folder(os.path.dirname(cfg['classifier_rf']['save_name']))
 
+    # --- Check output directory ---
+    check_folder(cfg['classifier_rf']['save_dir'])
 
     # --- Train sample ---
     f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
@@ -225,7 +231,8 @@ def train_classifier_rf_stereo(config_file):
     class_estimator = EventClassifierPandas(cfg['classifier_rf']['features'],
                                             **cfg['classifier_rf']['settings'])
     class_estimator.fit(shower_data_train)
-    class_estimator.save(cfg['classifier_rf']['save_name'])
+    class_estimator.save(os.path.join(cfg['classifier_rf']['save_dir'],
+                                      cfg['classifier_rf']['joblib_name']))
     # class_estimator.load(cfg['classifier_rf']['save_name'])
 
     info_message('Parameter importances', prefix='ClassifierRF')
@@ -261,6 +268,9 @@ def train_classifier_rf_stereo(config_file):
         performance[tel_id] = evaluate_performance(
             shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns])
 
+    # !!! NO PLOTS !!!
+    # return
+
     # ================
     # === Plotting ===
     # ================
@@ -269,7 +279,7 @@ def train_classifier_rf_stereo(config_file):
 
     plt.figure(figsize=(20, 10))
 
-    grid_shape = (2, 3)
+    grid_shape = (2, 7)
 
     for tel_num, tel_id in enumerate(performance):
         plt.subplot2grid(grid_shape, (0, tel_num))
@@ -343,7 +353,10 @@ def train_classifier_rf_stereo(config_file):
         plt.legend()
 
     plt.tight_layout()
-    plt.savefig('classifier_rf_gammaness.png')
+    save_plt(n=cfg['classifier_rf']['fig_name'],
+             rdir=cfg['classifier_rf']['save_dir'],
+             vect='')
+
     plt.close()
 
 

@@ -84,7 +84,7 @@ classifier_rf:
         n_jobs: 3
     
     features:
-        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands']
+        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands']
 
 event_list:
     max_time_diff: 6.9e-4

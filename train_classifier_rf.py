@@ -188,7 +188,7 @@ bkg_data['true_event_class'] = 1
 bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
 
 # Dropping extra keys
-bkg_data.drop('mjd', axis=1, inplace=True)
+# bkg_data.drop('mjd', axis=1, inplace=True)
 mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
 # Computing event weights
@@ -223,7 +223,7 @@ bkg_data['true_event_class'] = 1
 bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
 
 # Dropping extra keys
-bkg_data.drop('mjd', axis=1, inplace=True)
+# bkg_data.drop('mjd', axis=1, inplace=True)
 mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
 # Merging the test sample
