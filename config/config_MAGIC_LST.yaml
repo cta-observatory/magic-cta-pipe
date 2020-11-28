@@ -1,22 +1,24 @@
+# MAGIC-LST configuration file example
+
 data_files:
   mc:
     train_sample:
-      mask_sim: "/mnt/d/CTA-MC/DL0/*.simtel.gz"
-      hillas_h5: "/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5"
+      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
       # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
     test_sample:
-      mask_sim: "/mnt/d/CTA-MC/DL0/*.simtel.gz"
-      hillas_h5: "/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5"
+      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
       # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
 
   data:
     train_sample:
-      mask_sim: "/mnt/d/CTA-MC/DL0/*.simtel.gz"
-      hillas_h5: "/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5"
+      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
       # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
     test_sample:
-      mask_sim: "/mnt/d/CTA-MC/DL0/*.simtel.gz"
-      hillas_h5: "/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5"
+      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
       # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
 
 telescopes: [1, 2, 3, 4, 5, 6]
@@ -28,7 +30,7 @@ LST:
     keep_isolated_pixels: true
     min_number_picture_neighbors: 0
     picture_thresh: 8
-  camera_name: "LSTCam"
+  camera_name: 'LSTCam'
   min_pixel: 5
 
 MAGIC:
@@ -44,30 +46,37 @@ MAGIC:
   bad_pixel_config:
     pedestalLevel: 400
     destalLevelVariance: 4.5
-    pedestalType: "FromExtractorRndm"
-  camera_name: "MAGICCam"
+    pedestalType: 'FromExtractorRndm'
+  camera_name: 'MAGICCam'
   min_pixel: 5
+  position: # MAGIC telescope positions in m wrt. to the center of CTA simulations
+    5: [-27.24, -146.66, 50.0]
+    6: [-96.44, -96.77, 51.0]
 
+# --- TRAIN CLASSIFIER RF ------------------------------------------------------
 classifier_rf:
-  save_dir: "/mnt/d/CTA-MC/DL0/RFs/"
-  joblib_name: "classifier_rf.joblib"
-  fig_name: "classifier_rf_gammaness"
-  cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+  save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
+  joblib_name: 'classifier_rf.joblib'
+  fig_name: 'classifier_rf_gammaness'
+  cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
+  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands']
 
+# --- TRAIN DIRECTION RF -------------------------------------------------------
+direction_rf:
+  save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
+  joblib_name: 'direction_rf.joblib'
+  fig_name_theta2: 'Direction_RF_theta2'
+  fig_name_PSF_energy: 'Direction_RF_PSF_energy'
+  fig_name_PSF_offset: 'Direction_RF_PSF_offset'
+  cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
+  settings:
+    n_estimators: 100
+    min_samples_leaf: 10
+    n_jobs: 3
   features:
-    [
-      "slope",
-      "length",
-      "width",
-      "intensity",
-      "skewness",
-      "kurtosis",
-      "x",
-      "y",
-      "psi",
-      "num_islands",
-    ]
+    'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
+    'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
