@@ -1,3 +1,16 @@
+# Folders
 utils/__pycache__/
 __pycache__
 .vscode
+RFs
+
+# Standard files
+*.png
+*.pdf
+*.eps
+
+# MAGIC/CTA files
+*.root
+*.joblib
+*.gz
+*.h5
