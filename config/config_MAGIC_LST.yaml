@@ -21,7 +21,10 @@ data_files:
       hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
       # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
 
-telescopes: [1, 2, 3, 4, 5, 6]
+all_tels:
+  tel_ids: [1, 2, 3, 4, 5, 6]
+  tel_n: ['LST', 'MAGIC']
+  tel_n_short: ['LST', 'M']
 
 LST:
   tel_ids: [1, 2, 3, 4]
@@ -69,9 +72,6 @@ classifier_rf:
 direction_rf:
   save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
   joblib_name: 'direction_rf.joblib'
-  fig_name_theta2: 'Direction_RF_theta2'
-  fig_name_PSF_energy: 'Direction_RF_PSF_energy'
-  fig_name_PSF_offset: 'Direction_RF_PSF_offset'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
     n_estimators: 100
@@ -80,3 +80,20 @@ direction_rf:
   features:
     'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
     'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
+  fig_name_theta2: 'Direction_RF_theta2'
+  fig_name_PSF_energy: 'Direction_RF_PSF_energy'
+  fig_name_PSF_offset: 'Direction_RF_PSF_offset'
+  fig_size: [12, 12]
+
+# --- TRAIN ENERGY RF ----------------------------------------------------------
+energy_rf:
+  save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
+  joblib_name: 'energy_rf.joblib'
+  cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
+  settings:
+    n_estimators: 100
+    min_samples_leaf: 10
+    n_jobs: 3
+  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2']
+  fig_name: 'Energy_RF_migmatrix'
+  fig_size: [30, 10]

@@ -61,7 +61,7 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
         cfg = yaml.safe_load(f_)
 
     id_LST, id_MAGIC = cfg['LST']['tel_ids'], cfg['MAGIC']['tel_ids']
-    tels = list(set(cfg['telescopes']).intersection(id_LST+id_MAGIC))
+    tels = list(set(cfg['all_tels']['tel_ids']).intersection(id_LST+id_MAGIC))
     if(len(tels) < 2):
         print("Select at least two telescopes in the MAGIC + LST array")
         return

@@ -212,8 +212,6 @@ def train_direction_rf_stereo(config_file):
     # --- Evaluating the performance ---
     info_message('Evaluating the performance', prefix='DirRF')
     separation_df = compute_separation_angle(shower_data_test)
-    global s
-    s = separation_df
 
     # Energy-dependent resolution
     info_message('Estimating the energy-dependent resolution', prefix='DirRF')
@@ -290,7 +288,7 @@ def train_direction_rf_stereo(config_file):
     # === Plotting ===
     # ================
 
-    plt.figure(figsize=(12, 12))
+    plt.figure(figsize=tuple(cfg['direction_rf']['fig_size']))
     # plt.style.use('presentation')
 
     plt.xlabel(r'$\theta^2$, deg$^2$')
@@ -324,18 +322,17 @@ def train_direction_rf_stereo(config_file):
 
     plt.clf()
 
-    tel_labels = ['LST', 'MAGIC']
     plt.semilogx()
     plt.xlabel('Energy [TeV]')
     plt.ylabel(r'$\sigma_{68}$ [deg]')
     plt.ylim(0, 1.0)
     plt.plot(energy, energy_psf[0], linewidth=4, label='Total')
     for tel_id in tel_ids:
-        for tel_label in tel_labels:
+        for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
             if(tel_id in cfg[tel_label]['tel_ids']):
-                l_ = 'M' if(tel_label == "MAGIC") else tel_label
-                tel_n = '%s%d' % (l_, tel_id-cfg[tel_label]['tel_ids'][0]+1)
-                plt.plot(energy, energy_psf[tel_id], label=tel_n)
+                l_ = '%s%d' % (cfg['all_tels']['tel_n_short'][i],
+                               tel_id-cfg[tel_label]['tel_ids'][0]+1)
+                plt.plot(energy, energy_psf[tel_id], label=l_)
     plt.grid(linestyle=':')
     plt.legend()
     save_plt(n=cfg['direction_rf']['fig_name_PSF_energy'],
@@ -349,11 +346,11 @@ def train_direction_rf_stereo(config_file):
     plt.ylim(0, 0.5)
     plt.plot(offset, offset_psf[0], linewidth=4, label='Total')
     for tel_id in tel_ids:
-        for tel_label in tel_labels:
+        for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
             if(tel_id in cfg[tel_label]['tel_ids']):
-                l_ = 'M' if(tel_label == "MAGIC") else tel_label
-                tel_n = '%s%d' % (l_, tel_id-cfg[tel_label]['tel_ids'][0]+1)
-                plt.plot(offset, offset_psf[tel_id], label=tel_n)
+                l_ = '%s%d' % (cfg['all_tels']['tel_n_short'][i],
+                               tel_id-cfg[tel_label]['tel_ids'][0])
+                plt.plot(offset, offset_psf[tel_id], label=l_)
     plt.grid(linestyle=':')
     plt.legend()
     save_plt(n=cfg['direction_rf']['fig_name_PSF_offset'],
