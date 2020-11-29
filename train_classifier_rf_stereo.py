@@ -69,7 +69,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
 
     true_class = np.clip(data['true_event_class'], 0, 1)
     true_class = 1 - true_class
-    # !!! CHECK NOT WORKING - TO AVOID ERROR !!!
+    # !!! CHECK NOT WORKING - TO AVOID ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     try:
         report['metrics']['auc_roc'] = \
             sklearn.metrics.roc_auc_score(true_class, proba[:, 0])
@@ -123,11 +123,10 @@ def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
 
     return mc_weight_df, bkg_weight_df
 
+
 # =================
 # === Main code ===
 # =================
-
-
 def train_classifier_rf_stereo(config_file):
     # --- Reading the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label='classifier_rf')
@@ -152,7 +151,7 @@ def train_classifier_rf_stereo(config_file):
     bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
 
     # Dropping extra keys
-    # bkg_data.drop('mjd', axis=1, inplace=True)
+    # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
     mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
     # Computing event weights
@@ -188,7 +187,7 @@ def train_classifier_rf_stereo(config_file):
     bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
 
     # Dropping extra keys
-    # bkg_data.drop('mjd', axis=1, inplace=True)
+    # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
     mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
     # Merging the test sample
@@ -253,15 +252,11 @@ def train_classifier_rf_stereo(config_file):
         performance[tel_id] = evaluate_performance(
             shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns])
 
-    # !!! NO PLOTS !!!
-    # return
-
     # ================
     # === Plotting ===
     # ================
 
     # plt.style.use('presentation')
-
     plt.figure(figsize=(20, 10))
 
     grid_shape = (2, 7)
