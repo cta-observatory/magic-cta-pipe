@@ -1,14 +1,10 @@
 # coding: utf-8
 
 import argparse
-import yaml
-import datetime
 import time
 import pandas as pd
 import numpy as np
 import sklearn.metrics
-from astropy import units as u
-from matplotlib import colors
 import matplotlib.pyplot as plt
 
 from magicctapipe.utils.plot import *
@@ -17,8 +13,8 @@ from magicctapipe.utils.filedir import *
 from magicctapipe.train.event_processing import EventClassifierPandas
 
 PARSER = argparse.ArgumentParser(
-    description="This tools fits the event classification random forest on "
-    "the specified events files. For stereo data.",
+    description=("This tools fits the event classification random forest on "
+                 "the specified events files. For stereo data."),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
 PARSER.add_argument('-cfg', '--config_file', type=str, required=True,
@@ -63,16 +59,17 @@ def evaluate_performance(data, class0_name='event_class_0'):
     proba = data[class_names].values
     predicted_class = proba.argmax(axis=1)
 
-    report['metrics']['acc'] = \
-        sklearn.metrics.accuracy_score(data['true_event_class'],
-                                       predicted_class)
+    report['metrics']['acc'] = sklearn.metrics.accuracy_score(
+        data['true_event_class'], predicted_class
+    )
 
     true_class = np.clip(data['true_event_class'], 0, 1)
     true_class = 1 - true_class
     # !!! CHECK NOT WORKING - TO AVOID ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     try:
-        report['metrics']['auc_roc'] = \
-            sklearn.metrics.roc_auc_score(true_class, proba[:, 0])
+        report['metrics']['auc_roc'] = sklearn.metrics.roc_auc_score(
+            true_class, proba[:, 0]
+        )
     except Exception as e:
         print("ERROR: %s -> Setting report['metrics']['auc_roc'] = 0" % e)
         report['metrics']['auc_roc'] = 0
@@ -148,7 +145,7 @@ def train_classifier_rf_stereo(config_file):
     bkg_data['true_event_class'] = 1
 
     # Dropping data with the wrong altitude
-    bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
+    bkg_data = bkg_data.query(cfg['classifier_rf']['wrong_alt'])
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
@@ -167,7 +164,6 @@ def train_classifier_rf_stereo(config_file):
 
     # Merging the train sample
     shower_data_train = mc_data.append(bkg_data)
-    # print(shower_data_train.head())
     # --------------------
 
     # --- Test sample ---
@@ -184,7 +180,7 @@ def train_classifier_rf_stereo(config_file):
     bkg_data['true_event_class'] = 1
 
     # Dropping data with the wrong altitude
-    bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
+    bkg_data = bkg_data.query(cfg['classifier_rf']['wrong_alt'])
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
@@ -258,7 +254,6 @@ def train_classifier_rf_stereo(config_file):
     plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
 
     grid_shape = (2, len(tel_ids)+1)
-
 
     for tel_num, tel_id in enumerate(performance):
         plt.subplot2grid(grid_shape, (0, tel_num))

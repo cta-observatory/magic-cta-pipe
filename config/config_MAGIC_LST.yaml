@@ -61,6 +61,7 @@ classifier_rf:
   save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
   joblib_name: 'classifier_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
+  wrong_alt: 'tel_alt < 1.5707963267948966'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
