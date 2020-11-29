@@ -173,7 +173,7 @@ def train_energy_rf_stereo(config_file):
     # --- Test sample ---
     f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
     shower_data_test = load_dl1_data(f_)
-    tel_ids = get_tel_ids(shower_data_test)
+    tel_ids = get_tel_ids_dl1(shower_data_test)
 
     # --- Data preparation ---
     l_ = ['obs_id', 'event_id']

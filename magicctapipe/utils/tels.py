@@ -47,7 +47,7 @@ def get_tel_descriptions(name, cam, tel_ids):
     return tel_descriptions
 
 
-def get_tel_ids(df):
+def get_tel_ids_dl1(df):
     """Return telescope ids from loaded dl1 pandas dataframe
 
     Parameters
@@ -82,8 +82,8 @@ def convert_positions_dict(positions_dict):
     return positions_dict
 
 
-def get_tel_ids(all_tel_ids_LST=[1, 2, 3, 4], all_tel_ids_MAGIC=[5, 6],
-                tel_ids_sel=[1, 2, 3, 4, 5, 6]):
+def intersec_tel_ids(all_tel_ids_LST=[1, 2, 3, 4], all_tel_ids_MAGIC=[5, 6],
+                     tel_ids_sel=[1, 2, 3, 4, 5, 6]):
     """Get telescope ids from the intersection between the selected ids and the
     telescope ids of the telescope array
 

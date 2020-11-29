@@ -39,7 +39,7 @@ PARSER.add_argument('-cfg', '--config_file', type=str, required=True,
 
 def compute_separation_angle(shower_data_test):
     separation = dict()
-    tel_ids = get_tel_ids(shower_data_test)
+    tel_ids = get_tel_ids_dl1(shower_data_test)
 
     for tel_id in tel_ids:
         event_coord_true = SkyCoord(
@@ -133,7 +133,7 @@ def train_direction_rf_stereo(config_file):
     # --- Test sample ---
     f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
     shower_data_test = load_dl1_data(f_)
-    tel_ids = get_tel_ids(shower_data_test)
+    tel_ids = get_tel_ids_dl1(shower_data_test)
 
     # --- Data preparation ---
     l_ = ['obs_id', 'event_id']

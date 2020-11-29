@@ -59,7 +59,7 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
         cfg = yaml.safe_load(f_)
 
     tels_ids, tels_ids_LST, tels_ids_MAGIC = \
-        get_tel_ids(
+        intersec_tel_ids(
             all_tel_ids_LST=cfg['LST']['tel_ids'],
             all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids'],
             tel_ids_sel=cfg['all_tels']['tel_ids']
