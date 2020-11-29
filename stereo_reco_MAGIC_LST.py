@@ -93,7 +93,7 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
         # Init MAGIC cleaning
         if(consider_MAGIC):
             magic_clean = MAGIC_Cleaning.magic_clean(
-                camera=source.subarray.tel[id_MAGIC[0]].camera.geometry,
+                camera=source.subarray.tel[tels_ids_MAGIC[0]].camera.geometry,
                 configuration=cfg['MAGIC']['cleaning_config']
             )
             badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
@@ -136,7 +136,7 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
                 if(not tel_id in tels_ids):
                     continue
                 try:
-                    geom = source.subarray.tels_ids[tel_id].camera.geometry
+                    geom = source.subarray.tels[tel_id].camera.geometry
                     image = dl1.image  # == event_image
                     peakpos = dl1.peak_time  # == event_pulse_time
 
