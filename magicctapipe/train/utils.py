@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+
 
 def get_weights(mc_data, alt_edges, intensity_edges):
     mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
