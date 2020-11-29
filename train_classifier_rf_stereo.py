@@ -257,7 +257,7 @@ def train_classifier_rf_stereo(config_file):
     # ================
 
     # plt.style.use('presentation')
-    plt.figure(figsize=(20, 10))
+    plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
 
     grid_shape = (2, 7)
 

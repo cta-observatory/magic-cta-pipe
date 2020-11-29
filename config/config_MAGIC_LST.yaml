@@ -60,13 +60,14 @@ MAGIC:
 classifier_rf:
   save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
   joblib_name: 'classifier_rf.joblib'
-  fig_name: 'classifier_rf_gammaness'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
   features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands']
+  fig_name: 'classifier_rf_gammaness'
+  fig_size: [20, 10]
 
 # --- TRAIN DIRECTION RF -------------------------------------------------------
 direction_rf:
