@@ -151,6 +151,9 @@ def train_energy_rf_stereo(config_file):
     # Load config_file
     cfg = load_cfg_file_check(config_file=config_file, label='energy_rf')
 
+    # --- Check output directory ---
+    check_folder(cfg['classifier_rf']['save_dir'])
+
     # --- Train sample ---
     info_message("Loading train data...", prefix='EnergyRF')
     f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
@@ -238,11 +241,11 @@ def train_energy_rf_stereo(config_file):
                 n_ = '%s%d' % (cfg['all_tels']['tel_n_short'][i],
                                tel_id-cfg[tel_label]['tel_ids'][0]+1)
         plot_migmatrix(index=index, name=n_, matrix=tel_migmatrix[tel_id],
-                        grid_shape=grid_shape)
+                       grid_shape=grid_shape)
         index += 1
     # --- GLOBAL ---
     plot_migmatrix(index=index, name="All", matrix=migmatrix,
-                    grid_shape=grid_shape)
+                   grid_shape=grid_shape)
 
     plt.tight_layout()
     # plt.show()

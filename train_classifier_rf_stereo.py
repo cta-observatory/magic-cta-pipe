@@ -197,8 +197,6 @@ def train_classifier_rf_stereo(config_file):
     info_message('Preprosessing...', prefix='ClassifierRF')
 
     # --- Data preparation ---
-    global s
-    s = shower_data_train
     l_ = ['obs_id', 'event_id']
     shower_data_train['multiplicity'] = \
         shower_data_train['intensity'].groupby(level=l_).count()
@@ -259,7 +257,8 @@ def train_classifier_rf_stereo(config_file):
     # plt.style.use('presentation')
     plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
 
-    grid_shape = (2, 7)
+    grid_shape = (2, len(tel_ids)+1)
+
 
     for tel_num, tel_id in enumerate(performance):
         plt.subplot2grid(grid_shape, (0, tel_num))

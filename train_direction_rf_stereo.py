@@ -103,6 +103,9 @@ def train_direction_rf_stereo(config_file):
     # Load config_file
     cfg = load_cfg_file_check(config_file=config_file, label='direction_rf')
 
+    # --- Check output directory ---
+    check_folder(cfg['classifier_rf']['save_dir'])
+
     # --- MAGIC description ---
     # magic_optics = OpticsDescription.from_name('MAGIC')
     # magic_cam = CameraGeometry.from_name('MAGICCam')
@@ -294,8 +297,9 @@ def train_direction_rf_stereo(config_file):
     plt.xlabel(r'$\theta^2$, deg$^2$')
 
     # for tel_id in [0, 1, 2]:
-    for tel_id in [0]+tel_ids:
-        plt.subplot2grid((len([0]+tel_ids), 2), (tel_id, 0))
+    grid_shape = (len(tel_ids)+1, 2)
+    for index, tel_id in enumerate([0]+tel_ids):
+        plt.subplot2grid(grid_shape, (index, 0))
         plt.title(f'Tel {tel_id}')
         plt.xlabel(r'$\theta^2$, deg$^2$')
         # plt.semilogy()
@@ -305,7 +309,7 @@ def train_direction_rf_stereo(config_file):
                  range=(0, 0.5), density=True, histtype='step', color='C0')
         plt.grid(linestyle=':')
 
-        plt.subplot2grid((len([0]+tel_ids), 2), (tel_id, 1))
+        plt.subplot2grid(grid_shape, (index, 1))
         plt.xlabel(r'$\theta$, deg')
         plt.xlim(0, 2.0)
         plt.hist(separation_df[f'sep_{tel_id}'], bins=400, range=(0, 5),
