@@ -84,7 +84,8 @@ def compute_separation_angle(shower_data_test):
         df = pd.DataFrame(
             data={f'sep_{tel_id:d}': separation[tel_id]},
             index=shower_data_test.loc[
-                (slice(None), slice(None), tel_id), 'true_az'].index)
+                (slice(None), slice(None), tel_id), 'true_az'].index
+        )
         separation_df = separation_df.join(df)
 
     separation_df = separation_df.join(shower_data_test)
@@ -105,44 +106,6 @@ def train_direction_rf_stereo(config_file):
 
     # --- Check output directory ---
     check_folder(cfg['classifier_rf']['save_dir'])
-
-    # --- MAGIC description ---
-    # magic_optics = OpticsDescription.from_name('MAGIC')
-    # magic_cam = CameraGeometry.from_name('MAGICCam')
-    # magic_tel_description = TelescopeDescription(name='MAGIC',
-    #                                              tel_type='MAGIC',
-    #                                              optics=magic_optics,
-    #                                              camera=magic_cam)
-    # magic_tel_descriptions = {
-    #     cfg['MAGIC']['tel_ids'][0]: magic_tel_description,
-    #     cfg['MAGIC']['tel_ids'][1]: magic_tel_description
-    # }
-    # !!! MAGIC sub-array !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # magic_subarray = SubarrayDescription(
-    #     name='MAGIC',
-    #     tel_positions=convert_positions_dict(cfg['MAGIC']['positions']),
-    #     tel_descriptions=magic_tel_descriptions
-    # )
-
-    # --- LST description ---
-    # lst_optics = OpticsDescription.from_name('LST')
-    # lst_cam = CameraGeometry.from_name('LSTCam')
-    # lst_tel_description = TelescopeDescription(name='LST',
-    #                                            tel_type='LST',
-    #                                            optics=lst_optics,
-    #                                            camera=lst_cam)
-    # lst_tel_descriptions = {
-    #     cfg['LST']['tel_ids'][0]: lst_tel_description,
-    #     cfg['LST']['tel_ids'][1]: lst_tel_description,
-    #     cfg['LST']['tel_ids'][2]: lst_tel_description,
-    #     cfg['LST']['tel_ids'][3]: lst_tel_description
-    # }
-    # !!! LST sub-array !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # lst_subarray = SubarrayDescription(
-    #     name='LST',
-    #     tel_positions=convert_positions_dict(cfg['LST']['positions']),
-    #     tel_descriptions=lst_tel_descriptions
-    # )
 
     # --- MAGIC - LST description ---
     array_tel_descriptions = {

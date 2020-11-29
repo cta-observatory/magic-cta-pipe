@@ -23,6 +23,7 @@ from ctapipe.visualization import ArrayDisplay
 from magicctapipe.utils import MAGIC_Badpixels
 from magicctapipe.utils import MAGIC_Cleaning
 from magicctapipe.utils.utils import *
+from magicctapipe.utils.tels import *
 from magicctapipe.reco.stereo import *
 from magicctapipe.reco.image import *
 
@@ -60,13 +61,14 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
     with open(config_file, 'r') as f_:
         cfg = yaml.safe_load(f_)
 
-    id_LST, id_MAGIC = cfg['LST']['tel_ids'], cfg['MAGIC']['tel_ids']
-    tels = list(set(cfg['all_tels']['tel_ids']).intersection(id_LST+id_MAGIC))
-    if(len(tels) < 2):
-        print("Select at least two telescopes in the MAGIC + LST array")
-        return
-    consider_LST = any([t_ in id_LST for t_ in tels])
-    consider_MAGIC = any([t_ in id_MAGIC for t_ in tels])
+    tels_ids, tels_ids_LST, tels_ids_MAGIC = \
+        get_tel_ids(
+            all_tel_ids_LST=cfg['LST']['tel_ids'],
+            all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids'],
+            tel_ids_sel=cfg['all_tels']['tel_ids']
+        )
+    consider_LST = len(tels_ids_LST) > 0
+    consider_MAGIC = len(tels_ids_MAGIC) > 0
 
     file_list = glob.glob(cfg['data_files']['mc']['train_sample']['mask_sim'])
 
@@ -110,8 +112,9 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
             elif(event.count % 10 == 0):
                 print("Event %d" % event.count)
 
-            # Process only if I have at least two tels of the selected array
-            sel_tels = list(set(event.r0.tels_with_data).intersection(tels))
+            # Process only if I have at least two tels_ids of the selected array
+            sel_tels = \
+                list(set(event.r0.tels_with_data).intersection(tels_ids))
             if(len(sel_tels) < 2):
                 continue
 
@@ -130,10 +133,10 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
             # Loop on triggered telescopes
             for tel_id, dl1 in event.dl1.tel.items():
                 # Exclude telescopes not selected
-                if(not tel_id in tels):
+                if(not tel_id in tels_ids):
                     continue
                 try:
-                    geom = source.subarray.tels[tel_id].camera.geometry
+                    geom = source.subarray.tels_ids[tel_id].camera.geometry
                     image = dl1.image  # == event_image
                     peakpos = dl1.peak_time  # == event_pulse_time
 
