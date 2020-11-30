@@ -72,7 +72,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
             true_class, proba[:, 0]
         )
     except Exception as e:
-        print("ERROR: %s -> Setting report['metrics']['auc_roc'] = 0" % e)
+        print(f"ERROR: {e} -> Setting report['metrics']['auc_roc'] = 0")
         report['metrics']['auc_roc'] = 0
 
     return report
