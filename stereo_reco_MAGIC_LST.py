@@ -22,6 +22,7 @@ from ctapipe.visualization import ArrayDisplay
 
 from magicctapipe.utils import MAGIC_Badpixels
 from magicctapipe.utils import MAGIC_Cleaning
+from magicctapipe.utils.filedir import *
 from magicctapipe.utils.utils import *
 from magicctapipe.utils.tels import *
 from magicctapipe.reco.stereo import *
@@ -55,8 +56,7 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
     display : bool, optional
         display plots, by default False
     """
-    with open(config_file, 'r') as f_:
-        cfg = yaml.safe_load(f_)
+    cfg = load_cfg_file(config_file)
 
     tel_ids, tel_ids_LST, tel_ids_MAGIC = \
         intersec_tel_ids(
@@ -248,6 +248,9 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
                 )
         # --- END LOOP event in source ---
     # --- END LOOP file in file_list ---
+    # write_mc_header(source)
+    # write.write('mc_header', source.mc_header)
+
     writer.close()
     return
 
