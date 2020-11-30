@@ -15,3 +15,9 @@ A brief description:
 7. `add_orig_mc_tree.py`: adds the "original MC" tree info to the MC events tree processed earlier.
 8. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
 9. `make_event_lists.py`: produces the FITS event lists with application of the cuts.
+
+To start from MAGIC+LST simtel files:
+- `stereo_reco_MAGIC_LST.py`
+- `train_classifier_rf_stereo.py`
+- `train_direction_rf_stereo.py`
+- `train_energy_rf_stereo.py`
