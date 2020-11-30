@@ -106,9 +106,6 @@ def intersec_tel_ids(all_tel_ids_LST=[1, 2, 3, 4], all_tel_ids_MAGIC=[5, 6],
     """
     sum_ids = all_tel_ids_LST + all_tel_ids_MAGIC
     tels_ids = list(set(tel_ids_sel).intersection(sum_ids))
-    if(len(tels_ids) < 2):
-        print("Select at least two telescopes in the MAGIC + LST array")
-        sys.exit()
     tels_ids_LST = list(set(tels_ids).intersection(all_tel_ids_LST))
     tels_ids_MAGIC = list(set(tels_ids).intersection(all_tel_ids_MAGIC))
     print("Selected tels:", tels_ids)

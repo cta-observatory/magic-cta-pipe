@@ -64,6 +64,9 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
             all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids'],
             tel_ids_sel=cfg['all_tels']['tel_ids']
         )
+    if(len(tels_ids) < 2):
+        print("Select at least two telescopes in the MAGIC + LST array")
+        return
     consider_LST = len(tels_ids_LST) > 0
     consider_MAGIC = len(tels_ids_MAGIC) > 0
 
