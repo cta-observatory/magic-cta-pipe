@@ -99,16 +99,16 @@ def intersec_tel_ids(all_tel_ids_LST=[1, 2, 3, 4], all_tel_ids_MAGIC=[5, 6],
     Returns
     -------
     tuple
-        - tels_ids: intersection with tel_ids_sel and the sum between 
+        - tel_ids: intersection with tel_ids_sel and the sum between 
             all_tel_ids_LST and all_tel_ids_MAGIC
-        - tels_ids_LST: LST telescope ids in tel_ids
-        - tels_ids_MAGIC: MAGIC telescope ids in tel_ids
+        - tel_ids_LST: LST telescope ids in tel_ids
+        - tel_ids_MAGIC: MAGIC telescope ids in tel_ids
     """
     sum_ids = all_tel_ids_LST + all_tel_ids_MAGIC
-    tels_ids = list(set(tel_ids_sel).intersection(sum_ids))
-    tels_ids_LST = list(set(tels_ids).intersection(all_tel_ids_LST))
-    tels_ids_MAGIC = list(set(tels_ids).intersection(all_tel_ids_MAGIC))
-    print("Selected tels:", tels_ids)
-    print("LST tels:", tels_ids_LST)
-    print("MAGIC tels:", tels_ids_MAGIC)
-    return tels_ids, tels_ids_LST, tels_ids_MAGIC
+    tel_ids = list(set(tel_ids_sel).intersection(sum_ids))
+    tel_ids_LST = list(set(tel_ids).intersection(all_tel_ids_LST))
+    tel_ids_MAGIC = list(set(tel_ids).intersection(all_tel_ids_MAGIC))
+    print("Selected tels:", tel_ids)
+    print("LST tels:", tel_ids_LST)
+    print("MAGIC tels:", tel_ids_MAGIC)
+    return tel_ids, tel_ids_LST, tel_ids_MAGIC

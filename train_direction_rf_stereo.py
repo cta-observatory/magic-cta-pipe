@@ -107,14 +107,6 @@ def train_direction_rf_stereo(config_file):
     # --- Check output directory ---
     check_folder(cfg['classifier_rf']['save_dir'])
 
-    # --- MAGIC - LST description ---
-    array_tel_descriptions = {
-        **get_tel_descriptions(
-            name='LST', cam='LSTCam', tel_ids=cfg['LST']['tel_ids']),
-        **get_tel_descriptions(
-            name='MAGIC', cam='MAGICCam', tel_ids=cfg['MAGIC']['tel_ids'])
-    }
-
     # --- Train sample ---
     info_message("Loading train data...", prefix='DirRF')
     f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
@@ -133,7 +125,13 @@ def train_direction_rf_stereo(config_file):
     # --- Test sample ---
     f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
     shower_data_test = load_dl1_data(f_)
-    tel_ids = get_tel_ids_dl1(shower_data_test)
+    # tel_ids = get_tel_ids_dl1(shower_data_test)
+    tel_ids, tel_ids_LST, tel_ids_MAGIC = \
+        intersec_tel_ids(
+            tel_ids_sel=get_tel_ids_dl1(shower_data_test),
+            all_tel_ids_LST=cfg['LST']['tel_ids'],
+            all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids']
+        )
 
     # --- Data preparation ---
     l_ = ['obs_id', 'event_id']
@@ -145,6 +143,27 @@ def train_direction_rf_stereo(config_file):
     # Applying the cuts
     shower_data_train = shower_data_train.query(cfg['direction_rf']['cuts'])
     shower_data_test = shower_data_test.query(cfg['direction_rf']['cuts'])
+
+    # --- MAGIC - LST description ---
+    array_tel_descriptions = {}
+    if(len(tel_ids_LST) > 0):
+        array_tel_descriptions = {
+            **array_tel_descriptions,
+            **get_tel_descriptions(
+                name='LST', cam='LSTCam', tel_ids=cfg['LST']['tel_ids'])
+        }
+    if(len(tel_ids_MAGIC) > 0):
+        array_tel_descriptions = {
+            **array_tel_descriptions,
+            **get_tel_descriptions(
+                name='MAGIC', cam='MAGICCam', tel_ids=cfg['MAGIC']['tel_ids'])
+        }
+    # array_tel_descriptions = {
+    #     **get_tel_descriptions(
+    #         name='LST', cam='LSTCam', tel_ids=cfg['LST']['tel_ids']),
+    #     **get_tel_descriptions(
+    #         name='MAGIC', cam='MAGICCam', tel_ids=cfg['MAGIC']['tel_ids'])
+    # }
 
     # --- Training the direction RF ---
     info_message('Training the RF\n', prefix='DirRF')

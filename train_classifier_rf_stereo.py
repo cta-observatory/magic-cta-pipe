@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 
 from magicctapipe.utils.plot import *
 from magicctapipe.utils.utils import *
+from magicctapipe.utils.tels import *
 from magicctapipe.utils.filedir import *
 from magicctapipe.train.event_processing import EventClassifierPandas
 
@@ -235,10 +236,18 @@ def train_classifier_rf_stereo(config_file):
     idx = pd.IndexSlice
 
     performance = dict()
-    tel_ids = shower_data_test.index.levels[2]
+    # tel_ids = shower_data_test.index.levels[2]
 
+    tel_ids, tel_ids_LST, tel_ids_MAGIC = \
+        intersec_tel_ids(
+            tel_ids_sel=get_tel_ids_dl1(shower_data_test),
+            all_tel_ids_LST=cfg['LST']['tel_ids'],
+            all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids']
+        )
+
+    # !!! CHECK !!!
     performance[0] = evaluate_performance(
-        shower_data_test.loc[idx[:, :, 1], shower_data_test.columns],
+        shower_data_test.loc[idx[:, :, tel_ids[0]], shower_data_test.columns],
         class0_name='event_class_0_mean'
     )
 
