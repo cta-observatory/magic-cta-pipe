@@ -248,10 +248,13 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
                 )
         # --- END LOOP event in source ---
     # --- END LOOP file in file_list ---
-    # write_mc_header(source)
-    # write.write('mc_header', source.mc_header)
 
+    # Write MC HEADER
+    writer.write('mc_header', source.mc_header)
+
+    # Close writer
     writer.close()
+
     return
 
 
