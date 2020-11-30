@@ -5,6 +5,30 @@ import datetime
 import pandas as pd
 
 
+def load_cfg_file(config_file):
+    """Load the configuration file (yaml format)
+
+    Parameters
+    ----------
+    config_file : str
+        configuration file, yaml format
+
+    Returns
+    -------
+    dict
+        loaded configurations
+    """
+    e_ = ("ERROR: can not load the configuration file %s\n"
+          "Please check that the file exists and is of YAML or JSON format\n"
+          "Exiting")
+    try:
+        cfg = yaml.safe_load(open(config_file, "r"))
+    except IOError:
+        print(e_ % config_file)
+        sys.exit()
+    return cfg
+
+
 def load_cfg_file_check(config_file, label):
     """Load the configuration file (yaml format) and checks that the label
     section is present in the given file, if not it exits
@@ -26,11 +50,7 @@ def load_cfg_file_check(config_file, label):
           "Exiting")
     l_ = ("ERROR: the configuration file is missing the %s section.\n"
           "Exiting")
-    try:
-        cfg = yaml.safe_load(open(config_file, "r"))
-    except IOError:
-        print(e_ % config_file)
-        sys.exit()
+    cfg = load_cfg_file(config_file)
     if label not in cfg:
         print(l_ % label)
         sys.exit()
