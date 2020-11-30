@@ -244,9 +244,10 @@ def train_energy_rf_stereo(config_file):
     for index, tel_id in enumerate(tel_ids):
         for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
             if(tel_id in cfg[tel_label]['tel_ids']):
-                n_ = '%s%d' % (cfg['all_tels']['tel_n_short'][i],
-                               tel_id-cfg[tel_label]['tel_ids'][0]+1)
-        plot_migmatrix(index=index, name=n_, matrix=tel_migmatrix[tel_id],
+                n = cfg['all_tels']['tel_n_short'][i]
+                j = tel_id-cfg[tel_label]['tel_ids'][0]+1
+                name = f'{n}{j}'
+        plot_migmatrix(index=index, name=name, matrix=tel_migmatrix[tel_id],
                        grid_shape=grid_shape)
         index += 1
     # --- GLOBAL ---
