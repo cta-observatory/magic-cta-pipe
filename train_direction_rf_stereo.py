@@ -145,25 +145,10 @@ def train_direction_rf_stereo(config_file):
     shower_data_test = shower_data_test.query(cfg['direction_rf']['cuts'])
 
     # --- MAGIC - LST description ---
-    array_tel_descriptions = {}
-    if(len(tel_ids_LST) > 0):
-        array_tel_descriptions = {
-            **array_tel_descriptions,
-            **get_tel_descriptions(
-                name='LST', cam='LSTCam', tel_ids=cfg['LST']['tel_ids'])
-        }
-    if(len(tel_ids_MAGIC) > 0):
-        array_tel_descriptions = {
-            **array_tel_descriptions,
-            **get_tel_descriptions(
-                name='MAGIC', cam='MAGICCam', tel_ids=cfg['MAGIC']['tel_ids'])
-        }
-    # array_tel_descriptions = {
-    #     **get_tel_descriptions(
-    #         name='LST', cam='LSTCam', tel_ids=cfg['LST']['tel_ids']),
-    #     **get_tel_descriptions(
-    #         name='MAGIC', cam='MAGICCam', tel_ids=cfg['MAGIC']['tel_ids'])
-    # }
+    array_tel_descriptions = get_array_tel_descriptions(
+        tel_ids_LST=tel_ids_LST,
+        tel_ids_MAGIC=tel_ids_MAGIC
+    )
 
     # --- Training the direction RF ---
     info_message('Training the RF\n', prefix='DirRF')
@@ -316,8 +301,9 @@ def train_direction_rf_stereo(config_file):
     for tel_id in tel_ids:
         for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
             if(tel_id in cfg[tel_label]['tel_ids']):
-                l_ = '%s%d' % (cfg['all_tels']['tel_n_short'][i],
-                               tel_id-cfg[tel_label]['tel_ids'][0]+1)
+                n = cfg['all_tels']['tel_n_short'][i]
+                j = tel_id-cfg[tel_label]['tel_ids'][0]+1
+                l_ = f'{n}{j}'
                 plt.plot(energy, energy_psf[tel_id], label=l_)
     plt.grid(linestyle=':')
     plt.legend()
@@ -334,8 +320,9 @@ def train_direction_rf_stereo(config_file):
     for tel_id in tel_ids:
         for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
             if(tel_id in cfg[tel_label]['tel_ids']):
-                l_ = '%s%d' % (cfg['all_tels']['tel_n_short'][i],
-                               tel_id-cfg[tel_label]['tel_ids'][0])
+                n = cfg['all_tels']['tel_n_short'][i]
+                j = tel_id-cfg[tel_label]['tel_ids'][0]+1
+                l_ = f'{n}{j}'
                 plt.plot(offset, offset_psf[tel_id], label=l_)
     plt.grid(linestyle=':')
     plt.legend()
