@@ -47,6 +47,37 @@ def get_tel_descriptions(name, cam, tel_ids):
     return tel_descriptions
 
 
+def get_array_tel_descriptions(tel_ids_LST, tel_ids_MAGIC):
+    """Get telescope descriptions for the array
+
+    Parameters
+    ----------
+    tel_ids_LST : list
+        list of selected LST tel_ids
+    tel_ids_MAGIC : list
+        list of selected MAGIC tel_ids
+
+    Returns
+    -------
+    dict
+        array_tel_descriptions
+    """
+    array_tel_descriptions = {}
+    if(len(tel_ids_LST) > 0):
+        array_tel_descriptions = {
+            **array_tel_descriptions,
+            **get_tel_descriptions(
+                name='LST', cam='LSTCam', tel_ids=tel_ids_LST)
+        }
+    if(len(tel_ids_MAGIC) > 0):
+        array_tel_descriptions = {
+            **array_tel_descriptions,
+            **get_tel_descriptions(
+                name='MAGIC', cam='MAGICCam', tel_ids=tel_ids_MAGIC)
+        }
+    return array_tel_descriptions
+
+
 def get_tel_ids_dl1(df):
     """Return telescope ids from loaded dl1 pandas dataframe
 
