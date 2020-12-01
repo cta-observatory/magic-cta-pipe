@@ -41,15 +41,8 @@ def apply_rfs_stereo(config_file):
     info_message(f'Loading "{data_type}", sample "{sample}"',
                  prefix='ApplyRF')
 
-    shower_data = pd.read_hdf(
-        cfg['data_files'][data_type][sample]['hillas_h5'],
-        key='dl1/hillas_params'
-    )
-
-    # Sorting the data frame for convenience
-    shower_data = shower_data.reset_index()
-    shower_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    shower_data.sort_index(inplace=True)
+    shower_data = load_dl1_data(
+        file=cfg['data_files'][data_type][sample]['hillas_h5'])
 
     # Dropping data with the wrong altitude
     shower_data = shower_data.query(cfg['global']['wrong_alt'])
