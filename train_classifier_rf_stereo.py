@@ -94,8 +94,8 @@ def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
 
     # Treating the out-of-range events
     mc_alt_bins[mc_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
-    mc_intensity_bins[mc_intensity_bins == len(
-        intensity_edges) - 1] = len(intensity_edges) - 2
+    mc_intensity_bins[mc_intensity_bins == len(intensity_edges) - 1] = \
+        len(intensity_edges) - 2
 
     mc_weights = 1 / mc_hist[mc_alt_bins, mc_intensity_bins]
     mc_weights *= availability_hist[mc_alt_bins, mc_intensity_bins]
