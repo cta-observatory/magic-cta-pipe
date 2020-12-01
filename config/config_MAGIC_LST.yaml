@@ -6,21 +6,21 @@ data_files:
     train_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
+      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
     test_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
+      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
 
   data:
     train_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
+      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
     test_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      # hillas_h5: "/mnt/d/CTA-MC/MAGIC/MC_test_hillas.h5"
+      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
 
 # --- TELESCOPES ---------------------------------------------------------------
 all_tels:
@@ -57,6 +57,11 @@ MAGIC:
   position: # MAGIC telescope positions in m wrt. to the center of CTA simulations
     5: [-27.24, -146.66, 50.0]
     6: [-96.44, -96.77, 51.0]
+  
+# --- GLOBAL -------------------------------------------------------------------
+global:
+  wrong_alt: 'tel_alt < 1.5707963267948966'
+
 
 # --- TRAIN CLASSIFIER RF ------------------------------------------------------
 classifier_rf:
