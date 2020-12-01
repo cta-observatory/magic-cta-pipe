@@ -19,7 +19,7 @@ def load_cfg_file(config_file):
         loaded configurations
     """
     e_ = ("ERROR: can not load the configuration file %s\n"
-          "Please check that the file exists and is of YAML or JSON format\n"
+          "Please check that the file exists and is of YAML format\n"
           "Exiting")
     try:
         cfg = yaml.safe_load(open(config_file, "r"))
@@ -46,7 +46,7 @@ def load_cfg_file_check(config_file, label):
         loaded configurations
     """
     e_ = ("ERROR: can not load the configuration file %s\n"
-          "Please check that the file exists and is of YAML or JSON format\n"
+          "Please check that the file exists and is of YAML format\n"
           "Exiting")
     l_ = ("ERROR: the configuration file is missing the %s section.\n"
           "Exiting")
