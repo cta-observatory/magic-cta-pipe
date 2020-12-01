@@ -73,7 +73,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
         )
     except Exception as e:
         print(f"ERROR: {e} -> Setting report['metrics']['auc_roc'] = 0")
-        report['metrics']['auc_roc'] = 0
+        report['metrics']['auc_roc'] = 0.5
 
     return report
 
@@ -259,7 +259,6 @@ def train_classifier_rf_stereo(config_file):
     # === Plotting ===
     # ================
 
-    # plt.style.use('presentation')
     plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
 
     grid_shape = (2, len(tel_ids)+1)
