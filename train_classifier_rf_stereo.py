@@ -146,7 +146,7 @@ def train_classifier_rf_stereo(config_file):
     bkg_data['true_event_class'] = 1
 
     # Dropping data with the wrong altitude
-    bkg_data = bkg_data.query(cfg['classifier_rf']['wrong_alt'])
+    bkg_data = bkg_data.query(cfg['global']['wrong_alt'])
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
@@ -181,7 +181,7 @@ def train_classifier_rf_stereo(config_file):
     bkg_data['true_event_class'] = 1
 
     # Dropping data with the wrong altitude
-    bkg_data = bkg_data.query(cfg['classifier_rf']['wrong_alt'])
+    bkg_data = bkg_data.query(cfg['global']['wrong_alt'])
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
