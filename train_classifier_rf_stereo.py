@@ -150,7 +150,7 @@ def train_classifier_rf_stereo(config_file):
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
-    mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
+    mc_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
 
     # Computing event weights
     sin_edges = np.linspace(0, 1, num=51)
@@ -185,9 +185,9 @@ def train_classifier_rf_stereo(config_file):
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
-    mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
+    mc_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
     # !!! CHECK !!!
-    bkg_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
+    bkg_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
 
     # Merging the test sample
     shower_data_test = mc_data.append(bkg_data)

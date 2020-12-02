@@ -1,26 +1,25 @@
+--- # --- DATA FILES ---------------------------------------------------------------
 # MAGIC-LST configuration file example
 
-# --- DATA FILES ---------------------------------------------------------------
 data_files:
   mc:
     train_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
+      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point/Reco.h5'
     test_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
-
+      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-diffuse/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Reco.h5'
   data:
     train_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
+      mask_sim: '/mnt/d/CTA-MC/DL0/proton/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Hillas_Stereo.h5'
+      # reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5'
     test_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5' 
+      mask_sim: '/mnt/d/CTA-MC/DL0/proton/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Hillas_Stereo.h5'
+      # reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5'
 
 # --- TELESCOPES ---------------------------------------------------------------
 all_tels:
@@ -57,18 +56,16 @@ MAGIC:
   position: # MAGIC telescope positions in m wrt. to the center of CTA simulations
     5: [-27.24, -146.66, 50.0]
     6: [-96.44, -96.77, 51.0]
-  
+
 # --- GLOBAL -------------------------------------------------------------------
 global:
   wrong_alt: 'tel_alt < 1.5707963267948966'
 
-
 # --- TRAIN CLASSIFIER RF ------------------------------------------------------
 classifier_rf:
-  save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
+  save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'classifier_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
-  wrong_alt: 'tel_alt < 1.5707963267948966'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
@@ -76,10 +73,11 @@ classifier_rf:
   features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands']
   fig_name: 'classifier_rf_gammaness'
   fig_size: [20, 10]
+  extra_keys: ['true_energy', 'true_alt', 'true_az']
 
 # --- TRAIN DIRECTION RF -------------------------------------------------------
 direction_rf:
-  save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
+  save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'direction_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
@@ -96,7 +94,7 @@ direction_rf:
 
 # --- TRAIN ENERGY RF ----------------------------------------------------------
 energy_rf:
-  save_dir: '/mnt/d/CTA-MC/DL0/RFs/'
+  save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'energy_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
