@@ -66,14 +66,10 @@ def evaluate_performance(data, class0_name='event_class_0'):
 
     true_class = np.clip(data['true_event_class'], 0, 1)
     true_class = 1 - true_class
-    # !!! CHECK NOT WORKING - TO AVOID ERROR !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    try:
-        report['metrics']['auc_roc'] = sklearn.metrics.roc_auc_score(
-            true_class, proba[:, 0]
-        )
-    except Exception as e:
-        print(f"ERROR: {e} -> Setting report['metrics']['auc_roc'] = 0.5")
-        report['metrics']['auc_roc'] = 0.5
+
+    report['metrics']['auc_roc'] = sklearn.metrics.roc_auc_score(
+        true_class, proba[:, 0]
+    )
 
     return report
 
@@ -261,7 +257,7 @@ def train_classifier_rf_stereo(config_file):
     # ================
 
     plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
-    labels = ['Gammaness','Hadroness']
+    labels = ['Gammaness', 'Hadroness']
 
     grid_shape = (2, len(tel_ids)+1)
 
@@ -285,7 +281,7 @@ def train_classifier_rf_stereo(config_file):
                      where='post',
                      color=f'C{class_i}',
                      label=labels[event_class])
-                    #  label=f'Class {event_class}')
+            #  label=f'Class {event_class}')
 
             plt.step(gammaness[event_class]['XEdges'][1:],
                      gammaness[event_class]['Hist'],
@@ -333,7 +329,7 @@ def train_classifier_rf_stereo(config_file):
                      where='post',
                      color=f'C{class_i}',
                      label=labels[event_class])
-                    #  label=f'Class {event_class}')
+            #  label=f'Class {event_class}')
 
             plt.step(gammaness[event_class]['XEdges'][1:],
                      gammaness[event_class]['Cumsum'],
