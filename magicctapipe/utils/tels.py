@@ -143,3 +143,27 @@ def intersec_tel_ids(all_tel_ids_LST=[1, 2, 3, 4], all_tel_ids_MAGIC=[5, 6],
     print("LST tels:", tel_ids_LST)
     print("MAGIC tels:", tel_ids_MAGIC)
     return tel_ids, tel_ids_LST, tel_ids_MAGIC
+
+
+def get_tel_name(tel_id, cfg):
+    """Get tel name from tel_id
+
+    Parameters
+    ----------
+    tel_id : int
+        telescope id
+    cfg : dict
+        configuration dictionary loaded from config file
+
+    Returns
+    -------
+    str
+        telescope name
+    """
+    for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
+        if(tel_id in cfg[tel_label]['tel_ids']):
+            n = cfg['all_tels']['tel_n_short'][i]
+            j = tel_id-cfg[tel_label]['tel_ids'][0]+1
+            name = f'{n}{j}'
+            break
+    return name
