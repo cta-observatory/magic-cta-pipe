@@ -64,8 +64,33 @@ def check_folder(folder):
         os.makedirs(folder)
 
 
-def load_dl1_data(file):
-    """Load hillas parameters from dl1 file, h5 format
+def load_dl1_data(file, labels=['hillas_params']):
+    """Load `dl1/{label}` from dl1 file, h5 format
+
+    Parameters
+    ----------
+    file : str
+        file name
+    labels : list, optional
+        list of dl1 labels, by default ['hillas_params']
+
+    Returns
+    -------
+    pandas.core.frame.DataFrame
+        data
+    """
+    data = pd.DataFrame()
+    for label in labels:
+        data_ = pd.read_hdf(file, key=f'dl1/{label}')
+        data_.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+        data_.sort_index(inplace=True)
+        data = data.append(data_)
+    return data
+
+
+def load_dl1_data_stereo(file):
+    """Load `dl1/hillas_params` and `dl1/stereo_params` from dl1 file, 
+    h5 format
 
     Parameters
     ----------
@@ -77,9 +102,7 @@ def load_dl1_data(file):
     pandas.core.frame.DataFrame
         data
     """
-    data = pd.read_hdf(file, key='dl1/hillas_params')
-    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    data.sort_index(inplace=True)
+    data = load_dl1_data(file=file, labels=['hillas_params', 'stereo_params'])
     return data
 
 
