@@ -72,7 +72,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
             true_class, proba[:, 0]
         )
     except Exception as e:
-        print(f"ERROR: {e} -> Setting report['metrics']['auc_roc'] = 0")
+        print(f"ERROR: {e} -> Setting report['metrics']['auc_roc'] = 0.5")
         report['metrics']['auc_roc'] = 0.5
 
     return report
@@ -186,6 +186,8 @@ def train_classifier_rf_stereo(config_file):
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
     mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
+    # !!! CHECK !!!
+    bkg_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
     # Merging the test sample
     shower_data_test = mc_data.append(bkg_data)
@@ -244,7 +246,6 @@ def train_classifier_rf_stereo(config_file):
             all_tel_ids_LST=cfg['LST']['tel_ids'],
             all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids']
         )
-
     # !!! CHECK !!!
     performance[0] = evaluate_performance(
         shower_data_test.loc[idx[:, :, tel_ids[0]], shower_data_test.columns],
@@ -260,13 +261,19 @@ def train_classifier_rf_stereo(config_file):
     # ================
 
     plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
+    labels = ['Gammaness','Hadroness']
 
     grid_shape = (2, len(tel_ids)+1)
 
     for tel_num, tel_id in enumerate(performance):
         plt.subplot2grid(grid_shape, (0, tel_num))
-        plt.title(f'Tel {tel_id} estimation')
-        plt.xlabel('Class 0 probability')
+        if(tel_id == 0):
+            plt.title(f'Tel {tel_id} estimation')
+        else:
+            n_ = get_tel_name(tel_id=tel_id, cfg=cfg)
+            plt.title(f'{n_} estimation')
+        plt.xlabel('Gamma probability')
+        # plt.xlabel('Class 0 probability')
         plt.ylabel('Event density')
 
         gammaness = performance[tel_id]['gammaness']
@@ -277,7 +284,8 @@ def train_classifier_rf_stereo(config_file):
                      gammaness[event_class]['Hist'],
                      where='post',
                      color=f'C{class_i}',
-                     label=f'Class {event_class}')
+                     label=labels[event_class])
+                    #  label=f'Class {event_class}')
 
             plt.step(gammaness[event_class]['XEdges'][1:],
                      gammaness[event_class]['Hist'],
@@ -307,8 +315,13 @@ def train_classifier_rf_stereo(config_file):
     for tel_num, tel_id in enumerate(performance):
         plt.subplot2grid(grid_shape, (1, tel_num))
         plt.semilogy()
-        plt.title(f'Tel {tel_id} estimation')
-        plt.xlabel('Class 0 probability')
+        if(tel_id == 0):
+            plt.title(f'Tel {tel_id} estimation')
+        else:
+            n_ = get_tel_name(tel_id=tel_id, cfg=cfg)
+            plt.title(f'{n_} estimation')
+        plt.xlabel('Gamma probability')
+        # plt.xlabel('Class 0 probability')
         plt.ylabel('Cumulative probability')
         plt.ylim(1e-3, 1)
 
@@ -319,7 +332,8 @@ def train_classifier_rf_stereo(config_file):
                      gammaness[event_class]['Cumsum'],
                      where='post',
                      color=f'C{class_i}',
-                     label=f'Class {event_class}')
+                     label=labels[event_class])
+                    #  label=f'Class {event_class}')
 
             plt.step(gammaness[event_class]['XEdges'][1:],
                      gammaness[event_class]['Cumsum'],

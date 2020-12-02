@@ -44,8 +44,8 @@ PARSER.add_argument('-d', '--display', action='store_true', required=False,
                     help='Display plots')
 
 
-def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
-    """Stereo Reconstruction MAGIC + LST
+def call_stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
+    """Stereo Reconstruction MAGIC + LST, looping on all given data
 
     Parameters
     ----------
@@ -58,6 +58,37 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
     """
     cfg = load_cfg_file(config_file)
 
+    k1 = ['data', 'mc']
+    k2 = ['train_sample', 'test_sample']
+
+    for k1_ in k1:
+        for k2_ in k2:
+            stereo_reco_MAGIC_LST(
+                k1=k1_,
+                k2=k2_,
+                cfg=cfg,
+                max_events=max_events,
+                display=display
+            )
+
+
+def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
+    """Stereo Reconstruction MAGIC + LST
+
+    Parameters
+    ----------
+    k1 : str
+        first key
+    k2 : str
+        second key
+    cfg: dict
+        configurations loaded from configuration file
+    max_events : int, optional
+        max events, 0 for all, by default 0
+    display : bool, optional
+        display plots, by default False
+    """
+
     tel_ids, tel_ids_LST, tel_ids_MAGIC = \
         intersec_tel_ids(
             all_tel_ids_LST=cfg['LST']['tel_ids'],
@@ -67,15 +98,17 @@ def stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
     if(len(tel_ids) < 2):
         print("Select at least two telescopes in the MAGIC + LST array")
         return
+
     consider_LST = len(tel_ids_LST) > 0
     consider_MAGIC = len(tel_ids_MAGIC) > 0
 
-    file_list = glob.glob(cfg['data_files']['mc']['train_sample']['mask_sim'])
+    file_list = glob.glob(cfg['data_files'][k1][k2]['mask_sim'])
 
     # Output file
     # out_file = out_file_h5(in_file=file_list[0], li=3, hi=6)
-    out_file = cfg['data_files']['mc']['train_sample']['hillas_h5']
+    out_file = cfg['data_files'][k1][k2]['hillas_h5']
     print("Output file:\n%s" % out_file)
+    check_folder(os.path.dirname(out_file))
 
     writer = HDF5TableWriter(
         filename=out_file, group_name='dl1', overwrite=True
@@ -289,7 +322,7 @@ if __name__ == '__main__':
     args = PARSER.parse_args()
     kwargs = args.__dict__
     start_time = time.time()
-    stereo_reco_MAGIC_LST(
+    call_stereo_reco_MAGIC_LST(
         config_file=kwargs['config_file'],
         max_events=kwargs['max_events'],
         display=kwargs['display']
