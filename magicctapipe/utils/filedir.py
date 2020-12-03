@@ -147,8 +147,6 @@ def drop_keys(df, extra_keys):
     pandas.core.frame.DataFrame
         dataframe without extra keys
     """
-    print(type(df))
-    print(type(extra_keys))
     for extra_key in extra_keys:
         try:
             df.drop(extra_key, axis=1, inplace=True)
