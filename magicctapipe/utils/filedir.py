@@ -103,6 +103,7 @@ def load_dl1_data_stereo(file):
         data
     """
     data = load_dl1_data(file=file, labels=['hillas_params', 'stereo_params'])
+    data.drop(-1, level='tel_id', inplace=True)
     return data
 
 
@@ -128,3 +129,29 @@ def out_file_h5(in_file, li, hi):
     out = '%s.h5' % out.rstrip('.simtel.gz')
     out = os.path.join(os.path.dirname(in_file), out)
     return out
+
+
+def drop_keys(df, extra_keys):
+    """Drop extrakeys from pandas dataframe, without crashing if they are not
+    present in the dataframe
+
+    Parameters
+    ----------
+    df : pandas.core.frame.DataFrame
+        dataframe
+    extra_keys : list
+        list of keys to be dropped
+
+    Returns
+    -------
+    pandas.core.frame.DataFrame
+        dataframe without extra keys
+    """
+    print(type(df))
+    print(type(extra_keys))
+    for extra_key in extra_keys:
+        try:
+            df.drop(extra_key, axis=1, inplace=True)
+        except Exception as e:
+            print(f"ERROR in dropping extra key {extra_key}; {e}")
+    return df
