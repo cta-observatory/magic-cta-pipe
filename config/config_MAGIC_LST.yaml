@@ -1,6 +1,7 @@
---- # --- DATA FILES ---------------------------------------------------------------
 # MAGIC-LST configuration file example
 
+---
+# --- DATA FILES ---------------------------------------------------------------
 data_files:
   mc:
     train_sample:
