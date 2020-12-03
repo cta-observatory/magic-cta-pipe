@@ -131,11 +131,11 @@ def train_classifier_rf_stereo(config_file):
     # --- Train sample ---
     f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
     info_message('Loading MC train data...', prefix='ClassifierRF')
-    mc_data = load_dl1_data(f_)
+    mc_data = load_dl1_data_stereo(f_)
 
     f_ = cfg['data_files']['data']['train_sample']['hillas_h5']
     info_message('Loading "off" train data...', prefix='ClassifierRF')
-    bkg_data = load_dl1_data(f_)
+    bkg_data = load_dl1_data_stereo(f_)
 
     # True event classes
     mc_data['true_event_class'] = 0
@@ -146,7 +146,9 @@ def train_classifier_rf_stereo(config_file):
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
-    mc_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
+    mc_data = drop_keys(mc_data, cfg['classifier_rf']['extra_keys'])
+    # !!! CHECK !!!
+    bkg_data = drop_keys(bkg_data, cfg['classifier_rf']['extra_keys'])
 
     # Computing event weights
     sin_edges = np.linspace(0, 1, num=51)
@@ -166,11 +168,11 @@ def train_classifier_rf_stereo(config_file):
     # --- Test sample ---
     f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
     info_message('Loading MC test data...', prefix='ClassifierRF')
-    mc_data = load_dl1_data(f_)
+    mc_data = load_dl1_data_stereo(f_)
 
     f_ = cfg['data_files']['data']['test_sample']['hillas_h5']
     info_message('Loading "off" test data...', prefix='ClassifierRF')
-    bkg_data = load_dl1_data(f_)
+    bkg_data = load_dl1_data_stereo(f_)
 
     # True event classes
     mc_data['true_event_class'] = 0
@@ -181,9 +183,11 @@ def train_classifier_rf_stereo(config_file):
 
     # Dropping extra keys
     # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
-    mc_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
+    # mc_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
+    mc_data = drop_keys(mc_data, cfg['classifier_rf']['extra_keys'])
     # !!! CHECK !!!
-    bkg_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
+    bkg_data = drop_keys(bkg_data, cfg['classifier_rf']['extra_keys'])
+    # bkg_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
 
     # Merging the test sample
     shower_data_test = mc_data.append(bkg_data)
