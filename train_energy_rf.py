@@ -4,7 +4,6 @@ import argparse
 import yaml
 import datetime
 
-import scipy
 import pandas as pd
 import numpy as np
 
@@ -18,7 +17,7 @@ from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
 from ctapipe.reco import HillasReconstructor
-from ctapipe.reco.event_processing import EnergyEstimatorPandas
+from event_processing import EnergyEstimatorPandas
 
 from astropy import units as u
 
@@ -44,11 +43,11 @@ def info_message(text, prefix='info'):
 
 
 def GetHist2D(x,y, bins=30, range=None, weights=None):
-    hs, xedges, yedges = scipy.histogram2d(x,y, bins=bins, range=range, weights=weights)
+    hs, xedges, yedges = np.histogram2d(x,y, bins=bins, range=range, weights=weights)
     xloc = (xedges[1:] + xedges[:-1]) / 2
     yloc = (yedges[1:] + yedges[:-1]) / 2 
 
-    xxloc, yyloc = scipy.meshgrid( xloc, yloc, indexing='ij' )
+    xxloc, yyloc = np.meshgrid( xloc, yloc, indexing='ij' )
 
     hist = {}
     hist['Hist'] = hs
@@ -64,8 +63,8 @@ def GetHist2D(x,y, bins=30, range=None, weights=None):
 
 def evaluate_performance(data, energy_name):
     valid_data = data.dropna(subset=[energy_name])
-    migmatrix = GetHist2D(scipy.log10(valid_data['true_energy']),
-                          scipy.log10(valid_data[energy_name]),
+    migmatrix = GetHist2D(np.lib.scimath.log10(valid_data['true_energy']),
+                          np.lib.scimath.log10(valid_data[energy_name]),
                           range=((-1.5, 1.5), (-1.5, 1.5)), bins=30)
 
     matrix_norms = migmatrix['Hist'].sum(axis=1)
@@ -80,18 +79,18 @@ def evaluate_performance(data, energy_name):
         name = '{:d}%'.format(confidence)
 
         migmatrix[name] = dict()
-        migmatrix[name]['upper'] = scipy.zeros_like(migmatrix['X'])
-        migmatrix[name]['mean'] = scipy.zeros_like(migmatrix['X'])
-        migmatrix[name]['lower'] = scipy.zeros_like(migmatrix['X'])
-        migmatrix[name]['rms'] = scipy.zeros_like(migmatrix['X'])
+        migmatrix[name]['upper'] = np.zeros_like(migmatrix['X'])
+        migmatrix[name]['mean'] = np.zeros_like(migmatrix['X'])
+        migmatrix[name]['lower'] = np.zeros_like(migmatrix['X'])
+        migmatrix[name]['rms'] = np.zeros_like(migmatrix['X'])
 
         for i in range(0, len(migmatrix['X'])):
-            wh = scipy.where((scipy.log10(true_energies) >= migmatrix['XEdges'][i]) &
-                             (scipy.log10(true_energies) < migmatrix['XEdges'][i + 1]))
+            wh = np.where((np.lib.scimath.log10(true_energies) >= migmatrix['XEdges'][i]) &
+                             (np.lib.scimath.log10(true_energies) < migmatrix['XEdges'][i + 1]))
 
             if len(wh[0]) > 0:
                 rel_diff = (estimated_energies[wh] - true_energies[wh]) / true_energies[wh]
-                quantiles = scipy.percentile(rel_diff, [50 - confidence / 2.0, 50, 50 + confidence / 2.0])
+                quantiles = np.percentile(rel_diff, [50 - confidence / 2.0, 50, 50 + confidence / 2.0])
 
                 migmatrix[name]['upper'][i] = quantiles[2]
                 migmatrix[name]['mean'][i] = quantiles[1]
@@ -108,15 +107,15 @@ def evaluate_performance(data, energy_name):
 
 
 def get_weights(mc_data, alt_edges, intensity_edges):
-    mc_hist, _, _ = scipy.histogram2d(mc_data['tel_alt'],
+    mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
                                       mc_data['intensity'],
                                       bins=[alt_edges, intensity_edges])
 
-    availability_hist = scipy.clip(mc_hist, 0, 1)
+    availability_hist = np.clip(mc_hist, 0, 1)
 
     # --- MC weights ---
-    mc_alt_bins = scipy.digitize(mc_data['tel_alt'], alt_edges) - 1
-    mc_intensity_bins = scipy.digitize(mc_data['intensity'], intensity_edges) - 1
+    mc_alt_bins = np.digitize(mc_data['tel_alt'], alt_edges) - 1
+    mc_intensity_bins = np.digitize(mc_data['intensity'], intensity_edges) - 1
 
     # Treating the out-of-range events
     mc_alt_bins[mc_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -158,7 +157,7 @@ Exiting.
 """
 
 try:
-    config = yaml.load(open(parsed_args.config, "r"))
+    config = yaml.safe_load(open(parsed_args.config, "r"))
 except IOError:
     print(file_not_found_message.format(parsed_args.config))
     exit()
@@ -188,9 +187,9 @@ shower_data_train.sort_index(inplace=True)
 
 # Computing event weights
 info_message('Computing the train sample event weights...', prefix='DirRF')
-sin_edges = scipy.linspace(0, 1, num=51)
-alt_edges = scipy.arcsin(sin_edges)
-intensity_edges = scipy.logspace(1, 5, num=51)
+sin_edges = np.linspace(0, 1, num=51)
+alt_edges = np.lib.scimath.arcsin(sin_edges)
+intensity_edges = np.logspace(1, 5, num=51)
 
 mc_weights = get_weights(shower_data_train, alt_edges, intensity_edges)
 

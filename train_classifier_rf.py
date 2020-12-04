@@ -4,13 +4,12 @@ import argparse
 import yaml
 import datetime
 
-import scipy
 import pandas as pd
 import numpy as np
 
 import sklearn.metrics
 
-from ctapipe.reco.event_processing import EventClassifierPandas
+from event_processing import EventClassifierPandas
 
 from astropy import units as u
 
@@ -36,7 +35,7 @@ def info_message(text, prefix='info'):
 
 
 def GetHist(data, bins=30, range=None, weights=None):
-    hs, edges = scipy.histogram(data, bins=bins, range=range, weights=weights)
+    hs, edges = np.histogram(data, bins=bins, range=range, weights=weights)
     loc = (edges[1:] + edges[:-1]) / 2
 
     hist = {}
@@ -59,7 +58,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
         events = data.query(f'true_event_class == {event_class}')
         hist = GetHist(events[class0_name], bins=100, range=(0, 1))
         hist['Hist'] = hist['Hist'] / hist['Hist'].sum()
-        hist['Cumsum'] = 1 - scipy.cumsum(hist['Hist'])
+        hist['Cumsum'] = 1 - np.cumsum(hist['Hist'])
         
         report['gammaness'][event_class] = hist
 
@@ -73,7 +72,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
 
     report['metrics']['acc'] = sklearn.metrics.accuracy_score(data['true_event_class'], predicted_class)
     
-    true_class = scipy.clip(data['true_event_class'], 0, 1)
+    true_class = np.clip(data['true_event_class'], 0, 1)
     true_class = 1 - true_class
     report['metrics']['auc_roc'] = sklearn.metrics.roc_auc_score(true_class, proba[:, 0])
 
@@ -97,18 +96,18 @@ def load_data_sample(sample):
 
 
 def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
-    mc_hist, _, _ = scipy.histogram2d(mc_data['tel_alt'], 
+    mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'], 
                                       mc_data['intensity'], 
                                       bins=[alt_edges, intensity_edges])
-    bkg_hist, _, _ = scipy.histogram2d(bkg_data['tel_alt'], 
+    bkg_hist, _, _ = np.histogram2d(bkg_data['tel_alt'], 
                                        bkg_data['intensity'], 
                                        bins=[alt_edges, intensity_edges])
     
-    availability_hist = scipy.clip(mc_hist, 0, 1) * scipy.clip(bkg_hist, 0, 1)
+    availability_hist = np.clip(mc_hist, 0, 1) * np.clip(bkg_hist, 0, 1)
     
     # --- MC weights ---
-    mc_alt_bins = scipy.digitize(mc_data['tel_alt'], alt_edges) - 1
-    mc_intensity_bins = scipy.digitize(mc_data['intensity'], intensity_edges) - 1
+    mc_alt_bins = np.digitize(mc_data['tel_alt'], alt_edges) - 1
+    mc_intensity_bins = np.digitize(mc_data['intensity'], intensity_edges) - 1
     
     # Treating the out-of-range events
     mc_alt_bins[mc_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -118,8 +117,8 @@ def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
     mc_weights *= availability_hist[mc_alt_bins, mc_intensity_bins]
     
     # --- Bkg weights ---
-    bkg_alt_bins = scipy.digitize(bkg_data['tel_alt'], alt_edges) - 1
-    bkg_intensity_bins = scipy.digitize(bkg_data['intensity'], intensity_edges) - 1
+    bkg_alt_bins = np.digitize(bkg_data['tel_alt'], alt_edges) - 1
+    bkg_intensity_bins = np.digitize(bkg_data['intensity'], intensity_edges) - 1
 
     # Treating the out-of-range events
     bkg_alt_bins[bkg_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -162,7 +161,7 @@ Exiting.
 """
 
 try:
-    config = yaml.load(open(parsed_args.config, "r"))
+    config = yaml.safe_load(open(parsed_args.config, "r"))
 except IOError:
     print(file_not_found_message.format(parsed_args.config))
     exit()
@@ -193,9 +192,9 @@ bkg_data.drop('mjd', axis=1, inplace=True)
 mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
 # Computing event weights
-sin_edges = scipy.linspace(0, 1, num=51)
-alt_edges = scipy.arcsin(sin_edges)
-intensity_edges = scipy.logspace(1, 5, num=51)
+sin_edges = np.linspace(0, 1, num=51)
+alt_edges = np.lib.scimath.arcsin(sin_edges)
+intensity_edges = np.logspace(1, 5, num=51)
 
 mc_weights, bkg_weights = get_weights(mc_data, bkg_data, 
                                       alt_edges, intensity_edges)

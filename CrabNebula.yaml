@@ -54,7 +54,7 @@ image_cleaning:
 
 energy_rf:
     save_name: "RFs/energy_rf.joblib"
-    cuts: "(multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
     settings:
         n_estimators: 100
         min_samples_leaf: 10
@@ -65,7 +65,7 @@ energy_rf:
 
 direction_rf:
     save_name: "RFs/direction_rf.joblib"
-    cuts: "(multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
     settings:
         n_estimators: 100
         min_samples_leaf: 10
@@ -77,7 +77,7 @@ direction_rf:
 
 classifier_rf:
     save_name: "RFs/classifier_rf.joblib"
-    cuts: "(multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
     settings:
         n_estimators: 100
         min_samples_leaf: 10
@@ -93,4 +93,4 @@ event_list:
             l3rate: "80 < value < 1000"
             dc: "0 < value < 7e3"
         selection:
-            "(multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4) & (event_class_0 > 0.8)"
+            "(event_id > 0) & (multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4) & (event_class_0 > 0.8)"

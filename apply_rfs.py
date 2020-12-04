@@ -16,7 +16,7 @@ from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
-from ctapipe.reco.event_processing import EnergyEstimatorPandas, DirectionEstimatorPandas, EventClassifierPandas
+from event_processing import EnergyEstimatorPandas, DirectionEstimatorPandas, EventClassifierPandas
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
@@ -69,7 +69,7 @@ Exiting.
 """
 
 try:
-    config = yaml.load(open(parsed_args.config, "r"))
+    config = yaml.safe_load(open(parsed_args.config, "r"))
 except IOError:
     print(file_not_found_message.format(parsed_args.config))
     exit()

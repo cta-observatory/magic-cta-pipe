@@ -6,6 +6,7 @@ import argparse
 import pandas as pd
 
 import scipy
+import numpy as np
 
 import iminuit
 
@@ -58,13 +59,13 @@ class PSFProfileFunctor:
 
     @staticmethod
     def psf_profile(r, s, a2, a3, sigma1, sigma2, sigma3):
-        g1 = scipy.exp(-r**2 / (2 * sigma1**2))
-        g2 = scipy.exp(-r**2 / (2 * sigma2**2))
-        g3 = scipy.exp(-r**2 / (2 * sigma3**2))
+        g1 = np.exp(-r**2 / (2 * sigma1**2))
+        g2 = np.exp(-r**2 / (2 * sigma2**2))
+        g3 = np.exp(-r**2 / (2 * sigma3**2))
         
-        dn_domega = s / scipy.pi * (g1 + a2*g2 + a3*g3)
+        dn_domega = s / np.pi * (g1 + a2*g2 + a3*g3)
     
-        return 2*scipy.pi * dn_domega
+        return 2*np.pi * dn_domega
     
     @staticmethod
     def cstat(y, model_y, mode="Exact"):
@@ -90,14 +91,14 @@ class PSFProfileFunctor:
             The computed C-statistics values.
         """
 
-        res = -1 * scipy.sum(y*scipy.log(model_y) - model_y - scipy.special.gammaln(y+1))
+        res = -1 * np.sum(y*np.lib.scimath.log(model_y) - model_y - scipy.special.gammaln(y+1))
 
         if mode == "Normalized":
             res *= 2
 
         if mode == "Chi2-like":
-            #res = 2*res - scipy.sum(scipy.log(2*scipy.pi*y))
-            res = 2*res - scipy.sum(scipy.log(2*scipy.pi*model_y))
+            #res = 2*res - np.sum(np.lib.scimath.log(2*np.pi*y))
+            res = 2*res - np.sum(np.lib.scimath.log(2*np.pi*model_y))
 
         return res
    
@@ -175,14 +176,14 @@ class IRFGenerator:
         data['offcenter'] = offcenter
         
         # Binning in energy
-        energy_edges = scipy.logspace(scipy.log10(self.min_energy), 
-                                      scipy.log10(self.max_energy), 
+        energy_edges = np.logspace(np.lib.scimath.log10(self.min_energy), 
+                                      np.lib.scimath.log10(self.max_energy), 
                                       self.n_energy_bins+1)
         energ_lo = energy_edges[:-1]
         energ_hi = energy_edges[1:]
         
         # Binning in off-center distance
-        theta_edges = scipy.linspace(self.min_theta, 
+        theta_edges = np.linspace(self.min_theta, 
                                      self.max_theta, 
                                      self.n_theta_bins+1)
         theta_lo = theta_edges[:-1]
@@ -194,7 +195,7 @@ class IRFGenerator:
         psf_params = dict()
 
         for param in ['s', 'a2', 'a3', 'sigma1', 'sigma2', 'sigma3']:
-            psf_params[param] = scipy.zeros((self.n_energy_bins, self.n_theta_bins))
+            psf_params[param] = np.zeros((self.n_energy_bins, self.n_theta_bins))
         
         fit_params = {
             's': 1e3,
@@ -218,7 +219,7 @@ class IRFGenerator:
         }
         
         # PSF histogram grid
-        offset_edges = scipy.linspace(0, 4, num=100)**0.5
+        offset_edges = np.linspace(0, 4, num=100)**0.5
         offset_centers = (offset_edges[1:] + offset_edges[:-1]) / 2
         
         for ei in range(self.n_energy_bins):
@@ -228,7 +229,7 @@ class IRFGenerator:
                 event_filter = f'({energy_filter}) & ({theta_filter})'
                 events = data.query(event_filter)
             
-                psf_hist, _ = scipy.histogram(events['offset'], bins=offset_edges)
+                psf_hist, _ = np.histogram(events['offset'], bins=offset_edges)
                 
                 fit_func = PSFProfileFunctor(offset_centers, psf_hist)
                 
@@ -322,22 +323,22 @@ class IRFGenerator:
         data['offcenter'] = offcenter
         
         # Binning in energy
-        energy_edges = scipy.logspace(scipy.log10(self.min_energy), 
-                                      scipy.log10(self.max_energy), 
+        energy_edges = np.logspace(np.lib.scimath.log10(self.min_energy), 
+                                      np.lib.scimath.log10(self.max_energy), 
                                       self.n_energy_bins+1)
         energ_lo = energy_edges[:-1]
         energ_hi = energy_edges[1:]
         
         # Binning in off-center distance
-        theta_edges = scipy.linspace(self.min_theta, 
+        theta_edges = np.linspace(self.min_theta, 
                                      self.max_theta, 
                                      self.n_theta_bins+1)
         theta_lo = theta_edges[:-1]
         theta_hi = theta_edges[1:]
         
         # Binning in "migra" value
-        migra_edges = scipy.logspace(scipy.log10(self.min_migra), 
-                                     scipy.log10(self.max_migra),
+        migra_edges = np.logspace(np.lib.scimath.log10(self.min_migra), 
+                                     np.lib.scimath.log10(self.max_migra),
                                      self.n_migra_bins+1)
         migra_lo = migra_edges[:-1]
         migra_hi = migra_edges[1:]
@@ -355,13 +356,13 @@ class IRFGenerator:
             theta_edges
         ]
 
-        migra_matrix, _ = scipy.histogramdd(data_, bins=edges_)
+        migra_matrix, _ = np.histogramdd(data_, bins=edges_)
         
         # Normalizing the matrix
         migra_matrix_norms = migra_matrix.sum(axis=1)
         migra_matrix /= migra_matrix_norms[:, None, :]
         
-        isnan = scipy.isnan(migra_matrix)
+        isnan = np.isnan(migra_matrix)
         migra_matrix[isnan] = 0
         
         # --------------------------
@@ -429,24 +430,24 @@ class IRFGenerator:
         sim_shower_data['offcenter'] = offcenter
         
         # Binning in energy
-        energy_edges = scipy.logspace(scipy.log10(self.min_energy), 
-                                      scipy.log10(self.max_energy), 
+        energy_edges = np.logspace(np.lib.scimath.log10(self.min_energy), 
+                                      np.lib.scimath.log10(self.max_energy), 
                                       self.n_energy_bins+1)
         energ_lo = energy_edges[:-1]
         energ_hi = energy_edges[1:]
         
         # Binning in off-center distance
-        theta_edges = scipy.linspace(self.min_theta, 
+        theta_edges = np.linspace(self.min_theta, 
                                      self.max_theta, 
                                      self.n_theta_bins+1)
         theta_lo = theta_edges[:-1]
         theta_hi = theta_edges[1:]
         
-        trig_events_matrix, _, _ = scipy.histogram2d(trig_shower_data['true_energy'].values, 
+        trig_events_matrix, _, _ = np.histogram2d(trig_shower_data['true_energy'].values, 
                                                      trig_shower_data['offcenter'].values, 
                                                      bins=[energy_edges, theta_edges])
         
-        sim_events_matrix, _, _ = scipy.histogram2d(sim_shower_data['true_energy'].values, 
+        sim_events_matrix, _, _ = np.histogram2d(sim_shower_data['true_energy'].values, 
                                                     sim_shower_data['offcenter'].values, 
                                                     bins=[energy_edges, theta_edges])
    
@@ -456,7 +457,7 @@ class IRFGenerator:
         efficiency_matrix = trig_events_matrix / sim_events_matrix * ntel
         
         r_sim = 350.0  # m^2
-        aeff_matrix = scipy.pi * r_sim**2 * efficiency_matrix
+        aeff_matrix = np.pi * r_sim**2 * efficiency_matrix
         
         # --------------------------
         # --- Converting to FITS ---
@@ -523,20 +524,20 @@ class IRFGenerator:
         bkg_shower_data['offcenter'] = offcenter
         
         # Binning in energy
-        energy_edges = scipy.logspace(scipy.log10(self.min_energy), 
-                                      scipy.log10(self.max_energy), 
+        energy_edges = np.logspace(np.lib.scimath.log10(self.min_energy), 
+                                      np.lib.scimath.log10(self.max_energy), 
                                       self.n_energy_bins+1)
         energ_lo = energy_edges[:-1]
         energ_hi = energy_edges[1:]
         
         # Binning in off-center distance
-        theta_edges = scipy.linspace(self.min_theta, 
+        theta_edges = np.linspace(self.min_theta, 
                                      self.max_theta, 
                                      self.n_theta_bins+1)
         theta_lo = theta_edges[:-1]
         theta_hi = theta_edges[1:]
         
-        bkg_event_matrix, _, _ = scipy.histogram2d(bkg_shower_data['energy_reco_mean'].values, 
+        bkg_event_matrix, _, _ = np.histogram2d(bkg_shower_data['energy_reco_mean'].values, 
                                                   bkg_shower_data['offcenter'].values, 
                                                   bins=[energy_edges, theta_edges])
         
@@ -627,7 +628,7 @@ Exiting.
 """
 
 try:
-    config = yaml.load(open(parsed_args.config, "r"))
+    config = yaml.safe_load(open(parsed_args.config, "r"))
 except IOError:
     print(file_not_found_message.format(parsed_args.config))
     exit()
