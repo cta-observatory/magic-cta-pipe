@@ -83,7 +83,7 @@ def get_tel_ids_dl1(df):
 
     Parameters
     ----------
-    df : pandas.core.frame.DataFrame
+    df : pandas.DataFrame
         pandas dataframe
 
     Returns
