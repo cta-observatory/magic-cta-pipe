@@ -142,7 +142,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
 
             if(display):
                 print("Event %d" % event.count)
-            elif(event.count % 10 == 0):
+            elif(event.count % 100 == 0):
                 print("Event %d" % event.count)
 
             # Process only if I have at least two tel_ids of the selected array
