@@ -5,7 +5,8 @@ This repository contains the scripts needed to perform MAGIC+LST analysis with c
 
 A brief description:
 1. `CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
-2. `hillas_preprocessing.py`: compute the hillas parameters. Loops over MCs and real data.
+2. `hillas_preprocessing.py`: compute the hillas parameters. Loops over MCs and real data. This script uses the tailcuts cleaning.
+3. `hillas_preprocessing_MAGICCleaning.py`: compute the hillas parameters. Loops over MCs and real data. This script used the MAGIC cleaning implemented in MARS.
 3. `train_energy_rf.py`: trains the energy RF.
 4. `train_direction_rf.py`: trains the direction "disp" RF.
 5. `train_classifier_rf.py`: trains the event classification RF.
@@ -13,6 +14,12 @@ A brief description:
 7. `add_orig_mc_tree.py`: adds the "original MC" tree info to the MC events tree processed earlier.
 8. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
 9. `make_event_lists.py`: produces the FITS event lists with application of the cuts.
+
+Moreover, the `utils` directory contains two modules:
+* `MAGIC_Badpixels.py`: finds the so called bad/hot pixels i.e. pixels affected by stars, or pixels turned off or dead.
+* `MAGIC_Cleaning.py`: implements the MAGIC cleaning as defined in MARS.
+
+There is also an IPython notebook, `magic_lst_event_coincidence.ipynb`, which shows how to perform the coincidence of events between MAGIC and LST1 data, when data are taken by both systems.
 
 Here below you can find a more detailed description of the pipeline work flow.
 
@@ -90,7 +97,27 @@ $ python hillas_preprocessing.py --config=config.yaml
 
 where `config.yaml` is the name of the configuration file.
 
+Other available options are:
+* `--usereal`: run the script only over real data
+* `--usemc`: run the script only over MC data
+* `--usetest`: run the script only over test sample data
+* `--usetrain`: run the script only over train sample data
+* `--usem1`: run the script only over M1 data
+* `--usem2`: run the script only over M2 data
+
+These options can be concatenated, e.g.:
+
+```bash
+$ python hillas_preprocessing.py --config=config.yaml --usereal --usetest --usem1
+```
+
+will run the script over real data from the test sample and from the M1 telescope only.
+
 The next step in the pipeline is training the Random Forests for event classification, energy and direction reconstruction.
+
+### hillas\_preprocessing\_MAGICCleaning.py ###
+
+It is similar to `hillas_preprocessing.py`, the only difference is that it uses the MAGIC cleaning implemented in MARS. Its usage is the same as `hillas_preprocessing.py`, see above.
 
 ### train\_energy\_rf.py, train\_direction\_rf.py, train\_classifier\_rf.py ###
 
@@ -129,6 +156,12 @@ Run this script with the command:
 ```bash
 $ python add_orig_mc_tree.py --config=config.yaml
 ```
+
+Other available options are:
+* `--usetest`: run the script only over test sample data
+* `--usetrain`: run the script only over train sample data
+* `--usem1`: run the script only over M1 data
+* `--usem2`: run the script only over M2 data
 
 After this step, the Random Forests can be applied to the ON data and simulated data (test sample).
 
