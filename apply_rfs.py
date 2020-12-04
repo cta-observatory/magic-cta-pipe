@@ -91,7 +91,7 @@ magic_tel_positions = {
 magic_optics = OpticsDescription.from_name('MAGIC')
 magic_cam = CameraGeometry.from_name('MAGICCam')
 magic_tel_description = TelescopeDescription(name='MAGIC', 
-                                             type='MAGIC', 
+                                             tel_type='MAGIC', 
                                              optics=magic_optics, 
                                              camera=magic_cam)
 magic_tel_descriptions = {1: magic_tel_description, 
@@ -108,7 +108,7 @@ magic_tel_descriptions = {1: magic_tel_description,
 # Looping over MC / data etc
 for data_type in config['data_files']:
     # Using only the "test" sample
-    for sample in ['test_sample']:        
+    for sample in ['test_sample']:
         shower_data = pd.DataFrame()
         original_mc_data = pd.DataFrame()
         
@@ -121,11 +121,13 @@ for data_type in config['data_files']:
             tel_data = pd.read_hdf(config['data_files'][data_type][sample][telescope]['hillas_output'], 
                                    key='dl1/hillas_params')
             
-            #orig_mc = pd.read_hdf(config['data_files'][data_type][sample][telescope]['hillas_output'], 
-                                   #key='dl1/original_mc')
+            if data_type == 'mc':
+                orig_mc = pd.read_hdf(config['data_files'][data_type][sample][telescope]['hillas_output'], 
+                                    key='dl1/original_mc')
             
             shower_data = shower_data.append(tel_data)
-            #original_mc_data = original_mc_data.append(orig_mc)
+            if data_type == 'mc':
+                original_mc_data = original_mc_data.append(orig_mc)
             
         # Sorting the data frame for convenience
         shower_data = shower_data.reset_index()
@@ -135,13 +137,20 @@ for data_type in config['data_files']:
         # Dropping data with the wrong altitude
         shower_data = shower_data.query('tel_alt < 1.5707963267948966')
 
-        #original_mc_data = original_mc_data.reset_index()
-        #original_mc_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-        #original_mc_data.sort_index(inplace=True)
+        if data_type == 'mc':
+            original_mc_data = original_mc_data.reset_index()
+            original_mc_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+            original_mc_data.sort_index(inplace=True)
         
         # Computing the event "multiplicity"
         shower_data['multiplicity'] = shower_data['intensity'].groupby(level=['obs_id', 'event_id']).count()
-        #original_mc_data['multiplicity'] = original_mc_data['true_energy'].groupby(level=['obs_id', 'event_id']).count()
+        if data_type == 'mc':
+            original_mc_data['multiplicity'] = original_mc_data['true_energy'].groupby(level=['obs_id', 'event_id']).count()
+
+
+        #Added by Lea Heckmann 2020-05-15 for the moment to delete duplicate events
+        info_message(f'Removing duplicate events', prefix='ApplyRF')
+        shower_data = shower_data[~shower_data.index.duplicated()]
 
         # Applying RFs of every kind
         for rf_kind in ['direction_rf', 'energy_rf', 'classifier_rf']:
@@ -174,5 +183,6 @@ for data_type in config['data_files']:
         for telescope in config['data_files'][data_type][sample]:
             shower_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'], 
                             key='dl3/reco')
-            #original_mc_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'], 
-                                    #key='dl3/original_mc')
+            if data_type == 'mc':
+                original_mc_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'], 
+                                    key='dl3/original_mc')

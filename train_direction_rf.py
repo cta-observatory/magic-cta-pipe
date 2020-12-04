@@ -153,7 +153,7 @@ magic_tel_positions = {
 magic_optics = OpticsDescription.from_name('MAGIC')
 magic_cam = CameraGeometry.from_name('MAGICCam')
 magic_tel_description = TelescopeDescription(name='MAGIC', 
-                                             type='MAGIC', 
+                                             tel_type='MAGIC', 
                                              optics=magic_optics, 
                                              camera=magic_cam)
 magic_tel_descriptions = {1: magic_tel_description, 
@@ -222,9 +222,9 @@ info_message('Training the RF\n', prefix='DirRF')
 direction_estimator = DirectionEstimatorPandas(config['direction_rf']['features'], 
                                                magic_tel_descriptions, 
                                                **config['direction_rf']['settings'])
-#direction_estimator.fit(shower_data_train)
-#direction_estimator.save(config['direction_rf']['save_name'])
-direction_estimator.load(config['direction_rf']['save_name'])
+direction_estimator.fit(shower_data_train)
+direction_estimator.save(config['direction_rf']['save_name'])
+#direction_estimator.load(config['direction_rf']['save_name'])
 
 # Printing the parameter "importances"
 for kind in direction_estimator.telescope_rfs:
@@ -303,7 +303,7 @@ for oi in range(len(offset_edges) - 1):
 # ================
 
 pyplot.figure(figsize=(12, 12))
-pyplot.style.use('presentation')
+#pyplot.style.use('presentation')
 
 pyplot.xlabel(r'$\theta^2$, deg$^2$')
 
