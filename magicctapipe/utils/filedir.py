@@ -76,7 +76,7 @@ def load_dl1_data(file, labels=['hillas_params']):
 
     Returns
     -------
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         data
     """
     data = pd.DataFrame()
@@ -99,11 +99,10 @@ def load_dl1_data_stereo(file):
 
     Returns
     -------
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         data
     """
     data = load_dl1_data(file=file, labels=['hillas_params', 'stereo_params'])
-    data.drop(-1, level='tel_id', inplace=True)
     return data
 
 
@@ -137,19 +136,17 @@ def drop_keys(df, extra_keys):
 
     Parameters
     ----------
-    df : pandas.core.frame.DataFrame
+    df : pandas.DataFrame
         dataframe
     extra_keys : list
         list of keys to be dropped
 
     Returns
     -------
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         dataframe without extra keys
     """
     for extra_key in extra_keys:
-        try:
+        if(extra_key in df.columns):
             df.drop(extra_key, axis=1, inplace=True)
-        except Exception as e:
-            print(f"ERROR in dropping extra key {extra_key}; {e}")
     return df
