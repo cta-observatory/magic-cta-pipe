@@ -67,26 +67,33 @@ def evaluate_performance(data, class0_name='event_class_0'):
     true_class = np.clip(data['true_event_class'], 0, 1)
     true_class = 1 - true_class
 
-    report['metrics']['auc_roc'] = sklearn.metrics.roc_auc_score(
-        true_class, proba[:, 0]
-    )
+    try:
+        report['metrics']['auc_roc'] = sklearn.metrics.roc_auc_score(
+            true_class, proba[:, 0]
+        )
+    except Exception as e:
+        print(f"ERROR: {e}")
 
     return report
 
 
-def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
+def get_weights(mc_data, bkg_data, alt_edges, intensity_edges,
+                is_stereo=False):
+    intensity_lbl = f'{is_stereo*"average_"}intensity'
+
     mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
-                                   mc_data['intensity'],
+                                   mc_data[intensity_lbl],
                                    bins=[alt_edges, intensity_edges])
     bkg_hist, _, _ = np.histogram2d(bkg_data['tel_alt'],
-                                    bkg_data['intensity'],
+                                    bkg_data[intensity_lbl],
                                     bins=[alt_edges, intensity_edges])
 
     availability_hist = np.clip(mc_hist, 0, 1) * np.clip(bkg_hist, 0, 1)
 
     # --- MC weights ---
     mc_alt_bins = np.digitize(mc_data['tel_alt'], alt_edges) - 1
-    mc_intensity_bins = np.digitize(mc_data['intensity'], intensity_edges) - 1
+    mc_intensity_bins = \
+        np.digitize(mc_data[intensity_lbl], intensity_edges) - 1
 
     # Treating the out-of-range events
     mc_alt_bins[mc_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -98,8 +105,8 @@ def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
 
     # --- Bkg weights ---
     bkg_alt_bins = np.digitize(bkg_data['tel_alt'], alt_edges) - 1
-    bkg_intensity_bins = np.digitize(
-        bkg_data['intensity'], intensity_edges) - 1
+    bkg_intensity_bins = \
+        np.digitize(bkg_data[intensity_lbl], intensity_edges) - 1
 
     # Treating the out-of-range events
     bkg_alt_bins[bkg_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -118,106 +125,7 @@ def get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
     return mc_weight_df, bkg_weight_df
 
 
-# =================
-# === Main code ===
-# =================
-def train_classifier_rf_stereo(config_file):
-    # --- Reading the configuration file ---
-    cfg = load_cfg_file_check(config_file=config_file, label='classifier_rf')
-
-    # --- Check output directory ---
-    check_folder(cfg['classifier_rf']['save_dir'])
-
-    # --- Train sample ---
-    f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
-    info_message('Loading MC train data...', prefix='ClassifierRF')
-    mc_data = load_dl1_data_stereo(f_)
-
-    f_ = cfg['data_files']['data']['train_sample']['hillas_h5']
-    info_message('Loading "off" train data...', prefix='ClassifierRF')
-    bkg_data = load_dl1_data_stereo(f_)
-
-    # True event classes
-    mc_data['true_event_class'] = 0
-    bkg_data['true_event_class'] = 1
-
-    # Dropping data with the wrong altitude
-    bkg_data = bkg_data.query(cfg['global']['wrong_alt'])
-
-    # Dropping extra keys
-    # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
-    mc_data = drop_keys(mc_data, cfg['classifier_rf']['extra_keys'])
-    # !!! CHECK !!!
-    bkg_data = drop_keys(bkg_data, cfg['classifier_rf']['extra_keys'])
-
-    # Computing event weights
-    sin_edges = np.linspace(0, 1, num=51)
-    alt_edges = np.lib.scimath.arcsin(sin_edges)
-    intensity_edges = np.logspace(1, 5, num=51)
-
-    mc_weights, bkg_weights = get_weights(mc_data, bkg_data,
-                                          alt_edges, intensity_edges)
-
-    mc_data = mc_data.join(mc_weights)
-    bkg_data = bkg_data.join(bkg_weights)
-
-    # Merging the train sample
-    shower_data_train = mc_data.append(bkg_data)
-    # --------------------
-
-    # --- Test sample ---
-    f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
-    info_message('Loading MC test data...', prefix='ClassifierRF')
-    mc_data = load_dl1_data_stereo(f_)
-
-    f_ = cfg['data_files']['data']['test_sample']['hillas_h5']
-    info_message('Loading "off" test data...', prefix='ClassifierRF')
-    bkg_data = load_dl1_data_stereo(f_)
-
-    # True event classes
-    mc_data['true_event_class'] = 0
-    bkg_data['true_event_class'] = 1
-
-    # Dropping data with the wrong altitude
-    bkg_data = bkg_data.query(cfg['global']['wrong_alt'])
-
-    # Dropping extra keys
-    # bkg_data.drop('mjd', axis=1, inplace=True) # Key doesn't exist in data
-    # mc_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
-    mc_data = drop_keys(mc_data, cfg['classifier_rf']['extra_keys'])
-    # !!! CHECK !!!
-    bkg_data = drop_keys(bkg_data, cfg['classifier_rf']['extra_keys'])
-    # bkg_data.drop(cfg['classifier_rf']['extra_keys'], axis=1, inplace=True)
-
-    # Merging the test sample
-    shower_data_test = mc_data.append(bkg_data)
-    # -------------------
-
-    info_message('Preprosessing...', prefix='ClassifierRF')
-
-    # --- Data preparation ---
-    l_ = ['obs_id', 'event_id']
-    shower_data_train['multiplicity'] = \
-        shower_data_train['intensity'].groupby(level=l_).count()
-    shower_data_test['multiplicity'] = \
-        shower_data_test['intensity'].groupby(level=l_).count()
-
-    # Applying the cuts
-    shower_data_train = shower_data_train.query(cfg['classifier_rf']['cuts'])
-    shower_data_test = shower_data_test.query(cfg['classifier_rf']['cuts'])
-
-    # --- Training the direction RF ---
-    info_message('Training RF...', prefix='ClassifierRF')
-
-    class_estimator = EventClassifierPandas(cfg['classifier_rf']['features'],
-                                            **cfg['classifier_rf']['settings'])
-    class_estimator.fit(shower_data_train)
-    class_estimator.save(os.path.join(cfg['classifier_rf']['save_dir'],
-                                      cfg['classifier_rf']['joblib_name']))
-    # class_estimator.load(cfg['classifier_rf']['save_name'])
-
-    info_message('Parameter importances', prefix='ClassifierRF')
-    print('')
+def _print_par_imp(class_estimator):
     for tel_id in class_estimator.telescope_classifiers:
         feature_importances = \
             class_estimator.telescope_classifiers[tel_id].feature_importances_
@@ -228,9 +136,146 @@ def train_classifier_rf_stereo(config_file):
             print(f"  {feature:.<15s}: {importance:.4f}")
         print('')
 
+
+def _load_init_data(cfg, mode='train'):
+    f_ = cfg['data_files']['mc'][f'{mode}_sample']['hillas_h5']
+    info_message(f'Loading MC {mode} data...', prefix='ClassifierRF')
+    mc_data = load_dl1_data(f_, ['hillas_params'])
+    mc_st_data = load_dl1_data(f_, ['stereo_params'])
+
+    f_ = cfg['data_files']['data'][f'{mode}_sample']['hillas_h5']
+    info_message(f'Loading "off" {mode} data...', prefix='ClassifierRF')
+    bkg_data = load_dl1_data(f_, ['hillas_params'])
+    bkg_st_data = load_dl1_data(f_, ['stereo_params'])
+
+    # True event classes
+    mc_data['true_event_class'] = 0
+    bkg_data['true_event_class'] = 1
+    mc_st_data['true_event_class'] = 0
+    bkg_st_data['true_event_class'] = 1
+
+    # Dropping data with the wrong altitude
+    bkg_data = bkg_data.query(cfg['global']['wrong_alt'])
+
+    # Dropping extra keys
+    mc_data = drop_keys(mc_data, cfg['classifier_rf']['extra_keys'])
+    mc_st_data = drop_keys(mc_st_data, cfg['classifier_rf']['extra_keys'])
+    bkg_data = drop_keys(bkg_data, cfg['classifier_rf']['extra_keys'])
+    bkg_st_data = drop_keys(bkg_st_data, cfg['classifier_rf']['extra_keys'])
+
+    return mc_data, mc_st_data, bkg_data, bkg_st_data
+
+
+def _print_par_imp_st(class_estimator):
+    feature_importances = \
+        class_estimator.telescope_classifiers_st.feature_importances_
+    z_ = zip(class_estimator.feature_st_names, feature_importances)
+    for feature, importance in z_:
+        print(f"  {feature:.<15s}: {importance:.4f}")
+
+
+# =================
+# === Main code ===
+# =================
+def train_classifier_rf_stereo(config_file):
+    # --- Reading the configuration file ---
+    cfg = load_cfg_file_check(config_file=config_file, label='classifier_rf')
+    stereo_id = cfg['all_tels']['stereo_id']
+
+    # --- Check output directory ---
+    check_folder(cfg['classifier_rf']['save_dir'])
+
+    # --- Train sample ---
+    mc_data, mc_st_data, bkg_data, bkg_st_data = \
+        _load_init_data(mode='train', cfg=cfg)
+
+    # Computing event weights
+    sin_edges = np.linspace(0, 1, num=51)
+    alt_edges = np.lib.scimath.arcsin(sin_edges)
+    intensity_edges = np.logspace(1, 5, num=51)
+
+    mc_weights, bkg_weights = get_weights(
+        mc_data, bkg_data, alt_edges, intensity_edges)
+
+    mc_st_weights, bkg_st_weights = get_weights(
+        mc_st_data, bkg_st_data, alt_edges, intensity_edges, is_stereo=True)
+
+    mc_data = mc_data.join(mc_weights)
+    bkg_data = bkg_data.join(bkg_weights)
+    mc_st_data = mc_st_data.join(mc_st_weights)
+    bkg_st_data = bkg_st_data.join(bkg_st_weights)
+
+    # Merging the train sample
+    shower_data_train = mc_data.append(bkg_data)
+    shower_data_train_st = mc_st_data.append(bkg_st_data)
+    global s
+    # --------------------
+
+    # --- Test sample ---
+    mc_data, mc_st_data, bkg_data, bkg_st_data = \
+        _load_init_data(mode='test', cfg=cfg)
+
+    # Merging the test sample
+    shower_data_test = mc_data.append(bkg_data)
+    shower_data_test_st = mc_st_data.append(bkg_st_data)
+
+    # -------------------
+
+    info_message('Preprosessing...', prefix='ClassifierRF')
+
+    # --- Data preparation ---
+    l_ = ['obs_id', 'event_id']
+    shower_data_train['multiplicity'] = \
+        shower_data_train['intensity'].groupby(level=l_).count()
+    shower_data_test['multiplicity'] = \
+        shower_data_test['intensity'].groupby(level=l_).count()
+    shower_data_train_st['multiplicity'] = \
+        shower_data_train_st['average_intensity'].groupby(level=l_).count()
+    shower_data_test_st['multiplicity'] = \
+        shower_data_test_st['average_intensity'].groupby(level=l_).count()
+
+    # Applying the cuts
+    c_ = cfg['classifier_rf']['cuts']
+    shower_data_train = shower_data_train.query(c_)
+    shower_data_test = shower_data_test.query(c_)
+    c_ = cfg['classifier_rf']['cuts_st']
+    s = shower_data_train_st
+    shower_data_train_st = shower_data_train_st.query(c_)
+    shower_data_test_st = shower_data_test_st.query(c_)
+
+    # --- Training the direction RF ---
+    info_message('Training RF...', prefix='ClassifierRF')
+
+    class_estimator = EventClassifierPandas(
+        cfg['classifier_rf']['features'],
+        cfg['classifier_rf']['features_st'],
+        stereo_id,
+        **cfg['classifier_rf']['settings']
+    )
+    class_estimator.fit(shower_data_train)
+
+    class_estimator.fit(shower_data_train_st, is_stereo=True)
+    class_estimator.save(os.path.join(cfg['classifier_rf']['save_dir'],
+                                      cfg['classifier_rf']['joblib_name']))
+    # class_estimator.load(cfg['classifier_rf']['save_name'])
+
+    # Print Parameter importances Mono
+    info_message('Parameter importances', prefix='ClassifierRF')
+    _print_par_imp(class_estimator)
+
+    # Print Parameter importances Stereo
+    info_message('Stereo Parameter importances', prefix='ClassifierRF')
+    _print_par_imp_st(class_estimator)
+
+    # Apply RF
     info_message('Applying RF...', prefix='ClassifierRF')
+    # Mono
     class_reco = class_estimator.predict(shower_data_test)
     shower_data_test = shower_data_test.join(class_reco)
+    # Stereo
+    class_reco_st = class_estimator.predict(shower_data_test_st,
+                                            is_stereo=True)
+    shower_data_test_st = shower_data_test_st.join(class_reco_st)
 
     # Evaluating performance
     info_message('Evaluating performance...', prefix='ClassifierRF')
@@ -246,15 +291,22 @@ def train_classifier_rf_stereo(config_file):
             all_tel_ids_LST=cfg['LST']['tel_ids'],
             all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids']
         )
-    # !!! CHECK !!!
+
+    # Mean
     performance[0] = evaluate_performance(
         shower_data_test.loc[idx[:, :, tel_ids[0]], shower_data_test.columns],
         class0_name='event_class_0_mean'
     )
 
+    # For tels
     for tel_id in tel_ids:
         performance[tel_id] = evaluate_performance(
             shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns])
+
+    # Stereo
+    performance[stereo_id] = evaluate_performance(
+        shower_data_test_st.loc[idx[:, :, stereo_id],
+                                shower_data_test_st.columns])
 
     # ================
     # === Plotting ===
@@ -263,12 +315,15 @@ def train_classifier_rf_stereo(config_file):
     plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
     labels = ['Gammaness', 'Hadroness']
 
-    grid_shape = (2, len(tel_ids)+1)
+    grid_shape = (2, len(tel_ids)+1+1)
 
     for tel_num, tel_id in enumerate(performance):
         plt.subplot2grid(grid_shape, (0, tel_num))
         if(tel_id == 0):
-            plt.title(f'Tel {tel_id} estimation')
+            # plt.title(f'Tel {tel_id} estimation')
+            plt.title('Mean')
+        elif(tel_id == -1):
+            plt.title("Stereo")
         else:
             n_ = get_tel_name(tel_id=tel_id, cfg=cfg)
             plt.title(f'{n_} estimation')
@@ -316,7 +371,10 @@ def train_classifier_rf_stereo(config_file):
         plt.subplot2grid(grid_shape, (1, tel_num))
         plt.semilogy()
         if(tel_id == 0):
-            plt.title(f'Tel {tel_id} estimation')
+            # plt.title(f'Tel {tel_id} estimation')
+            plt.title('Mean')
+        elif(tel_id == -1):
+            plt.title("Stereo")
         else:
             n_ = get_tel_name(tel_id=tel_id, cfg=cfg)
             plt.title(f'{n_} estimation')

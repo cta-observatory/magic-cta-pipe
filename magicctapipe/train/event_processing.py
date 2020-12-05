@@ -2005,7 +2005,8 @@ class EventClassifierPandas:
     to give the final answer.
     """
 
-    def __init__(self, feature_names, **rf_settings):
+    def __init__(self, feature_names, feature_st_names, stereo_id,
+                 **rf_settings):
         """
         Constructor. Gets basic settings.
 
@@ -2019,11 +2020,13 @@ class EventClassifierPandas:
         """
 
         self.feature_names = feature_names
+        self.feature_st_names = feature_st_names
+        self.stereo_id = stereo_id
         self.rf_settings = rf_settings
 
         self.telescope_classifiers = dict()
 
-    def fit(self, shower_data):
+    def fit(self, shower_data, is_stereo=False):     
         """
         Fits the classification model.
 
@@ -2031,34 +2034,31 @@ class EventClassifierPandas:
         ----------
         shower_data: pandas.DataFrame
             Data frame with the shower parameters. Must contain columns called self.feature_names.
+        is_stereo : bool, optional
+            True if analysing stereo parameters, by default False
 
         Returns
         -------
         None
 
         """
+        if(not is_stereo):
+            self.train_per_telescope_rf(shower_data)
+        else:
+            self.train_stereo_rf(shower_data)
 
-        self.train_per_telescope_rf(shower_data)
 
-        # shower_data_with_energy = self.apply_per_telescope_rf(shower_data)
-        #
-        # features = shower_data_with_energy['energy_reco']
-        # features = features.fillna(0).groupby(['obs_id', 'event_id']).sum()
-        # features = features.values
-        #
-        # target = shower_data_with_energy['true_energy'].groupby(['obs_id', 'event_id']).mean().values
-        #
-        # self.consolidating_regressor = sklearn.ensemble.RandomForestRegressor(self.rf_settings)
-        # self.consolidating_regressor.fit(features, target)
-
-    def predict(self, shower_data):
+    def predict(self, shower_data, is_stereo=False):               
         """
         Applies the trained classifiers to the data.
 
         Parameters
         ----------
         shower_data: pandas.DataFrame
-            Data frame with the shower parameters. Must contain columns called self.feature_names.
+            Data frame with the shower parameters. Must contain columns called 
+            self.feature_names.
+        is_stereo : bool, optional
+            if stereo data, by default False
 
         Returns
         -------
@@ -2066,8 +2066,10 @@ class EventClassifierPandas:
             Updated data frame with the computed shower classes.
 
         """
-
-        shower_class = self.apply_per_telescope_rf(shower_data)
+        if(not is_stereo):
+            shower_class = self.apply_per_telescope_rf(shower_data)
+        else:
+            shower_class = self.apply_stereo_rf(shower_data)
 
         # Grouping per-event data
         class_group = shower_class.groupby(level=['obs_id', 'event_id'])
@@ -2087,32 +2089,76 @@ class EventClassifierPandas:
         Parameters
         ----------
         shower_data: pandas.DataFrame
-            Data frame with the shower parameters. Must contain columns called self.feature_names.
+            Data frame with the shower parameters. Must contain columns called 
+            self.feature_names.
 
         Returns
         -------
         None
 
         """
+        idx = pd.IndexSlice
+        tel_ids = shower_data.index.levels[2]
+        self.telescope_classifiers = dict()
+        for tel_id in tel_ids:
+            self.telescope_classifiers[tel_id] = \
+                self._train_rf(shower_data, self.feature_names, tel_id)
+    
+    def train_stereo_rf(self, shower_data):      
+        """
+        Trains the event classifiers on stereo data.
 
+        Parameters
+        ----------
+        shower_data: pandas.DataFrame
+            Data frame with the shower parameters. Must contain columns called
+            self.feature_st_names.
+
+        Returns
+        -------
+        None
+
+        """
+        self.telescope_classifiers_st = \
+            self._train_rf(shower_data, self.feature_st_names, self.stereo_id)
+
+    
+    def _train_rf(self, shower_data, features, index):
+        """Trains the rf
+
+        Parameters
+        ----------
+        shower_data : pandas.DataFrame
+            Dataframe
+        features : list
+            features list
+        index : int
+            tel_id for train_per_telescope_rf(), stereo_id for 
+            train_stereo_rf()
+
+        Returns
+        -------
+        sklearn.ensemble._forest.RandomForestClassifier
+            classifier
+        """        
         idx = pd.IndexSlice
 
-        tel_ids = shower_data.index.levels[2]
+        input_data = shower_data.loc[
+            idx[:, :, index],
+            features + ['event_weight', 'true_event_class']]
+        
+        input_data.dropna(inplace=True)
 
-        self.telescope_classifiers = dict()
+        x_train = input_data[list(features)].values
+        y_train = input_data['true_event_class'].values
+        weight = input_data['event_weight'].values
 
-        for tel_id in tel_ids:
-            input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'true_event_class']]
-            input_data.dropna(inplace=True)
+        classifier = sklearn.ensemble.RandomForestClassifier(
+            **self.rf_settings)
+        classifier.fit(x_train, y_train, sample_weight=weight)
 
-            x_train = input_data[list(self.feature_names)].values
-            y_train = input_data['true_event_class'].values
-            weight = input_data['event_weight'].values
+        return classifier
 
-            classifier = sklearn.ensemble.RandomForestClassifier(**self.rf_settings)
-            classifier.fit(x_train, y_train, sample_weight=weight)
-
-            self.telescope_classifiers[tel_id] = classifier
 
     def apply_per_telescope_rf(self, shower_data):
         """
@@ -2129,32 +2175,58 @@ class EventClassifierPandas:
             Updated data frame with the computed shower classes.
 
         """
-
         tel_ids = shower_data.index.levels[2]
-
         event_class_reco = pd.DataFrame()
-
         for tel_id in tel_ids:
-            # Selecting data
-            this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
-            this_telescope = this_telescope.dropna()
-            features = this_telescope.values
-
-            # Getting the RF response
-            response = self.telescope_classifiers[tel_id].predict_proba(features)
-
-            # Storing to a data frame
-            response_data = dict()
-            for class_i in range(response.shape[1]):
-                name = f'event_class_{class_i}'
-                response_data[name] = response[:, class_i]
-            df = pd.DataFrame(response_data, index=this_telescope.index)
-
+            df = self._apply_rf(shower_data, self.feature_names, tel_id)
             event_class_reco = event_class_reco.append(df)
-
         event_class_reco.sort_index(inplace=True)
-
         return event_class_reco
+    
+    def apply_stereo_rf(self, shower_data):
+        """
+        Applies the classifiers to stereo data.
+
+        Parameters
+        ----------
+        shower_data: pandas.DataFrame
+            Data frame with the shower parameters. Must contain columns called self.feature_names.
+
+        Returns
+        -------
+        pandas.DataFrame:
+            Updated data frame with the computed shower classes.
+
+        """
+        event_class_reco = self._apply_rf(
+            shower_data, self.feature_st_names, self.stereo_id, is_stereo=True)
+        event_class_reco.sort_index(inplace=True)
+        return event_class_reco
+
+    def _apply_rf(self, shower_data, features, index, is_stereo=False):
+        # Selecting data
+        this_telescope = shower_data.loc[(
+            slice(None), slice(None), index), features]
+        this_telescope = this_telescope.dropna()
+        features = this_telescope.values
+
+        # Getting the RF response
+        if(not is_stereo):
+            response = self.telescope_classifiers[index].predict_proba(
+                features)
+        else:
+            response = self.telescope_classifiers_st[index].predict_proba(
+                features)
+
+        # Storing to a data frame
+        response_data = dict()
+        for class_i in range(response.shape[1]):
+            name = f'event_class_{class_i}'
+            response_data[name] = response[:, class_i]
+        df = pd.DataFrame(response_data, index=this_telescope.index)
+
+        return df
+
 
     def save(self, file_name):
         """
@@ -2173,6 +2245,7 @@ class EventClassifierPandas:
 
         output = dict()
         output['feature_names'] = self.feature_names
+        output['feature_st_names'] = self.feature_st_names
         output['telescope_classifiers'] = self.telescope_classifiers
 
         joblib.dump(output, file_name)
