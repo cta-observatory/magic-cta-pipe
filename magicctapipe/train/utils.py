@@ -2,7 +2,22 @@ import numpy as np
 import pandas as pd
 
 
-def get_weights(mc_data, alt_edges, intensity_edges):
+def compute_event_weights():
+    """Compute event weights for train scripts
+
+    Returns
+    -------
+    tuple
+        - alt_edges
+        - intensity_edges
+    """
+    sin_edges = np.linspace(0, 1, num=51)
+    alt_edges = np.lib.scimath.arcsin(sin_edges)
+    intensity_edges = np.logspace(1, 5, num=51)
+    return alt_edges, intensity_edges
+
+
+def get_weights_mc(mc_data, alt_edges, intensity_edges):
     mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
                                    mc_data['intensity'],
                                    bins=[alt_edges, intensity_edges])

@@ -11,6 +11,7 @@ from magicctapipe.utils.plot import *
 from magicctapipe.utils.utils import *
 from magicctapipe.utils.tels import *
 from magicctapipe.utils.filedir import *
+from magicctapipe.train.utils import *
 from magicctapipe.train.event_processing import EventClassifierPandas
 
 PARSER = argparse.ArgumentParser(
@@ -77,7 +78,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
     return report
 
 
-def get_weights(mc_data, bkg_data, alt_edges, intensity_edges,
+def _get_weights(mc_data, bkg_data, alt_edges, intensity_edges,
                 is_stereo=False):
     intensity_lbl = f'{is_stereo*"average_"}intensity'
 
@@ -190,14 +191,12 @@ def train_classifier_rf_stereo(config_file):
         _load_init_data(mode='train', cfg=cfg)
 
     # Computing event weights
-    sin_edges = np.linspace(0, 1, num=51)
-    alt_edges = np.lib.scimath.arcsin(sin_edges)
-    intensity_edges = np.logspace(1, 5, num=51)
+    alt_edges, intensity_edges = compute_event_weights()
 
-    mc_weights, bkg_weights = get_weights(
+    mc_weights, bkg_weights = _get_weights(
         mc_data, bkg_data, alt_edges, intensity_edges)
 
-    mc_st_weights, bkg_st_weights = get_weights(
+    mc_st_weights, bkg_st_weights = _get_weights(
         mc_st_data, bkg_st_data, alt_edges, intensity_edges, is_stereo=True)
 
     mc_data = mc_data.join(mc_weights)
@@ -208,7 +207,6 @@ def train_classifier_rf_stereo(config_file):
     # Merging the train sample
     shower_data_train = mc_data.append(bkg_data)
     shower_data_train_st = mc_st_data.append(bkg_st_data)
-    global s
     # --------------------
 
     # --- Test sample ---
@@ -239,7 +237,6 @@ def train_classifier_rf_stereo(config_file):
     shower_data_train = shower_data_train.query(c_)
     shower_data_test = shower_data_test.query(c_)
     c_ = cfg['classifier_rf']['cuts_st']
-    s = shower_data_train_st
     shower_data_train_st = shower_data_train_st.query(c_)
     shower_data_test_st = shower_data_test_st.query(c_)
 

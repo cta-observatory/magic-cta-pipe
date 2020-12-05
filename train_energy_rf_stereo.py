@@ -162,11 +162,9 @@ def train_energy_rf_stereo(config_file):
     # Computing event weights
     info_message('Computing the train sample event weights...',
                  prefix='EnergyRF')
-    sin_edges = np.linspace(0, 1, num=51)
-    alt_edges = np.lib.scimath.arcsin(sin_edges)
-    intensity_edges = np.logspace(1, 5, num=51)
+    alt_edges, intensity_edges = compute_event_weights()
 
-    mc_weights = get_weights(shower_data_train, alt_edges, intensity_edges)
+    mc_weights = get_weights_mc(shower_data_train, alt_edges, intensity_edges)
 
     shower_data_train = shower_data_train.join(mc_weights)
 
