@@ -265,7 +265,10 @@ def train_direction_rf_stereo(config_file):
     grid_shape = (len(tel_ids)+1, 2)
     for index, tel_id in enumerate([0]+tel_ids):
         plt.subplot2grid(grid_shape, (index, 0))
-        plt.title(f'Tel {tel_id}')
+        if(tel_id==0):
+            plt.title(f'Total')
+        else:
+            plt.title(get_tel_name(tel_id=tel_id, cfg=cfg))
         plt.xlabel(r'$\theta^2$, deg$^2$')
         # plt.semilogy()
         plt.hist(separation_df[f'sep_{tel_id}']**2, bins=100,
@@ -299,9 +302,7 @@ def train_direction_rf_stereo(config_file):
     for tel_id in tel_ids:
         for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
             if(tel_id in cfg[tel_label]['tel_ids']):
-                n = cfg['all_tels']['tel_n_short'][i]
-                j = tel_id-cfg[tel_label]['tel_ids'][0]+1
-                l_ = f'{n}{j}'
+                l_ = get_tel_name(tel_id=tel_id, cfg=cfg)
                 plt.plot(energy, energy_psf[tel_id], label=l_)
     plt.grid(linestyle=':')
     plt.legend()
@@ -318,9 +319,7 @@ def train_direction_rf_stereo(config_file):
     for tel_id in tel_ids:
         for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
             if(tel_id in cfg[tel_label]['tel_ids']):
-                n = cfg['all_tels']['tel_n_short'][i]
-                j = tel_id-cfg[tel_label]['tel_ids'][0]+1
-                l_ = f'{n}{j}'
+                l_ = get_tel_name(tel_id=tel_id, cfg=cfg)
                 plt.plot(offset, offset_psf[tel_id], label=l_)
     plt.grid(linestyle=':')
     plt.legend()

@@ -146,14 +146,19 @@ def intersec_tel_ids(all_tel_ids_LST=[1, 2, 3, 4], all_tel_ids_MAGIC=[5, 6],
 
 
 def get_tel_name(tel_id, cfg):
-    """Get tel name from tel_id
+    """Get telescope name from telescope id
 
     Parameters
     ----------
     tel_id : int
         telescope id
     cfg : dict
-        configuration dictionary loaded from config file
+        configuration dictionary loaded from config file. It must contain the
+        following elements:
+            - cfg['all_tels']['tel_n']: list with all telescope names
+            - cfg[<tel_label>]['tel_ids']: list with telescope <tel_label> ids
+            - cfg['all_tels']['tel_n_short']: with with telescope short name,
+                to be plotted
 
     Returns
     -------
