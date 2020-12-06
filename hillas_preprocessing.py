@@ -260,13 +260,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
 
-    # Setting up the calibrator class.
-
-    config = traitlets.config.Config()
-    integrator_name = 'LocalPeakWindowSum'
-    config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 2
-
     # Finding available MC files
     input_files = glob.glob(input_mask)
     input_files.sort()
@@ -282,8 +275,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
     time_thresholds = image_cleaning_settings['time_thresholds']
-    #core_charge_thresholds = charge_thresholds.copy()
-    #core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
 
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
@@ -296,14 +287,10 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
             print("")
             # Event source
             source = MAGICEventSource(input_url=input_file)
-            calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
 
             # Looping over the events
             for event in source._mono_event_generator(telescope=f'M{tel_id}'):
                 tels_with_data = event.r1.tels_with_data
-
-                # Calibrating an event
-                # calibrator.calibrate(event)
 
                 computed_hillas_params = dict()
                 pointing_alt = dict()
@@ -323,6 +310,8 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                     if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
                         continue
 
                     clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
@@ -332,6 +321,8 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                     if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
                         continue
 
                     clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
@@ -341,47 +332,11 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
 
                     if event_image[clean_mask].sum() == 0:
                         # Event did not survive image cleaining
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
                         continue
 
-                    # ---------------------------
-                    # Computing the cleaning mask
-                    #clean_mask = tailcuts_clean(camera, event_image,
-                    #                             **charge_thresholds)
-                    #clean_mask_core = tailcuts_clean(camera, event_image,
-                    #                                  **core_charge_thresholds)
-                    #                         
-                    #if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining
-                    #    continue
-
-                    #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core,
-                    #                                       event_pulse_time,
-                    #                                       time_limit=time_thresholds['time_limit'],
-                    #                                       min_number_neighbors=time_thresholds['min_number_neighbors'])
-
-                    #if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining
-                    #    continue
-
-                    #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask,
-                    #                                           event_image, event_pulse_time,
-                    #                                           max_time_off=time_thresholds['max_time_off'],
-                    #                                           picture_thresh=charge_thresholds['picture_thresh'])
-
-                    #if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining
-                    #    continue
-
-                    ### Added on 02/07/2019
-                    #clean_mask = single_island(camera,clean_mask,event_image)
-
-                    #if event_image[clean_mask].sum() == 0:
-                        # Event did not survive image cleaining
-                    #    continue
-
                     num_islands = get_num_islands(camera, clean_mask, event_image)
-                    #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
-                    # ---------------------------
 
                     event_image_cleaned = event_image.copy()
                     event_image_cleaned[~clean_mask] = 0
@@ -401,30 +356,24 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                                                           image_mask)
                         leakage_params = leakage(camera, event_image, clean_mask)
 
-                        #computed_hillas_params[tel_id] = hillas_params
-
-                        #pointing_alt[tel_id] = event.pointing[tel_id].altitude.to(u.rad)
-                        #pointing_az[tel_id] = event.pointing[tel_id].azimuth.to(u.rad)
-
                         # Preparing metadata
-                        event_info = InfoContainer(obs_id=event.index.obs_id,
-                                                   event_id=scipy.int32(event.index.event_id),
-                                                   tel_id=tel_id,
-                                                   true_energy=event.mc.energy,
-                                                   true_alt=event.mc.alt.to(u.rad),
-                                                   true_az=event.mc.az.to(u.rad),
-                                                   tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
-                                                   tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
-                                                   n_islands=num_islands)
+                        event_info = InfoContainer(
+                            obs_id=event.index.obs_id,
+                            event_id=scipy.int32(event.index.event_id),
+                            tel_id=tel_id,
+                            true_energy=event.mc.energy,
+                            true_alt=event.mc.alt.to(u.rad),
+                            true_az=event.mc.az.to(u.rad),
+                            tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                            tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
+                            n_islands=num_islands
+                        )
 
                         # Storing the result
                         writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
-
-                #if len(pointing_alt.keys()) > 1:
-                    #stereo_params = hillas_reconstructor.predict(computed_hillas_params, event.inst, pointing_alt, pointing_az)
-                    #event_info.tel_id = -1
-                    ## Storing the result
-                    #writer.write("stereo_params", (event_info, stereo_params))
+                    else:
+                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                            f"telescope ID: {tel_id}) did not pass cleaning.")
 
 def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_settings):
     # Create event metadata container to hold event / observation / telescope IDs
@@ -440,13 +389,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
 
-    # Setting up the calibrator class.
-
-    config = traitlets.config.Config()
-    integrator_name = 'LocalPeakWindowSum'
-    config[integrator_name]['window_width'] = 5
-    config[integrator_name]['window_shift'] = 2
-
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -458,21 +400,15 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
     time_thresholds = image_cleaning_settings['time_thresholds']
-    #core_charge_thresholds = charge_thresholds.copy()
-    #core_charge_thresholds['boundary_thresh'] = core_charge_thresholds['picture_thresh']
 
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Creating an input source
         source = MAGICEventSource(input_url=input_mask)
-        calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
 
         # Looping over the events
         for event in source._mono_event_generator(telescope=f'M{tel_id}'):
             tels_with_data = event.r1.tels_with_data
-
-            # Calibrating an event
-            # calibrator.calibrate(event)
 
             computed_hillas_params = dict()
             pointing_alt = dict()
@@ -487,23 +423,13 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                 # Camera geometry
                 camera = source.subarray.tel[tel_id].camera
 
-                # ---------------------------
-                # Computing the cleaning mask
-                #clean_mask = tailcuts_clean(camera, event_image,
-                #                            **charge_thresholds)
-                #clean_mask_core = tailcuts_clean(camera, event_image,
-                #                                  **core_charge_thresholds)
-
                 clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
-
-                #clean_mask = apply_time_delta_cleaning(camera, clean_mask, clean_mask_core,
-                #                                       event_pulse_time,
-                #                                       time_limit=time_thresholds['time_limit'],
-                #                                       min_number_neighbors=time_thresholds['min_number_neighbors'])
 
                 clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
                                max_time_off=time_thresholds['max_time_off'],
@@ -511,12 +437,9 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
-
-                #clean_mask = apply_magic_time_off_cleaning(camera, clean_mask,
-                #                                           event_image, event_pulse_time,
-                #                                           max_time_off=time_thresholds['max_time_off'],
-                #                                           picture_thresh=charge_thresholds['picture_thresh'])
 
                 clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
                                max_time_diff=time_thresholds['max_time_diff'],
@@ -524,18 +447,11 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
-                ### Added on 02/07/2019
-                #clean_mask = single_island(camera,clean_mask,event_image)
-
-                #if event_image[clean_mask].sum() == 0:
-                    # Event did not survive image cleaining
-                #    continue
-
                 num_islands = get_num_islands(camera, clean_mask, event_image)
-                #clean_mask = filter_brightest_island(camera, clean_mask, event_image)
-                # ---------------------------
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -555,28 +471,22 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
                                                       image_mask)
                     leakage_params = leakage(camera, event_image, clean_mask)
 
-                    #computed_hillas_params[tel_id] = hillas_params
-
-                    #pointing_alt[tel_id] = event.pointing[tel_id].altitude.to(u.rad)
-                    #pointing_az[tel_id] = event.pointing[tel_id].azimuth.to(u.rad)
-
                     # Preparing metadata
-                    event_info = InfoContainer(obs_id=event.index.obs_id,
-                                               event_id=scipy.int32(event.index.event_id),
-                                               tel_id=tel_id,
-                                               mjd=event.trigger.time.mjd,
-                                               tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
-                                               tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
-                                               n_islands=num_islands)
+                    event_info = InfoContainer(
+                        obs_id=event.index.obs_id,
+                        event_id=scipy.int32(event.index.event_id),
+                        tel_id=tel_id,
+                        mjd=event.trigger.time.mjd,
+                        tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
+                        tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
+                        n_islands=num_islands
+                    )
 
                     # Storing the result
                     writer.write("hillas_params", (event_info, hillas_params, leakage_params, timing_params))
-
-            #if len(pointing_alt.keys()) > 1:
-                #stereo_params = hillas_reconstructor.predict(computed_hillas_params, event.inst, pointing_alt, pointing_az)
-                #event_info.tel_id = -1
-                ## Storing the result
-                #writer.write("stereo_params", (event_info, stereo_params))
+                else:
+                    print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
+                        f"telescope ID: {tel_id}) did not pass cleaning.")
 
 
 # =================
