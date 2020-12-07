@@ -157,20 +157,21 @@ def train_energy_rf_stereo(config_file):
     # --- Train sample ---
     f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
     info_message("Loading train data...", prefix='EnergyRF')
-    shower_data_train = load_dl1_data(f_)
+    shower_data_train = load_dl1_data_mono(f_)
 
     # Computing event weights
     info_message('Computing the train sample event weights...',
                  prefix='EnergyRF')
     alt_edges, intensity_edges = compute_event_weights()
 
-    mc_weights = get_weights_mc(shower_data_train, alt_edges, intensity_edges)
+    mc_weights = get_weights_mc_dir_class(
+        shower_data_train, alt_edges, intensity_edges)
 
     shower_data_train = shower_data_train.join(mc_weights)
 
     # --- Test sample ---
     f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
-    shower_data_test = load_dl1_data(f_)
+    shower_data_test = load_dl1_data_mono(f_)
     # tel_ids = get_tel_ids_dl1(shower_data_test)
     tel_ids, tel_ids_LST, tel_ids_MAGIC = \
         intersec_tel_ids(

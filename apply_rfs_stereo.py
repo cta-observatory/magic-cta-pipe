@@ -42,7 +42,7 @@ def apply_rfs_stereo(config_file):
     info_message(f'Loading "{data_type}", sample "{sample}"',
                  prefix='ApplyRF')
 
-    shower_data = load_dl1_data(
+    shower_data = load_dl1_data_mono(
         file=cfg['data_files'][data_type][sample]['hillas_h5'])
 
     # Dropping data with the wrong altitude

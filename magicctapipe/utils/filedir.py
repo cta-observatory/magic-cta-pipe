@@ -64,70 +64,54 @@ def check_folder(folder):
         os.makedirs(folder)
 
 
-def load_dl1_data(file, labels=['hillas_params']):
-    """Load `dl1/{label}` from dl1 file, h5 format
+def load_dl1_data_stereo(file, cfg):
+    """Load dl1 stereo
+
+    Parameters
+    ----------
+    file : string
+        file
+    cfg : dict
+        dict loaded from config
+
+    Returns
+    -------
+    pd.Dataframe
+        data
+    """
+    # Hillas
+    data_hillas = pd.read_hdf(file, key=f'dl1/hillas_params')
+    data_hillas = drop_keys(data_hillas, cfg['classifier_rf']['extra_keys'])
+    # Stereo
+    data_stereo = pd.read_hdf(file, key=f'dl1/stereo_params')
+    data_stereo = drop_keys(data_stereo, cfg['classifier_rf']['extra_keys'])
+    data_stereo = drop_keys(data_stereo, cfg['classifier_rf']['extra_st_keys'])
+    data = data_hillas.merge(data_stereo, on=['obs_id', 'event_id'])
+    # Index
+    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    data.sort_index(inplace=True)
+    return data
+
+
+def load_dl1_data_mono(file, label='hillas_params'):
+    """Load `dl1/{label}` from dl1 file, h5 format for mono data
 
     Parameters
     ----------
     file : str
         file name
-    labels : list, optional
-        list of dl1 labels, by default ['hillas_params']
+    label : str, optional
+        dl1 label, by default 'hillas_params'
 
     Returns
     -------
     pandas.DataFrame
         data
     """
-    data = pd.DataFrame()
-    for label in labels:
-        data_ = pd.read_hdf(file, key=f'dl1/{label}')
-        data_.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-        data_.sort_index(inplace=True)
-        data = data.append(data_)
+    data = pd.read_hdf(file, key=f'dl1/{label}')
+    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    data.sort_index(inplace=True)
     return data
-
-
-def load_dl1_data_stereo(file):
-    """Load `dl1/hillas_params` and `dl1/stereo_params` from dl1 file, 
-    h5 format
-
-    Parameters
-    ----------
-    file : str
-        file name
-
-    Returns
-    -------
-    pandas.DataFrame
-        data
-    """
-    data = load_dl1_data(file=file, labels=['hillas_params', 'stereo_params'])
-    return data
-
-
-def out_file_h5(in_file, li, hi):
-    """Returns the h5 output file name, from a simtel.gz input file
-
-    Parameters
-    ----------
-    in_file : str
-        Input file
-    li : int
-        low index
-    hi : int
-        high index
-
-    Returns
-    -------
-    str
-        h5 output file, absolute path
-    """
-    f = os.path.basename(in_file)
-    out = '_'.join(f.split('_')[:li]+f.split('_')[hi:])
-    out = '%s.h5' % out.rstrip('.simtel.gz')
-    out = os.path.join(os.path.dirname(in_file), out)
-    return out
 
 
 def drop_keys(df, extra_keys):
