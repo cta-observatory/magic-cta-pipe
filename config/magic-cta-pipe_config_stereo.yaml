@@ -1,0 +1,78 @@
+data_files:
+    mc:
+      train_sample:
+        magic:
+          input_mask: "/path/to/MC_train_files/GA*_Y_*.root"
+          hillas_output: "/path/to/MC_train_files/MC_train_hillas.h5"
+      test_sample:
+        magic:
+          input_mask: "/path/to/MC_test_files/GA*_Y_*.root"
+          hillas_output: "/path/to/MC_test_files/MC_test_hillas.h5"
+          reco_output: "/path/to/MC_test_files/MC_test_reco.h5"
+    data:
+      train_sample:
+        magic:
+          input_mask: "/path/to/data_train_files/20*_Y_*.root"
+          hillas_output: "/path/to/data_train_files/data_train_hillas.h5"
+      test_sample:
+        magic:
+          input_mask: "/path/to/data_test_files/20*_Y_*.root"
+          hillas_output: "/path/to/data_test_files/data_test_hillas.h5"
+          reco_output: "/path/to/data_test_files/data_test_reco.h5"
+
+image_cleaning:
+    magic:
+        charge_thresholds:
+            picture_thresh: 6
+            boundary_thresh: 3.5
+            min_number_picture_neighbors: 1
+
+        time_thresholds:
+            # 1.5 slices x 1.64 GHz
+            max_time_diff: 2.46
+            # 4.5 slices x 1.64 GHz
+            max_time_off: 7.38
+            min_number_neighbors: 1
+
+energy_rf:
+    save_name: "RFs/energy_rf.joblib"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 3
+    
+    features:
+        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2']
+
+direction_rf:
+    save_name: "RFs/direction_rf.joblib"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 3
+    
+    features:
+        'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
+        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
+
+classifier_rf:
+    save_name: "RFs/classifier_rf.joblib"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 3
+    
+    features:
+        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands']
+
+event_list:
+    max_time_diff: 6.9e-4
+    cuts:
+        quality:
+            l3rate: "80 < value < 1000"
+            dc: "0 < value < 7e3"
+        selection:
+            "(event_id > 0) & (multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4) & (event_class_0 > 0.8)"
