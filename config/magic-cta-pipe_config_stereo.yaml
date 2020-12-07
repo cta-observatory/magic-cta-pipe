@@ -1,3 +1,8 @@
+# Configuration file to be used for stereo analysis of MAGIC data.
+# In the several input_mask keys, one has to include files from
+# both M1 and M2, since the MAGICEventSource will match the events
+# to get the stereo events.
+
 data_files:
     mc:
       train_sample:
