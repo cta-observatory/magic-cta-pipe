@@ -48,7 +48,7 @@ energy_rf:
         n_jobs: 3
     
     features:
-        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2']
+        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2', 'h_max', 'alt', 'az']
 
 direction_rf:
     save_name: "RFs/direction_rf.joblib"
@@ -59,8 +59,8 @@ direction_rf:
         n_jobs: 3
     
     features:
-        'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
-        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
+        'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'alt', 'az']
+        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'alt', 'az']
 
 classifier_rf:
     save_name: "RFs/classifier_rf.joblib"
@@ -71,7 +71,7 @@ classifier_rf:
         n_jobs: 3
     
     features:
-        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands']
+        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands', 'h_max', 'alt', 'az']
 
 event_list:
     max_time_diff: 6.9e-4
