@@ -190,6 +190,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
                             mask=clean
                         )
                     elif geom.camera_name == cfg['MAGIC']['camera_name']:
+                        # Commented since it gives the error:
+                        # Image not reconstructed: 'is_simulation'
                         # badrmspixel_mask = \
                         #     badpixel_calculator.get_badrmspixel_mask(event)
                         # deadpixel_mask = \
