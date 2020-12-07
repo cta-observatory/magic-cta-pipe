@@ -141,30 +141,21 @@ def _print_par_imp(class_estimator):
 def _load_init_data(cfg, mode='train'):
     f_ = cfg['data_files']['mc'][f'{mode}_sample']['hillas_h5']
     info_message(f'Loading MC {mode} data...', prefix='ClassifierRF')
-    mc_data = load_dl1_data(f_, ['hillas_params'])
-    mc_st_data = load_dl1_data(f_, ['stereo_params'])
+    
+    mc_data = load_dl1_data_stereo(f_, cfg)
 
     f_ = cfg['data_files']['data'][f'{mode}_sample']['hillas_h5']
     info_message(f'Loading "off" {mode} data...', prefix='ClassifierRF')
-    bkg_data = load_dl1_data(f_, ['hillas_params'])
-    bkg_st_data = load_dl1_data(f_, ['stereo_params'])
+    bkg_data = load_dl1_data_stereo(f_, cfg)
 
     # True event classes
     mc_data['true_event_class'] = 0
     bkg_data['true_event_class'] = 1
-    mc_st_data['true_event_class'] = 0
-    bkg_st_data['true_event_class'] = 1
 
     # Dropping data with the wrong altitude
     bkg_data = bkg_data.query(cfg['global']['wrong_alt'])
 
-    # Dropping extra keys
-    mc_data = drop_keys(mc_data, cfg['classifier_rf']['extra_keys'])
-    mc_st_data = drop_keys(mc_st_data, cfg['classifier_rf']['extra_keys'])
-    bkg_data = drop_keys(bkg_data, cfg['classifier_rf']['extra_keys'])
-    bkg_st_data = drop_keys(bkg_st_data, cfg['classifier_rf']['extra_keys'])
-
-    return mc_data, mc_st_data, bkg_data, bkg_st_data
+    return mc_data, bkg_data
 
 
 def _print_par_imp_st(class_estimator):
@@ -187,7 +178,7 @@ def train_classifier_rf_stereo(config_file):
     check_folder(cfg['classifier_rf']['save_dir'])
 
     # --- Train sample ---
-    mc_data, mc_st_data, bkg_data, bkg_st_data = \
+    mc_data, bkg_data = \
         _load_init_data(mode='train', cfg=cfg)
 
     # Computing event weights
@@ -196,27 +187,19 @@ def train_classifier_rf_stereo(config_file):
     mc_weights, bkg_weights = _get_weights(
         mc_data, bkg_data, alt_edges, intensity_edges)
 
-    mc_st_weights, bkg_st_weights = _get_weights(
-        mc_st_data, bkg_st_data, alt_edges, intensity_edges, is_stereo=True)
-
     mc_data = mc_data.join(mc_weights)
     bkg_data = bkg_data.join(bkg_weights)
-    mc_st_data = mc_st_data.join(mc_st_weights)
-    bkg_st_data = bkg_st_data.join(bkg_st_weights)
 
     # Merging the train sample
     shower_data_train = mc_data.append(bkg_data)
-    shower_data_train_st = mc_st_data.append(bkg_st_data)
     # --------------------
 
     # --- Test sample ---
-    mc_data, mc_st_data, bkg_data, bkg_st_data = \
+    mc_data, bkg_data = \
         _load_init_data(mode='test', cfg=cfg)
 
     # Merging the test sample
     shower_data_test = mc_data.append(bkg_data)
-    shower_data_test_st = mc_st_data.append(bkg_st_data)
-
     # -------------------
 
     info_message('Preprosessing...', prefix='ClassifierRF')
@@ -227,52 +210,35 @@ def train_classifier_rf_stereo(config_file):
         shower_data_train['intensity'].groupby(level=l_).count()
     shower_data_test['multiplicity'] = \
         shower_data_test['intensity'].groupby(level=l_).count()
-    shower_data_train_st['multiplicity'] = \
-        shower_data_train_st['average_intensity'].groupby(level=l_).count()
-    shower_data_test_st['multiplicity'] = \
-        shower_data_test_st['average_intensity'].groupby(level=l_).count()
 
     # Applying the cuts
     c_ = cfg['classifier_rf']['cuts']
     shower_data_train = shower_data_train.query(c_)
     shower_data_test = shower_data_test.query(c_)
     c_ = cfg['classifier_rf']['cuts_st']
-    shower_data_train_st = shower_data_train_st.query(c_)
-    shower_data_test_st = shower_data_test_st.query(c_)
 
     # --- Training the direction RF ---
     info_message('Training RF...', prefix='ClassifierRF')
 
     class_estimator = EventClassifierPandas(
         cfg['classifier_rf']['features'],
-        cfg['classifier_rf']['features_st'],
-        stereo_id,
         **cfg['classifier_rf']['settings']
     )
     class_estimator.fit(shower_data_train)
 
-    class_estimator.fit(shower_data_train_st, is_stereo=True)
+    # class_estimator.fit(shower_data_train_st, is_stereo=True)
     class_estimator.save(os.path.join(cfg['classifier_rf']['save_dir'],
                                       cfg['classifier_rf']['joblib_name']))
-    # class_estimator.load(cfg['classifier_rf']['save_name'])
 
     # Print Parameter importances Mono
     info_message('Parameter importances', prefix='ClassifierRF')
     _print_par_imp(class_estimator)
-
-    # Print Parameter importances Stereo
-    info_message('Stereo Parameter importances', prefix='ClassifierRF')
-    _print_par_imp_st(class_estimator)
 
     # Apply RF
     info_message('Applying RF...', prefix='ClassifierRF')
     # Mono
     class_reco = class_estimator.predict(shower_data_test)
     shower_data_test = shower_data_test.join(class_reco)
-    # Stereo
-    class_reco_st = class_estimator.predict(shower_data_test_st,
-                                            is_stereo=True)
-    shower_data_test_st = shower_data_test_st.join(class_reco_st)
 
     # Evaluating performance
     info_message('Evaluating performance...', prefix='ClassifierRF')
@@ -300,31 +266,24 @@ def train_classifier_rf_stereo(config_file):
         performance[tel_id] = evaluate_performance(
             shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns])
 
-    # Stereo
-    performance[stereo_id] = evaluate_performance(
-        shower_data_test_st.loc[idx[:, :, stereo_id],
-                                shower_data_test_st.columns])
 
     # ================
     # === Plotting ===
     # ================
 
     plt.figure(figsize=tuple(cfg['classifier_rf']['fig_size']))
-    labels = ['Gammaness', 'Hadroness']
+    labels = ['Gamma', 'Hadrons']
 
-    grid_shape = (2, len(tel_ids)+1+1)
+    grid_shape = (2, len(tel_ids)+1)
 
     for tel_num, tel_id in enumerate(performance):
         plt.subplot2grid(grid_shape, (0, tel_num))
         if(tel_id == 0):
-            # plt.title(f'Tel {tel_id} estimation')
             plt.title('Mean')
-        elif(tel_id == -1):
-            plt.title("Stereo")
         else:
             n_ = get_tel_name(tel_id=tel_id, cfg=cfg)
             plt.title(f'{n_} estimation')
-        plt.xlabel('Gamma probability')
+        plt.xlabel('Gammaness')
         # plt.xlabel('Class 0 probability')
         plt.ylabel('Event density')
 
@@ -375,7 +334,7 @@ def train_classifier_rf_stereo(config_file):
         else:
             n_ = get_tel_name(tel_id=tel_id, cfg=cfg)
             plt.title(f'{n_} estimation')
-        plt.xlabel('Gamma probability')
+        plt.xlabel('Gammaness')
         # plt.xlabel('Class 0 probability')
         plt.ylabel('Cumulative probability')
         plt.ylim(1e-3, 1)
