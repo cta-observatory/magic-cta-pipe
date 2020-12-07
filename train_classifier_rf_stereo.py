@@ -141,7 +141,6 @@ def _print_par_imp(class_estimator):
 def _load_init_data(cfg, mode='train'):
     f_ = cfg['data_files']['mc'][f'{mode}_sample']['hillas_h5']
     info_message(f'Loading MC {mode} data...', prefix='ClassifierRF')
-    
     mc_data = load_dl1_data_stereo(f_, cfg)
 
     f_ = cfg['data_files']['data'][f'{mode}_sample']['hillas_h5']
