@@ -33,6 +33,7 @@ def apply_rfs_stereo(config_file):
     # ------------------------------
     # Reading the configuration file
     cfg = load_cfg_file(config_file)
+    stereo_id = cfg['all_tels']['stereo_id']
 
     # Using only the "data" "test_sample"
     data_type = 'data'
@@ -84,8 +85,12 @@ def apply_rfs_stereo(config_file):
                                               **cfg[rf_kind]['settings'])
 
         elif rf_kind == 'classifier_rf':
-            estimator = EventClassifierPandas(cfg[rf_kind]['features'],
-                                              **cfg[rf_kind]['settings'])
+            estimator = EventClassifierPandas(
+                cfg[rf_kind]['features'],
+                cfg[rf_kind]['features_st'],
+                stereo_id,
+                **cfg[rf_kind]['settings']
+            )
 
         estimator.load(os.path.join(cfg[rf_kind]['save_dir'],
                                     cfg[rf_kind]['joblib_name']))
