@@ -610,7 +610,7 @@ elif parsed_args.usetest:
 else:
     data_sample_to_process = ['train_sample', 'test_sample']
 
-telescope_to_process = ['magic1', 'magic2']
+telescopes_to_process = list(config['image_cleaning'].keys())
 
 for data_type in data_type_to_process:
     for sample in data_sample_to_process:
