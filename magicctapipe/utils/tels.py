@@ -3,12 +3,22 @@ import sys
 import datetime
 import pandas as pd
 from astropy import units as u
+import numpy as np
 
 import ctapipe
 from ctapipe.instrument import CameraGeometry
 from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
+
+def tel_ids_2_num(tel_ids):
+    """ From tel_ids to num dec """
+    return sum([2**a_ for a_ in tel_ids])
+
+def num_2_tel_ids(num):
+    """ From num dec to tel_ids """
+    return np.where(np.array(list(bin(num)[2:][::-1])) == '1')[0]
+
 
 
 def get_tel_descriptions(name, cam, tel_ids):
