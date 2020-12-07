@@ -17,7 +17,7 @@ def compute_event_weights():
     return alt_edges, intensity_edges
 
 
-def get_weights_mc(mc_data, alt_edges, intensity_edges):
+def get_weights_mc_dir_class(mc_data, alt_edges, intensity_edges):
     mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
                                    mc_data['intensity'],
                                    bins=[alt_edges, intensity_edges])

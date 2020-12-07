@@ -3,6 +3,8 @@ import astropy.units as u
 
 from ctapipe.core.container import Container, Field
 
+from magicctapipe.reco.stereo import *
+
 
 def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p):
     """Write
@@ -24,7 +26,8 @@ def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p):
 
 
 def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
-                       array_pointing, telescope_pointings, event_info, writer):
+                       array_pointing, telescope_pointings, event_info, 
+                       writer):
     """Check hillas parameters and write stero parameters
 
     Parameters
@@ -71,8 +74,7 @@ def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
                 telescopes_pointings=telescope_pointings
             )
             event_info.tel_id = -1
-            stereo_params.tel_ids = \
-                sum([2**a_ for a_ in stereo_params.tel_ids])
+            stereo_params.tel_ids = tel_ids_2_num(stereo_params.tel_ids)
             # How to go back
             # n = stereo_params.tel_ids
             # np.where(np.array(list(bin(n)[2:][::-1]))=='1')[0]
