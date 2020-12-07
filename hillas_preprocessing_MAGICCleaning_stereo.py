@@ -417,19 +417,21 @@ telescopes_to_process = list(config['image_cleaning'].keys())
 
 for data_type in data_type_to_process:
     for sample in data_sample_to_process:
-        try:
-            telescope_type = re.findall('(.*)[_\d]+', telescope_to_process[0])[0]
-        except:
-            ValueError(f'Can not recognize the telescope type from name "{telescope_to_process}"')
+        for telescope_type in telescopes_to_process:
+            if telescope_type not in config[data_type][sample]:
+                raise ValueError(f'Telescope type "{telescope_type}" is not in the configuration file')
 
-        info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
-                    prefix='Hillas')
+            if telescope_type not in config['image_cleaning']:
+                raise ValueError(f'Telescope type "{telescope_type}" does not have image cleaning settings')
 
-        is_mc = data_type.lower() == "mc"
+            info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
+                prefix='Hillas')
 
-        if is_mc:
-            process_dataset_mc(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                               output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
-        else:
-            process_dataset_data(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                                output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
+            is_mc = data_type.lower() == "mc"
+
+            if is_mc:
+                process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'])
+            else:
+                process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'])
