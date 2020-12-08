@@ -5,36 +5,42 @@
 data_files:
   mc:
     train_sample:
+      # mask_sim: '/mnt/d/CTA-MC/DL0/gamma-diffuse/*.simtel.gz'
+      # hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Hillas_Stereo.h5'
+      # reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Reco.h5'
       mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point/Hillas_Stereo.h5'
       reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point/Reco.h5'
     test_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-diffuse/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Reco.h5'
+      # mask_sim: '/mnt/d/CTA-MC/DL0/gamma-diffuse-2/*.simtel.gz'
+      # hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse-2/Hillas_Stereo.h5'
+      # reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse-2/Reco.h5'
+      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-2/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-2/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-2/Reco.h5'
   data:
     train_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/proton/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Hillas_Stereo.h5'
-      # reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Reco.h5'
     test_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/proton/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Hillas_Stereo.h5'
-      # reco_h5: '/mnt/d/CTA-MC/DL0/Reco.h5'
+      mask_sim: '/mnt/d/CTA-MC/DL0/proton-2/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-2/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Reco.h5'
 
 # --- TELESCOPES ---------------------------------------------------------------
 all_tels:
   tel_ids: [1, 2, 3, 4, 5, 6]
   tel_n: ['LST', 'MAGIC']
   tel_n_short: ['LST', 'M']
-
+  stereo_id: -1
 LST:
   tel_ids: [1, 2, 3, 4]
   cleaning_config:
-    boundary_thresh: 4
-    keep_isolated_pixels: true
-    min_number_picture_neighbors: 0
-    picture_thresh: 8
+    picture_thresh: 6
+    boundary_thresh: 3
+    keep_isolated_pixels: false
+    min_number_picture_neighbors: 1
   camera_name: 'LSTCam'
   min_pixel: 5
 
@@ -67,14 +73,15 @@ classifier_rf:
   save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'classifier_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
+  cuts_st: '(event_id > 0) & (multiplicity >= 1) & (average_intensity > 30)'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
-  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands']
+  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands', 'h_max', 'core_x', 'core_y', 'alt', 'az']
+  # features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands']
   fig_name: 'classifier_rf_gammaness'
   fig_size: [20, 10]
-  extra_keys: ['true_energy', 'true_alt', 'true_az']
 
 # --- TRAIN DIRECTION RF -------------------------------------------------------
 direction_rf:
@@ -86,8 +93,8 @@ direction_rf:
     min_samples_leaf: 10
     n_jobs: 3
   features:
-    'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
-    'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
+    'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'core_x', 'core_y', 'alt', 'az']
+    'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'core_x', 'core_y', 'alt', 'az']
   fig_name_theta2: 'Direction_RF_theta2'
   fig_name_PSF_energy: 'Direction_RF_PSF_energy'
   fig_name_PSF_offset: 'Direction_RF_PSF_offset'
@@ -102,6 +109,7 @@ energy_rf:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
-  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2']
+  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2', 'h_max', 'core_x', 'core_y', 'alt', 'az']
+  # features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2']
   fig_name: 'Energy_RF_migmatrix'
   fig_size: [30, 10]
