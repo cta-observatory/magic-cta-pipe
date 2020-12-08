@@ -64,28 +64,39 @@ def check_folder(folder):
         os.makedirs(folder)
 
 
-def load_dl1_data_stereo(file, cfg):
-    """Load dl1 stereo
+def load_dl1_data_stereo(file, drop=False):
+    """Load dl1 data hillas and stereo and merge them togheter
 
     Parameters
     ----------
     file : string
         file
-    cfg : dict
-        dict loaded from config
+    drop : bool, optional
+        drop extra keys, by default False
+
 
     Returns
     -------
     pd.Dataframe
         data
     """
+    extra_keys = [
+        'true_energy', 'true_alt', 'true_az', 'mjd', 'goodness_of_fit',
+        'h_max_uncert', 'az_uncert', 'core_uncert']
+    extra_st_keys = [
+        'true_energy', 'true_alt', 'true_az', 'tel_alt', 'tel_az',
+        'num_islands', 'tel_id']
     # Hillas
     data_hillas = pd.read_hdf(file, key=f'dl1/hillas_params')
-    data_hillas = drop_keys(data_hillas, cfg['classifier_rf']['extra_keys'])
     # Stereo
     data_stereo = pd.read_hdf(file, key=f'dl1/stereo_params')
-    data_stereo = drop_keys(data_stereo, cfg['classifier_rf']['extra_keys'])
-    data_stereo = drop_keys(data_stereo, cfg['classifier_rf']['extra_st_keys'])
+    # Drop common keys
+    data_stereo = drop_keys(data_stereo, extra_st_keys)
+    # Drop extra keys
+    if(drop):
+        data_hillas = drop_keys(data_hillas, extra_keys)
+        data_stereo = drop_keys(data_stereo, extra_keys)
+    # Merge
     data = data_hillas.merge(data_stereo, on=['obs_id', 'event_id'])
     # Index
     data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
