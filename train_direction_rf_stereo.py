@@ -110,7 +110,7 @@ def train_direction_rf_stereo(config_file):
     # --- Train sample ---
     info_message("Loading train data...", prefix='DirRF')
     f_ = cfg['data_files']['mc']['train_sample']['hillas_h5']
-    shower_data_train = load_dl1_data_mono(f_)
+    shower_data_train = load_dl1_data_stereo(f_)
 
     # Computing event weights
     info_message('Computing the train sample event weights...', prefix='DirRF')
@@ -123,8 +123,7 @@ def train_direction_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg['data_files']['mc']['test_sample']['hillas_h5']
-    shower_data_test = load_dl1_data_mono(f_)
-    # tel_ids = get_tel_ids_dl1(shower_data_test)
+    shower_data_test = load_dl1_data_stereo(f_)
     tel_ids, tel_ids_LST, tel_ids_MAGIC = \
         intersec_tel_ids(
             tel_ids_sel=get_tel_ids_dl1(shower_data_test),
@@ -160,7 +159,6 @@ def train_direction_rf_stereo(config_file):
     direction_estimator.fit(shower_data_train)
     direction_estimator.save(os.path.join(cfg['direction_rf']['save_dir'],
                                           cfg['direction_rf']['joblib_name']))
-    # direction_estimator.load(cfg['direction_rf']['save_name'])
 
     # Printing the parameter "importances"
     for kind in direction_estimator.telescope_rfs:
@@ -266,7 +264,7 @@ def train_direction_rf_stereo(config_file):
     grid_shape = (len(tel_ids)+1, 2)
     for index, tel_id in enumerate([0]+tel_ids):
         plt.subplot2grid(grid_shape, (index, 0))
-        if(tel_id==0):
+        if(tel_id == 0):
             plt.title(f'Total')
         else:
             plt.title(get_tel_name(tel_id=tel_id, cfg=cfg))
