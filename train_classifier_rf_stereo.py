@@ -171,7 +171,6 @@ def _print_par_imp_st(class_estimator):
 def train_classifier_rf_stereo(config_file):
     # --- Reading the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label='classifier_rf')
-    stereo_id = cfg['all_tels']['stereo_id']
 
     # --- Check output directory ---
     check_folder(cfg['classifier_rf']['save_dir'])

@@ -33,7 +33,6 @@ def apply_rfs_stereo(config_file):
     # ------------------------------
     # Reading the configuration file
     cfg = load_cfg_file(config_file)
-    stereo_id = cfg['all_tels']['stereo_id']
 
     # Using only the "data" "test_sample"
     data_type = 'data'
@@ -42,7 +41,7 @@ def apply_rfs_stereo(config_file):
     info_message(f'Loading "{data_type}", sample "{sample}"',
                  prefix='ApplyRF')
 
-    shower_data = load_dl1_data_mono(
+    shower_data = load_dl1_data_stereo(
         file=cfg['data_files'][data_type][sample]['hillas_h5'])
 
     # Dropping data with the wrong altitude
@@ -85,12 +84,8 @@ def apply_rfs_stereo(config_file):
                                               **cfg[rf_kind]['settings'])
 
         elif rf_kind == 'classifier_rf':
-            estimator = EventClassifierPandas(
-                cfg[rf_kind]['features'],
-                cfg[rf_kind]['features_st'],
-                stereo_id,
-                **cfg[rf_kind]['settings']
-            )
+            estimator = EventClassifierPandas(cfg[rf_kind]['features'],
+                                              **cfg[rf_kind]['settings'])
 
         estimator.load(os.path.join(cfg[rf_kind]['save_dir'],
                                     cfg[rf_kind]['joblib_name']))
@@ -105,9 +100,8 @@ def apply_rfs_stereo(config_file):
     # Storing the reconstructed values for the given data sample
     info_message('Saving the reconstructed data', prefix='ApplyRF')
 
-    for telescope in cfg['data_files'][data_type][sample]:
-        shower_data.to_hdf(
-            cfg['data_files'][data_type][sample]['reco_h5'], key='dl2/reco')
+    shower_data.to_hdf(
+        cfg['data_files'][data_type][sample]['reco_h5'], key='dl2/reco')
 
 
 if __name__ == '__main__':
