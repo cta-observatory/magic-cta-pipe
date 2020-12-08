@@ -79,7 +79,7 @@ def evaluate_performance(data, class0_name='event_class_0'):
 
 
 def _get_weights(mc_data, bkg_data, alt_edges, intensity_edges,
-                is_stereo=False):
+                 is_stereo=False):
     intensity_lbl = f'{is_stereo*"average_"}intensity'
 
     mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
@@ -141,11 +141,11 @@ def _print_par_imp(class_estimator):
 def _load_init_data(cfg, mode='train'):
     f_ = cfg['data_files']['mc'][f'{mode}_sample']['hillas_h5']
     info_message(f'Loading MC {mode} data...', prefix='ClassifierRF')
-    mc_data = load_dl1_data_stereo(f_, cfg)
+    mc_data = load_dl1_data_stereo(f_, drop=True)
 
     f_ = cfg['data_files']['data'][f'{mode}_sample']['hillas_h5']
     info_message(f'Loading "off" {mode} data...', prefix='ClassifierRF')
-    bkg_data = load_dl1_data_stereo(f_, cfg)
+    bkg_data = load_dl1_data_stereo(f_, drop=True)
 
     # True event classes
     mc_data['true_event_class'] = 0
@@ -214,7 +214,6 @@ def train_classifier_rf_stereo(config_file):
     c_ = cfg['classifier_rf']['cuts']
     shower_data_train = shower_data_train.query(c_)
     shower_data_test = shower_data_test.query(c_)
-    c_ = cfg['classifier_rf']['cuts_st']
 
     # --- Training the direction RF ---
     info_message('Training RF...', prefix='ClassifierRF')
@@ -264,7 +263,6 @@ def train_classifier_rf_stereo(config_file):
     for tel_id in tel_ids:
         performance[tel_id] = evaluate_performance(
             shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns])
-
 
     # ================
     # === Plotting ===
