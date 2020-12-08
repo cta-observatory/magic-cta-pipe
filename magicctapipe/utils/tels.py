@@ -12,11 +12,43 @@ from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
 def tel_ids_2_num(tel_ids):
-    """ From tel_ids to num dec """
+    """Function to convert a list of tel_ids into a decimal number wich can be
+    stored in a h5 file. 
+    The number is computed on a binary basis, assigning 1 to a triggered 
+    telescope, 0 to a non-triggered one.  
+    For example, if in the array the triggered telescopes are 2, 3 and 5:  
+    - [6 5 4 3 2 1] all telescope ids of the array  
+    - [  5   3 2  ] triggered telescopes (tel_ids)   
+    - [0 1 0 1 1 0] triggered telescopes (binary)
+    - the number is saved as decimal, therefore: 2**5 + 2**3 + 2**2 = 44  
+    Please note that the number does not depend on the presence or absence 
+    of non-triggered telescopes in the array
+
+    Parameters
+    ----------
+    tel_ids : list
+        list of triggered telescope ids
+
+    Returns
+    -------
+    int
+        decimal number computed as follow
+    """    
     return sum([2**a_ for a_ in tel_ids])
 
 def num_2_tel_ids(num):
-    """ From num dec to tel_ids """
+    """Inverse function of tel_ids_2_num()
+
+    Parameters
+    ----------
+    num : int
+        decimal number computed by tel_ids_2_num()
+
+    Returns
+    -------
+    list
+        list of triggered telescope ids
+    """    
     return np.where(np.array(list(bin(num)[2:][::-1])) == '1')[0]
 
 
