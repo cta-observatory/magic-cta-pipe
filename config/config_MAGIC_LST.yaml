@@ -73,7 +73,6 @@ classifier_rf:
   save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'classifier_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
-  cuts_st: '(event_id > 0) & (multiplicity >= 1) & (average_intensity > 30)'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
