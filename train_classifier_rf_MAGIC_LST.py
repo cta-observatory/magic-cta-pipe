@@ -78,15 +78,12 @@ def evaluate_performance(data, class0_name='event_class_0'):
     return report
 
 
-def _get_weights(mc_data, bkg_data, alt_edges, intensity_edges,
-                 is_stereo=False):
-    intensity_lbl = f'{is_stereo*"average_"}intensity'
-
+def _get_weights(mc_data, bkg_data, alt_edges, intensity_edges):
     mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
-                                   mc_data[intensity_lbl],
+                                   mc_data['intensity'],
                                    bins=[alt_edges, intensity_edges])
     bkg_hist, _, _ = np.histogram2d(bkg_data['tel_alt'],
-                                    bkg_data[intensity_lbl],
+                                    bkg_data['intensity'],
                                     bins=[alt_edges, intensity_edges])
 
     availability_hist = np.clip(mc_hist, 0, 1) * np.clip(bkg_hist, 0, 1)
@@ -94,7 +91,7 @@ def _get_weights(mc_data, bkg_data, alt_edges, intensity_edges,
     # --- MC weights ---
     mc_alt_bins = np.digitize(mc_data['tel_alt'], alt_edges) - 1
     mc_intensity_bins = \
-        np.digitize(mc_data[intensity_lbl], intensity_edges) - 1
+        np.digitize(mc_data['intensity'], intensity_edges) - 1
 
     # Treating the out-of-range events
     mc_alt_bins[mc_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -107,7 +104,7 @@ def _get_weights(mc_data, bkg_data, alt_edges, intensity_edges,
     # --- Bkg weights ---
     bkg_alt_bins = np.digitize(bkg_data['tel_alt'], alt_edges) - 1
     bkg_intensity_bins = \
-        np.digitize(bkg_data[intensity_lbl], intensity_edges) - 1
+        np.digitize(bkg_data['intensity'], intensity_edges) - 1
 
     # Treating the out-of-range events
     bkg_alt_bins[bkg_alt_bins == len(alt_edges) - 1] = len(alt_edges) - 2
@@ -200,7 +197,7 @@ def train_classifier_rf_stereo(config_file):
     shower_data_test = mc_data.append(bkg_data)
     # -------------------
 
-    info_message('Preprosessing...', prefix='ClassifierRF')
+    info_message('Preprocessing...', prefix='ClassifierRF')
 
     # --- Data preparation ---
     l_ = ['obs_id', 'event_id']
@@ -292,7 +289,7 @@ def train_classifier_rf_stereo(config_file):
                      gammaness[event_class]['Hist'],
                      where='post',
                      color=f'C{class_i}',
-                     label=labels[event_class])
+                     label=labels[class_i])
             #  label=f'Class {event_class}')
 
             plt.step(gammaness[event_class]['XEdges'][1:],
@@ -343,7 +340,7 @@ def train_classifier_rf_stereo(config_file):
                      gammaness[event_class]['Cumsum'],
                      where='post',
                      color=f'C{class_i}',
-                     label=labels[event_class])
+                     label=labels[class_i])
             #  label=f'Class {event_class}')
 
             plt.step(gammaness[event_class]['XEdges'][1:],
