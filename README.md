@@ -6,16 +6,19 @@ This repository contains the scripts needed to perform MAGIC+LST analysis with c
 
 
 A brief description:
-1. `CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
-2. `hillas_preprocessing.py`: compute the hillas parameters. Loops over MCs and real data. This script uses the tailcuts cleaning.
-3. `hillas_preprocessing_MAGICCleaning.py`: compute the hillas parameters. Loops over MCs and real data. This script used the MAGIC cleaning implemented in MARS.
-3. `train_energy_rf.py`: trains the energy RF.
-4. `train_direction_rf.py`: trains the direction "disp" RF.
-5. `train_classifier_rf.py`: trains the event classification RF.
-6. `apply_rfs.py`: applies the trained RFs to the "test" event sample.
-7. `add_orig_mc_tree.py`: adds the "original MC" tree info to the MC events tree processed earlier.
-8. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
-9. `make_event_lists.py`: produces the FITS event lists with application of the cuts.
+1. `config/CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
+2. `config/magic-cta-pipe_config_stereo.yaml`: an example of the configuration file for stereo analysis.
+3. `hillas_preprocessing.py`: compute the hillas parameters. Loops over MCs and real data. This script uses the tailcuts cleaning.
+4. `hillas_preprocessing_stereo.py`: compute the hillas and stereo parameters. Loops over MCs and real data. This script uses the tailcuts cleaning.
+5. `hillas_preprocessing_MAGICCleaning.py`: compute the hillas parameters. Loops over MCs and real data. This script used the MAGIC cleaning implemented in MARS.
+6. `hillas_preprocessing_MAGICCleaning_stereo.py`: compute the hillas and stereo parameters. Loops over MCs and real data. This script used the MAGIC cleaning implemented in MARS.
+7. `train_energy_rf.py`: trains the energy RF.
+8. `train_direction_rf.py`: trains the direction "disp" RF.
+9. `train_classifier_rf.py`: trains the event classification RF.
+10. `apply_rfs.py`: applies the trained RFs to the "test" event sample.
+11. `add_orig_mc_tree.py`: adds the "original MC" tree info to the MC events tree processed earlier.
+12. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
+13. `make_event_lists.py`: produces the FITS event lists with application of the cuts.
 
 Moreover, the `utils` directory contains two modules:
 * `MAGIC_Badpixels.py`: finds the so called bad/hot pixels i.e. pixels affected by stars, or pixels turned off or dead.
@@ -76,6 +79,12 @@ each of those Random Forests.
 
 Finally, the `event_list` key is used to specify some cuts, `quality` or user `selection` cuts.
 
+### Configuration file magic-cta-pipe\_config\_stereo.yaml ###
+
+This configuration file is very similar to the previous one, but it should be used when stereo analysis has to be performed. In particular, what changes wrt
+`CrabNebula.yaml` is that there is only one telescope name key, namely `magic`. This is because the input mask in this case will specify data from both
+M1 and M2 to allow for stereo reconstruction.
+
 ### hillas\_preprocessing.py ###
 
 The first script to run the pipeline is `hillas_preprocessing.py`. It takes calibrated files (both simulated and real data) as input and processes them:
@@ -120,6 +129,24 @@ The next step in the pipeline is training the Random Forests for event classific
 ### hillas\_preprocessing\_MAGICCleaning.py ###
 
 It is similar to `hillas_preprocessing.py`, the only difference is that it uses the MAGIC cleaning implemented in MARS. Its usage is the same as `hillas_preprocessing.py`, see above.
+
+### hillas\_preprocessing\_stereo.py and hillas\_preprocessing\_MAGICCleaning\_stereo.py ###
+
+These script are very similar to `hillas_preprocessing.py` and `hillas_preprocessing_MAGICCleaning.py`, but they include also the reconstruction of stereo parameters.
+
+Running the scripts is straightforward, e.g.:
+
+```bash
+$ python hillas_preprocessing_stereo.py --config=config_stereo.yaml
+```
+
+where `config_stereo.yaml` is the name of the configuration file, the proper one for stereo analysis.
+
+Other available options are:
+* `--usereal`: run the script only over real data
+* `--usemc`: run the script only over MC data
+* `--usetest`: run the script only over test sample data
+* `--usetrain`: run the script only over train sample data
 
 ### train\_energy\_rf.py, train\_direction\_rf.py, train\_classifier\_rf.py ###
 
