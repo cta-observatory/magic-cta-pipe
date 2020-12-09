@@ -46,7 +46,7 @@ def GetHist(data, bins=30, range=None, weights=None):
     return hist
 
 
-def evaluate_performance(data, class0_name='event_class_0', is_stereo):
+def evaluate_performance(data, is_stereo, class0_name='event_class_0'):
     if not is_stereo:
         data = data.dropna()
 
@@ -345,7 +345,7 @@ performance = dict()
 tel_ids = shower_data_test.index.levels[2]
 
 performance[0] = evaluate_performance(shower_data_test.loc[idx[:, :, 1], shower_data_test.columns],
-                                      class0_name='event_class_0_mean', is_stereo)
+                                      is_stereo, class0_name='event_class_0_mean')
 
 for tel_id in tel_ids:
     performance[tel_id] = evaluate_performance(shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns], is_stereo)
