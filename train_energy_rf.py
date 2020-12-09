@@ -107,6 +107,21 @@ def evaluate_performance(data, energy_name):
 
 
 def load_data_sample(sample):
+    """
+    This function loads Hillas data from the corresponding sample, merging the data
+    from the different telescopes found.
+
+    Parameters
+    ----------
+    sample: str
+        Sample from which data will be read
+
+    Returns
+    -------
+    pandas.Dataframe
+        Pandas dataframe with data from all the telescopes in sample
+    """
+
     shower_data = pd.DataFrame()
 
     for telescope in sample:
@@ -123,6 +138,22 @@ def load_data_sample(sample):
 
 
 def load_data_sample_stereo(input_file, is_mc):
+    """
+    This function loads Hillas and stereo data from input_file.
+
+    Parameters
+    ----------
+    input_file: str
+        Input HDF5 file
+    is_mc: bool
+        Flag to denote if data is MC or real
+
+    Returns
+    -------
+    pandas.Dataframe
+        Pandas dataframe with Hillas and stereo data
+    """
+
     shower_data = pd.DataFrame()
 
     hillas_data = pd.read_hdf(input_file, key='dl1/hillas_params')
