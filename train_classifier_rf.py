@@ -303,7 +303,7 @@ shower_data_test = mc_data.append(bkg_data)
 # -------------------
 
 
-info_message('Preprosessing...', prefix='ClassifierRF')
+info_message('Preprocessing...', prefix='ClassifierRF')
 
 # --- Data preparation ---
 shower_data_train['multiplicity'] = shower_data_train['intensity'].groupby(level=['obs_id', 'event_id']).count()
