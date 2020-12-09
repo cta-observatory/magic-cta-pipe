@@ -215,7 +215,7 @@ else:
     shower_data_train = load_data_sample(config['data_files']['mc']['train_sample'])
 
 # Computing event weights
-info_message('Computing the train sample event weights...', prefix='DirRF')
+info_message('Computing the train sample event weights...', prefix='DirectionRF')
 sin_edges = np.linspace(0, 1, num=51)
 alt_edges = np.lib.scimath.arcsin(sin_edges)
 intensity_edges = np.logspace(1, 5, num=51)
@@ -241,7 +241,7 @@ shower_data_train = shower_data_train.query(config['direction_rf']['cuts'])
 shower_data_test = shower_data_test.query(config['direction_rf']['cuts'])
 
 # --- Training the direction RF ---
-info_message('Training the RF\n', prefix='DirRF')
+info_message('Training the RF\n', prefix='DirectionRF')
 
 direction_estimator = DirectionEstimatorPandas(config['direction_rf']['features'],
                                                magic_tel_descriptions,
@@ -261,16 +261,16 @@ for kind in direction_estimator.telescope_rfs:
         print('')
 
 # --- Applying RF to the "test" sample ---
-info_message('Applying RF to the "test" sample', prefix='DirRF')
+info_message('Applying RF to the "test" sample', prefix='DirectionRF')
 coords_reco = direction_estimator.predict(shower_data_test)
 shower_data_test = shower_data_test.join(coords_reco)
 
 # --- Evaluating the performance ---
-info_message('Evaluating the performance', prefix='DirRF')
+info_message('Evaluating the performance', prefix='DirectionRF')
 separation_df = compute_separation_angle(shower_data_test)
 
 # Energy-dependent resolution
-info_message('Estimating the energy-dependent resolution', prefix='DirRF')
+info_message('Estimating the energy-dependent resolution', prefix='DirectionRF')
 energy_edges = np.logspace(-1, 1.3, num=20)
 energy = (energy_edges[1:] * energy_edges[:-1])**0.5
 
@@ -294,7 +294,7 @@ for ei in range(len(energy_edges) - 1):
         energy_psf[pi][ei] = np.percentile(selection, 68)
 
 # Offset-dependent resolution
-info_message('Estimating the offset-dependent resolution', prefix='DirRF')
+info_message('Estimating the offset-dependent resolution', prefix='DirectionRF')
 offset = angular_separation(separation_df['tel_az'], separation_df['tel_alt'],
                             separation_df['true_az'], separation_df['true_alt'])
 
