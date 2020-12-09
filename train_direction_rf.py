@@ -135,7 +135,7 @@ def load_data_sample_stereo(input_file, is_mc):
     hillas_data = pd.read_hdf(input_file, key='dl1/hillas_params')
     stereo_data = pd.read_hdf(input_file, key='dl1/stereo_params')
 
-    if ismc:
+    if is_mc:
         dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy']
     else:
         dropped_keys = ['tel_alt','tel_az','n_islands', 'mjd', 'tel_id']
