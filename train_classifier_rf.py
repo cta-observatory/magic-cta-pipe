@@ -360,10 +360,12 @@ pyplot.figure(figsize=(20, 10))
 
 grid_shape = (2, 3)
 
+plot_labels = ["Gammas", "Hadrons"]
+
 for tel_num, tel_id in enumerate(performance):
     pyplot.subplot2grid(grid_shape, (0, tel_num))
     pyplot.title(f'Tel {tel_id} estimation')
-    pyplot.xlabel('Class 0 probability')
+    pyplot.xlabel('Gammaness')
     pyplot.ylabel('Event density')
 
     gammaness = performance[tel_id]['gammaness']
@@ -374,7 +376,7 @@ for tel_num, tel_id in enumerate(performance):
                     gammaness[event_class]['Hist'],
                     where='post',
                     color=f'C{class_i}',
-                    label=f'Class {event_class}')
+                    label=f'{plot_labels[class_i]}')
 
         pyplot.step(gammaness[event_class]['XEdges'][1:],
                     gammaness[event_class]['Hist'],
@@ -405,7 +407,7 @@ for tel_num, tel_id in enumerate(performance):
     pyplot.subplot2grid(grid_shape, (1, tel_num))
     pyplot.semilogy()
     pyplot.title(f'Tel {tel_id} estimation')
-    pyplot.xlabel('Class 0 probability')
+    pyplot.xlabel('Gammaness')
     pyplot.ylabel('Cumulative probability')
     pyplot.ylim(1e-3, 1)
 
@@ -416,7 +418,7 @@ for tel_num, tel_id in enumerate(performance):
                     gammaness[event_class]['Cumsum'],
                     where='post',
                     color=f'C{class_i}',
-                    label=f'Class {event_class}')
+                    label=f'{plot_labels[class_i]}')
         
         pyplot.step(gammaness[event_class]['XEdges'][1:],
                     gammaness[event_class]['Cumsum'],
