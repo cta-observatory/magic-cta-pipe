@@ -110,7 +110,7 @@ def load_data_sample(sample):
     shower_data = pd.DataFrame()
 
     for telescope in sample:
-        info_message(f'Loading {telescope} data...', prefix='ClassifierRF')
+        info_message(f'Loading {telescope} data...', prefix='EnergyRF')
 
         hillas_data = pd.read_hdf(sample[telescope]['hillas_output'], key='dl1/hillas_params')
         hillas_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -211,7 +211,7 @@ else:
     is_stereo = False
 
 # --- Train sample ---
-info_message('Loading MC train data...', prefix='ClassifierRF')
+info_message('Loading MC train data...', prefix='EnergyRF')
 if is_stereo:
     shower_data_train = load_data_sample_stereo(config['data_files']['mc']['train_sample']['magic']['hillas_output'], True)
 else:
@@ -228,7 +228,7 @@ mc_weights = get_weights(shower_data_train, alt_edges, intensity_edges)
 shower_data_train = shower_data_train.join(mc_weights)
 
 # --- Test sample ---
-info_message('Loading MC test data...', prefix='ClassifierRF')
+info_message('Loading MC test data...', prefix='EnergyRF')
 if is_stereo:
     shower_data_test = load_data_sample_stereo(config['data_files']['mc']['test_sample']['magic']['hillas_output'], True)
 else:
