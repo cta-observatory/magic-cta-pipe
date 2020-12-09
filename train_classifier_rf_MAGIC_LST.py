@@ -214,7 +214,7 @@ def train_classifier_rf_stereo(config_file):
     shower_data_train = shower_data_train.query(c_)
     shower_data_test = shower_data_test.query(c_)
 
-    # --- Training the direction RF ---
+    # --- Training the classifier RF ---
     info_message('Training RF...', prefix='ClassifierRF')
 
     class_estimator = EventClassifierPandas(
@@ -223,10 +223,11 @@ def train_classifier_rf_stereo(config_file):
     )
     class_estimator.fit(shower_data_train)
 
-    # class_estimator.fit(shower_data_train_st, is_stereo=True)
+    # --- Save RF data to joblib file ---
     class_estimator.save(os.path.join(cfg['classifier_rf']['save_dir'],
                                       cfg['classifier_rf']['joblib_name']))
 
+    # --- Show results ---
     # Print Parameter importances Mono
     info_message('Parameter importances', prefix='ClassifierRF')
     _print_par_imp(class_estimator)
