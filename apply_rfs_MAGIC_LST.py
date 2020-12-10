@@ -35,73 +35,85 @@ def apply_rfs_stereo(config_file):
     cfg = load_cfg_file(config_file)
 
     # Using only the "data" "test_sample"
-    data_type = 'data'
+    data_types = ['mc', 'data']
     sample = 'test_sample'
 
-    info_message(f'Loading "{data_type}", sample "{sample}"',
-                 prefix='ApplyRF')
+    for data_type in data_types:
+        info_message(f'Loading "{data_type}", sample "{sample}"',
+                     prefix='ApplyRF')
 
-    shower_data = load_dl1_data_stereo(
-        file=cfg['data_files'][data_type][sample]['hillas_h5'])
+        shower_data = load_dl1_data_stereo(
+            file=cfg['data_files'][data_type][sample]['hillas_h5'])
 
-    # Dropping data with the wrong altitude
-    shower_data = shower_data.query(cfg['global']['wrong_alt'])
+        # Dropping data with the wrong altitude
+        shower_data = shower_data.query(cfg['global']['wrong_alt'])
 
-    # Computing the event "multiplicity"
-    l_ = ['obs_id', 'event_id']
-    shower_data['multiplicity'] = \
-        shower_data['intensity'].groupby(level=l_).count()
+        # Computing the event "multiplicity"
+        l_ = ['obs_id', 'event_id']
+        shower_data['multiplicity'] = \
+            shower_data['intensity'].groupby(level=l_).count()
 
-    # Added by Lea Heckmann 2020-05-15 for the moment to delete duplicate
-    # events
-    info_message(f'Removing duplicate events', prefix='ApplyRF')
-    shower_data = shower_data[~shower_data.index.duplicated()]
+        # Added by Lea Heckmann 2020-05-15 for the moment to delete duplicate
+        # events
+        info_message(f'Removing duplicate events', prefix='ApplyRF')
+        shower_data = shower_data[~shower_data.index.duplicated()]
 
-    # Get tel_ids
-    tel_ids, tel_ids_LST, tel_ids_MAGIC = \
-        intersec_tel_ids(
-            tel_ids_sel=get_tel_ids_dl1(shower_data),
-            all_tel_ids_LST=cfg['LST']['tel_ids'],
-            all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids']
+        # Get tel_ids
+        tel_ids, tel_ids_LST, tel_ids_MAGIC = \
+            intersec_tel_ids(
+                tel_ids_sel=get_tel_ids_dl1(shower_data),
+                all_tel_ids_LST=cfg['LST']['tel_ids'],
+                all_tel_ids_MAGIC=cfg['MAGIC']['tel_ids']
+            )
+
+        # --- MAGIC - LST description ---
+        array_tel_descriptions = get_array_tel_descriptions(
+            tel_ids_LST=tel_ids_LST,
+            tel_ids_MAGIC=tel_ids_MAGIC
         )
 
-    # --- MAGIC - LST description ---
-    array_tel_descriptions = get_array_tel_descriptions(
-        tel_ids_LST=tel_ids_LST,
-        tel_ids_MAGIC=tel_ids_MAGIC
-    )
+        # Applying RFs of every kind
+        for rf_kind in ['direction_rf', 'energy_rf', 'classifier_rf']:
+            info_message(f'Loading RF: {rf_kind}', prefix='ApplyRF')
 
-    # Applying RFs of every kind
-    for rf_kind in ['direction_rf', 'energy_rf', 'classifier_rf']:
-        info_message(f'Loading RF: {rf_kind}', prefix='ApplyRF')
+            if rf_kind == 'direction_rf':
+                estimator = DirectionEstimatorPandas(
+                    cfg[rf_kind]['features'],
+                    array_tel_descriptions,
+                    **cfg[rf_kind]['settings']
+                )
+            elif rf_kind == 'energy_rf':
+                estimator = EnergyEstimatorPandas(
+                    cfg[rf_kind]['features'],
+                    **cfg[rf_kind]['settings']
+                )
 
-        if rf_kind == 'direction_rf':
-            estimator = DirectionEstimatorPandas(cfg[rf_kind]['features'],
-                                                 array_tel_descriptions,
-                                                 **cfg[rf_kind]['settings'])
-        elif rf_kind == 'energy_rf':
-            estimator = EnergyEstimatorPandas(cfg[rf_kind]['features'],
-                                              **cfg[rf_kind]['settings'])
+            elif rf_kind == 'classifier_rf':
+                estimator = EventClassifierPandas(
+                    cfg[rf_kind]['features'],
+                    **cfg[rf_kind]['settings']
+                )
 
-        elif rf_kind == 'classifier_rf':
-            estimator = EventClassifierPandas(cfg[rf_kind]['features'],
-                                              **cfg[rf_kind]['settings'])
+            estimator.load(os.path.join(cfg[rf_kind]['save_dir'],
+                                        cfg[rf_kind]['joblib_name']))
 
-        estimator.load(os.path.join(cfg[rf_kind]['save_dir'],
-                                    cfg[rf_kind]['joblib_name']))
+            # --- Applying RF ---
+            info_message(f'Applying RF: {rf_kind}', prefix='ApplyRF')
+            reco = estimator.predict(shower_data)
 
-        # --- Applying RF ---
-        info_message(f'Applying RF: {rf_kind}', prefix='ApplyRF')
-        reco = estimator.predict(shower_data)
+            # Appeding the result to the main data frame
+            shower_data = shower_data.join(reco)
 
-        # Appeding the result to the main data frame
-        shower_data = shower_data.join(reco)
-
-    # Storing the reconstructed values for the given data sample
-    info_message('Saving the reconstructed data', prefix='ApplyRF')
-
-    shower_data.to_hdf(
-        cfg['data_files'][data_type][sample]['reco_h5'], key='dl2/reco')
+        # --- Store ---
+        info_message('Saving the reconstructed data', prefix='ApplyRF')
+        # Storing the reconstructed values for the given data sample
+        shower_data.to_hdf(cfg['data_files'][data_type][sample]['reco_h5'],
+                           key='dl2/reco')
+        # Take mc_header form dl1 and save in dl2
+        mc_ = pd.read_hdf(cfg['data_files'][data_type][sample]['hillas_h5'],
+                          key='dl1/mc_header')
+        mc_.to_hdf(cfg['data_files'][data_type][sample]['reco_h5'],
+                   key='dl2/mc_header')
 
 
 if __name__ == '__main__':
