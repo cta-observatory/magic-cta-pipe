@@ -46,17 +46,17 @@ def read_original_mc_tree(file_mask):
     file_list = glob.glob(file_mask)
 
     for file_name in file_list:
-        telelscope = int(re.findall(r'.*_M(\d)_.*', file_name)[0])
+        telescope = int(re.findall(r'.*_M(\d)_.*', file_name)[0])
         run_number = int(re.findall(r'.*_M\d_za\d+to\d+_\d_(\d+)_Y_.*', file_name)[0])
-        
-        with uproot.open(file_name) as input_data:       
+
+        with uproot.open(file_name) as input_data:
             true_energy = input_data['OriginalMC']['MMcEvtBasic.fEnergy'].array()
             tel_az = input_data['OriginalMC']['MMcEvtBasic.fTelescopePhi'].array()
             tel_zd = input_data['OriginalMC']['MMcEvtBasic.fTelescopeTheta'].array()
-            
+
             true_energy /= 1e3  # GeV -> TeV
             tel_alt = np.pi/2 - tel_zd
-            
+
             # # Transformation from Monte Carlo to usual azimuth
             # tel_az = -1 * (tel_az - np.pi + np.radians(7))
 
@@ -66,9 +66,9 @@ def read_original_mc_tree(file_mask):
             tel_pointing = AltAz(alt=tel_alt * u.rad,
                                 az=tel_az * u.rad)
 
-            optics = magic_tel_descriptions[telelscope].optics
-            camera = magic_tel_descriptions[telelscope].camera
-        
+            optics = magic_tel_descriptions[telescope].optics
+            camera = magic_tel_descriptions[telescope].camera
+
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                     rotation=camera.cam_rotation)
 
@@ -81,18 +81,18 @@ def read_original_mc_tree(file_mask):
 
             true_az = shower_coord_in_telescope.altaz.az.to(u.rad)
             true_alt = shower_coord_in_telescope.altaz.alt.to(u.rad)
-            
+
             offcenter = angular_separation(0 * u.deg, 0 * u.deg,
                                         shower_coord_in_telescope.fov_lon,
                                         shower_coord_in_telescope.fov_lat)
             offcenter = offcenter.to(u.deg)
-            
+
             evt_id = np.arange(len(tel_az))
             obs_id = np.repeat(run_number, len(tel_az))
-            tel_id = np.repeat(telelscope, len(tel_az))
-            
+            tel_id = np.repeat(telescope, len(tel_az))
+
             data_ = {
-                'obs_id': obs_id, 
+                'obs_id': obs_id,
                 'tel_id': tel_id,
                 'event_id': evt_id,
                 'tel_az': tel_az,
@@ -101,13 +101,13 @@ def read_original_mc_tree(file_mask):
                 'true_alt': true_alt,
                 'true_energy': true_energy
             }
-            
+
             df_ = pd.DataFrame(data=data_)
-            
+
             shower_data = shower_data.append(df_)
 
     shower_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    
+
     return shower_data
 
 
@@ -135,8 +135,15 @@ arg_parser.add_argument("--usem1",
 arg_parser.add_argument("--usem2",
                         help='Process only M2 files.',
                         action='store_true')
+arg_parser.add_argument("--usestereo",
+                        help='Process only M2 files.',
+                        action='store_true')
 
 parsed_args = arg_parser.parse_args()
+
+if parsed_args.usestereo and (parsed_args.usem1 or parsed_args.usem2):
+    print("Option --stereo cannot be used together with --usem1 or --usem2 options. Exiting.")
+
 # --------------------------
 
 # ------------------------------
@@ -168,14 +175,14 @@ magic_tel_positions = {
 # MAGIC telescope description
 magic_optics = OpticsDescription.from_name('MAGIC')
 magic_cam = CameraGeometry.from_name('MAGICCam')
-magic_tel_description = TelescopeDescription(name='MAGIC', 
-                                             tel_type='MAGIC', 
-                                             optics=magic_optics, 
+magic_tel_description = TelescopeDescription(name='MAGIC',
+                                             tel_type='MAGIC',
+                                             optics=magic_optics,
                                              camera=magic_cam)
-magic_tel_descriptions = {1: magic_tel_description, 
+magic_tel_descriptions = {1: magic_tel_description,
                           2: magic_tel_description}
-magic_subarray = SubarrayDescription('MAGIC', 
-                                     magic_tel_positions, 
+magic_subarray = SubarrayDescription('MAGIC',
+                                     magic_tel_positions,
                                      magic_tel_descriptions)
 
 # ------------------------------
@@ -198,19 +205,16 @@ elif parsed_args.usem2:
 else:
     telescope_to_process = ['magic1', 'magic2']
 
+if parsed_args.stereo:
+    telescope_to_process = ['magic']
+
 for data_type in config['data_files']:
     for sample in data_sample_to_process:
+        is_mc = data_type.lower() == "mc"
         for telescope in telescope_to_process:
-            is_mc = data_type.lower() == "mc"
-
             if is_mc:
                 info_message(f'Processing "{data_type}", sample "{sample}", telescope "{telescope}"',
                             prefix='OriginalMC')
-
-                try:
-                    telescope_type = re.findall('(.*)[_\d]+', telescope)[0]
-                except:
-                    ValueError(f'Can not recognize the telescope type from name "{telescope}"')
 
                 shower_data = read_original_mc_tree(config['data_files'][data_type][sample][telescope]['input_mask'])
 
