@@ -135,13 +135,13 @@ arg_parser.add_argument("--usem1",
 arg_parser.add_argument("--usem2",
                         help='Process only M2 files.',
                         action='store_true')
-arg_parser.add_argument("--usestereo",
+arg_parser.add_argument("--stereo",
                         help='Process only M2 files.',
                         action='store_true')
 
 parsed_args = arg_parser.parse_args()
 
-if parsed_args.usestereo and (parsed_args.usem1 or parsed_args.usem2):
+if parsed_args.stereo and (parsed_args.usem1 or parsed_args.usem2):
     print("Option --stereo cannot be used together with --usem1 or --usem2 options. Exiting.")
 
 # --------------------------
