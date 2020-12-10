@@ -143,6 +143,7 @@ parsed_args = arg_parser.parse_args()
 
 if parsed_args.stereo and (parsed_args.usem1 or parsed_args.usem2):
     print("Option --stereo cannot be used together with --usem1 or --usem2 options. Exiting.")
+    exit()
 
 # --------------------------
 
