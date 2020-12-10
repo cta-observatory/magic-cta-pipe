@@ -418,7 +418,7 @@ telescopes_to_process = list(config['image_cleaning'].keys())
 for data_type in data_type_to_process:
     for sample in data_sample_to_process:
         for telescope_type in telescopes_to_process:
-            if telescope_type not in config[data_type][sample]:
+            if telescope_type not in config['data_files'][data_type][sample]:
                 raise ValueError(f'Telescope type "{telescope_type}" is not in the configuration file')
 
             if telescope_type not in config['image_cleaning']:
