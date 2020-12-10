@@ -452,7 +452,7 @@ class IRFGenerator:
                                                     bins=[energy_edges, theta_edges])
 
         # add and mod. by Y.Suda on 2020.02.17
-        ntel = self.sim_shower_data['multiplicity'][0]
+        ntel = self.sim_shower_data['multiplicity'].iloc[0]
         #efficiency_matrix = trig_events_matrix / sim_events_matrix
         efficiency_matrix = trig_events_matrix / sim_events_matrix * ntel
 
