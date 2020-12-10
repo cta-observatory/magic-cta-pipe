@@ -86,6 +86,9 @@ classifier_rf:
     features:
         ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands']
 
+irf:
+    output_name: "/path/to/IRF_file/outfile.fits"
+
 event_list:
     max_time_diff: 6.9e-4
     cuts:
