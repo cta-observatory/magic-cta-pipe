@@ -135,6 +135,14 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
         horizon_frame = AltAz()
         hillas_reco = HillasReconstructor()
 
+        # Write MC HEADER
+        # Problem: impossible to write/read with the following function a 
+        # list, so we assign to run_array_direction an empty list, in order to
+        # make the sotware NOT write the run_array_direction
+        source.mc_header.run_array_direction = [] # dummy value
+        writer.write('mc_header', source.mc_header)
+
+        # Loop on events
         for event in source:
             if previous_event_id == event.index.event_id:
                 continue
@@ -283,9 +291,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
                 )
         # --- END LOOP event in source ---
     # --- END LOOP file in file_list ---
-
-    # Write MC HEADER
-    writer.write('mc_header', source.mc_header)
 
     # Close writer
     writer.close()
