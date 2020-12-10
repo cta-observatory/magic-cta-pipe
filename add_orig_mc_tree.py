@@ -6,7 +6,7 @@ import argparse
 import yaml
 import datetime
 
-import uproot
+import uproot3 as uproot
 import pandas as pd
 import numpy as np
 
