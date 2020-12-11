@@ -236,7 +236,23 @@ def filter_brightest_island(camera, clean_mask, event_image):
 
 
 def get_num_islands(camera, clean_mask, event_image):
-    # Identifying connected islands
+    """Get the number of connected islands in a shower image.
+
+    Parameters
+    ----------
+    camera : CameraGeometry
+        Description
+    clean_mask : np.array
+        Cleaning mask
+    event_image : np.array
+        Event image
+
+    Returns
+    -------
+    int
+        Number of islands
+    """
+
     neighbors = camera.neighbor_matrix_sparse
     clean_neighbors = neighbors[clean_mask][:, clean_mask]
     num_islands, labels = connected_components(clean_neighbors, directed=False)
@@ -245,9 +261,25 @@ def get_num_islands(camera, clean_mask, event_image):
 
 
 def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
-    # Create event metadata container to hold event / observation / telescope IDs
-    # and MC true values for the event energy and direction. We will need it to add
-    # this information to the event Hillas parameters when dumping the results to disk.
+    """Create event metadata container to hold event / observation / telescope
+    IDs and MC true values for the event energy and direction. We will need it
+    to add this information to the event Hillas parameters when dumping the
+    results to disk.
+
+    Parameters
+    ----------
+    input_mask : str
+        Mask for MC input files. Reading of files is managed
+        by the MAGICEventSource class.
+    output_name : str
+        Name of the HDF5 output file.
+    image_cleaning_settings : dict
+        Settings for the image cleaning
+
+    Returns
+    -------
+    None
+    """
 
     class InfoContainer(Container):
         obs_id = Field(-1, "Observation ID")
@@ -397,9 +429,25 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                     writer.write("stereo_params", (event_info, stereo_params))
 
 def process_dataset_data(input_mask, output_name, image_cleaning_settings):
-    # Create event metadata container to hold event / observation / telescope IDs
-    # and MC true values for the event energy and direction. We will need it to add
-    # this information to the event Hillas parameters when dumping the results to disk.
+    """Create event metadata container to hold event / observation / telescope
+    IDs and MC true values for the event energy and direction. We will need it
+    to add this information to the event Hillas parameters when dumping the
+    results to disk.
+
+    Parameters
+    ----------
+    input_mask : str
+        Mask for real data input files. Reading of files is managed
+        by the MAGICEventSource class.
+    output_name : str
+        Name of the HDF5 output file.
+    image_cleaning_settings : dict
+        Settings for the image cleaning
+
+    Returns
+    -------
+    None
+    """
 
     class InfoContainer(Container):
         obs_id = Field(-1, "Observation ID")
