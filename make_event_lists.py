@@ -76,6 +76,11 @@ for obs_id in obs_ids:
 
     obs_df = obs_df.query(config['event_list']['cuts']['selection'])
 
+    # if no events survive after cuts, print warning and go to the next obs_id
+    if obs_df.shape[0] == 0:
+        print(f"ObsID {obs_id}: no events surviving cuts. Skipping.")
+        continue
+
     # AltAz -> Eq conversion
 
     observatory_location = EarthLocation.of_site("Roque de los Muchachos")
