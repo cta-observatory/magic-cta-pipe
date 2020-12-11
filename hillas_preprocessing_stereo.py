@@ -256,6 +256,8 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
         true_energy = Field(-1, "MC event energy", unit=u.TeV)
         true_alt = Field(-1, "MC event altitude", unit=u.rad)
         true_az = Field(-1, "MC event azimuth", unit=u.rad)
+        true_core_x = Field(-1, "MC event x-core position", unit=u.m)
+        true_core_y = Field(-1, "MC event y-core position", unit=u.m)
         tel_alt = Field(-1, "MC telescope altitude", unit=u.rad)
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
@@ -280,9 +282,16 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
 
         # Event source
         source = MAGICEventSource(input_url=input_mask)
+        
+        obs_id_last = 0
 
         # Looping over the events
         for event in source:
+                        
+            if event.index.obs_id != obs_id_last:
+                writer.write("mc_header", event.mcheader)
+                obs_id_last = event.index.obs_id
+
             tels_with_data = event.r1.tels_with_data
 
             array_pointing = SkyCoord(
@@ -372,6 +381,8 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                         true_energy=event.mc.energy,
                         true_alt=event.mc.alt.to(u.rad),
                         true_az=event.mc.az.to(u.rad),
+                        true_core_x=event.mc.core_x.to(u.m),
+                        true_core_y=event.mc.core_y.to(u.m),
                         tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
                         tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
                         n_islands=num_islands
