@@ -136,10 +136,10 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
         hillas_reco = HillasReconstructor()
 
         # Write MC HEADER
-        # Problem: impossible to write/read with the following function a 
+        # Problem: impossible to write/read with the following function a
         # list, so we assign to run_array_direction an empty list, in order to
         # make the sotware NOT write the run_array_direction
-        source.mc_header.run_array_direction = [] # dummy value
+        source.mc_header.run_array_direction = []  # dummy value
         writer.write('mc_header', source.mc_header)
 
         # Loop on events
@@ -334,4 +334,4 @@ if __name__ == '__main__':
         max_events=kwargs['max_events'],
         display=kwargs['display']
     )
-    print("Execution time: %.2f s" % (time.time() - start_time))
+    print_elapsed_time(start_time, time.time())

@@ -15,7 +15,7 @@ from magicctapipe.train.utils import *
 from magicctapipe.train.event_processing import EventClassifierPandas
 
 PARSER = argparse.ArgumentParser(
-    description=("This tools fits the event classification random forest on "
+    description=("This tools fits the event classification random forest on ",
                  "the specified events files. For stereo data."),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter
 )
@@ -371,4 +371,4 @@ if __name__ == '__main__':
     train_classifier_rf_stereo(
         config_file=kwargs['config_file'],
     )
-    print("Execution time: %.2f s" % (time.time() - start_time))
+    print_elapsed_time(start_time, time.time())

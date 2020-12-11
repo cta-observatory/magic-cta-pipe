@@ -123,4 +123,4 @@ if __name__ == '__main__':
     apply_rfs_stereo(
         config_file=kwargs['config_file'],
     )
-    print("Execution time: %.2f s" % (time.time() - start_time))
+    print_elapsed_time(start_time, time.time())
