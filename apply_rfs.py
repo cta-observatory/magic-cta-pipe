@@ -128,7 +128,7 @@ for data_type in config['data_files']:
             stereo_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/stereo_params')
             if data_type == 'mc':
                 orig_mc = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/original_mc')
-                dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy']
+                dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy', 'true_core_x', 'true_core_y']
             else:
                 dropped_keys = ['tel_alt','tel_az','n_islands', 'mjd', 'tel_id']
 
