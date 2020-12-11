@@ -78,7 +78,7 @@ def get_num_islands(camera, clean_mask, event_image):
     return num_islands
 
 
-def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings):
+def process_dataset_mc(input_mask, tel_id, output_name):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
     to add this information to the event Hillas parameters when dumping the
@@ -93,8 +93,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
         Telescope ID
     output_name : str
         Name of the HDF5 output file.
-    image_cleaning_settings : dict
-        Settings for the image cleaning
 
     Returns
     -------
@@ -140,9 +138,6 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
     # We'll write the result to the HDF5 file that can be used for further processing.
 
     hillas_reconstructor = HillasReconstructor()
-
-    charge_thresholds = image_cleaning_settings['charge_thresholds']
-    time_thresholds = image_cleaning_settings['time_thresholds']
 
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
@@ -221,7 +216,7 @@ def process_dataset_mc(input_mask, tel_id, output_name, image_cleaning_settings)
                         f"telescope ID: {tel_id}) did not pass cleaning.")
 
 
-def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_settings):
+def process_dataset_data(input_mask, tel_id, output_name):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
     to add this information to the event Hillas parameters when dumping the
@@ -236,8 +231,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
         Telescope ID
     output_name : str
         Name of the HDF5 output file.
-    image_cleaning_settings : dict
-        Settings for the image cleaning
 
     Returns
     -------
@@ -277,9 +270,6 @@ def process_dataset_data(input_mask, tel_id, output_name, image_cleaning_setting
     # We'll write the result to the HDF5 file that can be used for further processing.
 
     hillas_reconstructor = HillasReconstructor()
-
-    charge_thresholds = image_cleaning_settings['charge_thresholds']
-    time_thresholds = image_cleaning_settings['time_thresholds']
 
     previous_event_id = 0
 
@@ -470,10 +460,8 @@ for data_type in data_type_to_process:
             if is_mc:
                 process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                    tel_id=tel_id,
-                                   output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
-                                   image_cleaning_settings=config['image_cleaning'][telescope_type])
+                                   output_name=config['data_files'][data_type][sample][telescope]['hillas_output'])
             else:
                 process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                      tel_id=tel_id,
-                                     output_name=config['data_files'][data_type][sample][telescope]['hillas_output'],
-                                     image_cleaning_settings=config['image_cleaning'][telescope_type])
+                                     output_name=config['data_files'][data_type][sample][telescope]['hillas_output'])
