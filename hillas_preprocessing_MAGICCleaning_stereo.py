@@ -111,14 +111,14 @@ def process_dataset_mc(input_mask, output_name):
 
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
 
-        obs_id_prec = 0
+        obs_id_last = 0
 
         # Looping over the events
         for event in source:
             
-            if event.index.obs_id != obs_id_prec:
+            if event.index.obs_id != obs_id_last:
                 writer.write("mc_header", event.mcheader)
-                obs_id_prec = event.index.obs_id
+                obs_id_last = event.index.obs_id
 
             tels_with_data = event.r1.tels_with_data
             
