@@ -41,6 +41,20 @@ def info_message(text, prefix='info'):
 
 
 def read_original_mc_tree(file_mask):
+    """Read the OriginalMC trees from input ROOT files and put the information
+    into a Pandas DataFrame.
+
+    Parameters
+    ----------
+    file_mask : str
+        Mask for input ROOT files.
+
+    Returns
+    -------
+    pd.DataFrame
+        A Pandas DataFrame containing the OriginalMC tree information
+        (true energy, alt and az).
+    """
     shower_data = pd.DataFrame()
 
     file_list = glob.glob(file_mask)
