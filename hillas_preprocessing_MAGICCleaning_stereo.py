@@ -75,6 +75,10 @@ def process_dataset_mc(input_mask, output_name):
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
 
+    class ObsIdContainer(Container):
+        obs_id = Field(-1, "Observation ID")
+
+
     cleaning_config = dict(
         picture_thresh = 6,
         boundary_thresh = 3.5,
@@ -111,13 +115,14 @@ def process_dataset_mc(input_mask, output_name):
 
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
 
-        obs_id_last = 0
+        obs_id_last = -1
 
         # Looping over the events
         for event in source:
             
             if event.index.obs_id != obs_id_last:
-                writer.write("mc_header", event.mcheader)
+                obs_id_info = ObsIdContainer(obs_id=event.index.obs_id)
+                writer.write("mc_header", (obs_id_info, event.mcheader))
                 obs_id_last = event.index.obs_id
 
             tels_with_data = event.r1.tels_with_data
