@@ -26,9 +26,17 @@ def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p):
     writer.write("hillas_params", (event_info, hillas_p, leakage_p, timing_p))
 
 
-def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
-                       array_pointing, telescope_pointings, event_info, 
-                       writer):
+def check_write_stereo(
+    event,
+    tel_id,
+    hillas_p,
+    hillas_reco,
+    subarray,
+    array_pointing,
+    telescope_pointings,
+    event_info,
+    writer,
+):
     """Check hillas parameters and write stero parameters
 
     Parameters
@@ -58,21 +66,22 @@ def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
         stereo_params
     """
     if len(hillas_p.keys()) > 1:
-        err_str = ("Event ID %d  (obs ID: %d) has an ellipse with width = %s: "
-                   "stereo parameters calculation skipped.")
+        err_str = (
+            "Event ID %d  (obs ID: %d) has an ellipse with width = %s: "
+            "stereo parameters calculation skipped."
+        )
         stereo_params = None
         if any([hillas_p[tel_id]["width"].value == 0 for tel_id in hillas_p]):
-            print(err_str % (event.index.event_id, event.index.obs_id, '0'))
-        elif any([np.isnan(hillas_p[tel_id]["width"].value) for
-                  tel_id in hillas_p]):
-            print(err_str % (event.index.event_id, event.index.obs_id, 'NaN'))
+            print(err_str % (event.index.event_id, event.index.obs_id, "0"))
+        elif any([np.isnan(hillas_p[tel_id]["width"].value) for tel_id in hillas_p]):
+            print(err_str % (event.index.event_id, event.index.obs_id, "NaN"))
         else:
             # Reconstruct stereo event. From ctapipe
             stereo_params = hillas_reco.predict(
                 hillas_dict=hillas_p,
                 subarray=subarray,
                 array_pointing=array_pointing,
-                telescopes_pointings=telescope_pointings
+                telescopes_pointings=telescope_pointings,
             )
             event_info.tel_id = -1
             stereo_params.tel_ids = tel_ids_2_num(stereo_params.tel_ids)
@@ -84,7 +93,8 @@ def check_write_stereo(event, tel_id, hillas_p, hillas_reco, subarray,
 
 
 class StereoInfoContainer(Container):
-    """"InfoContainer fro stereo"""
+    """"InfoContainer for stereo"""
+
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
     tel_id = Field(-1, "Telescope ID")
