@@ -150,7 +150,7 @@ arg_parser.add_argument("--usem2",
                         help='Process only M2 files.',
                         action='store_true')
 arg_parser.add_argument("--stereo",
-                        help='Process only M2 files.',
+                        help='Use stereo DL1 files.',
                         action='store_true')
 
 parsed_args = arg_parser.parse_args()
