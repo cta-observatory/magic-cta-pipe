@@ -236,7 +236,23 @@ def filter_brightest_island(camera, clean_mask, event_image):
 
 
 def get_num_islands(camera, clean_mask, event_image):
-    # Identifying connected islands
+    """Get the number of connected islands in a shower image.
+
+    Parameters
+    ----------
+    camera : CameraGeometry
+        Description
+    clean_mask : np.array
+        Cleaning mask
+    event_image : np.array
+        Event image
+
+    Returns
+    -------
+    int
+        Number of islands
+    """
+
     neighbors = camera.neighbor_matrix_sparse
     clean_neighbors = neighbors[clean_mask][:, clean_mask]
     num_islands, labels = connected_components(clean_neighbors, directed=False)
@@ -245,9 +261,25 @@ def get_num_islands(camera, clean_mask, event_image):
 
 
 def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
-    # Create event metadata container to hold event / observation / telescope IDs
-    # and MC true values for the event energy and direction. We will need it to add
-    # this information to the event Hillas parameters when dumping the results to disk.
+    """Create event metadata container to hold event / observation / telescope
+    IDs and MC true values for the event energy and direction. We will need it
+    to add this information to the event Hillas parameters when dumping the
+    results to disk.
+
+    Parameters
+    ----------
+    input_mask : str
+        Mask for MC input files. Reading of files is managed
+        by the MAGICEventSource class.
+    output_name : str
+        Name of the HDF5 output file.
+    image_cleaning_settings : dict
+        Settings for the image cleaning
+
+    Returns
+    -------
+    None
+    """
 
     class InfoContainer(Container):
         obs_id = Field(-1, "Observation ID")
@@ -412,9 +444,25 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                     writer.write("stereo_params", (event_info, stereo_params))
 
 def process_dataset_data(input_mask, output_name, image_cleaning_settings):
-    # Create event metadata container to hold event / observation / telescope IDs
-    # and MC true values for the event energy and direction. We will need it to add
-    # this information to the event Hillas parameters when dumping the results to disk.
+    """Create event metadata container to hold event / observation / telescope
+    IDs and MC true values for the event energy and direction. We will need it
+    to add this information to the event Hillas parameters when dumping the
+    results to disk.
+
+    Parameters
+    ----------
+    input_mask : str
+        Mask for real data input files. Reading of files is managed
+        by the MAGICEventSource class.
+    output_name : str
+        Name of the HDF5 output file.
+    image_cleaning_settings : dict
+        Settings for the image cleaning
+
+    Returns
+    -------
+    None
+    """
 
     class InfoContainer(Container):
         obs_id = Field(-1, "Observation ID")
@@ -625,28 +673,27 @@ elif parsed_args.usetest:
 else:
     data_sample_to_process = ['train_sample', 'test_sample']
 
-telescope_to_process = ['magic1', 'magic2']
+telescopes_to_process = list(config['image_cleaning'].keys())
 
 for data_type in data_type_to_process:
     for sample in data_sample_to_process:
-        try:
-            telescope_type = re.findall('(.*)[_\d]+', telescope_to_process[0])[0]
-        except:
-            ValueError(f'Can not recognize the telescope type from name "{telescope_to_process}"')
+        for telescope_type in telescopes_to_process:
+            if telescope_type not in config['data_files'][data_type][sample]:
+                raise ValueError(f'Telescope type "{telescope_type}" is not in the configuration file')
 
-        info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
-                    prefix='Hillas')
+            if telescope_type not in config['image_cleaning']:
+                raise ValueError(f'Telescope type "{telescope_type}" does not have image cleaning settings')
 
-        if telescope_type not in config['image_cleaning']:
-            raise ValueError(f'Guessed telescope type "{telescope_type}" does not have image cleaning settings')
+            info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
+                prefix='Hillas')
 
-        is_mc = data_type.lower() == "mc"
+            is_mc = data_type.lower() == "mc"
 
-        if is_mc:
-            process_dataset_mc(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                               output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'],
-                               image_cleaning_settings=config['image_cleaning'][telescope_type])
-        else:
-            process_dataset_data(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                                output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'],
-                                image_cleaning_settings=config['image_cleaning'][telescope_type])
+            if is_mc:
+                process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'],
+                    image_cleaning_settings=config['image_cleaning'][telescope_type])
+            else:
+                process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'],
+                    image_cleaning_settings=config['image_cleaning'][telescope_type])

@@ -45,7 +45,7 @@ def info_message(text, prefix='info'):
 def GetHist2D(x,y, bins=30, range=None, weights=None):
     hs, xedges, yedges = np.histogram2d(x,y, bins=bins, range=range, weights=weights)
     xloc = (xedges[1:] + xedges[:-1]) / 2
-    yloc = (yedges[1:] + yedges[:-1]) / 2 
+    yloc = (yedges[1:] + yedges[:-1]) / 2
 
     xxloc, yyloc = np.meshgrid( xloc, yloc, indexing='ij' )
 
@@ -106,6 +106,72 @@ def evaluate_performance(data, energy_name):
     return migmatrix
 
 
+def load_data_sample(sample):
+    """
+    This function loads Hillas data from the corresponding sample, merging the data
+    from the different telescopes found.
+
+    Parameters
+    ----------
+    sample: str
+        Sample from which data will be read
+
+    Returns
+    -------
+    pandas.Dataframe
+        Pandas dataframe with data from all the telescopes in sample
+    """
+
+    shower_data = pd.DataFrame()
+
+    for telescope in sample:
+        info_message(f'Loading {telescope} data...', prefix='EnergyRF')
+
+        hillas_data = pd.read_hdf(sample[telescope]['hillas_output'], key='dl1/hillas_params')
+        hillas_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+
+        shower_data = shower_data.append(hillas_data)
+
+    shower_data.sort_index(inplace=True)
+
+    return shower_data
+
+
+def load_data_sample_stereo(input_file, is_mc):
+    """
+    This function loads Hillas and stereo data from input_file.
+
+    Parameters
+    ----------
+    input_file: str
+        Input HDF5 file
+    is_mc: bool
+        Flag to denote if data is MC or real
+
+    Returns
+    -------
+    pandas.Dataframe
+        Pandas dataframe with Hillas and stereo data
+    """
+
+    shower_data = pd.DataFrame()
+
+    hillas_data = pd.read_hdf(input_file, key='dl1/hillas_params')
+    stereo_data = pd.read_hdf(input_file, key='dl1/stereo_params')
+
+    if is_mc:
+        dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy', 'true_core_x', 'true_core_y']
+    else:
+        dropped_keys = ['tel_alt','tel_az','n_islands', 'mjd', 'tel_id']
+
+    stereo_data.drop(dropped_keys, axis=1, inplace=True)
+
+    shower_data = hillas_data.merge(stereo_data, on=['obs_id', 'event_id'])
+    shower_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    shower_data.sort_index(inplace=True)
+
+    return shower_data
+
 def get_weights(mc_data, alt_edges, intensity_edges):
     mc_hist, _, _ = np.histogram2d(mc_data['tel_alt'],
                                       mc_data['intensity'],
@@ -143,6 +209,9 @@ This tools fits the energy random forest regressor on the specified events files
 
 arg_parser.add_argument("--config", default="config.yaml",
                         help='Configuration file to steer the code execution.')
+arg_parser.add_argument("--stereo",
+                        help='Use stereo DL1 files.',
+                        action='store_true')
 
 parsed_args = arg_parser.parse_args()
 # --------------------------
@@ -167,23 +236,17 @@ if 'energy_rf' not in config:
     exit()
 # ------------------------------
 
+if parsed_args.stereo:
+    is_stereo = True
+else:
+    is_stereo = False
 
 # --- Train sample ---
-info_message('Loading M1 train data...', prefix='EnergyRF')
-hillas_data_m1 = pd.read_hdf(config['data_files']['mc']['train_sample']['magic1']['hillas_output'], 
-                             key='dl1/hillas_params')
-hillas_data_m1.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-hillas_data_m1.sort_index(inplace=True)
-
-info_message('Loading M2 train data...', prefix='EnergyRF')
-hillas_data_m2 = pd.read_hdf(config['data_files']['mc']['train_sample']['magic2']['hillas_output'], 
-                             key='dl1/hillas_params')
-hillas_data_m2.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-hillas_data_m2.sort_index(inplace=True)
-
-info_message('Merging the data sets...', prefix='EnergyRF')
-shower_data_train = hillas_data_m1.append(hillas_data_m2)
-shower_data_train.sort_index(inplace=True)
+info_message('Loading MC train data...', prefix='EnergyRF')
+if is_stereo:
+    shower_data_train = load_data_sample_stereo(config['data_files']['mc']['train_sample']['magic']['hillas_output'], True)
+else:
+    shower_data_train = load_data_sample(config['data_files']['mc']['train_sample'])
 
 # Computing event weights
 info_message('Computing the train sample event weights...', prefix='DirRF')
@@ -196,21 +259,11 @@ mc_weights = get_weights(shower_data_train, alt_edges, intensity_edges)
 shower_data_train = shower_data_train.join(mc_weights)
 
 # --- Test sample ---
-info_message('Loading M1 test data...', prefix='EnergyRF')
-hillas_data_m1 = pd.read_hdf(config['data_files']['mc']['test_sample']['magic1']['hillas_output'], 
-                             key='dl1/hillas_params')
-hillas_data_m1.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-hillas_data_m1.sort_index(inplace=True)
-
-info_message('Loading M2 test data...', prefix='EnergyRF')
-hillas_data_m2 = pd.read_hdf(config['data_files']['mc']['test_sample']['magic2']['hillas_output'], 
-                             key='dl1/hillas_params')
-hillas_data_m2.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-hillas_data_m2.sort_index(inplace=True)
-
-info_message('Merging the data sets...', prefix='EnergyRF')
-shower_data_test = hillas_data_m1.append(hillas_data_m2)
-shower_data_test.sort_index(inplace=True)
+info_message('Loading MC test data...', prefix='EnergyRF')
+if is_stereo:
+    shower_data_test = load_data_sample_stereo(config['data_files']['mc']['test_sample']['magic']['hillas_output'], True)
+else:
+    shower_data_test = load_data_sample(config['data_files']['mc']['test_sample'])
 
 info_message('Preprocessing...', prefix='EnergyRF')
 
@@ -225,7 +278,7 @@ shower_data_test = shower_data_test.query(config['energy_rf']['cuts'])
 # --- Training the direction RF ---
 info_message('Training RF...', prefix='EnergyRF')
 
-energy_estimator = EnergyEstimatorPandas(config['energy_rf']['features'], 
+energy_estimator = EnergyEstimatorPandas(config['energy_rf']['features'],
                                          **config['energy_rf']['settings'])
 energy_estimator.fit(shower_data_train)
 energy_estimator.save(config['energy_rf']['save_name'])
@@ -250,9 +303,9 @@ info_message('Evaluating performance...', prefix='EnergyRF')
 
 idx = pd.IndexSlice
 
-m1_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 1], ['true_energy', 'energy_reco']], 
+m1_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 1], ['true_energy', 'energy_reco']],
                                     'energy_reco')
-m2_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 2], ['true_energy', 'energy_reco']], 
+m2_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 2], ['true_energy', 'energy_reco']],
                                     'energy_reco')
 
 migmatrix = evaluate_performance(shower_data_test, 'energy_reco_mean')
@@ -295,7 +348,7 @@ pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['upper'],
 pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['lower'],
             linestyle='--', color='C1')
 
-pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['95%']['upper'], 
+pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['95%']['upper'],
             linestyle=':', color='C2', label='95% containment')
 pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['95%']['lower'],
             linestyle=':', color='C2')
@@ -336,8 +389,8 @@ pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['95%']['lower'],
             linestyle=':', color='C2')
 
 pyplot.grid(linestyle=':')
-pyplot.legend()                                                 
-                   
+pyplot.legend()
+
 pyplot.subplot2grid(grid_shape, (0, 2))
 pyplot.title('M1+M2 estimation')
 pyplot.loglog()
