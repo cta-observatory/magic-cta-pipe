@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 
 
-def info_message(text, prefix='info'):
+def info_message(text, prefix="info"):
     """Prints the specified text with the prefix of the current date
 
     Parameters
@@ -27,6 +27,6 @@ def print_elapsed_time(start, end):
     end : float
         stop time, from time.time()
     """
-    h, r = divmod(end-start, 3600)
+    h, r = divmod(end - start, 3600)
     m, s = divmod(r, 60)
     print(f"Elapsed time: {int(h):0>2}:{int(m):0>2}:{int(s):0>2}")

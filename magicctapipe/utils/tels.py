@@ -11,6 +11,7 @@ from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
+
 def tel_ids_2_num(tel_ids):
     """Function to convert a list of tel_ids into a decimal number wich can be
     stored in a h5 file. 
@@ -33,8 +34,9 @@ def tel_ids_2_num(tel_ids):
     -------
     int
         decimal number computed as follow
-    """    
-    return sum([2**a_ for a_ in tel_ids])
+    """
+    return sum([2 ** a_ for a_ in tel_ids])
+
 
 def num_2_tel_ids(num):
     """Inverse function of tel_ids_2_num()
@@ -48,9 +50,8 @@ def num_2_tel_ids(num):
     -------
     list
         list of triggered telescope ids
-    """    
-    return np.where(np.array(list(bin(num)[2:][::-1])) == '1')[0]
-
+    """
+    return np.where(np.array(list(bin(num)[2:][::-1])) == "1")[0]
 
 
 def get_tel_descriptions(name, cam, tel_ids):
@@ -75,17 +76,11 @@ def get_tel_descriptions(name, cam, tel_ids):
     optics = OpticsDescription.from_name(name)
     cam = CameraGeometry.from_name(cam)
     tel_description = TelescopeDescription(
-        name=name,
-        tel_type=name,
-        optics=optics,
-        camera=cam
+        name=name, tel_type=name, optics=optics, camera=cam
     )
     tel_descriptions = {}
     for tel_id in tel_ids:
-        tel_descriptions = {
-            **tel_descriptions,
-            **{tel_id: tel_description}
-        }
+        tel_descriptions = {**tel_descriptions, **{tel_id: tel_description}}
     return tel_descriptions
 
 
@@ -105,17 +100,15 @@ def get_array_tel_descriptions(tel_ids_LST, tel_ids_MAGIC):
         array_tel_descriptions
     """
     array_tel_descriptions = {}
-    if(len(tel_ids_LST) > 0):
+    if len(tel_ids_LST) > 0:
         array_tel_descriptions = {
             **array_tel_descriptions,
-            **get_tel_descriptions(
-                name='LST', cam='LSTCam', tel_ids=tel_ids_LST)
+            **get_tel_descriptions(name="LST", cam="LSTCam", tel_ids=tel_ids_LST),
         }
-    if(len(tel_ids_MAGIC) > 0):
+    if len(tel_ids_MAGIC) > 0:
         array_tel_descriptions = {
             **array_tel_descriptions,
-            **get_tel_descriptions(
-                name='MAGIC', cam='MAGICCam', tel_ids=tel_ids_MAGIC)
+            **get_tel_descriptions(name="MAGIC", cam="MAGICCam", tel_ids=tel_ids_MAGIC),
         }
     return array_tel_descriptions
 
@@ -155,8 +148,11 @@ def convert_positions_dict(positions_dict):
     return positions_dict
 
 
-def intersec_tel_ids(all_tel_ids_LST=[1, 2, 3, 4], all_tel_ids_MAGIC=[5, 6],
-                     tel_ids_sel=[1, 2, 3, 4, 5, 6]):
+def intersec_tel_ids(
+    all_tel_ids_LST=[1, 2, 3, 4],
+    all_tel_ids_MAGIC=[5, 6],
+    tel_ids_sel=[1, 2, 3, 4, 5, 6],
+):
     """Get telescope ids from the intersection between the selected ids and the
     telescope ids of the telescope array
 
@@ -207,10 +203,10 @@ def get_tel_name(tel_id, cfg):
     str
         telescope name
     """
-    for i, tel_label in enumerate(cfg['all_tels']['tel_n']):
-        if(tel_id in cfg[tel_label]['tel_ids']):
-            n = cfg['all_tels']['tel_n_short'][i]
-            j = tel_id-cfg[tel_label]['tel_ids'][0]+1
-            name = f'{n}{j}'
+    for i, tel_label in enumerate(cfg["all_tels"]["tel_n"]):
+        if tel_id in cfg[tel_label]["tel_ids"]:
+            n = cfg["all_tels"]["tel_n_short"][i]
+            j = tel_id - cfg[tel_label]["tel_ids"][0] + 1
+            name = f"{n}{j}"
             break
     return name

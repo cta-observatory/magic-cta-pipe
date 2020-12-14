@@ -18,9 +18,11 @@ def load_cfg_file(config_file):
     dict
         loaded configurations
     """
-    e_ = ("ERROR: can not load the configuration file %s\n"
-          "Please check that the file exists and is of YAML format\n"
-          "Exiting")
+    e_ = (
+        "ERROR: can not load the configuration file %s\n"
+        "Please check that the file exists and is of YAML format\n"
+        "Exiting"
+    )
     try:
         cfg = yaml.safe_load(open(config_file, "r"))
     except IOError:
@@ -45,11 +47,12 @@ def load_cfg_file_check(config_file, label):
     dict
         loaded configurations
     """
-    e_ = ("ERROR: can not load the configuration file %s\n"
-          "Please check that the file exists and is of YAML format\n"
-          "Exiting")
-    l_ = ("ERROR: the configuration file is missing the %s section.\n"
-          "Exiting")
+    e_ = (
+        "ERROR: can not load the configuration file %s\n"
+        "Please check that the file exists and is of YAML format\n"
+        "Exiting"
+    )
+    l_ = "ERROR: the configuration file is missing the %s section.\n" "Exiting"
     cfg = load_cfg_file(config_file)
     if label not in cfg:
         print(l_ % label)
@@ -81,30 +84,43 @@ def load_dl1_data_stereo(file, drop=False):
         data
     """
     extra_keys = [
-        'true_energy', 'true_alt', 'true_az', 'mjd', 'goodness_of_fit',
-        'h_max_uncert', 'az_uncert', 'core_uncert']
+        "true_energy",
+        "true_alt",
+        "true_az",
+        "mjd",
+        "goodness_of_fit",
+        "h_max_uncert",
+        "az_uncert",
+        "core_uncert",
+    ]
     extra_stereo_keys = [
-        'true_energy', 'true_alt', 'true_az', 'tel_alt', 'tel_az',
-        'num_islands', 'tel_id']
+        "true_energy",
+        "true_alt",
+        "true_az",
+        "tel_alt",
+        "tel_az",
+        "num_islands",
+        "tel_id",
+    ]
     # Hillas
-    data_hillas = pd.read_hdf(file, key=f'dl1/hillas_params')
+    data_hillas = pd.read_hdf(file, key=f"dl1/hillas_params")
     # Stereo
-    data_stereo = pd.read_hdf(file, key=f'dl1/stereo_params')
+    data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
     # Drop common keys
     data_stereo = drop_keys(data_stereo, extra_stereo_keys)
     # Drop extra keys
-    if(drop):
+    if drop:
         data_hillas = drop_keys(data_hillas, extra_keys)
         data_stereo = drop_keys(data_stereo, extra_keys)
     # Merge
-    data = data_hillas.merge(data_stereo, on=['obs_id', 'event_id'])
+    data = data_hillas.merge(data_stereo, on=["obs_id", "event_id"])
     # Index
-    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)
     return data
 
 
-def load_dl1_data_mono(file, label='hillas_params'):
+def load_dl1_data_mono(file, label="hillas_params"):
     """Load `dl1/{label}` from dl1 file, h5 format for mono data
 
     Parameters
@@ -119,8 +135,8 @@ def load_dl1_data_mono(file, label='hillas_params'):
     pandas.DataFrame
         data
     """
-    data = pd.read_hdf(file, key=f'dl1/{label}')
-    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    data = pd.read_hdf(file, key=f"dl1/{label}")
+    data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)
     return data
 
@@ -142,6 +158,6 @@ def drop_keys(df, extra_keys):
         dataframe without extra keys
     """
     for extra_key in extra_keys:
-        if(extra_key in df.columns):
+        if extra_key in df.columns:
             df.drop(extra_key, axis=1, inplace=True)
     return df
