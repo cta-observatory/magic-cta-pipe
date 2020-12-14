@@ -327,7 +327,7 @@ def train_direction_rf_stereo(config_file):
     save_plt(
         n=cfg["direction_rf"]["fig_name_theta2"],
         rdir=cfg["direction_rf"]["save_dir"],
-        vect="pdf,eps",
+        vect="pdf",
     )
     plt.close()
 
@@ -348,7 +348,7 @@ def train_direction_rf_stereo(config_file):
     save_plt(
         n=cfg["direction_rf"]["fig_name_PSF_energy"],
         rdir=cfg["direction_rf"]["save_dir"],
-        vect="pdf,eps",
+        vect="pdf",
     )
     plt.close()
 
@@ -367,7 +367,7 @@ def train_direction_rf_stereo(config_file):
     save_plt(
         n=cfg["direction_rf"]["fig_name_PSF_offset"],
         rdir=cfg["direction_rf"]["save_dir"],
-        vect="pdf,eps",
+        vect="pdf",
     )
     plt.close()
 

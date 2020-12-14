@@ -281,7 +281,7 @@ def train_energy_rf_stereo(config_file):
     save_plt(
         n=cfg["energy_rf"]["fig_name"],
         rdir=cfg["energy_rf"]["save_dir"],
-        vect="pdf,eps",
+        vect="pdf",
     )
     plt.close()
 
