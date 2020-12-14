@@ -278,8 +278,11 @@ def train_energy_rf_stereo(config_file):
     plot_migmatrix(index=index, name="All", matrix=migmatrix, grid_shape=grid_shape)
 
     plt.tight_layout()
-    # plt.show()
-    save_plt(n=cfg["energy_rf"]["fig_name"], rdir=cfg["energy_rf"]["save_dir"], vect="")
+    save_plt(
+        n=cfg["energy_rf"]["fig_name"],
+        rdir=cfg["energy_rf"]["save_dir"],
+        vect="pdf,eps",
+    )
     plt.close()
 
 

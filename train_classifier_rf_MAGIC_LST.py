@@ -394,7 +394,7 @@ def train_classifier_rf_stereo(config_file):
     save_plt(
         n=cfg["classifier_rf"]["fig_name"],
         rdir=cfg["classifier_rf"]["save_dir"],
-        vect="",
+        vect="pdf,eps",
     )
 
     plt.close()
