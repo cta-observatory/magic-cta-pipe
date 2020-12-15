@@ -18,10 +18,7 @@ from magicctapipe.utils.utils import *
 from magicctapipe.utils.filedir import *
 
 PARSER = argparse.ArgumentParser(
-    description=(
-        "This tools fits the event classification random forest on ",
-        "the specified events files. For stereo data."
-    ),
+    description="Apply random forests. For stereo data.",
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 PARSER.add_argument(
