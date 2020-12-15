@@ -22,16 +22,11 @@ from magicctapipe.utils.filedir import *
 from magicctapipe.train.utils import *
 from magicctapipe.train.event_processing import DirectionEstimatorPandas
 
-# import ctapipe
-# from ctapipe.instrument import CameraGeometry
-# from ctapipe.instrument import TelescopeDescription
-# from ctapipe.instrument import OpticsDescription
-# from ctapipe.instrument import SubarrayDescription
 
 PARSER = argparse.ArgumentParser(
     description=(
-        "This tools fits the direction random forest regressor on "
-        "the specified events files. For stereo data."
+        "Fits the direction random forest regressor on the specified files. "
+        "For stereo data."
     ),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )

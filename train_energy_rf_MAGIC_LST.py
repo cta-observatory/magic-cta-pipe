@@ -16,8 +16,8 @@ from magicctapipe.train.event_processing import EnergyEstimatorPandas
 
 PARSER = argparse.ArgumentParser(
     description=(
-        "This tools fits the energy random forest regressor on "
-        "the specified events files. For stereo data."
+        "Fits the energy random forest regressor on the specified files. "
+        "For stereo data."
     ),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
@@ -279,9 +279,7 @@ def train_energy_rf_stereo(config_file):
 
     plt.tight_layout()
     save_plt(
-        n=cfg["energy_rf"]["fig_name"],
-        rdir=cfg["energy_rf"]["save_dir"],
-        vect="pdf",
+        n=cfg["energy_rf"]["fig_name"], rdir=cfg["energy_rf"]["save_dir"], vect="pdf",
     )
     plt.close()
 

@@ -16,8 +16,8 @@ from magicctapipe.train.event_processing import EventClassifierPandas
 
 PARSER = argparse.ArgumentParser(
     description=(
-        "This tools fits the event classification random forest on ",
-        "the specified events files. For stereo data.",
+        "Fits the event classification random forest on the specified files. "
+        "For stereo data."
     ),
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
