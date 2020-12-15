@@ -7,7 +7,6 @@ data_files:
     train_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-train/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-train/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-train/Reco.h5'
     test_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-test/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-test/Hillas_Stereo.h5'
@@ -16,7 +15,6 @@ data_files:
     train_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/proton-train/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-train/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-train/Reco.h5'
     test_sample:
       mask_sim: '/mnt/d/CTA-MC/DL0/proton-test/*.simtel.gz'
       hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-test/Hillas_Stereo.h5'
