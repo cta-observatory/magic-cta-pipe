@@ -5,28 +5,22 @@
 data_files:
   mc:
     train_sample:
-      # mask_sim: '/mnt/d/CTA-MC/DL0/gamma-diffuse/*.simtel.gz'
-      # hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Hillas_Stereo.h5'
-      # reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse/Reco.h5'
-      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point/Reco.h5'
+      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-train/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-train/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-train/Reco.h5'
     test_sample:
-      # mask_sim: '/mnt/d/CTA-MC/DL0/gamma-diffuse-2/*.simtel.gz'
-      # hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse-2/Hillas_Stereo.h5'
-      # reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-diffuse-2/Reco.h5'
-      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-2/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-2/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-2/Reco.h5'
+      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-test/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-test/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-test/Reco.h5'
   data:
     train_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/proton/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Reco.h5'
+      mask_sim: '/mnt/d/CTA-MC/DL0/proton-train/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-train/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-train/Reco.h5'
     test_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/proton-2/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-2/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton/Reco.h5'
+      mask_sim: '/mnt/d/CTA-MC/DL0/proton-test/*.simtel.gz'
+      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-test/Hillas_Stereo.h5'
+      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-test/Reco.h5'
 
 # --- TELESCOPES ---------------------------------------------------------------
 all_tels:
