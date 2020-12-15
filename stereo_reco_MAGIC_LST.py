@@ -6,6 +6,7 @@ import copy
 import yaml
 import glob
 import scipy
+import select
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
@@ -44,14 +45,6 @@ PARSER.add_argument(
     help="Config file",
 )
 PARSER.add_argument(
-    "-n",
-    "--max_events",
-    type=int,
-    required=False,
-    default=0,
-    help="Max events, 0 for all",
-)
-PARSER.add_argument(
     "-d",
     "--display",
     action="store_true",
@@ -61,15 +54,13 @@ PARSER.add_argument(
 )
 
 
-def call_stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
+def call_stereo_reco_MAGIC_LST(config_file, display=False):
     """Stereo Reconstruction MAGIC + LST, looping on all given data
 
     Parameters
     ----------
     config_file : str
         configuration file, .yaml format
-    max_events : int, optional
-        max events, 0 for all, by default 0
     display : bool, optional
         display plots, by default False
     """
@@ -80,12 +71,10 @@ def call_stereo_reco_MAGIC_LST(config_file, max_events=0, display=False):
 
     for k1_ in k1:
         for k2_ in k2:
-            stereo_reco_MAGIC_LST(
-                k1=k1_, k2=k2_, cfg=cfg, max_events=max_events, display=display
-            )
+            stereo_reco_MAGIC_LST(k1=k1_, k2=k2_, cfg=cfg, display=display)
 
 
-def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
+def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
     """Stereo Reconstruction MAGIC + LST
 
     Parameters
@@ -96,8 +85,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
         second key
     cfg: dict
         configurations loaded from configuration file
-    max_events : int, optional
-        max events, 0 for all, by default 0
     display : bool, optional
         display plots, by default False
     """
@@ -130,7 +117,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
     for file in file_list:
         print("Analyzing file:\n%s" % file)
         # Open simtel file
-        source = SimTelEventSource(file, max_events=max_events)
+        source = SimTelEventSource(file)
         # Init calibrator, both for MAGIC and LST
         calibrator = CameraCalibrator(subarray=source.subarray)
         # Init MAGIC cleaning
@@ -152,13 +139,17 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
         source.mc_header.run_array_direction = []  # dummy value
         writer.write("mc_header", source.mc_header)
 
+        if display:
+            fig, ax = plt.subplots()
+            go, first_time_display, cont = True, True, False
+
         # Loop on events
         for event in source:
             if previous_event_id == event.index.event_id:
                 continue
             previous_event_id = copy.copy(event.index.event_id)
 
-            if display:
+            if display and go:
                 print("Event %d" % event.count)
             elif event.count % 100 == 0:
                 print("Event %d" % event.count)
@@ -281,14 +272,19 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
                 writer=writer,
             )
             # Display plot
-            if display:
-                _display_plots(
+            if display and go:
+                go, cont = _display_plots(
                     source=source,
                     event=event,
                     hillas_p=hillas_p,
                     time_grad=time_grad,
                     stereo_p=stereo_p,
+                    first=first_time_display,
+                    cont=cont,
+                    fig=fig,
+                    ax=ax,
                 )
+                first_time_display = False
         # --- END LOOP event in source ---
     # --- END LOOP file in file_list ---
 
@@ -298,8 +294,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, max_events=0, display=False):
     return
 
 
-def _display_plots(source, event, hillas_p, time_grad, stereo_p):
-    fig, ax = plt.subplots()
+def _display_plots(source, event, hillas_p, time_grad, stereo_p, first, cont, fig, ax):
+
     ax.set_xlabel("Distance (m)")
     ax.set_ylabel("Distance (m)")
     # Display the top-town view of the MAGIC-LST telescope array
@@ -326,7 +322,27 @@ def _display_plots(source, event, hillas_p, time_grad, stereo_p):
         label="Estimated Impact",
     )
     plt.legend()
-    plt.show()
+    if first:
+        plt.show(block=False)
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+    go = True
+    if not cont:
+        c = input("Press Enter to continue, s to stop, c to go continously: ")
+    plt.cla()
+    if not cont:
+        if c == "s":
+            go = False
+        elif c == "c":
+            print("Press Enter to stop the loop")
+            cont = True
+    if cont:
+        i, o, e = select.select([sys.stdin], [], [], 0.0001)
+        if i == [sys.stdin]:
+            go = False
+            input()
+        time.sleep(0.1)
+    return go, cont
 
 
 if __name__ == "__main__":
@@ -334,8 +350,6 @@ if __name__ == "__main__":
     kwargs = args.__dict__
     start_time = time.time()
     call_stereo_reco_MAGIC_LST(
-        config_file=kwargs["config_file"],
-        max_events=kwargs["max_events"],
-        display=kwargs["display"],
+        config_file=kwargs["config_file"], display=kwargs["display"]
     )
     print_elapsed_time(start_time, time.time())
