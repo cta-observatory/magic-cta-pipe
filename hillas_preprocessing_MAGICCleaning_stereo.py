@@ -154,8 +154,8 @@ def process_dataset_mc(input_mask, output_name):
             computed_hillas_params = dict()
             telescope_pointings = dict()
             array_pointing = SkyCoord(
-                alt=event.mc.alt,
-                az=event.mc.az,
+                alt=event.pointing.array_altitude,
+                az=event.pointing.array_azimuth,
                 frame=horizon_frame,
             )
 
@@ -316,8 +316,8 @@ def process_dataset_data(input_mask, output_name):
             computed_hillas_params = dict()
             telescope_pointings = dict()
             array_pointing = SkyCoord(
-                alt=event.pointing.tel[0].altitude,
-                az=event.pointing.tel[0].azimuth,
+                alt=event.pointing.array_altitude,
+                az=event.pointing.array_azimuth,
                 frame=horizon_frame,
             )
 
