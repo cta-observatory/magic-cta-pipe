@@ -119,12 +119,6 @@ def process_dataset_mc(input_mask, output_name):
         findhotpixels = False,
     )
 
-    bad_pixels_config = dict(
-        pedestalLevel = 400,
-        pedestalLevelVariance = 4.5,
-        pedestalType = 'FromExtractorRndm'
-    )
-
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
