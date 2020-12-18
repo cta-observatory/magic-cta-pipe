@@ -100,6 +100,7 @@ def load_dl1_data_stereo(file, drop=False):
         "tel_alt",
         "tel_az",
         "num_islands",
+        "n_islands",
         "tel_id",
     ]
     # Hillas
