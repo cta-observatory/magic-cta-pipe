@@ -120,12 +120,6 @@ def process_dataset_mc(input_mask, tel_id, output_name):
         findhotpixels=False,
     )
 
-    bad_pixels_config = dict(
-        pedestalLevel = 400,
-        pedestalLevelVariance = 4.5,
-        pedestalType = 'FromExtractorRndm'
-    )
-
     # Finding available MC files
     input_files = glob.glob(input_mask)
     input_files.sort()
