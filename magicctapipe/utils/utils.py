@@ -28,9 +28,38 @@ def print_elapsed_time(start, end):
     end : float
         stop time, from time.time()
     """
+    print(make_elapsed_time_str(start=start, end=end))
+
+
+def make_elapsed_time_str(start, end):
+    """[summary]
+
+    Parameters
+    ----------
+    start : [type]
+        [description]
+    end : str
+        [description]
+
+    """
+    """Makes elapsed time string as start - end. Output format is `hh:mm:ss`
+
+    Parameters
+    ----------
+    start : float
+        start time, from time.time()
+    end : float
+        stop time, from time.time()
+
+    Returns
+    -------
+    str
+        output string
+    """
     h, r = divmod(end - start, 3600)
     m, s = divmod(r, 60)
-    print(f"Elapsed time: {int(h):0>2}:{int(m):0>2}:{int(s):0>2}")
+    out_s = f"Elapsed time: {int(h):0>2}:{int(m):0>2}:{int(s):0>2}"
+    return out_s
 
 
 def print_title(title, style_char="=", in_space=3, width_char=80):
@@ -51,11 +80,6 @@ def print_title(title, style_char="=", in_space=3, width_char=80):
         number of spaces between the title and the style characters, by default 3
     width_char : int, optional
         total width in characters, by default 80
-
-    Returns
-    -------
-    str
-        formatted title string
     """
     print(
         make_title_str(
