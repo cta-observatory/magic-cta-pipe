@@ -64,6 +64,8 @@ PARSER.add_argument(
 
 
 def train_classifier_rf_stereo(config_file):
+    print_title("TRAIN CLASSIFIER RFs")
+
     # --- Reading the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label="classifier_rf")
 
@@ -288,6 +290,8 @@ def train_classifier_rf_stereo(config_file):
 
 
 def train_direction_rf_stereo(config_file):
+    print_title("TRAIN DIRECTION RFs")
+
     # Load config_file
     cfg = load_cfg_file_check(config_file=config_file, label="direction_rf")
 
@@ -554,6 +558,8 @@ def train_direction_rf_stereo(config_file):
 
 
 def train_energy_rf_stereo(config_file):
+    print_title("TRAIN ENERGY RFs")
+
     # --- Reading the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label="energy_rf")
 
@@ -677,19 +683,10 @@ if __name__ == "__main__":
         print("Type -h or --help for information on how to run the script")
 
     if do_classifier:
-        print("==================================================")
-        print("============   TRAIN CLASSIFIER RFs   ============")
-        print("==================================================")
         train_classifier_rf_stereo(config_file=kwargs["config_file"])
     if do_energy:
-        print("==================================================")
-        print("==============   TRAIN ENERGY RFs   ==============")
-        print("==================================================")
         train_energy_rf_stereo(config_file=kwargs["config_file"])
     if do_direction:
-        print("==================================================")
-        print("============   TRAIN DIRECTION RFs   =============")
-        print("==================================================")
         train_direction_rf_stereo(config_file=kwargs["config_file"])
 
     print_elapsed_time(start_time, time.time())
