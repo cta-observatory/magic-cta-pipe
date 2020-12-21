@@ -64,6 +64,8 @@ def call_stereo_reco_MAGIC_LST(config_file, display=False):
     display : bool, optional
         display plots, by default False
     """
+    print_title("Stereo Reconstruction")
+
     cfg = load_cfg_file(config_file)
 
     k1 = ["data", "mc"]
