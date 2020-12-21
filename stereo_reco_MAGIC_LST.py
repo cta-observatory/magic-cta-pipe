@@ -89,11 +89,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         display plots, by default False
     """
 
-    tel_ids, tel_ids_LST, tel_ids_MAGIC = intersec_tel_ids(
-        all_tel_ids_LST=cfg["LST"]["tel_ids"],
-        all_tel_ids_MAGIC=cfg["MAGIC"]["tel_ids"],
-        tel_ids_sel=cfg["all_tels"]["tel_ids"],
-    )
+    tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
     if len(tel_ids) < 2:
         print("Select at least two telescopes in the MAGIC + LST array")
         return

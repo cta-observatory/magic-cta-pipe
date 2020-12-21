@@ -62,11 +62,7 @@ def apply_rfs_stereo(config_file):
         shower_data = shower_data[~shower_data.index.duplicated()]
 
         # Get tel_ids
-        tel_ids, tel_ids_LST, tel_ids_MAGIC = intersec_tel_ids(
-            tel_ids_sel=get_tel_ids_dl1(shower_data),
-            all_tel_ids_LST=cfg["LST"]["tel_ids"],
-            all_tel_ids_MAGIC=cfg["MAGIC"]["tel_ids"],
-        )
+        tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
         # --- MAGIC - LST description ---
         array_tel_descriptions = get_array_tel_descriptions(

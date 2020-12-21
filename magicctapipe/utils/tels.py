@@ -148,6 +148,40 @@ def convert_positions_dict(positions_dict):
     return positions_dict
 
 
+def check_tel_ids(cfg):
+    """Function to check the given tel_ids in the configuration file (all_tels:tel_ids)
+
+    Parameters
+    ----------
+    cfg : dict
+        configuration dictionary loaded from config file. It must contain the
+        following elements:
+            - cfg['all_tels']['tel_n']: list with all telescope names
+            - cfg[<tel_label>]['tel_ids']: list with telescope <tel_label> ids, where
+            <tel_label> is MAGIC and LST, but not necessarily both
+    
+    Returns
+    -------
+    tuple
+        - tel_ids: intersection with tel_ids_sel and the sum between 
+            all_tel_ids_LST and all_tel_ids_MAGIC
+        - tel_ids_LST: LST telescope ids in tel_ids
+        - tel_ids_MAGIC: MAGIC telescope ids in tel_ids
+    """
+    all_tel_ids = {"LST": [], "MAGIC": []}
+    for k in all_tel_ids.keys():
+        if k in cfg.keys():
+            if "tel_ids" in cfg[k].keys():
+                all_tel_ids[k] = cfg[k]["tel_ids"]
+
+    tel_ids, tel_ids_LST, tel_ids_MAGIC = intersec_tel_ids(
+        all_tel_ids_LST=all_tel_ids["LST"],
+        all_tel_ids_MAGIC=all_tel_ids["MAGIC"],
+        tel_ids_sel=cfg["all_tels"]["tel_ids"],
+    )
+    return tel_ids, tel_ids_LST, tel_ids_MAGIC
+
+
 def intersec_tel_ids(
     all_tel_ids_LST=[1, 2, 3, 4],
     all_tel_ids_MAGIC=[5, 6],

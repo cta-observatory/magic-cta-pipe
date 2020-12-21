@@ -146,11 +146,7 @@ def train_classifier_rf_stereo(config_file):
     performance = dict()
     # tel_ids = shower_data_test.index.levels[2]
 
-    tel_ids, tel_ids_LST, tel_ids_MAGIC = intersec_tel_ids(
-        tel_ids_sel=get_tel_ids_dl1(shower_data_test),
-        all_tel_ids_LST=cfg["LST"]["tel_ids"],
-        all_tel_ids_MAGIC=cfg["MAGIC"]["tel_ids"],
-    )
+    tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # Mean
     performance[0] = evaluate_performance_classifier(
@@ -314,11 +310,7 @@ def train_direction_rf_stereo(config_file):
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
     shower_data_test = load_dl1_data_stereo(f_)
-    tel_ids, tel_ids_LST, tel_ids_MAGIC = intersec_tel_ids(
-        tel_ids_sel=get_tel_ids_dl1(shower_data_test),
-        all_tel_ids_LST=cfg["LST"]["tel_ids"],
-        all_tel_ids_MAGIC=cfg["MAGIC"]["tel_ids"],
-    )
+    tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # --- Data preparation ---
     l_ = ["obs_id", "event_id"]
@@ -583,11 +575,7 @@ def train_energy_rf_stereo(config_file):
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
     shower_data_test = load_dl1_data_stereo(f_)
     # tel_ids = get_tel_ids_dl1(shower_data_test)
-    tel_ids, tel_ids_LST, tel_ids_MAGIC = intersec_tel_ids(
-        tel_ids_sel=get_tel_ids_dl1(shower_data_test),
-        all_tel_ids_LST=cfg["LST"]["tel_ids"],
-        all_tel_ids_MAGIC=cfg["MAGIC"]["tel_ids"],
-    )
+    tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # --- Data preparation ---
     l_ = ["obs_id", "event_id"]
