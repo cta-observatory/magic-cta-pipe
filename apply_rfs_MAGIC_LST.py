@@ -22,7 +22,11 @@ PARSER = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 PARSER.add_argument(
-    "-cfg", "--config_file", type=str, required=True, help="Configuration file",
+    "-cfg",
+    "--config_file",
+    type=str,
+    required=True,
+    help="Configuration file, yaml format",
 )
 
 

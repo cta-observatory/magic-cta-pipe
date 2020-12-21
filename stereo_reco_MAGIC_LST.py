@@ -40,9 +40,8 @@ PARSER.add_argument(
     "-cfg",
     "--config_file",
     type=str,
-    required=False,
-    default="./config/config_MAGIC_LST.yaml",
-    help="Config file",
+    required=True,
+    help="Configuration file, yaml format",
 )
 PARSER.add_argument(
     "-d",

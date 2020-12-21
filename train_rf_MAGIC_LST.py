@@ -27,7 +27,7 @@ PARSER.add_argument(
     "--config_file",
     type=str,
     required=True,
-    help="Configuration file to steer the code execution",
+    help="Configuration file, yaml format",
 )
 PARSER.add_argument(
     "-c",
