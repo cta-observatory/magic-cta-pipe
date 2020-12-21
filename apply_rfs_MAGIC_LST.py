@@ -22,18 +22,20 @@ PARSER = argparse.ArgumentParser(
     formatter_class=argparse.ArgumentDefaultsHelpFormatter,
 )
 PARSER.add_argument(
-    "-cfg",
-    "--config_file",
-    type=str,
-    required=True,
-    help="Configuration file to steer the code execution",
+    "-cfg", "--config_file", type=str, required=True, help="Configuration file",
 )
 
 
-# =================
-# === Main code ===
-# =================
 def apply_rfs_stereo(config_file):
+    """Apply Random Forests
+
+    Parameters
+    ----------
+    config_file : str
+        configuration file
+    """
+    print_title("Apply RFs")
+
     # ------------------------------
     # Reading the configuration file
     cfg = load_cfg_file(config_file)
