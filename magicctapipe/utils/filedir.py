@@ -164,8 +164,8 @@ def drop_keys(df, extra_keys):
     return df
 
 
-def out_file_h5(in_file, li, hi):
-    """Returns the h5 output file name, from a simtel.gz input file
+def out_file_h5_no_run(in_file, li, hi):
+    """Returns the h5 output file name, from a simtel.gz input file, no run number
 
     Parameters
     ----------
