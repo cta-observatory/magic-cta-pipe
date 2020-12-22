@@ -85,7 +85,6 @@ def load_dl1_data_stereo_list(file_mask, drop=False):
         data
     """
     file_list = glob.glob(file_mask)
-    print(file_list)
     for i, file in enumerate(file_list):
         data_ = load_dl1_data_stereo(file, drop)
         if i == 0:
