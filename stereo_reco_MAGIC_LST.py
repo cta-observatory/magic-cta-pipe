@@ -44,6 +44,38 @@ PARSER.add_argument(
     help="Configuration file, yaml format",
 )
 PARSER.add_argument(
+    "-mtr",
+    "--only_mc_train",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Consider only mc train files",
+)
+PARSER.add_argument(
+    "-mte",
+    "--only_mc_test",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Consider only mc test files",
+)
+PARSER.add_argument(
+    "-dtr",
+    "--only_data_train",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Consider only data train files",
+)
+PARSER.add_argument(
+    "-dte",
+    "--only_data_test",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Consider only data test files",
+)
+PARSER.add_argument(
     "-d",
     "--display",
     action="store_true",
@@ -53,26 +85,33 @@ PARSER.add_argument(
 )
 
 
-def call_stereo_reco_MAGIC_LST(config_file, display=False):
+def call_stereo_reco_MAGIC_LST(kwargs):
     """Stereo Reconstruction MAGIC + LST, looping on all given data
 
     Parameters
     ----------
-    config_file : str
-        configuration file, .yaml format
-    display : bool, optional
-        display plots, by default False
+    kwargs : dict
+        parser options
     """
     print_title("Stereo Reconstruction")
 
-    cfg = load_cfg_file(config_file)
+    cfg = load_cfg_file(kwargs["config_file"])
 
-    k1 = ["data", "mc"]
-    k2 = ["train_sample", "test_sample"]
+    if kwargs["only_mc_train"]:
+        k1, k2 = ["mc"], ["train_sample"]
+    elif kwargs["only_mc_test"]:
+        k1, k2 = ["mc"], ["test_sample"]
+    elif kwargs["only_data_train"]:
+        k1, k2 = ["data"], ["train_sample"]
+    elif kwargs["only_data_test"]:
+        k1, k2 = ["mc"], ["test_sample"]
+    else:
+        k1 = ["mc", "data"]
+        k2 = ["train_sample", "test_sample"]
 
     for k1_ in k1:
         for k2_ in k2:
-            stereo_reco_MAGIC_LST(k1=k1_, k2=k2_, cfg=cfg, display=display)
+            stereo_reco_MAGIC_LST(k1=k1_, k2=k2_, cfg=cfg, display=kwargs["display"])
 
 
 def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
@@ -101,8 +140,10 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
     file_list = glob.glob(cfg["data_files"][k1][k2]["mask_sim"])
 
     # Output file
-    # out_file = out_file_h5(in_file=file_list[0], li=3, hi=6)
-    out_file = cfg["data_files"][k1][k2]["hillas_h5"]
+    out_file = os.path.join(
+        os.path.dirname(cfg["data_files"][k1][k2]["hillas_h5"]),
+        out_file_h5(in_file=file_list[0], li=3, hi=6),
+    )
     print("Output file:\n%s" % out_file)
     check_folder(os.path.dirname(out_file))
 
@@ -346,7 +387,5 @@ if __name__ == "__main__":
     args = PARSER.parse_args()
     kwargs = args.__dict__
     start_time = time.time()
-    call_stereo_reco_MAGIC_LST(
-        config_file=kwargs["config_file"], display=kwargs["display"]
-    )
+    call_stereo_reco_MAGIC_LST(kwargs)
     print_elapsed_time(start_time, time.time())
