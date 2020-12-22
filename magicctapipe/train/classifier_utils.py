@@ -129,11 +129,11 @@ def print_par_imp_classifier(class_estimator):
 def load_init_data_classifier(cfg, mode="train"):
     f_ = cfg["data_files"]["mc"][f"{mode}_sample"]["hillas_h5"]
     info_message(f"Loading MC {mode} data...", prefix="ClassifierRF")
-    mc_data = load_dl1_data_stereo(f_, drop=True)
+    mc_data = load_dl1_data_stereo_list(f_, drop=True)
 
     f_ = cfg["data_files"]["data"][f"{mode}_sample"]["hillas_h5"]
     info_message(f'Loading "off" {mode} data...', prefix="ClassifierRF")
-    bkg_data = load_dl1_data_stereo(f_, drop=True)
+    bkg_data = load_dl1_data_stereo_list(f_, drop=True)
 
     # True event classes
     mc_data["true_event_class"] = 0

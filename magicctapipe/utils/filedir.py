@@ -1,5 +1,6 @@
 import os
 import sys
+import glob
 import yaml
 import datetime
 import pandas as pd
@@ -65,6 +66,33 @@ def check_folder(folder):
     if not os.path.exists(folder):
         print("Directory %s does not exist, creating it..." % folder)
         os.makedirs(folder)
+
+
+def load_dl1_data_stereo_list(file_mask, drop=False):
+    """Load dl1 data hillas and stereo and merge them togheter, from a file mask
+
+    Parameters
+    ----------
+    file : string
+        file
+    drop : bool, optional
+        drop extra keys, by default False
+
+
+    Returns
+    -------
+    pd.Dataframe
+        data
+    """
+    file_list = glob.glob(file_mask)
+    data = None
+    for file in file_list:
+        data_ = load_dl1_data_stereo(file, drop)
+        if data is None:
+            data = data_
+        else:
+            data.append(data_)
+    return data
 
 
 def load_dl1_data_stereo(file, drop=False):
