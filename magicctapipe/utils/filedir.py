@@ -165,7 +165,7 @@ def drop_keys(df, extra_keys):
 
 
 def out_file_h5_no_run(in_file, li, hi):
-    """Returns the h5 output file name, from a simtel.gz input file, no run number
+    """Returns the h5 output file name, from a simtel.gz input file, without run number
 
     Parameters
     ----------
@@ -187,3 +187,21 @@ def out_file_h5_no_run(in_file, li, hi):
     out = os.path.join(os.path.dirname(in_file), out)
     return out
 
+
+def out_file_h5(in_file):
+    """Returns the h5 output file name, from a simtel.gz input file. Only file name,
+    without path
+
+    Parameters
+    ----------
+    in_file : str
+        Input file
+
+    Returns
+    -------
+    str
+        h5 output file, without path
+    """
+    f = os.path.basename(in_file)
+    out = "%s.h5" % f.rstrip(".simtel.gz")
+    return out

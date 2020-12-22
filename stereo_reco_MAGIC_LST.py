@@ -142,7 +142,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
     # Output file
     out_file = os.path.join(
         os.path.dirname(cfg["data_files"][k1][k2]["hillas_h5"]),
-        out_file_h5(in_file=file_list[0], li=3, hi=6),
+        out_file_h5(in_file=file_list[0]),
     )
     print("Output file:\n%s" % out_file)
     check_folder(os.path.dirname(out_file))
