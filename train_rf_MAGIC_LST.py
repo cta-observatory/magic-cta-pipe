@@ -297,7 +297,7 @@ def train_direction_rf_stereo(config_file):
     # --- Train sample ---
     info_message("Loading train data...", prefix="DirRF")
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
-    shower_data_train = load_dl1_data_stereo(f_)
+    shower_data_train = load_dl1_data_stereo_list(f_)
 
     # Computing event weights
     info_message("Computing the train sample event weights...", prefix="DirRF")
@@ -309,7 +309,7 @@ def train_direction_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
-    shower_data_test = load_dl1_data_stereo(f_)
+    shower_data_test = load_dl1_data_stereo_list(f_)
     tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # --- Data preparation ---
