@@ -307,7 +307,11 @@ class MAGICBadPixelsCalc():
                     self.sample_ranges_dead[tel_id - 1][i,1] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][1].unix
 
             # now find sample:
-            i_min_dead = np.where(event_time >= self.sample_ranges_dead[tel_id - 1][:,0])[0][-1]
+            indices_time_dead = np.where(event_time >= self.sample_ranges_dead[tel_id - 1][:,0])[0]
+            if indices_time_dead.size:
+                i_min_dead = indices_time_dead[-1]
+            else:
+                i_min_dead = 0
 
             deadpixel_mask[tel_id - 1] = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[i_min_dead]
 
