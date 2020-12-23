@@ -26,7 +26,7 @@ class MAGICBadPixelsCalc():
             self.pedestalLevelVariance = config['pedestalLevelVariance']
         else:
             self.pedestalLevelVariance = 4.5
-            
+
         if 'pedestalType' in config:
             pedestalTypeName = config['pedestalType']
             if pedestalTypeName == 'Fundamental':
@@ -65,17 +65,17 @@ class MAGICBadPixelsCalc():
         Initializes or resets for each new run subrun-wise dead pixel samples
         or pedestal info with computed outlier masks.
         """
-        
+
         if event.index.obs_id != self.current_obs_id:
-        
+
             self.sample_times_ped = [[], []]
             self.n_samples_ped = np.zeros(2, dtype=np.int16) - 1
             self.charge_std_outliers = [[], []]
             #self.charge_std = [[], []]
-    
+
             self.sample_ranges_dead = [None, None]
             self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
-            
+
             self.current_obs_id = event.index.obs_id
 
     def _check_is_mc(self, event):
@@ -86,7 +86,7 @@ class MAGICBadPixelsCalc():
         -------
          self.is_mc, self.check_is_mc
         """
-        
+
         if not self.check_is_mc:
             if event.meta['is_simulation'] == True:
                 self.is_mc = True
@@ -133,10 +133,10 @@ class MAGICBadPixelsCalc():
         for i in range(self.n_camera_pixels):
 
             # Calculate the corrected means:
-    
+
             if (charge_std[i] <= 0.5 * meanrms or charge_std[i] >= 1.5 * meanrms):
                 continue
-    
+
             meanrms2 += charge_std[i]
             varrms2 += charge_std[i]**2
             npix += 1
@@ -164,7 +164,7 @@ class MAGICBadPixelsCalc():
             uplim2  = meanrms2 + self.pedestalLevelVariance * varrms2
 
         bads = 0
-    
+
         # Blind the Bad Pixels
         for i in range(self.n_camera_pixels):    
             if ((self.pedestalLevel <= 0             or (charge_std[i] > lolim1 and charge_std[i] <= uplim1))
