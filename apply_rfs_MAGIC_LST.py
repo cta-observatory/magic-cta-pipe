@@ -68,6 +68,7 @@ def apply_rfs_stereo(config_file):
                 out_file_h5_reco(in_file=file),
             )
             print(f"Output file:\n{out_file}")
+            check_folder(os.path.dirname(out_file))
 
             shower_data = load_dl1_data_stereo(file)
 
