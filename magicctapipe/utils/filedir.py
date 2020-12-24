@@ -101,9 +101,8 @@ def load_dl1_data_stereo_list_selected(
     if file_n_key in sub_dict.keys():
         n = sub_dict[file_n_key]
         if n > 0:
-            data = load_dl1_data_stereo_list(file_list[:n], drop)
-    else:
-        data = load_dl1_data_stereo_list(file_list, drop)
+            file_list = file_list[:n]
+    data = load_dl1_data_stereo_list(file_list, drop)
     return data
 
 
