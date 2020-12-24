@@ -68,8 +68,36 @@ def check_folder(folder):
         os.makedirs(folder)
 
 
+def load_dl1_data_stereo_list_selected(file_list, sub_dict, drop=False):
+    """Loads dl1 data hillas and stereo and merge them togheter, from a `file_list`. 
+    If in `sub_dict` finds the `file_n` key, and the given number is > 0, it limits the
+    `file_list` lenght to the given number
+
+    Parameters
+    ----------
+    file_list : string
+        file_list
+    sub_dict : dict
+        sub-dictionary loaded from config file (e.g. cfg["direction_rf"])
+    drop : bool, optional
+        drop extra keys, by default False
+
+    Returns
+    -------
+    [type]
+        [description]
+    """
+    if "file_n" in sub_dict.keys():
+        n = sub_dict["file_n"]
+        if n > 0:
+            data = load_dl1_data_stereo_list(file_list[:n], drop)
+    else:
+        data = load_dl1_data_stereo_list(file_list[:n], drop)
+    return data
+
+
 def load_dl1_data_stereo_list(file_list, drop=False):
-    """Load dl1 data hillas and stereo and merge them togheter, from a file_list
+    """Loads dl1 data hillas and stereo and merge them togheter, from a file_list
 
     Parameters
     ----------
@@ -94,7 +122,7 @@ def load_dl1_data_stereo_list(file_list, drop=False):
 
 
 def load_dl1_data_stereo(file, drop=False):
-    """Load dl1 data hillas and stereo and merge them togheter
+    """Loads dl1 data hillas and stereo and merge them togheter
 
     Parameters
     ----------
