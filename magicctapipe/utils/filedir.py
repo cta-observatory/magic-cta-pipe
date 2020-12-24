@@ -96,7 +96,7 @@ def load_dl1_data_stereo_list_selected(
         if n > 0:
             data = load_dl1_data_stereo_list(file_list[:n], drop)
     else:
-        data = load_dl1_data_stereo_list(file_list[:n], drop)
+        data = load_dl1_data_stereo_list(file_list, drop)
     return data
 
 
