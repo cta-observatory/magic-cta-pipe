@@ -68,9 +68,11 @@ def check_folder(folder):
         os.makedirs(folder)
 
 
-def load_dl1_data_stereo_list_selected(file_list, sub_dict, drop=False):
+def load_dl1_data_stereo_list_selected(
+    file_list, sub_dict, file_n_key="file_n", drop=False
+):
     """Loads dl1 data hillas and stereo and merge them togheter, from a `file_list`. 
-    If in `sub_dict` finds the `file_n` key, and the given number is > 0, it limits the
+    If in `sub_dict` finds the `file_n_key` key, and the given number is > 0, it limits the
     `file_list` lenght to the given number
 
     Parameters
@@ -79,6 +81,8 @@ def load_dl1_data_stereo_list_selected(file_list, sub_dict, drop=False):
         file_list
     sub_dict : dict
         sub-dictionary loaded from config file (e.g. cfg["direction_rf"])
+    file_n_key : str, optional
+        file number key, by default "file_n"
     drop : bool, optional
         drop extra keys, by default False
 
@@ -87,8 +91,8 @@ def load_dl1_data_stereo_list_selected(file_list, sub_dict, drop=False):
     pd.Dataframe
         data
     """
-    if "file_n" in sub_dict.keys():
-        n = sub_dict["file_n"]
+    if file_n_key in sub_dict.keys():
+        n = sub_dict[file_n_key]
         if n > 0:
             data = load_dl1_data_stereo_list(file_list[:n], drop)
     else:
