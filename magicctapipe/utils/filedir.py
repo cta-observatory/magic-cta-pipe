@@ -84,8 +84,8 @@ def load_dl1_data_stereo_list_selected(file_list, sub_dict, drop=False):
 
     Returns
     -------
-    [type]
-        [description]
+    pd.Dataframe
+        data
     """
     if "file_n" in sub_dict.keys():
         n = sub_dict["file_n"]
