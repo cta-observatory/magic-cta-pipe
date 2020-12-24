@@ -7,7 +7,7 @@ import pandas as pd
 
 
 def load_cfg_file(config_file):
-    """Load the configuration file (yaml format)
+    """Loads the configuration file (yaml format)
 
     Parameters
     ----------
@@ -33,8 +33,8 @@ def load_cfg_file(config_file):
 
 
 def load_cfg_file_check(config_file, label):
-    """Load the configuration file (yaml format) and checks that the label
-    section is present in the given file, if not it exits
+    """Loads the configuration file (yaml format) and checks that the label
+    section is present in the given file, otherwise it exits
 
     Parameters
     ----------
@@ -62,7 +62,13 @@ def load_cfg_file_check(config_file, label):
 
 
 def check_folder(folder):
-    """Check if folder exists; if not, it will be created"""
+    """Checks if folder exists; if not, it will be created
+
+    Parameters
+    ----------
+    folder : str
+        folder name (with path)
+    """
     if not os.path.exists(folder):
         print("Directory %s does not exist, creating it..." % folder)
         os.makedirs(folder)
@@ -71,9 +77,10 @@ def check_folder(folder):
 def load_dl1_data_stereo_list_selected(
     file_list, sub_dict, file_n_key="file_n", drop=False
 ):
-    """Loads dl1 data hillas and stereo and merge them togheter, from a `file_list`. 
-    If in `sub_dict` finds the `file_n_key` key, and the given number is > 0, it limits the
-    `file_list` lenght to the given number
+    """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`. 
+    If in `sub_dict` it finds the `file_n_key` key, and the given number is > 0, it 
+    limits the `file_list` lenght to the given number. Useful to make random forests
+    plot on a small test sample
 
     Parameters
     ----------
@@ -101,7 +108,7 @@ def load_dl1_data_stereo_list_selected(
 
 
 def load_dl1_data_stereo_list(file_list, drop=False):
-    """Loads dl1 data hillas and stereo and merge them togheter, from a file_list
+    """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`
 
     Parameters
     ----------
@@ -126,7 +133,7 @@ def load_dl1_data_stereo_list(file_list, drop=False):
 
 
 def load_dl1_data_stereo(file, drop=False):
-    """Loads dl1 data hillas and stereo and merge them togheter
+    """Loads dl1 data (hillas and stereo) from `file` and merge them togheter
 
     Parameters
     ----------
@@ -180,7 +187,7 @@ def load_dl1_data_stereo(file, drop=False):
 
 
 def load_dl1_data_mono(file, label="hillas_params"):
-    """Load `dl1/{label}` from dl1 file, h5 format for mono data
+    """Loads `dl1/{label}` from dl1 file, h5 format for mono data
 
     Parameters
     ----------
@@ -201,7 +208,7 @@ def load_dl1_data_mono(file, label="hillas_params"):
 
 
 def drop_keys(df, extra_keys):
-    """Drop extrakeys from pandas dataframe, without crashing if they are not
+    """Drops extrakeys from pandas dataframe, without crashing if they are not
     present in the dataframe
 
     Parameters
