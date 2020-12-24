@@ -68,13 +68,13 @@ def check_folder(folder):
         os.makedirs(folder)
 
 
-def load_dl1_data_stereo_list(file_mask, drop=False):
-    """Load dl1 data hillas and stereo and merge them togheter, from a file mask
+def load_dl1_data_stereo_list(file_list, drop=False):
+    """Load dl1 data hillas and stereo and merge them togheter, from a file_list
 
     Parameters
     ----------
-    file : string
-        file
+    file_list : string
+        file_list
     drop : bool, optional
         drop extra keys, by default False
 
@@ -84,7 +84,6 @@ def load_dl1_data_stereo_list(file_mask, drop=False):
     pd.Dataframe
         data
     """
-    file_list = glob.glob(file_mask)
     for i, file in enumerate(file_list):
         data_ = load_dl1_data_stereo(file, drop)
         if i == 0:

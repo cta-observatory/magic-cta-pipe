@@ -297,7 +297,7 @@ def train_direction_rf_stereo(config_file):
     # --- Train sample ---
     info_message("Loading train data...", prefix="DirRF")
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
-    shower_data_train = load_dl1_data_stereo_list(f_)
+    shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
 
     # Computing event weights
     info_message("Computing the train sample event weights...", prefix="DirRF")
@@ -309,7 +309,8 @@ def train_direction_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
-    shower_data_test = load_dl1_data_stereo_list(f_)
+    shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
+    # shower_data_test = load_dl1_data_stereo_list_selected(f_, cfg["direction_rf"])
     tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # --- Data preparation ---
@@ -561,7 +562,7 @@ def train_energy_rf_stereo(config_file):
     # --- Train sample ---
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
     info_message("Loading train data...", prefix="EnergyRF")
-    shower_data_train = load_dl1_data_stereo_list(f_)
+    shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
 
     # Computing event weights
     info_message("Computing the train sample event weights...", prefix="EnergyRF")
@@ -573,7 +574,7 @@ def train_energy_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
-    shower_data_test = load_dl1_data_stereo_list(f_)
+    shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
     # tel_ids = get_tel_ids_dl1(shower_data_test)
     tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
