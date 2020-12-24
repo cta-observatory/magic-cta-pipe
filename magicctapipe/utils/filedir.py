@@ -269,3 +269,22 @@ def out_file_h5(in_file):
     f = os.path.basename(in_file)
     out = "%s.h5" % f.rstrip(".simtel.gz")
     return out
+
+
+def out_file_h5_reco(in_file):
+    """Returns the h5 reco output file name, from a h5 dl1 input file. Only file name,
+    without path
+
+    Parameters
+    ----------
+    in_file : str
+        Input file
+
+    Returns
+    -------
+    str
+        h5 output file, without path
+    """
+    f = os.path.basename(in_file)
+    out = "%s_reco.h5" % f.rstrip(".h5")
+    return out
