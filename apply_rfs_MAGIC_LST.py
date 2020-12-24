@@ -28,9 +28,25 @@ PARSER.add_argument(
     required=True,
     help="Configuration file, yaml format",
 )
+PARSER.add_argument(
+    "-mte",
+    "--only_mc_test",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Consider only mc test files",
+)
+PARSER.add_argument(
+    "-dte",
+    "--only_data_test",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Consider only data test files",
+)
 
 
-def apply_rfs_stereo(config_file):
+def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
     """Apply Random Forests
 
     Parameters
@@ -53,7 +69,13 @@ def apply_rfs_stereo(config_file):
     )
 
     # Using only the "mc" and "data" "test_sample"
-    data_types = ["mc", "data"]
+    if only_mc_test:
+        data_types = ["mc"]
+    elif only_data_test:
+        data_types = ["data"]
+    else:
+        data_types = ["mc", "data"]
+
     sample = "test_sample"
 
     for data_type in data_types:
@@ -135,5 +157,9 @@ if __name__ == "__main__":
     args = PARSER.parse_args()
     kwargs = args.__dict__
     start_time = time.time()
-    apply_rfs_stereo(config_file=kwargs["config_file"],)
+    apply_rfs_stereo(
+        config_file=kwargs["config_file"],
+        only_mc_test=kwargs["only_mc_test"],
+        only_data_test=kwargs["only_data_test"],
+    )
     print_elapsed_time(start_time, time.time())
