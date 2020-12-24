@@ -309,8 +309,10 @@ def train_direction_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
-    shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
-    # shower_data_test = load_dl1_data_stereo_list_selected(f_, cfg["direction_rf"])
+    # shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
+    shower_data_test = load_dl1_data_stereo_list_selected(
+        file_list=glob.glob(f_), sub_dict=cfg["direction_rf"], file_n_key="test_file_n"
+    )
     tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # --- Data preparation ---
