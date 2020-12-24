@@ -139,21 +139,20 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
     file_list = glob.glob(cfg["data_files"][k1][k2]["mask_sim"])
 
-    # Output file
-    out_file = os.path.join(
-        os.path.dirname(cfg["data_files"][k1][k2]["hillas_h5"]),
-        out_file_h5(in_file=file_list[0]),
-    )
-    print("Output file:\n%s" % out_file)
-    check_folder(os.path.dirname(out_file))
-
-    writer = HDF5TableWriter(filename=out_file, group_name="dl1", overwrite=True)
-
     previous_event_id = 0
 
     # Opening the output file
     for file in file_list:
-        print("Analyzing file:\n%s" % file)
+        print(f"Analyzing file:\n{file}")
+        # Output file
+        out_file = os.path.join(
+            os.path.dirname(cfg["data_files"][k1][k2]["hillas_h5"]),
+            out_file_h5(in_file=file_list[0]),
+        )
+        print(f"Output file:\n{out_file}")
+        check_folder(os.path.dirname(out_file))
+        writer = HDF5TableWriter(filename=out_file, group_name="dl1", overwrite=True)
+
         # Open simtel file
         source = SimTelEventSource(file)
         # Init calibrator, both for MAGIC and LST
@@ -324,10 +323,9 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 )
                 first_time_display = False
         # --- END LOOP event in source ---
+        # Close writer
+        writer.close()
     # --- END LOOP file in file_list ---
-
-    # Close writer
-    writer.close()
 
     return
 
