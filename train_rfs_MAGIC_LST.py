@@ -297,6 +297,7 @@ def train_direction_rf_stereo(config_file):
     # --- Train sample ---
     info_message("Loading train data...", prefix="DirRF")
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
+    print(f"Loading files with the following mask:\n{f_}")
     shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
 
     # Computing event weights
@@ -309,6 +310,7 @@ def train_direction_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
+    print(f"Loading files with the following mask:\n{f_}")
     # shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
     shower_data_test = load_dl1_data_stereo_list_selected(
         file_list=glob.glob(f_), sub_dict=cfg["direction_rf"], file_n_key="test_file_n"
@@ -564,6 +566,7 @@ def train_energy_rf_stereo(config_file):
     # --- Train sample ---
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
     info_message("Loading train data...", prefix="EnergyRF")
+    print(f"Loading files with the following mask:\n{f_}")
     shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
 
     # Computing event weights
@@ -576,6 +579,7 @@ def train_energy_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
+    print(f"Loading files with the following mask:\n{f_}")
     # shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
     shower_data_test = load_dl1_data_stereo_list_selected(
         file_list=glob.glob(f_), sub_dict=cfg["energy_rf"], file_n_key="test_file_n"
