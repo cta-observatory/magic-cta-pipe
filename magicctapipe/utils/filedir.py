@@ -19,6 +19,7 @@ def load_cfg_file(config_file):
     dict
         loaded configurations
     """
+    print(f"Loading configuration file\n{config_file}")
     e_ = (
         "ERROR: can not load the configuration file %s\n"
         "Please check that the file exists and is of YAML format\n"
