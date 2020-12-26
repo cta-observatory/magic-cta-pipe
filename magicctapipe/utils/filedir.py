@@ -106,7 +106,7 @@ def load_dl1_data_stereo_list_selected(
     return data
 
 
-def load_dl1_data_stereo_list(file_list, drop=False):
+def load_dl1_data_stereo_list(file_list, drop=False, verbose=True):
     """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`
 
     Parameters
@@ -115,6 +115,8 @@ def load_dl1_data_stereo_list(file_list, drop=False):
         file_list
     drop : bool, optional
         drop extra keys, by default False
+    verbose : bool, optional
+        print file list, by default True
 
 
     Returns
@@ -122,6 +124,9 @@ def load_dl1_data_stereo_list(file_list, drop=False):
     pd.Dataframe
         data
     """
+    if verbose:
+        fl = "\n".join(file_list)
+        print(f"File list:\n{fl}")
     for i, file in enumerate(file_list):
         data_ = load_dl1_data_stereo(file, drop)
         if i == 0:
