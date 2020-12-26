@@ -107,7 +107,7 @@ def load_dl1_data_stereo_list_selected(
     return data
 
 
-def load_dl1_data_stereo_list(file_list, drop=False, verbose=True):
+def load_dl1_data_stereo_list(file_list, drop=False, verbose=False):
     """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`
 
     Parameters
@@ -117,7 +117,7 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=True):
     drop : bool, optional
         drop extra keys, by default False
     verbose : bool, optional
-        print file list, by default True
+        print file list, by default False
 
 
     Returns
@@ -128,10 +128,16 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=True):
     if verbose:
         fl = "\n".join(file_list)
         print(f"File list:\n{fl}")
+    first_time = True
     for i, file in enumerate(file_list):
-        data_ = load_dl1_data_stereo(file, drop)
-        if i == 0:
+        try:
+            data_ = load_dl1_data_stereo(file, drop)
+        except Exception as e:
+            print(f"LOAD FAILED with file {file}", e)
+            continue
+        if first_time:
             data = data_
+            first_time = False
         else:
             data = data.append(data_)
     return data
