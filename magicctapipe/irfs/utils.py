@@ -105,14 +105,19 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
 
     pyirf_simu_info = convert_simu_info_mcp_to_pyirf(file_list)
 
+    first_time = False
     for i, file in enumerate(file_list):
-        events_ = pd.read_hdf(file, key=reco_key).rename(columns=name_mapping)
-        if useless_cols != []:
-            events_ = events_.drop(useless_cols, axis=1, errors="ignore")
-        if i == 0:
-            events = events_
-        else:
-            events = events.append(events_)
+        try:
+            events_ = pd.read_hdf(file, key=reco_key).rename(columns=name_mapping)
+            if useless_cols != []:
+                events_ = events_.drop(useless_cols, axis=1, errors="ignore")
+            if first_time:
+                events = events_
+                first_time = False
+            else:
+                events = events.append(events_)
+        except Exception as e:
+            print(f"ERROR: skipping file {file}\n{e}")
 
     events = table.QTable.from_pandas(events)
     for k, v in unit_mapping.items():
