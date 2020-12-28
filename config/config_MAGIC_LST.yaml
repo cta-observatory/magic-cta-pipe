@@ -1,24 +1,27 @@
-# MAGIC-LST configuration file example
-
----
 # --- DATA FILES ---------------------------------------------------------------
+# NOTE:
+# - stereo_reco will store files in "DL1" folder ("_Link" is removed from hillas_h5)
+# - train_rfs and train_rfs will look in "DL1_Link" folder instead
+# - train_rfs is run on all files, so so "_run${run}_" is removed from hillas_h5
 data_files:
   mc:
     train_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-train/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-train/Hillas_Stereo.h5'
+      mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/gamma_00deg/*_run${run}_*.simtel.gz'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/gamma_00deg_train/*_run${run}_*.h5'
     test_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/gamma-point-test/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-test/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/gamma-point-test/Reco.h5'
+      mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/gamma_00deg/*_run${run}_*.simtel.gz'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/gamma_00deg_test/*_run${run}_*.h5'
+      # reco_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL2/gamma_00deg_test_reco/*_reco.h5'
+      reco_h5: '/mnt/d/CTA-MC/Prod5/CopyIT/MAGIC_4LST/DL2/gamma_00deg_test_reco/*_reco.h5'
   data:
     train_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/proton-train/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-train/Hillas_Stereo.h5'
+      mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/proton/*_run${run}_*.simtel.gz'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/proton_train/*_run${run}_*.h5'
     test_sample:
-      mask_sim: '/mnt/d/CTA-MC/DL0/proton-test/*.simtel.gz'
-      hillas_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-test/Hillas_Stereo.h5'
-      reco_h5: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/proton-test/Reco.h5'
+      mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/proton/*_run${run}_*.simtel.gz'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/proton_test/*_run${run}_*.h5'
+      # reco_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL2/proton_test_reco/*_reco.h5'
+      reco_h5: '/mnt/d/CTA-MC/Prod5/CopyIT/MAGIC_4LST/DL2/proton_test_reco/*_reco.h5'
 
 # --- TELESCOPES ---------------------------------------------------------------
 all_tels:
@@ -26,6 +29,7 @@ all_tels:
   tel_n: ['LST', 'MAGIC']
   tel_n_short: ['LST', 'M']
   stereo_id: -1
+
 LST:
   tel_ids: [1, 2, 3, 4]
   cleaning_config:
@@ -62,21 +66,38 @@ global:
 
 # --- TRAIN CLASSIFIER RF ------------------------------------------------------
 classifier_rf:
-  save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
+  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'classifier_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
-  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands', 'h_max', 'core_x', 'core_y', 'alt', 'az']
-  # features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands']
+  features:
+    [
+      'slope',
+      'length',
+      'width',
+      'intensity',
+      'skewness',
+      'kurtosis',
+      'x',
+      'y',
+      'psi',
+      'num_islands',
+      'h_max',
+      'core_x',
+      'core_y',
+      'alt',
+      'az',
+    ]
   fig_name: 'classifier_rf_gammaness'
   fig_size: [20, 10]
+  test_file_n: 0
 
 # --- TRAIN DIRECTION RF -------------------------------------------------------
 direction_rf:
-  save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
+  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'direction_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
@@ -84,23 +105,133 @@ direction_rf:
     min_samples_leaf: 10
     n_jobs: 3
   features:
-    'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'core_x', 'core_y', 'alt', 'az']
-    'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'core_x', 'core_y', 'alt', 'az']
+    'disp':
+      [
+        'slope',
+        'length',
+        'width',
+        'intensity',
+        'skewness',
+        'kurtosis',
+        'x',
+        'y',
+        'psi',
+        'h_max',
+        'core_x',
+        'core_y',
+        'alt',
+        'az',
+      ]
+    'pos_angle_shift':
+      [
+        'slope',
+        'length',
+        'width',
+        'intensity',
+        'skewness',
+        'kurtosis',
+        'x',
+        'y',
+        'psi',
+        'h_max',
+        'core_x',
+        'core_y',
+        'alt',
+        'az',
+      ]
   fig_name_theta2: 'Direction_RF_theta2'
   fig_name_PSF_energy: 'Direction_RF_PSF_energy'
   fig_name_PSF_offset: 'Direction_RF_PSF_offset'
   fig_size: [12, 12]
+  test_file_n: 10
 
 # --- TRAIN ENERGY RF ----------------------------------------------------------
 energy_rf:
-  save_dir: '/mnt/d/CTA-MC/DL0/Analysis/MAGIC_4LST/RFs/'
+  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'energy_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
-  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2', 'h_max', 'core_x', 'core_y', 'alt', 'az']
-  # features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2']
+  features:
+    [
+      'slope',
+      'length',
+      'width',
+      'intensity',
+      'skewness',
+      'kurtosis',
+      'x',
+      'y',
+      'psi',
+      'intensity_width_1',
+      'intensity_width_2',
+      'h_max',
+      'core_x',
+      'core_y',
+      'alt',
+      'az',
+    ]
   fig_name: 'Energy_RF_migmatrix'
   fig_size: [30, 10]
+  test_file_n: 0
+
+# --- IRFs ---------------------------------------------------------------------
+irfs:
+  T_OBS: 50 # u.hour
+  ALPHA: 0.2 # scaling between on and off region
+  MAX_BG_RADIUS: 1.0 # u.deg
+  INITIAL_GH_CUT_EFFICENCY: 0.4
+  MAX_GH_CUT_EFFICIENCY: 0.8
+  GH_CUT_EFFICIENCY_STEP: 0.01
+  N_EBINS: 20
+  EMIN: 0.05 # TeV
+  EMAX: 50 # TeV
+  INTENSITY_CUT: 100
+  LEAKAGE2_CUT: 0.2
+  max_files_gamma: 5
+  max_files_proton: 5
+  save_dir: '/mnt/d/CTA-MC/Prod5/CopyIT/MAGIC_4LST/IRFs/'
+  useless_cols:
+    [
+      'pixels_width_1',
+      'pixels_width_2',
+      'alt',
+      'alt_uncert',
+      'az',
+      'az_uncert',
+      'core_x',
+      'core_y',
+      'core_uncert',
+      'h_max',
+      'h_max_uncert',
+      'is_valid',
+      'tel_ids',
+      'average_intensity',
+      'goodness_of_fit',
+      'multiplicity',
+      'disp_reco',
+      'disp_reco_err',
+      'az_reco_mean',
+      'alt_reco_mean',
+      'energy_reco_err',
+      'energy_reco_mean',
+      'event_class_1',
+      'event_class_0_mean',
+      'event_class_1_mean',
+      'x',
+      'y',
+      'r',
+      'phi',
+      'length',
+      'width',
+      'psi',
+      'skewness',
+      'kurtosis',
+      'slope',
+      'slope_err',
+      'intercept',
+      'intercept_err',
+      'deviation',
+    ]
