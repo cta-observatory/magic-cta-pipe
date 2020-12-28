@@ -77,7 +77,7 @@ def make_irfs_MAGIC_LST(config_file):
 
     cfg = load_cfg_file(config_file)
 
-    # Initial variables
+    # --- Initial variables ---
     # Observation time for sensitivity
     T_OBS = cfg["irfs"]["T_OBS"] * u.hour
 
@@ -113,7 +113,6 @@ def make_irfs_MAGIC_LST(config_file):
         useless_cols = cfg["irfs"]["useless_cols"]
     else:
         useless_cols = []
-
     events_g, simu_info_g = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         file_mask=cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
         useless_cols=useless_cols,
@@ -125,7 +124,7 @@ def make_irfs_MAGIC_LST(config_file):
         max_files=cfg["irfs"]["max_files_proton"],
     )
 
-    # Apply quality cuts
+    # --- Apply quality cuts ---
     for events in (events_g, events_p):
         events["good_events"] = (events["intensity"] >= INTENSITY_CUT) & (
             events["leakage_intensity_width_2"] <= LEAKAGE2_CUT
@@ -144,7 +143,7 @@ def make_irfs_MAGIC_LST(config_file):
         },
     }
 
-    # Manage MC gammas:
+    # --- Manage MC gammas ---
     # Get simulated spectrum
     particles["gamma"]["simulated_spectrum"] = PowerLaw.from_simulation(
         particles["gamma"]["simulation_info"], T_OBS
@@ -172,7 +171,7 @@ def make_irfs_MAGIC_LST(config_file):
         assumed_source_alt=particles["gamma"]["events"]["true_alt"],
     )
 
-    # Manage MC protons:
+    # --- Manage MC protons ---
     # Get simulated spectrum
     particles["proton"]["simulated_spectrum"] = PowerLaw.from_simulation(
         particles["proton"]["simulation_info"], T_OBS
@@ -201,7 +200,7 @@ def make_irfs_MAGIC_LST(config_file):
     gammas = particles["gamma"]["events"]
     protons = particles["proton"]["events"]
 
-    # Calculate the best cuts for sensitivity
+    # --- Calculate the best cuts for sensitivity ---
     # Define bins
     # Sensitivity energy bins
     sensitivity_bins = np.logspace(np.log10(EMIN), np.log10(EMAX), N_EBINS + 1) * u.TeV
@@ -210,7 +209,8 @@ def make_irfs_MAGIC_LST(config_file):
     signal = gammas
     background = protons
 
-    # Calculate an initial GH cut for calculating initial theta cuts, based on INITIAL_GH_CUT_EFFICIENCY
+    # Calculate an initial GH cut for calculating initial theta cuts, based on
+    # INITIAL_GH_CUT_EFFICIENCY
     INITIAL_GH_CUT = np.quantile(signal["gh_score"], (1 - INITIAL_GH_CUT_EFFICENCY))
 
     # Initial $\theta$ cut
@@ -457,8 +457,8 @@ def make_irfs_MAGIC_LST(config_file):
     )
 
     # Style settings
-    plt.xlim(1.0e-2, 2.0e2)
-    plt.ylim(0.5e-1, 1)
+    # plt.xlim(1.0e-2, 2.0e2)
+    # plt.ylim(0.5e-1, 1)
     plt.xscale("log")
     plt.yscale("log")
     plt.xlabel("True energy / TeV")
@@ -520,14 +520,12 @@ def make_irfs_MAGIC_LST(config_file):
         ax.title.set_text(
             "%.1f-%.1f TeV" % (emin_bins[i].to_value(), emax_bins[i].to_value())
         )
-        ax.set_xlabel("Az (º)")
-        ax.set_ylabel("Alt (º)")
+        ax.set_xlabel(r"Az ($\mathrm{\deg}$)")
+        ax.set_ylabel(r"Alt ($\mathrm{\deg}$)")
         fig.colorbar(pcm[3], ax=ax)
     fig_name = f"Reco_AltAz"
 
-    # -----------------------------------
     # --- Checks on number of islands ---
-    # -----------------------------------
     fig, ax = plt.subplots(figsize=(10, 8))
     gammas_selected = gammas[
         (gammas["selected"]) & (gammas["reco_energy"] > 1.0 * u.TeV)
@@ -549,6 +547,11 @@ def make_irfs_MAGIC_LST(config_file):
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
+
+    # --- Save results dictionary ---
+    results_file = os.path.join(cfg["irfs"]["save_dir"], "IRFs.yaml")
+    save_yaml_np(res, results_file)
+    # yaml.dump(res, open(results_file, "w"), default_flow_style=False)
 
 
 if __name__ == "__main__":
