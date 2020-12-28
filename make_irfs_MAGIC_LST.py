@@ -1,39 +1,22 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# ## LST Sensitivity calculation using pyirf
-#
-# This notebook allow to calculate the best LST sensitivity using real data.
-# It uses MC gammas to optimize the best gammaness and $\theta^2$ cuts.
-# The gammaness cut can be optimized based on gamma efficiency or on the best sensitivity.
-# Cuts are then applied to ON/OFF data to calculate sensitivity.
-# Sensitivity using MC gammas as signal is also calculated.
-# Some useful plots such as rates, cuts per energy bin, angular resolution, etc. are shown at the end.
-#
-
-# ### Needed imports
-from lstchain.io.io import read_dl2_to_pyirf, dl2_params_lstcam_key
-import logging
-import operator
-from lstchain.mc import plot_utils
-from tables import open_file
-import glob
+import os
 import sys
-
+import glob
+import operator
+import numpy as np
+import pandas as pd
+from astropy import table
+import astropy.units as u
+from astropy.io import fits
+from astropy.table import QTable
+from tables import open_file
+import matplotlib.pyplot as plt
 
 from ctapipe.io import HDF5TableReader
 from ctapipe.containers import MCHeaderContainer
 from ctapipe.core.container import Container, Field
 
-
-import numpy as np
-from astropy import table
-import astropy.units as u
-from astropy.io import fits
-import matplotlib.pyplot as plt
-from astropy.table import QTable
-import pandas as pd
-import os
+from lstchain.io.io import read_dl2_to_pyirf, dl2_params_lstcam_key
+from lstchain.mc import plot_utils
 
 from pyirf.simulations import SimulatedEventsInfo
 from pyirf.io.eventdisplay import read_eventdisplay_fits
@@ -46,12 +29,10 @@ from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.sensitivity import calculate_sensitivity
 from pyirf.utils import calculate_theta, calculate_source_fov_offset
 from pyirf.benchmarks import energy_bias_resolution, angular_resolution
-
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.sensitivity import calculate_sensitivity, estimate_background
 from pyirf.utils import calculate_theta, calculate_source_fov_offset
 from pyirf.benchmarks import energy_bias_resolution, angular_resolution
-
 from pyirf.spectral import (
     calculate_event_weights,
     PowerLaw,
@@ -59,14 +40,12 @@ from pyirf.spectral import (
     IRFDOC_PROTON_SPECTRUM,
 )
 from pyirf.cut_optimization import optimize_gh_cut
-
 from pyirf.irf import (
     effective_area_per_energy,
     energy_dispersion,
     psf_table,
     background_2d,
 )
-
 from pyirf.io import (
     create_aeff2d_hdu,
     create_psf_table_hdu,
@@ -74,9 +53,6 @@ from pyirf.io import (
     create_rad_max_hdu,
     create_background_2d_hdu,
 )
-
-log = logging.getLogger("pyirf")
-pd.options.display.max_columns = 999
 
 
 # ### Initial variables
