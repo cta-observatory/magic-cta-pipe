@@ -113,8 +113,6 @@ def make_irfs_MAGIC_LST(config_file):
         useless_cols = cfg["irfs"]["useless_cols"]
     else:
         useless_cols = []
-    t_ = "MAGIC_4LST"
-    tag = ""
 
     events_g, simu_info_g = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         file_mask=cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
@@ -360,7 +358,7 @@ def make_irfs_MAGIC_LST(config_file):
     rdir = "IRFs"
     if not os.path.exists(rdir):
         os.mkdir(rdir)
-    fig_name = os.path.join(rdir, f"Sensitivity.png")
+    fig_name = f"Sensitivity"
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
@@ -402,7 +400,7 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xscale("log")
     plt.yscale("log")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"Rates.png")
+    fig_name = f"Rates"
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
@@ -419,7 +417,7 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xlabel(r"$E_\mathrm{reco} / \mathrm{TeV}$")
     plt.xscale("log")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"Cut_Theta2.png")
+    fig_name = f"Cut_Theta2"
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
@@ -435,7 +433,7 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xlabel(r"$E_\mathrm{reco} / \mathrm{TeV}$")
     plt.xscale("log")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"Cut_GH.png")
+    fig_name = f"Cut_GH"
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
@@ -466,7 +464,7 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xlabel("True energy / TeV")
     plt.ylabel("Angular Resolution / deg")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"Angular_Resolution.png")
+    fig_name = f"Angular_Resolution"
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
@@ -497,7 +495,7 @@ def make_irfs_MAGIC_LST(config_file):
     plt.ylabel("Energy resolution")
     plt.grid(which="both")
     plt.legend(loc="best")
-    fig_name = os.path.join(rdir, f"Energy_Resolution.png")
+    fig_name = f"Energy_Resolution"
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
@@ -525,8 +523,7 @@ def make_irfs_MAGIC_LST(config_file):
         ax.set_xlabel("Az (º)")
         ax.set_ylabel("Alt (º)")
         fig.colorbar(pcm[3], ax=ax)
-    fig_name = os.path.join(rdir, f"RecoAltAz.png")
-    plt.savefig(fig_name, dpi=300)
+    fig_name = f"Reco_AltAz"
 
     # -----------------------------------
     # --- Checks on number of islands ---
@@ -537,8 +534,10 @@ def make_irfs_MAGIC_LST(config_file):
     ]
     plt.hist(gammas_selected["num_islands"], bins=10, range=(0.5, 10.5))
     plt.yscale("log")
-    fig_name = os.path.join(rdir, f"Num_Islands_Gamma.png")
-    plt.savefig(fig_name, dpi=300)
+    fig_name = f"Num_Islands_Gamma"
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
     fig, ax = plt.subplots(figsize=(10, 8))
     protons_selected = protons[
@@ -546,8 +545,10 @@ def make_irfs_MAGIC_LST(config_file):
     ]
     plt.hist(protons_selected["num_islands"], bins=10, range=(0.5, 10.5))
     plt.yscale("log")
-    fig_name = os.path.join(rdir, f"Num_Islands_Proton.png")
-    plt.savefig(fig_name, dpi=300)
+    fig_name = f"Num_Islands_Proton"
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
 
 if __name__ == "__main__":
