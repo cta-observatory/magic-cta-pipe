@@ -73,24 +73,8 @@ classifier_rf:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
-  features:
-    [
-      'slope',
-      'length',
-      'width',
-      'intensity',
-      'skewness',
-      'kurtosis',
-      'x',
-      'y',
-      'psi',
-      'num_islands',
-      'h_max',
-      'core_x',
-      'core_y',
-      'alt',
-      'az',
-    ]
+  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands', 'h_max',
+             'core_x', 'core_y', 'alt', 'az']
   fig_name: 'classifier_rf_gammaness'
   fig_size: [20, 10]
   test_file_n: 0
@@ -105,40 +89,10 @@ direction_rf:
     min_samples_leaf: 10
     n_jobs: 3
   features:
-    'disp':
-      [
-        'slope',
-        'length',
-        'width',
-        'intensity',
-        'skewness',
-        'kurtosis',
-        'x',
-        'y',
-        'psi',
-        'h_max',
-        'core_x',
-        'core_y',
-        'alt',
-        'az',
-      ]
-    'pos_angle_shift':
-      [
-        'slope',
-        'length',
-        'width',
-        'intensity',
-        'skewness',
-        'kurtosis',
-        'x',
-        'y',
-        'psi',
-        'h_max',
-        'core_x',
-        'core_y',
-        'alt',
-        'az',
-      ]
+    'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'core_x', 
+             'core_y', 'alt', 'az']
+    'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 
+                        'core_x', 'core_y', 'alt', 'az']
   fig_name_theta2: 'Direction_RF_theta2'
   fig_name_PSF_energy: 'Direction_RF_PSF_energy'
   fig_name_PSF_offset: 'Direction_RF_PSF_offset'
@@ -154,25 +108,8 @@ energy_rf:
     n_estimators: 100
     min_samples_leaf: 10
     n_jobs: 3
-  features:
-    [
-      'slope',
-      'length',
-      'width',
-      'intensity',
-      'skewness',
-      'kurtosis',
-      'x',
-      'y',
-      'psi',
-      'intensity_width_1',
-      'intensity_width_2',
-      'h_max',
-      'core_x',
-      'core_y',
-      'alt',
-      'az',
-    ]
+  features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 
+             'intensity_width_2', 'h_max', 'core_x', 'core_y', 'alt', 'az']
   fig_name: 'Energy_RF_migmatrix'
   fig_size: [30, 10]
   test_file_n: 0
@@ -193,45 +130,9 @@ irfs:
   max_files_gamma: 5
   max_files_proton: 5
   save_dir: '/mnt/d/CTA-MC/Prod5/CopyIT/MAGIC_4LST/IRFs/'
-  useless_cols:
-    [
-      'pixels_width_1',
-      'pixels_width_2',
-      'alt',
-      'alt_uncert',
-      'az',
-      'az_uncert',
-      'core_x',
-      'core_y',
-      'core_uncert',
-      'h_max',
-      'h_max_uncert',
-      'is_valid',
-      'tel_ids',
-      'average_intensity',
-      'goodness_of_fit',
-      'multiplicity',
-      'disp_reco',
-      'disp_reco_err',
-      'az_reco_mean',
-      'alt_reco_mean',
-      'energy_reco_err',
-      'energy_reco_mean',
-      'event_class_1',
-      'event_class_0_mean',
-      'event_class_1_mean',
-      'x',
-      'y',
-      'r',
-      'phi',
-      'length',
-      'width',
-      'psi',
-      'skewness',
-      'kurtosis',
-      'slope',
-      'slope_err',
-      'intercept',
-      'intercept_err',
-      'deviation',
-    ]
+  useless_cols: ['pixels_width_1', 'pixels_width_2', 'alt', 'alt_uncert', 'az', 'az_uncert', 'core_x', 'core_y', 
+                 'core_uncert', 'h_max', 'h_max_uncert', 'is_valid', 'tel_ids', 'average_intensity', 'goodness_of_fit', 
+                 'multiplicity', 'disp_reco', 'disp_reco_err', 'az_reco_mean', 'alt_reco_mean', 'energy_reco_err', 
+                 'energy_reco_mean', 'event_class_1', 'event_class_0_mean', 'event_class_1_mean', 'x', 'y', 'r', 'phi',
+                 'length', 'width', 'psi', 'skewness', 'kurtosis', 'slope', 'slope_err', 'intercept', 'intercept_err', 
+                 'deviation']
