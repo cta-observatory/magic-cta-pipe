@@ -300,3 +300,19 @@ def out_file_h5_reco(in_file):
     f = os.path.basename(in_file)
     out = "%s_reco.h5" % f.rstrip(".h5")
     return out
+
+
+def read_mc_header(file):
+    """Function to read `mc_header` from DL2 file
+
+    Parameters
+    ----------
+    file : str
+        file
+
+    Returns
+    -------
+    pd.DataFrame
+        mc_header
+    """
+    return pd.read_hdf(file, key="dl2/mc_header")
