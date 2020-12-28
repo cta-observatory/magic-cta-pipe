@@ -187,7 +187,8 @@ def make_irfs_MAGIC_LST(config_file):
         particles["proton"]["events"][k] = calculate_source_fov_offset(
             particles["proton"]["events"], prefix=prefix
         )
-    # calculate theta / distance between reco and assumed source position
+
+    # Calculate theta / distance between reco and assumed source position
     # we handle only ON observations here, so the assumed source position
     # is the pointing position
     particles["proton"]["events"]["theta"] = calculate_theta(
