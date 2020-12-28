@@ -77,6 +77,9 @@ def make_irfs_MAGIC_LST(config_file):
 
     cfg = load_cfg_file(config_file)
 
+    # --- Check out folder ---
+    check_folder(cfg["irfs"]["save_dir"])
+
     # --- Initial variables ---
     # Observation time for sensitivity
     T_OBS = cfg["irfs"]["T_OBS"] * u.hour
@@ -356,9 +359,6 @@ def make_irfs_MAGIC_LST(config_file):
     )
     plt.grid(which="both")
     plt.legend()
-    rdir = "IRFs"
-    if not os.path.exists(rdir):
-        os.mkdir(rdir)
     fig_name = f"Sensitivity"
     save_plt(
         n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
