@@ -2,8 +2,10 @@ import os
 import sys
 import glob
 import yaml
+import copy
 import datetime
 import pandas as pd
+import numpy as np
 
 
 def load_cfg_file(config_file):
@@ -316,3 +318,39 @@ def read_mc_header(file):
         mc_header
     """
     return pd.read_hdf(file, key="dl2/mc_header")
+
+
+def save_yaml_np(data, file):
+    """Save dictionary to yaml file, converting `np.array` objects to `list`
+
+    Parameters
+    ----------
+    data : dict
+        data to be saved
+    file : str
+        yaml file name
+    """
+    with open(file, "w") as f_:
+        yaml.dump(convert_np_list_dict(copy.deepcopy(data)), f_)
+
+
+def convert_np_list_dict(d):
+    """Loop on dictionary and convert `np.array` objects to list
+
+    Parameters
+    ----------
+    d : dict
+        input dictionary
+
+    Returns
+    -------
+    dict
+        output dictionary
+    """
+    for k in d.keys():
+        if type(d[k]) == dict:
+            convert_np_list_dict(d[k])
+        elif type(d[k]) == np.ndarray:
+            d[k] = d[k].tolist()
+    return d
+
