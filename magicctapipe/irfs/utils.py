@@ -113,7 +113,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
                 events_ = events_.drop(useless_cols, axis=1, errors="ignore")
             if first_time:
                 events = events_
-                first_time = False
+                first_time = True
             else:
                 events = events.append(events_)
         except Exception as e:
