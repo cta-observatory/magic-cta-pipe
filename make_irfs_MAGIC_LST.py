@@ -57,6 +57,7 @@ from pyirf.io import (
 from magicctapipe.utils.filedir import *
 from magicctapipe.utils.utils import *
 from magicctapipe.irfs.utils import *
+from magicctapipe.utils.plot import *
 
 PARSER = argparse.ArgumentParser(
     description="Apply random forests. For stereo data.",
@@ -81,16 +82,15 @@ def make_irfs_MAGIC_LST(config_file):
     T_OBS = cfg["irfs"]["T_OBS"] * u.hour
 
     # scaling between on and off region.
-    # Make off region 5 times larger than on region for better
-    # background statistics
+    # Make off region 5 times larger than on region for better background statistics
     ALPHA = cfg["irfs"]["ALPHA"]
 
     # Radius to use for calculating bg rate
     MAX_BG_RADIUS = cfg["irfs"]["MAX_BG_RADIUS"] * u.deg
 
-    # gamma efficiency used for first calculation of the binned theta cuts
-    # initial theta cuts are calculated using a fixed g/h cut corresponding to this efficiency
-    # then g/h cuts are optimized after applying these initial theta cuts.
+    # Gamma efficiency used for first calculation of the binned theta cuts
+    # initial theta cuts are calculated using a fixed g/h cut corresponding to this
+    # efficiency then g/h cuts are optimized after applying these initial theta cuts.
     INITIAL_GH_CUT_EFFICENCY = cfg["irfs"]["INITIAL_GH_CUT_EFFICENCY"]
 
     # gamma efficiency used for gh cuts calculation
@@ -99,6 +99,7 @@ def make_irfs_MAGIC_LST(config_file):
 
     # Number of energy bins
     N_EBINS = cfg["irfs"]["N_EBINS"]
+
     # Energy range
     EMIN = cfg["irfs"]["EMIN"]
     EMAX = cfg["irfs"]["EMAX"]
@@ -107,13 +108,14 @@ def make_irfs_MAGIC_LST(config_file):
     INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
     LEAKAGE2_CUT = cfg["irfs"]["LEAKAGE2_CUT"]
 
-    # ### Read hdf5 files into pyirf format
+    # Read hdf5 files into pyirf format
     if "useless_cols" in cfg["irfs"].keys():
         useless_cols = cfg["irfs"]["useless_cols"]
     else:
         useless_cols = []
     t_ = "MAGIC_4LST"
     tag = ""
+
     events_g, simu_info_g = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         file_mask=cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
         useless_cols=useless_cols,
@@ -125,7 +127,7 @@ def make_irfs_MAGIC_LST(config_file):
         max_files=cfg["irfs"]["max_files_proton"],
     )
 
-    # ### Apply quality cuts
+    # Apply quality cuts
     for events in (events_g, events_p):
         events["good_events"] = (events["intensity"] >= INTENSITY_CUT) & (
             events["leakage_intensity_width_2"] <= LEAKAGE2_CUT
@@ -201,24 +203,19 @@ def make_irfs_MAGIC_LST(config_file):
     gammas = particles["gamma"]["events"]
     protons = particles["proton"]["events"]
 
-    # ## Calculate the best cuts for sensitivity
-
-    # ### Define bins
-
+    # Calculate the best cuts for sensitivity
+    # Define bins
     # Sensitivity energy bins
     sensitivity_bins = np.logspace(np.log10(EMIN), np.log10(EMAX), N_EBINS + 1) * u.TeV
 
-    # ### Data to optimize best cuts
-
+    # Data to optimize best cuts
     signal = gammas
     background = protons
 
     # Calculate an initial GH cut for calculating initial theta cuts, based on INITIAL_GH_CUT_EFFICIENCY
     INITIAL_GH_CUT = np.quantile(signal["gh_score"], (1 - INITIAL_GH_CUT_EFFICENCY))
-    INITIAL_GH_CUT
 
-    # ### Initial $\theta$ cut
-
+    # Initial $\theta$ cut
     # theta cut is 68 percent containmente of the gammas
     # for now with a fixed global, unoptimized score cut
     mask_theta_cuts = signal["gh_score"] >= INITIAL_GH_CUT
@@ -235,8 +232,7 @@ def make_irfs_MAGIC_LST(config_file):
         signal["theta"], signal["reco_energy"], theta_cuts, operator.le
     )
 
-    # ### Run block below for G/H cut optimization based on best sensitivity
-
+    # G/H cut optimization based on best sensitivity
     print("Optimizing G/H separation cut for best sensitivity")
     gh_cut_efficiencies = np.arange(
         GH_CUT_EFFICIENCY_STEP,
@@ -245,7 +241,6 @@ def make_irfs_MAGIC_LST(config_file):
     )
     sensitivity_step_2, gh_cuts = optimize_gh_cut(
         signal[signal["selected_theta"]],
-        #     signal,
         background,
         reco_energy_bins=sensitivity_bins,
         gh_cut_efficiencies=gh_cut_efficiencies,
@@ -261,7 +256,7 @@ def make_irfs_MAGIC_LST(config_file):
             tab["gh_score"], tab["reco_energy"], gh_cuts, operator.ge
         )
 
-    # ### Setting of $\theta$ cut as 68% containment of events surviving the cuts
+    # Setting of $\theta$ cut as 68% containment of events surviving the cuts
     theta_cuts_opt = calculate_percentile_cut(
         gammas[gammas["selected_gh"]]["theta"],
         gammas[gammas["selected_gh"]]["reco_energy"],
@@ -270,8 +265,7 @@ def make_irfs_MAGIC_LST(config_file):
         fill_value=0.32 * u.deg,
     )
 
-    # ### Evaluate optimized cuts
-
+    # Evaluate optimized cuts
     gammas["selected_theta"] = evaluate_binned_cut(
         gammas["theta"], gammas["reco_energy"], theta_cuts_opt, operator.le
     )
@@ -282,8 +276,7 @@ def make_irfs_MAGIC_LST(config_file):
     print(f"Selected gammas:  {gammas['selected'].sum()}")
     print(f"Selected protons: {protons['selected'].sum()}")
 
-    # ### Crate event histograms
-
+    # Crate event histograms
     gamma_hist = create_histogram_table(
         gammas[gammas["selected"]], bins=sensitivity_bins
     )
@@ -295,11 +288,12 @@ def make_irfs_MAGIC_LST(config_file):
         background_radius=MAX_BG_RADIUS,
     )
 
-    # ### Sensitivity with MC gammas and protons
+    # Results dictionary
+    res = {}
+
+    # --- Sensitivity with MC gammas and protons ---
     sensitivity_mc = calculate_sensitivity(gamma_hist, proton_hist, alpha=ALPHA)
-
-    # ### Plot Sensitivity curves
-
+    # Plot Sensitivity curves
     # scale relative sensitivity by Crab flux to get the flux sensitivity
     spectrum = particles["gamma"]["target_spectrum"]
     sensitivity_mc["flux_sensitivity"] = sensitivity_mc[
@@ -310,20 +304,22 @@ def make_irfs_MAGIC_LST(config_file):
     ax = plt.axes()
     unit = u.Unit("TeV cm-2 s-1")
 
-    base_name = t_
-
     e = sensitivity_mc["reco_energy_center"]
-
     s_mc = e ** 2 * sensitivity_mc["flux_sensitivity"]
 
-    plt.errorbar(
-        e.to_value(u.GeV),
-        s_mc.to_value(unit),
-        xerr=(
+    res["sensitivity"] = {
+        "energy": e.to_value(u.GeV),
+        "value": s_mc.to_value(unit),
+        "energy_err": (
             sensitivity_mc["reco_energy_high"] - sensitivity_mc["reco_energy_low"]
         ).to_value(u.GeV)
         / 2,
-        label=f"MC gammas/protons {base_name}",
+    }
+    plt.errorbar(
+        res["sensitivity"]["energy"],
+        res["sensitivity"]["value"],
+        xerr=res["sensitivity"]["energy_err"],
+        label=f"MC gammas/protons",
     )
 
     # Plot magic sensitivity
@@ -352,7 +348,7 @@ def make_irfs_MAGIC_LST(config_file):
     )  # Energy in GeV
 
     # Style settings
-    plt.title("Minimal Flux Needed for 5σ Detection in 50 hours")
+    plt.title("Minimal Flux Needed for 5$\mathrm{\sigma}$ Detection in 50 hours")
     plt.xscale("log")
     plt.yscale("log")
     plt.xlabel("Reconstructed energy [GeV]")
@@ -364,13 +360,13 @@ def make_irfs_MAGIC_LST(config_file):
     rdir = "IRFs"
     if not os.path.exists(rdir):
         os.mkdir(rdir)
-    fig_name = os.path.join(rdir, f"Sensitivity_{base_name}{tag}.png")
-    plt.savefig(fig_name, dpi=300)
-    # plt.show()
+    fig_name = os.path.join(rdir, f"Sensitivity.png")
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
-    # ### Rates
-
-    fix, ax = plt.subplots()
+    # --- Rates ---
+    fix, ax = plt.subplots(figsize=(10, 8))
     rate_gammas = gamma_hist["n_weighted"] / T_OBS.to(u.min)
     area_ratio_p = (1 - np.cos(theta_cuts_opt["cut"])) / (1 - np.cos(MAX_BG_RADIUS))
     rate_proton = proton_hist["n_weighted"] * area_ratio_p / T_OBS.to(u.min)
@@ -406,14 +402,13 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xscale("log")
     plt.yscale("log")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"Rates_{base_name}{tag}.png")
-    plt.savefig(fig_name, dpi=300)
-    # plt.show()
+    fig_name = os.path.join(rdir, f"Rates.png")
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
-    # ### Cuts
-
-    fix, ax = plt.subplots()
-
+    # --- Cuts ---
+    fix, ax = plt.subplots(figsize=(10, 8))
     plt.errorbar(
         0.5 * (theta_cuts["low"] + theta_cuts["high"]).to_value(u.TeV),
         (theta_cuts["cut"] ** 2).to_value(u.deg ** 2),
@@ -424,12 +419,12 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xlabel(r"$E_\mathrm{reco} / \mathrm{TeV}$")
     plt.xscale("log")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"Cuts_{base_name}{tag}.png")
-    plt.savefig(fig_name, dpi=300)
-    # plt.show()
+    fig_name = os.path.join(rdir, f"Cut_Theta2.png")
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
-    fix, ax = plt.subplots()
-
+    fix, ax = plt.subplots(figsize=(10, 8))
     plt.errorbar(
         0.5 * (gh_cuts["low"] + gh_cuts["high"]).to_value(u.TeV),
         gh_cuts["cut"],
@@ -440,12 +435,13 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xlabel(r"$E_\mathrm{reco} / \mathrm{TeV}$")
     plt.xscale("log")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"Cuts02_{base_name}{tag}.png")
-    plt.savefig(fig_name, dpi=300)
-    # plt.show()
+    fig_name = os.path.join(rdir, f"Cut_GH.png")
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
-    # ### Angular Resolution
-    fix, ax = plt.subplots()
+    # --- Angular Resolution ---
+    fix, ax = plt.subplots(figsize=(10, 8))
 
     selected_events_gh = table.vstack(
         gammas[gammas["selected_gh"]], protons[protons["selected_gh"]]
@@ -470,21 +466,19 @@ def make_irfs_MAGIC_LST(config_file):
     plt.xlabel("True energy / TeV")
     plt.ylabel("Angular Resolution / deg")
     plt.grid(which="both")
-    fig_name = os.path.join(rdir, f"AngularRes_{base_name}{tag}.png")
-    plt.savefig(fig_name, dpi=300)
-    # plt.show()
+    fig_name = os.path.join(rdir, f"Angular_Resolution.png")
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
-    # ### Energy resolution
-    fix, ax = plt.subplots()
-
+    # --- Energy resolution ---
+    fix, ax = plt.subplots(figsize=(10, 8))
     selected_events = table.vstack(
         gammas[gammas["selected"]], protons[protons["selected"]]
     )
-
     selected_events = table.vstack(
         gammas[gammas["selected"]], protons[protons["selected"]]
     )
-
     bias_resolution = energy_bias_resolution(selected_events, sensitivity_bins,)
 
     # Plot function
@@ -503,11 +497,12 @@ def make_irfs_MAGIC_LST(config_file):
     plt.ylabel("Energy resolution")
     plt.grid(which="both")
     plt.legend(loc="best")
-    fig_name = os.path.join(rdir, f"EnergyRes_{base_name}{tag}.png")
-    plt.savefig(fig_name, dpi=300)
-    # plt.show()
+    fig_name = os.path.join(rdir, f"Energy_Resolution.png")
+    save_plt(
+        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
 
-    # ### Reco Alt/Az for MC selected events
+    # --- Reco Alt/Az for MC selected events ---
     fix, ax = plt.subplots()
 
     fig, axs = plt.subplots(nrows=1, ncols=5, figsize=(30, 4))
@@ -530,30 +525,28 @@ def make_irfs_MAGIC_LST(config_file):
         ax.set_xlabel("Az (º)")
         ax.set_ylabel("Alt (º)")
         fig.colorbar(pcm[3], ax=ax)
-    fig_name = os.path.join(rdir, f"RecoAltAz_{base_name}{tag}.png")
+    fig_name = os.path.join(rdir, f"RecoAltAz.png")
     plt.savefig(fig_name, dpi=300)
-    # plt.show()
 
-    # ### Reco camera coordinates for real on events
-
-    # ### Checks on number of islands
-
-    fig, ax = plt.subplots()
+    # -----------------------------------
+    # --- Checks on number of islands ---
+    # -----------------------------------
+    fig, ax = plt.subplots(figsize=(10, 8))
     gammas_selected = gammas[
         (gammas["selected"]) & (gammas["reco_energy"] > 1.0 * u.TeV)
     ]
     plt.hist(gammas_selected["num_islands"], bins=10, range=(0.5, 10.5))
     plt.yscale("log")
-    fig_name = os.path.join(rdir, f"NumIslandsGamma_{base_name}{tag}.png")
+    fig_name = os.path.join(rdir, f"Num_Islands_Gamma.png")
     plt.savefig(fig_name, dpi=300)
 
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 8))
     protons_selected = protons[
         (protons["selected"]) & (protons["reco_energy"] > 1.0 * u.TeV)
     ]
     plt.hist(protons_selected["num_islands"], bins=10, range=(0.5, 10.5))
     plt.yscale("log")
-    fig_name = os.path.join(rdir, f"NumIslandsProton_{base_name}{tag}.png")
+    fig_name = os.path.join(rdir, f"Num_Islands_Proton.png")
     plt.savefig(fig_name, dpi=300)
 
 
