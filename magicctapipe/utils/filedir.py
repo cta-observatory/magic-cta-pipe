@@ -77,7 +77,7 @@ def check_folder(folder):
         try:
             os.makedirs(folder)
         except Exception as e:
-            print(f"ERROR, folder not created: {e}")
+            print(f"ERROR, folder not created. {e}")
 
 
 def load_dl1_data_stereo_list_selected(
