@@ -42,3 +42,33 @@ def get_weights_mc_dir_class(mc_data, alt_edges, intensity_edges):
 
     return mc_weight_df
 
+
+def check_train_test_intersections(train, test):
+    """Function to check if there are same events in train and test samples
+
+    Parameters
+    ----------
+    train : pd.DataFrame
+        train dataframe
+    test : pd.DataFrame
+        test dataframe
+    
+     Returns
+    -------
+    bool
+        test_passed
+    """
+    tests = {
+        "data": [train, test],
+    }
+    test_passed = True
+    cols = list(train.columns)
+    df_merge = pd.merge(train, test, on=cols, how="inner")
+    if df_merge.empty:
+        print(f"PASS: test and train are different")
+    else:
+        print("********** WARNING **********")
+        print(f"Same entries for test and train")
+        test_passed = False
+        print(df_merge)
+    return test_passed
