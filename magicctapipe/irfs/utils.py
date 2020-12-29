@@ -100,7 +100,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     }
     file_list = glob.glob(file_mask)
 
-    if max_files > 0:
+    if (max_files > 0) and (max_files < len(file_list)):
         file_list = file_list[:max_files]
 
     pyirf_simu_info = convert_simu_info_mcp_to_pyirf(file_list)
