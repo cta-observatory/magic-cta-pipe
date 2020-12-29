@@ -318,6 +318,7 @@ def train_direction_rf_stereo(config_file):
         file_list=glob.glob(f_), sub_dict=cfg["direction_rf"], file_n_key="test_file_n"
     )
 
+    # --- Check intersections ---
     if "check_train_test" in cfg["direction_rf"].keys():
         if cfg["direction_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="DirRF")
@@ -599,6 +600,16 @@ def train_energy_rf_stereo(config_file):
     shower_data_test = load_dl1_data_stereo_list_selected(
         file_list=glob.glob(f_), sub_dict=cfg["energy_rf"], file_n_key="test_file_n"
     )
+
+    # --- Check intersections ---
+    if "check_train_test" in cfg["direction_rf"].keys():
+        if cfg["direction_rf"]["check_train_test"]:
+            info_message("Check train and test", prefix="EnergyRF")
+            test_passed = check_train_test_intersections(
+                shower_data_train, shower_data_test
+            )
+            s_ = "Test PASSED" if test_passed else "Test NOT PASSED"
+            info_message(s_, prefix="EnergyRF")
 
     # Computing event weights
     info_message("Computing the train sample event weights...", prefix="EnergyRF")
