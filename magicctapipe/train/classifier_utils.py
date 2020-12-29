@@ -7,6 +7,7 @@ from magicctapipe.utils.utils import *
 from magicctapipe.utils.plot import *
 from magicctapipe.utils.tels import *
 from magicctapipe.utils.filedir import *
+from magicctapipe.train.global_utils import *
 
 
 def GetHist_classifier(data, bins=30, range=None, weights=None):
@@ -164,7 +165,8 @@ def load_init_data_classifier(cfg, mode="train"):
 def check_train_test_intersections_classifier(
     mc_data_train, bkg_data_train, mc_data_test, bkg_data_test
 ):
-    """Function to check if there are same events in train and test samples
+    """Function to check if there are same events in train and test samples, for 
+    train rfs classifier
 
     Parameters
     ----------
@@ -189,13 +191,5 @@ def check_train_test_intersections_classifier(
     test_passed = True
     for k in tests.keys():
         print(f"Analizing {k} test and train")
-        cols = list(tests[k][0].columns)
-        df_merge = pd.merge(*tests[k], on=cols, how="inner")
-        if df_merge.empty:
-            print(f"PASS: test and train are different")
-        else:
-            print("********** WARNING **********")
-            print(f"Same entries for test and train")
-            test_passed = False
-            print(df_merge)
+        test_passed = test_passed and check_train_test_intersections(*tests[k])
     return test_passed
