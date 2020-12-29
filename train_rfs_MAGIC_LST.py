@@ -80,9 +80,12 @@ def train_classifier_rf_stereo(config_file):
 
     # --- Check intersections ---
     # useful ONLY if test_file_n == 0
+    w_ = "WARNING: test_file_n != 0, considering only a selection of the test sample"
     if "check_train_test" in cfg["classifier_rf"].keys():
         if cfg["classifier_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="ClassifierRF")
+            if cfg["classifier_rf"]["test_file_n"] > 0:
+                info_message(w_, prefix="ClassifierRF")
             test_passed = check_train_test_intersections_classifier(
                 mc_data_train=mc_data_train,
                 bkg_data_train=bkg_data_train,
@@ -321,9 +324,12 @@ def train_direction_rf_stereo(config_file):
 
     # --- Check intersections ---
     # useful ONLY if test_file_n == 0
+    w_ = "WARNING: test_file_n != 0, considering only a selection of the test sample"
     if "check_train_test" in cfg["direction_rf"].keys():
         if cfg["direction_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="DirRF")
+            if cfg["direction_rf"]["test_file_n"] > 0:
+                info_message(w_, prefix="DirRF")
             test_passed = check_train_test_intersections(
                 shower_data_train, shower_data_test
             )
@@ -605,9 +611,12 @@ def train_energy_rf_stereo(config_file):
 
     # --- Check intersections ---
     # useful ONLY if test_file_n == 0
-    if "check_train_test" in cfg["direction_rf"].keys():
-        if cfg["direction_rf"]["check_train_test"]:
+    w_ = "WARNING: test_file_n != 0, considering only a selection of the test sample"
+    if "check_train_test" in cfg["energy_rf"].keys():
+        if cfg["energy_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="EnergyRF")
+            if cfg["energy_rf"]["test_file_n"] > 0:
+                info_message(w_, prefix="EnergyRF")
             test_passed = check_train_test_intersections(
                 shower_data_train, shower_data_test
             )
