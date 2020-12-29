@@ -78,6 +78,19 @@ def train_classifier_rf_stereo(config_file):
     # --- Test sample ---
     mc_data_test, bkg_data_test = load_init_data_classifier(mode="test", cfg=cfg)
 
+    # --- Check intersections ---
+    if "check_train_test" in cfg["classifier_rf"].keys():
+        if cfg["classifier_rf"]["check_train_test"]:
+            info_message("Check train and test", prefix="ClassifierRF")
+            test_passed = check_train_test_intersections(
+                mc_data_train=mc_data_train,
+                bkg_data_train=bkg_data_train,
+                mc_data_test=mc_data_test,
+                bkg_data_test=bkg_data_test,
+            )
+            s_ = "Test PASSED" if test_passed else "Test NOT PASSED"
+            info_message(s_, prefix="ClassifierRF")
+
     # Computing event weights
     alt_edges, intensity_edges = compute_event_weights()
 
