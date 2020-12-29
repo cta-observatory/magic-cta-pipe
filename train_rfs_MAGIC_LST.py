@@ -581,7 +581,7 @@ def train_energy_rf_stereo(config_file):
     cfg = load_cfg_file_check(config_file=config_file, label="energy_rf")
 
     # --- Check output directory ---
-    check_folder(cfg["classifier_rf"]["save_dir"])
+    check_folder(cfg["energy_rf"]["save_dir"])
 
     # --- Train sample ---
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
