@@ -141,9 +141,9 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
     previous_event_id = 0
 
-    # Opening the output file
     for file in file_list:
         print(f"Analyzing file:\n{file}")
+
         # Output file
         out_file = os.path.join(
             os.path.dirname(cfg["data_files"][k1][k2]["hillas_h5"]),
@@ -325,6 +325,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         # --- END LOOP event in source ---
         # Close writer
         writer.close()
+
     # --- END LOOP file in file_list ---
 
     return
