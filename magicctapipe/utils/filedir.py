@@ -74,7 +74,10 @@ def check_folder(folder):
     """
     if not os.path.exists(folder):
         print("Directory %s does not exist, creating it..." % folder)
-        os.makedirs(folder)
+        try:
+            os.makedirs(folder)
+        except Exception as e:
+            print(f"ERROR, folder not created: {e}")
 
 
 def load_dl1_data_stereo_list_selected(
