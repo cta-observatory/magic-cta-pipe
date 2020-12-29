@@ -73,28 +73,26 @@ def train_classifier_rf_stereo(config_file):
     check_folder(cfg["classifier_rf"]["save_dir"])
 
     # --- Train sample ---
-    mc_data, bkg_data = load_init_data_classifier(mode="train", cfg=cfg)
+    mc_data_train, bkg_data_train = load_init_data_classifier(mode="train", cfg=cfg)
+
+    # --- Test sample ---
+    mc_data_test, bkg_data_test = load_init_data_classifier(mode="test", cfg=cfg)
 
     # Computing event weights
     alt_edges, intensity_edges = compute_event_weights()
 
     mc_weights, bkg_weights = get_weights_classifier(
-        mc_data, bkg_data, alt_edges, intensity_edges
+        mc_data_train, bkg_data_train, alt_edges, intensity_edges
     )
 
-    mc_data = mc_data.join(mc_weights)
-    bkg_data = bkg_data.join(bkg_weights)
+    mc_data_train = mc_data_train.join(mc_weights)
+    bkg_data_train = bkg_data_train.join(bkg_weights)
 
     # Merging the train sample
-    shower_data_train = mc_data.append(bkg_data)
-    # --------------------
-
-    # --- Test sample ---
-    mc_data, bkg_data = load_init_data_classifier(mode="test", cfg=cfg)
+    shower_data_train = mc_data_train.append(bkg_data_train)
 
     # Merging the test sample
-    shower_data_test = mc_data.append(bkg_data)
-    # -------------------
+    shower_data_test = mc_data_test.append(bkg_data_test)
 
     info_message("Preprocessing...", prefix="ClassifierRF")
 
