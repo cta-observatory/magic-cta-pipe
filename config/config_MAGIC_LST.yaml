@@ -66,6 +66,7 @@ global:
 
 # --- TRAIN CLASSIFIER RF ------------------------------------------------------
 classifier_rf:
+  check_train_test: True
   save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'classifier_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
@@ -81,6 +82,7 @@ classifier_rf:
 
 # --- TRAIN DIRECTION RF -------------------------------------------------------
 direction_rf:
+  check_train_test: False
   save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'direction_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
@@ -101,6 +103,7 @@ direction_rf:
 
 # --- TRAIN ENERGY RF ----------------------------------------------------------
 energy_rf:
+  check_train_test: False
   save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
   joblib_name: 'energy_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
