@@ -79,6 +79,7 @@ def train_classifier_rf_stereo(config_file):
     mc_data_test, bkg_data_test = load_init_data_classifier(mode="test", cfg=cfg)
 
     # --- Check intersections ---
+    # useful ONLY if test_file_n == 0
     if "check_train_test" in cfg["classifier_rf"].keys():
         if cfg["classifier_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="ClassifierRF")
@@ -319,6 +320,7 @@ def train_direction_rf_stereo(config_file):
     )
 
     # --- Check intersections ---
+    # useful ONLY if test_file_n == 0
     if "check_train_test" in cfg["direction_rf"].keys():
         if cfg["direction_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="DirRF")
@@ -602,6 +604,7 @@ def train_energy_rf_stereo(config_file):
     )
 
     # --- Check intersections ---
+    # useful ONLY if test_file_n == 0
     if "check_train_test" in cfg["direction_rf"].keys():
         if cfg["direction_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="EnergyRF")
