@@ -297,7 +297,7 @@ def train_direction_rf_stereo(config_file):
     # --- Train sample ---
     info_message("Loading train data...", prefix="DirRF")
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
-    print(f"Loading files with the following mask:\n{f_}")
+    info_message(f"Loading files with the following mask:\n{f_}", prefix="DirRF")
     shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
 
     # Computing event weights
@@ -310,7 +310,7 @@ def train_direction_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
-    print(f"Loading files with the following mask:\n{f_}")
+    info_message(f"Loading files with the following mask:\n{f_}", prefix="DirRF")
     # shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
     shower_data_test = load_dl1_data_stereo_list_selected(
         file_list=glob.glob(f_), sub_dict=cfg["direction_rf"], file_n_key="test_file_n"
@@ -400,7 +400,7 @@ def train_direction_rf_stereo(config_file):
                 ].dropna()
                 energy_psf[pi][ei] = np.percentile(selection, 68)
             except Exception as e:
-                print("ERROR: %s. Setting energy_psf to 0" % e)
+                print(f"ERROR: {e}. Setting energy_psf to 0")
                 energy_psf[pi][ei] = 0
 
     # Offset-dependent resolution
@@ -442,7 +442,7 @@ def train_direction_rf_stereo(config_file):
                 ].dropna()
                 offset_psf[pi][oi] = np.percentile(selection[f"sep_{pi}"], 68)
             except Exception as e:
-                print("ERROR: %s. Setting offset_psf to 0" % e)
+                print(f"ERROR: {e}. Setting offset_psf to 0")
                 offset_psf[pi][oi] = 0
 
     # ================
@@ -566,7 +566,7 @@ def train_energy_rf_stereo(config_file):
     # --- Train sample ---
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
     info_message("Loading train data...", prefix="EnergyRF")
-    print(f"Loading files with the following mask:\n{f_}")
+    info_message(f"Loading files with the following mask:\n{f_}", prefix="EnergyRF")
     shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
 
     # Computing event weights
@@ -579,7 +579,7 @@ def train_energy_rf_stereo(config_file):
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
-    print(f"Loading files with the following mask:\n{f_}")
+    info_message(f"Loading files with the following mask:\n{f_}", prefix="EnergyRF")
     # shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
     shower_data_test = load_dl1_data_stereo_list_selected(
         file_list=glob.glob(f_), sub_dict=cfg["energy_rf"], file_n_key="test_file_n"
