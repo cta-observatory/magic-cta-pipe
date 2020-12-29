@@ -192,10 +192,10 @@ def check_train_test_intersections_classifier(
         cols = list(tests[k][0].columns)
         df_merge = pd.merge(*tests[k], on=cols, how="inner")
         if df_merge.empty:
-            print(f"PASS: {k} test and train are different")
+            print(f"PASS: test and train are different")
         else:
             print("********** WARNING **********")
-            print(f"Same entries for {k} test and train")
+            print(f"Same entries for test and train")
             test_passed = False
             print(df_merge)
     return test_passed
