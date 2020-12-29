@@ -191,5 +191,6 @@ def check_train_test_intersections_classifier(
     test_passed = True
     for k in tests.keys():
         print(f"Analizing {k} test and train")
-        test_passed = test_passed and check_train_test_intersections(*tests[k])
+        test_passed_ = check_train_test_intersections(*tests[k])
+        test_passed = test_passed and test_passed_
     return test_passed

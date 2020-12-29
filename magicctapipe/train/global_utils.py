@@ -58,9 +58,6 @@ def check_train_test_intersections(train, test):
     bool
         test_passed
     """
-    tests = {
-        "data": [train, test],
-    }
     test_passed = True
     cols = list(train.columns)
     df_merge = pd.merge(train, test, on=cols, how="inner")
