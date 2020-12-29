@@ -82,7 +82,7 @@ def train_classifier_rf_stereo(config_file):
     if "check_train_test" in cfg["classifier_rf"].keys():
         if cfg["classifier_rf"]["check_train_test"]:
             info_message("Check train and test", prefix="ClassifierRF")
-            test_passed = check_train_test_intersections(
+            test_passed = check_train_test_intersections_classifier(
                 mc_data_train=mc_data_train,
                 bkg_data_train=bkg_data_train,
                 mc_data_test=mc_data_test,
