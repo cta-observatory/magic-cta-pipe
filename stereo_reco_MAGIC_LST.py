@@ -299,16 +299,13 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # --- END LOOP on tel_ids ---
 
             # Ignore events with less than two telescopes
-            if len(hillas_p) < 2:
+            if len(hillas_p.keys()) < 2:
                 print("EVENT with LESS than 2 tels: STEREO PARAMS NOT CALCULATED")
                 continue
 
             # Store hillas params
             # Loop on triggered telescopes
-            for tel_id, dl1 in event.dl1.tel.items():
-                # Exclude telescopes not selected
-                if not tel_id in tel_ids:
-                    continue
+            for tel_id in tel_ids:
                 # Write them
                 write_hillas(
                     writer=writer,
