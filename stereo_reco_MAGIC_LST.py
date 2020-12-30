@@ -197,7 +197,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 continue
 
             hillas_p, leakage_p, timing_p = {}, {}, {}
-            telescope_pointings, time_grad, event_info = {}, {}, {}, {}
+            telescope_pointings, time_grad, event_info = {}, {}, {}
 
             # Eval pointing
             array_pointing = SkyCoord(
