@@ -196,7 +196,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             if len(sel_tels) < 2:
                 continue
 
-            telescope_pointings, hillas_p, time_grad = {}, {}, {}
+            hillas_p, leakage_p, timing_p = {}, {}, {}
+            telescope_pointings, time_grad, event_info = {}, {}, {}, {}
 
             # Eval pointing
             array_pointing = SkyCoord(
@@ -256,7 +257,11 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     else:
                         continue
                     # Analize cleaned image: Hillas, leakeage, timing
-                    hillas_p[tel_id], leakage_p, timing_p = clean_image_params(
+                    (
+                        hillas_p[tel_id],
+                        leakage_p[tel_id],
+                        timing_p[tel_id],
+                    ) = clean_image_params(
                         geom=geom, image=image, clean=clean, peakpos=peakpos
                     )
                     # Get time gradients
@@ -269,7 +274,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     )
 
                     # Preparing metadata
-                    event_info = StereoInfoContainer(
+                    event_info[tel_id] = StereoInfoContainer(
                         obs_id=event.index.obs_id,
                         event_id=scipy.int32(event.index.event_id),
                         tel_id=tel_id,
@@ -281,13 +286,13 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         num_islands=num_islands,
                     )
                     # Store hillas results
-                    write_hillas(
-                        writer=writer,
-                        event_info=event_info,
-                        hillas_p=hillas_p[tel_id],
-                        leakage_p=leakage_p,
-                        timing_p=timing_p,
-                    )
+                    # write_hillas(
+                    #     writer=writer,
+                    #     event_info=event_info,
+                    #     hillas_p=hillas_p[tel_id],
+                    #     leakage_p=leakage_p,
+                    #     timing_p=timing_p,
+                    # )
                 except Exception as e:
                     print("Image not reconstructed:", e)
                     break
@@ -297,6 +302,22 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             if len(hillas_p) < 2:
                 print("EVENT with LESS than 2 tels: STEREO PARAMS NOT CALCULATED")
                 continue
+
+            # Store hillas params
+            # Loop on triggered telescopes
+            for tel_id, dl1 in event.dl1.tel.items():
+                # Exclude telescopes not selected
+                if not tel_id in tel_ids:
+                    continue
+                # Write them
+                write_hillas(
+                    writer=writer,
+                    event_info=event_info[tel_id],
+                    hillas_p=hillas_p[tel_id],
+                    leakage_p=leakage_p[tel_id],
+                    timing_p=timing_p[tel_id],
+                )
+
             # Eval stereo parameters and write them
             stereo_p = check_write_stereo(
                 event=event,
