@@ -295,6 +295,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
             # Ignore events with less than two telescopes
             if len(hillas_p) < 2:
+                print("EVENT with LESS than 2 tels: STEREO PARAMS NOT CALCULATED")
                 continue
             # Eval stereo parameters and write them
             stereo_p = check_write_stereo(
