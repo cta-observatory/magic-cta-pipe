@@ -305,7 +305,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
             # Store hillas params
             # Loop on triggered telescopes
-            for tel_id in tel_ids:
+            for tel_id in sel_tels:
                 # Write them
                 write_hillas(
                     writer=writer,
@@ -325,7 +325,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 subarray=source.subarray,
                 array_pointing=array_pointing,
                 telescope_pointings=telescope_pointings,
-                event_info=event_info,
+                event_info=event_info[sel_tels[0]],
                 writer=writer,
             )
             # Display plot
