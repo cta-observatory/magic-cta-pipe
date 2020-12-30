@@ -147,16 +147,18 @@ def make_irfs_MAGIC_LST(config_file):
     }
 
     # --- Manage MC gammas ---
-    # Get simulated spectrum
-    particles["gamma"]["simulated_spectrum"] = PowerLaw.from_simulation(
-        particles["gamma"]["simulation_info"], T_OBS
-    )
-    # Reweight to target spectrum (Crab Hegra)
-    particles["gamma"]["events"]["weight"] = calculate_event_weights(
-        particles["gamma"]["events"]["true_energy"],
-        particles["gamma"]["target_spectrum"],
-        particles["gamma"]["simulated_spectrum"],
-    )
+    if "reweight_gamma" in cfg["irfs"].keys():
+        if cfg["irfs"]["reweight_gamma"]:
+            # Get simulated spectrum
+            particles["gamma"]["simulated_spectrum"] = PowerLaw.from_simulation(
+                particles["gamma"]["simulation_info"], T_OBS
+            )
+            # Reweight to target spectrum (Crab Hegra)
+            particles["gamma"]["events"]["weight"] = calculate_event_weights(
+                particles["gamma"]["events"]["true_energy"],
+                particles["gamma"]["target_spectrum"],
+                particles["gamma"]["simulated_spectrum"],
+            )
     for prefix in ("true", "reco"):
         k = f"{prefix}_source_fov_offset"
         particles["gamma"]["events"][k] = calculate_source_fov_offset(
@@ -175,16 +177,18 @@ def make_irfs_MAGIC_LST(config_file):
     )
 
     # --- Manage MC protons ---
-    # Get simulated spectrum
-    particles["proton"]["simulated_spectrum"] = PowerLaw.from_simulation(
-        particles["proton"]["simulation_info"], T_OBS
-    )
-    # Reweight to target spectrum:
-    particles["proton"]["events"]["weight"] = calculate_event_weights(
-        particles["proton"]["events"]["true_energy"],
-        particles["proton"]["target_spectrum"],
-        particles["proton"]["simulated_spectrum"],
-    )
+    if "reweight_proton" in cfg["irfs"].keys():
+        if cfg["irfs"]["reweight_proton"]:
+            # Get simulated spectrum
+            particles["proton"]["simulated_spectrum"] = PowerLaw.from_simulation(
+                particles["proton"]["simulation_info"], T_OBS
+            )
+            # Reweight to target spectrum:
+            particles["proton"]["events"]["weight"] = calculate_event_weights(
+                particles["proton"]["events"]["true_energy"],
+                particles["proton"]["target_spectrum"],
+                particles["proton"]["simulated_spectrum"],
+            )
     for prefix in ("true", "reco"):
         k = f"{prefix}_source_fov_offset"
         particles["proton"]["events"][k] = calculate_source_fov_offset(
