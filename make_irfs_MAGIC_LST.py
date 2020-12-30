@@ -245,6 +245,7 @@ def make_irfs_MAGIC_LST(config_file):
         op=operator.ge,
         alpha=ALPHA,
         background_radius=MAX_BG_RADIUS,
+        progress=False,
     )
 
     # Evaluate gh cut
