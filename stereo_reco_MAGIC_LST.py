@@ -300,6 +300,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             stereo_p = check_write_stereo(
                 event=event,
                 tel_id=tel_id,
+                stereo_id=cfg["all_tels"]["stereo_id"],
                 hillas_p=hillas_p,
                 hillas_reco=hillas_reco,
                 subarray=source.subarray,

@@ -29,6 +29,7 @@ def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p):
 def check_write_stereo(
     event,
     tel_id,
+    stereo_id,
     hillas_p,
     hillas_reco,
     subarray,
@@ -83,7 +84,7 @@ def check_write_stereo(
                 array_pointing=array_pointing,
                 telescopes_pointings=telescope_pointings,
             )
-            event_info.tel_id = -1
+            event_info.tel_id = stereo_id
             stereo_params.tel_ids = tel_ids_2_num(stereo_params.tel_ids)
             # How to go back
             # n = stereo_params.tel_ids
