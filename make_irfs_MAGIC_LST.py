@@ -229,11 +229,6 @@ def make_irfs_MAGIC_LST(config_file):
         percentile=68,
     )
 
-    # evaluate the initial theta cut
-    signal["selected_theta"] = evaluate_binned_cut(
-        signal["theta"], signal["reco_energy"], theta_cuts, operator.le
-    )
-
     # G/H cut optimization based on best sensitivity
     print("Optimizing G/H separation cut for best sensitivity")
     gh_cut_efficiencies = np.arange(
