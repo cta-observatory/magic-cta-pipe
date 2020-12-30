@@ -266,7 +266,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         geom=geom, image=image, clean=clean, peakpos=peakpos
                     )
                     # Get time gradients
-                    time_grad[tel_id] = timing_p.slope.value
+                    time_grad[tel_id] = timing_p[tel_id].slope.value
 
                     telescope_pointings[tel_id] = SkyCoord(
                         alt=event.pointing.tel[tel_id].altitude,
