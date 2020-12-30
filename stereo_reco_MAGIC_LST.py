@@ -198,6 +198,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
             hillas_p, leakage_p, timing_p = {}, {}, {}
             telescope_pointings, time_grad, event_info = {}, {}, {}
+            failed = False
 
             # Eval pointing
             array_pointing = SkyCoord(
@@ -295,8 +296,12 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     # )
                 except Exception as e:
                     print("Image not reconstructed:", e)
+                    failed = True
                     break
             # --- END LOOP on tel_ids ---
+
+            if failed:
+                continue
 
             # Ignore events with less than two telescopes
             if len(hillas_p.keys()) < 2:
