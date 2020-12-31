@@ -308,6 +308,11 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 print("EVENT with LESS than 2 tels: STEREO PARAMS NOT CALCULATED")
                 continue
 
+            # Check hillas parameters for stereo reconstruction
+            if not check_stereo(event=event, tel_id=tel_id, hillas_p=hillas_p):
+                print("STEREO CHECK NOT PASSED")
+                continue
+
             # Store hillas params
             # Loop on triggered telescopes
             for tel_id in sel_tels:
@@ -321,9 +326,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 )
 
             # Eval stereo parameters and write them
-            stereo_p = check_write_stereo(
-                event=event,
-                tel_id=tel_id,
+            stereo_p = write_stereo(
                 stereo_id=cfg["all_tels"]["stereo_id"],
                 hillas_p=hillas_p,
                 hillas_reco=hillas_reco,
