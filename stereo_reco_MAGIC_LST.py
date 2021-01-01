@@ -154,7 +154,11 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         writer = HDF5TableWriter(filename=out_file, group_name="dl1", overwrite=True)
 
         # Open simtel file
-        source = SimTelEventSource(file)
+        if "max_events_run" in cfg["all_tels"]:
+            max_events_run = cfg["all_tels"]["max_events_run"]
+        else:
+            max_events_run = 0
+        source = SimTelEventSource(file, max_events=max_events_run)
         # Init calibrator, both for MAGIC and LST
         calibrator = CameraCalibrator(subarray=source.subarray)
         # Init MAGIC cleaning
@@ -221,15 +225,28 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     peakpos = dl1.peak_time  # == event_pulse_time
 
                     # Cleaning
-                    # if geom.camera_name == cfg["LST"]["camera_name"]:
-                    if True:
+                    if geom.camera_name == cfg["LST"]["camera_name"]:
                         # Apply tailcuts clean. From ctapipe
                         clean = tailcuts_clean(
                             geom=geom, image=image, **cfg["LST"]["cleaning_config"]
                         )
                         # Ignore if less than n pixels after cleaning
-                        # if clean.sum() < cfg["LST"]["min_pixel"]:
-                        #     continue
+                        if clean.sum() < cfg["LST"]["min_pixel"]:
+                            continue
+                        # Number of islands: LST. From ctapipe
+                        num_islands, island_ids = number_of_islands(
+                            geom=geom, mask=clean
+                        )
+                    elif geom.camera_name == cfg["MAGIC"]["camera_name"]:
+                        # Apply tailcuts clean. From ctapipe
+                        clean = tailcuts_clean(
+                            geom=geom,
+                            image=image,
+                            **cfg["MAGIC"]["cleaning_config_ctapipe"],
+                        )
+                        # Ignore if less than n pixels after cleaning
+                        if clean.sum() < cfg["MAGIC"]["min_pixel"]:
+                            continue
                         # Number of islands: LST. From ctapipe
                         num_islands, island_ids = number_of_islands(
                             geom=geom, mask=clean
