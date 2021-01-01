@@ -53,7 +53,7 @@ def clean_image_params(geom, image, clean, peakpos):
             timing_p
     """
     # Hillas parameters, same for LST and MAGIC. From ctapipe
-    hillas_p = hillas_parameters(geom=geom[clean], image=image[clean])
+    hillas_p = hillas_parameters(geom=geom, image=image[clean])
     # Leakage, same for LST and MAGIC. From ctapipe
     leakage_p = leakage(geom=geom, image=image, cleaning_mask=clean)
     # Timing parameters, same for LST and MAGIC. From ctapipe
