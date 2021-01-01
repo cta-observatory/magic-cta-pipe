@@ -228,8 +228,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                             geom=geom, image=image, **cfg["LST"]["cleaning_config"]
                         )
                         # Ignore if less than n pixels after cleaning
-                        if clean.sum() < cfg["LST"]["min_pixel"]:
-                            continue
+                        # if clean.sum() < cfg["LST"]["min_pixel"]:
+                        #     continue
                         # Number of islands: LST. From ctapipe
                         num_islands, island_ids = number_of_islands(
                             geom=geom, mask=clean
