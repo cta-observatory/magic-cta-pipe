@@ -295,7 +295,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     #     timing_p=timing_p,
                     # )
                 except Exception as e:
-                    print("Image not reconstructed:", e)
+                    print(f"Image not reconstructed (tel_id={tel_id}):", e)
                     failed = True
                     break
             # --- END LOOP on tel_ids ---
