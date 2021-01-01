@@ -306,7 +306,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
             # Ignore events with less than two telescopes
             if len(hillas_p.keys()) < 2:
-                print("EVENT with LESS than 2 tels: STEREO PARAMS NOT CALCULATED")
+                print(f"EVENT with LESS than 2 hillas_p (sel_tels={sel_tels})")
                 continue
 
             # Check hillas parameters for stereo reconstruction
