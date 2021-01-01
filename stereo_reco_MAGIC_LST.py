@@ -221,7 +221,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     peakpos = dl1.peak_time  # == event_pulse_time
 
                     # Cleaning
-                    if geom.camera_name == cfg["LST"]["camera_name"]:
+                    # if geom.camera_name == cfg["LST"]["camera_name"]:
+                    if True:
                         # Apply tailcuts clean. From ctapipe
                         clean = tailcuts_clean(
                             geom=geom, image=image, **cfg["LST"]["cleaning_config"]
@@ -233,30 +234,30 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         num_islands, island_ids = number_of_islands(
                             geom=geom, mask=clean
                         )
-                    elif geom.camera_name == cfg["MAGIC"]["camera_name"]:
-                        # Commented since it gives the error:
-                        # Image not reconstructed: 'is_simulation'
-                        # badrmspixel_mask = \
-                        #     badpixel_calculator.get_badrmspixel_mask(event)
-                        # deadpixel_mask = \
-                        #     badpixel_calculator.get_deadpixel_mask(event)
-                        # unsuitable_mask = np.logical_or(
-                        #     badrmspixel_mask[tel_id-1],
-                        #     deadpixel_mask[tel_id-1]
-                        # )
-                        # Apply MAGIC cleaning. From magic-cta-pipe
-                        clean, image, peakpos = magic_clean.clean_image(
-                            event_image=image, event_pulse_time=peakpos
-                        )
-                        # Ignore if less than n pixels after cleaning
-                        if clean.sum() < cfg["MAGIC"]["min_pixel"]:
-                            continue
-                        # Number of islands: MAGIC. From magic-cta-pipe
-                        num_islands = get_num_islands_MAGIC(
-                            camera=geom, clean_mask=clean, event_image=image
-                        )
-                    else:
-                        continue
+                    # elif geom.camera_name == cfg["MAGIC"]["camera_name"]:
+                    #     # Commented since it gives the error:
+                    #     # Image not reconstructed: 'is_simulation'
+                    #     # badrmspixel_mask = \
+                    #     #     badpixel_calculator.get_badrmspixel_mask(event)
+                    #     # deadpixel_mask = \
+                    #     #     badpixel_calculator.get_deadpixel_mask(event)
+                    #     # unsuitable_mask = np.logical_or(
+                    #     #     badrmspixel_mask[tel_id-1],
+                    #     #     deadpixel_mask[tel_id-1]
+                    #     # )
+                    #     # Apply MAGIC cleaning. From magic-cta-pipe
+                    #     clean, image, peakpos = magic_clean.clean_image(
+                    #         event_image=image, event_pulse_time=peakpos
+                    #     )
+                    #     # Ignore if less than n pixels after cleaning
+                    #     if clean.sum() < cfg["MAGIC"]["min_pixel"]:
+                    #         continue
+                    #     # Number of islands: MAGIC. From magic-cta-pipe
+                    #     num_islands = get_num_islands_MAGIC(
+                    #         camera=geom, clean_mask=clean, event_image=image
+                    #     )
+                    # else:
+                    #     continue
                     # Analize cleaned image: Hillas, leakeage, timing
                     (
                         hillas_p[tel_id],
