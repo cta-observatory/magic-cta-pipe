@@ -176,8 +176,8 @@ def load_dl1_data_stereo(file, drop=False):
     ]
     extra_stereo_keys = [
         "true_energy",
-        "true_alt",
-        "true_az",
+        # "true_alt",
+        # "true_az",
         "tel_alt",
         "tel_az",
         "num_islands",
@@ -189,7 +189,7 @@ def load_dl1_data_stereo(file, drop=False):
     # Stereo
     data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
     # Drop common keys
-    # data_stereo = drop_keys(data_stereo, extra_stereo_keys)
+    data_stereo = drop_keys(data_stereo, extra_stereo_keys)
     # Drop extra keys
     if drop:
         data_hillas = drop_keys(data_hillas, extra_keys)
