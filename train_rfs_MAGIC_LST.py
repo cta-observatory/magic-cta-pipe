@@ -420,19 +420,19 @@ def train_direction_rf_stereo(config_file):
         query = separation_df.query(cuts)
 
         # for pi in range(3): # OLD
-        for tel_id in [0] + tel_ids:
-            # if pi > 0:
-            #     tel_id = pi
-            # else:
-            #     tel_id = 1
+        for pi in [0] + tel_ids:
+            if pi > 0:
+                tel_id = pi
+            else:
+                tel_id = tel_ids[0]
             try:
                 selection = query.loc[
-                    (slice(None), slice(None), tel_id), f"sep_{tel_id}"
+                    (slice(None), slice(None), tel_id), f"sep_{pi}"
                 ].dropna()
-                energy_psf[tel_id][ei] = np.percentile(selection, 68)
+                energy_psf[pi][ei] = np.percentile(selection, 68)
             except Exception as e:
                 print(f"ERROR: {e}. Setting energy_psf to 0")
-                energy_psf[tel_id][ei] = 0
+                energy_psf[pi][ei] = 0
 
     # Offset-dependent resolution
     info_message("Estimating the offset-dependent resolution", prefix="DirRF")
@@ -466,7 +466,7 @@ def train_direction_rf_stereo(config_file):
             if pi > 0:
                 tel_id = pi
             else:
-                tel_id = 1
+                tel_id = tel_ids[0]
             try:
                 selection = query.loc[
                     (slice(None), slice(None), tel_id), [f"sep_{pi}"]
