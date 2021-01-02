@@ -180,14 +180,13 @@ def load_dl1_data_stereo(file, drop=False):
     data_hillas = pd.read_hdf(file, key=f"dl1/hillas_params")
     # Stereo
     data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
-    # Drop common keys
+    # Drop extra stereo keys
     data_stereo = drop_keys(data_stereo, extra_stereo_keys)
-    # Drop extra keys
-    if drop:
-        data_hillas = drop_keys(data_hillas, extra_keys)
-        data_stereo = drop_keys(data_stereo, extra_keys)
     # Merge
     data = data_hillas.merge(data_stereo, on=common_keys)
+    # Drop extra keys
+    if drop:
+        data = drop_keys(data, extra_keys)
     # Index
     data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)

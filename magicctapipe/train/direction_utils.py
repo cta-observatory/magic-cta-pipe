@@ -68,10 +68,7 @@ def compute_separation_angle_direction(shower_data_test):
         )
         separation_df = separation_df.join(df)
 
-    pd.set_option("display.max_columns", 500)
-    print(separation_df)
     separation_df = separation_df.join(shower_data_test)
-    print(separation_df)
 
     for tel_id in [0] + tel_ids:
         print(f"  Tel {tel_id} scatter: ", f"{separation[tel_id].to(u.deg).std():.2f}")
