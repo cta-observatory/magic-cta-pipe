@@ -15,6 +15,10 @@ from magicctapipe.utils.filedir import *
 
 def compute_separation_angle_direction(shower_data_test):
     separation = dict()
+
+    # ???
+    shower_data_test.dropna(subset=["az_reco_mean", "alt_reco_mean"], inplace=True)
+
     tel_ids = get_tel_ids_dl1(shower_data_test)
 
     for tel_id in tel_ids:
