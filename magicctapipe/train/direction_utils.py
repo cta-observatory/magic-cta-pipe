@@ -16,6 +16,8 @@ from magicctapipe.utils.filedir import *
 def compute_separation_angle_direction(shower_data_test):
     separation = dict()
     tel_ids = get_tel_ids_dl1(shower_data_test)
+    print("DEBUG")
+    print(f"tel_ids={tel_ids}")
 
     for tel_id in tel_ids:
         event_coord_true = SkyCoord(
@@ -35,6 +37,7 @@ def compute_separation_angle_direction(shower_data_test):
         )
 
         separation[tel_id] = event_coord_true.separation(event_coord_reco)
+        print(f"separation[{tel_id}]={separation[tel_id]}")
 
     event_coord_true = SkyCoord(
         shower_data_test["true_az"].values * u.rad,
@@ -49,12 +52,13 @@ def compute_separation_angle_direction(shower_data_test):
     )
 
     separation[0] = event_coord_true.separation(event_coord_reco)
-    print(separation[0])
+    print(f"separation[0]={separation[0]}")
 
     # Converting to a data frame
     separation_df = pd.DataFrame(
         data={"sep_0": separation[0]}, index=shower_data_test.index
     )
+    print(f"separation_df={separation_df}")
     # for tel_id in separation_df.index.levels[2]: # OLD
     for tel_id in tel_ids:
         df = pd.DataFrame(
