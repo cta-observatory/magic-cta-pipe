@@ -61,6 +61,10 @@ def compute_separation_angle_direction(shower_data_test):
     print(f"separation_df=\n{separation_df}")
     separation_df = separation_df.dropna()
     print(f"separation_df=\n{separation_df}")
+    try:
+        print(f"separation_df.index.levels[2]=\n{separation_df.index.levels[2]}")
+    except Exception as e:
+        print(f"Print failed, {e}")
     # for tel_id in separation_df.index.levels[2]: # OLD
     for tel_id in tel_ids:
         df = pd.DataFrame(
