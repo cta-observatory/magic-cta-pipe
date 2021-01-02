@@ -174,16 +174,8 @@ def load_dl1_data_stereo(file, drop=False):
         "az_uncert",
         "core_uncert",
     ]
-    extra_stereo_keys = [
-        "true_energy",
-        # "true_alt",
-        # "true_az",
-        "tel_alt",
-        "tel_az",
-        "num_islands",
-        "n_islands",
-        "tel_id",
-    ]
+    extra_stereo_keys = ["tel_alt", "tel_az", "num_islands", "n_islands", "tel_id"]
+    common_keys = ["obs_id", "event_id", "true_energy", "true_alt", "true_az"]
     # Hillas
     data_hillas = pd.read_hdf(file, key=f"dl1/hillas_params")
     # Stereo
@@ -195,7 +187,7 @@ def load_dl1_data_stereo(file, drop=False):
         data_hillas = drop_keys(data_hillas, extra_keys)
         data_stereo = drop_keys(data_stereo, extra_keys)
     # Merge
-    data = data_hillas.merge(data_stereo, on=["obs_id", "event_id"])
+    data = data_hillas.merge(data_stereo, on=common_keys)
     # Index
     data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)
