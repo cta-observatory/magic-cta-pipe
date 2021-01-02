@@ -49,6 +49,7 @@ def compute_separation_angle_direction(shower_data_test):
     )
 
     separation[0] = event_coord_true.separation(event_coord_reco)
+    print(separation[0])
 
     # Converting to a data frame
     separation_df = pd.DataFrame(
