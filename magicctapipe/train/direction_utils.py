@@ -50,9 +50,6 @@ def compute_separation_angle_direction(shower_data_test):
 
     separation[0] = event_coord_true.separation(event_coord_reco)
     # ???
-    mask = ~np.isnan(separation[0])
-    for tel_id in [0] + tel_ids:
-        separation[tel_id] = separation[tel_id][mask]
 
     # Converting to a data frame
     separation_df = pd.DataFrame(
