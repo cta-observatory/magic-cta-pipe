@@ -49,7 +49,6 @@ def compute_separation_angle_direction(shower_data_test):
     )
 
     separation[0] = event_coord_true.separation(event_coord_reco)
-    # ???
 
     # Converting to a data frame
     separation_df = pd.DataFrame(
@@ -72,11 +71,6 @@ def compute_separation_angle_direction(shower_data_test):
     for tel_id in [0] + tel_ids:
         s_ = separation[tel_id][~np.isnan(separation[tel_id])]
         print(f"  Tel {tel_id} scatter: ", f"{s_.to(u.deg).std():.2f}")
-
-    pd.set_option("display.max_columns", 500)
-    print(separation_df)
-    separation_df = separation_df.dropna(subset=[f"sep_{t_}" for t_ in tel_ids])
-    print(separation_df)
 
     return separation_df
 
