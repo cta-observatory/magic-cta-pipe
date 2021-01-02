@@ -73,7 +73,10 @@ def compute_separation_angle_direction(shower_data_test):
         s_ = separation[tel_id][~np.isnan(separation[tel_id])]
         print(f"  Tel {tel_id} scatter: ", f"{s_.to(u.deg).std():.2f}")
 
+    print(separation_df)
+
     separation_df = separation_df.dropna()
+    print(separation_df)
 
     return separation_df
 
