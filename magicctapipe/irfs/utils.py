@@ -22,10 +22,10 @@ def read_simu_info_mcp_sum_num_showers(file_list):
         mc_header with sum num showers
     """
     d = read_mc_header(file_list[0])
-    num_showers = 0
-    for i, file in enumerate(file_list):
-        num_showers += int(read_mc_header(file)["num_showers"])
-    d["num_showers"] = num_showers
+    # num_showers = 0
+    # for i, file in enumerate(file_list):
+    #     num_showers += int(read_mc_header(file)["num_showers"])
+    # d["num_showers"] = num_showers
     return d
 
 
