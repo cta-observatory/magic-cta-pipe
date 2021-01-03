@@ -298,20 +298,22 @@ def out_file_h5_reco(in_file):
     return out
 
 
-def read_mc_header(file):
+def read_mc_header(file, mc_header_key="dl2/mc_header"):
     """Function to read `mc_header` from DL2 file
 
     Parameters
     ----------
     file : str
         file
+    mc_header_key : str, optional
+        mc_header key, by default "dl2/mc_header"
 
     Returns
     -------
     pd.DataFrame
         mc_header
     """
-    return pd.read_hdf(file, key="dl2/mc_header")
+    return pd.read_hdf(file, key=mc_header_key)
 
 
 def save_yaml_np(data, file):

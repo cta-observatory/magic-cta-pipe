@@ -7,7 +7,7 @@ from pyirf.simulations import SimulatedEventsInfo
 from magicctapipe.utils.filedir import *
 
 
-def read_simu_info_mcp_sum_num_showers(file_list):
+def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header"):
     """Function to read simulation information from DL2 files and sum the simultated
     showers. Assumes that all the mc_headers are equal
 
@@ -15,21 +15,23 @@ def read_simu_info_mcp_sum_num_showers(file_list):
     ----------
     file_list : list
         magic-cta-pipe DL2 file list
+    mc_header_key : str, optional
+        mc_header key, by default "dl2/mc_header"
 
     Returns
     -------
     pd.DataFrame
         mc_header with sum num showers
     """
-    d = read_mc_header(file_list[0])
+    d = read_mc_header(file_list[0], mc_header_key)
     num_showers = 0
     for i, file in enumerate(file_list):
-        num_showers += int(read_mc_header(file)["num_showers"])
+        num_showers += int(read_mc_header(file)["num_showers"], mc_header_key)
     d["num_showers"] = num_showers
     return d
 
 
-def convert_simu_info_mcp_to_pyirf(file_list):
+def convert_simu_info_mcp_to_pyirf(file_list, mc_header_key="dl2/mc_header"):
     """Function to convert simulation information from magic-cta-pipe DL2 files to 
     pyirf format
 
@@ -37,13 +39,15 @@ def convert_simu_info_mcp_to_pyirf(file_list):
     ----------
     file_list : file list
         magic-cta-pipe DL2 file list
+    mc_header_key : str, optional
+        mc_header key, by default "dl2/mc_header"
 
     Returns
     -------
     SimulatedEventsInfo
         pyirf_simu_info
     """
-    simu_info = read_simu_info_mcp_sum_num_showers(file_list)
+    simu_info = read_simu_info_mcp_sum_num_showers(file_list, mc_header_key)
     pyirf_simu_info = SimulatedEventsInfo(
         n_showers=int(simu_info.num_showers) * int(simu_info.shower_reuse),
         energy_min=float(simu_info.energy_range_min) * u.TeV,
@@ -56,7 +60,11 @@ def convert_simu_info_mcp_to_pyirf(file_list):
 
 
 def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
-    file_mask, reco_key="dl2/reco", useless_cols=[], max_files=0
+    file_mask,
+    reco_key="dl2/reco",
+    mc_header_key="dl2/mc_header",
+    useless_cols=[],
+    max_files=0,
 ):
     """Function to
 
@@ -66,6 +74,8 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         file mask for magic-cta-pipe DL2 files
     reco_key : str, optional
         key for DL2 reco files, by default "dl2/reco"
+    mc_header_key : str, optional
+        mc_header key, by default "dl2/mc_header"
     useless_cols : list, optional
         columns not used, by default []
     max_files : int, optional
@@ -103,7 +113,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     if (max_files > 0) and (max_files < len(file_list)):
         file_list = file_list[:max_files]
 
-    pyirf_simu_info = convert_simu_info_mcp_to_pyirf(file_list)
+    pyirf_simu_info = convert_simu_info_mcp_to_pyirf(file_list, mc_header_key)
 
     first_time = True
     for i, file in enumerate(file_list):
