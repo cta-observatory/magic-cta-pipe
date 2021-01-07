@@ -66,17 +66,17 @@ PARSER.add_argument(
 def train_classifier_rf_stereo(config_file):
     print_title("TRAIN CLASSIFIER RFs")
 
-    # --- Reading the configuration file ---
+    # --- Read the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label="classifier_rf")
 
     # --- Check output directory ---
     check_folder(cfg["classifier_rf"]["save_dir"])
 
     # --- Train sample ---
-    mc_data_train, bkg_data_train = load_init_data_classifier(mode="train", cfg=cfg)
+    mc_data_train, bkg_data_train = load_init_data_classifier(cfg=cfg, mode="train")
 
     # --- Test sample ---
-    mc_data_test, bkg_data_test = load_init_data_classifier(mode="test", cfg=cfg)
+    mc_data_test, bkg_data_test = load_init_data_classifier(cfg=cfg, mode="test")
 
     # --- Check intersections ---
     # useful ONLY if test_file_n == 0
@@ -95,7 +95,7 @@ def train_classifier_rf_stereo(config_file):
             s_ = "Test PASSED" if test_passed else "Test NOT PASSED"
             info_message(s_, prefix="ClassifierRF")
 
-    # Computing event weights
+    # Computing event weights for train sample
     alt_edges, intensity_edges = compute_event_weights()
 
     mc_weights, bkg_weights = get_weights_classifier(
@@ -303,7 +303,7 @@ def train_classifier_rf_stereo(config_file):
 def train_direction_rf_stereo(config_file):
     print_title("TRAIN DIRECTION RFs")
 
-    # Load config_file
+    # --- Read the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label="direction_rf")
 
     # --- Check output directory ---
@@ -375,6 +375,8 @@ def train_direction_rf_stereo(config_file):
         **cfg["direction_rf"]["settings"],
     )
     direction_estimator.fit(shower_data_train)
+
+    # --- Save RF data to joblib file ---
     direction_estimator.save(
         os.path.join(
             cfg["direction_rf"]["save_dir"], cfg["direction_rf"]["joblib_name"]
@@ -588,7 +590,7 @@ def train_direction_rf_stereo(config_file):
 def train_energy_rf_stereo(config_file):
     print_title("TRAIN ENERGY RFs")
 
-    # --- Reading the configuration file ---
+    # --- Read the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label="energy_rf")
 
     # --- Check output directory ---
@@ -657,6 +659,8 @@ def train_energy_rf_stereo(config_file):
         cfg["energy_rf"]["features"], **cfg["energy_rf"]["settings"]
     )
     energy_estimator.fit(shower_data_train)
+
+    # --- Save RF data to joblib file ---
     energy_estimator.save(
         os.path.join(cfg["energy_rf"]["save_dir"], cfg["energy_rf"]["joblib_name"])
     )
@@ -722,6 +726,7 @@ if __name__ == "__main__":
     args = PARSER.parse_args()
     kwargs = args.__dict__
     start_time = time.time()
+
     do_classifier = kwargs["all"] or kwargs["classifier"]
     do_energy = kwargs["all"] or kwargs["energy"]
     do_direction = kwargs["all"] or kwargs["direction"]
