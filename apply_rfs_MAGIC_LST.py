@@ -47,17 +47,20 @@ PARSER.add_argument(
 
 
 def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
-    """Apply Random Forests
+    """Apply
 
     Parameters
     ----------
     config_file : str
         configuration file
+    only_mc_test : bool
+        process only `mc_test` files
+    only_data_test : bool
+        process only `data_test` files
     """
     print_title("Apply RFs")
 
-    # ------------------------------
-    # Reading the configuration file
+    # --- Read the configuration file ---
     cfg = load_cfg_file(config_file)
 
     # Get tel_ids
@@ -68,7 +71,7 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
         tel_ids_LST=tel_ids_LST, tel_ids_MAGIC=tel_ids_MAGIC
     )
 
-    # Using only the "mc" and "data" "test_sample"
+    # Using only the "mc" and/or "data" "test_sample"
     if only_mc_test:
         data_types = ["mc"]
     elif only_data_test:
@@ -108,11 +111,14 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
             info_message(f"Removing duplicate events", prefix="ApplyRF")
             shower_data = shower_data[~shower_data.index.duplicated()]
 
-            # Applying RFs of every kind
+            # --- Applying RFs ---
+            # Random forest kinds
             rf_kinds = ["direction_rf", "energy_rf", "classifier_rf"]
+            # Loop on rf_kinds
             for rf_kind in rf_kinds:
                 info_message(f"Loading RF: {rf_kind}", prefix="ApplyRF")
 
+                # Init the estimator
                 if rf_kind == "direction_rf":
                     estimator = DirectionEstimatorPandas(
                         cfg[rf_kind]["features"],
@@ -129,25 +135,28 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
                         cfg[rf_kind]["features"], **cfg[rf_kind]["settings"]
                     )
 
+                # Load the joblib RFs file
                 estimator.load(
                     os.path.join(cfg[rf_kind]["save_dir"], cfg[rf_kind]["joblib_name"])
                 )
 
-                # --- Applying RF ---
+                # Apply RF
                 info_message(f"Applying RF: {rf_kind}", prefix="ApplyRF")
                 reco = estimator.predict(shower_data)
 
                 # Appeding the result to the main data frame
                 shower_data = shower_data.join(reco)
+
             # --- END LOOP on rf_kinds ---
 
-            # --- Store ---
+            # --- Store results in DL2 file ---
             info_message("Saving the reconstructed data", prefix="ApplyRF")
             # Storing the reconstructed values for the given data sample
             shower_data.to_hdf(out_file, key="dl2/reco")
-            # Take mc_header form dl1 and save in dl2
+            # Take mc_header form DL1 and save in DL2
             mc_ = pd.read_hdf(file, key="dl1/mc_header")
             mc_.to_hdf(out_file, key="dl2/mc_header")
+
         # --- END LOOP on file_list ---
 
     # --- END LOOP on data_types ---
