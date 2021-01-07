@@ -334,7 +334,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     break
             # --- END LOOP on tel_ids ---
 
-            # --- Check if event if fine ---
+            # --- Check if event is fine ---
             # Ignore if I had an "Exception"
             if failed:
                 continue
@@ -389,6 +389,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     ax=ax,
                 )
                 first_time_display = False
+
         # --- END LOOP event in source ---
 
         # --- Close DL1 writer ---
