@@ -84,9 +84,9 @@ def load_dl1_data_stereo_list_selected(
     file_list, sub_dict, file_n_key="file_n", drop=False
 ):
     """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`. 
-    If in `sub_dict` it finds the `file_n_key` key, and the given number is > 0, it 
+    If in `sub_dict` it finds the `file_n_key` key, and if the given number is > 0, it 
     limits the `file_list` lenght to the given number. Useful to make random forests
-    plot on a small test sample
+    plot on a smaller test sample
 
     Parameters
     ----------
