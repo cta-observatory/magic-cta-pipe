@@ -86,7 +86,7 @@ PARSER.add_argument(
 
 
 def call_stereo_reco_MAGIC_LST(kwargs):
-    """Stereo Reconstruction MAGIC + LST, looping on all given data
+    """Stereo Reconstruction for MAGIC and/or LST array, looping on all given data
 
     Parameters
     ----------
@@ -115,14 +115,14 @@ def call_stereo_reco_MAGIC_LST(kwargs):
 
 
 def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
-    """Stereo Reconstruction MAGIC + LST
+    """Stereo Reconstruction for MAGIC and/or LST array
 
     Parameters
     ----------
     k1 : str
-        first key
+        first key in `cfg["data_files"][k1][k2]`
     k2 : str
-        second key
+        second key in `cfg["data_files"][k1][k2]`
     cfg: dict
         configurations loaded from configuration file
     display : bool, optional
@@ -146,27 +146,33 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
     previous_event_id = 0
 
+    # --- Loop on files ---
     for file in file_list:
         print(f"Analyzing file:\n{file}")
 
-        # Output file
+        # --- Output file DL1 ---
         out_file = os.path.join(
             os.path.dirname(cfg["data_files"][k1][k2]["hillas_h5"]),
             out_file_h5(in_file=file),
         )
         print(f"Output file:\n{out_file}")
         check_folder(os.path.dirname(out_file))
+        # Init the writer for the output file
         writer = HDF5TableWriter(filename=out_file, group_name="dl1", overwrite=True)
 
-        # Open simtel file
+        # --- Open simtel file ---
         if "max_events_run" in cfg["all_tels"]:
             max_events_run = cfg["all_tels"]["max_events_run"]
         else:
-            max_events_run = 0
+            max_events_run = 0  # I read all events in the file
+
+        # Init source
         source = SimTelEventSource(file, max_events=max_events_run)
+
         # Init calibrator, both for MAGIC and LST
         calibrator = CameraCalibrator(subarray=source.subarray)
-        # Init MAGIC cleaning
+
+        # Init MAGIC MARS cleaning, if selected
         if consider_MAGIC and use_MARS_cleaning:
             magic_clean = MAGIC_Cleaning.magic_clean(
                 camera=source.subarray.tel[tel_ids_MAGIC[0]].camera.geometry,
@@ -175,21 +181,23 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
                 config=cfg["MAGIC"]["bad_pixel_config"]
             )
-        horizon_frame = AltAz()
-        hillas_reco = HillasReconstructor()
 
-        # Write MC HEADER
+        # --- Write MC HEADER ---
         # Problem: impossible to write/read with the following function a
         # list, so we assign to run_array_direction an empty list, in order to
         # make the sotware NOT write the run_array_direction
         source.mc_header.run_array_direction = []  # dummy value
         writer.write("mc_header", source.mc_header)
 
+        # Other inits
+        horizon_frame = AltAz()
+        hillas_reco = HillasReconstructor()
+
         if display:
             fig, ax = plt.subplots()
             go, first_time_display, cont = True, True, False
 
-        # Loop on events
+        # --- Loop on events in source ---
         for event in source:
             if previous_event_id == event.index.event_id:
                 continue
@@ -201,10 +209,12 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 print("Event %d" % event.count)
 
             # Process only if I have at least two tel_ids of the selected array
+            # sel_tels: selected telescopes with data in the event
             sel_tels = list(set(event.r0.tels_with_data).intersection(tel_ids))
             if len(sel_tels) < 2:
                 continue
 
+            # Inits
             hillas_p, leakage_p, timing_p = {}, {}, {}
             telescope_pointings, time_grad, event_info = {}, {}, {}
             failed = False
@@ -216,7 +226,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 frame=horizon_frame,
             )
 
-            # Calibrate event, both for MAGIC and LST
+            # --- Calibrate ---
+            # Call the calibrator, both for MAGIC and LST
             calibrator(event)
 
             # Loop on triggered telescopes
@@ -229,9 +240,9 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     image = dl1.image  # == event_image
                     peakpos = dl1.peak_time  # == event_pulse_time
 
-                    # Cleaning
+                    # --- Cleaning ---
                     if geom.camera_name == cfg["LST"]["camera_name"]:
-                        # Apply tailcuts clean. From ctapipe
+                        # Apply tailcuts clean on LST. From ctapipe
                         clean = tailcuts_clean(
                             geom=geom, image=image, **cfg["LST"]["cleaning_config"]
                         )
@@ -246,7 +257,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         geom.camera_name == cfg["MAGIC"]["camera_name"]
                         and not use_MARS_cleaning
                     ):
-                        # Apply tailcuts clean. From ctapipe
+                        # Apply tailcuts clean on MAGIC. From ctapipe
                         clean = tailcuts_clean(
                             geom=geom,
                             image=image,
@@ -273,7 +284,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         #     badrmspixel_mask[tel_id-1],
                         #     deadpixel_mask[tel_id-1]
                         # )
-                        # Apply MAGIC cleaning. From magic-cta-pipe
+                        # Apply MAGIC MARS cleaning. From magic-cta-pipe
                         clean, image, peakpos = magic_clean.clean_image(
                             event_image=image, event_pulse_time=peakpos
                         )
@@ -286,7 +297,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         )
                     else:
                         continue
-                    # Analize cleaned image: Hillas, leakeage, timing
+                    # --- Analize cleaned image ---
+                    # Evaluate Hillas, leakeage, timing
                     (
                         hillas_p[tel_id],
                         leakage_p[tel_id],
@@ -297,6 +309,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     # Get time gradients
                     time_grad[tel_id] = timing_p[tel_id].slope.value
 
+                    # Evaluate telescope pointings
                     telescope_pointings[tel_id] = SkyCoord(
                         alt=event.pointing.tel[tel_id].altitude,
                         az=event.pointing.tel[tel_id].azimuth,
@@ -315,20 +328,14 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
                         num_islands=num_islands,
                     )
-                    # Store hillas results
-                    # write_hillas(
-                    #     writer=writer,
-                    #     event_info=event_info,
-                    #     hillas_p=hillas_p[tel_id],
-                    #     leakage_p=leakage_p,
-                    #     timing_p=timing_p,
-                    # )
                 except Exception as e:
                     print(f"Image not reconstructed (tel_id={tel_id}):", e)
                     failed = True
                     break
             # --- END LOOP on tel_ids ---
 
+            # --- Check if event if fine ---
+            # Ignore if I had an "Exception"
             if failed:
                 continue
 
@@ -342,9 +349,10 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 print("STEREO CHECK NOT PASSED")
                 continue
 
+            # --- Store DL1 data ---
             # Store hillas params
-            # Loop on triggered telescopes
             tel_ids_written = list(event_info.keys())
+            # Loop on triggered telescopes
             for tel_id in tel_ids_written:
                 # Write them
                 write_hillas(
@@ -366,7 +374,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 event_info=event_info[tel_ids_written[0]],
                 writer=writer,
             )
-            # Display plot
+
+            # --- Display plot ---
             if display and go:
                 go, cont = _display_plots(
                     source=source,
@@ -381,7 +390,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 )
                 first_time_display = False
         # --- END LOOP event in source ---
-        # Close writer
+
+        # --- Close DL1 writer ---
         writer.close()
 
     # --- END LOOP file in file_list ---
