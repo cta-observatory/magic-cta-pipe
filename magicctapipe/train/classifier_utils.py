@@ -128,6 +128,20 @@ def print_par_imp_classifier(class_estimator):
 
 
 def load_init_data_classifier(cfg, mode="train"):
+    """Load and init data for classifier train RFs
+
+    Parameters
+    ----------
+    cfg : dict
+        configurations loaded from configuration file
+    mode : str, optional
+        train or test, by default "train"
+
+    Returns
+    -------
+    tuple
+        mc_data, bkg_data
+    """
     fl_ = glob.glob(cfg["data_files"]["mc"][f"{mode}_sample"]["hillas_h5"])
     info_message(f"Loading MC {mode} data...", prefix="ClassifierRF")
     if mode == "test":
