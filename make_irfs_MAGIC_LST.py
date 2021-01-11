@@ -100,6 +100,11 @@ def make_irfs_MAGIC_LST(config_file):
     MAX_GH_CUT_EFFICIENCY = cfg["irfs"]["MAX_GH_CUT_EFFICIENCY"]
     GH_CUT_EFFICIENCY_STEP = cfg["irfs"]["GH_CUT_EFFICIENCY_STEP"]
 
+    if "MIN_GH_CUT_EFFICIENCY" in cfg["irfs"].keys():
+        MIN_GH_CUT_EFFICIENCY = cfg["irfs"]["MIN_GH_CUT_EFFICIENCY"]
+    else:
+        MIN_GH_CUT_EFFICIENCY = GH_CUT_EFFICIENCY_STEP
+
     # Number of energy bins
     N_EBINS = cfg["irfs"]["N_EBINS"]
 
@@ -236,8 +241,9 @@ def make_irfs_MAGIC_LST(config_file):
 
     # G/H cut optimization based on best sensitivity
     print("Optimizing G/H separation cut for best sensitivity")
+
     gh_cut_efficiencies = np.arange(
-        GH_CUT_EFFICIENCY_STEP,
+        MIN_GH_CUT_EFFICIENCY,
         MAX_GH_CUT_EFFICIENCY + GH_CUT_EFFICIENCY_STEP / 2,
         GH_CUT_EFFICIENCY_STEP,
     )
