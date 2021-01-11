@@ -65,6 +65,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     mc_header_key="dl2/mc_header",
     useless_cols=[],
     max_files=0,
+    verbose=False,
 ):
     """Function to
 
@@ -80,6 +81,8 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         columns not used, by default []
     max_files : int, optional
         max number of files to be processed, 0 to process all of them, by default 0
+    verbose : bool, optional
+        verbose mode, by default False
 
     Returns
     -------
@@ -117,6 +120,8 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
 
     first_time = True
     for i, file in enumerate(file_list):
+        if verbose:
+            print(f"Analizing file: {file}")
         try:
             events_ = pd.read_hdf(file, key=reco_key).rename(columns=name_mapping)
             if useless_cols != []:
