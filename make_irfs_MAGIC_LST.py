@@ -127,15 +127,13 @@ def make_irfs_MAGIC_LST(config_file):
 
     # Read hdf5 files into pyirf format
 
-    useless_cols = get_key_if_exists(cfg["irfs"], "useless_cols", [])
-
     for particle_type, p in particles.items():
         log.info(f"Simulated {particle_type.title()} Events:")
         p["events"], p["simulation_info"] = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
             file_mask=p["file"],
-            useless_cols=useless_cols,
+            useless_cols=get_key_if_exists(cfg["irfs"], "useless_cols", []),
             max_files=p["max_files"],
-            verbose=True,
+            verbose=get_key_if_exists(cfg["irfs"], "verbose", False),
             eval_mean_events=True,
         )
         p["events"]["particle_type"] = particle_type
