@@ -65,6 +65,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     mc_header_key="dl2/mc_header",
     useless_cols=[],
     max_files=0,
+    eval_mean_events=False,
     verbose=False,
 ):
     """Function to
@@ -81,6 +82,8 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         columns not used, by default []
     max_files : int, optional
         max number of files to be processed, 0 to process all of them, by default 0
+    eval_mean_events : bool, optional
+        evaluate mean of event, to get single row per obs_id, by default False
     verbose : bool, optional
         verbose mode, by default False
 
@@ -126,6 +129,8 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
             events_ = pd.read_hdf(file, key=reco_key).rename(columns=name_mapping)
             if useless_cols != []:
                 events_ = events_.drop(useless_cols, axis=1, errors="ignore")
+            if eval_mean_events:
+                events_ = events_.mean(level=1)
             if first_time:
                 events = events_
                 first_time = False
@@ -133,6 +138,16 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
                 events = events.append(events_)
         except Exception as e:
             print(f"ERROR: skipping file {file}\n{e}")
+
+    # if eval_mean_events:
+    #     events_mean = pd.DataFrame()
+    #     event_ids = list(dict.fromkeys(events.index.get_level_values("event_id")))
+    #     for i in range(len(event_ids)):
+    #         if verbose:
+    #             print(f"Evaluating mean of event_id = {event_ids[i]}")
+    #         ev_ = events.loc[(slice(None), event_ids[i], slice(None))]
+    #         events_mean = events_mean.append(pd.DataFrame({i: ev_.mean()}).T)
+    #     events = events_mean
 
     events = table.QTable.from_pandas(events)
     for k, v in unit_mapping.items():
