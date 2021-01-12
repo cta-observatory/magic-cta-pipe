@@ -23,3 +23,19 @@ def save_plt(n, rdir="", vect="pdf,eps"):
     else:
         print("Figure NOT saved, directory doesn't exist")
     return
+
+
+def load_default_plot_settings():
+    """Load default plot settings"""
+    params = {
+        "figure.figsize": (10, 6),
+        "savefig.bbox": "tight",
+        "axes.grid": True,
+        "errorbar.capsize": 3,
+        "axes.titlesize": 16,
+        "axes.labelsize": 16,
+        "xtick.labelsize": 14,
+        "ytick.labelsize": 14,
+        "legend.fontsize": 14,
+    }
+    plt.rcParams.update(params)
