@@ -65,6 +65,14 @@ PARSER.add_argument(
     required=True,
     help="Configuration file, yaml format",
 )
+PARSER.add_argument(
+    "-p",
+    "--only_plot",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Only plot results",
+)
 
 
 def make_irfs_MAGIC_LST(config_file):
@@ -472,7 +480,8 @@ if __name__ == "__main__":
     kwargs = args.__dict__
     start_time = time.time()
 
-    make_irfs_MAGIC_LST(kwargs["config_file"])
+    if not kwargs["only_plot"]:
+        make_irfs_MAGIC_LST(kwargs["config_file"])
 
     plot_irfs_MAGIC_LST(kwargs["config_file"])
 
