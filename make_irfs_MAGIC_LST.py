@@ -328,6 +328,7 @@ def make_irfs_MAGIC_LST(config_file):
     ang_res = angular_resolution(
         gammas[gammas["selected_gh"]], reco_energy_bins, energy_type="reco"
     )
+    ang_res = QTable(ang_res)
     psf = psf_table(
         gammas[gammas["selected_gh"]],
         true_energy_bins,
@@ -368,17 +369,16 @@ def make_irfs_MAGIC_LST(config_file):
 
     # --- Plot Sensitivity ---
     fig, ax = plt.subplots(figsize=(12, 8))
-    # Style settings
     ax.set_title(r"Minimal Flux Needed for 5$\mathrm{\sigma}$ Detection in 50 hours")
     ax.set_xscale("log")
     ax.set_yscale("log")
     ax.set_xlabel("Reconstructed energy [GeV]")
+    unit = u.Unit("TeV cm-2 s-1")
     ax.set_ylabel(
         rf"$(E^2 \cdot \mathrm{{Flux Sensitivity}}) /$ ({unit.to_string('latex')})"
     )
     ax.grid(which="both")
 
-    unit = u.Unit("TeV cm-2 s-1")
     e = sensitivity["reco_energy_center"]
     s_mc = e ** 2 * sensitivity["flux_sensitivity"]
     plt.errorbar(
@@ -419,6 +419,23 @@ def make_irfs_MAGIC_LST(config_file):
 
     save_plt(
         n=f"Sensitivity", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
+
+    # --- Plot Angular Resolution ---
+    fig, ax = plt.subplots()
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Reconstructed energy [GeV]")
+    ax.set_ylabel("Angular resolution [deg]")
+    ax.grid(which="both")
+    plt.errorbar(
+        ang_res["reco_energy_center"].to_value(u.GeV),
+        ang_res["angular_resolution"].to_value(u.deg),
+        xerr=(ang_res["reco_energy_high"] - ang_res["reco_energy_low"]).to_value(u.GeV)
+        / 2,
+    )
+    save_plt(
+        n=f"Angular_resolution", rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
 
 
