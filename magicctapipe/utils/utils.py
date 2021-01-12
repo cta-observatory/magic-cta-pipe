@@ -125,3 +125,26 @@ def make_title_str(title, style_char="=", in_space=3, width_char=80):
     s3 = f"{style_char*width_char}"
     s = f"{s1}{s2}{s3}"
     return s
+
+
+def get_key_if_exists(dictionary, key, default):
+    """Return dictionary[key] if key exists in dictionary, otherwise default
+
+    Parameters
+    ----------
+    dictionary : dict
+        dictionary
+    key : str
+        key
+    default : [type]
+        default value
+
+    Returns
+    -------
+    [type]
+        dictionary[key] or default
+    """
+    out = default
+    if key in dictionary:
+        out = dictionary[key]
+    return out
