@@ -106,19 +106,19 @@ def make_irfs_MAGIC_LST(config_file):
     particles = {
         "gamma": {
             "file": cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
-            "max_files": cfg["irfs"]["max_files_gamma"],
+            "max_files": get_key_if_exists(cfg["irfs"], "max_files_gamma", 0),
             "target_spectrum": CRAB_HEGRA,
         },
         "proton": {
             "file": cfg["data_files"]["data"]["test_sample"]["reco_h5"],
-            "max_files": cfg["irfs"]["max_files_proton"],
+            "max_files": get_key_if_exists(cfg["irfs"], "max_files_proton", 0),
             "target_spectrum": IRFDOC_PROTON_SPECTRUM,
         },
     }
     if consider_electron:
         particles["electron"] = {
             "file": cfg["data_files"]["data_el"]["test_sample"]["reco_h5"],
-            "max_files": cfg["irfs"]["max_files_electron"],
+            "max_files": get_key_if_exists(cfg["irfs"], "max_files_electron", 0),
             "target_spectrum": IRFDOC_ELECTRON_SPECTRUM,
         }
 
@@ -126,7 +126,6 @@ def make_irfs_MAGIC_LST(config_file):
     logging.getLogger("pyirf").setLevel(logging.DEBUG)
 
     # Read hdf5 files into pyirf format
-
     for particle_type, p in particles.items():
         log.info(f"Simulated {particle_type.title()} Events:")
         p["events"], p["simulation_info"] = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
