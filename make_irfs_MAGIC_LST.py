@@ -49,6 +49,7 @@ from magicctapipe.utils.filedir import *
 from magicctapipe.utils.utils import *
 from magicctapipe.irfs.utils import *
 from magicctapipe.utils.plot import *
+from magicctapipe.utils.utils import *
 
 import matplotlib.pylab as plt
 from lstchain.mc import plot_utils
@@ -70,7 +71,8 @@ def make_irfs_MAGIC_LST(config_file):
     print_title("Make IRFs")
 
     cfg = load_cfg_file(config_file)
-    consider_electron = False
+
+    consider_electron = get_key_if_exists(cfg["irfs"], "consider_electron", False)
 
     # --- Check out folder ---
     check_folder(cfg["irfs"]["save_dir"])
@@ -97,24 +99,26 @@ def make_irfs_MAGIC_LST(config_file):
     MAX_GH_CUT_EFFICIENCY = cfg["irfs"]["MAX_GH_CUT_EFFICIENCY"]
     GH_CUT_EFFICIENCY_STEP = cfg["irfs"]["GH_CUT_EFFICIENCY_STEP"]
 
-    if "MIN_GH_CUT_EFFICIENCY" in cfg["irfs"].keys():
-        MIN_GH_CUT_EFFICIENCY = cfg["irfs"]["MIN_GH_CUT_EFFICIENCY"]
-    else:
-        MIN_GH_CUT_EFFICIENCY = GH_CUT_EFFICIENCY_STEP
+    MIN_GH_CUT_EFFICIENCY = get_key_if_exists(
+        cfg["irfs"], "MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP
+    )
 
     particles = {
         "gamma": {
             "file": cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
+            "max_files": cfg["irfs"]["max_files_gamma"],
             "target_spectrum": CRAB_HEGRA,
         },
         "proton": {
             "file": cfg["data_files"]["data"]["test_sample"]["reco_h5"],
+            "max_files": cfg["irfs"]["max_files_proton"],
             "target_spectrum": IRFDOC_PROTON_SPECTRUM,
         },
     }
     if consider_electron:
         particles["electron"] = {
-            "file": "data/electron_onSource.S.3HB9-FD_ID0.eff-0.fits.gz",
+            "file": cfg["data_files"]["data_el"]["test_sample"]["reco_h5"],
+            "max_files": cfg["irfs"]["max_files_electron"],
             "target_spectrum": IRFDOC_ELECTRON_SPECTRUM,
         }
 
@@ -122,16 +126,15 @@ def make_irfs_MAGIC_LST(config_file):
     logging.getLogger("pyirf").setLevel(logging.DEBUG)
 
     # Read hdf5 files into pyirf format
-    if "useless_cols" in cfg["irfs"].keys():
-        useless_cols = cfg["irfs"]["useless_cols"]
-    else:
-        useless_cols = []
+
+    useless_cols = get_key_if_exists(cfg["irfs"], "useless_cols", [])
 
     for particle_type, p in particles.items():
         log.info(f"Simulated {particle_type.title()} Events:")
         p["events"], p["simulation_info"] = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
             file_mask=p["file"],
             useless_cols=useless_cols,
+            max_files=p["max_files"],
             verbose=True,
             eval_mean_events=True,
         )
@@ -170,8 +173,13 @@ def make_irfs_MAGIC_LST(config_file):
 
     # event display uses much finer bins for the theta cut than
     # for the sensitivity
+
     theta_bins = add_overflow_bins(
-        create_bins_per_decade(10 ** (-1.9) * u.TeV, 10 ** 2.3005 * u.TeV, 50,)
+        create_bins_per_decade(
+            e_min=10 ** (cfg["irfs"]["theta_bins_exp_low"]) * u.TeV,
+            e_max=10 ** (cfg["irfs"]["theta_bins_exp_high"]) * u.TeV,
+            bins_per_decade=cfg["irfs"]["theta_bins_num"],
+        )
     )
 
     # theta cut is 68 percent containmente of the gammas
@@ -190,7 +198,9 @@ def make_irfs_MAGIC_LST(config_file):
     # same bins as event display uses
     sensitivity_bins = add_overflow_bins(
         create_bins_per_decade(
-            10 ** (-1.9) * u.TeV, 10 ** 2.31 * u.TeV, bins_per_decade=5
+            e_min=10 ** (cfg["irfs"]["sensitivity_bins_exp_low"]) * u.TeV,
+            e_max=10 ** (cfg["irfs"]["sensitivity_bins_exp_high"]) * u.TeV,
+            bins_per_decade=cfg["irfs"]["sensitivity_bins_num"],
         )
     )
 
