@@ -74,6 +74,8 @@ def make_irfs_MAGIC_LST(config_file):
 
     consider_electron = get_key_if_exists(cfg["irfs"], "consider_electron", False)
 
+    load_default_plot_settings()
+
     # --- Check out folder ---
     check_folder(cfg["irfs"]["save_dir"])
 
@@ -366,6 +368,16 @@ def make_irfs_MAGIC_LST(config_file):
 
     # --- Plot Sensitivity ---
     fig, ax = plt.subplots(figsize=(12, 8))
+    # Style settings
+    ax.set_title(r"Minimal Flux Needed for 5$\mathrm{\sigma}$ Detection in 50 hours")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Reconstructed energy [GeV]")
+    ax.set_ylabel(
+        rf"$(E^2 \cdot \mathrm{{Flux Sensitivity}}) /$ ({unit.to_string('latex')})"
+    )
+    ax.grid(which="both")
+
     unit = u.Unit("TeV cm-2 s-1")
     e = sensitivity["reco_energy_center"]
     s_mc = e ** 2 * sensitivity["flux_sensitivity"]
@@ -403,16 +415,8 @@ def make_irfs_MAGIC_LST(config_file):
         ax, 1, 5 * u.GeV, 1e4 * u.GeV, linestyle=":", label="1% Crab"
     )  # Energy in GeV
 
-    # Style settings
-    plt.title("Minimal Flux Needed for 5σ Detection in 50 hours")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("Reconstructed energy [GeV]")
-    plt.ylabel(
-        rf"$(E^2 \cdot \mathrm{{Flux Sensitivity}}) /$ ({unit.to_string('latex')})"
-    )
-    plt.grid(which="both")
     plt.legend()
+
     save_plt(
         n=f"Sensitivity", rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
