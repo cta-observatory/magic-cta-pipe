@@ -68,6 +68,13 @@ PARSER.add_argument(
 
 
 def make_irfs_MAGIC_LST(config_file):
+    """Make IRFs for MAGIC and/or LST array using pyirf
+
+    Parameters
+    ----------
+    config_file : str
+        configuration file
+    """
     print_title("Make IRFs")
 
     cfg = load_cfg_file(config_file)
@@ -361,11 +368,34 @@ def make_irfs_MAGIC_LST(config_file):
     hdus.append(fits.BinTableHDU(ang_res, name="ANGULAR_RESOLUTION"))
     hdus.append(fits.BinTableHDU(bias_resolution, name="ENERGY_BIAS_RESOLUTION"))
 
+    # --- Store results ---
     log.info("Writing outputfile")
     fits.HDUList(hdus).writeto(
         os.path.join(cfg["irfs"]["save_dir"], "pyirf_eventdisplay.fits.gz"),
         overwrite=True,
     )
+
+
+def plot_irfs_MAGIC_LST(config_file):
+    """Plot IRFs for MAGIC and/or LST array using pyirf
+
+    Parameters
+    ----------
+    config_file : str
+        configuration file
+    """
+    print_title("Plot IRFs")
+
+    cfg = load_cfg_file(config_file)
+
+    # --- Open file ---
+    # Open fits
+    hdu_open = fits.open(
+        os.path.join(cfg["irfs"]["save_dir"], "pyirf_eventdisplay.fits.gz")
+    )
+    # Rewrite variables
+    sensitivity = QTable.read(hdu_open, hdu="SENSITIVITY")
+    ang_res = QTable.read(hdu_open, hdu="ANGULAR_RESOLUTION")
 
     # --- Plot Sensitivity ---
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -381,13 +411,11 @@ def make_irfs_MAGIC_LST(config_file):
 
     e = sensitivity["reco_energy_center"]
     s_mc = e ** 2 * sensitivity["flux_sensitivity"]
+    e_low, e_high = sensitivity["reco_energy_low"], sensitivity["reco_energy_high"]
     plt.errorbar(
         e.to_value(u.GeV),
         s_mc.to_value(unit),
-        xerr=(
-            sensitivity["reco_energy_high"] - sensitivity["reco_energy_low"]
-        ).to_value(u.GeV)
-        / 2,
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
         label=f"MC gammas/protons",
     )
     # Plot magic sensitivity
@@ -445,5 +473,7 @@ if __name__ == "__main__":
     start_time = time.time()
 
     make_irfs_MAGIC_LST(kwargs["config_file"])
+
+    plot_irfs_MAGIC_LST(kwargs["config_file"])
 
     print_elapsed_time(start_time, time.time())
