@@ -89,8 +89,6 @@ def make_irfs_MAGIC_LST(config_file):
 
     consider_electron = get_key_if_exists(cfg["irfs"], "consider_electron", False)
 
-    load_default_plot_settings()
-
     # --- Check out folder ---
     check_folder(cfg["irfs"]["save_dir"])
 
@@ -396,6 +394,8 @@ def plot_irfs_MAGIC_LST(config_file):
 
     cfg = load_cfg_file(config_file)
 
+    load_default_plot_settings()
+
     # --- Open file ---
     # Open fits
     hdu_open = fits.open(
@@ -460,18 +460,17 @@ def plot_irfs_MAGIC_LST(config_file):
     # --- Plot Angular Resolution ---
     fig, ax = plt.subplots()
     ax.set_xscale("log")
-    ax.set_yscale("log")
     ax.set_xlabel("Reconstructed energy [GeV]")
     ax.set_ylabel("Angular resolution [deg]")
-    ax.grid(which="both")
+    e = ang_res["reco_energy_center"]
+    e_low, e_high = ang_res["reco_energy_low"], ang_res["reco_energy_high"]
     plt.errorbar(
-        ang_res["reco_energy_center"].to_value(u.GeV),
+        e.to_value(u.GeV),
         ang_res["angular_resolution"].to_value(u.deg),
-        xerr=(ang_res["reco_energy_high"] - ang_res["reco_energy_low"]).to_value(u.GeV)
-        / 2,
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
     )
     save_plt(
-        n=f"Angular_resolution", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+        n=f"Angular_Resolution", rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
 
 
