@@ -1,23 +1,14 @@
 import os
-import sys
-import time
 import glob
+import time
+import logging
 import operator
 import argparse
+
 import numpy as np
-import pandas as pd
 from astropy import table
 import astropy.units as u
 from astropy.io import fits
-from tables import open_file
-import matplotlib.pyplot as plt
-
-from ctapipe.io import HDF5TableReader
-from ctapipe.containers import MCHeaderContainer
-from ctapipe.core.container import Container, Field
-
-from lstchain.io.io import read_dl2_to_pyirf, dl2_params_lstcam_key
-from lstchain.mc import plot_utils
 
 from pyirf.io.eventdisplay import read_eventdisplay_fits
 from pyirf.binning import (
@@ -26,26 +17,26 @@ from pyirf.binning import (
     create_histogram_table,
 )
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
-from pyirf.sensitivity import calculate_sensitivity
-from pyirf.utils import calculate_theta, calculate_source_fov_offset
-from pyirf.benchmarks import energy_bias_resolution, angular_resolution
-from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.sensitivity import calculate_sensitivity, estimate_background
 from pyirf.utils import calculate_theta, calculate_source_fov_offset
 from pyirf.benchmarks import energy_bias_resolution, angular_resolution
+
 from pyirf.spectral import (
     calculate_event_weights,
     PowerLaw,
     CRAB_HEGRA,
     IRFDOC_PROTON_SPECTRUM,
+    IRFDOC_ELECTRON_SPECTRUM,
 )
 from pyirf.cut_optimization import optimize_gh_cut
+
 from pyirf.irf import (
     effective_area_per_energy,
     energy_dispersion,
     psf_table,
     background_2d,
 )
+
 from pyirf.io import (
     create_aeff2d_hdu,
     create_psf_table_hdu,
@@ -58,6 +49,9 @@ from magicctapipe.utils.filedir import *
 from magicctapipe.utils.utils import *
 from magicctapipe.irfs.utils import *
 from magicctapipe.utils.plot import *
+
+import matplotlib.pylab as plt
+from lstchain.mc import plot_utils
 
 PARSER = argparse.ArgumentParser(
     description="Apply random forests. For stereo data.",
@@ -76,9 +70,12 @@ def make_irfs_MAGIC_LST(config_file):
     print_title("Make IRFs")
 
     cfg = load_cfg_file(config_file)
+    consider_electron = False
 
     # --- Check out folder ---
     check_folder(cfg["irfs"]["save_dir"])
+
+    log = logging.getLogger("pyirf")
 
     # --- Initial variables ---
     # Observation time for sensitivity
@@ -105,232 +102,275 @@ def make_irfs_MAGIC_LST(config_file):
     else:
         MIN_GH_CUT_EFFICIENCY = GH_CUT_EFFICIENCY_STEP
 
-    # Number of energy bins
-    N_EBINS = cfg["irfs"]["N_EBINS"]
+    particles = {
+        "gamma": {
+            "file": cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
+            "target_spectrum": CRAB_HEGRA,
+        },
+        "proton": {
+            "file": cfg["data_files"]["data"]["test_sample"]["reco_h5"],
+            "target_spectrum": IRFDOC_PROTON_SPECTRUM,
+        },
+    }
+    if consider_electron:
+        particles["electron"] = {
+            "file": "data/electron_onSource.S.3HB9-FD_ID0.eff-0.fits.gz",
+            "target_spectrum": IRFDOC_ELECTRON_SPECTRUM,
+        }
 
-    # Energy range
-    EMIN = cfg["irfs"]["EMIN"]
-    EMAX = cfg["irfs"]["EMAX"]
-
-    # Fixed cuts
-    INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
-    LEAKAGE2_CUT = cfg["irfs"]["LEAKAGE2_CUT"]
+    logging.basicConfig(level=logging.INFO)
+    logging.getLogger("pyirf").setLevel(logging.DEBUG)
 
     # Read hdf5 files into pyirf format
     if "useless_cols" in cfg["irfs"].keys():
         useless_cols = cfg["irfs"]["useless_cols"]
     else:
         useless_cols = []
-    events_g, simu_info_g = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
-        file_mask=cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
-        useless_cols=useless_cols,
-        max_files=cfg["irfs"]["max_files_gamma"],
-    )
-    events_p, simu_info_p = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
-        file_mask=cfg["data_files"]["data"]["test_sample"]["reco_h5"],
-        useless_cols=useless_cols,
-        max_files=cfg["irfs"]["max_files_proton"],
-    )
 
-    # --- Apply quality cuts ---
-    for events in (events_g, events_p):
-        events["good_events"] = (events["intensity"] >= INTENSITY_CUT) & (
-            events["leakage_intensity_width_2"] <= LEAKAGE2_CUT
+    for particle_type, p in particles.items():
+        log.info(f"Simulated {particle_type.title()} Events:")
+        p["events"], p["simulation_info"] = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
+            file_mask=p["file"],
+            useless_cols=useless_cols,
+            verbose=True,
+            eval_mean_events=True,
         )
+        p["events"]["particle_type"] = particle_type
 
-    particles = {
-        "gamma": {
-            "events": events_g[events_g["good_events"]],
-            "simulation_info": simu_info_g,
-            "target_spectrum": CRAB_HEGRA,
-        },
-        "proton": {
-            "events": events_p[events_p["good_events"]],
-            "simulation_info": simu_info_p,
-            "target_spectrum": IRFDOC_PROTON_SPECTRUM,
-        },
-    }
-
-    # --- Manage MC gammas ---
-    # Get simulated spectrum
-    particles["gamma"]["simulated_spectrum"] = PowerLaw.from_simulation(
-        particles["gamma"]["simulation_info"], T_OBS
-    )
-    # Reweight to target spectrum (Crab Hegra)
-    particles["gamma"]["events"]["weight"] = calculate_event_weights(
-        particles["gamma"]["events"]["true_energy"],
-        particles["gamma"]["target_spectrum"],
-        particles["gamma"]["simulated_spectrum"],
-    )
-    for prefix in ("true", "reco"):
-        k = f"{prefix}_source_fov_offset"
-        particles["gamma"]["events"][k] = calculate_source_fov_offset(
-            particles["gamma"]["events"], prefix=prefix
+        p["simulated_spectrum"] = PowerLaw.from_simulation(p["simulation_info"], T_OBS)
+        p["events"]["weight"] = calculate_event_weights(
+            p["events"]["true_energy"], p["target_spectrum"], p["simulated_spectrum"]
         )
-    particles["gamma"]["events"]["source_fov_offset"] = calculate_source_fov_offset(
-        particles["gamma"]["events"]
-    )
-    # calculate theta / distance between reco and assumed source position
-    # we handle only ON observations here, so the assumed source position
-    # is the pointing position
-    particles["gamma"]["events"]["theta"] = calculate_theta(
-        particles["gamma"]["events"],
-        assumed_source_az=particles["gamma"]["events"]["true_az"],
-        assumed_source_alt=particles["gamma"]["events"]["true_alt"],
-    )
+        for prefix in ("true", "reco"):
+            k = f"{prefix}_source_fov_offset"
+            p["events"][k] = calculate_source_fov_offset(p["events"], prefix=prefix)
 
-    # --- Manage MC protons ---
-    # Get simulated spectrum
-    particles["proton"]["simulated_spectrum"] = PowerLaw.from_simulation(
-        particles["proton"]["simulation_info"], T_OBS
-    )
-    # Reweight to target spectrum:
-    particles["proton"]["events"]["weight"] = calculate_event_weights(
-        particles["proton"]["events"]["true_energy"],
-        particles["proton"]["target_spectrum"],
-        particles["proton"]["simulated_spectrum"],
-    )
-    for prefix in ("true", "reco"):
-        k = f"{prefix}_source_fov_offset"
-        particles["proton"]["events"][k] = calculate_source_fov_offset(
-            particles["proton"]["events"], prefix=prefix
+        # calculate theta / distance between reco and assuemd source positoin
+        # we handle only ON observations here, so the assumed source pos
+        # is the pointing position
+        p["events"]["theta"] = calculate_theta(
+            p["events"],
+            assumed_source_az=p["events"]["pointing_az"],
+            assumed_source_alt=p["events"]["pointing_alt"],
         )
+        log.info(p["simulation_info"])
+        log.info("")
 
-    # Calculate theta / distance between reco and assumed source position
-    # we handle only ON observations here, so the assumed source position
-    # is the pointing position
-    particles["proton"]["events"]["theta"] = calculate_theta(
-        particles["proton"]["events"],
-        assumed_source_az=particles["proton"]["events"]["pointing_az"],
-        assumed_source_alt=particles["proton"]["events"]["pointing_alt"],
-    )
-
-    # Get events
     gammas = particles["gamma"]["events"]
-    protons = particles["proton"]["events"]
+    # background table composed of both electrons and protons
+    if consider_electron:
+        background = table.vstack(
+            [particles["proton"]["events"], particles["electron"]["events"]]
+        )
+    else:
+        background = table.vstack([particles["proton"]["events"]])
 
-    # --- Calculate the best cuts for sensitivity ---
-    # Define bins
-    # Sensitivity energy bins
-    sensitivity_bins = np.logspace(np.log10(EMIN), np.log10(EMAX), N_EBINS + 1) * u.TeV
+    INITIAL_GH_CUT = np.quantile(gammas["gh_score"], (1 - INITIAL_GH_CUT_EFFICENCY))
+    log.info(f"Using fixed G/H cut of {INITIAL_GH_CUT} to calculate theta cuts")
 
-    # Data to optimize best cuts
-    signal = gammas
-    background = protons
+    # event display uses much finer bins for the theta cut than
+    # for the sensitivity
+    theta_bins = add_overflow_bins(
+        create_bins_per_decade(10 ** (-1.9) * u.TeV, 10 ** 2.3005 * u.TeV, 50,)
+    )
 
-    # Calculate an initial GH cut for calculating initial theta cuts, based on
-    # INITIAL_GH_CUT_EFFICIENCY
-    INITIAL_GH_CUT = np.quantile(signal["gh_score"], (1 - INITIAL_GH_CUT_EFFICENCY))
-
-    # Initial $\theta$ cut
     # theta cut is 68 percent containmente of the gammas
     # for now with a fixed global, unoptimized score cut
-    mask_theta_cuts = signal["gh_score"] >= INITIAL_GH_CUT
+    mask_theta_cuts = gammas["gh_score"] >= INITIAL_GH_CUT
     theta_cuts = calculate_percentile_cut(
-        signal["theta"][mask_theta_cuts],
-        signal["reco_energy"][mask_theta_cuts],
-        bins=sensitivity_bins,
-        fill_value=np.nan * u.deg,
+        gammas["theta"][mask_theta_cuts],
+        gammas["reco_energy"][mask_theta_cuts],
+        bins=theta_bins,
+        min_value=0.05 * u.deg,
+        fill_value=0.32 * u.deg,
+        max_value=0.32 * u.deg,
         percentile=68,
     )
 
-    # evaluate the initial theta cut
-    signal["selected_theta"] = evaluate_binned_cut(
-        signal["theta"], signal["reco_energy"], theta_cuts, operator.le
+    # same bins as event display uses
+    sensitivity_bins = add_overflow_bins(
+        create_bins_per_decade(
+            10 ** (-1.9) * u.TeV, 10 ** 2.31 * u.TeV, bins_per_decade=5
+        )
     )
 
-    # G/H cut optimization based on best sensitivity
-    print("Optimizing G/H separation cut for best sensitivity")
-
+    log.info("Optimizing G/H separation cut for best sensitivity")
     gh_cut_efficiencies = np.arange(
         MIN_GH_CUT_EFFICIENCY,
         MAX_GH_CUT_EFFICIENCY + GH_CUT_EFFICIENCY_STEP / 2,
         GH_CUT_EFFICIENCY_STEP,
     )
+
     sensitivity_step_2, gh_cuts = optimize_gh_cut(
-        signal[signal["selected_theta"]],
+        gammas,
         background,
         reco_energy_bins=sensitivity_bins,
         gh_cut_efficiencies=gh_cut_efficiencies,
-        theta_cuts=theta_cuts,
         op=operator.ge,
+        theta_cuts=theta_cuts,
         alpha=ALPHA,
         background_radius=MAX_BG_RADIUS,
-        progress=False,
     )
 
-    # Evaluate gh cut
-    for tab in (gammas, protons):
+    # now that we have the optimized gh cuts, we recalculate the theta
+    # cut as 68 percent containment on the events surviving these cuts.
+    log.info("Recalculating theta cut for optimized GH Cuts")
+    for tab in (gammas, background):
         tab["selected_gh"] = evaluate_binned_cut(
             tab["gh_score"], tab["reco_energy"], gh_cuts, operator.ge
         )
 
-    # Setting of $\theta$ cut as 68% containment of events surviving the cuts
     theta_cuts_opt = calculate_percentile_cut(
         gammas[gammas["selected_gh"]]["theta"],
         gammas[gammas["selected_gh"]]["reco_energy"],
-        sensitivity_bins,
+        theta_bins,
         percentile=68,
         fill_value=0.32 * u.deg,
+        max_value=0.32 * u.deg,
+        min_value=0.05 * u.deg,
     )
 
-    # Evaluate optimized cuts
     gammas["selected_theta"] = evaluate_binned_cut(
         gammas["theta"], gammas["reco_energy"], theta_cuts_opt, operator.le
     )
     gammas["selected"] = gammas["selected_theta"] & gammas["selected_gh"]
 
-    protons["selected"] = protons["selected_gh"]
-
-    print(f"Selected gammas:  {gammas['selected'].sum()}")
-    print(f"Selected protons: {protons['selected'].sum()}")
-
-    # Crate event histograms
-    gamma_hist = create_histogram_table(
+    # calculate sensitivity
+    signal_hist = create_histogram_table(
         gammas[gammas["selected"]], bins=sensitivity_bins
     )
-    proton_hist = estimate_background(
-        protons[protons["selected"]],
+    background_hist = estimate_background(
+        background[background["selected_gh"]],
         reco_energy_bins=sensitivity_bins,
         theta_cuts=theta_cuts_opt,
         alpha=ALPHA,
         background_radius=MAX_BG_RADIUS,
     )
+    sensitivity = calculate_sensitivity(signal_hist, background_hist, alpha=ALPHA)
 
-    # Results dictionary
-    res = {}
-
-    # --- Sensitivity with MC gammas and protons ---
-    sensitivity_mc = calculate_sensitivity(gamma_hist, proton_hist, alpha=ALPHA)
-    # Plot Sensitivity curves
     # scale relative sensitivity by Crab flux to get the flux sensitivity
     spectrum = particles["gamma"]["target_spectrum"]
-    sensitivity_mc["flux_sensitivity"] = sensitivity_mc[
-        "relative_sensitivity"
-    ] * spectrum(sensitivity_mc["reco_energy_center"])
+    for s in (sensitivity_step_2, sensitivity):
+        s["flux_sensitivity"] = s["relative_sensitivity"] * spectrum(
+            s["reco_energy_center"]
+        )
 
-    plt.figure(figsize=(12, 8))
-    ax = plt.axes()
-    unit = u.Unit("TeV cm-2 s-1")
+    log.info("Calculating IRFs")
+    hdus = [
+        fits.PrimaryHDU(),
+        fits.BinTableHDU(sensitivity, name="SENSITIVITY"),
+        fits.BinTableHDU(sensitivity_step_2, name="SENSITIVITY_STEP_2"),
+        fits.BinTableHDU(theta_cuts, name="THETA_CUTS"),
+        fits.BinTableHDU(theta_cuts_opt, name="THETA_CUTS_OPT"),
+        fits.BinTableHDU(gh_cuts, name="GH_CUTS"),
+    ]
 
-    e = sensitivity_mc["reco_energy_center"]
-    s_mc = e ** 2 * sensitivity_mc["flux_sensitivity"]
-
-    res["sensitivity"] = {
-        "energy": e.to_value(u.GeV),
-        "value": s_mc.to_value(unit),
-        "energy_err": (
-            sensitivity_mc["reco_energy_high"] - sensitivity_mc["reco_energy_low"]
-        ).to_value(u.GeV)
-        / 2,
+    masks = {
+        "": gammas["selected"],
+        "_NO_CUTS": slice(None),
+        "_ONLY_GH": gammas["selected_gh"],
+        "_ONLY_THETA": gammas["selected_theta"],
     }
-    plt.errorbar(
-        res["sensitivity"]["energy"],
-        res["sensitivity"]["value"],
-        xerr=res["sensitivity"]["energy_err"],
-        label=f"MC gammas/protons",
+
+    # binnings for the irfs
+    true_energy_bins = add_overflow_bins(
+        create_bins_per_decade(10 ** -1.9 * u.TeV, 10 ** 2.31 * u.TeV, 10)
+    )
+    reco_energy_bins = add_overflow_bins(
+        create_bins_per_decade(10 ** -1.9 * u.TeV, 10 ** 2.31 * u.TeV, 5)
+    )
+    fov_offset_bins = [0, 0.5] * u.deg
+    source_offset_bins = np.arange(0, 1 + 1e-4, 1e-3) * u.deg
+    energy_migration_bins = np.geomspace(0.2, 5, 200)
+
+    for label, mask in masks.items():
+        effective_area = effective_area_per_energy(
+            gammas[mask],
+            particles["gamma"]["simulation_info"],
+            true_energy_bins=true_energy_bins,
+        )
+        hdus.append(
+            create_aeff2d_hdu(
+                effective_area[..., np.newaxis],  # add one dimension for FOV offset
+                true_energy_bins,
+                fov_offset_bins,
+                extname="EFFECTIVE_AREA" + label,
+            )
+        )
+        edisp = energy_dispersion(
+            gammas[mask],
+            true_energy_bins=true_energy_bins,
+            fov_offset_bins=fov_offset_bins,
+            migration_bins=energy_migration_bins,
+        )
+        hdus.append(
+            create_energy_dispersion_hdu(
+                edisp,
+                true_energy_bins=true_energy_bins,
+                migration_bins=energy_migration_bins,
+                fov_offset_bins=fov_offset_bins,
+                extname="ENERGY_DISPERSION" + label,
+            )
+        )
+
+    bias_resolution = energy_bias_resolution(
+        gammas[gammas["selected"]], reco_energy_bins, energy_type="reco"
+    )
+    ang_res = angular_resolution(
+        gammas[gammas["selected_gh"]], reco_energy_bins, energy_type="reco"
+    )
+    psf = psf_table(
+        gammas[gammas["selected_gh"]],
+        true_energy_bins,
+        fov_offset_bins=fov_offset_bins,
+        source_offset_bins=source_offset_bins,
     )
 
+    background_rate = background_2d(
+        background[background["selected_gh"]],
+        reco_energy_bins,
+        fov_offset_bins=np.arange(0, 11) * u.deg,
+        t_obs=T_OBS,
+    )
+
+    hdus.append(
+        create_background_2d_hdu(
+            background_rate, reco_energy_bins, fov_offset_bins=np.arange(0, 11) * u.deg,
+        )
+    )
+    hdus.append(
+        create_psf_table_hdu(
+            psf, true_energy_bins, source_offset_bins, fov_offset_bins,
+        )
+    )
+    hdus.append(
+        create_rad_max_hdu(
+            theta_cuts_opt["cut"][:, np.newaxis], theta_bins, fov_offset_bins
+        )
+    )
+    hdus.append(fits.BinTableHDU(ang_res, name="ANGULAR_RESOLUTION"))
+    hdus.append(fits.BinTableHDU(bias_resolution, name="ENERGY_BIAS_RESOLUTION"))
+
+    log.info("Writing outputfile")
+    fits.HDUList(hdus).writeto(
+        os.path.join(cfg["irfs"]["save_dir"], "pyirf_eventdisplay.fits.gz"),
+        overwrite=True,
+    )
+
+    # --- Plot Sensitivity ---
+    fig, ax = plt.subplots(figsize=(12, 8))
+    unit = u.Unit("TeV cm-2 s-1")
+    e = sensitivity["reco_energy_center"]
+    s_mc = e ** 2 * sensitivity["flux_sensitivity"]
+    plt.errorbar(
+        e.to_value(u.GeV),
+        s_mc.to_value(unit),
+        xerr=(
+            sensitivity["reco_energy_high"] - sensitivity["reco_energy_low"]
+        ).to_value(u.GeV)
+        / 2,
+        label=f"MC gammas/protons",
+    )
     # Plot magic sensitivity
     s = np.loadtxt(
         os.path.join(
@@ -357,7 +397,7 @@ def make_irfs_MAGIC_LST(config_file):
     )  # Energy in GeV
 
     # Style settings
-    plt.title("Minimal Flux Needed for 5$\mathrm{\sigma}$ Detection in 50 hours")
+    plt.title("Minimal Flux Needed for 5σ Detection in 50 hours")
     plt.xscale("log")
     plt.yscale("log")
     plt.xlabel("Reconstructed energy [GeV]")
@@ -366,200 +406,9 @@ def make_irfs_MAGIC_LST(config_file):
     )
     plt.grid(which="both")
     plt.legend()
-    fig_name = f"Sensitivity"
     save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
+        n=f"Sensitivity", rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
-
-    # --- Rates ---
-    fix, ax = plt.subplots(figsize=(10, 8))
-    rate_gammas = gamma_hist["n_weighted"] / T_OBS.to(u.min)
-    area_ratio_p = (1 - np.cos(theta_cuts_opt["cut"])) / (1 - np.cos(MAX_BG_RADIUS))
-    rate_proton = proton_hist["n_weighted"] * area_ratio_p / T_OBS.to(u.min)
-
-    plt.errorbar(
-        0.5
-        * (gamma_hist["reco_energy_low"] + gamma_hist["reco_energy_high"]).to_value(
-            u.TeV
-        ),
-        rate_gammas.to_value(1 / u.min),
-        xerr=0.5
-        * (gamma_hist["reco_energy_high"] - gamma_hist["reco_energy_low"]).to_value(
-            u.TeV
-        ),
-        label="Gammas MC",
-    )
-
-    plt.errorbar(
-        0.5
-        * (proton_hist["reco_energy_low"] + proton_hist["reco_energy_high"]).to_value(
-            u.TeV
-        ),
-        rate_proton.to_value(1 / u.min),
-        xerr=0.5
-        * (proton_hist["reco_energy_high"] - proton_hist["reco_energy_low"]).to_value(
-            u.TeV
-        ),
-        label="Protons MC",
-    )
-    plt.legend()
-    plt.ylabel("Rate events/min")
-    plt.xlabel(r"$E_\mathrm{reco} / \mathrm{TeV}$")
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.grid(which="both")
-    fig_name = f"Rates"
-    save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
-    )
-
-    # --- Cuts ---
-    fix, ax = plt.subplots(figsize=(10, 8))
-    plt.errorbar(
-        0.5 * (theta_cuts["low"] + theta_cuts["high"]).to_value(u.TeV),
-        (theta_cuts["cut"] ** 2).to_value(u.deg ** 2),
-        xerr=0.5 * (theta_cuts["high"] - theta_cuts["low"]).to_value(u.TeV),
-        ls="",
-    )
-    plt.ylabel(r"$\theta^2$-cut")
-    plt.xlabel(r"$E_\mathrm{reco} / \mathrm{TeV}$")
-    plt.xscale("log")
-    plt.grid(which="both")
-    fig_name = f"Cut_Theta2"
-    save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
-    )
-
-    fix, ax = plt.subplots(figsize=(10, 8))
-    plt.errorbar(
-        0.5 * (gh_cuts["low"] + gh_cuts["high"]).to_value(u.TeV),
-        gh_cuts["cut"],
-        xerr=0.5 * (gh_cuts["high"] - gh_cuts["low"]).to_value(u.TeV),
-        ls="",
-    )
-    plt.ylabel("G/H-cut")
-    plt.xlabel(r"$E_\mathrm{reco} / \mathrm{TeV}$")
-    plt.xscale("log")
-    plt.grid(which="both")
-    fig_name = f"Cut_GH"
-    save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
-    )
-
-    # --- Angular Resolution ---
-    fix, ax = plt.subplots(figsize=(10, 8))
-
-    selected_events_gh = table.vstack(
-        gammas[gammas["selected_gh"]], protons[protons["selected_gh"]]
-    )
-
-    ang_res = angular_resolution(
-        selected_events_gh[selected_events_gh["selected_gh"]], sensitivity_bins,
-    )
-
-    plt.errorbar(
-        0.5 * (ang_res["true_energy_low"] + ang_res["true_energy_high"]),
-        ang_res["angular_resolution"],
-        xerr=0.5 * (ang_res["true_energy_high"] - ang_res["true_energy_low"]),
-        ls="",
-    )
-
-    # Style settings
-    # plt.xlim(1.0e-2, 2.0e2)
-    # plt.ylim(0.5e-1, 1)
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("True energy / TeV")
-    plt.ylabel("Angular Resolution / deg")
-    plt.grid(which="both")
-    fig_name = f"Angular_Resolution"
-    save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
-    )
-
-    # --- Energy resolution ---
-    fix, ax = plt.subplots(figsize=(10, 8))
-    selected_events = table.vstack(
-        gammas[gammas["selected"]], protons[protons["selected"]]
-    )
-    selected_events = table.vstack(
-        gammas[gammas["selected"]], protons[protons["selected"]]
-    )
-    bias_resolution = energy_bias_resolution(selected_events, sensitivity_bins,)
-
-    # Plot function
-    plt.errorbar(
-        0.5
-        * (bias_resolution["true_energy_low"] + bias_resolution["true_energy_high"]),
-        bias_resolution["resolution"],
-        xerr=0.5
-        * (bias_resolution["true_energy_high"] - bias_resolution["true_energy_low"]),
-        ls="",
-    )
-    plt.xscale("log")
-
-    # Style settings
-    plt.xlabel(r"$E_\mathrm{True} / \mathrm{TeV}$")
-    plt.ylabel("Energy resolution")
-    plt.grid(which="both")
-    plt.legend(loc="best")
-    fig_name = f"Energy_Resolution"
-    save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
-    )
-
-    # --- Reco Alt/Az for MC selected events ---
-    fix, ax = plt.subplots()
-
-    fig, axs = plt.subplots(nrows=1, ncols=5, figsize=(30, 4))
-    emin_bins = [0.0, 0.1, 0.5, 1, 5] * u.TeV
-    emax_bins = [0.1, 0.5, 1, 5, 10] * u.TeV
-
-    for i, ax in enumerate(axs):
-        events = selected_events[
-            (selected_events["reco_energy"] > emin_bins[i])
-            & (selected_events["reco_energy"] < emax_bins[i])
-        ]
-        pcm = ax.hist2d(
-            events["reco_az"].to_value(u.deg),
-            events["reco_alt"].to_value(u.deg),
-            bins=50,
-        )
-        ax.title.set_text(
-            "%.1f-%.1f TeV" % (emin_bins[i].to_value(), emax_bins[i].to_value())
-        )
-        ax.set_xlabel(r"Az ($\mathrm{\deg}$)")
-        ax.set_ylabel(r"Alt ($\mathrm{\deg}$)")
-        fig.colorbar(pcm[3], ax=ax)
-    fig_name = f"Reco_AltAz"
-
-    # --- Checks on number of islands ---
-    fig, ax = plt.subplots(figsize=(10, 8))
-    gammas_selected = gammas[
-        (gammas["selected"]) & (gammas["reco_energy"] > 1.0 * u.TeV)
-    ]
-    plt.hist(gammas_selected["num_islands"], bins=10, range=(0.5, 10.5))
-    plt.yscale("log")
-    fig_name = f"Num_Islands_Gamma"
-    save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
-    )
-
-    fig, ax = plt.subplots(figsize=(10, 8))
-    protons_selected = protons[
-        (protons["selected"]) & (protons["reco_energy"] > 1.0 * u.TeV)
-    ]
-    plt.hist(protons_selected["num_islands"], bins=10, range=(0.5, 10.5))
-    plt.yscale("log")
-    fig_name = f"Num_Islands_Proton"
-    save_plt(
-        n=fig_name, rdir=cfg["irfs"]["save_dir"], vect="pdf",
-    )
-
-    # --- Save results dictionary ---
-    results_file = os.path.join(cfg["irfs"]["save_dir"], "IRFs.yaml")
-    save_yaml_np(res, results_file)
-    # yaml.dump(res, open(results_file, "w"), default_flow_style=False)
 
 
 if __name__ == "__main__":
