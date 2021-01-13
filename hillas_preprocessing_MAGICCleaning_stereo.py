@@ -50,7 +50,23 @@ def info_message(text, prefix='info'):
     print(f"({prefix:s}) {date_str:s}: {text:s}")
 
 def get_num_islands(camera, clean_mask, event_image):
-    # Identifying connected islands
+    """Get the number of connected islands in a shower image.
+
+    Parameters
+    ----------
+    camera : CameraGeometry
+        Description
+    clean_mask : np.array
+        Cleaning mask
+    event_image : np.array
+        Event image
+
+    Returns
+    -------
+    int
+        Number of islands
+    """
+
     neighbors = camera.neighbor_matrix_sparse
     clean_neighbors = neighbors[clean_mask][:, clean_mask]
     num_islands, labels = connected_components(clean_neighbors, directed=False)
@@ -58,9 +74,23 @@ def get_num_islands(camera, clean_mask, event_image):
     return num_islands
 
 def process_dataset_mc(input_mask, output_name):
-    # Create event metadata container to hold event / observation / telescope IDs
-    # and MC true values for the event energy and direction. We will need it to add
-    # this information to the event Hillas parameters when dumping the results to disk.
+    """Create event metadata container to hold event / observation / telescope
+    IDs and MC true values for the event energy and direction. We will need it
+    to add this information to the event Hillas parameters when dumping the
+    results to disk.
+
+    Parameters
+    ----------
+    input_mask : str
+        Mask for MC input files. Reading of files is managed
+        by the MAGICEventSource class.
+    output_name : str
+        Name of the HDF5 output file.
+
+    Returns
+    -------
+    None
+    """
 
     class InfoContainer(Container):
         obs_id = Field(-1, "Observation ID")
@@ -69,9 +99,15 @@ def process_dataset_mc(input_mask, output_name):
         true_energy = Field(-1, "MC event energy", unit=u.TeV)
         true_alt = Field(-1, "MC event altitude", unit=u.rad)
         true_az = Field(-1, "MC event azimuth", unit=u.rad)
+        true_core_x = Field(-1, "MC event x-core position", unit=u.m)
+        true_core_y = Field(-1, "MC event y-core position", unit=u.m)
         tel_alt = Field(-1, "MC telescope altitude", unit=u.rad)
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
+
+    class ObsIdContainer(Container):
+        obs_id = Field(-1, "Observation ID")
+
 
     cleaning_config = dict(
         picture_thresh = 6,
@@ -81,12 +117,6 @@ def process_dataset_mc(input_mask, output_name):
         usetime = True,
         usesum = True,
         findhotpixels = False,
-    )
-
-    bad_pixels_config = dict(
-        pedestalLevel = 400,
-        pedestalLevelVariance = 4.5,
-        pedestalType = 'FromExtractorRndm'
     )
 
     # Now let's loop over the events and perform:
@@ -104,19 +134,28 @@ def process_dataset_mc(input_mask, output_name):
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Event source
         source = MAGICEventSource(input_url=input_mask)
-
+        
         camera = source.subarray.tel[1].camera
+
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
+
+        obs_id_last = -1
 
         # Looping over the events
         for event in source:
-            tels_with_data = event.r1.tels_with_data
+            
+            if event.index.obs_id != obs_id_last:
+                obs_id_info = ObsIdContainer(obs_id=event.index.obs_id)
+                writer.write("mc_header", (obs_id_info, event.mcheader))
+                obs_id_last = event.index.obs_id
 
+            tels_with_data = event.r1.tels_with_data
+            
             computed_hillas_params = dict()
             telescope_pointings = dict()
             array_pointing = SkyCoord(
-                alt=event.mc.alt,
-                az=event.mc.az,
+                alt=event.pointing.array_altitude,
+                az=event.pointing.array_azimuth,
                 frame=horizon_frame,
             )
 
@@ -167,6 +206,8 @@ def process_dataset_mc(input_mask, output_name):
                             true_energy=event.mc.energy,
                             true_alt=event.mc.alt.to(u.rad),
                             true_az=event.mc.az.to(u.rad),
+                            true_core_x=event.mc.core_x.to(u.m),
+                            true_core_y=event.mc.core_y.to(u.m),
                             tel_alt=event.pointing.tel[tel_id].altitude.to(u.rad),
                             tel_az=event.pointing.tel[tel_id].azimuth.to(u.rad),
                             n_islands=num_islands
@@ -195,10 +236,25 @@ def process_dataset_mc(input_mask, output_name):
                     # Storing the result
                     writer.write("stereo_params", (event_info, stereo_params))
 
+
 def process_dataset_data(input_mask, output_name):
-    # Create event metadata container to hold event / observation / telescope IDs
-    # and MC true values for the event energy and direction. We will need it to add
-    # this information to the event Hillas parameters when dumping the results to disk.
+    """Create event metadata container to hold event / observation / telescope
+    IDs and MC true values for the event energy and direction. We will need it
+    to add this information to the event Hillas parameters when dumping the
+    results to disk.
+
+    Parameters
+    ----------
+    input_mask : str
+        Mask for real data input files. Reading of files is managed
+        by the MAGICEventSource class.
+    output_name : str
+        Name of the HDF5 output file.
+
+    Returns
+    -------
+    None
+    """
 
     class InfoContainer(Container):
         obs_id = Field(-1, "Observation ID")
@@ -260,8 +316,8 @@ def process_dataset_data(input_mask, output_name):
             computed_hillas_params = dict()
             telescope_pointings = dict()
             array_pointing = SkyCoord(
-                alt=event.pointing.tel[0].altitude,
-                az=event.pointing.tel[0].azimuth,
+                alt=event.pointing.array_altitude,
+                az=event.pointing.array_azimuth,
                 frame=horizon_frame,
             )
 
@@ -413,23 +469,25 @@ elif parsed_args.usetest:
 else:
     data_sample_to_process = ['train_sample', 'test_sample']
 
-telescope_to_process = ['magic1', 'magic2']
+telescopes_to_process = list(config['image_cleaning'].keys())
 
 for data_type in data_type_to_process:
     for sample in data_sample_to_process:
-        try:
-            telescope_type = re.findall('(.*)[_\d]+', telescope_to_process[0])[0]
-        except:
-            ValueError(f'Can not recognize the telescope type from name "{telescope_to_process}"')
+        for telescope_type in telescopes_to_process:
+            if telescope_type not in config['data_files'][data_type][sample]:
+                raise ValueError(f'Telescope type "{telescope_type}" is not in the configuration file')
 
-        info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
-                    prefix='Hillas')
+            if telescope_type not in config['image_cleaning']:
+                raise ValueError(f'Telescope type "{telescope_type}" does not have image cleaning settings')
 
-        is_mc = data_type.lower() == "mc"
+            info_message(f'Data "{data_type}", sample "{sample}", telescope "{telescope_type}"',
+                prefix='Hillas')
 
-        if is_mc:
-            process_dataset_mc(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                               output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
-        else:
-            process_dataset_data(input_mask=config['data_files'][data_type][sample]['magic1']['input_mask'],
-                                output_name=config['data_files'][data_type][sample]['magic1']['hillas_output'])
+            is_mc = data_type.lower() == "mc"
+
+            if is_mc:
+                process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'])
+            else:
+                process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'])
