@@ -242,8 +242,8 @@ def drop_keys(df, extra_keys):
 
 
 def check_common_keys(df1, df2, common_keys):
-    """Check if common keys exist df1 and df2, and return list of common keys which
-    really exist in both dataframe
+    """Check if `common_keys` exist both in `df1` and in `df2`, and return sub-list 
+    of `common_keys` which really exist in both dataframe
 
     Parameters
     ----------
