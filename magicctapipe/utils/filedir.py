@@ -173,6 +173,8 @@ def load_dl1_data_stereo(file, drop=False):
         "h_max_uncert",
         "az_uncert",
         "core_uncert",
+        "true_core_x",
+        "true_core_y",
     ]
     extra_stereo_keys = ["tel_alt", "tel_az", "num_islands", "n_islands", "tel_id"]
     common_keys = ["obs_id", "event_id", "true_energy", "true_alt", "true_az"]
@@ -182,11 +184,14 @@ def load_dl1_data_stereo(file, drop=False):
     data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
     # Drop extra stereo keys
     data_stereo = drop_keys(data_stereo, extra_stereo_keys)
-    # Merge
-    data = data_hillas.merge(data_stereo, on=common_keys)
     # Drop extra keys
     if drop:
-        data = drop_keys(data, extra_keys)
+        data_hillas = drop_keys(data_hillas, extra_keys)
+        data_stereo = drop_keys(data_stereo, extra_keys)
+    # Check common keys
+    common_keys = check_common_keys(data_hillas, data_stereo, common_keys)
+    # Merge
+    data = data_hillas.merge(data_stereo, on=common_keys)
     # Index
     data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)
@@ -234,6 +239,31 @@ def drop_keys(df, extra_keys):
         if extra_key in df.columns:
             df.drop(extra_key, axis=1, inplace=True)
     return df
+
+
+def check_common_keys(df1, df2, common_keys):
+    """Check if common keys exist df1 and df2, and return list of common keys which
+    really exist in both dataframe
+
+    Parameters
+    ----------
+    df1 : pandas.DataFrame
+        dataframe
+    df2 : pandas.DataFrame
+        dataframe
+    common_keys : list
+        list of common keys to be checked
+
+    Returns
+    -------
+    list
+        list of common keys
+    """
+    common_keys_checked = []
+    for k in common_keys:
+        if k in df1.columns and k in df2.columns:
+            common_keys_checked.append(k)
+    return common_keys_checked
 
 
 def out_file_h5_no_run(in_file, li, hi):
