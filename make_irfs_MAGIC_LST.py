@@ -150,6 +150,7 @@ def make_irfs_MAGIC_LST(config_file):
             verbose=get_key_if_exists(cfg["irfs"], "verbose", False),
             eval_mean_events=True,
         )
+        log.info(f"Number of events: {len(p["events"])}")
         p["events"]["particle_type"] = particle_type
 
         p["simulated_spectrum"] = PowerLaw.from_simulation(p["simulation_info"], T_OBS)
