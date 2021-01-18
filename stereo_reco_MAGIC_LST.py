@@ -335,10 +335,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # --- END LOOP on tel_ids ---
 
             # --- Check if event is fine ---
-            # Ignore if I had an "Exception"
-            if failed:
-                continue
-
             # Ignore events with less than two telescopes
             if len(hillas_p.keys()) < 2:
                 print(f"EVENT with LESS than 2 hillas_p (sel_tels={sel_tels})")
