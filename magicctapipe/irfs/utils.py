@@ -1,10 +1,24 @@
-import astropy.units as u
-from astropy.table import QTable
+import os
+import glob
+import time
+import logging
+import operator
+import argparse
+
+import numpy as np
 from astropy import table
+import astropy.units as u
+from astropy.io import fits
+from astropy.table import QTable
 
 from pyirf.simulations import SimulatedEventsInfo
 
 from magicctapipe.utils.filedir import *
+from magicctapipe.utils.plot import *
+from magicctapipe.utils.utils import *
+
+import matplotlib.pylab as plt
+from lstchain.mc import plot_utils
 
 
 def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header"):
@@ -154,3 +168,114 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         events[k] *= v
 
     return events, pyirf_simu_info
+
+
+def plot_irfs_MAGIC_LST(config_file):
+    """Plot IRFs for MAGIC and/or LST array using pyirf
+
+    Parameters
+    ----------
+    config_file : str
+        configuration file
+    """
+    print_title("Plot IRFs")
+
+    cfg = load_cfg_file(config_file)
+
+    load_default_plot_settings()
+
+    # --- Open file ---
+    # Open fits
+    hdu_open = fits.open(
+        os.path.join(cfg["irfs"]["save_dir"], "pyirf_eventdisplay.fits.gz")
+    )
+
+    # --- Plot Sensitivity ---
+    sensitivity = QTable.read(hdu_open, hdu="SENSITIVITY")
+    fig, ax = plt.subplots(figsize=(12, 8))
+    ax.set_title(r"Minimal Flux Needed for 5$\mathrm{\sigma}$ Detection in 50 hours")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("Reconstructed energy (GeV)")
+    unit = u.Unit("TeV cm-2 s-1")
+    ax.set_ylabel(
+        rf"$(E^2 \cdot \mathrm{{Flux Sensitivity}}) /$ ({unit.to_string('latex')})"
+    )
+    ax.grid(which="both")
+
+    e = sensitivity["reco_energy_center"]
+    s_mc = e ** 2 * sensitivity["flux_sensitivity"]
+    e_low, e_high = sensitivity["reco_energy_low"], sensitivity["reco_energy_high"]
+    plt.errorbar(
+        e.to_value(u.GeV),
+        s_mc.to_value(unit),
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
+        label=f"MC gammas/protons",
+    )
+    # Plot magic sensitivity
+    s = np.loadtxt(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "../../data/magic_sensitivity.txt",
+        ),
+        skiprows=1,
+    )
+    ax.loglog(
+        s[:, 0],
+        s[:, 3] * np.power(s[:, 0] / 1e3, 2),
+        color="black",
+        label="MAGIC (Aleksic et al. 2014)",
+    )
+
+    # Plot Crab SED
+    plot_utils.plot_Crab_SED(
+        ax, 100, 5 * u.GeV, 1e4 * u.GeV, label="100% Crab"
+    )  # Energy in GeV
+    plot_utils.plot_Crab_SED(
+        ax, 10, 5 * u.GeV, 1e4 * u.GeV, linestyle="--", label="10% Crab"
+    )  # Energy in GeV
+    plot_utils.plot_Crab_SED(
+        ax, 1, 5 * u.GeV, 1e4 * u.GeV, linestyle=":", label="1% Crab"
+    )  # Energy in GeV
+
+    plt.legend()
+
+    save_plt(
+        n=f"Sensitivity", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
+
+    # --- Plot Angular Resolution ---
+    ang_res = QTable.read(hdu_open, hdu="ANGULAR_RESOLUTION")
+    fig, ax = plt.subplots()
+    ax.set_xscale("log")
+    ax.set_xlabel("Reconstructed energy (GeV)")
+    ax.set_ylabel("Angular resolution (deg)")
+    e = ang_res["reco_energy_center"]
+    e_low, e_high = ang_res["reco_energy_low"], ang_res["reco_energy_high"]
+    plt.errorbar(
+        e.to_value(u.GeV),
+        ang_res["angular_resolution"].to_value(u.deg),
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
+    )
+    save_plt(
+        n=f"Angular_Resolution", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
+
+    # --- Effective Area ---
+    effective_area = QTable.read(hdu_open, hdu="EFFECTIVE_AREA")
+    fig, ax = plt.subplots()
+    ax.set_xscale("log")
+    ax.set_xlabel("Reconstructed energy (GeV)")
+    ax.set_ylabel(r"Effective Area ($\mathrm{m^2}$)")
+    e_low, e_high = effective_area["ENERG_LO"][0], effective_area["ENERG_HI"][0]
+    e = (e_low + e_high) / 2
+    a = effective_area["EFFAREA"][0, 0]
+    e = e_high
+    m2 = u.m * u.m
+    plt.errorbar(
+        e.to_value(u.GeV), a.to_value(m2), xerr=(e - e_low).to_value(u.GeV),
+    )
+    save_plt(
+        n=f"Effective_Area", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+    )
+
