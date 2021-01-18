@@ -112,10 +112,10 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         "energy_reco": "reco_energy",
         "alt_reco": "reco_alt",
         "az_reco": "reco_az",
-        "intensity_width_1": "leakage_intensity_width_1",
-        "intensity_width_2": "leakage_intensity_width_2",
+        # "intensity_width_1": "leakage_intensity_width_1",
+        # "intensity_width_2": "leakage_intensity_width_2",
         "event_class_0": "gh_score",
-        "pos_angle_shift_reco": "reco_source_fov_offset",  # ???
+        # "pos_angle_shift_reco": "reco_source_fov_offset",  # ???
     }
 
     unit_mapping = {
