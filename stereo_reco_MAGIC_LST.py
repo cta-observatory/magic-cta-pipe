@@ -233,7 +233,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # Loop on triggered telescopes
             for tel_id, dl1 in event.dl1.tel.items():
                 # Exclude telescopes not selected
-                if not tel_id in tel_ids:
+                if not tel_id in sel_tels:
                     continue
                 try:
                     geom = source.subarray.tels[tel_id].camera.geometry
