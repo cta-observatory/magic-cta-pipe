@@ -128,7 +128,7 @@ def make_title_str(title, style_char="=", in_space=3, width_char=80):
 
 
 def get_key_if_exists(dictionary, key, default):
-    """Return dictionary[key] if key exists in dictionary, otherwise default
+    """Returns `dictionary[key]` if `key` exists in `dictionary`, otherwise `default`
 
     Parameters
     ----------
