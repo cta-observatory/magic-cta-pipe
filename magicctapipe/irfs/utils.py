@@ -106,6 +106,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     tuple
         events, pyirf_simu_info
     """
+    # Map column names (DL2 -> pyirf)
     name_mapping = {
         "tel_alt": "pointing_alt",
         "tel_az": "pointing_az",
@@ -118,6 +119,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         # "pos_angle_shift_reco": "reco_source_fov_offset",  # ???
     }
 
+    # Map units
     unit_mapping = {
         "true_energy": u.TeV,
         "reco_energy": u.TeV,
