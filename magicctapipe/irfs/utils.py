@@ -130,6 +130,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         "reco_alt": u.rad,
         "reco_az": u.rad,
     }
+
     file_list = glob.glob(file_mask)
 
     if (max_files > 0) and (max_files < len(file_list)):
@@ -154,16 +155,6 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
                 events = events.append(events_)
         except Exception as e:
             print(f"ERROR: skipping file {file}\n{e}")
-
-    # if eval_mean_events:
-    #     events_mean = pd.DataFrame()
-    #     event_ids = list(dict.fromkeys(events.index.get_level_values("event_id")))
-    #     for i in range(len(event_ids)):
-    #         if verbose:
-    #             print(f"Evaluating mean of event_id = {event_ids[i]}")
-    #         ev_ = events.loc[(slice(None), event_ids[i], slice(None))]
-    #         events_mean = events_mean.append(pd.DataFrame({i: ev_.mean()}).T)
-    #     events = events_mean
 
     events = table.QTable.from_pandas(events)
     for k, v in unit_mapping.items():
