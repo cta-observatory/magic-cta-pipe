@@ -189,10 +189,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         source.mc_header.run_array_direction = []  # dummy value
         writer.write("mc_header", source.mc_header)
 
-        # Other inits
-        horizon_frame = AltAz()
-        hillas_reco = HillasReconstructor()
-
         if display:
             fig, ax = plt.subplots()
             go, first_time_display, cont = True, True, False
@@ -218,6 +214,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             hillas_p, leakage_p, timing_p = {}, {}, {}
             telescope_pointings, time_grad, event_info = {}, {}, {}
             failed = False
+            horizon_frame = AltAz()
+            hillas_reco = HillasReconstructor()
 
             # Eval pointing
             array_pointing = SkyCoord(
