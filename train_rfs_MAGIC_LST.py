@@ -365,7 +365,6 @@ def train_direction_rf_stereo(config_file):
     # Applying the cuts
     shower_data_train = shower_data_train.query(cfg["direction_rf"]["cuts"])
     shower_data_test = shower_data_test.query(cfg["direction_rf"]["cuts"])
-    print(shower_data_test)
 
     # --- MAGIC - LST description ---
     array_tel_descriptions = get_array_tel_descriptions(
@@ -402,6 +401,7 @@ def train_direction_rf_stereo(config_file):
 
     # --- Applying RF to the "test" sample ---
     info_message('Applying RF to the "test" sample', prefix="DirRF")
+    print(shower_data_test)
     coords_reco = direction_estimator.predict(shower_data_test)
     shower_data_test = shower_data_test.join(coords_reco)
 
