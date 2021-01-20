@@ -622,7 +622,6 @@ def train_energy_rf_stereo(config_file):
         file_n_key="test_file_n",
         mono_mode=mono_mode,
     )
-    print(shower_data_test)
 
     # --- Check intersections ---
     wt_ = "WARNING: check only on gammas; use it in classifier to check also protons"
