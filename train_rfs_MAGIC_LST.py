@@ -611,7 +611,6 @@ def train_energy_rf_stereo(config_file):
     )
     info_message(f"Loading files with the following mask:\n{f_}", prefix="EnergyRF")
     shower_data_train = load_dl1_data_stereo_list(glob.glob(f_), mono_mode=mono_mode)
-    print(shower_data_train)
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
@@ -623,6 +622,7 @@ def train_energy_rf_stereo(config_file):
         file_n_key="test_file_n",
         mono_mode=mono_mode,
     )
+    print(shower_data_test)
 
     # --- Check intersections ---
     wt_ = "WARNING: check only on gammas; use it in classifier to check also protons"
