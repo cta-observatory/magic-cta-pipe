@@ -143,7 +143,7 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=False, mono_mode=Fa
             if not mono_mode:
                 data_ = load_dl1_data_stereo(file, drop)
             else:
-                data_ = load_dl1_data_mono(file, drop)
+                data_ = load_dl1_data_mono(file)
         except Exception as e:
             print(f"LOAD FAILED with file {file}", e)
             continue
