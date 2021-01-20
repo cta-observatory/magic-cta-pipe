@@ -129,7 +129,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         display plots, by default False
     """
 
-    if len(cfg["all_tels"]["tel_ids"] == 1):
+    if len(cfg["all_tels"]["tel_ids"]) == 1:
         mono_mode = True
     else:
         mono_mode = False
