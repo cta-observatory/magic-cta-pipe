@@ -423,7 +423,8 @@ def train_direction_rf_stereo(config_file):
         cuts += f" & (true_energy < {energy_edges[ei+1]: .2e})"
         # cuts += ' & (intensity > 100)'
         # cuts += ' & (length > 0.05)'
-        cuts += " & (multiplicity > 1)"
+        if not mono_mode:
+            cuts += " & (multiplicity > 1)"
         query = separation_df.query(cuts)
 
         # for pi in range(3): # OLD
@@ -465,7 +466,8 @@ def train_direction_rf_stereo(config_file):
         cuts += f" & (offset < {offset_edges[oi+1]:.2f})"
         # cuts += ' & (intensity > 100)'
         # cuts += ' & (length > 0.05)'
-        cuts += " & (multiplicity > 1)"
+        if not mono_mode:
+            cuts += " & (multiplicity > 1)"
         query = separation_df.query(cuts)
 
         # for pi in range(3):
