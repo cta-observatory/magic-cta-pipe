@@ -81,7 +81,7 @@ def check_folder(folder):
 
 
 def load_dl1_data_stereo_list_selected(
-    file_list, sub_dict, file_n_key="file_n", drop=False
+    file_list, sub_dict, file_n_key="file_n", drop=False, mono_mode=False
 ):
     """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`. 
     If in `sub_dict` it finds the `file_n_key` key, and if the given number is > 0, it 
@@ -98,6 +98,8 @@ def load_dl1_data_stereo_list_selected(
         file number key, by default "file_n"
     drop : bool, optional
         drop extra keys, by default False
+    mono_mode : bool, optional
+        mono mode, by default False
 
     Returns
     -------
@@ -108,11 +110,11 @@ def load_dl1_data_stereo_list_selected(
         n = sub_dict[file_n_key]
         if n > 0:
             file_list = file_list[:n]
-    data = load_dl1_data_stereo_list(file_list, drop)
+    data = load_dl1_data_stereo_list(file_list, drop, mono_mode=mono_mode)
     return data
 
 
-def load_dl1_data_stereo_list(file_list, drop=False, verbose=False):
+def load_dl1_data_stereo_list(file_list, drop=False, verbose=False, mono_mode=False):
     """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`
 
     Parameters
@@ -123,6 +125,8 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=False):
         drop extra keys, by default False
     verbose : bool, optional
         print file list, by default False
+    mono_mode : bool, optional
+        mono mode, by default False
 
 
     Returns
@@ -136,7 +140,7 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=False):
     first_time = True
     for i, file in enumerate(file_list):
         try:
-            data_ = load_dl1_data_stereo(file, drop)
+            data_ = load_dl1_data_stereo(file, drop, mono_mode)
         except Exception as e:
             print(f"LOAD FAILED with file {file}", e)
             continue
@@ -148,7 +152,7 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=False):
     return data
 
 
-def load_dl1_data_stereo(file, drop=False):
+def load_dl1_data_stereo(file, drop=False, mono_mode=False):
     """Loads dl1 data (hillas and stereo) from `file` and merge them togheter
 
     Parameters
@@ -157,6 +161,8 @@ def load_dl1_data_stereo(file, drop=False):
         file
     drop : bool, optional
         drop extra keys, by default False
+    mono_mode : bool, optional
+        mono mode, by default False
 
 
     Returns
@@ -181,17 +187,22 @@ def load_dl1_data_stereo(file, drop=False):
     # Hillas
     data_hillas = pd.read_hdf(file, key=f"dl1/hillas_params")
     # Stereo
-    data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
-    # Drop extra stereo keys
-    data_stereo = drop_keys(data_stereo, extra_stereo_keys)
+    if not mono_mode:
+        data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
+        # Drop extra stereo keys
+        data_stereo = drop_keys(data_stereo, extra_stereo_keys)
     # Drop extra keys
     if drop:
         data_hillas = drop_keys(data_hillas, extra_keys)
-        data_stereo = drop_keys(data_stereo, extra_keys)
-    # Check common keys
-    common_keys = check_common_keys(data_hillas, data_stereo, common_keys)
-    # Merge
-    data = data_hillas.merge(data_stereo, on=common_keys)
+        if not mono_mode:
+            data_stereo = drop_keys(data_stereo, extra_keys)
+    if not mono_mode:
+        # Check common keys
+        common_keys = check_common_keys(data_hillas, data_stereo, common_keys)
+        # Merge
+        data = data_hillas.merge(data_stereo, on=common_keys)
+    else:
+        data = data_hillas
     # Index
     data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)

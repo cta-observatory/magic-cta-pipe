@@ -306,6 +306,8 @@ def train_direction_rf_stereo(config_file):
     # --- Read the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label="direction_rf")
 
+    mono_mode = len(cfg["all_tels"]["tel_ids"]) == 1
+
     # --- Check output directory ---
     check_folder(cfg["direction_rf"]["save_dir"])
 
@@ -313,13 +315,16 @@ def train_direction_rf_stereo(config_file):
     info_message("Loading train data...", prefix="DirRF")
     f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
     info_message(f"Loading train files with the following mask:\n{f_}", prefix="DirRF")
-    shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
+    shower_data_train = load_dl1_data_stereo_list(glob.glob(f_), mono_mode=mono_mode)
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
     info_message(f"Loading test files with the following mask:\n{f_}", prefix="DirRF")
     shower_data_test = load_dl1_data_stereo_list_selected(
-        file_list=glob.glob(f_), sub_dict=cfg["direction_rf"], file_n_key="test_file_n"
+        file_list=glob.glob(f_),
+        sub_dict=cfg["direction_rf"],
+        file_n_key="test_file_n",
+        mono_mode=mono_mode,
     )
 
     # --- Check intersections ---
@@ -593,6 +598,8 @@ def train_energy_rf_stereo(config_file):
     # --- Read the configuration file ---
     cfg = load_cfg_file_check(config_file=config_file, label="energy_rf")
 
+    mono_mode = len(cfg["all_tels"]["tel_ids"]) == 1
+
     # --- Check output directory ---
     check_folder(cfg["energy_rf"]["save_dir"])
 
@@ -603,14 +610,17 @@ def train_energy_rf_stereo(config_file):
         f"Loading train data with the following mask: \n{f_}", prefix="EnergyRF"
     )
     info_message(f"Loading files with the following mask:\n{f_}", prefix="EnergyRF")
-    shower_data_train = load_dl1_data_stereo_list(glob.glob(f_))
+    shower_data_train = load_dl1_data_stereo_list(glob.glob(f_), mono_mode=mono_mode)
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
     info_message(f"Loading test data with the following mask:\n{f_}", prefix="EnergyRF")
     # shower_data_test = load_dl1_data_stereo_list(glob.glob(f_))
     shower_data_test = load_dl1_data_stereo_list_selected(
-        file_list=glob.glob(f_), sub_dict=cfg["energy_rf"], file_n_key="test_file_n"
+        file_list=glob.glob(f_),
+        sub_dict=cfg["energy_rf"],
+        file_n_key="test_file_n",
+        mono_mode=mono_mode,
     )
 
     # --- Check intersections ---

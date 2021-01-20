@@ -142,6 +142,7 @@ def load_init_data_classifier(cfg, mode="train"):
     tuple
         mc_data, bkg_data
     """
+    mono_mode = len(cfg["all_tels"]["tel_ids"]) == 1
     fl_ = glob.glob(cfg["data_files"]["mc"][f"{mode}_sample"]["hillas_h5"])
     info_message(f"Loading MC {mode} data...", prefix="ClassifierRF")
     if mode == "test":
@@ -150,9 +151,10 @@ def load_init_data_classifier(cfg, mode="train"):
             sub_dict=cfg["classifier_rf"],
             file_n_key="test_file_n",
             drop=True,
+            mono_mode=mono_mode,
         )
     else:
-        mc_data = load_dl1_data_stereo_list(fl_, drop=True)
+        mc_data = load_dl1_data_stereo_list(fl_, drop=True, mono_mode=mono_mode)
 
     fl_ = glob.glob(cfg["data_files"]["data"][f"{mode}_sample"]["hillas_h5"])
     info_message(f'Loading "off" {mode} data...', prefix="ClassifierRF")
@@ -162,9 +164,10 @@ def load_init_data_classifier(cfg, mode="train"):
             sub_dict=cfg["classifier_rf"],
             file_n_key="test_file_n",
             drop=True,
+            mono_mode=mono_mode,
         )
     else:
-        bkg_data = load_dl1_data_stereo_list(fl_, drop=True)
+        bkg_data = load_dl1_data_stereo_list(fl_, drop=True, mono_mode=mono_mode)
 
     # True event classes
     mc_data["true_event_class"] = 0
