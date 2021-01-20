@@ -212,7 +212,9 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # Process only if I have at least two tel_ids of the selected array
             # sel_tels: selected telescopes with data in the event
             sel_tels = list(set(event.r0.tels_with_data).intersection(tel_ids))
-            if len(sel_tels) < 2 and not mono_mode:
+            if not mono_mode and len(sel_tels) < 2:
+                continue
+            elif mono_mode and len(sel_tels) < 1:
                 continue
 
             # Inits
