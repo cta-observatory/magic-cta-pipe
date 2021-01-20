@@ -401,7 +401,6 @@ def train_direction_rf_stereo(config_file):
 
     # --- Applying RF to the "test" sample ---
     info_message('Applying RF to the "test" sample', prefix="DirRF")
-    print(shower_data_test)
     coords_reco = direction_estimator.predict(shower_data_test)
     shower_data_test = shower_data_test.join(coords_reco)
 
