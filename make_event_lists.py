@@ -143,6 +143,12 @@ for obs_id in obs_ids:
     gti_hdu = pyfits.BinTableHDU.from_columns(col_defs)
     gti_hdu.name = 'GTI'
 
+    gti_hdu.header['MJDREFI'] = int(np.floor(time_ref))
+    gti_hdu.header['MJDREFF'] = time_ref - np.floor(time_ref)
+    gti_hdu.header['TIMEUNIT'] = 's'
+    gti_hdu.header['TIMESYS'] = 'UTC'
+    gti_hdu.header['TIMEREF'] = 'LOCAL'
+
     # Preparing Events HDU
 
     col_event_id = pyfits.Column(name='EVENT_ID',
