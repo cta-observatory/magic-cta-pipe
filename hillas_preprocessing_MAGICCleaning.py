@@ -21,7 +21,6 @@ from ctapipe_io_magic import MAGICEventSource
 
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
-from ctapipe.calib import CameraCalibrator
 from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters, leakage
 from ctapipe.image.timing import timing_parameters
@@ -144,7 +143,6 @@ def process_dataset_mc(input_mask, tel_id, output_name):
             print("")
             # Event source
             source = MAGICEventSource(input_url=input_file)
-            calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
 
             camera = source.subarray.tel[tel_id].camera
             magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
@@ -271,7 +269,6 @@ def process_dataset_data(input_mask, tel_id, output_name):
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Creating an input source
         source = MAGICEventSource(input_url=input_mask)
-        calibrator = CameraCalibrator(subarray=source.subarray, config=config, image_extractor=integrator_name)
 
         camera = source.subarray.tel[tel_id].camera
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
