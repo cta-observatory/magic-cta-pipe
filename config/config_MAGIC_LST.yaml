@@ -7,25 +7,23 @@ data_files:
   mc:
     train_sample:
       mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/gamma_00deg/*_run${run}_*.simtel.gz'
-      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/gamma_00deg_train/*_run${run}_*.h5'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST/DL1_Link/gamma_00deg_train/*_run${run}_*.h5'
     test_sample:
       mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/gamma_00deg/*_run${run}_*.simtel.gz'
-      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/gamma_00deg_test/*_run${run}_*.h5'
-      # reco_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL2/gamma_00deg_test_reco/*_reco.h5'
-      reco_h5: '/mnt/d/CTA-MC/Prod5/CopyIT/MAGIC_4LST/DL2/gamma_00deg_test_reco/*_reco.h5'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST/DL1_Link/gamma_00deg_test/*_run${run}_*.h5'
+      reco_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST/DL2/gamma_00deg_test_reco/*_reco.h5'
   data:
     train_sample:
       mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/proton/*_run${run}_*.simtel.gz'
-      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/proton_train/*_run${run}_*.h5'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST/DL1_Link/proton_train/*_run${run}_*.h5'
     test_sample:
       mask_sim: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/DL0_Link/proton/*_run${run}_*.simtel.gz'
-      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL1_Link/proton_test/*_run${run}_*.h5'
-      # reco_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/DL2/proton_test_reco/*_reco.h5'
-      reco_h5: '/mnt/d/CTA-MC/Prod5/CopyIT/MAGIC_4LST/DL2/proton_test_reco/*_reco.h5'
+      hillas_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST/DL1_Link/proton_test/*_run${run}_*.h5'
+      reco_h5: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST/DL2/proton_test_reco/*_reco.h5'
 
 # --- TELESCOPES ---------------------------------------------------------------
 all_tels:
-  tel_ids: [1, 2, 3, 4, 5, 6]
+  tel_ids: [1, 2, 3, 4]
   tel_n: ['LST', 'MAGIC']
   tel_n_short: ['LST', 'M']
   stereo_id: -1
@@ -66,8 +64,8 @@ global:
 
 # --- TRAIN CLASSIFIER RF ------------------------------------------------------
 classifier_rf:
-  check_train_test: True
-  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
+  check_train_test: False
+  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST_Diffuse/RFs/'
   joblib_name: 'classifier_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
@@ -75,15 +73,15 @@ classifier_rf:
     min_samples_leaf: 10
     n_jobs: 3
   features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'num_islands', 'h_max',
-             'core_x', 'core_y', 'alt', 'az']
+             'core_x', 'core_y']
   fig_name: 'classifier_rf_gammaness'
   fig_size: [20, 10]
-  test_file_n: 0
+  test_file_n: 200
 
 # --- TRAIN DIRECTION RF -------------------------------------------------------
 direction_rf:
   check_train_test: False
-  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
+  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST_Diffuse/RFs/'
   joblib_name: 'direction_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
@@ -92,19 +90,19 @@ direction_rf:
     n_jobs: 3
   features:
     'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'core_x', 
-             'core_y', 'alt', 'az']
+             'core_y']
     'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 
-                        'core_x', 'core_y', 'alt', 'az']
+                        'core_x', 'core_y']
   fig_name_theta2: 'Direction_RF_theta2'
   fig_name_PSF_energy: 'Direction_RF_PSF_energy'
   fig_name_PSF_offset: 'Direction_RF_PSF_offset'
   fig_size: [12, 12]
-  test_file_n: 10
+  test_file_n: 50
 
 # --- TRAIN ENERGY RF ----------------------------------------------------------
 energy_rf:
   check_train_test: False
-  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC_4LST/RFs/'
+  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST_Diffuse/RFs/'
   joblib_name: 'energy_rf.joblib'
   cuts: '(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)'
   settings:
@@ -112,10 +110,10 @@ energy_rf:
     min_samples_leaf: 10
     n_jobs: 3
   features: ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 
-             'intensity_width_2', 'h_max', 'core_x', 'core_y', 'alt', 'az']
+             'intensity_width_2', 'h_max', 'core_x', 'core_y']
   fig_name: 'Energy_RF_migmatrix'
   fig_size: [30, 10]
-  test_file_n: 0
+  test_file_n: 200
 
 # --- IRFs ---------------------------------------------------------------------
 irfs:
@@ -123,19 +121,22 @@ irfs:
   ALPHA: 0.2 # scaling between on and off region
   MAX_BG_RADIUS: 1.0 # u.deg
   INITIAL_GH_CUT_EFFICENCY: 0.4
-  MAX_GH_CUT_EFFICIENCY: 0.8
+  MAX_GH_CUT_EFFICIENCY: 0.95
   GH_CUT_EFFICIENCY_STEP: 0.01
-  N_EBINS: 20
-  EMIN: 0.05 # TeV
-  EMAX: 50 # TeV
-  INTENSITY_CUT: 100
-  LEAKAGE2_CUT: 0.2
-  max_files_gamma: 5
-  max_files_proton: 5
-  save_dir: '/mnt/d/CTA-MC/Prod5/CopyIT/MAGIC_4LST/IRFs/'
+  MIN_GH_CUT_EFFICIENCY: 0.85
+  theta_bins_exp_low: -1.9
+  theta_bins_exp_high: 2.3005
+  theta_bins_num: 50
+  sensitivity_bins_exp_low: -1.9
+  sensitivity_bins_exp_high: 2.31
+  sensitivity_bins_num: 5
+  max_files_gamma: 0
+  max_files_proton: 0
+  verbose: True
+  save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/4LST/IRFs/'
   useless_cols: ['pixels_width_1', 'pixels_width_2', 'alt', 'alt_uncert', 'az', 'az_uncert', 'core_x', 'core_y', 
                  'core_uncert', 'h_max', 'h_max_uncert', 'is_valid', 'tel_ids', 'average_intensity', 'goodness_of_fit', 
                  'multiplicity', 'disp_reco', 'disp_reco_err', 'az_reco_mean', 'alt_reco_mean', 'energy_reco_err', 
                  'energy_reco_mean', 'event_class_1', 'event_class_0_mean', 'event_class_1_mean', 'x', 'y', 'r', 'phi',
                  'length', 'width', 'psi', 'skewness', 'kurtosis', 'slope', 'slope_err', 'intercept', 'intercept_err', 
-                 'deviation']
+                 'deviation', 'intensity_width_1', 'intensity_width_2', 'num_islands', 'intensity']
