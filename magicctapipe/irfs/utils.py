@@ -163,6 +163,69 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     return events, pyirf_simu_info
 
 
+def plot_sensitivity(data, unit, label):
+    """Plot sensitivity
+
+    Parameters
+    ----------
+    data : astropy QTable
+        sensitivity data
+    unit : astropy unit
+        sensitivity unit
+    label : str
+        label for plot
+    """
+    e = data["reco_energy_center"]
+    s_mc = e ** 2 * data["flux_sensitivity"]
+    e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
+    plt.errorbar(
+        e.to_value(u.GeV),
+        s_mc.to_value(unit),
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
+        label=label,
+    )
+
+
+def plot_ang_res(data, label):
+    """Plot angular resolution
+
+    Parameters
+    ----------
+    data : astropy QTable
+        angular resolution data
+    label : str
+        label for plot
+    """
+    e = data["reco_energy_center"]
+    e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
+    plt.errorbar(
+        e.to_value(u.GeV),
+        data["angular_resolution"].to_value(u.deg),
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
+        label=label,
+    )
+
+
+def plot_effective_area(data, label):
+    """Plot effective area
+
+    Parameters
+    ----------
+    data : astropy QTable
+        effective area data
+    label : str
+        label for plot
+    """
+    e_low, e_high = data["ENERG_LO"][0], data["ENERG_HI"][0]
+    e = (e_low + e_high) / 2
+    a = data["EFFAREA"][0, 0]
+    e = e_high
+    m2 = u.m * u.m
+    plt.errorbar(
+        e.to_value(u.GeV), a.to_value(m2), xerr=(e - e_low).to_value(u.GeV), label=label
+    )
+
+
 def plot_irfs_MAGIC_LST(config_file):
     """Plot IRFs for MAGIC and/or LST array using pyirf
 
@@ -196,15 +259,8 @@ def plot_irfs_MAGIC_LST(config_file):
     )
     ax.grid(which="both")
 
-    e = sensitivity["reco_energy_center"]
-    s_mc = e ** 2 * sensitivity["flux_sensitivity"]
-    e_low, e_high = sensitivity["reco_energy_low"], sensitivity["reco_energy_high"]
-    plt.errorbar(
-        e.to_value(u.GeV),
-        s_mc.to_value(unit),
-        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
-        label=f"MC gammas/protons",
-    )
+    plot_sensitivity(data=sensitivity, unit=unit, label="MC gammas/protons")
+
     # Plot magic sensitivity
     s = np.loadtxt(
         os.path.join(
@@ -243,13 +299,8 @@ def plot_irfs_MAGIC_LST(config_file):
     ax.set_xscale("log")
     ax.set_xlabel("Reconstructed energy (GeV)")
     ax.set_ylabel("Angular resolution (deg)")
-    e = ang_res["reco_energy_center"]
-    e_low, e_high = ang_res["reco_energy_low"], ang_res["reco_energy_high"]
-    plt.errorbar(
-        e.to_value(u.GeV),
-        ang_res["angular_resolution"].to_value(u.deg),
-        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
-    )
+
+    plot_ang_res(data=ang_res, label="Angular Resolution")
     save_plt(
         n=f"Angular_Resolution", rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
@@ -260,14 +311,7 @@ def plot_irfs_MAGIC_LST(config_file):
     ax.set_xscale("log")
     ax.set_xlabel("Reconstructed energy (GeV)")
     ax.set_ylabel(r"Effective Area ($\mathrm{m^2}$)")
-    e_low, e_high = effective_area["ENERG_LO"][0], effective_area["ENERG_HI"][0]
-    e = (e_low + e_high) / 2
-    a = effective_area["EFFAREA"][0, 0]
-    e = e_high
-    m2 = u.m * u.m
-    plt.errorbar(
-        e.to_value(u.GeV), a.to_value(m2), xerr=(e - e_low).to_value(u.GeV),
-    )
+    plot_effective_area(data=effective_area, label="Effective Area")
     save_plt(
         n=f"Effective_Area", rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
