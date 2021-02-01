@@ -373,7 +373,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     hillas_dict=hillas_p,
                     subarray=subarray,
                     array_pointing=array_pointing,
-                    telescopes_pointings=telescope_pointings,
+                    telescopes_pointings=None,
+                    # telescopes_pointings=telescope_pointings,
                 )
                 write_stereo(
                     stereo_params=stereo_params,
