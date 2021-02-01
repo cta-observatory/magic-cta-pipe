@@ -348,4 +348,7 @@ def plot_MARS_sensitivity(array="4LST", label=""):
     e_low = (10 ** (e_mars_ - err_e_mars_) * u.TeV).to(u.GeV).value
     e_high = (10 ** (e_mars_ + err_e_mars_) * u.TeV).to(u.GeV).value
     err_e_mars = [(e_mars - e_low), (e_high - e_mars)]
-    plt.errorbar(e_mars, s_mars, xerr=err_e_mars, yerr=err_s_mars, label=label)
+    plt.errorbar(
+        e_mars, s_mars, xerr=err_e_mars, yerr=err_s_mars, label=label, linestyle="--"
+    )
+
