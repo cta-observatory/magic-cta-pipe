@@ -317,7 +317,7 @@ def plot_irfs_MAGIC_LST(config_file):
     )
 
 
-def plot_MARS_sensitivity(array="4LST", label="4LST, MARS"):
+def plot_MARS_sensitivity(array="4LST", label=""):
     """Plot Sensitivity from MARS
 
     Parameters
@@ -328,7 +328,7 @@ def plot_MARS_sensitivity(array="4LST", label="4LST, MARS"):
             - "4LST": file = "magic-cta-pipe/data/MARS_4LST.txt"
             - "MAGIC": file = "magic-cta-pipe/data/MARS_MAGIC.txt"
     label : str, optional
-        plot label, by default "4LST, MARS"
+        custom plot label, by default ""
     """
     if array == "4LST":
         f_ = "MARS_4LST.txt"
@@ -337,6 +337,8 @@ def plot_MARS_sensitivity(array="4LST", label="4LST, MARS"):
     else:
         print("Invalid array")
         return
+    if label == "":
+        label = f"{array}, Di Pierro et al. ICRC2019"
     file = os.path.join(os.path.dirname(os.path.realpath(__file__)), f"../../data/{f_}")
     d = np.loadtxt(file, unpack=True)
     e_mars_, s_mars_, err_e_mars_, err_s_mars_ = [d_[:-1] for d_ in d]
