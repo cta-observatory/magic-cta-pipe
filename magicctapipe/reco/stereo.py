@@ -127,29 +127,14 @@ def check_stereo(event, tel_id, hillas_p):
 
 
 def write_stereo(
-    stereo_id,
-    hillas_p,
-    hillas_reco,
-    subarray,
-    array_pointing,
-    telescope_pointings,
-    event_info,
-    writer,
+    stereo_params, stereo_id, event_info, writer,
 ):
     """Check hillas parameters and write stero parameters
 
     Parameters
     ----------
-    hillas_p : dict
-        computed hillas parameters
-    hillas_reco : ctapipe.reco.HillasReconstructor.HillasReconstructor
-        HillasReconstructor
-    subarray : ctapipe.instrument.subarray.SubarrayDescription
-        source.subarray
-    array_pointing : astropy.coordinates.sky_coordinate.SkyCoord
-        array_pointing
-    telescope_pointings : dict
-        telescope_pointings
+    stereo_params : ctapipe.containers.ReconstructedShowerContainer
+        stereo parameters
     event_info : StereoInfoContainer
         StereoInfoContainer object
     writer : ctapipe.io.hdf5tableio.HDF5TableWriter
@@ -160,13 +145,7 @@ def write_stereo(
     ctapipe.containers.ReconstructedShowerContainer
         stereo_params
     """
-    # Reconstruct stereo event. From ctapipe
-    stereo_params = hillas_reco.predict(
-        hillas_dict=hillas_p,
-        subarray=subarray,
-        array_pointing=array_pointing,
-        telescopes_pointings=telescope_pointings,
-    )
+
     event_info.tel_id = stereo_id
     stereo_params.tel_ids = tel_ids_2_num(stereo_params.tel_ids)
     # How to go back

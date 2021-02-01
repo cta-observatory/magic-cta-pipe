@@ -368,13 +368,16 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
             # Eval stereo parameters and write them
             if not mono_mode:
-                stereo_p = write_stereo(
-                    stereo_id=cfg["all_tels"]["stereo_id"],
-                    hillas_p=hillas_p,
-                    hillas_reco=hillas_reco,
-                    subarray=source.subarray,
+                # Reconstruct stereo event. From ctapipe
+                stereo_params = hillas_reco.predict(
+                    hillas_dict=hillas_p,
+                    subarray=subarray,
                     array_pointing=array_pointing,
-                    telescope_pointings=telescope_pointings,
+                    telescopes_pointings=telescope_pointings,
+                )
+                write_stereo(
+                    stereo_params=stereo_params,
+                    stereo_id=cfg["all_tels"]["stereo_id"],
                     event_info=event_info[tel_ids_written[0]],
                     writer=writer,
                 )
@@ -386,7 +389,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     event=event,
                     hillas_p=hillas_p,
                     time_grad=time_grad,
-                    stereo_p=stereo_p,
+                    stereo_params=stereo_params,
                     first=first_time_display,
                     cont=cont,
                     fig=fig,
@@ -404,7 +407,9 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
     return
 
 
-def _display_plots(source, event, hillas_p, time_grad, stereo_p, first, cont, fig, ax):
+def _display_plots(
+    source, event, hillas_p, time_grad, stereo_params, first, cont, fig, ax
+):
 
     ax.set_xlabel("Distance (m)")
     ax.set_ylabel("Distance (m)")
@@ -424,8 +429,8 @@ def _display_plots(source, event, hillas_p, time_grad, stereo_p, first, cont, fi
         event.mc.core_x, event.mc.core_y, s=20, c="k", marker="x", label="True Impact"
     )
     plt.scatter(
-        stereo_p.core_x,
-        stereo_p.core_y,
+        stereo_params.core_x,
+        stereo_params.core_y,
         s=20,
         c="r",
         marker="x",
