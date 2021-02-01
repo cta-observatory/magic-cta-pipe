@@ -316,3 +316,34 @@ def plot_irfs_MAGIC_LST(config_file):
         n=f"Effective_Area", rdir=cfg["irfs"]["save_dir"], vect="pdf",
     )
 
+
+def plot_MARS_sensitivity(array="4LST", label="4LST, MARS"):
+    """Plot Sensitivity from MARS
+
+    Parameters
+    ----------
+    array : str, optional
+        telescope array, by default "4LST"
+        Possibilities:
+            - "4LST": file = "magic-cta-pipe/data/MARS_4LST.txt"
+            - "MAGIC": file = "magic-cta-pipe/data/MARS_MAGIC.txt"
+    label : str, optional
+        plot label, by default "4LST, MARS"
+    """
+    if array == "4LST":
+        f_ = "MARS_4LST.txt"
+    elif array == "MAGIC":
+        f_ = "MARS_MAGIC.txt"
+    else:
+        print("Invalid array")
+        return
+    file = os.path.join(os.path.dirname(os.path.realpath(__file__)), f"../../data/{f_}")
+    d = np.loadtxt(file, unpack=True)
+    e_mars_, s_mars_, err_e_mars_, err_s_mars_ = [d_[:-1] for d_ in d]
+    s_mars = (s_mars_ * u.erg).to(u.TeV).value
+    err_s_mars = (err_s_mars_ * u.erg).to(u.TeV).value
+    e_mars = (10 ** (e_mars_) * u.TeV).to(u.GeV).value
+    e_low = (10 ** (e_mars_ - err_e_mars_) * u.TeV).to(u.GeV).value
+    e_high = (10 ** (e_mars_ + err_e_mars_) * u.TeV).to(u.GeV).value
+    err_e_mars = [(e_mars - e_low), (e_high - e_mars)]
+    plt.errorbar(e_mars, s_mars, xerr=err_e_mars, yerr=err_s_mars, label=label)
