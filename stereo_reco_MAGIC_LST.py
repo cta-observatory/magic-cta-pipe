@@ -371,7 +371,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 # Reconstruct stereo event. From ctapipe
                 stereo_params = hillas_reco.predict(
                     hillas_dict=hillas_p,
-                    subarray=subarray,
+                    subarray=source.subarray,
                     array_pointing=array_pointing,
                     telescopes_pointings=None,
                     # telescopes_pointings=telescope_pointings,
