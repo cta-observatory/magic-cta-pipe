@@ -70,8 +70,8 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     cosz_b = math.nan
 
     psi = hillas_params_dict[1].psi.to("rad")
-    cos_psi = math.cos(psi)
-    sin_psi = math.sin(psi)
+    cos_psi = math.cos(psi.value)
+    sin_psi = math.sin(psi.value)
 
     cosx_b, cosy_b, cosz_b = camera_to_direction(camera_dist, M1_pointing_Az, M1_pointing_Zd, cog_x+cos_psi, cog_y+sin_psi)
 
@@ -100,8 +100,8 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     cosz_b = math.nan
 
     psi = hillas_params_dict[2].psi.to("rad")
-    cos_psi = math.cos(psi)
-    sin_psi = math.sin(psi)
+    cos_psi = math.cos(psi.value)
+    sin_psi = math.sin(psi.value)
 
     cosx_b, cosy_b, cosz_b = camera_to_direction(camera_dist, M2_pointing_Az, M2_pointing_Zd, cog_x+cos_psi, cog_y+sin_psi)
 
@@ -146,12 +146,12 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     #
      
     #get telescope position:
-    M1_x = subarray.positions[1][0].to("cm")
-    M1_y = subarray.positions[1][1].to("cm")
-    M1_z = subarray.positions[1][2].to("cm")
-    M2_x = subarray.positions[2][0].to("cm")
-    M2_y = subarray.positions[2][1].to("cm")
-    M2_z = subarray.positions[2][2].to("cm")
+    M1_x = subarray.positions[1][0].to("cm").value
+    M1_y = subarray.positions[1][1].to("cm").value
+    M1_z = subarray.positions[1][2].to("cm").value
+    M2_x = subarray.positions[2][0].to("cm").value
+    M2_y = subarray.positions[2][1].to("cm").value
+    M2_z = subarray.positions[2][2].to("cm").value
 
     # Correction of M1 and M2 positions in the z=0 plan if M1_z or M2_z is not null
     # if(fabs(M1_z)>1.){ 
