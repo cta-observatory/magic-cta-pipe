@@ -16,10 +16,10 @@ def camera_to_direction(rc, CTphi, CTtheta, x, y):
     xc = x/rc
     yc = y/rc
 
-    norm = 1/math.sqrt(1+xc.value*xc.value+yc.value*yc.value)
+    norm = 1/math.sqrt(1+xc*xc+yc*yc)
 
-    xref = xc.value * norm
-    yref = yc.value * norm
+    xref = xc * norm
+    yref = yc * norm
     zref = -1 * norm
 
     cosx =  xref * sinphi + yref * costheta*cosphi - zref * sintheta*cosphi
