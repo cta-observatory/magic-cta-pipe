@@ -298,7 +298,7 @@ def process_dataset_data(input_mask, output_name):
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Creating an input source
-        source = MAGICEventSource(input_url=input_mask)
+        source = MAGICEventSource(input_url=input_mask, max_events=1000)
 
         camera = source.subarray.tel[1].camera
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
@@ -394,7 +394,7 @@ def process_dataset_data(input_mask, output_name):
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
                         f"has an ellipse with width=NaN: stereo parameters calculation skipped.")
                 else:
-                    stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing)
+                    stereo_params = stereo_par_calc_mars(computed_hillas_params, source.subarray, telescope_pointings)
                     event_info.tel_id = -1
                     # Storing the result
                     writer.write("stereo_params", (event_info, stereo_params))
