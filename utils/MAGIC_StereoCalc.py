@@ -56,8 +56,8 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
 
     camera_dist = 17.0*1000
 
-    cog_x = hillas_params_dict[1].x.to("mm")
-    cog_y = hillas_params_dict[1].y.to("mm")
+    cog_x = hillas_params_dict[1].x.to("mm").value
+    cog_y = hillas_params_dict[1].y.to("mm").value
 
     M1_cosx_a, M1_cosy_a, M1_cosz_a = camera_to_direction(camera_dist, M1_pointing_Az,M1_pointing_Zd, cog_x, cog_y)
 
@@ -90,8 +90,8 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     M2_cosy_a = math.nan
     M2_cosz_a = math.nan # Direction from M2 to the shower c.o.g.
 
-    cog_x = hillas_params_dict[2].x.to("mm")
-    cog_y = hillas_params_dict[2].y.to("mm")
+    cog_x = hillas_params_dict[2].x.to("mm").value
+    cog_y = hillas_params_dict[2].y.to("mm").value
 
     M2_cosx_a, M2_cosy_a, M2_cosz_a = camera_to_direction(camera_dist, M2_pointing_Az, M2_pointing_Zd, cog_x, cog_y)
 
