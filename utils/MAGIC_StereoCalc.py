@@ -43,7 +43,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     M1_pointing_Az = telescope_pointing_dict[1].az.value
     M1_pointing_Zd = np.pi - telescope_pointing_dict[1].alt.value
     M2_pointing_Az = telescope_pointing_dict[2].az.value
-    M2_pointing_Zd = np.pi - telescope_pointing_dict[2].al.value
+    M2_pointing_Zd = np.pi - telescope_pointing_dict[2].alt.value
 
     # Start Stereo-reconstruction
     #
