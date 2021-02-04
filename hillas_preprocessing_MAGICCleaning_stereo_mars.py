@@ -396,11 +396,12 @@ def process_dataset_data(input_mask, output_name):
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
                         f"has an ellipse with width=NaN: stereo parameters calculation skipped.")
                 else:
-                    stereo_params = stereo_par_calc_mars(computed_hillas_params, source.subarray, telescope_pointings)
+                    stereo_params_mars = stereo_par_calc_mars(computed_hillas_params, source.subarray, telescope_pointings)
+                    stereo_params_cta = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing)
                     event_info.tel_id = -1
                     # Storing the result
-                    writer.write("stereo_params", (event_info, stereo_params))
-
+                    writer.write("stereo_params_mars", (event_info, stereo_params_mars))
+                    writer.write("stereo_params_cta", (event_info, stereo_params_cta))
 
 # =================
 # === Main code ===
