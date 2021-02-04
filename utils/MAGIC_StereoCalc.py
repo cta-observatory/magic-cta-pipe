@@ -69,11 +69,17 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     cosy_b = math.nan
     cosz_b = math.nan
 
-    psi = hillas_params_dict[1].psi.to("rad")
-    cos_psi = math.cos(psi.value)
-    sin_psi = math.sin(psi.value)
+    psi = hillas_params_dict[1].psi.value
+    if psi > 0:
+        delta = 90 - psi
+    elif psi < 0:
+        delta = -1*(90 + psi)
+    else:
+        delta = 0
+    cos_delta = math.cos(delta/rad_to_deg)
+    sin_delta = math.sin(delta/rad_to_deg)
 
-    cosx_b, cosy_b, cosz_b = camera_to_direction(camera_dist, M1_pointing_Az, M1_pointing_Zd, cog_x+cos_psi, cog_y+sin_psi)
+    cosx_b, cosy_b, cosz_b = camera_to_direction(camera_dist, M1_pointing_Az, M1_pointing_Zd, cog_x+cos_delta, cog_y+sin_delta)
 
     #
     # The vectorial product of the latter two vectors is a vector
@@ -99,11 +105,17 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     cosy_b = math.nan
     cosz_b = math.nan
 
-    psi = hillas_params_dict[2].psi.to("rad")
-    cos_psi = math.cos(psi.value)
-    sin_psi = math.sin(psi.value)
+    psi = hillas_params_dict[2].psi.value
+    if psi > 0:
+        delta = 90 - psi
+    elif psi < 0:
+        delta = -1*(90 + psi)
+    else:
+        delta = 0
+    cos_delta = math.cos(delta/rad_to_deg)
+    sin_delta = math.sin(delta/rad_to_deg)
 
-    cosx_b, cosy_b, cosz_b = camera_to_direction(camera_dist, M2_pointing_Az, M2_pointing_Zd, cog_x+cos_psi, cog_y+sin_psi)
+    cosx_b, cosy_b, cosz_b = camera_to_direction(camera_dist, M2_pointing_Az, M2_pointing_Zd, cog_x+cos_delta, cog_y+sin_delta)
 
     M2_SPlanVectX = M2_cosy_a*cosz_b - cosy_b*M2_cosz_a
     M2_SPlanVectY = M2_cosz_a*cosx_b - cosz_b*M2_cosx_a
