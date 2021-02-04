@@ -40,10 +40,10 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     # Pointing position of the telescopes
     # We should have a option to use or not the starguider correction
     #
-    M1_pointing_Az = telescope_pointing_dict[1].az.value
-    M1_pointing_Zd = np.pi - telescope_pointing_dict[1].alt.value
-    M2_pointing_Az = telescope_pointing_dict[2].az.value
-    M2_pointing_Zd = np.pi - telescope_pointing_dict[2].alt.value
+    M1_pointing_Az = telescope_pointing_dict[1].az.value/rad_to_deg
+    M1_pointing_Zd = (90. - telescope_pointing_dict[1].alt.value)/rad_to_deg
+    M2_pointing_Az = telescope_pointing_dict[2].az.value/rad_to_deg
+    M2_pointing_Zd = (90. - telescope_pointing_dict[2].alt.value)/rad_to_deg
 
     # Start Stereo-reconstruction
     #
