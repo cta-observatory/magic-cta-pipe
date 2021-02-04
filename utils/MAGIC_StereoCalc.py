@@ -29,7 +29,7 @@ def camera_to_direction(rc, CTphi, CTtheta, x, y):
     cosy *= -1
     cosz *= -1
 
-    return cosx, cosy, cosy
+    return cosx, cosy, cosz
 
 def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     is_valid = False
