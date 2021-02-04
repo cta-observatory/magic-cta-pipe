@@ -69,7 +69,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     cosy_b = math.nan
     cosz_b = math.nan
 
-    psi = hillas_params_dict[1].psi.value
+    psi = hillas_params_dict[1].psi.to("deg").value
     if psi > 0:
         delta = 90 - psi
     elif psi < 0:
@@ -105,7 +105,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     cosy_b = math.nan
     cosz_b = math.nan
 
-    psi = hillas_params_dict[2].psi.value
+    psi = hillas_params_dict[2].psi.to("deg").value
     if psi > 0:
         delta = 90 - psi
     elif psi < 0:
