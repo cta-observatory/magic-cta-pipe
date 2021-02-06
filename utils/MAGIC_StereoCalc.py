@@ -265,7 +265,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     is_valid = True
     result = ReconstructedShowerContainer(
         alt=(90. - fDirectionZd)*u.deg,
-        az=-fDirectionAz*u.deg,
+        az=fDirectionAz*u.deg,
         core_x=(fCoreX/100.0)*u.m,
         core_y=(fCoreY/100.0)*u.m,
         tel_ids=[h for h in hillas_params_dict.keys()],
