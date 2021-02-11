@@ -1,8 +1,18 @@
 import math
 import numpy as np
+from numpy import nan
 from astropy import units as u
 
+from ctapipe.core import Container, Field
 from ctapipe.containers import ReconstructedShowerContainer
+
+class ReconstructedShowerContainerMars(Container):
+    """ Collection of stereo parameters """
+
+    container_prefix = "stereo_params_mars"
+    stereo_params_ctapipe = Field(ReconstructedShowerContainer(), "Stereo parameters ctapipe")
+    impact_1 = Field(nan * u.m, "Impact M1", unit=u.m)
+    impact_2 = Field(nan * u.m, "Impact M2", unit=u.m)
 
 def camera_to_direction(rc, CTphi, CTtheta, x, y):
     """Converts a position in camera coordinates to unit vector
