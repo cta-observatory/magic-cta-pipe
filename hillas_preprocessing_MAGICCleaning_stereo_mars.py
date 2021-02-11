@@ -92,7 +92,7 @@ def scale_camera_geometry(camera, factor):
     """
     pix_x_scaled = factor*camera.pix_x
     pix_y_scaled = factor*camera.pix_y
-    pix_area_scaled = geom.guess_pixel_area(pix_x_scaled, pix_y_scaled, camera.pix_type)
+    pix_area_scaled = camera.guess_pixel_area(pix_x_scaled, pix_y_scaled, camera.pix_type)
 
     return CameraGeometry(
         camera_name='MAGICCam',
