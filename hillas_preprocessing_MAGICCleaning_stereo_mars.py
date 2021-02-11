@@ -151,6 +151,8 @@ def process_dataset_mc(input_mask, output_name):
         findhotpixels = False,
     )
 
+    aberration_factor = 1./1.0713
+
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -168,8 +170,9 @@ def process_dataset_mc(input_mask, output_name):
         source = MAGICEventSource(input_url=input_mask)
         
         camera = source.subarray.tel[1].camera
+        camera_scaled = scale_camera_geometry(camera, aberration_factor)
 
-        magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
+        magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
 
         obs_id_last = -1
 
@@ -200,7 +203,7 @@ def process_dataset_mc(input_mask, output_name):
 
                 clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time)
 
-                num_islands = get_num_islands(camera, clean_mask, event_image)
+                num_islands = get_num_islands(camera_scaled, clean_mask, event_image)
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -211,16 +214,16 @@ def process_dataset_mc(input_mask, output_name):
                 if np.any(event_image_cleaned):
                     try:
                         # If event has survived the cleaning, computing the Hillas parameters
-                        hillas_params = hillas_parameters(camera, event_image_cleaned)
+                        hillas_params = hillas_parameters(camera_scaled, event_image_cleaned)
                         image_mask = event_image_cleaned > 0
                         timing_params = timing_parameters(
-                            camera,
+                            camera_scaled,
                             event_image_cleaned,
                             event_pulse_time_cleaned,
                             hillas_params,
                             image_mask
                         )
-                        leakage_params = leakage(camera, event_image, clean_mask)
+                        leakage_params = leakage(camera_scaled, event_image, clean_mask)
 
                         computed_hillas_params[tel_id] = hillas_params
 
@@ -315,6 +318,8 @@ def process_dataset_data(input_mask, output_name):
         pedestalType = 'FromExtractorRndm'
     )
 
+    aberration_factor = 1./1.0713
+
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -334,7 +339,8 @@ def process_dataset_data(input_mask, output_name):
         source = MAGICEventSource(input_url=input_mask)
 
         camera = source.subarray.tel[1].camera
-        magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
+        camera_scaled = scale_camera_geometry(camera, aberration_factor)
+        magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
 
         # Looping over the events
@@ -368,7 +374,7 @@ def process_dataset_data(input_mask, output_name):
 
                 clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time,unsuitable_mask=unsuitable_mask)
 
-                num_islands = get_num_islands(camera, clean_mask, event_image)
+                num_islands = get_num_islands(camera_scaled, clean_mask, event_image)
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -379,16 +385,16 @@ def process_dataset_data(input_mask, output_name):
                 if np.any(event_image_cleaned):
                     try:
                         # If event has survived the cleaning, computing the Hillas parameters
-                        hillas_params = hillas_parameters(camera, event_image_cleaned)
+                        hillas_params = hillas_parameters(camera_scaled, event_image_cleaned)
                         image_mask = event_image_cleaned > 0
                         timing_params = timing_parameters(
-                            camera,
+                            camera_scaled,
                             event_image_cleaned,
                             event_pulse_time_cleaned,
                             hillas_params,
                             image_mask
                         )
-                        leakage_params = leakage(camera, event_image, clean_mask)
+                        leakage_params = leakage(camera_scaled, event_image, clean_mask)
 
                         computed_hillas_params[tel_id] = hillas_params
 
