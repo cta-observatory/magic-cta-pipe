@@ -41,37 +41,37 @@ image_cleaning:
 
 energy_rf:
     save_name: "RFs/energy_rf.joblib"
-    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 50) & (intensity < 50000) & (length > 0.0) & (intensity_width_1 < 0.15) & (is_valid == 1)"
     settings:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
     
     features:
-        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2', 'h_max', 'alt', 'az']
+        ['slope', 'length', 'width', 'intensity', 'intensity_width_1', 'intensity_width_2', 'impact_1', 'impact_2', 'h_max']
 
 direction_rf:
     save_name: "RFs/direction_rf.joblib"
-    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 50) & (intensity < 50000) & (length > 0.0) & (intensity_width_1 < 0.15) & (is_valid == 1)"
     settings:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
     
     features:
-        'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'alt', 'az']
-        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'alt', 'az']
+        'disp': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'zd']
+        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'zd']
 
 classifier_rf:
     save_name: "RFs/classifier_rf.joblib"
-    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 30) & (length > 0.0) & (intensity_width_1 < 0.15)"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 50) & (intensity < 50000) & (length > 0.0) & (intensity_width_1 < 0.15) & (is_valid == 1)"
     settings:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
     
     features:
-        ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands', 'h_max', 'alt', 'az']
+        ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2']
 
 irf:
     output_name: "/path/to/IRF_file/outfile.fits"
