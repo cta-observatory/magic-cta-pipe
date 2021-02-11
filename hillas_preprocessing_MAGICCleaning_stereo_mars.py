@@ -24,6 +24,7 @@ from ctapipe.core.container import Container, Field
 from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters, leakage
 from ctapipe.image.timing import timing_parameters
+from ctapipe.instrument import CameraGeometry
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
@@ -73,6 +74,36 @@ def get_num_islands(camera, clean_mask, event_image):
     num_islands, labels = connected_components(clean_neighbors, directed=False)
 
     return num_islands
+
+def scale_camera_geometry(camera, factor):
+    """Scale given camera geometry of a given (constant) factor
+    
+    Parameters
+    ----------
+    camera : CameraGeometry
+        Camera geometry
+    factor : float
+        Scale factor
+    
+    Returns
+    -------
+    CameraGeometry
+        Scaled camera geometry
+    """
+    pix_x_scaled = factor*camera.pix_x
+    pix_y_scaled = factor*camera.pix_y
+    pix_area_scaled = geom.guess_pixel_area(pix_x_scaled, pix_y_scaled, camera.pix_type)
+
+    return CameraGeometry(
+        camera_name='MAGICCam',
+        pix_id=camera.pix_id,
+        pix_x=pix_x_scaled,
+        pix_y=pix_y_scaled,
+        pix_area=pix_area_scaled,
+        pix_type=camera.pix_type,
+        pix_rotation=camera.pix_rotation,
+        cam_rotation=camera.cam_rotation
+        )
 
 def process_dataset_mc(input_mask, output_name):
     """Create event metadata container to hold event / observation / telescope
