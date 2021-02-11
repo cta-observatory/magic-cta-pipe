@@ -54,8 +54,14 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     M1_cosy_a = math.nan
     M1_cosz_a = math.nan # Direction from M1 to the shower c.o.g.
 
+    # average distance of the camera from the mirror, in mm
     camera_dist = 17.0*1000
 
+    # camera reference system in ctapipe and MARS is different
+    # transformation is:
+    # x' = -x
+    # y' = -y
+    # also, MARS works with mm
     cog_x = -1*hillas_params_dict[1].y.to("mm").value
     cog_y = -1*hillas_params_dict[1].x.to("mm").value
 
