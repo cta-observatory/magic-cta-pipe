@@ -5,9 +5,27 @@ from astropy import units as u
 from ctapipe.containers import ReconstructedShowerContainer
 
 def camera_to_direction(rc, CTphi, CTtheta, x, y):
-    #
-    # convention of phi defined in TDAS 01-05
-    #
+    """Converts a position in camera coordinates to unit vector
+
+    Parameters
+    ----------
+    rc : float
+        Average distance between camera and reflector
+    CTphi : float
+        Phi angle of the telescope pointing (azimuth)
+    CTtheta : float
+        Theta angle of the telescope pointing (zenith)
+    x : float
+        x coordinate in camera
+    y : float
+        y coordinate in camera
+
+    Returns
+    -------
+    Tuple
+        Tuple with unit vector direction cosines
+    """
+
     sinphi   = math.sin(CTphi)
     cosphi   = math.cos(CTphi)
     costheta = math.cos(CTtheta)
@@ -32,6 +50,22 @@ def camera_to_direction(rc, CTphi, CTtheta, x, y):
     return cosx, cosy, cosz
 
 def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
+    """Calculate stereo parameters according to MARS calculation
+
+    Parameters
+    ----------
+    hillas_params_dict : dict
+        Dictionary of HillasParametersContainer
+    subarray : SubarrayDescription
+        Subarray description
+    telescope_pointing_dict : dict
+        Dictionary of PointingContainer
+    
+    Returns
+    -------
+    ReconstructedShowerContainer
+        Container of stereo parameters
+    """
     is_valid = False
 
     rad_to_deg = 180./np.pi
