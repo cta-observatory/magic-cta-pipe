@@ -180,7 +180,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     norm = math.sqrt(showerdir_cosx*showerdir_cosx + showerdir_cosy*showerdir_cosy + showerdir_cosz*showerdir_cosz)
 
     if (norm==0):
-        return ReconstructedShowerContainer()
+        return ReconstructedShowerContainerMars()
     if (showerdir_cosz<0):
         norm*=-1. # to have the vector pointing up
 
@@ -229,7 +229,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     fCoreY = (M2proj_x - M1proj_x)*M1_SPlanVectX*M2_SPlanVectX + M2proj_y*M2_SPlanVectY*M1_SPlanVectX - M1proj_y*M1_SPlanVectY*M2_SPlanVectX
     den = M2_SPlanVectY*M1_SPlanVectX - M1_SPlanVectY*M2_SPlanVectX
     if(den==0):
-        return ReconstructedShowerContainer()
+        return ReconstructedShowerContainerMars()
     fCoreX /= -den
     fCoreY /= den
 
@@ -240,13 +240,13 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     scalar = (fCoreX-M1_x)*showerdir_cosx + (fCoreY-M1_y)*showerdir_cosy - M1_z*showerdir_cosz
     fM1Impact = (fCoreX-M1_x)*(fCoreX-M1_x) + (fCoreY-M1_y)*(fCoreY-M1_y) + M1_z*M1_z - scalar*scalar
     if(fM1Impact<0.):
-        return ReconstructedShowerContainer()
+        return ReconstructedShowerContainerMars()
     fM1Impact = math.sqrt(fM1Impact)
 
     scalar = (fCoreX-M2_x)*showerdir_cosx + (fCoreY-M2_y)*showerdir_cosy - M2_z*showerdir_cosz
     fM2Impact = (fCoreX-M2_x)*(fCoreX-M2_x) + (fCoreY-M2_y)*(fCoreY-M2_y) + M2_z*M2_z - scalar*scalar
     if(fM2Impact<0.):
-        return ReconstructedShowerContainer()
+        return ReconstructedShowerContainerMars()
     fM2Impact = math.sqrt(fM2Impact)
 
     # Same technique for the E-W and N-S components:
@@ -279,7 +279,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     # X = a1*(Z-M1_z) + M1_x = a1 Z + (M1_x-a1*M1_z)
     # Y = c1*(Z-M1_z) + M1_y = c1 Z + (M1_y-c1*M1_z)
     if(M1_cosz_a==0):
-        return ReconstructedShowerContainer()
+        return ReconstructedShowerContainerMars()
     a1 = M1_cosx_a/M1_cosz_a
     c1 = M1_cosy_a/M1_cosz_a
 
@@ -287,7 +287,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     # X = a2*(Z-M2_z) + M2_x = a2 Z + (M2_x-a2*M2_z)
     # Y = c2*(Z-M2_z) + M2_y = c2 Z + (M2_y-c2*M2_z)
     if(M2_cosz_a==0):
-        return ReconstructedShowerContainer()
+        return ReconstructedShowerContainerMars()
     a2 = M2_cosx_a/M2_cosz_a
     c2 = M2_cosy_a/M2_cosz_a
 
@@ -295,7 +295,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     # X = a3 Z + fCoreX
     # Y = c3 Z + fCoreY
     if(showerdir_cosz==0):
-        return ReconstructedShowerContainer()
+        return ReconstructedShowerContainerMars()
     a3 = showerdir_cosx/showerdir_cosz
     c3 = showerdir_cosy/showerdir_cosz
 
@@ -313,7 +313,7 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     fMaxHeight /= ((a1-a2)*(a1-a2) + (c1-c2)*(c1-c2) + (a2-a3)*(a2-a3) + (c2-c3)*(c2-c3) + (a3-a1)*(a3-a1) + (c3-c1)*(c3-c1))
 
     is_valid = True
-    result = ReconstructedShowerContainer(
+    stereo_params_ctapipe = ReconstructedShowerContainer(
         alt=(90. - fDirectionZd)*u.deg,
         az=fDirectionAz*u.deg,
         core_x=(fCoreX/100.0)*u.m,
@@ -323,5 +323,11 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
         is_valid=is_valid,
         h_max=(fMaxHeight/100.0)*u.m,
     )
+
+    result = ReconstructedShowerContainerMars(
+        stereo_params_ctapipe = stereo_params_ctapipe,
+        impact_1 = (fM1Impact/100.0)*u.m,
+        impact_2 = (fM2Impact/100.0)*u.m,
+        )
 
     return result
