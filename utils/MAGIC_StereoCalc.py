@@ -9,8 +9,35 @@ from ctapipe.containers import ReconstructedShowerContainer
 class ReconstructedShowerContainerMars(Container):
     """ Collection of stereo parameters """
 
-    container_prefix = "stereo_params_mars"
-    stereo_params_ctapipe = Field(ReconstructedShowerContainer(), "Stereo parameters ctapipe")
+    alt = Field(nan * u.deg, "reconstructed altitude", unit=u.deg)
+    alt_uncert = Field(nan * u.deg, "reconstructed altitude uncertainty", unit=u.deg)
+    az = Field(nan * u.deg, "reconstructed azimuth", unit=u.deg)
+    az_uncert = Field(nan * u.deg, "reconstructed azimuth uncertainty", unit=u.deg)
+    core_x = Field(
+        nan * u.m, "reconstructed x coordinate of the core position", unit=u.m
+    )
+    core_y = Field(
+        nan * u.m, "reconstructed y coordinate of the core position", unit=u.m
+    )
+    core_uncert = Field(
+        nan * u.m, "uncertainty of the reconstructed core position", unit=u.m
+    )
+    h_max = Field(nan * u.m, "reconstructed height of the shower maximum", unit=u.m)
+    h_max_uncert = Field(nan * u.m, "uncertainty of h_max", unit=u.m)
+    is_valid = Field(
+        False,
+        (
+            "direction validity flag. True if the shower direction"
+            "was properly reconstructed by the algorithm"
+        ),
+    )
+    tel_ids = Field(
+        [], ("list of the telescope ids used in the" " reconstruction of the shower")
+    )
+    average_intensity = Field(
+        nan, "average intensity of the intensities used for reconstruction"
+    )
+    goodness_of_fit = Field(nan, "measure of algorithm success (if fit)")
     impact_1 = Field(nan * u.m, "Impact M1", unit=u.m)
     impact_2 = Field(nan * u.m, "Impact M2", unit=u.m)
 
@@ -313,7 +340,8 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
     fMaxHeight /= ((a1-a2)*(a1-a2) + (c1-c2)*(c1-c2) + (a2-a3)*(a2-a3) + (c2-c3)*(c2-c3) + (a3-a1)*(a3-a1) + (c3-c1)*(c3-c1))
 
     is_valid = True
-    stereo_params_ctapipe = ReconstructedShowerContainer(
+
+    result = ReconstructedShowerContainerMars(
         alt=(90. - fDirectionZd)*u.deg,
         az=fDirectionAz*u.deg,
         core_x=(fCoreX/100.0)*u.m,
@@ -322,10 +350,6 @@ def stereo_par_calc_mars(hillas_params_dict, subarray, telescope_pointing_dict):
         average_intensity=np.mean([h.intensity for h in hillas_params_dict.values()]),
         is_valid=is_valid,
         h_max=(fMaxHeight/100.0)*u.m,
-    )
-
-    result = ReconstructedShowerContainerMars(
-        stereo_params_ctapipe = stereo_params_ctapipe,
         impact_1 = (fM1Impact/100.0)*u.m,
         impact_2 = (fM2Impact/100.0)*u.m,
         )
