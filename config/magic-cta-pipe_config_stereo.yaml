@@ -59,8 +59,8 @@ direction_rf:
         n_jobs: 3
     
     features:
-        'disp': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'zd']
-        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'zd']
+        'disp': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'alt']
+        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'alt']
 
 classifier_rf:
     save_name: "RFs/classifier_rf.joblib"
