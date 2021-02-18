@@ -129,15 +129,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         display plots, by default False
     """
 
-    # ONLY STEREO
-    # if len(cfg["all_tels"]["tel_ids"]) == 1:
-    #     mono_mode = True
-    # else:
-    #     mono_mode = False
-    mono_mode = False
-
     tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
-    if len(tel_ids) < 2 and not mono_mode:
+    if len(tel_ids) < 2:
         print("Select at least two telescopes in the MAGIC + LST array")
         return
 
@@ -211,9 +204,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # Process only if I have at least two tel_ids of the selected array
             # sel_tels: selected telescopes with data in the event
             sel_tels = list(set(event.r0.tels_with_data).intersection(tel_ids))
-            if not mono_mode and len(sel_tels) < 2:
-                continue
-            elif mono_mode and len(sel_tels) < 1:
+            if len(sel_tels) < 2:
                 continue
 
             # Inits
@@ -340,17 +331,29 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
             # --- Check if event is fine ---
             # Ignore events with less than two telescopes
-            if not mono_mode and len(hillas_p.keys()) < 2:
+            if len(hillas_p.keys()) < 2:
                 print(f"EVENT with LESS than 2 hillas_p (sel_tels={sel_tels})")
                 continue
-            elif mono_mode and len(hillas_p.keys()) < 1:
-                print(f"EVENT with NO 2 hillas_p (sel_tels={sel_tels})")
 
             # Check hillas parameters for stereo reconstruction
-            if not mono_mode:
-                if not check_stereo(event=event, tel_id=tel_id, hillas_p=hillas_p):
-                    print("STEREO CHECK NOT PASSED")
-                    continue
+            if not check_stereo(event=event, tel_id=tel_id, hillas_p=hillas_p):
+                print("STEREO CHECK NOT PASSED")
+                continue
+
+            # Eval stereo parameters and write them
+            # Reconstruct stereo event. From ctapipe
+            stereo_params = hillas_reco.predict(
+                hillas_dict=hillas_p,
+                subarray=source.subarray,
+                array_pointing=array_pointing,
+                telescopes_pointings=None,
+                # telescopes_pointings=telescope_pointings,
+            )
+
+            # Eval impact
+            hillas_p = eval_impact(
+                subarray=source.subarray, hillas_p=hillas_p, stereo_params=stereo_params
+            )
 
             # --- Store DL1 data ---
             # Store hillas params
@@ -366,22 +369,12 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     timing_p=timing_p[tel_id],
                 )
 
-            # Eval stereo parameters and write them
-            if not mono_mode:
-                # Reconstruct stereo event. From ctapipe
-                stereo_params = hillas_reco.predict(
-                    hillas_dict=hillas_p,
-                    subarray=source.subarray,
-                    array_pointing=array_pointing,
-                    telescopes_pointings=None,
-                    # telescopes_pointings=telescope_pointings,
-                )
-                write_stereo(
-                    stereo_params=stereo_params,
-                    stereo_id=cfg["all_tels"]["stereo_id"],
-                    event_info=event_info[tel_ids_written[0]],
-                    writer=writer,
-                )
+            write_stereo(
+                stereo_params=stereo_params,
+                stereo_id=cfg["all_tels"]["stereo_id"],
+                event_info=event_info[tel_ids_written[0]],
+                writer=writer,
+            )
 
             # --- Display plot ---
             if display and go:
