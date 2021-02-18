@@ -1,3 +1,5 @@
+import numpy as np
+
 from scipy.sparse.csgraph import connected_components
 
 import astropy.units as u
