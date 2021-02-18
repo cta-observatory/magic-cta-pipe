@@ -74,7 +74,6 @@ def clean_image_params(geom, image, clean, peakpos):
 
 def eval_impact(subarray, hillas_p, stereo_params):
     # Impact parameter for energy estimation (/ tel)
-    subarray = source.subarray
     ground_frame = GroundFrame()
     for tel_id in hillas_p.keys():
         pos = subarray.positions[tel_id]
