@@ -1,5 +1,8 @@
 from scipy.sparse.csgraph import connected_components
 
+import astropy.units as u
+
+
 from ctapipe.image import leakage, hillas_parameters
 from ctapipe.image.timing import timing_parameters
 from ctapipe.coordinates import GroundFrame
