@@ -4,6 +4,8 @@ from ctapipe.image import leakage, hillas_parameters
 from ctapipe.image.timing import timing_parameters
 from ctapipe.coordinates import GroundFrame
 
+from astropy.coordinates import SkyCoord, AltAz
+
 
 def get_num_islands_MAGIC(camera, clean_mask, event_image):
     """Eval num islands for MAGIC
