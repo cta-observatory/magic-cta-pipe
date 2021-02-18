@@ -8,6 +8,7 @@ import astropy.units as u
 from ctapipe.image import leakage, hillas_parameters
 from ctapipe.image.timing import timing_parameters
 from ctapipe.coordinates import GroundFrame
+from ctapipe.core.container import Container, Field
 
 from astropy.coordinates import SkyCoord, AltAz
 
@@ -82,6 +83,11 @@ def clean_image_params(geom, image, clean, peakpos):
 def eval_impact(subarray, hillas_p, stereo_params):
     # Impact parameter for energy estimation (/ tel)
     ground_frame = GroundFrame()
+    impact_p = {}
+
+    class ImpactContainer(Container):
+        impact = Field(-1, "Impact")
+
     for tel_id in hillas_p.keys():
         pos = subarray.positions[tel_id]
         tel_ground = SkyCoord(pos[0], pos[1], pos[2], frame=ground_frame)
@@ -90,7 +96,8 @@ def eval_impact(subarray, hillas_p, stereo_params):
             stereo_params.core_x, stereo_params.core_y, 0 * u.m, frame=ground_frame,
         )
         # Should be better handled (tilted frame)
-        hillas_p[tel_id]["impact"] = np.sqrt(
+        impact_ = np.sqrt(
             (core_ground.x - tel_ground.x) ** 2 + (core_ground.y - tel_ground.y) ** 2
         )
-    return hillas_p
+        impact_p[tel_id] = ImpactContainer(impact=impact_)
+    return impact_p

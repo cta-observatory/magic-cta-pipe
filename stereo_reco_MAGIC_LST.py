@@ -351,7 +351,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             )
 
             # Eval impact
-            hillas_p = eval_impact(
+            impact_p = eval_impact(
                 subarray=source.subarray, hillas_p=hillas_p, stereo_params=stereo_params
             )
 
