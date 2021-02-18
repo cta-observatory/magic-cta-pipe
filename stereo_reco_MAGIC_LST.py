@@ -367,6 +367,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     hillas_p=hillas_p[tel_id],
                     leakage_p=leakage_p[tel_id],
                     timing_p=timing_p[tel_id],
+                    impact_p=impact_p[tel_id],
                 )
 
             write_stereo(

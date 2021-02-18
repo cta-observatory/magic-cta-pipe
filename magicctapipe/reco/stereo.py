@@ -7,7 +7,7 @@ from magicctapipe.reco.stereo import *
 from magicctapipe.utils.tels import *
 
 
-def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p):
+def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p, impact_p):
     """Write
 
     Parameters
@@ -22,8 +22,10 @@ def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p):
         leakage parameters
     timing_p : ctapipe.containers.TimingParametersContainer
         timing parameters
+    impact_p : magic-cta-pipe custom impact container
+        impact parameters
     """
-    writer.write("hillas_params", (event_info, hillas_p, leakage_p, timing_p))
+    writer.write("hillas_params", (event_info, hillas_p, leakage_p, timing_p, impact_p))
 
 
 def check_write_stereo(
