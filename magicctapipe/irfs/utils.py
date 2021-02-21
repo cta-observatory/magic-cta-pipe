@@ -317,7 +317,7 @@ def plot_irfs_MAGIC_LST(config_file):
     )
 
 
-def plot_MARS_sensitivity(array="4LST", label=""):
+def plot_MARS_sensitivity(array="4LST", label="", print_data=False):
     """Plot Sensitivity from MARS
 
     Parameters
@@ -329,6 +329,8 @@ def plot_MARS_sensitivity(array="4LST", label=""):
             - "MAGIC": file = "magic-cta-pipe/data/MARS_MAGIC.txt"
     label : str, optional
         custom plot label, by default ""
+    print_data : bool, optional
+        print data, by default False
     """
     if array == "4LST":
         f_ = "MARS_4LST.txt"
@@ -351,4 +353,7 @@ def plot_MARS_sensitivity(array="4LST", label=""):
     plt.errorbar(
         e_mars, s_mars, xerr=err_e_mars, yerr=err_s_mars, label=label, linestyle="--"
     )
+    if print_data:
+        print("Energy\t\tDirection")
+        [print(f"{l_[0]}\t{l_[1]}") for l_ in list(map(list, zip(*[e_mars, s_mars])))]
 
