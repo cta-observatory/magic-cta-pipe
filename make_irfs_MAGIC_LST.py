@@ -118,6 +118,9 @@ def make_irfs_MAGIC_LST(config_file):
         cfg["irfs"], "MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP
     )
 
+    INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
+    LEAKAGE2_CUT = cfg["irfs"]["LEAKAGE2_CUT"]
+
     particles = {
         "gamma": {
             "file": cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
@@ -150,6 +153,11 @@ def make_irfs_MAGIC_LST(config_file):
             verbose=get_key_if_exists(cfg["irfs"], "verbose", False),
             eval_mean_events=True,
         )
+
+        good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
+            p["events"]["intensity_width_2"] <= LEAKAGE2_CUT
+        )
+
         l_ = len(p["events"])
         log.info(f"Number of events: {l_}")
         p["events"]["particle_type"] = particle_type
