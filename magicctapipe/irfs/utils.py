@@ -262,19 +262,7 @@ def plot_irfs_MAGIC_LST(config_file):
     plot_sensitivity(data=sensitivity, unit=unit, label="MC gammas/protons")
 
     # Plot magic sensitivity
-    s = np.loadtxt(
-        os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "../../data/magic_sensitivity.txt",
-        ),
-        skiprows=1,
-    )
-    ax.loglog(
-        s[:, 0],
-        s[:, 3] * np.power(s[:, 0] / 1e3, 2),
-        color="black",
-        label="MAGIC (Aleksic et al. 2014)",
-    )
+    plot_MAGIC_reference_sensitivity(ax)
 
     # Plot Crab SED
     plot_utils.plot_Crab_SED(
@@ -309,6 +297,7 @@ def plot_irfs_MAGIC_LST(config_file):
     effective_area = QTable.read(hdu_open, hdu="EFFECTIVE_AREA")
     fig, ax = plt.subplots()
     ax.set_xscale("log")
+    ax.set_yscale("log")
     ax.set_xlabel("Reconstructed energy (GeV)")
     ax.set_ylabel(r"Effective Area ($\mathrm{m^2}$)")
     plot_effective_area(data=effective_area, label="Effective Area")
@@ -356,4 +345,37 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False):
     if print_data:
         print("Energy\t\tDirection")
         [print(f"{l_[0]}\t{l_[1]}") for l_ in list(map(list, zip(*[e_mars, s_mars])))]
+
+
+def plot_MAGIC_reference_sensitivity(ax):
+    # s = np.loadtxt(
+    #     os.path.join(
+    #         os.path.dirname(os.path.realpath(__file__)),
+    #         "../../data/magic_sensitivity.txt",
+    #     ),
+    #     skiprows=1,
+    # )
+    # ax.loglog(
+    #     s[:, 0],
+    #     s[:, 3] * np.power(s[:, 0] / 1e3, 2),
+    #     color="black",
+    #     label="MAGIC (Aleksic et al. 2014)",
+    # )
+    d = np.loadtxt(
+        os.path.join(
+            os.path.dirname(os.path.realpath(__file__)),
+            "../../data/MAGIC_Sensitivity_magicmpp.txt",
+        ),
+        unpack=True,
+    )
+    e, e_low, e_high = d[0], d[1], d[2]
+    s, err_s = d[5], d[6]
+    ax.errorbar(
+        e,
+        s,
+        xerr=[(e - e_low), (e_high - e)],
+        yerr=err_s,
+        label="MAGIC Reference magic.mpp.mpg.de",
+        color="k",
+    )
 

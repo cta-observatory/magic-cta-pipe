@@ -32,7 +32,7 @@ def print_elapsed_time(start, end):
 
 
 def make_elapsed_time_str(start, end):
-    """[summary]
+    """Make elapsed time
 
     Parameters
     ----------
