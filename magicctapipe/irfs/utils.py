@@ -163,7 +163,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     return events, pyirf_simu_info
 
 
-def plot_sensitivity(data, unit, label):
+def plot_sensitivity(data, unit, label, kwargs={}):
     """Plot sensitivity
 
     Parameters
@@ -174,6 +174,8 @@ def plot_sensitivity(data, unit, label):
         sensitivity unit
     label : str
         label for plot
+    kwargs : dict, optional
+        plt.errorbar options, by default {}
     """
     e = data["reco_energy_center"]
     s_mc = e ** 2 * data["flux_sensitivity"]
@@ -183,6 +185,7 @@ def plot_sensitivity(data, unit, label):
         s_mc.to_value(unit),
         xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
         label=label,
+        **kwargs,
     )
 
 
@@ -337,14 +340,18 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False):
     d = np.loadtxt(file, unpack=True)
     e_mars_, s_mars_, err_e_mars_, err_s_mars_ = [d_[:-1] for d_ in d]
 
+    # Units
+    unit_file = u.Unit("erg cm-2 s-1")
+    unit = u.Unit("TeV cm-2 s-1")
+
     # Convert sensitivity from erg/(s cm**2) to TeV/(s cm**2)
-    s_mars = (s_mars_ * u.erg).to(u.TeV).value
-    err_s_mars = (err_s_mars_ * u.erg).to(u.TeV).value
+    s_mars = (s_mars_ * unit_file).to(unit).value
+    err_s_mars = (err_s_mars_ * unit_file).to(unit).value
 
     # Convert energy from log(E/TeV) to GeV
-    e_mars = (10 ** (e_mars_) * u.TeV).to(u.GeV).value
-    e_low = (10 ** (e_mars_ - err_e_mars_) * u.TeV).to(u.GeV).value
-    e_high = (10 ** (e_mars_ + err_e_mars_) * u.TeV).to(u.GeV).value
+    e_mars = ((10 ** (e_mars_)) * u.TeV).to(u.GeV).value
+    e_low = ((10 ** (e_mars_ - err_e_mars_)) * u.TeV).to(u.GeV).value
+    e_high = ((10 ** (e_mars_ + err_e_mars_)) * u.TeV).to(u.GeV).value
     err_e_mars = [(e_mars - e_low), (e_high - e_mars)]
 
     # Plot
