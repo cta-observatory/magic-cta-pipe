@@ -389,8 +389,7 @@ def make_irfs_MAGIC_LST(config_file):
     # --- Store results ---
     log.info("Writing outputfile")
     fits.HDUList(hdus).writeto(
-        os.path.join(cfg["irfs"]["save_dir"], "pyirf_eventdisplay.fits.gz"),
-        overwrite=True,
+        os.path.join(cfg["irfs"]["save_dir"], "pyirf.fits.gz"), overwrite=True,
     )
 
 
