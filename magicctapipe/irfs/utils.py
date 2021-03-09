@@ -316,29 +316,38 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False):
         Possibilities:
             - "4LST": file = "magic-cta-pipe/data/MARS_4LST.txt"
             - "MAGIC": file = "magic-cta-pipe/data/MARS_MAGIC.txt"
+            - "MAGIC_LST1": file = "magic-cta-pipe/data/MARS_MAGIC_LST1.txt"
     label : str, optional
         custom plot label, by default ""
     print_data : bool, optional
         print data, by default False
     """
-    if array == "4LST":
-        f_ = "MARS_4LST.txt"
-    elif array == "MAGIC":
-        f_ = "MARS_MAGIC.txt"
+    available_arrays = ["4LST", "MAGIC", "MAGIC_LST1"]
+
+    if array in available_arrays:
+        f_ = f"MARS_{array}.txt"
     else:
         print("Invalid array")
         return
     if label == "":
         label = f"{array}, Di Pierro et al. ICRC2019"
+
+    # Load data
     file = os.path.join(os.path.dirname(os.path.realpath(__file__)), f"../../data/{f_}")
     d = np.loadtxt(file, unpack=True)
     e_mars_, s_mars_, err_e_mars_, err_s_mars_ = [d_[:-1] for d_ in d]
+
+    # Convert sensitivity from erg/(s cm**2) to TeV/(s cm**2)
     s_mars = (s_mars_ * u.erg).to(u.TeV).value
     err_s_mars = (err_s_mars_ * u.erg).to(u.TeV).value
+
+    # Convert energy from log(E/TeV) to GeV
     e_mars = (10 ** (e_mars_) * u.TeV).to(u.GeV).value
     e_low = (10 ** (e_mars_ - err_e_mars_) * u.TeV).to(u.GeV).value
     e_high = (10 ** (e_mars_ + err_e_mars_) * u.TeV).to(u.GeV).value
     err_e_mars = [(e_mars - e_low), (e_high - e_mars)]
+
+    # Plot
     plt.errorbar(
         e_mars, s_mars, xerr=err_e_mars, yerr=err_s_mars, label=label, linestyle="--"
     )
