@@ -130,8 +130,8 @@ irfs:
   max_files_gamma: 0
   max_files_proton: 0
   verbose: False
-  INTENSITY_CUT: 100
-  LEAKAGE2_CUT: 0.2
+  INTENSITY_CUT: 50
+  LEAKAGE1_CUT: 0.15
   save_dir: '/fefs/aswg/workspace/davide.depaoli/CTA-MC/Prod5/Analysis/MAGIC/IRFs/'
   useless_cols: ['pixels_width_1', 'pixels_width_2', 'alt', 'alt_uncert', 'az', 'az_uncert', 'core_x', 'core_y', 'impact', 
                  'core_uncert', 'h_max', 'h_max_uncert', 'is_valid', 'tel_ids', 'average_intensity', 'goodness_of_fit', 

@@ -154,9 +154,12 @@ def make_irfs_MAGIC_LST(config_file):
             eval_mean_events=True,
         )
 
+        # Applying cuts
         good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
-            p["events"]["intensity_width_2"] <= LEAKAGE2_CUT
+            p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
         )
+
+        p["events"] = p["events"][good_]
 
         l_ = len(p["events"])
         log.info(f"Number of events: {l_}")
@@ -170,8 +173,8 @@ def make_irfs_MAGIC_LST(config_file):
             k = f"{prefix}_source_fov_offset"
             p["events"][k] = calculate_source_fov_offset(p["events"], prefix=prefix)
 
-        # calculate theta / distance between reco and assuemd source positoin
-        # we handle only ON observations here, so the assumed source pos
+        # calculate theta / distance between reco and assuemd source position
+        # we handle only ON observations here, so the assumed source position
         # is the pointing position
         p["events"]["theta"] = calculate_theta(
             p["events"],
