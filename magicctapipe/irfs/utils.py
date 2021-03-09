@@ -245,9 +245,7 @@ def plot_irfs_MAGIC_LST(config_file):
 
     # --- Open file ---
     # Open fits
-    hdu_open = fits.open(
-        os.path.join(cfg["irfs"]["save_dir"], "pyirf_eventdisplay.fits.gz")
-    )
+    hdu_open = fits.open(os.path.join(cfg["irfs"]["save_dir"], "pyirf.fits.gz"))
 
     # --- Plot Sensitivity ---
     sensitivity = QTable.read(hdu_open, hdu="SENSITIVITY")
