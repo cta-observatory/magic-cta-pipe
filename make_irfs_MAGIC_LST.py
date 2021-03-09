@@ -119,7 +119,7 @@ def make_irfs_MAGIC_LST(config_file):
     )
 
     INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
-    LEAKAGE2_CUT = cfg["irfs"]["LEAKAGE2_CUT"]
+    LEAKAGE1_CUT = cfg["irfs"]["LEAKAGE1_CUT"]
 
     particles = {
         "gamma": {
