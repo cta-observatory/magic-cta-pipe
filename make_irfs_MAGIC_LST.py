@@ -158,7 +158,6 @@ def make_irfs_MAGIC_LST(config_file):
         good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
             p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
         )
-
         p["events"] = p["events"][good_]
 
         l_ = len(p["events"])
