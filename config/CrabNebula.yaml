@@ -89,6 +89,8 @@ classifier_rf:
 irf:
     output_name: "/path/to/IRF_file/outfile.fits"
 
+source_name: "Crab"
+
 event_list:
     max_time_diff: 6.9e-4
     cuts:

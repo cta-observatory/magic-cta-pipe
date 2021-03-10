@@ -69,6 +69,8 @@ df = pandas.read_hdf(path, key='dl3/reco')
 
 obs_ids = df.index.levels[0].values
 
+source_name = config['source_name']
+
 for obs_id in obs_ids:
     print(f"Processing observation with ID: {obs_id}")
     obs_df = df.xs(obs_id, level="obs_id")
@@ -228,8 +230,10 @@ for obs_id in obs_ids:
     events_hdu.header['TELESCOP'] = 'MAGIC'
     events_hdu.header['INSTRUME'] = 'M12'
     events_hdu.header['CALDB'] = 'dev'
-    events_hdu.header['IRF'] = 'crab'
+    events_hdu.header['IRF'] = source_name
     events_hdu.header['CREATOR'] = 'MAGIC-ctapipe converter'
+
+    events_hdu.header['OBJECT'] = source_name
 
     events_hdu.header['MJDREFI'] = int(np.floor(time_ref))
     events_hdu.header['MJDREFF'] = time_ref - np.floor(time_ref)
@@ -239,7 +243,7 @@ for obs_id in obs_ids:
 
     # Saving to FITS
 
-    output_name = f"events_{obs_id}.fits"
+    output_name = f"events_{source_name}_{obs_id}.fits"
 
     primary_hdu = pyfits.PrimaryHDU()
 
