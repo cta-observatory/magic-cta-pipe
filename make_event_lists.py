@@ -16,6 +16,8 @@ import sys
 sys.path.append('../')
 import gti
 
+import uproot3 as uproot
+
 
 
 # =================
@@ -200,8 +202,16 @@ for obs_id in obs_ids:
     events_hdu.header['LIVETIME'] = events_hdu.header['TSTOP'] - events_hdu.header['TSTART']
     events_hdu.header['DEADC'] = events_hdu.header['LIVETIME'] / events_hdu.header['ONTIME']
 
-    events_hdu.header['RA_PNT'] = event_ra.mean().to(units.deg).value
-    events_hdu.header['DEC_PNT'] = event_dec.mean().to(units.deg).value
+    pointing_ra  = -1
+    pointing_dec = -1
+
+    for fname in file_list:
+        with uproot.open(fname) as input_stream:
+            pointing_ra  = input_stream['RunHeaders']['MRawRunHeader_1.fTelescopeRA'].array()[0]*(15.0/3600.0) # convert second of hours to degrees
+            pointing_dec = input_stream['RunHeaders']['MRawRunHeader_1.fTelescopeDEC'].array()[0]/3600.0      # convert arcsec to degrees
+
+    events_hdu.header['RA_PNT']  = pointing_ra
+    events_hdu.header['DEC_PNT'] = pointing_dec
 
     events_hdu.header['ALT_PNT'] = -1
     events_hdu.header['AZ_PNT'] = -1
