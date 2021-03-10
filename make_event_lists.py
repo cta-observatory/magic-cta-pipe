@@ -70,7 +70,7 @@ df = pandas.read_hdf(path, key='dl3/reco')
 obs_ids = df.index.levels[0].values
 
 for obs_id in obs_ids:
-    print(f"Processinf observation with ID: {obs_id}")
+    print(f"Processing observation with ID: {obs_id}")
     obs_df = df.xs(obs_id, level="obs_id")
     obs_df = obs_df.reset_index()
 
