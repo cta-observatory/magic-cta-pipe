@@ -163,7 +163,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     return events, pyirf_simu_info
 
 
-def plot_sensitivity(data, unit, label, kwargs={}):
+def plot_sensitivity(data, unit, label, **kwargs):
     """Plot sensitivity
 
     Parameters
@@ -174,8 +174,7 @@ def plot_sensitivity(data, unit, label, kwargs={}):
         sensitivity unit
     label : str
         label for plot
-    kwargs : dict, optional
-        plt.errorbar options, by default {}
+    **kwargs : passed to plt.errorbar
     """
     e = data["reco_energy_center"]
     s_mc = e ** 2 * data["flux_sensitivity"]
@@ -299,7 +298,7 @@ def plot_irfs_MAGIC_LST(config_file):
     fig, ax = plt.subplots()
     ax.set_xscale("log")
     ax.set_yscale("log")
-    ax.set_xlabel("Reconstructed energy (GeV)")
+    ax.set_xlabel("True energy (GeV)")
     ax.set_ylabel(r"Effective Area ($\mathrm{m^2}$)")
     plot_effective_area(data=effective_area, label="Effective Area")
     save_plt(
