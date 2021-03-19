@@ -204,19 +204,7 @@ arg_parser.add_argument("--stereo",
                         action='store_true')
 
 parsed_args = arg_parser.parse_args()
-# --------------------------
-if parsed_args.config == 'CrabNebula_2019-11-27.yaml':
-    date='2019-11-27'
-    cosa='ON_data'
-if parsed_args.config == 'CrabNebula_2020-01-18.yaml':
-    date='2020-01-18'
-    cosa='ON_data'
-if parsed_args.config == 'CrabNebula_2019-11-27_off.yaml':
-    date='2019-11-27'
-    cosa='Hadrons'
-if parsed_args.config == 'CrabNebula_2020-01-18_off.yaml':
-    date='2020-01-18'
-    cosa='Hadrons'
+# ------------------------------ 
 # ------------------------------
 # Reading the configuration file
 
@@ -448,5 +436,5 @@ for tel_num, tel_id in enumerate(performance):
 
 pyplot.tight_layout()
 
-pyplot.savefig('classifier_rf_gammaness_'+date+'_'+cosa+'.png')
+pyplot.savefig('classifier_rf_gammaness.png')
 pyplot.close()

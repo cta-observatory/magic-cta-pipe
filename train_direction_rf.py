@@ -191,11 +191,7 @@ arg_parser.add_argument("--stereo",
                         action='store_true')
 
 parsed_args = arg_parser.parse_args()
-# --------------------------
-if parsed_args.config == 'CrabNebula_2019-11-27.yaml':
-    date='2019-11-27'
-if parsed_args.config == 'CrabNebula_2020-01-18.yaml':
-    date='2020-01-18'
+# ------------------------------
 # ------------------------------
 # Reading the configuration file
 
@@ -382,7 +378,7 @@ for tel_id in [0, 1, 2]:
     pyplot.grid(linestyle=':')
 
 pyplot.tight_layout()
-pyplot.savefig('Direction_RF_theta2_'+date+'.png')
+pyplot.savefig('Direction_RF_theta2.png')
 pyplot.close()
 
 pyplot.clf()
@@ -395,7 +391,7 @@ pyplot.plot(energy, energy_psf[1], label='M1')
 pyplot.plot(energy, energy_psf[2], label='M2')
 pyplot.grid(linestyle=':')
 pyplot.legend()
-pyplot.savefig('Direction_RF_PSF_energy_'+date+'.png')
+pyplot.savefig('Direction_RF_PSF_energy.png')
 pyplot.close()
 
 pyplot.clf()
@@ -407,5 +403,5 @@ pyplot.plot(offset, offset_psf[1], label='M1')
 pyplot.plot(offset, offset_psf[2], label='M2')
 pyplot.grid(linestyle=':')
 pyplot.legend()
-pyplot.savefig('Direction_RF_PSF_offset_'+date+'.png')
+pyplot.savefig('Direction_RF_PSF_offset.png')
 pyplot.close()
