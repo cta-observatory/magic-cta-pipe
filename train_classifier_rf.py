@@ -205,7 +205,18 @@ arg_parser.add_argument("--stereo",
 
 parsed_args = arg_parser.parse_args()
 # --------------------------
-
+if parsed_args.config == 'CrabNebula_2019-11-27.yaml':
+    date='2019-11-27'
+    cosa='ON_data'
+if parsed_args.config == 'CrabNebula_2020-01-18.yaml':
+    date='2020-01-18'
+    cosa='ON_data'
+if parsed_args.config == 'CrabNebula_2019-11-27_off.yaml':
+    date='2019-11-27'
+    cosa='Hadrons'
+if parsed_args.config == 'CrabNebula_2020-01-18_off.yaml':
+    date='2020-01-18'
+    cosa='Hadrons'
 # ------------------------------
 # Reading the configuration file
 
@@ -243,6 +254,7 @@ else:
 info_message('Loading "off" train data...', prefix='ClassifierRF')
 if is_stereo:
     bkg_data = load_data_sample_stereo(config['data_files']['data']['train_sample']['magic']['hillas_output'], False)
+    print('bkg_data = ',bkg_data)
 else:
     bkg_data = load_data_sample(config['data_files']['data']['train_sample'])
 
@@ -361,6 +373,7 @@ pyplot.figure(figsize=(20, 10))
 grid_shape = (2, 3)
 
 plot_labels = ["Gammas", "Hadrons"]
+plot_labels1 = ["Gammas", cosa]
 
 for tel_num, tel_id in enumerate(performance):
     pyplot.subplot2grid(grid_shape, (0, tel_num))
@@ -376,7 +389,7 @@ for tel_num, tel_id in enumerate(performance):
                     gammaness[event_class]['Hist'],
                     where='post',
                     color=f'C{class_i}',
-                    label=f'{plot_labels[class_i]}')
+                    label=f'{plot_labels1[class_i]}')
 
         pyplot.step(gammaness[event_class]['XEdges'][1:],
                     gammaness[event_class]['Hist'],
@@ -418,7 +431,7 @@ for tel_num, tel_id in enumerate(performance):
                     gammaness[event_class]['Cumsum'],
                     where='post',
                     color=f'C{class_i}',
-                    label=f'{plot_labels[class_i]}')
+                    label=f'{plot_labels1[class_i]}')
         
         pyplot.step(gammaness[event_class]['XEdges'][1:],
                     gammaness[event_class]['Cumsum'],
@@ -435,5 +448,5 @@ for tel_num, tel_id in enumerate(performance):
 
 pyplot.tight_layout()
 
-pyplot.savefig('classifier_rf_gammaness.png')
+pyplot.savefig('classifier_rf_gammaness_'+date+'_'+cosa+'.png')
 pyplot.close()

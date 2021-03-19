@@ -86,3 +86,6 @@ event_list:
             dc: "0 < value < 7e3"
         selection:
             "(event_id > 0) & (multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4) & (event_class_0 > 0.8)"
+
+coordinates:
+    ra_dec: [83.633083, 22.0145]

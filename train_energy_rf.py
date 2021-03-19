@@ -216,6 +216,11 @@ arg_parser.add_argument("--stereo",
 parsed_args = arg_parser.parse_args()
 # --------------------------
 
+if parsed_args.config == 'CrabNebula_2019-11-27.yaml':
+    date='2019-11-27'
+if parsed_args.config == 'CrabNebula_2020-01-18.yaml':
+    date='2020-01-18'
+
 # ------------------------------
 # Reading the configuration file
 
@@ -429,5 +434,5 @@ pyplot.legend()
 pyplot.tight_layout()
 
 #pyplot.show()
-pyplot.savefig('Energy_RF_migmatrix.png')
+pyplot.savefig('Energy_RF_migmatrix_'+date+'.png')
 pyplot.close()
