@@ -1,10 +1,10 @@
 # coding: utf-8
-
+from astropy.time import Time
 import datetime
 import yaml
 import argparse
 import pandas as pd
-
+import numpy as np
 import scipy
 
 import sklearn
@@ -17,7 +17,7 @@ from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
 from event_processing import EnergyEstimatorPandas, DirectionEstimatorPandas, EventClassifierPandas
-
+from astropy.coordinates import EarthLocation, SkyCoord, AltAz
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
 from astropy.coordinates.angle_utilities import angular_separation, position_angle
@@ -41,6 +41,57 @@ def info_message(text, prefix='info'):
 
     date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     print(f"({prefix:s}) {date_str:s}: {text:s}")
+
+def compute_theta2_real(shower_data_test):
+    print('-----------REAL-----------------')
+    separation = dict()
+    observatory_location = EarthLocation.of_site("Roque de los Muchachos")
+    event_times = Time(shower_data_test["mjd"],
+                    format='mjd',
+                    location=observatory_location)
+    alt_az_frame = AltAz(obstime=event_times, location=observatory_location)
+
+    #reconstructed coordinates
+    event_coord_reco = SkyCoord(alt=scipy.degrees(shower_data_test['alt_reco_mean']),
+                                    az=scipy.degrees(shower_data_test['az_reco_mean']),
+                                    frame=alt_az_frame,
+                                    unit='deg')
+
+    event_ra_reco = event_coord_reco.fk5.ra
+    event_dec_reco = event_coord_reco.fk5.dec
+    
+    #Crab coordinates
+    event_ra_true = ra_dec_Crab[0]
+    event_dec_true = ra_dec_Crab[1]
+
+    #separation
+    c1 = SkyCoord(ra=event_ra_true,dec=event_dec_true,unit='deg')
+    c2 = SkyCoord(ra=event_ra_reco.to(u.deg).value,dec=event_dec_reco.to(u.deg).value,unit='deg')
+    sep = c1.separation(c2)
+    
+    #theta2
+    theta2=(sep.to(u.deg).value)**2
+
+    return theta2
+
+
+def compute_theta2_mc(shower_data_test):
+    #reconstructed coordinates  
+    event_coord_reco = SkyCoord(alt=scipy.degrees(shower_data_test['alt_reco_mean']),
+                                    az=scipy.degrees(shower_data_test['az_reco_mean']),
+                                    frame=AltAz(),
+                                    unit='deg')
+    #true coordinates                                                                                      
+    event_coord_true = SkyCoord(alt=scipy.degrees(shower_data_test['true_alt']),
+                                    az=scipy.degrees(shower_data_test['true_az']),
+                                    frame=AltAz(),
+                                    unit='deg')
+    #separation
+    sep = event_coord_true.separation(event_coord_reco)
+    #theta2
+    theta2=(sep.to(u.deg).value)**2
+
+    return theta2
 
 
 # =================
@@ -113,7 +164,7 @@ magic_tel_descriptions = {1: magic_tel_description,
     #'energy_rf': EnergyEstimatorPandas,
 #}
 
-# Looping over MC / data etc
+# Looping over MC / data etc (SIA MC CHE REAL)
 for data_type in config['data_files']:
     # Using only the "test" sample
     for sample in ['test_sample']:
@@ -126,6 +177,10 @@ for data_type in config['data_files']:
 
             hillas_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/hillas_params')
             stereo_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/stereo_params')
+
+            ra_dec_Crab=(config['coordinates']['ra_dec'])
+            print(ra_dec_Crab)
+            
             if data_type == 'mc':
                 orig_mc = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/original_mc')
                 dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy', 'true_core_x', 'true_core_y']
@@ -133,7 +188,6 @@ for data_type in config['data_files']:
                 dropped_keys = ['tel_alt','tel_az','n_islands', 'mjd', 'tel_id']
 
             stereo_data.drop(dropped_keys, axis=1, inplace=True)
-
             shower_data = hillas_data.merge(stereo_data, on=['obs_id', 'event_id'])
             if data_type == 'mc':
                 original_mc_data = original_mc_data.append(orig_mc)
@@ -157,6 +211,8 @@ for data_type in config['data_files']:
                 if data_type == 'mc':
                     original_mc_data = original_mc_data.append(orig_mc)
 
+
+        
         # Sorting the data frame for convenience
         shower_data = shower_data.reset_index()
         shower_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -207,17 +263,17 @@ for data_type in config['data_files']:
 
         # Storing the reconstructed values for the given data sample
         info_message('Saving the reconstructed data', prefix='ApplyRF')
-
+        
         if is_stereo:
-            shower_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],
-                key='dl3/reco')
             if data_type == 'mc':
-                original_mc_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],
-                    key='dl3/original_mc')
+                shower_data['theta2']=compute_theta2_mc(shower_data)
+                original_mc_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],key='dl3/original_mc')
+            else:
+                shower_data['theta2']=compute_theta2_real(shower_data)
+            shower_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],key='dl3/reco') 
+
         else:
             for telescope in config['data_files'][data_type][sample]:
-                shower_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'],
-                    key='dl3/reco')
+                shower_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'],key='dl3/reco')
                 if data_type == 'mc':
-                    original_mc_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'],
-                        key='dl3/original_mc')
+                    original_mc_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'],key='dl3/original_mc')
