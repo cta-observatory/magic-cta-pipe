@@ -668,7 +668,8 @@ else:
 
 irf_generator = IRFGenerator(mc_file_name)
 
-irf_generator.set_energy_binning(min_energy=0.1, max_energy=30, n_energy_bins=10)
+#irf_generator.set_energy_binning(min_energy=0.1, max_energy=30, n_energy_bins=10)
+irf_generator.set_energy_binning(min_energy=0.03, max_energy=30, n_energy_bins=30)
 irf_generator.set_theta_binning(min_theta=0.0, max_theta=1.5, n_theta_bins=5)
 irf_generator.set_migra_binning(min_migra=0.2, max_migra=5.0, n_migra_bins=5)
 

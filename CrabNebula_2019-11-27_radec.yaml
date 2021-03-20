@@ -1,0 +1,91 @@
+# Configuration file to be used for stereo analysis of MAGIC data.
+# In the several input_mask keys, one has to include files from
+# both M1 and M2, since the MAGICEventSource will match the events
+# to get the stereo events.
+
+data_files:
+    mc:
+      train_sample:
+        magic:
+          input_mask: "/storage/gpfs_data/ctalocal/aberti/Analysis_MAGIC/MONTECARLO/ST0312/Diffuse/Calibrated/Train/GA*_Y_*.root"
+          hillas_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Hillas/MC/MC_train_hillas.h5"
+          reco_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Reco/MC/MC_train_hillas_theta.h5"
+      test_sample:
+        magic:
+          input_mask: "/storage/gpfs_data/ctalocal/aberti/Analysis_MAGIC/MONTECARLO/ST0312/Diffuse/Calibrated/Test/GA*_Y_*.root"
+          hillas_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Hillas/MC/MC_test_hillas.h5"
+          reco_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Reco/MC/MC_test_hillas_theta.h5"
+    data:
+      train_sample:
+        magic:
+          input_mask: "/storage/gpfs_data/ctalocal/aberti/MAGIC_LST/Analysis/Crab_campaign/OFF_data/Calibrated_OFF/20*_Y_*.root"
+          hillas_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Hillas/OFF/OFF_train_hillas.h5"
+          reco_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Reco/OFF/OFF_train_hillas_theta.h5"
+      test_sample:
+        magic:
+          input_mask: "/storage/gpfs_data/ctalocal/aberti/MAGIC_LST/Analysis/Crab_campaign/CrabNebula/2019-11-27/Calibrated_ON/20*_Y_*.root"
+          hillas_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Hillas/ON/ON_test_hillas.h5"
+          reco_output: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/Reco/ON/ON_test_hillas_theta.h5"
+
+image_cleaning:
+    magic:
+        charge_thresholds:
+            picture_thresh: 6
+            boundary_thresh: 3.5
+            min_number_picture_neighbors: 1
+
+        time_thresholds:
+            # 1.5 slices x 1.64 GHz
+            max_time_diff: 2.46
+            # 4.5 slices x 1.64 GHz
+            max_time_off: 7.38
+            min_number_neighbors: 1
+
+energy_rf:
+    save_name: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/RFs/energy_rf.joblib"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 50) & (intensity < 50000) & (length > 0.0) & (intensity_width_1 < 0.15) & (is_valid == 1)"
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 3
+    
+    features:
+        ['slope', 'length', 'width', 'intensity', 'intensity_width_1', 'intensity_width_2', 'impact_1', 'impact_2', 'h_max']
+
+direction_rf:
+    save_name: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/RFs/direction_rf.joblib"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 50) & (intensity < 50000) & (length > 0.0) & (intensity_width_1 < 0.15) & (is_valid == 1)"
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 3
+    
+    features:
+        'disp': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'alt']
+        'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2', 'alt']
+
+classifier_rf:
+    save_name:  "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/RFs/classifier_rf_ON.joblib"
+    cuts: "(event_id > 0) & (multiplicity > 1) & (intensity > 50) & (intensity < 50000) & (length > 0.0) & (intensity_width_1 < 0.15) & (is_valid == 1)"
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 3
+    
+    features:
+        ['slope', 'length', 'width', 'intensity', 'h_max', 'impact_1', 'impact_2']
+
+irf:
+    output_name: "/storage/gpfs_data/ctalocal/emedina/data/MAGIC_LST/Crab_campaign/CrabNebula/2019-11-27/v080_new/IRF/outfile0.8_nopos.fits"
+
+event_list:
+    max_time_diff: 6.9e-4
+    cuts:
+        quality:
+            l3rate: "80 < value < 1000"
+            dc: "0 < value < 7e3"
+        selection:
+            "(event_id > 0) & (multiplicity > 1) & (event_class_0 > 0.8)"
+
+coordinates:
+    ra_dec: [83.633083, 22.0145]
