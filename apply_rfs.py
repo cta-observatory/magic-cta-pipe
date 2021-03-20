@@ -1,5 +1,4 @@
 # coding: utf-8
-from astropy.time import Time
 import datetime
 import yaml
 import argparse
@@ -18,6 +17,7 @@ from ctapipe.instrument import SubarrayDescription
 
 from event_processing import EnergyEstimatorPandas, DirectionEstimatorPandas, EventClassifierPandas
 from astropy import units as u
+from astropy.time import Time
 from astropy.coordinates import EarthLocation,SkyCoord, AltAz
 from astropy.coordinates.angle_utilities import angular_separation, position_angle
 
