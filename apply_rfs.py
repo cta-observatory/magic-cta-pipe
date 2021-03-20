@@ -73,12 +73,12 @@ def compute_theta2_real(shower_data_test):
 
 
 def compute_theta2_mc(shower_data_test):
-    #reconstructed coordinates  
+    #reconstructed coordinates
     event_coord_reco = SkyCoord(alt=scipy.degrees(shower_data_test['alt_reco_mean']),
                                     az=scipy.degrees(shower_data_test['az_reco_mean']),
                                     frame=AltAz(),
                                     unit='deg')
-    #true coordinates                                                                                      
+    #true coordinates
     event_coord_true = SkyCoord(alt=scipy.degrees(shower_data_test['true_alt']),
                                     az=scipy.degrees(shower_data_test['true_az']),
                                     frame=AltAz(),
@@ -154,13 +154,11 @@ magic_tel_descriptions = {1: magic_tel_description,
                           2: magic_tel_description}
 # -----------------
 
-
 ## RF classes to be used for recostruction
 #estimator_classes = {
     #'direction_rf': DirectionEstimatorPandas,
     #'energy_rf': EnergyEstimatorPandas,
 #}
-
 
 ra_dec_source=(config['source']['coordinates']['ra_dec'])
 print(f"Source coordinates: RA={ra_dec_source[0]} deg; DEC={ra_dec_source[1]} deg")
@@ -209,8 +207,6 @@ for data_type in config['data_files']:
                 if data_type == 'mc':
                     original_mc_data = original_mc_data.append(orig_mc)
 
-
-        
         # Sorting the data frame for convenience
         shower_data = shower_data.reset_index()
         shower_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -228,7 +224,6 @@ for data_type in config['data_files']:
         shower_data['multiplicity'] = shower_data['intensity'].groupby(level=['obs_id', 'event_id']).count()
         if data_type == 'mc':
             original_mc_data['multiplicity'] = original_mc_data['true_energy'].groupby(level=['obs_id', 'event_id']).count()
-
 
         #Added by Lea Heckmann 2020-05-15 for the moment to delete duplicate events
         info_message(f'Removing duplicate events', prefix='ApplyRF')
