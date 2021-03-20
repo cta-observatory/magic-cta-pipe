@@ -235,6 +235,7 @@ def make_irfs_MAGIC_LST(config_file):
         GH_CUT_EFFICIENCY_STEP,
     )
 
+    # Fixed the desired efficiencies, find the best gh cuts
     sensitivity_step_2, gh_cuts = optimize_gh_cut(
         gammas,
         background,
