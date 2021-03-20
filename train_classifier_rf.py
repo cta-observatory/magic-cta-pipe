@@ -242,7 +242,6 @@ else:
 info_message('Loading "off" train data...', prefix='ClassifierRF')
 if is_stereo:
     bkg_data = load_data_sample_stereo(config['data_files']['data']['train_sample']['magic']['hillas_output'], False)
-    print('bkg_data = ',bkg_data)
 else:
     bkg_data = load_data_sample(config['data_files']['data']['train_sample'])
 
@@ -361,7 +360,6 @@ pyplot.figure(figsize=(20, 10))
 grid_shape = (2, 3)
 
 plot_labels = ["Gammas", "Hadrons"]
-plot_labels1 = ["Gammas", cosa]
 
 for tel_num, tel_id in enumerate(performance):
     pyplot.subplot2grid(grid_shape, (0, tel_num))
@@ -377,7 +375,7 @@ for tel_num, tel_id in enumerate(performance):
                     gammaness[event_class]['Hist'],
                     where='post',
                     color=f'C{class_i}',
-                    label=f'{plot_labels1[class_i]}')
+                    label=f'{plot_labels[class_i]}')
 
         pyplot.step(gammaness[event_class]['XEdges'][1:],
                     gammaness[event_class]['Hist'],
@@ -419,7 +417,7 @@ for tel_num, tel_id in enumerate(performance):
                     gammaness[event_class]['Cumsum'],
                     where='post',
                     color=f'C{class_i}',
-                    label=f'{plot_labels1[class_i]}')
+                    label=f'{plot_labels[class_i]}')
         
         pyplot.step(gammaness[event_class]['XEdges'][1:],
                     gammaness[event_class]['Cumsum'],

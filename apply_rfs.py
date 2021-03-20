@@ -17,9 +17,8 @@ from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
 from event_processing import EnergyEstimatorPandas, DirectionEstimatorPandas, EventClassifierPandas
-from astropy.coordinates import EarthLocation, SkyCoord, AltAz
 from astropy import units as u
-from astropy.coordinates import SkyCoord, AltAz
+from astropy.coordinates import EarthLocation,SkyCoord, AltAz
 from astropy.coordinates.angle_utilities import angular_separation, position_angle
 
 from matplotlib import pyplot, colors
@@ -43,8 +42,6 @@ def info_message(text, prefix='info'):
     print(f"({prefix:s}) {date_str:s}: {text:s}")
 
 def compute_theta2_real(shower_data_test):
-    print('-----------REAL-----------------')
-    separation = dict()
     observatory_location = EarthLocation.of_site("Roque de los Muchachos")
     event_times = Time(shower_data_test["mjd"],
                     format='mjd',
@@ -61,8 +58,8 @@ def compute_theta2_real(shower_data_test):
     event_dec_reco = event_coord_reco.fk5.dec
     
     #Crab coordinates
-    event_ra_true = ra_dec_Crab[0]
-    event_dec_true = ra_dec_Crab[1]
+    event_ra_true = ra_dec_source[0]
+    event_dec_true = ra_dec_source[1]
 
     #separation
     c1 = SkyCoord(ra=event_ra_true,dec=event_dec_true,unit='deg')
@@ -164,7 +161,7 @@ magic_tel_descriptions = {1: magic_tel_description,
     #'energy_rf': EnergyEstimatorPandas,
 #}
 
-# Looping over MC / data etc (SIA MC CHE REAL)
+# Looping over MC / data etc
 for data_type in config['data_files']:
     # Using only the "test" sample
     for sample in ['test_sample']:
@@ -178,8 +175,8 @@ for data_type in config['data_files']:
             hillas_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/hillas_params')
             stereo_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/stereo_params')
 
-            ra_dec_Crab=(config['coordinates']['ra_dec'])
-            print(ra_dec_Crab)
+            ra_dec_source=(config['coordinates']['ra_dec'])
+            print(ra_dec_source)
             
             if data_type == 'mc':
                 orig_mc = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/original_mc')
