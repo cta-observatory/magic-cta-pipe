@@ -161,6 +161,10 @@ magic_tel_descriptions = {1: magic_tel_description,
     #'energy_rf': EnergyEstimatorPandas,
 #}
 
+
+ra_dec_source=(config['source']['coordinates']['ra_dec'])
+print(f"Source coordinates: RA={ra_dec_source[0]} deg; DEC={ra_dec_source[1]} deg")
+
 # Looping over MC / data etc
 for data_type in config['data_files']:
     # Using only the "test" sample
@@ -175,9 +179,6 @@ for data_type in config['data_files']:
             hillas_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/hillas_params')
             stereo_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/stereo_params')
 
-            ra_dec_source=(config['coordinates']['ra_dec'])
-            print(ra_dec_source)
-            
             if data_type == 'mc':
                 orig_mc = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/original_mc')
                 dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy', 'true_core_x', 'true_core_y']

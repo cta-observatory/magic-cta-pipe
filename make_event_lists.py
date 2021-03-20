@@ -69,7 +69,7 @@ df = pandas.read_hdf(path, key='dl3/reco')
 
 obs_ids = df.index.levels[0].values
 
-source_name = config['source_name']
+source_name = config['source']['name']
 
 for obs_id in obs_ids:
     print(f"Processing observation with ID: {obs_id}")
