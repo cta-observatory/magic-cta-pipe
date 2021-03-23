@@ -66,6 +66,9 @@ else:
     path = config['data_files']['data']['test_sample']['magic1']['reco_output']
 
 df = pandas.read_hdf(path, key='dl3/reco')
+if is_stereo:
+    df = df.reset_index(level = 'tel_id')
+    df = df[df['tel_id'] == 1]
 
 obs_ids = df.index.levels[0].values
 
