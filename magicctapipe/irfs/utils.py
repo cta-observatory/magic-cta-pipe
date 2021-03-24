@@ -188,7 +188,7 @@ def plot_sensitivity(data, unit, label, **kwargs):
     )
 
 
-def plot_ang_res(data, label):
+def plot_ang_res(data, label, **kwargs):
     """Plot angular resolution
 
     Parameters
@@ -197,6 +197,7 @@ def plot_ang_res(data, label):
         angular resolution data
     label : str
         label for plot
+    **kwargs : passed to plt.errorbar
     """
     e = data["reco_energy_center"]
     e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
@@ -205,10 +206,11 @@ def plot_ang_res(data, label):
         data["angular_resolution"].to_value(u.deg),
         xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
         label=label,
+        **kwargs,
     )
 
 
-def plot_effective_area(data, label):
+def plot_effective_area(data, label, **kwargs):
     """Plot effective area
 
     Parameters
@@ -217,6 +219,7 @@ def plot_effective_area(data, label):
         effective area data
     label : str
         label for plot
+    **kwargs : passed to plt.errorbar
     """
     e_low, e_high = data["ENERG_LO"][0], data["ENERG_HI"][0]
     e = (e_low + e_high) / 2
@@ -224,7 +227,11 @@ def plot_effective_area(data, label):
     e = e_high
     m2 = u.m * u.m
     plt.errorbar(
-        e.to_value(u.GeV), a.to_value(m2), xerr=(e - e_low).to_value(u.GeV), label=label
+        e.to_value(u.GeV),
+        a.to_value(m2),
+        xerr=(e - e_low).to_value(u.GeV),
+        label=label,
+        **kwargs,
     )
 
 
