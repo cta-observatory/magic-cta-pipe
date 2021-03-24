@@ -140,6 +140,8 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
     use_MARS_cleaning = get_key_if_exists(cfg["MAGIC"], "use_MARS_cleaning", True)
 
     file_list = glob.glob(cfg["data_files"][k1][k2]["mask_sim"])
+    print(file_list)
+    print(cfg["data_files"][k1][k2]["mask_sim"])
 
     previous_event_id = 0
 
