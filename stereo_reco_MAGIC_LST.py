@@ -104,7 +104,7 @@ def call_stereo_reco_MAGIC_LST(kwargs):
     elif kwargs["only_data_train"]:
         k1, k2 = ["data"], ["train_sample"]
     elif kwargs["only_data_test"]:
-        k1, k2 = ["mc"], ["test_sample"]
+        k1, k2 = ["data"], ["test_sample"]
     else:
         k1 = ["mc", "data"]
         k2 = ["train_sample", "test_sample"]
