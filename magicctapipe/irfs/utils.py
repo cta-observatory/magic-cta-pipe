@@ -266,7 +266,7 @@ def plot_irfs_MAGIC_LST(config_file):
     )
     ax.grid(which="both")
 
-    plot_sensitivity(data=sensitivity, unit=unit, label="MC gammas/protons")
+    plot_sensitivity(data=sensitivity, unit=unit, label="MC")
 
     # Plot magic sensitivity
     plot_MAGIC_reference_sensitivity(ax)
