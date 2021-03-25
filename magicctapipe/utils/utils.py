@@ -65,7 +65,7 @@ def make_elapsed_time_str(start, end):
 def print_title(title, style_char="=", in_space=3, width_char=80):
     """Prints a title string in the following format. If `style_char="="` and 
     `in_space=3`, the string will be:
-    ```plain
+    ```text
         ===...=================...===  
         ===...===   title   ===...===  
         ===...=================...===  
