@@ -135,7 +135,7 @@ def make_irfs_MAGIC_LST(config_file):
     }
     if consider_electron:
         particles["electron"] = {
-            "file": cfg["data_files"]["data_el"]["test_sample"]["reco_h5"],
+            "file": cfg["irfs"]["electron_dl2"],
             "max_files": get_key_if_exists(cfg["irfs"], "max_files_electron", 0),
             "target_spectrum": IRFDOC_ELECTRON_SPECTRUM,
         }
