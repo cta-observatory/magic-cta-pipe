@@ -1463,8 +1463,8 @@ class DirectionEstimatorPandas:
             tel_pointing = AltAz(alt=this_telescope['tel_alt'].values * u.rad,
                                  az=this_telescope['tel_az'].values * u.rad)
 
-            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.cam_rotation)
+            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length, 
+                                       rotation=camera.geometry.cam_rotation)
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
@@ -1577,7 +1577,7 @@ class DirectionEstimatorPandas:
                                  az=this_telescope['tel_az'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.cam_rotation)
+                                       rotation=camera.geometry.cam_rotation)
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
@@ -1918,7 +1918,7 @@ class DirectionEstimatorPandas:
                                  az=this_telescope['tel_az'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.cam_rotation)
+                                       rotation=camera.geometry.cam_rotation)
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
@@ -2287,7 +2287,7 @@ class DirectionStereoEstimatorPandas:
                                  az=shower_data[f'tel_az_{tel_id:d}'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.cam_rotation)
+                                       rotation=camera.geometry.cam_rotation)
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
@@ -2470,7 +2470,7 @@ class DirectionStereoEstimatorPandas:
                                  az=shower_data[f'tel_az_{tel_id:d}'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.cam_rotation)
+                                       rotation=camera.geometry.cam_rotation)
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
