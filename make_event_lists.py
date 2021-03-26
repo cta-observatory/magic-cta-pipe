@@ -16,6 +16,8 @@ import sys
 sys.path.append('../')
 import gti
 
+import uproot3 as uproot
+
 
 
 # =================
@@ -64,10 +66,16 @@ else:
     path = config['data_files']['data']['test_sample']['magic1']['reco_output']
 
 df = pandas.read_hdf(path, key='dl3/reco')
+if is_stereo:
+    df = df.reset_index(level = 'tel_id')
+    df = df[df['tel_id'] == 1]
 
 obs_ids = df.index.levels[0].values
 
+source_name = config['source']['name']
+
 for obs_id in obs_ids:
+    print(f"Processing observation with ID: {obs_id}")
     obs_df = df.xs(obs_id, level="obs_id")
     obs_df = obs_df.reset_index()
 
@@ -143,6 +151,12 @@ for obs_id in obs_ids:
     gti_hdu = pyfits.BinTableHDU.from_columns(col_defs)
     gti_hdu.name = 'GTI'
 
+    gti_hdu.header['MJDREFI'] = int(np.floor(time_ref))
+    gti_hdu.header['MJDREFF'] = time_ref - np.floor(time_ref)
+    gti_hdu.header['TIMEUNIT'] = 's'
+    gti_hdu.header['TIMESYS'] = 'UTC'
+    gti_hdu.header['TIMEREF'] = 'LOCAL'
+
     # Preparing Events HDU
 
     col_event_id = pyfits.Column(name='EVENT_ID',
@@ -200,8 +214,15 @@ for obs_id in obs_ids:
     events_hdu.header['LIVETIME'] = events_hdu.header['TSTOP'] - events_hdu.header['TSTART']
     events_hdu.header['DEADC'] = events_hdu.header['LIVETIME'] / events_hdu.header['ONTIME']
 
-    events_hdu.header['RA_PNT'] = event_ra.mean().to(units.deg).value
-    events_hdu.header['DEC_PNT'] = event_dec.mean().to(units.deg).value
+    pointing_ra  = -1
+    pointing_dec = -1
+
+    with uproot.open(file_list[0]) as input_stream:
+        pointing_ra  = input_stream['RunHeaders']['MRawRunHeader.fTelescopeRA'].array()[0]*(15.0/3600.0) # convert second of hours to degrees
+        pointing_dec = input_stream['RunHeaders']['MRawRunHeader.fTelescopeDEC'].array()[0]/3600.0      # convert arcsec to degrees
+
+    events_hdu.header['RA_PNT']  = pointing_ra
+    events_hdu.header['DEC_PNT'] = pointing_dec
 
     events_hdu.header['ALT_PNT'] = -1
     events_hdu.header['AZ_PNT'] = -1
@@ -212,8 +233,10 @@ for obs_id in obs_ids:
     events_hdu.header['TELESCOP'] = 'MAGIC'
     events_hdu.header['INSTRUME'] = 'M12'
     events_hdu.header['CALDB'] = 'dev'
-    events_hdu.header['IRF'] = 'crab'
+    events_hdu.header['IRF'] = source_name
     events_hdu.header['CREATOR'] = 'MAGIC-ctapipe converter'
+
+    events_hdu.header['OBJECT'] = source_name
 
     events_hdu.header['MJDREFI'] = int(np.floor(time_ref))
     events_hdu.header['MJDREFF'] = time_ref - np.floor(time_ref)
@@ -223,7 +246,7 @@ for obs_id in obs_ids:
 
     # Saving to FITS
 
-    output_name = f"events_{obs_id}.fits"
+    output_name = f"events_{source_name}_{obs_id}.fits"
 
     primary_hdu = pyfits.PrimaryHDU()
 

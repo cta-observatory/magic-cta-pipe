@@ -76,6 +76,11 @@ classifier_rf:
 irf:
     output_name: "/path/to/IRF_file/outfile.fits"
 
+source:
+    name: "Crab"
+    coordinates:
+        ra_dec: [83.633083, 22.0145]
+
 event_list:
     max_time_diff: 6.9e-4
     cuts:
@@ -83,4 +88,4 @@ event_list:
             l3rate: "80 < value < 1000"
             dc: "0 < value < 7e3"
         selection:
-            "(event_id > 0) & (multiplicity > 1) & (abs(pos_angle_shift_reco - 0.5) > 0.4) & (event_class_0 > 0.8)"
+            "(event_id > 0) & (multiplicity > 1) & (event_class_0 > 0.8)"

@@ -214,8 +214,7 @@ arg_parser.add_argument("--stereo",
                         action='store_true')
 
 parsed_args = arg_parser.parse_args()
-# --------------------------
-
+# ------------------------------
 # ------------------------------
 # Reading the configuration file
 
