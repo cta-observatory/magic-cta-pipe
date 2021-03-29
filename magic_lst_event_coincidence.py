@@ -7,8 +7,6 @@ import re
 import sys
 import time
 import glob
-import pickle
-import uproot
 import argparse
 import warnings
 import numpy as np 
@@ -50,7 +48,7 @@ print('\nLoading the MAGIC dataset...')
 
 for path in data_paths_magic:
     print(path)
-    df = pd.read_hdf(path, key='events/params')
+    df = pd.read_hdf(path, key='dl1/hillas_params')
     data_magic = pd.concat([data_magic, df])
 
 data_magic.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -60,7 +58,7 @@ for tel_id in [1, 2]:
     df = data_magic.query(f'tel_id == {tel_id}')
     print(f'MAGIC{tel_id}:  {len(df)} events')
 
-print('\nApplying the mutiplicity cut...')
+print('\nApplying the multiplicity cut...')
 
 multiplicity = data_magic['intensity'].groupby(['obs_id', 'event_id']).size()
 data_magic['multiplicity'] = multiplicity
@@ -221,7 +219,7 @@ data_stereo = pd.concat([df_lst, df_magic[1], df_magic[2]])
 data_stereo = data_stereo.sort_index()   
 data_stereo['offset_avg'] = np.repeat(offset_avg, len(data_stereo))
 
-data_stereo.to_hdf(args.output_file, key='events/params')
+data_stereo.to_hdf(args.output_file, key='dl1/hillas_params')
 
 for tel_id, tel_name in zip([1, 5, 6], ['LST1', 'MAGIC1', 'MAGIC2']):
     df = data_stereo.query(f'tel_id == {tel_id}')

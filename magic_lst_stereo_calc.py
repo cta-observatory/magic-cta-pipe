@@ -1,10 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Purpose of this notebook:
-# - demonstrate the stereo parameters calculation of the real coincident events 
-# - check the obtained stereo parameters by plotting the histogram
-# 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
 import sys
@@ -42,7 +38,7 @@ args = parser.parse_args()
 
 print('\nLoading the DL1 coincidence file...')
 
-data_stereo = pd.read_hdf(args.input_file, key='events/params')
+data_stereo = pd.read_hdf(args.input_file, key='dl1/hillas_params')
 print(args.input_file)
 
 for tel_id, tel_name in zip([1, 5, 6], ['LST-1', 'MAGIC1', 'MAGIC2']):
@@ -115,7 +111,6 @@ for i_ev, event_id in enumerate(event_ids):
     array_pointing = SkyCoord(alt=alt_tel, az=az_tel, frame=horizon_frame)
     
     hillas_params = {}
-    telescopes_pointings = {}
 
     for tel_id in [1, 5, 6]:
 
@@ -132,15 +127,10 @@ for i_ev, event_id in enumerate(event_ids):
         hillas_params[tel_id].intensity = df_tel['intensity'].values[0]
         hillas_params[tel_id].skewness = df_tel['skewness'].values[0]
         hillas_params[tel_id].kurtosis = df_tel['kurtosis'].values[0]
-
-        # define the telescopes pointings container 
-        alt_tel = u.Quantity(df_ev.query(f'tel_id == {tel_id}')['alt_tel'].values[0], u.rad)
-        az_tel = u.Quantity(df_ev.query(f'tel_id == {tel_id}')['az_tel'].values[0], u.rad)
-        telescopes_pointings[tel_id] = SkyCoord(alt=alt_tel, az=az_tel, frame=horizon_frame)
     
     # calculate the stereo parameters
     try:
-        stereo_params = hillas_reconstructor.predict(hillas_params, subarray, array_pointing, telescopes_pointings)
+        stereo_params = hillas_reconstructor.predict(hillas_params, subarray, array_pointing)
     except InvalidWidthException:
         print(f'--> event ID {event_id}: HillasContainer contains width = 0 or nan. Stereo parameter calculation skipped.')
         stereo_params = ReconstructedShowerContainer()
@@ -160,7 +150,7 @@ for tel_id in [1, 5, 6]:
     for param in container.keys():
         data_stereo.loc[(slice(None), slice(None), slice(None), tel_id), param] = container[param]
 
-data_stereo.to_hdf(args.output_file, key='events/params')
+data_stereo.to_hdf(args.output_file, key='dl1/hillas_params')
 
 print('\nDone.')    
 
