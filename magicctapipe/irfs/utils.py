@@ -367,20 +367,15 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False):
         [print(f"{l_[0]}\t{l_[1]}") for l_ in list(map(list, zip(*[e_mars, s_mars])))]
 
 
-def plot_MAGIC_reference_sensitivity(ax):
-    # s = np.loadtxt(
-    #     os.path.join(
-    #         os.path.dirname(os.path.realpath(__file__)),
-    #         "../../data/magic_sensitivity.txt",
-    #     ),
-    #     skiprows=1,
-    # )
-    # ax.loglog(
-    #     s[:, 0],
-    #     s[:, 3] * np.power(s[:, 0] / 1e3, 2),
-    #     color="black",
-    #     label="MAGIC (Aleksic et al. 2014)",
-    # )
+def plot_MAGIC_reference_sensitivity(ax, **kwargs):
+    """Plot MAGIC reference sensitivity
+
+    Parameters
+    ----------
+    ax : plt.ax
+        ax where you want to plot the sensitivity
+    **kwargs : passed to plt.errorbar
+    """
     d = np.loadtxt(
         os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
@@ -390,12 +385,9 @@ def plot_MAGIC_reference_sensitivity(ax):
     )
     e, e_low, e_high = d[0], d[1], d[2]
     s, err_s = d[5], d[6]
-    ax.errorbar(
-        e,
-        s,
-        xerr=[(e - e_low), (e_high - e)],
-        yerr=err_s,
-        label="MAGIC Reference magic.mpp.mpg.de",
-        color="k",
-    )
+    if "label" not in kwargs.keys():
+        kwargs["label"] = "MAGIC Reference magic.mpp.mpg.de"
+    if "color" not in kwargs.keys():
+        kwargs["color"] = "k"
+    ax.errorbar(e, s, xerr=[(e - e_low), (e_high - e)], yerr=err_s, **kwargs)
 
