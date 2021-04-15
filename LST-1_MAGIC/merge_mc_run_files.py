@@ -12,7 +12,8 @@ import numpy as np
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument('--input-dir', '-i', dest='input_dir', type=str, default=None, help='Path to the input directory')
-arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default=None, help='Name of the output file')
+arg_parser.add_argument('--num-subsets', '-n', dest='num_subsets', type=int, default=20, help='Number of subsets')
+arg_parser.add_argument('--suffix', '-s', dest='suffix', type=str, default=None, help='Suffix to the output file')
 
 args = arg_parser.parse_args()
 
@@ -32,7 +33,10 @@ if data_paths == []:
 
 print(f'--> {len(data_paths)} input files\n')
 
-data_paths = np.reshape(data_paths, (20, int(len(data_paths)/20)))
+re_parser = re.findall('(.*)_run(\d+)\.h5', data_paths[0].split('/')[-1])[0]
+file_name = re_parser[0]
+
+data_paths = np.reshape(data_paths, (args.num_subsets, int(len(data_paths)/args.num_subsets)))
 
 for i_col in range(len(data_paths)):
     print(f'=== subset {i_col} ===')
@@ -61,7 +65,11 @@ for path in data_paths:
     data = pd.concat([data, df])
     del df
 
-output_path = args.input_dir + '/' + args.output_file
+if args.suffix != None:
+    output_path = args.input_dir + f'/{file_name}_{args.suffix}.h5'
+else:
+    output_path = args.input_dir + f'/{file_name}.h5'
+
 data.to_hdf(output_path, key='events/params')
 
 for path in data_paths:

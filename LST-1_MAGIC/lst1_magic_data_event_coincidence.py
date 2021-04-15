@@ -30,10 +30,16 @@ ns2sec = 1e-9
 
 arg_parser = argparse.ArgumentParser() 
 
-arg_parser.add_argument('--input-file-lst', '-il', dest='input_file_lst', type=str, help='Path to the LST-1 input file')
-arg_parser.add_argument('--input-dir-magic', '-im', dest='input_dir_magic', type=str, help='Path to the MAGIC input directory')
-arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./coincidence.h5', help='Path to the output file')
-arg_parser.add_argument('--config-file', '-c', dest='config_file', type=str, default='./config.yaml', help='Path to the config file')
+arg_parser.add_argument('--input-file-lst', '-il', dest='input_file_lst', type=str, 
+    help='Path to the LST-1 input file. The DL1 files produced by cta-lstchain with HDF5 format is needed, f.g. dl1_LST-1.Run02923.0000.h5')
+
+arg_parser.add_argument('--input-dir-magic', '-im', dest='input_dir_magic', type=str, 
+    help='Path to the MAGIC input directory that contains the MAGIC input files with HDF5 format.')
+
+arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./coincidence.h5', 
+    help='Path and name of the output file with HDF5 format.')
+
+arg_parser.add_argument('--config-file', '-c', dest='config_file', type=str, default='./config.yaml', help='Path to the config file.')
 
 args = arg_parser.parse_args()
 
@@ -112,13 +118,16 @@ foclen_lst = 28  # unit: [m]
 data_lst['length'] = foclen_lst * np.tan(np.deg2rad(data_lst['length'].values))
 data_lst['width'] = foclen_lst * np.tan(np.deg2rad(data_lst['width'].values))
 
+data_lst['phi'] = np.rad2deg(data_lst['phi'].values)
+data_lst['psi'] = np.rad2deg(data_lst['psi'].values)
+
 # ===================================
 # === Check the event coincidence ===
 # ===================================
 
-print('\nCoincidence configuration:\n {}'.format(config['coincidence']))
-
 config = yaml.safe_load(open(args.config_file, "r"))
+
+print('\nCoincidence configuration:\n {}'.format(config['coincidence']))
 
 type_timestamp = config['coincidence']['timestamp_lst']
 window = float(config['coincidence']['window'])

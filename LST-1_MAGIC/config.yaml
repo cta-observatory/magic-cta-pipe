@@ -35,7 +35,7 @@ cleaning:
             max_time_diff: 2.46
             usetime: True
             usesum: True
-            findhotpixels: False   # for real data: True? 
+            findhotpixels: False  # False for MC, True for real data
 
 coincidence: 
     timestamp_lst: 'dragon_time' 

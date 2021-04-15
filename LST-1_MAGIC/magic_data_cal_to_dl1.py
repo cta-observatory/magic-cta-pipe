@@ -47,8 +47,12 @@ start_time = time.time()
 
 arg_parser = argparse.ArgumentParser()
 
-arg_parser.add_argument('--input-dir', '-i', dest='input_dir', type=str, help='Path to the input directory')
-arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5', help='Path to the output file')
+arg_parser.add_argument('--input-dir', '-i', dest='input_dir', type=str, 
+    help='Path to the MAGIC input directory that contains the MAGIC input files with root format.')
+
+arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5', 
+    help='Path and name of the output file with HDF5 format.')
+
 arg_parser.add_argument('--config-file', '-c', dest='config_file', type=str, default='./config.yaml', help='Path to the config file')
 
 args = arg_parser.parse_args()

@@ -25,8 +25,13 @@ start_time = time.time()
 # ========================
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--input-file', '-i', dest='input_file', type=str, help='Path to the input file')
-parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./dl1_stereo.h5', help='Path to the output file')
+
+parser.add_argument('--input-file', '-i', dest='input_file', type=str, 
+    help='Path to the input file. The DL1 coincidence file with HDF5 format is needed, f.g dl1_coincidence_Run02923.0000.h5')
+
+parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./dl1_stereo.h5', 
+    help='Path and name of the output file with HDF5 format.')
+
 parser.add_argument('--config-file', '-c', dest='config_file', type=str, default='./config.yaml', help='Path to the config file')
 
 args = parser.parse_args()
@@ -55,43 +60,29 @@ for tel_name in config['tel_ids']:
     df = data_stereo.query('tel_id == {}'.format(config['tel_ids'][tel_name]))
     print(f'{tel_name}: {len(df)} events')
 
-if 'coincidence' in args.input_file:
+# ====================================
+# === Check the angular separation ===
+# ====================================
 
-    # === Check the angular separation of the pointing directions for the real data ===
+print('\nChecking the pointing direction...')
 
-    print('\nChecking the pointing direction...')
+df_lst = data_stereo.query('tel_id == {}'.format(config['tel_ids']['LST-1']))
+df_magic = data_stereo.query('tel_id == {}'.format(config['tel_ids']['MAGIC-I']))
 
-    df_lst = data_stereo.query('tel_id == {}'.format(config['tel_ids']['LST-1']))
-    df_magic = data_stereo.query('tel_id == {}'.format(config['tel_ids']['MAGIC-I']))
+theta = angular_separation(df_lst['az_tel'].values*u.rad, df_lst['alt_tel'].values*u.rad,
+                            df_magic['az_tel'].values*u.rad, df_magic['alt_tel'].values*u.rad)
 
-    theta = angular_separation(df_lst['az_tel'].values*u.rad, df_lst['alt_tel'].values*u.rad,
-                             df_magic['az_tel'].values*u.rad, df_magic['alt_tel'].values*u.rad)
-    
-    theta = theta.to(u.deg).value
+theta = theta.to(u.deg).value
 
-    theta_lim = config['stereo_reco']['theta_lim']
-    condition = (theta*60 > theta_lim)
+theta_lim = config['stereo_reco']['theta_lim']
+condition = (theta*60 > theta_lim)
 
-    if np.sum(condition) > 0:
-        print(f'--> Angular separation is larger than {theta_lim} arcmin. ' \
-                    'Input events may be taken with different pointing direction. Please check the input data. Exiting.')
-        sys.exit()
-    else:
-        print(f'--> The angular separation is less than {theta_lim} arcmin. Continuing.')
-
+if np.sum(condition) > 0:
+    print(f'--> Angular separation is larger than {theta_lim} arcmin. ' \
+                'Input events may be taken with different pointing direction. Please check the input data. Exiting.')
+    sys.exit()
 else:
-
-    # === Applying the multiplicity cut for the MC data ===
-
-    print('\nApplying the multiplicity (= 3) cut:')
-
-    multiplicity = data_stereo.groupby(['obs_id', 'event_id']).size()
-    data_stereo['multiplicity'] = multiplicity
-    data_stereo = data_stereo.query('multiplicity == 3')
-
-    for tel_name in config['tel_ids']:
-        df = data_stereo.query('tel_id == {}'.format(config['tel_ids'][tel_name]))
-        print(f'{tel_name}: {len(df)} events')
+    print(f'--> The angular separation is less than {theta_lim} arcmin. Continuing.')
         
 # ===========================
 # === Define the subarray ===
@@ -170,8 +161,8 @@ for i_ev, event_id in enumerate(event_ids):
         hillas_params[tel_id].r = u.Quantity(df_tel['r'].values[0], u.m)
         hillas_params[tel_id].length = u.Quantity(df_tel['length'].values[0], u.m)
         hillas_params[tel_id].width = u.Quantity(df_tel['width'].values[0], u.m)
-        hillas_params[tel_id].phi = Angle(df_tel['phi'].values[0], u.rad)
-        hillas_params[tel_id].psi = Angle(df_tel['psi'].values[0], u.rad)
+        hillas_params[tel_id].phi = Angle(df_tel['phi'].values[0], u.deg)
+        hillas_params[tel_id].psi = Angle(df_tel['psi'].values[0], u.deg)
         hillas_params[tel_id].intensity = df_tel['intensity'].values[0]
         hillas_params[tel_id].skewness = df_tel['skewness'].values[0]
         hillas_params[tel_id].kurtosis = df_tel['kurtosis'].values[0]
