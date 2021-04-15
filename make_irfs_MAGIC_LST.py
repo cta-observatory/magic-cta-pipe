@@ -154,6 +154,10 @@ def make_irfs_MAGIC_LST(config_file):
             eval_mean_events=True,
         )
 
+        # Multiplicity cut
+        cut_mult = get_key_if_exists(cfg["irfs"], "cut_on_multiplicity", 4)
+        p["events"] = p["events"][p["events"]["multiplicity"] >= cut_mult].copy()
+
         # Applying cuts
         good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
             p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
