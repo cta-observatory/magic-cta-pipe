@@ -313,7 +313,7 @@ def plot_irfs_MAGIC_LST(config_file):
     )
 
 
-def plot_MARS_sensitivity(array="4LST", label="", print_data=False):
+def plot_MARS_sensitivity(array="4LST", label="", print_data=False, **kwargs):
     """Plot Sensitivity from MARS
 
     Parameters
@@ -358,9 +358,13 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False):
     e_high = ((10 ** (e_mars_ + err_e_mars_)) * u.TeV).to(u.GeV).value
     err_e_mars = [(e_mars - e_low), (e_high - e_mars)]
 
+    # Set default values in kwargs
+    if "linestyle" not in kwargs.keys():
+        kwargs["linestyle"] = "--"
+
     # Plot
     plt.errorbar(
-        e_mars, s_mars, xerr=err_e_mars, yerr=err_s_mars, label=label, linestyle="--"
+        e_mars, s_mars, xerr=err_e_mars, yerr=err_s_mars, label=label, **kwargs
     )
     if print_data:
         print("Energy\t\tDirection")
