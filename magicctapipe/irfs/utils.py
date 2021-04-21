@@ -337,7 +337,7 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False, **kwargs):
         print("Invalid array")
         return
     if label == "":
-        label = f"{array}, Di Pierro et al. ICRC2019"
+        label = f"{array} Di Pierro et al. ICRC2019"
 
     # Load data
     file = os.path.join(os.path.dirname(os.path.realpath(__file__)), f"../../data/{f_}")
