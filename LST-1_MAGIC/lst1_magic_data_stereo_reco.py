@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+
 import sys
 import time
 import yaml
@@ -9,12 +11,21 @@ import warnings
 import numpy as np 
 import pandas as pd
 from astropy import units as u
-from astropy.coordinates import SkyCoord, AltAz, Angle
+from astropy.time import Time
+from astropy.coordinates import SkyCoord, AltAz, Angle, EarthLocation
 from astropy.coordinates.angle_utilities import angular_separation
 from ctapipe.io import event_source
 from ctapipe.reco import HillasReconstructor
 from ctapipe.containers import HillasParametersContainer, ReconstructedShowerContainer
 from ctapipe.reco.reco_algorithms import InvalidWidthException
+
+def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z): 
+    t = (tel_pos_x - core_x) * np.cos(alt) * np.cos(az) - (tel_pos_y - core_y) * np.cos(alt) * np.sin(az) + tel_pos_z * np.sin(alt)    
+    impact = np.sqrt((core_x - tel_pos_x + t * np.cos(alt) * np.cos(az))**2 + \
+                     (core_y - tel_pos_y - t * np.cos(alt) * np.sin(az))**2 + (t * np.sin(alt) - tel_pos_z)**2)
+    return impact
+
+deg2arcmin = 60
 
 warnings.simplefilter('ignore')
 
@@ -27,7 +38,7 @@ start_time = time.time()
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--input-file', '-i', dest='input_file', type=str, 
-    help='Path to the input file. The DL1 coincidence file with HDF5 format is needed, f.g dl1_coincidence_Run02923.0000.h5')
+    help='Path to the input file. The DL1 coincidence file with HDF5 format is needed, f.g dl1_coincidence_lst1_magic_Run02923.0000.h5')
 
 parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./dl1_stereo.h5', 
     help='Path and name of the output file with HDF5 format.')
@@ -40,9 +51,9 @@ config = yaml.safe_load(open(args.config_file, "r"))
 
 print('\nTelescope IDs: {}'.format(config['tel_ids']))
 
-allowed_tels = []
+allowed_tel_ids = []
 for tel_name in config['tel_ids']:
-    allowed_tels.append(config['tel_ids'][tel_name])
+    allowed_tel_ids.append(config['tel_ids'][tel_name])
 
 # ===========================
 # === Load the input file === 
@@ -51,9 +62,6 @@ for tel_name in config['tel_ids']:
 print(f'\nLoading {args.input_file}')
 
 data_stereo = pd.read_hdf(args.input_file, key='events/params')
-data_stereo.reset_index(inplace=True)
-
-data_stereo.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
 data_stereo.sort_index(inplace=True)
 
 for tel_name in config['tel_ids']:
@@ -75,7 +83,7 @@ theta = angular_separation(df_lst['az_tel'].values*u.rad, df_lst['alt_tel'].valu
 theta = theta.to(u.deg).value
 
 theta_lim = config['stereo_reco']['theta_lim']
-condition = (theta*60 > theta_lim)
+condition = (theta*deg2arcmin > theta_lim)
 
 if np.sum(condition) > 0:
     print(f'--> Angular separation is larger than {theta_lim} arcmin. ' \
@@ -100,7 +108,7 @@ tels_pos_x = []
 tels_pos_y = []
 tels_pos_z = []
 
-for tel_id in allowed_tels:
+for tel_id in allowed_tel_ids:
     tels_pos_x.append(tel_positions[tel_id].value[0])
     tels_pos_y.append(tel_positions[tel_id].value[1])
     tels_pos_z.append(tel_positions[tel_id].value[2])
@@ -122,9 +130,10 @@ for tel_name in config['tel_ids']:
 # === Calculate the stereo parameters ===
 # =======================================
 
-event_ids = np.unique(data_stereo.index.get_level_values('event_id').values)
-n_events = len(event_ids)
+hillas_reconstructor = HillasReconstructor()
+horizon_frame = AltAz()
 
+# === initialize the event container ===
 container = {}
 for param in ReconstructedShowerContainer().keys():
     if param == 'tel_ids':
@@ -132,8 +141,8 @@ for param in ReconstructedShowerContainer().keys():
     else:
         container[param] = []
 
-hillas_reconstructor = HillasReconstructor()
-horizon_frame = AltAz()
+event_ids = np.unique(data_stereo.index.get_level_values('event_id').values)
+n_events = len(event_ids)
 
 print('\nReconstructing the stereo parameters...')
     
@@ -151,7 +160,7 @@ for i_ev, event_id in enumerate(event_ids):
     
     hillas_params = {}
     
-    for tel_id in allowed_tels:    
+    for tel_id in allowed_tel_ids:    
     
         # === define the hillas parameter containers === 
         df_tel = df_ev.query(f'tel_id == {tel_id}')
@@ -173,7 +182,7 @@ for i_ev, event_id in enumerate(event_ids):
     except InvalidWidthException:
         print(f'--> event ID {event_id}: HillasContainer contains width = 0 or nan. Stereo parameter calculation skipped.')
         stereo_params = ReconstructedShowerContainer()
-    
+
     for param in stereo_params.keys():
         if 'astropy' in str(type(stereo_params[param])):
             container[param].append(stereo_params[param].value)
@@ -184,8 +193,38 @@ for i_ev, event_id in enumerate(event_ids):
 
 print(f'{i_ev+1}/{n_events} events')
 
+for param in container.keys():
+    container[param] = np.array(container[param])
+
+container['az'][container['az'] < 0] += 2*np.pi
+
+# === convert the "Alt/Az" to "RA/Dec" === 
+print(f'\nTransforming "Alt/Az" to "RA/Dec" direction...')
+
+config_loc = config['obs_location']
+location = EarthLocation.from_geodetic(lat=config_loc['lat']*u.deg, lon=config_loc['lon']*u.deg, height=config_loc['height']*u.m)
+
+df = data_stereo.query('tel_id == {}'.format(config['tel_ids']['LST-1']))
+ts_type = config['coincidence']['timestamp_lst']
+
+timestamps = Time(df[ts_type].values, format='unix', scale='utc')
+horizon_frames = AltAz(location=location, obstime=timestamps)
+
+event_coords = SkyCoord(alt=container['alt'], az=container['az'], unit='rad', frame=horizon_frames)
+event_coords = event_coords.transform_to('fk5')
+
+container['ra'] = event_coords.ra.value
+container['dec'] = event_coords.dec.value
+
 # === store the parameter in the data frame ===
-for tel_id in allowed_tels:
+for tel_id in allowed_tel_ids:
+
+    # --- calculate the Impact parameter ---
+    impact = calc_impact(container['core_x'], container['core_y'], container['az'], container['alt'],
+                         tel_positions_cog[tel_id][0].value, tel_positions_cog[tel_id][1].value, tel_positions_cog[tel_id][2].value)
+    
+    data_stereo.loc[(slice(None), slice(None), tel_id), 'impact'] = impact
+    
     for param in container.keys():
         data_stereo.loc[(slice(None), slice(None), tel_id), param] = container[param]
 

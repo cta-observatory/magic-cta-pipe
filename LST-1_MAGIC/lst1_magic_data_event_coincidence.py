@@ -104,6 +104,7 @@ print(f'LST-1: {n_events_lst} events')
 
 data_lst.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
 
+# --- change the column names to the default ones ---
 col_renames = {
     'leakage_pixels_width_1': 'pixels_width_1', 
     'leakage_pixels_width_2': 'pixels_width_2', 
@@ -114,10 +115,12 @@ col_renames = {
 
 data_lst.rename(columns=col_renames, inplace=True)
 
+# --- change the unit from [deg] to [m] ---
 foclen_lst = 28  # unit: [m]
 data_lst['length'] = foclen_lst * np.tan(np.deg2rad(data_lst['length'].values))
 data_lst['width'] = foclen_lst * np.tan(np.deg2rad(data_lst['width'].values))
 
+# --- change the unit from [rad] to [deg] ---
 data_lst['phi'] = np.rad2deg(data_lst['phi'].values)
 data_lst['psi'] = np.rad2deg(data_lst['psi'].values)
 

@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import sys
-import glob
+# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+
 import time
 import yaml
 import scipy
@@ -40,6 +40,12 @@ class InfoContainer(Container):
     alt_tel = Field(-1, "Telescope altitude", unit=u.rad)
     az_tel = Field(-1, "Telescope azimuth", unit=u.rad)
     n_islands = Field(-1, "Number of image islands")
+
+def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z): 
+    t = (tel_pos_x - core_x) * np.cos(alt) * np.cos(az) - (tel_pos_y - core_y) * np.cos(alt) * np.sin(az) + tel_pos_z * np.sin(alt)    
+    impact = np.sqrt((core_x - tel_pos_x + t * np.cos(alt) * np.cos(az))**2 + \
+                     (core_y - tel_pos_y - t * np.cos(alt) * np.sin(az))**2 + (t * np.sin(alt) - tel_pos_z)**2)
+    return impact
 
 start_time = time.time()
 
@@ -115,9 +121,15 @@ extractor = {}
 extractor['LST'] = ImageExtractor.from_name(list(config['integration']['LST'])[0], subarray=subarray, config=Config(config['integration']['LST']))
 extractor['MAGIC'] = ImageExtractor.from_name(list(config['integration']['MAGIC'])[0], subarray=subarray, config=Config(config['integration']['MAGIC']))
 
-calibrator = {config['tel_ids']['LST-1']: CameraCalibrator(subarray, image_extractor=extractor['LST']),
-              config['tel_ids']['MAGIC-I']: CameraCalibrator(subarray, image_extractor=extractor['MAGIC']), 
-              config['tel_ids']['MAGIC-II']: CameraCalibrator(subarray, image_extractor=extractor['MAGIC'])}
+calibrator = {}
+
+for tel_name in config['tel_ids']:
+    tel_id = config['tel_ids'][tel_name]
+
+    if 'LST' in tel_name:
+        calibrator[tel_id] = CameraCalibrator(subarray, image_extractor=extractor['LST'])
+    elif 'MAGIC' in tel_name:
+        calibrator[tel_id] = CameraCalibrator(subarray, image_extractor=extractor['MAGIC'])
 
 print('\nCleaning configuration:\n {}'.format(config['cleaning']))
 
@@ -222,7 +234,7 @@ with HDF5TableWriter(filename=args.output_file, group_name='events', overwrite=T
                         az_tel=event.mc.tel[tel_id].azimuth_raw*u.rad,
                         n_islands=num_islands)
                 
-            if len(hillas_params) == 3:
+            if len(hillas_params) == len(allowed_tel_ids):
 
                 # === Stereo parameter calculation ===
                 try:
@@ -239,8 +251,45 @@ with HDF5TableWriter(filename=args.output_file, group_name='events', overwrite=T
             for tel_id in event_info.keys():
                 writer.write("params", (event_info[tel_id], hillas_params[tel_id], timing_params[tel_id], leakage_params[tel_id], stereo_params))
 
-            
 print(f'{i_ev+1} events')
+
+# === open the data files === 
+data = pd.read_hdf(args.output_file, key='events/params')
+data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+data.sort_index(inplace=True)
+
+# --- change the scale and units of "az" and "alt" ---
+data['az'] = np.deg2rad(data['az'].values)
+data['alt'] = np.deg2rad(data['alt'].values)
+
+azimuths = data['az'].values
+azimuths[azimuths < 0] += 2*np.pi
+
+data['az'] = azimuths
+
+# --- calculate the Impact parameter ---
+for tel_id in allowed_tel_ids:
+
+    df = data.query(f'tel_id == {tel_id}')
+
+    impact = calc_impact(df['core_x'].values, df['core_y'].values, df['az'].values, df['alt'].values,
+                         tel_positions_cog[tel_id][0].value, tel_positions_cog[tel_id][1].value, tel_positions_cog[tel_id][2].value)
+
+    mc_impact = calc_impact(df['mc_core_x'].values, df['mc_core_y'].values, df['mc_az'].values, df['mc_alt'].values,
+                         tel_positions_cog[tel_id][0].value, tel_positions_cog[tel_id][1].value, tel_positions_cog[tel_id][2].value)
+    
+    data.loc[(slice(None), slice(None), tel_id), 'impact'] = impact
+    data.loc[(slice(None), slice(None), tel_id), 'mc_impact'] = mc_impact
+
+# --- check the number of events ---
+n_events = len(data.groupby(['obs_id', 'event_id']).mean())
+print(f'\nTotal: {n_events} events')
+
+for tel_name in config['tel_ids']:
+    df = data.query('tel_id == {}'.format(config['tel_ids'][tel_name]))
+    print(f'{tel_name}: {len(df)} events')
+
+data.to_hdf(args.output_file, key='events/params')
 
 print(f'\nOutput file:\n {args.output_file}')
 
