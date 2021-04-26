@@ -24,7 +24,7 @@ from ctapipe.image.timing import timing_parameters
 from ctapipe.image.morphology import number_of_islands
 from ctapipe.reco import HillasReconstructor
 from ctapipe.reco.reco_algorithms import InvalidWidthException
-from utils import MAGIC_Cleaning
+from utils import MAGIC_Cleaning, calc_impact
 
 warnings.simplefilter('ignore')
 
@@ -40,12 +40,6 @@ class InfoContainer(Container):
     alt_tel = Field(-1, "Telescope altitude", unit=u.rad)
     az_tel = Field(-1, "Telescope azimuth", unit=u.rad)
     n_islands = Field(-1, "Number of image islands")
-
-def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z): 
-    t = (tel_pos_x - core_x) * np.cos(alt) * np.cos(az) - (tel_pos_y - core_y) * np.cos(alt) * np.sin(az) + tel_pos_z * np.sin(alt)    
-    impact = np.sqrt((core_x - tel_pos_x + t * np.cos(alt) * np.cos(az))**2 + \
-                     (core_y - tel_pos_y - t * np.cos(alt) * np.sin(az))**2 + (t * np.sin(alt) - tel_pos_z)**2)
-    return impact
 
 start_time = time.time()
 

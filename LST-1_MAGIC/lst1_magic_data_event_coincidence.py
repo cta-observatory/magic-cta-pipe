@@ -39,7 +39,8 @@ arg_parser.add_argument('--input-dir-magic', '-im', dest='input_dir_magic', type
 arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./coincidence.h5', 
     help='Path and name of the output file with HDF5 format.')
 
-arg_parser.add_argument('--config-file', '-c', dest='config_file', type=str, default='./config.yaml', help='Path to the config file.')
+arg_parser.add_argument('--config-file', '-c', dest='config_file', type=str, default='./config.yaml', 
+    help='Path to the config file with yaml format.')
 
 args = arg_parser.parse_args()
 
@@ -79,7 +80,7 @@ for tel_id, tel_name in zip([1, 2], ['MAGIC-I', 'MAGIC-II']):
     df = data_magic.query(f'tel_id == {tel_id}')
     print(f'{tel_name}:  {len(df)} events')
 
-print('\nApplying the mutiplicity cut (= 2)...')
+print('\nApplying the multiplicity cut (= 2)...')
 
 multiplicity = data_magic.groupby(['obs_id_magic', 'event_id_magic']).size()
 data_magic['multiplicity'] = multiplicity
@@ -116,7 +117,9 @@ col_renames = {
 data_lst.rename(columns=col_renames, inplace=True)
 
 # --- change the unit from [deg] to [m] ---
-foclen_lst = 28  # unit: [m]
+optics_lst = pd.read_hdf(data_path, key='instrument/telescope/optics')
+foclen_lst = optics_lst['equivalent_focal_length'].values[0]
+
 data_lst['length'] = foclen_lst * np.tan(np.deg2rad(data_lst['length'].values))
 data_lst['width'] = foclen_lst * np.tan(np.deg2rad(data_lst['width'].values))
 

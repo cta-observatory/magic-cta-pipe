@@ -18,12 +18,7 @@ from ctapipe.io import event_source
 from ctapipe.reco import HillasReconstructor
 from ctapipe.containers import HillasParametersContainer, ReconstructedShowerContainer
 from ctapipe.reco.reco_algorithms import InvalidWidthException
-
-def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z): 
-    t = (tel_pos_x - core_x) * np.cos(alt) * np.cos(az) - (tel_pos_y - core_y) * np.cos(alt) * np.sin(az) + tel_pos_z * np.sin(alt)    
-    impact = np.sqrt((core_x - tel_pos_x + t * np.cos(alt) * np.cos(az))**2 + \
-                     (core_y - tel_pos_y - t * np.cos(alt) * np.sin(az))**2 + (t * np.sin(alt) - tel_pos_z)**2)
-    return impact
+from utils import calc_impact
 
 deg2arcmin = 60
 
@@ -86,11 +81,11 @@ theta_lim = config['stereo_reco']['theta_lim']
 condition = (theta*deg2arcmin > theta_lim)
 
 if np.sum(condition) > 0:
-    print(f'--> Angular separation is larger than {theta_lim} arcmin. ' \
+    print(f'--> Angular separation between telescope pointings is larger than {theta_lim} arcmin. ' \
                 'Input events may be taken with different pointing direction. Please check the input data. Exiting.')
     sys.exit()
 else:
-    print(f'--> The angular separation is less than {theta_lim} arcmin. Continuing.')
+    print(f'--> The angular separation between telescope pointings is less than {theta_lim} arcmin. Continuing.')
         
 # ===========================
 # === Define the subarray ===
