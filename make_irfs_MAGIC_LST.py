@@ -50,6 +50,7 @@ from magicctapipe.utils.utils import *
 from magicctapipe.irfs.utils import *
 from magicctapipe.utils.plot import *
 from magicctapipe.utils.utils import *
+from magicctapipe.utils.tels import *
 
 import matplotlib.pylab as plt
 from lstchain.mc import plot_utils
