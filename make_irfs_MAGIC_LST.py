@@ -117,12 +117,12 @@ def make_irfs_MAGIC_LST(config_file):
 
     particles = {
         "gamma": {
-            "file": cfg["data_files"]["mc"]["test_sample"]["reco_h5"],
+            "file": cfg["irfs"]["gamma_dl2"],
             "max_files": get_key_if_exists(cfg["irfs"], "max_files_gamma", 0),
             "target_spectrum": CRAB_HEGRA,
         },
         "proton": {
-            "file": cfg["data_files"]["data"]["test_sample"]["reco_h5"],
+            "file": cfg["irfs"]["proton_dl2"],
             "max_files": get_key_if_exists(cfg["irfs"], "max_files_proton", 0),
             "target_spectrum": IRFDOC_PROTON_SPECTRUM,
         },
