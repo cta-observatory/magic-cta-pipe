@@ -82,7 +82,6 @@ def make_irfs_MAGIC_LST(config_file):
     cfg = load_cfg_file(config_file)
 
     consider_electron = get_key_if_exists(cfg["irfs"], "consider_electron", False)
-    tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # --- Check out folder ---
     check_folder(cfg["irfs"]["save_dir"])
@@ -150,7 +149,7 @@ def make_irfs_MAGIC_LST(config_file):
         )
 
         # Multiplicity cut
-        cut_mult = get_key_if_exists(cfg["irfs"], "cut_on_multiplicity", len(tel_ids))
+        cut_mult = get_key_if_exists(cfg["irfs"], "cut_on_multiplicity", 2)
         p["events"] = p["events"][p["events"]["multiplicity"] >= cut_mult].copy()
 
         # Applying cuts
