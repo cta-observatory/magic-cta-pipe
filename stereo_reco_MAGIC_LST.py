@@ -237,6 +237,19 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
                     # --- Cleaning ---
                     if geom.camera_name == cfg["LST"]["camera_name"]:
+                        ##### LSTCHAIN TAILCUT #####
+                        # # Apply tailcuts clean on LST. From ctapipe
+                        # clean, num_islands, island_ids = tailcuts_clean_lstchain(
+                        #     camera_geometry=geom,
+                        #     image=image,
+                        #     peak_time=peakpos,
+                        #     cleaning_parameters=cfg["LST"]["cleaning_config"],
+                        #     input_file=file,
+                        # )
+                        # # Ignore if less than n pixels after cleaning
+                        # if clean.sum() < cfg["LST"]["min_pixel"]:
+                        #     continue
+                        ##### OLD #####
                         # Apply tailcuts clean on LST. From ctapipe
                         clean = tailcuts_clean(
                             geom=geom, image=image, **cfg["LST"]["cleaning_config"]

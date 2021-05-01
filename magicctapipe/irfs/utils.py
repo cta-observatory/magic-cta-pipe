@@ -235,7 +235,7 @@ def plot_effective_area(data, label, **kwargs):
     )
 
 
-def plot_irfs_MAGIC_LST(config_file):
+def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     """Plot IRFs for MAGIC and/or LST array using pyirf
 
     Parameters
@@ -251,7 +251,7 @@ def plot_irfs_MAGIC_LST(config_file):
 
     # --- Open file ---
     # Open fits
-    hdu_open = fits.open(os.path.join(cfg["irfs"]["save_dir"], "pyirf.fits.gz"))
+    hdu_open = fits.open(os.path.join(irfs_dir, "pyirf.fits.gz"))
 
     # --- Plot Sensitivity ---
     sensitivity = QTable.read(hdu_open, hdu="SENSITIVITY")
@@ -285,7 +285,7 @@ def plot_irfs_MAGIC_LST(config_file):
     plt.legend()
 
     save_plt(
-        n=f"Sensitivity", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+        n=f"Sensitivity", rdir=irfs_dir, vect="pdf",
     )
 
     # --- Plot Angular Resolution ---
@@ -297,7 +297,7 @@ def plot_irfs_MAGIC_LST(config_file):
 
     plot_ang_res(data=ang_res, label="Angular Resolution")
     save_plt(
-        n=f"Angular_Resolution", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+        n=f"Angular_Resolution", rdir=irfs_dir, vect="pdf",
     )
 
     # --- Effective Area ---
@@ -309,7 +309,7 @@ def plot_irfs_MAGIC_LST(config_file):
     ax.set_ylabel(r"Effective Area ($\mathrm{m^2}$)")
     plot_effective_area(data=effective_area, label="Effective Area")
     save_plt(
-        n=f"Effective_Area", rdir=cfg["irfs"]["save_dir"], vect="pdf",
+        n=f"Effective_Area", rdir=irfs_dir, vect="pdf",
     )
 
 

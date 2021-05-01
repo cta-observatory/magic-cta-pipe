@@ -1,6 +1,7 @@
 import os
 import glob
 import time
+import shutil
 import logging
 import operator
 import argparse
@@ -65,14 +66,6 @@ PARSER.add_argument(
     type=str,
     required=True,
     help="Configuration file, yaml format",
-)
-PARSER.add_argument(
-    "-p",
-    "--only_plot",
-    action="store_true",
-    required=False,
-    default=False,
-    help="Only plot results",
 )
 
 
@@ -395,9 +388,21 @@ def make_irfs_MAGIC_LST(config_file):
 
     # --- Store results ---
     log.info("Writing outputfile")
+
+    irfs_subdir = "IRFs_MinEff%s_cut%s/" % (str(MIN_GH_CUT_EFFICIENCY), str(cut_mult))
+    irfs_dir = os.path.join(cfg["irfs"]["save_dir"], irfs_subdir)
+    check_folder(irfs_dir)
+
     fits.HDUList(hdus).writeto(
-        os.path.join(cfg["irfs"]["save_dir"], "pyirf.fits.gz"), overwrite=True,
+        os.path.join(irfs_dir, "pyirf.fits.gz"), overwrite=True,
     )
+
+    shutil.copyfile(
+        kwargs["config_file"],
+        os.path.join(irfs_dir, os.path.basename(kwargs["config_file"])),
+    )
+
+    return irfs_dir
 
 
 if __name__ == "__main__":
@@ -405,9 +410,8 @@ if __name__ == "__main__":
     kwargs = args.__dict__
     start_time = time.time()
 
-    if not kwargs["only_plot"]:
-        make_irfs_MAGIC_LST(kwargs["config_file"])
+    irfs_dir = make_irfs_MAGIC_LST(kwargs["config_file"])
 
-    plot_irfs_MAGIC_LST(kwargs["config_file"])
+    plot_irfs_MAGIC_LST(kwargs["config_file"], irfs_dir)
 
     print_elapsed_time(start_time, time.time())
