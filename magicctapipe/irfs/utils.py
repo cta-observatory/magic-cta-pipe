@@ -163,7 +163,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     return events, pyirf_simu_info
 
 
-def plot_sensitivity(data, unit, label, **kwargs):
+def plot_sensitivity(data, unit, label, ax=None, **kwargs):
     """Plot sensitivity
 
     Parameters
@@ -174,18 +174,22 @@ def plot_sensitivity(data, unit, label, **kwargs):
         sensitivity unit
     label : str
         label for plot
+    ax : matplotlib axis, optional
+        give it if you want to specify the axis, by default None
     **kwargs : passed to plt.errorbar
     """
     e = data["reco_energy_center"]
     s_mc = e ** 2 * data["flux_sensitivity"]
     e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
-    plt.errorbar(
+    ax_ = ax if ax != None else plt
+    plt_ = ax_.errorbar(
         e.to_value(u.GeV),
         s_mc.to_value(unit),
         xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
         label=label,
         **kwargs,
     )
+    return plt_
 
 
 def plot_ang_res(data, label, **kwargs):
