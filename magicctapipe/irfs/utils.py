@@ -165,8 +165,8 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
             if useless_cols != []:
                 events_ = events_.drop(useless_cols, axis=1, errors="ignore")
             if eval_mean_events:
-                # events_ = events_.groupby(["obs_id", "event_id"]).mean()
-                events_ = events_.mean(level=1)
+                events_ = events_.groupby(["obs_id", "event_id"]).mean()
+                # events_ = events_.mean(level=1)
             if first_time:
                 events = events_
                 first_time = False
