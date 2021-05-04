@@ -66,6 +66,10 @@ def convert_simu_info_mcp_to_pyirf(file_list, mc_header_key="dl2/mc_header"):
         pyirf_simu_info
     """
     simu_info = read_simu_info_mcp_sum_num_showers(file_list, mc_header_key)
+    if len(file_list) == 1:
+        for k in simu_info.keys():
+            if k != "num_showers":
+                simu_info[k] = simu_info[k][0]
     pyirf_simu_info = SimulatedEventsInfo(
         n_showers=int(simu_info.num_showers) * int(simu_info.shower_reuse),
         energy_min=float(simu_info.energy_range_min) * u.TeV,
