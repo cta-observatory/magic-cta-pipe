@@ -44,9 +44,10 @@ def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header")
             num_showers += int(read_mc_header(file, mc_header_key)["num_showers"])
     else:
         file = file_list[0]
-        num_showers += int(read_mc_header(file, mc_header_key)["num_showers"].sum())
+        num_showers = int(read_mc_header(file, mc_header_key)["num_showers"].sum())
     d["num_showers"] = num_showers
-    print(num_showers)
+    # In the case of merged DL2 now num_showers is a list where each value is the sum
+    # of the showers... no good
     return d
 
 
@@ -79,7 +80,8 @@ def convert_simu_info_mcp_to_pyirf(file_list, mc_header_key="dl2/mc_header"):
         )
     else:
         pyirf_simu_info = SimulatedEventsInfo(
-            n_showers=int(simu_info.num_showers) * int(simu_info.shower_reuse.iloc[0]),
+            n_showers=int(simu_info.num_showers.iloc[0])
+            * int(simu_info.shower_reuse.iloc[0]),
             energy_min=float(simu_info.energy_range_min.iloc[0]) * u.TeV,
             energy_max=float(simu_info.energy_range_max.iloc[0]) * u.TeV,
             max_impact=float(simu_info.max_scatter_range.iloc[0]) * u.m,
