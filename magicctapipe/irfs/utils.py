@@ -66,18 +66,25 @@ def convert_simu_info_mcp_to_pyirf(file_list, mc_header_key="dl2/mc_header"):
         pyirf_simu_info
     """
     simu_info = read_simu_info_mcp_sum_num_showers(file_list, mc_header_key)
-    if len(file_list) == 1:
-        for k in simu_info.columns:
-            if k != "num_showers":
-                simu_info[k] = simu_info[k][0]
-    pyirf_simu_info = SimulatedEventsInfo(
-        n_showers=int(simu_info.num_showers) * int(simu_info.shower_reuse),
-        energy_min=float(simu_info.energy_range_min) * u.TeV,
-        energy_max=float(simu_info.energy_range_max) * u.TeV,
-        max_impact=float(simu_info.max_scatter_range) * u.m,
-        spectral_index=float(simu_info.spectral_index),
-        viewcone=float(simu_info.max_viewcone_radius) * u.deg,
-    )
+    # very bad way way to separate file_list and merged file
+    if len(file_list) > 1:
+        pyirf_simu_info = SimulatedEventsInfo(
+            n_showers=int(simu_info.num_showers) * int(simu_info.shower_reuse),
+            energy_min=float(simu_info.energy_range_min) * u.TeV,
+            energy_max=float(simu_info.energy_range_max) * u.TeV,
+            max_impact=float(simu_info.max_scatter_range) * u.m,
+            spectral_index=float(simu_info.spectral_index),
+            viewcone=float(simu_info.max_viewcone_radius) * u.deg,
+        )
+    else:
+        pyirf_simu_info = SimulatedEventsInfo(
+            n_showers=int(simu_info.num_showers) * int(simu_info.shower_reuse.iloc[0]),
+            energy_min=float(simu_info.energy_range_min.iloc[0]) * u.TeV,
+            energy_max=float(simu_info.energy_range_max.iloc[0]) * u.TeV,
+            max_impact=float(simu_info.max_scatter_range.iloc[0]) * u.m,
+            spectral_index=float(simu_info.spectral_index.iloc[0]),
+            viewcone=float(simu_info.max_viewcone_radius.iloc[0]) * u.deg,
+        )
     return pyirf_simu_info
 
 
