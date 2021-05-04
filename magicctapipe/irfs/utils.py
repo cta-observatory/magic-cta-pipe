@@ -39,7 +39,7 @@ def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header")
     """
     d = read_mc_header(file_list[0], mc_header_key)
     num_showers = 0
-    if len(file_list > 1):
+    if len(file_list) > 1:
         for i, file in enumerate(file_list):
             num_showers += int(read_mc_header(file, mc_header_key)["num_showers"])
     else:
