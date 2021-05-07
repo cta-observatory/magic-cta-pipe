@@ -43,11 +43,10 @@ def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header")
         for i, file in enumerate(file_list):
             num_showers += int(read_mc_header(file, mc_header_key)["num_showers"])
     else:
-        file = file_list[0]
-        num_showers = int(read_mc_header(file, mc_header_key)["num_showers"].sum())
+        num_showers = int(d["num_showers"].sum())
     d["num_showers"] = num_showers
     # In the case of merged DL2 now num_showers is a list where each value is the sum
-    # of the showers... no good
+    # of the showers... not very smart
     return d
 
 
@@ -88,6 +87,8 @@ def convert_simu_info_mcp_to_pyirf(file_list, mc_header_key="dl2/mc_header"):
             spectral_index=float(simu_info.spectral_index.iloc[0]),
             viewcone=float(simu_info.max_viewcone_radius.iloc[0]) * u.deg,
         )
+    # Regarding the max_impact, in pyirf is used for:
+    # A = np.pi * simulated_event_info.max_impact ** 2
     return pyirf_simu_info
 
 
