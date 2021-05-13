@@ -11,10 +11,6 @@ import sklearn
 import sklearn.ensemble
 
 import ctapipe
-from ctapipe.instrument import CameraGeometry
-from ctapipe.instrument import TelescopeDescription
-from ctapipe.instrument import OpticsDescription
-from ctapipe.instrument import SubarrayDescription
 
 from ctapipe.reco import HillasReconstructor
 from event_processing import EnergyEstimatorPandas
