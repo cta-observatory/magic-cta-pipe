@@ -10,7 +10,7 @@ import sklearn
 import sklearn.ensemble
 
 import ctapipe
-from ctapipe.instrument import CameraGeometry
+from ctapipe.instrument import CameraDescription
 from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
@@ -145,7 +145,7 @@ magic_tel_positions = {
 
 # MAGIC telescope description
 magic_optics = OpticsDescription.from_name('MAGIC')
-magic_cam = CameraGeometry.from_name('MAGICCam')
+magic_cam = CameraDescription.from_name("MAGICCam")
 magic_tel_description = TelescopeDescription(name='MAGIC',
                                              tel_type='MAGIC',
                                              optics=magic_optics,
