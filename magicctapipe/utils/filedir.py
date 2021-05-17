@@ -201,7 +201,7 @@ def load_dl1_data_stereo(file, drop=False):
         # Merge
         data = data_hillas.merge(data_stereo, on=common_keys)
     except:
-        data = pd.read_hdf(file, key=f"dl/hillas_params")
+        data = pd.read_hdf(file, key=f"dl2/reco")
     # Index
     data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)
