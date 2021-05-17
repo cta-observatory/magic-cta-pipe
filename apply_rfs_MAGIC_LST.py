@@ -118,35 +118,37 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
             # Loop on rf_kinds
             for rf_kind in rf_kinds:
                 info_message(f"Loading RF: {rf_kind}", prefix="ApplyRF")
+                try:
+                    # Init the estimator
+                    if rf_kind == "direction_rf":
+                        estimator = DirectionEstimatorPandas(
+                            cfg[rf_kind]["features"],
+                            array_tel_descriptions,
+                            **cfg[rf_kind]["settings"],
+                        )
+                    elif rf_kind == "energy_rf":
+                        estimator = EnergyEstimatorPandas(
+                            cfg[rf_kind]["features"], **cfg[rf_kind]["settings"]
+                        )
 
-                # Init the estimator
-                if rf_kind == "direction_rf":
-                    estimator = DirectionEstimatorPandas(
-                        cfg[rf_kind]["features"],
-                        array_tel_descriptions,
-                        **cfg[rf_kind]["settings"],
+                    elif rf_kind == "classifier_rf":
+                        estimator = EventClassifierPandas(
+                            cfg[rf_kind]["features"], **cfg[rf_kind]["settings"]
+                        )
+
+                    # Load the joblib RFs file
+                    estimator.load(
+                        os.path.join(cfg[rf_kind]["save_dir"], cfg[rf_kind]["joblib_name"])
                     )
-                elif rf_kind == "energy_rf":
-                    estimator = EnergyEstimatorPandas(
-                        cfg[rf_kind]["features"], **cfg[rf_kind]["settings"]
-                    )
 
-                elif rf_kind == "classifier_rf":
-                    estimator = EventClassifierPandas(
-                        cfg[rf_kind]["features"], **cfg[rf_kind]["settings"]
-                    )
+                    # Apply RF
+                    info_message(f"Applying RF: {rf_kind}", prefix="ApplyRF")
+                    reco = estimator.predict(shower_data)
 
-                # Load the joblib RFs file
-                estimator.load(
-                    os.path.join(cfg[rf_kind]["save_dir"], cfg[rf_kind]["joblib_name"])
-                )
-
-                # Apply RF
-                info_message(f"Applying RF: {rf_kind}", prefix="ApplyRF")
-                reco = estimator.predict(shower_data)
-
-                # Appeding the result to the main data frame
-                shower_data = shower_data.join(reco)
+                    # Appeding the result to the main data frame
+                    shower_data = shower_data.join(reco)
+                except Exception as e:
+                    print(e)
 
             # --- END LOOP on rf_kinds ---
 
