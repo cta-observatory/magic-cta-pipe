@@ -15,7 +15,8 @@ RFs
 *.gz
 *.h5
 
-#
+# Other
 TODO.txt
 test.ipynb
 .ipynb_checkpoints
+*.tmp
