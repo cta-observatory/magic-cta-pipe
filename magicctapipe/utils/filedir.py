@@ -185,10 +185,16 @@ def load_dl1_data_stereo(file, drop=False):
     ]
     extra_stereo_keys = ["tel_alt", "tel_az", "num_islands", "n_islands", "tel_id"]
     common_keys = ["obs_id", "event_id", "true_energy", "true_alt", "true_az"]
-    # Hillas
-    data_hillas = pd.read_hdf(file, key=f"dl1/hillas_params")
-    # Stereo
-    data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
+    try:
+        # Hillas
+        data_hillas = pd.read_hdf(file, key=f"dl1/hillas_params")
+        # Stereo
+        data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
+    except:
+        # Hillas
+        data_hillas = pd.read_hdf(file, key=f"dl2/reco")
+        # Stereo
+        data_stereo = pd.read_hdf(file, key=f"dl2/reco")
     # Drop extra stereo keys
     data_stereo = drop_keys(data_stereo, extra_stereo_keys)
     # Drop extra keys
