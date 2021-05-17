@@ -161,8 +161,12 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
             # Take mc_header form DL1 and save in DL2
             try:
                 # Only if file is a Monte Carlo simulation
-                mc_ = pd.read_hdf(file, key="dl1/mc_header")
-                mc_.to_hdf(out_file, key="dl2/mc_header")
+                try:
+                    mc_ = pd.read_hdf(file, key="dl1/mc_header")
+                    mc_.to_hdf(out_file, key="dl2/mc_header")
+                except:
+                    mc_ = pd.read_hdf(file, key="dl2/mc_header")
+                    mc_.to_hdf(out_file, key="dl2/mc_header")
             except Exception as e:
                 # No mc_header found in file, file is not a simulation
                 print(f"No dl1/mc_header found in file {file}, skipping")
