@@ -200,10 +200,10 @@ def load_dl1_data_stereo(file, drop=False):
         common_keys = check_common_keys(data_hillas, data_stereo, common_keys)
         # Merge
         data = data_hillas.merge(data_stereo, on=common_keys)
+        # Index
+        data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     except:
         data = pd.read_hdf(file, key=f"dl2/reco")
-    # Index
-    data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     data.sort_index(inplace=True)
     return data
 
