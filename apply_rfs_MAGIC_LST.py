@@ -85,6 +85,7 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
         info_message(f'Loading "{data_type}", sample "{sample}"', prefix="ApplyRF")
 
         file_list = glob.glob(cfg["data_files"][data_type][sample]["hillas_h5"])
+        print(cfg["data_files"][data_type][sample]["hillas_h5"])
         print(file_list)
 
         for file in file_list:
