@@ -115,7 +115,7 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
 
             # --- Applying RFs ---
             # Random forest kinds
-            rf_kinds = ["direction_rf", "energy_rf", "classifier_rf"]
+            rf_kinds = ["energy_rf", "direction_rf", "classifier_rf"]
             # Loop on rf_kinds
             for rf_kind in rf_kinds:
                 info_message(f"Loading RF: {rf_kind}", prefix="ApplyRF")
@@ -139,7 +139,9 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
 
                     # Load the joblib RFs file
                     estimator.load(
-                        os.path.join(cfg[rf_kind]["save_dir"], cfg[rf_kind]["joblib_name"])
+                        os.path.join(
+                            cfg[rf_kind]["save_dir"], cfg[rf_kind]["joblib_name"]
+                        )
                     )
 
                     # Apply RF
