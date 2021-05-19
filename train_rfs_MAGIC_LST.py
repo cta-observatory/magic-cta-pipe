@@ -61,9 +61,17 @@ PARSER.add_argument(
     default=False,
     help="Train all random forests",
 )
+PARSER.add_argument(
+    "-p",
+    "--only_plots",
+    action="store_true",
+    required=False,
+    default=False,
+    help="Only plots (works only for classifier)",
+)
 
 
-def train_classifier_rf_stereo(config_file):
+def train_classifier_rf_stereo(config_file, only_plots=False):
     print_title("TRAIN CLASSIFIER RFs")
 
     # --- Read the configuration file ---
@@ -73,40 +81,45 @@ def train_classifier_rf_stereo(config_file):
     check_folder(cfg["classifier_rf"]["save_dir"])
 
     # --- Train sample ---
-    mc_data_train, bkg_data_train = load_init_data_classifier(cfg=cfg, mode="train")
+    if not only_plots:
+        mc_data_train, bkg_data_train = load_init_data_classifier(cfg=cfg, mode="train")
 
     # --- Test sample ---
     mc_data_test, bkg_data_test = load_init_data_classifier(cfg=cfg, mode="test")
 
     # --- Check intersections ---
-    # useful ONLY if test_file_n == 0
-    wn_ = "WARNING: test_file_n != 0, considering only a selection of the test sample"
-    if "check_train_test" in cfg["classifier_rf"].keys():
-        if cfg["classifier_rf"]["check_train_test"]:
-            info_message("Check train and test", prefix="ClassifierRF")
-            if cfg["classifier_rf"]["test_file_n"] > 0:
-                info_message(wn_, prefix="ClassifierRF")
-            test_passed = check_train_test_intersections_classifier(
-                mc_data_train=mc_data_train,
-                bkg_data_train=bkg_data_train,
-                mc_data_test=mc_data_test,
-                bkg_data_test=bkg_data_test,
-            )
-            s_ = "Test PASSED" if test_passed else "Test NOT PASSED"
-            info_message(s_, prefix="ClassifierRF")
+    if not only_plots:
+        # useful ONLY if test_file_n == 0
+        wn_ = (
+            "WARNING: test_file_n != 0, considering only a selection of the test sample"
+        )
+        if "check_train_test" in cfg["classifier_rf"].keys():
+            if cfg["classifier_rf"]["check_train_test"]:
+                info_message("Check train and test", prefix="ClassifierRF")
+                if cfg["classifier_rf"]["test_file_n"] > 0:
+                    info_message(wn_, prefix="ClassifierRF")
+                test_passed = check_train_test_intersections_classifier(
+                    mc_data_train=mc_data_train,
+                    bkg_data_train=bkg_data_train,
+                    mc_data_test=mc_data_test,
+                    bkg_data_test=bkg_data_test,
+                )
+                s_ = "Test PASSED" if test_passed else "Test NOT PASSED"
+                info_message(s_, prefix="ClassifierRF")
 
-    # Computing event weights for train sample
-    alt_edges, intensity_edges = compute_event_weights()
+    if not only_plots:
+        # Computing event weights for train sample
+        alt_edges, intensity_edges = compute_event_weights()
 
-    mc_weights, bkg_weights = get_weights_classifier(
-        mc_data_train, bkg_data_train, alt_edges, intensity_edges
-    )
+        mc_weights, bkg_weights = get_weights_classifier(
+            mc_data_train, bkg_data_train, alt_edges, intensity_edges
+        )
 
-    mc_data_train = mc_data_train.join(mc_weights)
-    bkg_data_train = bkg_data_train.join(bkg_weights)
+        mc_data_train = mc_data_train.join(mc_weights)
+        bkg_data_train = bkg_data_train.join(bkg_weights)
 
-    # Merging the train sample
-    shower_data_train = mc_data_train.append(bkg_data_train)
+        # Merging the train sample
+        shower_data_train = mc_data_train.append(bkg_data_train)
 
     # Merging the test sample
     shower_data_test = mc_data_test.append(bkg_data_test)
@@ -115,16 +128,18 @@ def train_classifier_rf_stereo(config_file):
 
     # --- Data preparation ---
     l_ = ["obs_id", "event_id"]
-    shower_data_train["multiplicity"] = (
-        shower_data_train["intensity"].groupby(level=l_).count()
-    )
+    if not only_plots:
+        shower_data_train["multiplicity"] = (
+            shower_data_train["intensity"].groupby(level=l_).count()
+        )
     shower_data_test["multiplicity"] = (
         shower_data_test["intensity"].groupby(level=l_).count()
     )
 
     # Applying the cuts
     c_ = cfg["classifier_rf"]["cuts"]
-    shower_data_train = shower_data_train.query(c_)
+    if not only_plots:
+        shower_data_train = shower_data_train.query(c_)
     shower_data_test = shower_data_test.query(c_)
 
     # --- Training the classifier RF ---
@@ -133,14 +148,20 @@ def train_classifier_rf_stereo(config_file):
     class_estimator = EventClassifierPandas(
         cfg["classifier_rf"]["features"], **cfg["classifier_rf"]["settings"]
     )
-    class_estimator.fit(shower_data_train)
+    if not only_plots:
+        class_estimator.fit(shower_data_train)
 
-    # --- Save RF data to joblib file ---
-    class_estimator.save(
-        os.path.join(
-            cfg["classifier_rf"]["save_dir"], cfg["classifier_rf"]["joblib_name"]
+        # --- Save RF data to joblib file ---
+        class_estimator.save(
+            os.path.join(
+                cfg["classifier_rf"]["save_dir"], cfg["classifier_rf"]["joblib_name"]
+            )
         )
-    )
+    else:
+        # Load the joblib RFs file
+        class_estimator.load(
+            os.path.join(cfg[rf_kind]["save_dir"], cfg[rf_kind]["joblib_name"])
+        )
 
     # --- Show results ---
     # Print Parameter importances Mono
@@ -748,7 +769,9 @@ if __name__ == "__main__":
         print("Type -h or --help for information on how to run the script")
 
     if do_classifier:
-        train_classifier_rf_stereo(config_file=kwargs["config_file"])
+        train_classifier_rf_stereo(
+            config_file=kwargs["config_file"], only_plots=kwargs["only_plots"]
+        )
     if do_energy:
         train_energy_rf_stereo(config_file=kwargs["config_file"])
     if do_direction:
