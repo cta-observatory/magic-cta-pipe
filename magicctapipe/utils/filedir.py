@@ -110,7 +110,7 @@ def load_dl1_data_stereo_list_selected(
         n = sub_dict[file_n_key]
         if n > 0:
             file_list = file_list[:n]
-    data = load_dl1_data_stereo_list(file_list, drop, mono_mode=mono_mode)
+    data = load_dl1_data_stereo_list(file_list, drop, mono_mode=mono_mode, verbose=True)
     return data
 
 
