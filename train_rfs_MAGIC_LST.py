@@ -160,7 +160,9 @@ def train_classifier_rf_stereo(config_file, only_plots=False):
     else:
         # Load the joblib RFs file
         class_estimator.load(
-            os.path.join(cfg[rf_kind]["save_dir"], cfg[rf_kind]["joblib_name"])
+            os.path.join(
+                cfg["classifier_rf"]["save_dir"], cfg["classifier_rf"]["joblib_name"]
+            )
         )
 
     # --- Show results ---
