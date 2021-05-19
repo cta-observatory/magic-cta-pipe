@@ -22,8 +22,9 @@ def GetHist_classifier(data, bins=30, range=None, weights=None):
     return hist
 
 
-def evaluate_performance_classifier(data, class0_name="event_class_0"):
-    data = data.dropna()
+def evaluate_performance_classifier(data, class0_name="event_class_0", drop_na=True):
+    if drop_na:
+        data = data.dropna()
 
     report = {"gammaness": dict(), "metrics": dict()}
 

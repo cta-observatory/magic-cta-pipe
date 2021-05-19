@@ -186,16 +186,20 @@ def train_classifier_rf_stereo(config_file, only_plots=False):
 
     tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
+    drop_na = True if not only_plots else False
+
     # Mean
     performance[0] = evaluate_performance_classifier(
         shower_data_test.loc[idx[:, :, tel_ids[0]], shower_data_test.columns],
         class0_name="event_class_0_mean",
+        drop_na=drop_na,
     )
 
     # For tels
     for tel_id in tel_ids:
         performance[tel_id] = evaluate_performance_classifier(
-            shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns]
+            shower_data_test.loc[idx[:, :, tel_id], shower_data_test.columns],
+            drop_na=drop_na,
         )
 
     # ================
