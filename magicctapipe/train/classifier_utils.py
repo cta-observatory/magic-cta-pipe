@@ -51,6 +51,7 @@ def evaluate_performance_classifier(data, class0_name="event_class_0"):
 
     proba = data[class_names].values
     predicted_class = proba.argmax(axis=1)
+    print(proba)
 
     report["metrics"]["acc"] = sklearn.metrics.accuracy_score(
         data["true_event_class"], predicted_class
