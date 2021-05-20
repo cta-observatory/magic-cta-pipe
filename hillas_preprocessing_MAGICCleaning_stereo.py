@@ -31,7 +31,7 @@ from astropy.coordinates import SkyCoord, AltAz
 from utils import MAGIC_Badpixels
 # from utils import bad_pixel_treatment
 from utils import MAGIC_Cleaning
-from utils.calc_impact import calc_impact
+from utils import calc_impact
 
 def info_message(text, prefix='info'):
     """
