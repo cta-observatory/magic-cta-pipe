@@ -346,7 +346,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                 # Pixel arrival time map
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
                 # Camera geometry
-                camera = source.subarray.tel[tel_id].camera
+                camera = source.subarray.tel[tel_id].camera.geometry
 
                 # Added on 06/07/2019
                 clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
@@ -512,7 +512,7 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
                 # Pixel arrival time map
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
                 # Camera geometry
-                camera = source.subarray.tel[tel_id].camera
+                camera = source.subarray.tel[tel_id].camera.geometry
 
                 clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
