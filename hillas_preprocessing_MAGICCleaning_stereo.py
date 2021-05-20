@@ -154,8 +154,11 @@ def process_dataset_mc(input_mask, output_name):
 
             tels_with_data = event.r1.tels_with_data
 
+            event_info             = dict()
+            leakage_params         = dict()
+            timing_params          = dict()
             computed_hillas_params = dict()
-            telescope_pointings = dict()
+            telescope_pointings    = dict()
             array_pointing = SkyCoord(
                 alt=event.pointing.array_altitude,
                 az=event.pointing.array_azimuth,
@@ -334,8 +337,11 @@ def process_dataset_data(input_mask, output_name):
 
             tels_with_data = event.r1.tels_with_data
 
+            event_info             = dict()
+            leakage_params         = dict()
+            timing_params          = dict()
             computed_hillas_params = dict()
-            telescope_pointings = dict()
+            telescope_pointings    = dict()
             array_pointing = SkyCoord(
                 alt=event.pointing.array_altitude,
                 az=event.pointing.array_azimuth,
