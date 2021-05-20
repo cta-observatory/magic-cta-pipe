@@ -11,10 +11,6 @@ import numpy as np
 import iminuit
 
 import ctapipe
-from ctapipe.instrument import CameraGeometry
-from ctapipe.instrument import TelescopeDescription
-from ctapipe.instrument import OpticsDescription
-from ctapipe.instrument import SubarrayDescription
 
 import astropy.io.fits as pyfits
 from astropy import units as u
@@ -641,25 +637,6 @@ except IOError:
     print(file_not_found_message.format(parsed_args.config))
     exit()
 # ------------------------------
-
-# -----------------
-# MAGIC definitions
-# MAGIC telescope positions in m wrt. to the center of CTA simulations
-magic_tel_positions = {
-    1: [-27.24, -146.66, 50.00] * u.m,
-    2: [-96.44, -96.77, 51.00] * u.m
-}
-
-# MAGIC telescope description
-magic_optics = OpticsDescription.from_name('MAGIC')
-magic_cam = CameraGeometry.from_name('MAGICCam')
-magic_tel_description = TelescopeDescription(name='MAGIC',
-                                             tel_type='MAGIC',
-                                             optics=magic_optics,
-                                             camera=magic_cam)
-magic_tel_descriptions = {1: magic_tel_description,
-                          2: magic_tel_description}
-# -----------------
 
 if parsed_args.stereo:
     is_stereo = True
