@@ -243,10 +243,10 @@ def process_dataset_mc(input_mask, output_name):
                     # Storing the result
                     for tel_id in list(event_info.keys()):
                         _impact = calc_impact(
-                            stereo_params.core_x,
-                            stereo_params.core_y,
-                            stereo_params.az,
-                            stereo_params.alt,
+                            stereo_params.core_x.value,
+                            stereo_params.core_y.value,
+                            stereo_params.az.to("rad").value,
+                            stereo_params.alt.to("rad").value,
                             source.subarray.positions[tel_id][0].value,
                             source.subarray.positions[tel_id][1].value,
                             source.subarray.positions[tel_id][2].value
@@ -426,10 +426,10 @@ def process_dataset_data(input_mask, output_name):
                     # Storing the result
                     for tel_id in list(event_info.keys()):
                         _impact = calc_impact(
-                            stereo_params.core_x,
-                            stereo_params.core_y,
-                            stereo_params.az,
-                            stereo_params.alt,
+                            stereo_params.core_x.value,
+                            stereo_params.core_y.value,
+                            stereo_params.az.to("rad").value,
+                            stereo_params.alt.to("rad").value,
                             source.subarray.positions[tel_id][0].value,
                             source.subarray.positions[tel_id][1].value,
                             source.subarray.positions[tel_id][2].value
