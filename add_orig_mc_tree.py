@@ -15,7 +15,7 @@ from astropy.coordinates import AltAz, SkyCoord
 from astropy.coordinates.angle_utilities import angular_separation
 
 import ctapipe
-from ctapipe.instrument import CameraGeometry
+from ctapipe.instrument import CameraDescription
 from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
@@ -81,7 +81,7 @@ def read_original_mc_tree(file_mask):
                                 az=tel_az * u.rad)
 
             optics = magic_tel_descriptions[telescope].optics
-            camera = magic_tel_descriptions[telescope].camera
+            camera = magic_tel_descriptions[telescope].camera.geometry
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                     rotation=camera.cam_rotation)
@@ -189,7 +189,7 @@ magic_tel_positions = {
 
 # MAGIC telescope description
 magic_optics = OpticsDescription.from_name('MAGIC')
-magic_cam = CameraGeometry.from_name('MAGICCam')
+magic_cam = CameraDescription.from_name('MAGICCam')
 magic_tel_description = TelescopeDescription(name='MAGIC',
                                              tel_type='MAGIC',
                                              optics=magic_optics,
