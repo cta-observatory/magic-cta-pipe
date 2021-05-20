@@ -21,12 +21,11 @@ from ctapipe.image import hillas_parameters, leakage
 from ctapipe.image.timing import timing_parameters
 from ctapipe.image.cleaning import tailcuts_clean
 from ctapipe.image.morphology import number_of_islands
-from ctapipe.instrument import CameraGeometry  
 
 from utils import MAGIC_Badpixels
 from utils import MAGIC_Cleaning
 
-warnings.simplefilter('ignore') 
+warnings.simplefilter('ignore')
 
 class InfoContainer(Container):
     obs_id = Field(-1, "Observation ID")
@@ -47,10 +46,10 @@ start_time = time.time()
 
 arg_parser = argparse.ArgumentParser()
 
-arg_parser.add_argument('--input-dir', '-i', dest='input_dir', type=str, 
+arg_parser.add_argument('--input-dir', '-i', dest='input_dir', type=str,
     help='Path to the MAGIC input directory that contains the MAGIC input files with root format.')
 
-arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5', 
+arg_parser.add_argument('--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5',
     help='Path and name of the output file with HDF5 format.')
 
 arg_parser.add_argument('--config-file', '-c', dest='config_file', type=str, default='./config.yaml', help='Path to the config file')
@@ -89,7 +88,7 @@ with HDF5TableWriter(filename=args.output_file, group_name='events', overwrite=T
 
     print('\nProcessing the events...')
 
-    for i_ev, event in enumerate(source._mono_event_generator(telescope=f'M{tel_id}')):  
+    for i_ev, event in enumerate(source._mono_event_generator(telescope=f'M{tel_id}')):
         
         if i_ev%1000 == 0:  
             print(f'{i_ev} events')
@@ -134,7 +133,7 @@ with HDF5TableWriter(filename=args.output_file, group_name='events', overwrite=T
                 print(f'--> {i_ev} event (event ID = {event.index.event_id}): Timing parameter calculation failed. Skipping.')
                 continue
             
-            # === Leakage parameter calculation === 
+            # === Leakage parameter calculation ===
             try:
                 leakage_params = leakage(geom_camera, image, signal_pixels)
             except: 
@@ -153,7 +152,7 @@ with HDF5TableWriter(filename=args.output_file, group_name='events', overwrite=T
                 n_islands=num_islands
             )
 
-            writer.write("params", (event_info, hillas_params, leakage_params, timing_params))         
+            writer.write("params", (event_info, hillas_params, leakage_params, timing_params))
 
 end_time = time.time()
 print(f'elapsed time = {end_time - start_time} [sec]')
