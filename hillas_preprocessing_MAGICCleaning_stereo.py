@@ -252,7 +252,7 @@ def process_dataset_mc(input_mask, output_name):
                     stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing)
                     # Storing the result
                     for tel_id in list(event_info.keys()):
-                        _impact = calc_impact(
+                        _impact = calc_impact.calc_impact(
                             stereo_params.core_x.value,
                             stereo_params.core_y.value,
                             stereo_params.az.to("rad").value,
@@ -453,7 +453,7 @@ def process_dataset_data(input_mask, output_name):
                     stereo_params = hillas_reconstructor.predict(computed_hillas_params, source.subarray, array_pointing)
                     # Storing the result
                     for tel_id in list(event_info.keys()):
-                        _impact = calc_impact(
+                        _impact = calc_impact.calc_impact(
                             stereo_params.core_x.value,
                             stereo_params.core_y.value,
                             stereo_params.az.to("rad").value,
