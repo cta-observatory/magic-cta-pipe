@@ -133,6 +133,12 @@ def process_dataset_mc(input_mask, output_name):
 
     horizon_frame = AltAz()
 
+    events_not_passing_cleaning       = 0
+    events_hillas_calculation_failed  = 0
+    events_stereo_calculation_skipped = 0
+    events_stereo_calculation_failed  = 0
+    events_stereo_calculation_success = 0
+
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Event source
@@ -222,20 +228,24 @@ def process_dataset_mc(input_mask, output_name):
                     except ValueError:
                         print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
                             f"telescope ID: {tel_id}): Hillas calculation failed.")
+                        events_hillas_calculation_failed += 1
                         break
                 else:
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
                         f"telescope ID: {tel_id}) did not pass cleaning.")
+                    events_not_passing_cleaning += 1
                     break
 
             if len(computed_hillas_params.keys()) > 1:
                 if any([computed_hillas_params[tel_id]["width"].value == 0 for tel_id in computed_hillas_params]):
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
                         f"has an ellipse with width=0: stereo parameters calculation skipped.")
+                    events_stereo_calculation_skipped += 1
                     continue
                 elif any([np.isnan(computed_hillas_params[tel_id]["width"].value) for tel_id in computed_hillas_params]):
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
                         f"has an ellipse with width=NaN: stereo parameters calculation skipped.")
+                    events_stereo_calculation_skipped += 1
                     continue
                 else:
                     # stereo params
@@ -256,6 +266,14 @@ def process_dataset_mc(input_mask, output_name):
                     event_info[list(event_info.keys())[0]].tel_id = -1
                     # Storing the result
                     writer.write("stereo_params", (event_info[list(event_info.keys())[0]], stereo_params))
+                    events_stereo_calculation_success += 1
+
+    print("Event processing statistics ...")
+    print("\tEvents not passing cleaning: {events_not_passing_cleaning}")
+    print("\tEvents with hillas calculation failed: {events_hillas_calculation_failed}")
+    print("\tEvents with stereo calculation skipped: {events_stereo_calculation_skipped}")
+    print("\tEvents with stereo calculation failed: {events_stereo_calculation_failed}")
+    print("\tEvents with stereo calculation: {events_stereo_calculation_success}")
 
 
 def process_dataset_data(input_mask, output_name):
@@ -317,6 +335,12 @@ def process_dataset_data(input_mask, output_name):
     horizon_frame = AltAz()
 
     previous_event_id = 0
+
+    events_not_passing_cleaning       = 0
+    events_hillas_calculation_failed  = 0
+    events_stereo_calculation_skipped = 0
+    events_stereo_calculation_failed  = 0
+    events_stereo_calculation_success = 0
 
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
@@ -405,20 +429,24 @@ def process_dataset_data(input_mask, output_name):
                     except ValueError:
                         print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
                             f"telescope ID: {tel_id}): Hillas calculation failed.")
+                        events_hillas_calculation_failed += 1
                         break
                 else:
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
                         f"telescope ID: {tel_id}) did not pass cleaning.")
+                    events_not_passing_cleaning += 1
                     break
 
             if len(computed_hillas_params.keys()) > 1:
                 if any([computed_hillas_params[tel_id]["width"].value == 0 for tel_id in computed_hillas_params]):
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
                         f"has an ellipse with width=0: stereo parameters calculation skipped.")
+                    events_stereo_calculation_skipped += 1
                     continue
                 elif any([np.isnan(computed_hillas_params[tel_id]["width"].value) for tel_id in computed_hillas_params]):
                     print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}) "
                         f"has an ellipse with width=NaN: stereo parameters calculation skipped.")
+                    events_stereo_calculation_skipped += 1
                     continue
                 else:
                     # stereo params
@@ -439,6 +467,14 @@ def process_dataset_data(input_mask, output_name):
                     event_info[list(event_info.keys())[0]].tel_id = -1
                     # Storing the result
                     writer.write("stereo_params", (event_info[list(event_info.keys())[0]], stereo_params))
+                    events_stereo_calculation_success += 1
+
+    print("Event processing statistics ...")
+    print("\tEvents not passing cleaning: {events_not_passing_cleaning}")
+    print("\tEvents with hillas calculation failed: {events_hillas_calculation_failed}")
+    print("\tEvents with stereo calculation skipped: {events_stereo_calculation_skipped}")
+    print("\tEvents with stereo calculation failed: {events_stereo_calculation_failed}")
+    print("\tEvents with stereo calculation: {events_stereo_calculation_success}")
 
 
 # =================
