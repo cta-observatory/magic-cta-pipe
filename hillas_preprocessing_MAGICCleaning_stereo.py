@@ -269,11 +269,11 @@ def process_dataset_mc(input_mask, output_name):
                     events_stereo_calculation_success += 1
 
     print("Event processing statistics ...")
-    print("\tEvents not passing cleaning: {events_not_passing_cleaning}")
-    print("\tEvents with hillas calculation failed: {events_hillas_calculation_failed}")
-    print("\tEvents with stereo calculation skipped: {events_stereo_calculation_skipped}")
-    print("\tEvents with stereo calculation failed: {events_stereo_calculation_failed}")
-    print("\tEvents with stereo calculation: {events_stereo_calculation_success}")
+    print(f"\tEvents not passing cleaning: {events_not_passing_cleaning}")
+    print(f"\tEvents with hillas calculation failed: {events_hillas_calculation_failed}")
+    print(f"\tEvents with stereo calculation skipped: {events_stereo_calculation_skipped}")
+    print(f"\tEvents with stereo calculation failed: {events_stereo_calculation_failed}")
+    print(f"\tEvents with stereo calculation: {events_stereo_calculation_success}")
 
 
 def process_dataset_data(input_mask, output_name):
@@ -470,11 +470,11 @@ def process_dataset_data(input_mask, output_name):
                     events_stereo_calculation_success += 1
 
     print("Event processing statistics ...")
-    print("\tEvents not passing cleaning: {events_not_passing_cleaning}")
-    print("\tEvents with hillas calculation failed: {events_hillas_calculation_failed}")
-    print("\tEvents with stereo calculation skipped: {events_stereo_calculation_skipped}")
-    print("\tEvents with stereo calculation failed: {events_stereo_calculation_failed}")
-    print("\tEvents with stereo calculation: {events_stereo_calculation_success}")
+    print(f"\tEvents not passing cleaning: {events_not_passing_cleaning}")
+    print(f"\tEvents with hillas calculation failed: {events_hillas_calculation_failed}")
+    print(f"\tEvents with stereo calculation skipped: {events_stereo_calculation_skipped}")
+    print(f"\tEvents with stereo calculation failed: {events_stereo_calculation_failed}")
+    print(f"\tEvents with stereo calculation: {events_stereo_calculation_success}")
 
 
 # =================
