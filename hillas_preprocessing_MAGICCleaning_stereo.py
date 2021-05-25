@@ -24,6 +24,7 @@ from ctapipe.core.container import Container, Field
 from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters, leakage
 from ctapipe.image.timing import timing_parameters
+from ctapipe.instrument import CameraGeometry
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
@@ -74,6 +75,36 @@ def get_num_islands(camera, clean_mask, event_image):
 
     return num_islands
 
+def scale_camera_geometry(camera, factor):
+    """Scale given camera geometry of a given (constant) factor
+    
+    Parameters
+    ----------
+    camera : CameraGeometry
+        Camera geometry
+    factor : float
+        Scale factor
+    
+    Returns
+    -------
+    CameraGeometry
+        Scaled camera geometry
+    """
+    pix_x_scaled = factor*camera.pix_x
+    pix_y_scaled = factor*camera.pix_y
+    pix_area_scaled = geom.guess_pixel_area(pix_x_scaled, pix_y_scaled, camera.pix_type)
+
+    return CameraGeometry(
+        camera_name='MAGICCam',
+        pix_id=camera.pix_id,
+        pix_x=pix_x_scaled,
+        pix_y=pix_y_scaled,
+        pix_area=pix_area_scaled,
+        pix_type=camera.pix_type,
+        pix_rotation=camera.pix_rotation,
+        cam_rotation=camera.cam_rotation
+    )
+
 def process_dataset_mc(input_mask, output_name):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
@@ -122,6 +153,8 @@ def process_dataset_mc(input_mask, output_name):
         findhotpixels = False,
     )
 
+    aberration_factor = 1./1.0713
+
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -145,8 +178,8 @@ def process_dataset_mc(input_mask, output_name):
         source = MAGICEventSource(input_url=input_mask)
         
         camera = source.subarray.tel[1].camera.geometry
-
-        magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
+        camera_scaled = scale_camera_geometry(camera, aberration_factor)
+        magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
 
         obs_id_last = -1
 
@@ -180,7 +213,7 @@ def process_dataset_mc(input_mask, output_name):
 
                 clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time)
 
-                num_islands = get_num_islands(camera, clean_mask, event_image)
+                num_islands = get_num_islands(camera_scaled, clean_mask, event_image)
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -191,16 +224,16 @@ def process_dataset_mc(input_mask, output_name):
                 if np.any(event_image_cleaned):
                     try:
                         # If event has survived the cleaning, computing the Hillas parameters
-                        hillas_params = hillas_parameters(camera, event_image_cleaned)
+                        hillas_params = hillas_parameters(camera_scaled, event_image_cleaned)
                         image_mask = event_image_cleaned > 0
                         timing_params[tel_id] = timing_parameters(
-                            camera,
+                            camera_scaled,
                             event_image_cleaned,
                             event_pulse_time_cleaned,
                             hillas_params,
                             image_mask
                         )
-                        leakage_params[tel_id] = leakage(camera, event_image, clean_mask)
+                        leakage_params[tel_id] = leakage(camera_scaled, event_image, clean_mask)
 
                         computed_hillas_params[tel_id] = hillas_params
 
@@ -323,6 +356,8 @@ def process_dataset_data(input_mask, output_name):
         pedestalType = 'FromExtractorRndm'
     )
 
+    aberration_factor = 1./1.0713
+
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -348,7 +383,8 @@ def process_dataset_data(input_mask, output_name):
         source = MAGICEventSource(input_url=input_mask)
 
         camera = source.subarray.tel[1].camera.geometry
-        magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
+        camera_scaled = scale_camera_geometry(camera, aberration_factor)
+        magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
 
         # Looping over the events
@@ -385,7 +421,7 @@ def process_dataset_data(input_mask, output_name):
 
                 clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time,unsuitable_mask=unsuitable_mask)
 
-                num_islands = get_num_islands(camera, clean_mask, event_image)
+                num_islands = get_num_islands(camera_scaled, clean_mask, event_image)
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -396,16 +432,16 @@ def process_dataset_data(input_mask, output_name):
                 if np.any(event_image_cleaned):
                     try:
                         # If event has survived the cleaning, computing the Hillas parameters
-                        hillas_params = hillas_parameters(camera, event_image_cleaned)
+                        hillas_params = hillas_parameters(camera_scaled, event_image_cleaned)
                         image_mask = event_image_cleaned > 0
                         timing_params[tel_id] = timing_parameters(
-                            camera,
+                            camera_scaled,
                             event_image_cleaned,
                             event_pulse_time_cleaned,
                             hillas_params,
                             image_mask
                         )
-                        leakage_params[tel_id] = leakage(camera, event_image, clean_mask)
+                        leakage_params[tel_id] = leakage(camera_scaled, event_image, clean_mask)
 
                         computed_hillas_params[tel_id] = hillas_params
 
