@@ -559,7 +559,7 @@ except IOError:
 if 'data_files' not in config:
     print('Error: the configuration file is missing the "data_files" section. Exiting.')
     exit()
-    
+
 if 'image_cleaning' not in config:
     print('Error: the configuration file is missing the "image_cleaning" section. Exiting.')
     exit()

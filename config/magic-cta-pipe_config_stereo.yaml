@@ -82,6 +82,7 @@ source:
         ra_dec: [83.633083, 22.0145]
 
 event_list:
+    output_directory: "/path/to/output/directory"
     max_time_diff: 6.9e-4
     cuts:
         quality:
@@ -89,3 +90,10 @@ event_list:
             dc: "0 < value < 7e3"
         selection:
             "(event_id > 0) & (multiplicity > 1) & (event_class_0 > 0.8)"
+
+spectrum:
+    input_files: "/path/to/input/events*.fits"
+    #exclude_region: {0 : [183.604, -8.708, 0.5]}
+    spectral_model:
+        power_law: {'index' : 2, 'amplitude' : 2e-11, 'reference' : 0.3}
+        #log_parabola: {'alpha' : 2, 'amplitude' : 2e-11, 'beta' : 0.2, 'reference' : 0.3}
