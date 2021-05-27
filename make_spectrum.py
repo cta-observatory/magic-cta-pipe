@@ -82,6 +82,22 @@ def crab_magic_2(e):
 
     return e2dnde
 
+def read_config(config):
+    options = {}
+    options["event_files"] = config["spectrum"]["input_files"]
+    options["irf_file"] = config["irf"]["output_name"]
+    options["source_name"] = config["source"]["name"]
+    options["source_ra"] = config["source"]["coordinates"]["ra_dec"][0]
+    options["source_dec"] = config["source"]["coordinates"]["ra_dec"][1]
+    options["off_positions"] = config["spectrum"]["off_positions"]
+    options["energy_reco_nbins"] = config["spectrum"]["energy_reco_nbins"]
+    options["energy_reco_min"] = config["spectrum"]["energy_reco_min"]
+    options["energy_reco_max"] = config["spectrum"]["energy_reco_max"]
+    options["energy_true_factor"] = config["spectrum"]["energy_true_factor"]
+    options["spectral_model"] = config["spectrum"]["spectral_model"]
+
+    return options
+
 print(f"Using numpy version {np.__version__}")
 print(f"Using astropy version {astropy.__version__}")
 print(f"Using gammapy version {gammapy.__version__}")
