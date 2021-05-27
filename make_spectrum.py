@@ -212,12 +212,13 @@ mask = exclusion_mask.geom.region_mask(exclusion_regions, inside=False)
 exclusion_mask.data = mask
 exclusion_mask.plot()
 off_positions = options["off_positions"]
+center = SkyCoord(data_store.obs_table[0]["RA_PNT"], data_store.obs_table[0]["DEC_PNT"], unit="deg")
 finder = ReflectedRegionsFinder(
-               region=on_region,
-               center=center,
-               max_region_number=1,
-               min_distance_input="0.0 deg",
-               min_distance="90 deg",
+            region=on_region,
+            center=center,
+            max_region_number=1,
+            min_distance_input="0.0 deg",
+            min_distance="90 deg",
         )
 finder.run()
 max_angle = finder._max_angle.value
