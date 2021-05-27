@@ -208,7 +208,9 @@ mask = exclusion_mask.geom.region_mask(exclusion_regions, inside=False)
 exclusion_mask.data = mask
 exclusion_mask.plot()
 off_positions = options["off_positions"]
-bkg_maker = ReflectedRegionsBackgroundMaker(max_region_number=off_positions)
+min_distance_off = 360./(off_positions+1)
+min_distance_on  = min_distance_off
+bkg_maker = ReflectedRegionsBackgroundMaker(min_distance=min_distance_off, min_distance_input=min_distance_on, max_region_number=off_positions)
 
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
