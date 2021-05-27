@@ -95,5 +95,5 @@ spectrum:
     input_files: "/path/to/input/events*.fits"
     #exclude_region: {0 : [183.604, -8.708, 0.5]}
     spectral_model:
-        power_law: {'index' : 2, 'amplitude' : 2e-11, 'reference' : 0.3}
-        #log_parabola: {'alpha' : 2, 'amplitude' : 2e-11, 'beta' : 0.2, 'reference' : 0.3}
+        power_law: {'index' : 2, 'amplitude' : 2.0e-11, 'reference' : 0.3}
+        #log_parabola: {'alpha' : 2, 'amplitude' : 2.0e-11, 'beta' : 0.2, 'reference' : 0.3}
