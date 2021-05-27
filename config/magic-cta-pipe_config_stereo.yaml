@@ -93,6 +93,11 @@ event_list:
 
 spectrum:
     input_files: "/path/to/input/events*.fits"
+    energy_reco_nbins: 30
+    energy_reco_min: 0.005  # TeV
+    energy_reco_max: 50.    # TeV
+    energy_true_factor: 1.4      # ratio of number of estimated-to-true energy bins
+    off_positions: 3
     #exclude_region: {0 : [183.604, -8.708, 0.5]}
     spectral_model:
         power_law: {'index' : 2, 'amplitude' : 2.0e-11, 'reference' : 0.3}
