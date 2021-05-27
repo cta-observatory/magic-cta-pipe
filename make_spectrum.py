@@ -168,14 +168,21 @@ plt.figure(figsize=(10, 5))
 plot_theta_squared_table(theta2_table)
 plt.show()
 
-e_reco = MapAxis.from_energy_bounds(0.1, 40, 40, unit="TeV", name="energy")
-e_true = MapAxis.from_energy_bounds(
-    0.05, 100, 200, unit="TeV", name="energy_true"
-)
+e_reco_nbins  = options["energy_reco_nbins"]
+e_reco_min    = options["energy_reco_min"]
+e_reco_max    = options["energy_reco_max"]
+e_true_factor = options["energy_true_factor"]
+e_true_nbins  = int(float(e_reco_nbins)/e_true_factor)
+print(e_true_nbins)
+
+e_reco = MapAxis.from_energy_bounds(e_reco_min, e_reco_max, e_reco_nbins, unit="TeV", name="energy")
+print(e_reco.edges)
+e_true = MapAxis.from_energy_bounds(e_reco_min, e_reco_max, e_true_nbins, unit="TeV", name="energy_true")
+print(e_true.edges)
+
 dataset_empty = SpectrumDataset.create(
     e_reco=e_reco, e_true=e_true, region=on_region
 )
-
 dataset_maker = SpectrumDatasetMaker(
     containment_correction=False, selection=["counts", "exposure", "edisp"]
 )
