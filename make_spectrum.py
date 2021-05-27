@@ -32,6 +32,7 @@ from gammapy.makers import (
     SafeMaskMaker,
     SpectrumDatasetMaker,
     ReflectedRegionsBackgroundMaker,
+    ReflectedRegionsFinder,
 )
 from gammapy.estimators import FluxPointsEstimator
 from gammapy.visualization import plot_spectrum_datasets_off_regions
@@ -81,6 +82,9 @@ def crab_magic_2(e):
     e2dnde = dnde * e.to(u.eV)**2
 
     return e2dnde
+
+def get_angle(max_angle, regions):
+    return int((360-(((360-max_angle)/4.0)*(regions+1)))/(regions+1) - 1)
 
 def read_config(config):
     options = {}
@@ -208,9 +212,18 @@ mask = exclusion_mask.geom.region_mask(exclusion_regions, inside=False)
 exclusion_mask.data = mask
 exclusion_mask.plot()
 off_positions = options["off_positions"]
-min_distance_off = Angle(360./(off_positions+1), unit="deg")
-min_distance_on  = min_distance_off
-bkg_maker = ReflectedRegionsBackgroundMaker(min_distance=min_distance_off, min_distance_input=min_distance_on, max_region_number=off_positions)
+finder = ReflectedRegionsFinder(
+               region=on_region,
+               center=center,
+               max_region_number=1,
+               min_distance_input="0.0 deg",
+               min_distance="90 deg",
+        )
+finder.run()
+max_angle = finder._max_angle.value
+angle_regions = get_angle(max_angle, off_positions)
+min_distance_off = Angle(angle_regions, unit="deg")
+bkg_maker = ReflectedRegionsBackgroundMaker(min_distance=min_distance_off, max_region_number=off_positions)
 
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
