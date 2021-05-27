@@ -224,7 +224,7 @@ finder.run()
 max_angle = finder._max_angle.value
 angle_regions = get_angle(max_angle, off_positions)
 min_distance_off = Angle(angle_regions, unit="deg")
-bkg_maker = ReflectedRegionsBackgroundMaker(min_distance=min_distance_off, max_region_number=off_positions)
+bkg_maker = ReflectedRegionsBackgroundMaker(min_distance=min_distance_off, min_distance_input="0.0 deg", max_region_number=off_positions)
 
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
