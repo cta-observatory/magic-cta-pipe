@@ -207,7 +207,8 @@ exclusion_mask = Map.create(
 mask = exclusion_mask.geom.region_mask(exclusion_regions, inside=False)
 exclusion_mask.data = mask
 exclusion_mask.plot()
-bkg_maker = ReflectedRegionsBackgroundMaker()
+off_positions = options["off_positions"]
+bkg_maker = ReflectedRegionsBackgroundMaker(max_region_number=off_positions)
 
 safe_mask_masker = SafeMaskMaker(methods=["aeff-max"], aeff_percent=10)
 
