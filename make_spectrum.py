@@ -125,11 +125,13 @@ except IOError:
 
 # copying IRF file into proper directory, otherwise it will not be found
 
-event_files = config["spectrum"]["input_files"]
-irf_file    = Path(config["irf"]["output_name"])
+options = read_config(config)
+
+event_files = options["event_files"]
+irf_file    = Path(options["irf_file"])
 event_path  = str(Path(event_files).parent)
 os.environ['CALDB'] = event_path
-source_name = config["source"]["name"]
+source_name = options["source_name"]
 irf_path = Path(f"{event_path}/data/magic/dev/bcf/{source_name}")
 irf_path.mkdir(parents=True, exist_ok=True)
 shutil.copy(irf_file, irf_path)
@@ -147,8 +149,8 @@ obs.aeff.peek()
 obs.edisp.peek()
 obs.psf.peek()
 
-source_ra  = config["source"]["coordinates"]["ra_dec"][0]
-source_dec = config["source"]["coordinates"]["ra_dec"][1]
+source_ra  = options["source_ra"]
+source_dec = options["source_dec"]
 target_position = SkyCoord(ra=source_ra, dec=source_dec, unit="deg", frame="icrs")
 on_region_radius = Angle("0.11 deg")
 on_region = CircleSkyRegion(center=target_position, radius=on_region_radius)
@@ -242,8 +244,8 @@ plt.xlabel("Livetime [h]")
 plt.ylabel("Sqrt(TS)")
 plt.show()
 
-if "power_law" in config["spectrum"]["spectral_model"]:
-    parameters = config["spectrum"]["spectral_model"]["power_law"]
+if "power_law" in options["spectral_model"]:
+    parameters = options["spectral_model"]["power_law"]
     index = parameters["index"]
     amplitude = parameters["amplitude"]
     reference = parameters["reference"]
@@ -253,8 +255,8 @@ if "power_law" in config["spectrum"]["spectral_model"]:
     spectral_model = PowerLawSpectralModel(
         index=index, amplitude=amplitude * u.Unit("cm-2 s-1 TeV-1"), reference=reference * u.TeV
     )
-elif "log_parabola" in config["spectrum"]["spectral_model"]:
-    parameters = config["spectrum"]["spectral_model"]["log_parabola"]
+elif "log_parabola" in options["spectral_model"]:
+    parameters = options["spectral_model"]["log_parabola"]
     alpha = parameters["alpha"]
     beta = parameters["beta"]
     amplitude = parameters["amplitude"]
