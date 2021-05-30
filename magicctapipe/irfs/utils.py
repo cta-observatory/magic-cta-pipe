@@ -97,11 +97,12 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     reco_key="dl2/reco",
     mc_header_key="dl2/mc_header",
     useless_cols=[],
+    cuts="",
     max_files=0,
     eval_mean_events=False,
     verbose=False,
 ):
-    """Function to
+    """Function to read dl2 file and convert to pyirf format
 
     Parameters
     ----------
@@ -113,6 +114,8 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
         mc_header key, by default "dl2/mc_header"
     useless_cols : list, optional
         columns not used, by default []
+    cuts : str, optional
+        cuts on dl2 events, by default ""
     max_files : int, optional
         max number of files to be processed, 0 to process all of them, by default 0
     eval_mean_events : bool, optional
@@ -163,6 +166,9 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
             print(f"Analizing file: {file}")
         try:
             events_ = pd.read_hdf(file, key=reco_key).rename(columns=name_mapping)
+            if cuts != "":
+                print(f"Applying cuts: {cuts}")
+                events_.query(cuts)
             if useless_cols != []:
                 events_ = events_.drop(useless_cols, axis=1, errors="ignore")
             if eval_mean_events:

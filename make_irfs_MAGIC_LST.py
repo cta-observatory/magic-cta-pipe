@@ -111,9 +111,10 @@ def make_irfs_MAGIC_LST(config_file):
     MIN_GH_CUT_EFFICIENCY = get_key_if_exists(
         cfg["irfs"], "MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP
     )
-
-    INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
-    LEAKAGE1_CUT = cfg["irfs"]["LEAKAGE1_CUT"]
+    cuts = get_key_if_exists(cfg["irfs"], "cuts", "")
+    if cuts == "":
+        INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
+        LEAKAGE1_CUT = cfg["irfs"]["LEAKAGE1_CUT"]
 
     particles = {
         "gamma": {
@@ -146,17 +147,19 @@ def make_irfs_MAGIC_LST(config_file):
             max_files=p["max_files"],
             verbose=get_key_if_exists(cfg["irfs"], "verbose", False),
             eval_mean_events=True,
+            cuts=cuts,
         )
 
         # Multiplicity cut
         cut_mult = get_key_if_exists(cfg["irfs"], "cut_on_multiplicity", 2)
         p["events"] = p["events"][p["events"]["multiplicity"] >= cut_mult].copy()
 
-        # Applying cuts
-        good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
-            p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
-        )
-        p["events"] = p["events"][good_]
+        # Applying cuts (if not already done)
+        if cuts == "":
+            good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
+                p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
+            )
+            p["events"] = p["events"][good_]
 
         l_ = len(p["events"])
         log.info(f"Number of events: {l_}")
@@ -387,8 +390,13 @@ def make_irfs_MAGIC_LST(config_file):
 
     # --- Store results ---
     log.info("Writing outputfile")
+    tag = f'_{get_key_if_exists(cfg["irfs"], "tag", "")}'
 
-    irfs_subdir = "IRFs_MinEff%s_cut%s/" % (str(MIN_GH_CUT_EFFICIENCY), str(cut_mult))
+    irfs_subdir = "IRFs_MinEff%s_cut%s%s/" % (
+        str(MIN_GH_CUT_EFFICIENCY),
+        str(cut_mult),
+        tag,
+    )
     irfs_dir = os.path.join(cfg["irfs"]["save_dir"], irfs_subdir)
     check_folder(irfs_dir)
 
