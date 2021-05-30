@@ -168,7 +168,7 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
             events_ = pd.read_hdf(file, key=reco_key).rename(columns=name_mapping)
             if cuts != "":
                 print(f"Applying cuts: {cuts}")
-                events_.query(cuts)
+                events_ = events_.query(cuts)
             if useless_cols != []:
                 events_ = events_.drop(useless_cols, axis=1, errors="ignore")
             if eval_mean_events:
