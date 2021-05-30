@@ -390,7 +390,10 @@ def make_irfs_MAGIC_LST(config_file):
 
     # --- Store results ---
     log.info("Writing outputfile")
-    tag = f'_{get_key_if_exists(cfg["irfs"], "tag", "")}'
+    if "tag" in cfg["irfs"]:
+        tag = f'_{cfg["irfs"]["tag"]}'
+    else:
+        tag = ""
 
     irfs_subdir = "IRFs_MinEff%s_cut%s%s/" % (
         str(MIN_GH_CUT_EFFICIENCY),
