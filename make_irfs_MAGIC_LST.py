@@ -112,7 +112,7 @@ def make_irfs_MAGIC_LST(config_file):
         cfg["irfs"], "MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP
     )
     cuts = get_key_if_exists(cfg["irfs"], "cuts", "")
-    if cuts == "":
+    if "cuts" not in cfg["irfs"]:
         INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
         LEAKAGE1_CUT = cfg["irfs"]["LEAKAGE1_CUT"]
 
@@ -155,7 +155,7 @@ def make_irfs_MAGIC_LST(config_file):
         p["events"] = p["events"][p["events"]["multiplicity"] >= cut_mult].copy()
 
         # Applying cuts (if not already done)
-        if cuts == "":
+        if "cuts" not in cfg["irfs"]:
             good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
                 p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
             )
