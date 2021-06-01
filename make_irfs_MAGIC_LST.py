@@ -112,9 +112,9 @@ def make_irfs_MAGIC_LST(config_file):
         cfg["irfs"], "MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP
     )
     cuts = get_key_if_exists(cfg["irfs"], "cuts", "")
-    if "cuts" not in cfg["irfs"]:
-        INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
-        LEAKAGE1_CUT = cfg["irfs"]["LEAKAGE1_CUT"]
+    # if "cuts" not in cfg["irfs"]:
+    #     INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
+    #     LEAKAGE1_CUT = cfg["irfs"]["LEAKAGE1_CUT"]
 
     particles = {
         "gamma": {
@@ -150,16 +150,14 @@ def make_irfs_MAGIC_LST(config_file):
             cuts=cuts,
         )
 
-        # Multiplicity cut
-        cut_mult = get_key_if_exists(cfg["irfs"], "cut_on_multiplicity", 2)
-        p["events"] = p["events"][p["events"]["multiplicity"] >= cut_mult].copy()
-
-        # Applying cuts (if not already done)
-        if "cuts" not in cfg["irfs"]:
-            good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
-                p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
-            )
-            p["events"] = p["events"][good_]
+        # # Applying cuts (if not already done)
+        # if "cuts" not in cfg["irfs"]:
+        #     cut_mult = get_key_if_exists(cfg["irfs"], "cut_on_multiplicity", 2)
+        #     p["events"] = p["events"][p["events"]["multiplicity"] >= cut_mult].copy()
+        #     good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
+        #         p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
+        #     )
+        #     p["events"] = p["events"][good_]
 
         l_ = len(p["events"])
         log.info(f"Number of events: {l_}")
@@ -395,6 +393,14 @@ def make_irfs_MAGIC_LST(config_file):
     else:
         tag = ""
 
+    if "cuts" in cfg["irfs"]:
+        # Find multiplicity cut
+        rm_dict = {" ": "", "<": "", ">": "", "=": "", "(": "", ")": ""}
+        cuts_list = cfg["irfs"]["cuts"].translate(str.maketrans(rm_dict)).split("&")
+        for s_ in cuts_list:
+            if "multiplicity" in s_:
+                cut_mult = int(s_.replace("multiplicity", ""))
+
     irfs_subdir = "IRFs_MinEff%s_cut%s%s/" % (
         str(MIN_GH_CUT_EFFICIENCY),
         str(cut_mult),
@@ -402,6 +408,7 @@ def make_irfs_MAGIC_LST(config_file):
     )
     irfs_dir = os.path.join(cfg["irfs"]["save_dir"], irfs_subdir)
     check_folder(irfs_dir)
+    log.info(f"Output directory: {irfs_dir}")
 
     fits.HDUList(hdus).writeto(
         os.path.join(irfs_dir, "pyirf.fits.gz"), overwrite=True,
