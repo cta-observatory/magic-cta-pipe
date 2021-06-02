@@ -89,7 +89,7 @@ def clean_image_params(geom, image, clean, peakpos):
 
 
 def eval_impact(subarray, hillas_p, stereo_params):
-    """Copied from protopipe""""
+    """Copied from protopipe"""
     # Impact parameter for energy estimation (/ tel)
     ground_frame = GroundFrame()
     impact_p = {}

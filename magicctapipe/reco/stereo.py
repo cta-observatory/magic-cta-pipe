@@ -158,7 +158,7 @@ def write_stereo(
 
 
 class StereoInfoContainer(Container):
-    """"InfoContainer for stereo"""
+    """InfoContainer for stereo"""
 
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
