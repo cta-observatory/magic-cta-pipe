@@ -73,6 +73,7 @@ if is_stereo:
 obs_ids = df.index.levels[0].values
 
 source_name = config['source']['name']
+output_directory = config['event_list']['output_directory']
 
 for obs_id in obs_ids:
     print(f"Processing observation with ID: {obs_id}")
@@ -246,7 +247,7 @@ for obs_id in obs_ids:
 
     # Saving to FITS
 
-    output_name = f"events_{source_name}_{obs_id}.fits"
+    output_name = f"{output_directory}/events_{source_name}_{obs_id}.fits"
 
     primary_hdu = pyfits.PrimaryHDU()
 
