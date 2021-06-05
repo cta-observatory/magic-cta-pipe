@@ -6,6 +6,7 @@ import argparse
 import pandas as pd
 
 import scipy
+import scipy.special
 import numpy as np
 
 import iminuit
