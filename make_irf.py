@@ -199,27 +199,6 @@ class IRFGenerator:
         for param in ['s', 'a2', 'a3', 'sigma1', 'sigma2', 'sigma3']:
             psf_params[param] = np.zeros((self.n_energy_bins, self.n_theta_bins))
 
-        fit_params = {
-            's': 1e3,
-            'a2': 0.01,
-            'a3': 0,
-            'sigma1': 0.1,
-            'sigma2': 0.3,
-            'sigma3': 0.1,
-
-            'limit_s': (0, None),
-            'limit_a2': (0, 0.1),
-            'limit_a3': (0, 0.1),
-            'limit_sigma1': (0, 1),
-            'limit_sigma2': (0, 1),
-            'limit_sigma3': (0, 1),
-
-            'fix_a2': False,
-            'fix_a3': True,
-            'fix_sigma2': False,
-            'fix_sigma3': True,
-        }
-
         # PSF histogram grid
         offset_edges = np.linspace(0, 4, num=100)**0.5
         offset_centers = (offset_edges[1:] + offset_edges[:-1]) / 2
@@ -236,11 +215,45 @@ class IRFGenerator:
                 fit_func = PSFProfileFunctor(offset_centers, psf_hist)
 
                 if iminuit.__version__ < '2':
+                    fit_params = {
+                        's': 1e3,
+                        'a2': 0.01,
+                        'a3': 0,
+                        'sigma1': 0.1,
+                        'sigma2': 0.3,
+                        'sigma3': 0.1,
+
+                        'limit_s': (0, None),
+                        'limit_a2': (0, 0.1),
+                        'limit_a3': (0, 0.1),
+                        'limit_sigma1': (0, 1),
+                        'limit_sigma2': (0, 1),
+                        'limit_sigma3': (0, 1),
+
+                        'fix_a2': False,
+                        'fix_a3': True,
+                        'fix_sigma2': False,
+                        'fix_sigma3': True,
+                    }
                     fit_obj = iminuit.Minuit(fit_func, pedantic=False, print_level=0,
                                         **fit_params)
                 else:
+                    fit_params = {
+                        's': 1e3,
+                        'a2': 0.01,
+                        'a3': 0,
+                        'sigma1': 0.1,
+                        'sigma2': 0.3,
+                        'sigma3': 0.1,
+                    }
                     fit_obj = iminuit.Minuit(fit_func, **fit_params)
+                    fit_obj.limits = [(0, None), (0, 0.1), (0, 0.1), (0, 1), (0, 1), (0, 1)]
+                    fit_obj.fixed["a2"] = False
+                    fit_obj.fixed["a3"] = True
+                    fit_obj.fixed["sigma2"] = False
+                    fit_obj.fixed["sigma3"] = True
                     fit_obj.print_level = 0
+
                 fit_obj.migrad()
 
                 for key in psf_params:
