@@ -249,7 +249,7 @@ on_region.to_pixel(ax.wcs).plot(ax=ax, edgecolor="k")
 plot_spectrum_datasets_off_regions(ax=ax, datasets=datasets)
 plt.show()
 
-datasets[2].peek()
+#datasets[2].peek()
 
 info_table = datasets.info_table(cumulative=True)
 info_table
