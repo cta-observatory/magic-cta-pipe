@@ -139,6 +139,9 @@ source_name = options["source_name"]
 irf_path = Path(f"{event_path}/data/magic/dev/bcf/{source_name}")
 irf_path.mkdir(parents=True, exist_ok=True)
 shutil.copy(irf_file, irf_path)
+irf_file_old = f"{irf_path}/{irf_file}"
+irf_file_new = f"{irf_path}/irf_file.fits"
+os.rename(irf_file_old, irf_file_new)
 
 event_files_list = sorted([str(filename) for filename in Path(event_files).parent.expanduser().glob(Path(event_files).name)])
 data_store = DataStore.from_events_files(event_files_list)
