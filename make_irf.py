@@ -234,7 +234,7 @@ class IRFGenerator:
 
                 fit_func = PSFProfileFunctor(offset_centers, psf_hist)
 
-                if iminuit.__version__ < 2:
+                if iminuit.__version__ < '2':
                     fit_obj = iminuit.Minuit(fit_func, pedantic=False, print_level=0,
                                         **fit_params)
                 else:
