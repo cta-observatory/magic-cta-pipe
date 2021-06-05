@@ -234,8 +234,12 @@ class IRFGenerator:
 
                 fit_func = PSFProfileFunctor(offset_centers, psf_hist)
 
-                fit_obj = iminuit.Minuit(fit_func, pedantic=False, print_level=0,
+                if iminuit.__version__ < 2:
+                    fit_obj = iminuit.Minuit(fit_func, pedantic=False, print_level=0,
                                         **fit_params)
+                else:
+                    fit_obj = iminuit.Minuit(fit_func, **fit_params)
+                    fit_obj.print_level = 0
                 fit_obj.migrad()
 
                 for key in psf_params:
