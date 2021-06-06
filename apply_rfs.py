@@ -205,10 +205,12 @@ for data_type in config['data_files']:
                 if data_type == 'mc':
                     orig_mc = pd.read_hdf(config['data_files'][data_type][sample][telescope]['hillas_output'],
                         key='dl1/original_mc')
+                    mc_header = pd.read_hdf(config['data_files'][data_type][sample][telescope]['hillas_output'], key='dl1/mc_header')
 
                 shower_data = shower_data.append(tel_data)
                 if data_type == 'mc':
                     original_mc_data = original_mc_data.append(orig_mc)
+                    mc_header_data   = mc_header_data.append(mc_header)
 
         # Sorting the data frame for convenience
         shower_data = shower_data.reset_index()
