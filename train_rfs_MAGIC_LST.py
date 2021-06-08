@@ -207,7 +207,8 @@ def train_classifier_rf_stereo(config_file, only_plots=False):
     # ================
 
     plt.figure(figsize=tuple(cfg["classifier_rf"]["fig_size"]))
-    labels = ["Gamma", "Hadrons"]
+    # labels = ["Gamma", "Hadrons"]
+    labels = get_key_if_exists(cfg["classifier_rf"], "labels", ["Gamma", "Hadrons"])
 
     grid_shape = (2, len(tel_ids) + 1)
 
