@@ -386,6 +386,30 @@ def make_irfs_MAGIC_LST(config_file):
     hdus.append(fits.BinTableHDU(ang_res, name="ANGULAR_RESOLUTION"))
     hdus.append(fits.BinTableHDU(bias_resolution, name="ENERGY_BIAS_RESOLUTION"))
 
+    # --- Evaluate gamma efficiency ---
+    gamma_efficiency = QTable()
+    for l_ in ["low", "center", "high"]:
+        gamma_efficiency[l_] = gh_cuts[l_]
+    for l_ in ["eff_gh", "eff"]:
+        gamma_efficiency[l_] = 0.0
+    for i in range(len(gh_cuts["cut"])):
+        if gh_cuts["cut"][i] < 1:
+            m = np.logical_and(
+                gammas["true_energy"] > gh_cuts["low"][i],
+                gammas["true_energy"] < gh_cuts["high"][i],
+            )
+            gammas_sel_en = gammas[m]
+            m_gh = gammas_sel_en["gh_score"] > gh_cuts["cut"][i]
+            gammas_sel_en_gh = gammas_sel_en[m_gh]
+            gamma_efficiency["eff_gh"][i] = float(
+                len(gammas_sel_en_gh) / len(gammas_sel_en)
+            )
+            gamma_efficiency["eff"][i] = float(
+                len(gammas_sel_en[gammas_sel_en["selected"] == True])
+                / len(gammas_sel_en)
+            )
+    hdus.append(fits.BinTableHDU(gamma_efficiency, name="GAMMA_EFFICIENCY"))
+
     # --- Store results ---
     log.info("Writing outputfile")
     if "tag" in cfg["irfs"]:

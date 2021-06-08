@@ -268,6 +268,39 @@ def plot_effective_area(data, label, **kwargs):
     )
 
 
+def plot_gamma_eff_gh(gamma_efficiency, gh_cuts, sensitivity):
+    """Plot gamma efficiency and gh cuts
+
+    Parameters
+    ----------
+    gamma_efficiency : astropy QTable
+        gamma efficiency
+    gh_cuts : astropy QTable
+        gh cuts
+    sensitivity : astropy QTable
+        sensitivity
+    """
+    fig, ax = plt.subplots()
+    ax.set_xlabel("Energy (GeV)")
+    ax.set_xscale("log")
+    # Consider only energy where the sensitivity is estimated
+    m_ = sensitivity["n_signal"] > 0
+    plt.plot(gh_cuts["center"][m_].to(u.GeV), gh_cuts["cut"][m_], "-o", label="GH cut")
+    plt.plot(
+        gamma_efficiency["center"][m_].to(u.GeV),
+        gamma_efficiency["eff_gh"][m_],
+        "-o",
+        label="Gamma Efficiency GH",
+    )
+    plt.plot(
+        gamma_efficiency["center"][m_].to(u.GeV),
+        gamma_efficiency["eff"][m_],
+        "-o",
+        label="Gamma Efficiency",
+    )
+    plt.legend()
+
+
 def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     """Plot IRFs for MAGIC and/or LST array using pyirf
 
@@ -343,6 +376,14 @@ def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     plot_effective_area(data=effective_area, label="Effective Area")
     save_plt(
         n=f"Effective_Area", rdir=irfs_dir, vect="pdf",
+    )
+
+    # --- GH cuts and Gamma Efficiency ---
+    gh_cuts = QTable.read(hdu_open, hdu="GH_CUTS")
+    gamma_efficiency = QTable.read(hdu_open, hdu="GAMMA_EFFICIENCY")
+    plot_gamma_eff_gh(gamma_efficiency, gh_cuts, sensitivity)
+    save_plt(
+        n=f"Gamma_Efficiency", rdir=irfs_dir, vect="pdf",
     )
 
 
