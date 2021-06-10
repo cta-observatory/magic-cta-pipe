@@ -317,6 +317,26 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     # Get time gradients
                     time_grad[tel_id] = timing_p[tel_id].slope.value
 
+                    # global HILLAS_P, LEAKAGE_P, TIMING_P, CFG
+                    # HILLAS_P = hillas_p
+                    # LEAKAGE_P = leakage_p
+                    # TIMING_P = timing_p
+                    # CFG = cfg
+                    cuts = cfg["all_tels"]["cuts"]
+                    if (
+                        (hillas_p[tel_id].intensity < cuts["intensity_low"])
+                        or (hillas_p[tel_id].intensity > cuts["intensity_high"])
+                        or (hillas_p[tel_id].length < cuts["length_low"])
+                        or (
+                            leakage_p[tel_id].intensity_width_1
+                            > cuts["intensity_width_1_high"]
+                        )
+                    ):
+                        hillas_p.pop(tel_id, None)
+                        leakage_p.pop(tel_id, None)
+                        timing_p.pop(tel_id, None)
+                        continue
+
                     # Evaluate telescope pointings
                     telescope_pointings[tel_id] = SkyCoord(
                         alt=event.pointing.tel[tel_id].altitude,
