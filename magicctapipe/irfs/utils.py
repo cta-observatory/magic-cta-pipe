@@ -170,6 +170,9 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
                 print(f"Applying cuts: {cuts}")
                 print(len(events_))
                 events_ = events_.query(cuts)
+                # l_ = ["obs_id", "event_id"]
+                # events_["multiplicity"] = events_["intensity"].groupby(level=l_).count()
+                # events_ = events_.query(cuts)
                 print(len(events_))
             events_ = events_.rename(columns=name_mapping)
             if useless_cols != []:
