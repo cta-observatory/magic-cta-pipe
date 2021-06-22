@@ -155,7 +155,7 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=False, mono_mode=Fa
     return data
 
 
-def load_dl1_data_stereo(file, drop=False, slope_abs=True):
+def load_dl1_data_stereo(file, drop=False, slope_abs=False):
     """Loads dl1 data (hillas and stereo) from `file` and merge them togheter
 
     Parameters
@@ -165,7 +165,7 @@ def load_dl1_data_stereo(file, drop=False, slope_abs=True):
     drop : bool, optional
         drop extra keys, by default False
     slope_abs : bool, optional
-        get only the absolute value of slope, by default True
+        get only the absolute value of slope, by default False
 
 
     Returns
@@ -213,7 +213,7 @@ def load_dl1_data_stereo(file, drop=False, slope_abs=True):
     return data
 
 
-def load_dl1_data_mono(file, label="hillas_params", slope_abs=True):
+def load_dl1_data_mono(file, label="hillas_params", slope_abs=False):
     """Loads `dl1/{label}` from dl1 file, h5 format for mono data
 
     Parameters
@@ -223,7 +223,7 @@ def load_dl1_data_mono(file, label="hillas_params", slope_abs=True):
     label : str, optional
         dl1 label, by default 'hillas_params'
     slope_abs : bool, optional
-        get only the absolute value of slope, by default True
+        get only the absolute value of slope, by default False
 
     Returns
     -------
