@@ -401,13 +401,17 @@ def make_irfs_MAGIC_LST(config_file):
             gammas_sel_en = gammas[m]
             m_gh = gammas_sel_en["gh_score"] > gh_cuts["cut"][i]
             gammas_sel_en_gh = gammas_sel_en[m_gh]
-            gamma_efficiency["eff_gh"][i] = float(
-                len(gammas_sel_en_gh) / len(gammas_sel_en)
-            )
-            gamma_efficiency["eff"][i] = float(
-                len(gammas_sel_en[gammas_sel_en["selected"] == True])
-                / len(gammas_sel_en)
-            )
+            try:
+                gamma_efficiency["eff_gh"][i] = float(
+                    len(gammas_sel_en_gh) / len(gammas_sel_en)
+                )
+                gamma_efficiency["eff"][i] = float(
+                    len(gammas_sel_en[gammas_sel_en["selected"] == True])
+                    / len(gammas_sel_en)
+                )
+            except:
+                gamma_efficiency["eff_gh"][i] = -1
+                gamma_efficiency["eff"][i] = -1
     hdus.append(fits.BinTableHDU(gamma_efficiency, name="GAMMA_EFFICIENCY"))
 
     # --- Store results ---
