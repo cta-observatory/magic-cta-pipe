@@ -147,7 +147,9 @@ def load_init_data_classifier(cfg, mode="train"):
         mc_data, bkg_data
     """
     mono_mode = len(cfg["all_tels"]["tel_ids"]) == 1
-    fl_ = glob.glob(cfg["data_files"]["mc"][f"{mode}_sample"]["hillas_h5"])
+    f_ = cfg["data_files"]["mc"][f"{mode}_sample"]["hillas_h5"]
+    f_ = f"{os.path.dirname(f_)}/*{os.path.splitext(f_)[1]}"
+    fl_ = glob.glob(f_)
     info_message(f"Loading MC {mode} data...", prefix="ClassifierRF")
     if mode == "test":
         mc_data = load_dl1_data_stereo_list_selected(
@@ -160,7 +162,9 @@ def load_init_data_classifier(cfg, mode="train"):
     else:
         mc_data = load_dl1_data_stereo_list(fl_, drop=True, mono_mode=mono_mode)
 
-    fl_ = glob.glob(cfg["data_files"]["data"][f"{mode}_sample"]["hillas_h5"])
+    f_ = cfg["data_files"]["data"][f"{mode}_sample"]["hillas_h5"]
+    f_ = f"{os.path.dirname(f_)}/*{os.path.splitext(f_)[1]}"
+    fl_ = glob.glob(f_)
     info_message(f'Loading "off" {mode} data...', prefix="ClassifierRF")
     if mode == "test":
         bkg_data = load_dl1_data_stereo_list_selected(
