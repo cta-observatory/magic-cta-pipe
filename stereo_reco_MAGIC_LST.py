@@ -1,6 +1,7 @@
 # coding: utf-8
 
 import os
+from re import S
 import time
 import copy
 import yaml
@@ -137,9 +138,11 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
     consider_LST = len(tel_ids_LST) > 0
     consider_MAGIC = len(tel_ids_MAGIC) > 0
 
-    use_MARS_cleaning = get_key_if_exists(cfg["MAGIC"], "use_MARS_cleaning", True)
+    if consider_MAGIC:
+        use_MARS_cleaning = get_key_if_exists(cfg["MAGIC"], "use_MARS_cleaning", True)
 
     file_list = glob.glob(cfg["data_files"][k1][k2]["mask_sim"])
+    print(file_list)
 
     previous_event_id = 0
 
