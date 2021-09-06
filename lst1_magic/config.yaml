@@ -3,47 +3,47 @@ tel_ids:
     MAGIC-I: 2
     MAGIC-II: 3
 
-integration:
-    LST:
-        LocalPeakWindowSum:
-            window_shift: 4
-            window_width: 8
-    MAGIC:
-        LocalPeakWindowSum:
-            window_shift: 2
-            window_width: 5
 
-bad_pixels:
-    MAGIC:
+LST:
+    LocalPeakWindowSum:
+        window_shift: 4
+        window_width: 8
+
+    tailcuts_clean:
+        picture_thresh: 6
+        boundary_thresh: 3
+        keep_isolated_pixels: False
+        min_number_picture_neighbors: 1
+
+
+MAGIC:
+    LocalPeakWindowSum:
+        window_shift: 2
+        window_width: 5
+
+    sum_image_clean:
+        picture_thresh: 6
+        boundary_thresh: 3.5
+        max_time_off: 7.38
+        max_time_diff: 2.46
+        usetime: True
+        usesum: True
+        findhotpixels: True   # False for MC, True for real data
+
+    bad_pixels:
         pedestalLevel: 400
         pedestalLevelVariance: 4.5
         pedestalType: 'FromExtractorRndm'
 
-cleaning:
-    LST:
-        tailcuts_clean:
-            picture_thresh: 6
-            boundary_thresh: 3
-            keep_isolated_pixels: False
-            min_number_picture_neighbors: 1
-        
-    MAGIC:
-        MAGICCleaning:
-            picture_thresh: 6
-            boundary_thresh: 3.5
-            max_time_off: 7.38
-            max_time_diff: 2.46
-            usetime: True
-            usesum: True
-            findhotpixels: False  # False for MC, True for real data
 
 coincidence: 
-    timestamp_lst: 'dragon_time' 
-    window: 6e-7    # unit: [sec]
+    type_lst_time: 'dragon_time' 
+    tel_id_magic: 1
+    window_width: 6e-7    # unit: [sec]
     bins_offset: 
         start: -5e-6    # unit: [sec]
-        stop: 0     # unit: [sec]
-        step: 1e-7     # unit: [sec]
+        stop: 0         # unit: [sec]
+
 
 stereo_reco:
     theta_lim: 2   # unit: [arcmin]
@@ -51,11 +51,13 @@ stereo_reco:
                 east_pointing/run1/sim_telarray_v3_trans_80%/cta-prod5-lapalma_LST-1_MAGIC/0.4deg/Data/\
                 gamma_40deg_90deg_run1___cta-prod5-lapalma_LST-1_MAGIC_desert-2158m_mono_off0.4.simtel.gz"
 
+
 obs_location:
     name: 'ORM_MAGIC'
     lat: 28.76177  # unit: [deg]
     lon: -17.89064  # unit: [deg]
     height: 2199.835  # unit: [m]
+
 
 classifier_rf:
     settings:
@@ -65,6 +67,7 @@ classifier_rf:
 
     features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
 
+
 energy_rf:
     settings:
         n_estimators: 100
@@ -72,6 +75,7 @@ energy_rf:
         n_jobs: 3
 
     features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+
 
 direction_rf:
     settings:
