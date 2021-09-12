@@ -1,9 +1,3 @@
-tel_ids:
-    LST-1: 1
-    MAGIC-I: 2
-    MAGIC-II: 3
-
-
 LST:
     LocalPeakWindowSum:
         window_shift: 4
@@ -38,11 +32,10 @@ MAGIC:
 
 coincidence: 
     type_lst_time: 'dragon_time' 
-    tel_id_magic: 1
-    window_width: 6e-7    # unit: [sec]
-    bins_offset: 
-        start: -5e-6    # unit: [sec]
-        stop: 0         # unit: [sec]
+    type_magic_time: 'MAGIC-I'
+    window_width: 6e-7      # unit: [sec]
+    offset_start: -5e-6      # unit: [sec] 
+    offset_stop: 0          # unit: [sec]
 
 
 stereo_reco:
