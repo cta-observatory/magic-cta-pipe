@@ -107,7 +107,7 @@ def load_magic_data(data_paths):
 
     return data_magic
 
-def event_coincidence(data_lst, data_magic, config_file):
+def event_coincidence(data_lst, data_magic, config):
 
     sec2us = 1e6
     sec2ns = 1e9
@@ -117,15 +117,13 @@ def event_coincidence(data_lst, data_magic, config_file):
     accuracy_time = 1e-7
     decimals = int(np.log10(1/accuracy_time))
 
-    config = yaml.safe_load(open(config_file, "r"))
-
-    print('\nCoincidence configuration:\n {}'.format(config['coincidence']))
+    print('\nConfiguration for the event coincidence:\n {}'.format(config))
 
     # --- get LST timestamps ---
     mjd = data_magic['mjd'].values[0]
     obs_day = Time(mjd, format='mjd', scale='utc')
 
-    type_lst_time = config['coincidence']['type_lst_time']
+    type_lst_time = config['type_lst_time']
 
     time_lst_unix = list(map(str, data_lst[type_lst_time].values))  
     time_lst_unix = np.array(list(map(Decimal, time_lst_unix)))
@@ -139,7 +137,7 @@ def event_coincidence(data_lst, data_magic, config_file):
         3: data_magic.query('tel_id == 3')
     }
 
-    type_magic_time = config['coincidence']['type_magic_time']
+    type_magic_time = config['type_magic_time']
 
     if type_magic_time == 'MAGIC-I':
         tel_id = 2
@@ -155,12 +153,10 @@ def event_coincidence(data_lst, data_magic, config_file):
     # --- extract events --- 
     print('\nExtracting the MAGIC-stereo events within the LST-1 data observation time window...')
 
-    window_width = float(config['coincidence']['window_width'])
+    window_width = config['window_width']
 
     bins_offset = np.arange(
-        start=float(config['coincidence']['offset_start']), 
-        stop=float(config['coincidence']['offset_stop']),
-        step=accuracy_time
+        start=config['offset_start'], stop=config['offset_stop'], step=accuracy_time
     )
 
     bins_offset = np.round(bins_offset, decimals)
@@ -232,8 +228,6 @@ def event_coincidence(data_lst, data_magic, config_file):
     # --- make coincident events list --- 
     indices_magic = []
     indices_lst = []
-
-    print('\nMaking the coincident event list...')
 
     offset = bins_offset[bins_offset < offset_avg][-1]
     time_lim_lo = np.round(time_lst - window_width/2 + offset, decimals)
@@ -308,7 +302,8 @@ def main():
     data_magic = load_magic_data(args.input_data_magic)
 
     # --- perform event coincidence ---
-    data_stereo = event_coincidence(data_lst, data_magic, args.config_file)
+    config_lst1_magic = yaml.safe_load(open(args.config_file, "r"))
+    data_stereo = event_coincidence(data_lst, data_magic, config_lst1_magic['coincidence'])
 
     # --- store the coincident events list ---
     print(f'\nOutput data file: {args.output_data}')

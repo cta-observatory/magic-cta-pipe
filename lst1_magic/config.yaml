@@ -33,8 +33,8 @@ MAGIC:
 coincidence: 
     type_lst_time: 'dragon_time' 
     type_magic_time: 'MAGIC-I'
-    window_width: 6e-7      # unit: [sec]
-    offset_start: -5e-6      # unit: [sec] 
+    window_width: 6.0e-7      # unit: [sec]
+    offset_start: -5.0e-6      # unit: [sec] 
     offset_stop: 0          # unit: [sec]
 
 
