@@ -5,6 +5,7 @@
 
 import re
 import sys
+import glob
 import yaml
 import time
 import argparse
@@ -22,16 +23,16 @@ __all__ = [
     'event_coincidence',
 ]
 
-def load_lst_data(data_path):
+def load_lst_data(input_data):
 
     # --- load data ---
-    print(f'\nLoading the LST-1 data file: {data_path}')
+    print(f'\nLoading the LST-1 data file: {input_data}')
 
-    re_parser = re.findall("(\w+)_LST-1.Run(\d+)\.(\d+)\.h5", data_path)[0]
+    re_parser = re.findall("(\w+)_LST-1.Run(\d+)\.(\d+)\.h5", input_data)[0]
     data_level = re_parser[0]
 
     data_lst = pd.read_hdf(
-        data_path, key=f'{data_level}/event/telescope/parameters/LST_LSTCam'
+        input_data, key=f'{data_level}/event/telescope/parameters/LST_LSTCam'
     )
     
     n_events = len(data_lst)
@@ -50,7 +51,7 @@ def load_lst_data(data_path):
     data_lst.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
 
     # --- change the unit from [deg] to [m] ---
-    optics_lst = pd.read_hdf(data_path, key='configuration/instrument/telescope/optics')
+    optics_lst = pd.read_hdf(input_data, key='configuration/instrument/telescope/optics')
     foclen_lst = optics_lst['equivalent_focal_length'].values[0]
 
     data_lst['length'] = foclen_lst * np.tan(np.deg2rad(data_lst['length'].values))
@@ -62,19 +63,20 @@ def load_lst_data(data_path):
 
     return data_lst
 
-def load_magic_data(data_paths):
-
-    data_paths.sort()
+def load_magic_data(input_data):
 
     # --- load data ---
-    data_magic = pd.DataFrame()
-
     print('\nLoading the MAGIC data files...')
 
     column_names = {
         'obs_id': 'obs_id_magic',
         'event_id': 'event_id_magic'
     }
+
+    data_magic = pd.DataFrame()
+
+    data_paths = glob.glob(input_data)
+    data_paths.sort()
 
     for path in data_paths:
 
@@ -275,33 +277,33 @@ def main():
 
     arg_parser.add_argument(
         '--input-data-lst', '-il', dest='input_data_lst', type=str, 
-        help='Path to an input LST-1 DL1 file with HDF5 format, f.g. dl1_LST-1.Run02923.0000.h5'
+        help='Path to an input LST-1 DL1 data file, e.g., dl1_LST-1.Run02923.0000.h5'
     )
 
     arg_parser.add_argument(
-        '--input-data-magic', '-im', dest='input_data_magic', nargs='+', type=str, 
-        help='Path to input MAGIC DL1 data file(s) with HDF5 format, f.g. dl1_magic1_run*.h5'
+        '--input-data-magic', '-im', dest='input_data_magic', type=str, 
+        help='Path to input MAGIC DL1 data file(s), e.g., dl1_magic1_run*.h5'
     )
 
     arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, default='./dl1_coincidence.h5', 
-        help='Path and name of an output data file with HDF5 format, f.g. ./dl1_coincidence.h5'
+        '--output-data', '-o', dest='output_data', type=str,  
+        help='Path and name of an output data file with HDF5 format, e.g., dl1_coincidence.h5'
     )
 
     arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml', 
-        help='Path to a config file with yaml format, f.g. ./config.yaml'
+        '--config-file', '-c', dest='config_file', type=str, 
+        help='Path to a config file with yaml format, e.g., config.yaml'
     )
 
     args = arg_parser.parse_args()
 
-    # --- load LST data ---
+    # --- load the LST-1 data ---
     data_lst = load_lst_data(args.input_data_lst)
 
-    # --- load MAGIC data ---
+    # --- load the MAGIC data ---
     data_magic = load_magic_data(args.input_data_magic)
 
-    # --- perform event coincidence ---
+    # --- perform the event coincidence ---
     config_lst1_magic = yaml.safe_load(open(args.config_file, "r"))
     data_stereo = event_coincidence(data_lst, data_magic, config_lst1_magic['coincidence'])
 

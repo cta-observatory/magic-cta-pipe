@@ -32,50 +32,48 @@ __all__ = [
     'magic_cal_to_dl1'
 ]
 
-def magic_cal_to_dl1(input_mask, output_file, config_file):
-
-    class InfoContainer(Container):
+class InfoContainer(Container):
     
-        obs_id = Field(-1, "Observation ID")
-        event_id = Field(-1, "Event ID")
-        tel_id = Field(-1, "Telescope ID")
-        mjd = Field(-1, "Event mjd")
-        millisec = Field(-1, "Event millisec")
-        nanosec = Field(-1, "Event nanosec")
-        alt_tel = Field(-1, "MC telescope altitude", unit=u.rad)
-        az_tel = Field(-1, "MC telescope azimuth", unit=u.rad)
-        n_islands = Field(-1, "Number of image islands")
+    obs_id = Field(-1, "Observation ID")
+    event_id = Field(-1, "Event ID")
+    tel_id = Field(-1, "Telescope ID")
+    mjd = Field(-1, "Event mjd")
+    millisec = Field(-1, "Event millisec")
+    nanosec = Field(-1, "Event nanosec")
+    alt_tel = Field(-1, "MC telescope altitude", unit=u.rad)
+    az_tel = Field(-1, "MC telescope azimuth", unit=u.rad)
+    n_islands = Field(-1, "Number of image islands")
+
+def magic_cal_to_dl1(input_data, output_data, config):
+
+    config_cleaning = config['sum_image_clean']
+    config_badpixels = config['bad_pixels']
+
+    print(f'\nConfiguration for image cleaning: \n{config_cleaning}')
+    print(f'\nConfiguration for bad pixels calculation: \n{config_badpixels}')
 
     # --- check input data ---
-    data_paths = glob.glob(input_mask)
+    data_paths = glob.glob(input_data)
     data_paths.sort()
 
     if data_paths == []:
-        print('Error: No input files found. Please check your input argument. Exiting.')
+        print('Error: No input data files found. Please check your argument. Exiting.')
         sys.exit()
 
-    print('\nProcess the following files:')
-    for path in data_paths:
-        print(path)
+    else: 
+        print('\nProcess the following files:')
+        for path in data_paths:
+            print(path)
 
     parser = re.findall('.*_M(\d)_.*\.root', data_paths[0])
     tel_id = int(parser[0])
-    
-    # --- load config file ---
-    config = yaml.safe_load(open(config_file, "r"))
-
-    config_cleaning = config['MAGIC']['sum_image_clean']
-    config_badpixels = config['MAGIC']['bad_pixels']
-
-    print(f'\nCleaning configuration: \n{config_cleaning}')
-    print(f'\nBad pixel calculator configuration: \n{config_badpixels}')
-
-    previous_event_id = 0
 
     # --- process data ---
-    with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
+    previous_event_id = 0
+
+    with HDF5TableWriter(filename=output_data, group_name='events', overwrite=True) as writer:
         
-        source = MAGICEventSource(input_url=input_mask)
+        source = MAGICEventSource(input_url=input_data)
 
         geom_camera = source.subarray.tel[tel_id].camera
         magic_clean = MAGIC_Cleaning.magic_clean(geom_camera, config_cleaning)
@@ -165,25 +163,25 @@ def main():
     arg_parser = argparse.ArgumentParser()
 
     arg_parser.add_argument(
-        '--input-dir', '-i', dest='input_dir', type=str, 
-        help='Path to an input directory that contains MAGIC Calibrated files (*_Y_*.root).'
+        '--input-data', '-i', dest='input_data', type=str, 
+        help='Path to input MAGIC Calibrated data file(s), e.g., *_Y_*.root'
     )
 
     arg_parser.add_argument(
-        '--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5', 
-        help='Path and name of an output file with HDF5 format (default: ./dl1_magic.h5).'
+        '--output-data', '-o', dest='output_data', type=str,  
+        help='Path and name of an output DL1 data file with HDF5 format, e.g., dl1_magic.h5'
     )
 
     arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml', 
-        help='Path to a config file with yaml format (default: ./config.yaml).'
+        '--config-file', '-c', dest='config_file', type=str, 
+        help='Path to a config file with yaml format, e.g., config.yaml'
     )
 
     args = arg_parser.parse_args()
 
-    # --- process MAGIC Cal to DL1 --- 
-    input_mask = args.input_dir + "/*_Y_*.root"
-    magic_cal_to_dl1(input_mask, args.output_file, args.config_file)
+    # --- process the MAGIC Calibrated data to DL1 --- 
+    config_lst1_magic = yaml.safe_load(open(args.config_file, "r"))
+    magic_cal_to_dl1(args.input_data, args.output_data, config_lst1_magic['MAGIC'])
 
     print('\nDone.')
 
