@@ -46,8 +46,10 @@ class InfoContainer(Container):
 
 def magic_cal_to_dl1(input_data, output_data, config):
 
-    config_cleaning = config['sum_image_clean']
+    config_cleaning = config['magic_clean']
     config_badpixels = config['bad_pixels']
+
+    config_cleaning['findhotpixels'] = True
 
     print(f'\nConfiguration for image cleaning: \n{config_cleaning}')
     print(f'\nConfiguration for bad pixels calculation: \n{config_badpixels}')

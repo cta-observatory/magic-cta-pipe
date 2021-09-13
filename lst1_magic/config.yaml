@@ -15,14 +15,13 @@ MAGIC:
         window_shift: 2
         window_width: 5
 
-    sum_image_clean:
+    magic_clean:
         picture_thresh: 6
         boundary_thresh: 3.5
         max_time_off: 7.38
         max_time_diff: 2.46
         usetime: True
         usesum: True
-        findhotpixels: True   # False for MC, True for real data
 
     bad_pixels:
         pedestalLevel: 400
