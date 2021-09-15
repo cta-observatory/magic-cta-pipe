@@ -28,9 +28,7 @@ from utils import MAGIC_Cleaning
 
 warnings.simplefilter('ignore') 
 
-__all__ = [
-    'magic_cal_to_dl1'
-]
+__all__ = ['magic_cal_to_dl1']
 
 class InfoContainer(Container):
     
@@ -44,7 +42,7 @@ class InfoContainer(Container):
     az_tel = Field(-1, "MC telescope azimuth", unit=u.rad)
     n_islands = Field(-1, "Number of image islands")
 
-def magic_cal_to_dl1(input_data, output_data, config):
+def magic_cal_to_dl1(input_data_path, output_data_path, config):
 
     config_cleaning = config['magic_clean']
     config_badpixels = config['bad_pixels']
@@ -55,27 +53,27 @@ def magic_cal_to_dl1(input_data, output_data, config):
     print(f'\nConfiguration for bad pixels calculation: \n{config_badpixels}')
 
     # --- check input data ---
-    data_paths = glob.glob(input_data)
-    data_paths.sort()
+    path_list = glob.glob(input_data_path)
+    path_list.sort()
 
-    if data_paths == []:
+    if path_list == []:
         print('Error: No input data files found. Please check your argument. Exiting.')
         sys.exit()
 
     else: 
         print('\nProcess the following files:')
-        for path in data_paths:
+        for path in path_list:
             print(path)
 
-    parser = re.findall('.*_M(\d)_.*\.root', data_paths[0])
+    parser = re.findall('.*_M(\d)_.*\.root', path_list[0])
     tel_id = int(parser[0])
 
     # --- process data ---
     previous_event_id = 0
 
-    with HDF5TableWriter(filename=output_data, group_name='events', overwrite=True) as writer:
+    with HDF5TableWriter(filename=output_data_path, group_name='events', overwrite=True) as writer:
         
-        source = MAGICEventSource(input_url=input_data)
+        source = MAGICEventSource(input_url=input_data_path)
 
         geom_camera = source.subarray.tel[tel_id].camera
         magic_clean = MAGIC_Cleaning.magic_clean(geom_camera, config_cleaning)

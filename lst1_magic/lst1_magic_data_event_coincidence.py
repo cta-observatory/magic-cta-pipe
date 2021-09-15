@@ -17,22 +17,18 @@ from astropy.time import Time
 
 warnings.simplefilter('ignore')
 
-__all__ = [
-    'load_lst_data',
-    'load_magic_data', 
-    'event_coincidence',
-]
+__all__ = ['event_coincidence']
 
-def load_lst_data(input_data):
+def load_lst_data(data_path):
 
     # --- load data ---
-    print(f'\nLoading the LST-1 data file: {input_data}')
+    print(f'\nLoading the LST-1 data file: {data_path}')
 
-    re_parser = re.findall("(\w+)_LST-1.Run(\d+)\.(\d+)\.h5", input_data)[0]
+    re_parser = re.findall("(\w+)_LST-1.Run(\d+)\.(\d+)\.h5", data_path)[0]
     data_level = re_parser[0]
 
     data_lst = pd.read_hdf(
-        input_data, key=f'{data_level}/event/telescope/parameters/LST_LSTCam'
+        data_path, key=f'{data_level}/event/telescope/parameters/LST_LSTCam'
     )
     
     n_events = len(data_lst)
@@ -51,7 +47,7 @@ def load_lst_data(input_data):
     data_lst.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
 
     # --- change the unit from [deg] to [m] ---
-    optics_lst = pd.read_hdf(input_data, key='configuration/instrument/telescope/optics')
+    optics_lst = pd.read_hdf(data_path, key='configuration/instrument/telescope/optics')
     foclen_lst = optics_lst['equivalent_focal_length'].values[0]
 
     data_lst['length'] = foclen_lst * np.tan(np.deg2rad(data_lst['length'].values))
@@ -63,7 +59,7 @@ def load_lst_data(input_data):
 
     return data_lst
 
-def load_magic_data(input_data):
+def load_magic_data(data_path):
 
     # --- load data ---
     print('\nLoading the MAGIC data files...')
@@ -75,10 +71,10 @@ def load_magic_data(input_data):
 
     data_magic = pd.DataFrame()
 
-    data_paths = glob.glob(input_data)
-    data_paths.sort()
+    path_list = glob.glob(data_path)
+    path_list.sort()
 
-    for path in data_paths:
+    for path in path_list:
 
         print(path)
 
@@ -109,7 +105,7 @@ def load_magic_data(input_data):
 
     return data_magic
 
-def event_coincidence(data_lst, data_magic, config):
+def event_coincidence(data_path_lst, data_path_magic, config):
 
     sec2us = 1e6
     sec2ns = 1e9
@@ -121,6 +117,12 @@ def event_coincidence(data_lst, data_magic, config):
 
     print('\nConfiguration for the event coincidence:\n {}'.format(config))
 
+    # --- load the LST-1 data ---
+    data_lst = load_lst_data(data_path_lst)
+
+    # --- load the MAGIC data ---
+    data_magic = load_magic_data(data_path_magic)
+    
     # --- get LST timestamps ---
     mjd = data_magic['mjd'].values[0]
     obs_day = Time(mjd, format='mjd', scale='utc')
@@ -276,13 +278,13 @@ def main():
     arg_parser = argparse.ArgumentParser() 
 
     arg_parser.add_argument(
-        '--input-data-lst', '-il', dest='input_data_lst', type=str, 
+        '--input-data-lst', '-l', dest='input_data_lst', type=str, 
         help='Path to an input LST-1 DL1 data file, e.g., dl1_LST-1.Run02923.0000.h5'
     )
 
     arg_parser.add_argument(
-        '--input-data-magic', '-im', dest='input_data_magic', type=str, 
-        help='Path to input MAGIC DL1 data file(s), e.g., dl1_magic1_run*.h5'
+        '--input-data-magic', '-m', dest='input_data_magic', type=str, 
+        help='Path to input MAGIC DL1 data file(s), e.g., dl1_run*.h5'
     )
 
     arg_parser.add_argument(
@@ -297,15 +299,12 @@ def main():
 
     args = arg_parser.parse_args()
 
-    # --- load the LST-1 data ---
-    data_lst = load_lst_data(args.input_data_lst)
-
-    # --- load the MAGIC data ---
-    data_magic = load_magic_data(args.input_data_magic)
-
     # --- perform the event coincidence ---
     config_lst1_magic = yaml.safe_load(open(args.config_file, "r"))
-    data_stereo = event_coincidence(data_lst, data_magic, config_lst1_magic['coincidence'])
+
+    data_stereo = event_coincidence(
+        args.input_data_lst, args.input_data_magic, config_lst1_magic['coincidence']
+    )
 
     # --- store the coincident events list ---
     print(f'\nOutput data file: {args.output_data}')
