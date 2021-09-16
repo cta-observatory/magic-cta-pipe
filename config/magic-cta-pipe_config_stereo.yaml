@@ -27,17 +27,23 @@ data_files:
 
 image_cleaning:
     magic:
-        charge_thresholds:
-            picture_thresh: 6
-            boundary_thresh: 3.5
-            min_number_picture_neighbors: 1
+        picture_thresh: 6
+        boundary_thresh: 3.5
+        min_number_picture_neighbors: 1
+        # 1.5 slices x 1.64 GHz
+        max_time_diff: 2.46
+        # 4.5 slices x 1.64 GHz
+        max_time_off: 7.38
+        min_number_neighbors: 3
+        usetime : True
+        usesum : True
+        findhotpixels : True
 
-        time_thresholds:
-            # 1.5 slices x 1.64 GHz
-            max_time_diff: 2.46
-            # 4.5 slices x 1.64 GHz
-            max_time_off: 7.38
-            min_number_neighbors: 1
+bad_pixels:
+    magic:
+        pedestalLevel: 400
+        pedestalLevelVariance: 4.5
+        pedestalType: "FromExtractorRndm"
 
 energy_rf:
     save_name: "RFs/energy_rf.joblib"

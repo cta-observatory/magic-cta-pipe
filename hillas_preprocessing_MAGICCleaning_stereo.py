@@ -130,7 +130,7 @@ def reflected_camera_geometry(camera_geom):
         cam_rotation=camera_geom.cam_rotation
     )
 
-def process_dataset_mc(input_mask, output_name):
+def process_dataset_mc(input_mask, output_name, cleaning_config):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
     to add this information to the event Hillas parameters when dumping the
@@ -143,6 +143,8 @@ def process_dataset_mc(input_mask, output_name):
         by the MAGICEventSource class.
     output_name : str
         Name of the HDF5 output file.
+    cleaning_config: dict
+        Dictionary for cleaning settings
 
     Returns
     -------
@@ -168,17 +170,9 @@ def process_dataset_mc(input_mask, output_name):
     class ImpactContainer(Container):
         impact = Field(-1, "Impact")
 
-    cleaning_config = dict(
-        picture_thresh = 6,
-        boundary_thresh = 3.5,
-        max_time_off = 4.5 * 1.64,
-        max_time_diff = 1.5 * 1.64,
-        usetime = True,
-        usesum = True,
-        findhotpixels = False,
-    )
-
     aberration_factor = 1./1.0713
+
+    cleaning_config["findhotpixels"] = False
 
     # Now let's loop over the events and perform:
     #  - image cleaning;
@@ -335,7 +329,7 @@ def process_dataset_mc(input_mask, output_name):
     print(f"\tEvents with stereo calculation: {events_stereo_calculation_success}")
 
 
-def process_dataset_data(input_mask, output_name):
+def process_dataset_data(input_mask, output_name, cleaning_config, bad_pixels_config):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
     to add this information to the event Hillas parameters when dumping the
@@ -348,6 +342,10 @@ def process_dataset_data(input_mask, output_name):
         by the MAGICEventSource class.
     output_name : str
         Name of the HDF5 output file.
+    cleaning_config: dict
+        Dictionary for cleaning settings
+    bad_pixels_config: dict
+        Dictionary for bad pixels settings
 
     Returns
     -------
@@ -365,22 +363,6 @@ def process_dataset_data(input_mask, output_name):
 
     class ImpactContainer(Container):
         impact = Field(-1, "Impact")
-
-    cleaning_config = dict(
-        picture_thresh = 6,
-        boundary_thresh = 3.5,
-        max_time_off = 4.5 * 1.64,
-        max_time_diff = 1.5 * 1.64,
-        usetime = True,
-        usesum = True,
-        findhotpixels=True,
-    )
-
-    bad_pixels_config = dict(
-        pedestalLevel = 400,
-        pedestalLevelVariance = 4.5,
-        pedestalType = 'FromExtractorRndm'
-    )
 
     aberration_factor = 1./1.0713
 
@@ -626,9 +608,12 @@ for data_type in data_type_to_process:
 
             is_mc = data_type.lower() == "mc"
 
+            cleaning_config = config['image_cleaning'][telescope_type]
+            bad_pixels_config = config['bad_pixels'][telescope_type]
+
             if is_mc:
                 process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
-                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'])
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'], cleaning_config)
             else:
                 process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
-                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'])
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'], cleaning_config, bad_pixels_config)
