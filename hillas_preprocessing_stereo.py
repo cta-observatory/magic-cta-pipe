@@ -25,6 +25,7 @@ from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters, leakage
 from ctapipe.image.timing import timing_parameters
 from ctapipe.image.cleaning import tailcuts_clean     # apply_time_delta_cleaning
+from ctapipe.instrument import CameraGeometry
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
@@ -259,6 +260,60 @@ def get_num_islands(camera, clean_mask, event_image):
 
     return num_islands
 
+def scale_camera_geometry(camera_geom, factor):
+    """Scale given camera geometry of a given (constant) factor
+    
+    Parameters
+    ----------
+    camera : CameraGeometry
+        Camera geometry
+    factor : float
+        Scale factor
+    
+    Returns
+    -------
+    CameraGeometry
+        Scaled camera geometry
+    """
+    pix_x_scaled = factor*camera_geom.pix_x
+    pix_y_scaled = factor*camera_geom.pix_y
+    pix_area_scaled = camera_geom.guess_pixel_area(pix_x_scaled, pix_y_scaled, camera_geom.pix_type)
+
+    return CameraGeometry(
+        camera_name='MAGICCam',
+        pix_id=camera_geom.pix_id,
+        pix_x=pix_x_scaled,
+        pix_y=pix_y_scaled,
+        pix_area=pix_area_scaled,
+        pix_type=camera_geom.pix_type,
+        pix_rotation=camera_geom.pix_rotation,
+        cam_rotation=camera_geom.cam_rotation
+    )
+
+def reflected_camera_geometry(camera_geom):
+    """Reflect camera geometry (x->-y, y->-x)
+
+    Parameters
+    ----------
+    camera_geom : CameraGeometry
+        Camera geometry
+
+    Returns
+    -------
+    CameraGeometry
+        Reflected camera geometry
+    """
+
+    return CameraGeometry(
+        camera_name='MAGICCam',
+        pix_id=camera_geom.pix_id,
+        pix_x=-1.*camera_geom.pix_y,
+        pix_y=-1.*camera_geom.pix_x,
+        pix_area=camera_geom.guess_pixel_area(camera_geom.pix_x, camera_geom.pix_y, camera_geom.pix_type),
+        pix_type=camera_geom.pix_type,
+        pix_rotation=camera_geom.pix_rotation,
+        cam_rotation=camera_geom.cam_rotation
+    )
 
 def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
     """Create event metadata container to hold event / observation / telescope
@@ -304,6 +359,8 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
     #  
     # We'll write the result to the HDF5 file that can be used for further processing.
 
+    aberration_factor = 1./1.0713
+
     hillas_reconstructor = HillasReconstructor()
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
@@ -322,7 +379,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
 
         # Looping over the events
         for event in source:
-                        
+
             if event.index.obs_id != obs_id_last:
                 obs_id_info = ObsIdContainer(obs_id=event.index.obs_id)
                 writer.write("mc_header", (obs_id_info, event.mcheader))
@@ -346,10 +403,12 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                 # Pixel arrival time map
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
                 # Camera geometry
-                camera = source.subarray.tel[tel_id].camera.geometry
+                camera_old = source.subarray.tel[tel_id].camera.geometry
+                camera = reflected_camera_geometry(camera_old)
+                camera_scaled = scale_camera_geometry(camera, aberration_factor)
 
                 # Added on 06/07/2019
-                clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
+                clean_mask = magic_clean_step1(camera_scaled,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
@@ -357,7 +416,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
-                clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
+                clean_mask = magic_clean_step2(camera_scaled, clean_mask, event_image, event_pulse_time,
                             max_time_off=time_thresholds['max_time_off'],
                             core_thresh=charge_thresholds['picture_thresh'])
                             #usetime=usetime)
@@ -368,7 +427,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
-                clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
+                clean_mask = magic_clean_step3(camera_scaled, clean_mask, event_image, event_pulse_time,
                             max_time_diff=time_thresholds['max_time_diff'],
                             boundary_thresh=charge_thresholds['boundary_thresh'])
                             #usetime=usetime)
@@ -379,7 +438,7 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
-                num_islands = get_num_islands(camera, clean_mask, event_image)
+                num_islands = get_num_islands(camera_scaled, clean_mask, event_image)
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -390,16 +449,16 @@ def process_dataset_mc(input_mask, output_name, image_cleaning_settings):
                 # if event_image_cleaned.sum() > 0:
                 if len(event_image[clean_mask]) > 3:
                     # If event has survived the cleaning, computing the Hillas parameters
-                    hillas_params = hillas_parameters(camera, event_image_cleaned)
+                    hillas_params = hillas_parameters(camera_scaled, event_image_cleaned)
                     image_mask = event_image_cleaned > 0
                     timing_params = timing_parameters(
-                        camera,
+                        camera_scaled,
                         event_image_cleaned,
                         event_pulse_time_cleaned,
                         hillas_params,
                         image_mask
                     )
-                    leakage_params = leakage(camera, event_image, clean_mask)
+                    leakage_params = leakage(camera_scaled, event_image, clean_mask)
 
                     computed_hillas_params[tel_id] = hillas_params
 
@@ -480,6 +539,8 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
     #  
     # We'll write the result to the HDF5 file that can be used for further processing.
 
+    aberration_factor = 1./1.0713
+
     hillas_reconstructor = HillasReconstructor()
 
     charge_thresholds = image_cleaning_settings['charge_thresholds']
@@ -512,9 +573,11 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
                 # Pixel arrival time map
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
                 # Camera geometry
-                camera = source.subarray.tel[tel_id].camera.geometry
+                camera_old = source.subarray.tel[tel_id].camera.geometry
+                camera = reflected_camera_geometry(camera_old)
+                camera_scaled = scale_camera_geometry(camera, aberration_factor)
 
-                clean_mask = magic_clean_step1(camera,event_image,core_thresh=charge_thresholds['picture_thresh'])
+                clean_mask = magic_clean_step1(camera_scaled,event_image,core_thresh=charge_thresholds['picture_thresh'])
 
                 if event_image[clean_mask].sum() == 0:
                     # Event did not survive image cleaining
@@ -522,7 +585,7 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
-                clean_mask = magic_clean_step2(camera, clean_mask, event_image, event_pulse_time,
+                clean_mask = magic_clean_step2(camera_scaled, clean_mask, event_image, event_pulse_time,
                                max_time_off=time_thresholds['max_time_off'],
                                core_thresh=charge_thresholds['picture_thresh'])
 
@@ -532,7 +595,7 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
-                clean_mask = magic_clean_step3(camera, clean_mask, event_image, event_pulse_time,
+                clean_mask = magic_clean_step3(camera_scaled, clean_mask, event_image, event_pulse_time,
                                max_time_diff=time_thresholds['max_time_diff'],
                                boundary_thresh=charge_thresholds['boundary_thresh'])
 
@@ -542,7 +605,7 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
                     continue
 
-                num_islands = get_num_islands(camera, clean_mask, event_image)
+                num_islands = get_num_islands(camera_scaled, clean_mask, event_image)
 
                 event_image_cleaned = event_image.copy()
                 event_image_cleaned[~clean_mask] = 0
@@ -553,16 +616,16 @@ def process_dataset_data(input_mask, output_name, image_cleaning_settings):
                 # if event_image_cleaned.sum() > 0:
                 if len(event_image[clean_mask]) > 3:
                     # If event has survived the cleaning, computing the Hillas parameters
-                    hillas_params = hillas_parameters(camera, event_image_cleaned)
+                    hillas_params = hillas_parameters(camera_scaled, event_image_cleaned)
                     image_mask = event_image_cleaned > 0
                     timing_params = timing_parameters(
-                        camera,
+                        camera_scaled,
                         event_image_cleaned,
                         event_pulse_time_cleaned,
                         hillas_params,
                         image_mask
                     )
-                    leakage_params = leakage(camera, event_image, clean_mask)
+                    leakage_params = leakage(camera_scaled, event_image, clean_mask)
 
                     computed_hillas_params[tel_id] = hillas_params
 
