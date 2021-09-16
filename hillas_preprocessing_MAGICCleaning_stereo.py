@@ -105,6 +105,31 @@ def scale_camera_geometry(camera_geom, factor):
         cam_rotation=camera_geom.cam_rotation
     )
 
+def reflected_camera_geometry(camera_geom):
+    """Reflect camera geometry (x->-y, y->-x)
+
+    Parameters
+    ----------
+    camera_geom : CameraGeometry
+        Camera geometry
+
+    Returns
+    -------
+    CameraGeometry
+        Reflected camera geometry
+    """
+
+    return CameraGeometry(
+        camera_name='MAGICCam',
+        pix_id=camera_geom.pix_id,
+        pix_x=-1.*camera_geom.pix_y,
+        pix_y=-1.*camera_geom.pix_x,
+        pix_area=camera_geom.guess_pixel_area(camera_geom.pix_x, camera_geom.pix_y, camera_geom.pix_type),
+        pix_type=camera_geom.pix_type,
+        pix_rotation=camera_geom.pix_rotation,
+        cam_rotation=camera_geom.cam_rotation
+    )
+
 def process_dataset_mc(input_mask, output_name):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
@@ -176,8 +201,9 @@ def process_dataset_mc(input_mask, output_name):
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Event source
         source = MAGICEventSource(input_url=input_mask)
-        
-        camera = source.subarray.tel[1].camera.geometry
+
+        camera_old = source.subarray.tel[1].camera.geometry
+        camera = reflected_camera_geometry(camera_old)
         camera_scaled = scale_camera_geometry(camera, aberration_factor)
         magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
 
@@ -382,7 +408,8 @@ def process_dataset_data(input_mask, output_name):
         # Creating an input source
         source = MAGICEventSource(input_url=input_mask)
 
-        camera = source.subarray.tel[1].camera.geometry
+        camera_old = source.subarray.tel[1].camera.geometry
+        camera = reflected_camera_geometry(camera_old)
         camera_scaled = scale_camera_geometry(camera, aberration_factor)
         magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
