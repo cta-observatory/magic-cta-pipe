@@ -1,1 +1,2 @@
-from .my_functions import calc_impact, calc_nsim
+from .merge_files import *
+from .my_functions import *

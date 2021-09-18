@@ -38,17 +38,7 @@ coincidence:
 
 
 stereo_reco:
-    theta_lim: 2   # unit: [arcmin]
-    simtel_path: "/home/yoshiki.ohtani/workspace/Data/LaPalma/LST-1_MAGIC/gamma/zenith_40deg/\
-                east_pointing/run1/sim_telarray_v3_trans_80%/cta-prod5-lapalma_LST-1_MAGIC/0.4deg/Data/\
-                gamma_40deg_90deg_run1___cta-prod5-lapalma_LST-1_MAGIC_desert-2158m_mono_off0.4.simtel.gz"
-
-
-obs_location:
-    name: 'ORM_MAGIC'
-    lat: 28.76177  # unit: [deg]
-    lon: -17.89064  # unit: [deg]
-    height: 2199.835  # unit: [m]
+    subarray: '/fefs/home/yoshiki.ohtani/software/magic-cta-pipe/lst1_magic/data/subarray_lst1_magic.pkl'
 
 
 classifier_rf:

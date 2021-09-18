@@ -21,7 +21,7 @@ __all__ = ['event_coincidence']
 
 def load_lst_data(data_path):
 
-    # --- load data ---
+    # --- load the input data ---
     print(f'\nLoading the LST-1 data file: {data_path}')
 
     re_parser = re.findall("(\w+)_LST-1.Run(\d+)\.(\d+)\.h5", data_path)[0]
@@ -47,11 +47,11 @@ def load_lst_data(data_path):
     data_lst.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
 
     # --- change the unit from [deg] to [m] ---
-    optics_lst = pd.read_hdf(data_path, key='configuration/instrument/telescope/optics')
-    foclen_lst = optics_lst['equivalent_focal_length'].values[0]
+    optics = pd.read_hdf(data_path, key='configuration/instrument/telescope/optics')
+    foclen = optics['equivalent_focal_length'].values[0]
 
-    data_lst['length'] = foclen_lst * np.tan(np.deg2rad(data_lst['length'].values))
-    data_lst['width'] = foclen_lst * np.tan(np.deg2rad(data_lst['width'].values))
+    data_lst['length'] = foclen * np.tan(np.deg2rad(data_lst['length'].values))
+    data_lst['width'] = foclen * np.tan(np.deg2rad(data_lst['width'].values))
 
     # --- change the unit from [rad] to [deg] ---
     data_lst['phi'] = np.rad2deg(data_lst['phi'].values)
@@ -61,8 +61,8 @@ def load_lst_data(data_path):
 
 def load_magic_data(data_path):
 
-    # --- load data ---
-    print('\nLoading the MAGIC data files...')
+    # --- load the input data ---
+    print('\nLoading the following MAGIC data files:')
 
     column_names = {
         'obs_id': 'obs_id_magic',
@@ -79,7 +79,7 @@ def load_magic_data(data_path):
         print(path)
 
         df = pd.read_hdf(path, key='events/params')
-        df['tel_id'] = df['tel_id'].values + 1
+        df['tel_id'] = df['tel_id'].values + 1      
         df.rename(columns=column_names, inplace=True)
 
         data_magic = pd.concat([data_magic, df])
@@ -108,22 +108,21 @@ def load_magic_data(data_path):
 def event_coincidence(data_path_lst, data_path_magic, config):
 
     sec2us = 1e6
-    sec2ns = 1e9
     ms2sec = 1e-3
     ns2sec = 1e-9
 
     accuracy_time = 1e-7
     decimals = int(np.log10(1/accuracy_time))
 
-    print('\nConfiguration for the event coincidence:\n {}'.format(config))
+    print(f'\nConfiguration for the event coincidence:\n{config}')
 
-    # --- load the LST-1 data ---
+    # --- load the input LST-1 data ---
     data_lst = load_lst_data(data_path_lst)
 
-    # --- load the MAGIC data ---
+    # --- load the input MAGIC data ---
     data_magic = load_magic_data(data_path_magic)
     
-    # --- get LST timestamps ---
+    # --- get the LST timestamps ---
     mjd = data_magic['mjd'].values[0]
     obs_day = Time(mjd, format='mjd', scale='utc')
 
@@ -135,7 +134,7 @@ def event_coincidence(data_path_lst, data_path_magic, config):
     time_lst = time_lst_unix - Decimal(str(obs_day.unix))
     time_lst = np.array(list(map(float, time_lst)))
 
-    # --- get MAGIC timestamps ---
+    # --- get the MAGIC timestamps ---
     df_magic = {
         2: data_magic.query('tel_id == 2'),
         3: data_magic.query('tel_id == 3')
@@ -144,13 +143,10 @@ def event_coincidence(data_path_lst, data_path_magic, config):
     type_magic_time = config['type_magic_time']
 
     if type_magic_time == 'MAGIC-I':
-        tel_id = 2
+        time_magic = df_magic[2]['millisec'].values * ms2sec + df_magic[2]['nanosec'].values * ns2sec
 
     elif type_magic_time == 'MAGIC-II':
-        tel_id = 3
-
-    time_magic = df_magic[tel_id]['millisec'].values * ms2sec +\
-                 df_magic[tel_id]['nanosec'].values * ns2sec
+        time_magic = df_magic[3]['millisec'].values * ms2sec + df_magic[3]['nanosec'].values * ns2sec
 
     time_magic = np.round(time_magic, decimals)
 
@@ -171,8 +167,8 @@ def event_coincidence(data_path_lst, data_path_magic, config):
     condition = (condition_lo & condition_hi)
 
     if np.sum(condition) == 0:
-        print('--> No MAGIC-stereo events within the LST-1 data observation time window. ' \
-              'Please check your MAGIC and LST-1 input files. Exiting.')
+        print('--> No MAGIC-stereo events are found within the LST-1 data observation time window. ' \
+              'Please check your MAGIC and LST-1 input data. Exiting.')
         sys.exit()
 
     else:
@@ -184,7 +180,7 @@ def event_coincidence(data_path_lst, data_path_magic, config):
 
     time_magic = time_magic[condition]
 
-    # --- check coincidence ---
+    # --- check the coincidence ---
     print('Checking the coincidence...')
 
     n_events_lst = len(time_lst)
@@ -213,8 +209,8 @@ def event_coincidence(data_path_lst, data_path_magic, config):
         print(f'time_offset = {offset*sec2us:.01f} [us]  -->  {n_events_stereo[i_off]} events')
 
     n_events_max = np.max(n_events_stereo)
-    index_max = np.where(n_events_stereo == n_events_max)[0][0]
-    offset_at_max = bins_offset[index_max]
+    index_at_max = np.where(n_events_stereo == n_events_max)[0][0]
+    offset_at_max = bins_offset[index_at_max]
 
     offset_lo = np.round(offset_at_max - window_width, decimals)
     offset_hi = np.round(offset_at_max + window_width, decimals)
@@ -229,7 +225,7 @@ def event_coincidence(data_path_lst, data_path_magic, config):
     print(f'--> Number of coincidences = {n_events_at_avg}')
     print(f'--> Ratio of the coincidences = {n_events_at_avg}/{n_events_magic} = {ratio*100:.1f}%')
 
-    # --- make coincident events list --- 
+    # --- make a coincident events list --- 
     indices_magic = []
     indices_lst = []
 
@@ -289,7 +285,7 @@ def main():
 
     arg_parser.add_argument(
         '--output-data', '-o', dest='output_data', type=str,  
-        help='Path and name of an output data file with HDF5 format, e.g., dl1_coincidence.h5'
+        help='Path and name of an output data file with HDF5 format, e.g., dl1_lst1_magic.h5'
     )
 
     arg_parser.add_argument(
