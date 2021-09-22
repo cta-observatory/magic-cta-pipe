@@ -613,7 +613,7 @@ for data_type in data_type_to_process:
 
             if is_mc:
                 process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
-                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'], cleaning_config)
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'], cleaning_config=cleaning_config)
             else:
                 process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope_type]['input_mask'],
-                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'], cleaning_config, bad_pixels_config)
+                    output_name=config['data_files'][data_type][sample][telescope_type]['hillas_output'], cleaning_config=cleaning_config, bad_pixels_config=bad_pixels_config)
