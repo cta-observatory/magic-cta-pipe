@@ -19,23 +19,24 @@ warnings.simplefilter('ignore')
 
 __all__ = ['event_coincidence']
 
+
 def load_lst_data(data_path):
 
-    # --- load the input data ---
     print(f'\nLoading the LST-1 data file: {data_path}')
 
-    re_parser = re.findall("(\w+)_LST-1.Run(\d+)\.(\d+)\.h5", data_path)[0]
+    re_parser = re.findall('(\w+)_LST-1.Run(\d+)\.(\d+)\.h5', data_path)[0]
     data_level = re_parser[0]
 
     data_lst = pd.read_hdf(
         data_path, key=f'{data_level}/event/telescope/parameters/LST_LSTCam'
     )
     
-    n_events = len(data_lst)
-    print(f'LST-1: {n_events} events')
+    print(f'LST-1: {len(data_lst)} events')
 
     # --- change the column names ---
     column_names = {
+        'obs_id': 'obs_id_lst',
+        'event_id': 'event_id_lst',
         'leakage_pixels_width_1': 'pixels_width_1', 
         'leakage_pixels_width_2': 'pixels_width_2', 
         'leakage_intensity_width_1': 'intensity_width_1',
@@ -44,7 +45,15 @@ def load_lst_data(data_path):
     } 
 
     data_lst.rename(columns=column_names, inplace=True)
-    data_lst.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+
+    # --- remove unnecessary columns ---
+    column_names = [
+        'log_intensity', 'n_pixels', 'concentration_cog', 'concentration_core', 
+        'concentration_pixel', 'mc_type', 'mc_core_distance', 
+        'tel_pos_x', 'tel_pos_y', 'tel_pos_z', 
+    ]
+
+    data_lst = data_lst.drop(column_names, axis=1)
 
     # --- change the unit from [deg] to [m] ---
     optics = pd.read_hdf(data_path, key='configuration/instrument/telescope/optics')
@@ -57,53 +66,50 @@ def load_lst_data(data_path):
     data_lst['phi'] = np.rad2deg(data_lst['phi'].values)
     data_lst['psi'] = np.rad2deg(data_lst['psi'].values)
 
+    # --- set the index ---
+    data_lst.set_index(['obs_id_lst', 'event_id_lst', 'tel_id'], inplace=True)
+
     return data_lst
+
 
 def load_magic_data(data_path):
 
-    # --- load the input data ---
     print('\nLoading the following MAGIC data files:')
-
-    column_names = {
-        'obs_id': 'obs_id_magic',
-        'event_id': 'event_id_magic'
-    }
 
     data_magic = pd.DataFrame()
 
-    path_list = glob.glob(data_path)
-    path_list.sort()
+    paths_list = glob.glob(data_path)
+    paths_list.sort()
 
-    for path in path_list:
+    for path in paths_list:
 
         print(path)
 
         df = pd.read_hdf(path, key='events/params')
-        df['tel_id'] = df['tel_id'].values + 1      
-        df.rename(columns=column_names, inplace=True)
-
         data_magic = pd.concat([data_magic, df])
 
-    data_magic.set_index(['obs_id_magic', 'event_id_magic', 'tel_id'], inplace=True)
+    data_magic.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     data_magic.sort_index(inplace=True)
 
-    for tel_id, tel_name in zip([2, 3], ['MAGIC-I', 'MAGIC-II']):
+    for tel_id, tel_name in zip([1, 2], ['MAGIC-I', 'MAGIC-II']):
         n_events = len(data_magic.query(f'tel_id == {tel_id}'))
         print(f'{tel_name}:  {n_events} events')
 
     # --- apply multiplicity cut ---
     print('\nApplying the multiplicity cut (= 2)...')
 
-    multiplicity = data_magic.groupby(['obs_id_magic', 'event_id_magic']).size()
+    multiplicity = data_magic.groupby(['obs_id', 'event_id']).size()
+
     data_magic['multiplicity'] = multiplicity
     data_magic = data_magic.query('multiplicity == 2')
-    data_magic.drop('multiplicity', axis=1)
+    data_magic = data_magic.drop('multiplicity', axis=1)
 
-    for tel_id, tel_name in zip([2, 3], ['MAGIC-I', 'MAGIC-II']):
+    for tel_id, tel_name in zip([1, 2], ['MAGIC-I', 'MAGIC-II']):
         n_events = len(data_magic.query(f'tel_id == {tel_id}'))
         print(f'{tel_name}:  {n_events} events')
 
     return data_magic
+
 
 def event_coincidence(data_path_lst, data_path_magic, config):
 
@@ -122,7 +128,7 @@ def event_coincidence(data_path_lst, data_path_magic, config):
     # --- load the input MAGIC data ---
     data_magic = load_magic_data(data_path_magic)
     
-    # --- get the LST timestamps ---
+    # --- get the LST-1 timestamps ---
     mjd = data_magic['mjd'].values[0]
     obs_day = Time(mjd, format='mjd', scale='utc')
 
@@ -136,17 +142,15 @@ def event_coincidence(data_path_lst, data_path_magic, config):
 
     # --- get the MAGIC timestamps ---
     df_magic = {
-        2: data_magic.query('tel_id == 2'),
-        3: data_magic.query('tel_id == 3')
+        1: data_magic.query('tel_id == 1'), 
+        2: data_magic.query('tel_id == 2'), 
     }
 
-    type_magic_time = config['type_magic_time']
+    if config['type_magic_time'] == 'MAGIC-I':
+        time_magic = df_magic[1]['millisec'].values * ms2sec + df_magic[1]['nanosec'].values * ns2sec
 
-    if type_magic_time == 'MAGIC-I':
+    elif config['type_magic_time'] == 'MAGIC-II':
         time_magic = df_magic[2]['millisec'].values * ms2sec + df_magic[2]['nanosec'].values * ns2sec
-
-    elif type_magic_time == 'MAGIC-II':
-        time_magic = df_magic[3]['millisec'].values * ms2sec + df_magic[3]['nanosec'].values * ns2sec
 
     time_magic = np.round(time_magic, decimals)
 
@@ -175,13 +179,13 @@ def event_coincidence(data_path_lst, data_path_magic, config):
         n_events_magic = np.sum(condition)
         print(f'--> {n_events_magic} MAGIC-stereo events are found. Continuing.\n')
     
+    df_magic[1] = df_magic[1].iloc[condition]
     df_magic[2] = df_magic[2].iloc[condition]
-    df_magic[3] = df_magic[3].iloc[condition]
 
     time_magic = time_magic[condition]
 
-    # --- check the coincidence ---
-    print('Checking the coincidence...')
+    # --- check the event coincidence ---
+    print('Checking the event coincidence...')
 
     n_events_lst = len(time_lst)
 
@@ -225,7 +229,7 @@ def event_coincidence(data_path_lst, data_path_magic, config):
     print(f'--> Number of coincidences = {n_events_at_avg}')
     print(f'--> Ratio of the coincidences = {n_events_at_avg}/{n_events_magic} = {ratio*100:.1f}%')
 
-    # --- make a coincident events list --- 
+    # --- check the event coincidence with the averaged offset --- 
     indices_magic = []
     indices_lst = []
 
@@ -244,27 +248,51 @@ def event_coincidence(data_path_lst, data_path_magic, config):
             indices_magic.append(index_magic)
             indices_lst.append(i_ev)
 
-    df_lst = data_lst.iloc[indices_lst]
-    obs_id_lst = df_lst.index.get_level_values('obs_id')
-    event_id_lst = df_lst.index.get_level_values('event_id')
+    obs_ids_lst = data_lst.iloc[indices_lst].index.get_level_values('obs_id_lst')
+    event_ids_lst = data_lst.iloc[indices_lst].index.get_level_values('event_id_lst')
 
-    for tel_id in [2, 3]:
-        df_magic[tel_id] = df_magic[tel_id].iloc[indices_magic]
-        df_magic[tel_id]['obs_id'] = obs_id_lst
-        df_magic[tel_id]['event_id'] = event_id_lst
+    obs_ids_magic = df_magic[1].iloc[indices_magic].index.get_level_values('obs_id')
+    event_ids_magic = df_magic[1].iloc[indices_magic].index.get_level_values('event_id')
+
+    # --- arrange the LST-1 data frame ---
+    df_lst = data_lst.iloc[indices_lst]
+
+    df_lst['obs_id'] = obs_ids_magic
+    df_lst['event_id'] = event_ids_magic
+
+    df_lst.reset_index(inplace=True)
+    df_lst.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+
+    # --- arange the MAGIC data frame ---
+    for tel_id in [1, 2]:
+        
+        df_magic[tel_id].loc[(obs_ids_magic, event_ids_magic, tel_id), 'obs_id_lst'] = obs_ids_lst
+        df_magic[tel_id].loc[(obs_ids_magic, event_ids_magic, tel_id), 'event_id_lst'] = event_ids_lst
+
         df_magic[tel_id].reset_index(inplace=True)
+        df_magic[tel_id]['tel_id'] = tel_id + 1   # MAGIC-I -> 2, MAGIC-II -> 3
         df_magic[tel_id].set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
 
-    data_stereo = pd.concat([df_lst, df_magic[2], df_magic[3]])
+    # --- make a coincident events list ---
+    if config['keep_magic_stereo']:
+        print('\nKeeping the non-coincident MAGIC-stereo events...')
+
+    else:
+        print('\nDiscarding the non-coincident MAGIC-stereo events...')
+        df_magic[1] = df_magic[1].iloc[indices_magic]
+        df_magic[2] = df_magic[2].iloc[indices_magic]
+
+    data_stereo = pd.concat([df_lst, df_magic[1], df_magic[2]])
     data_stereo.sort_index(inplace=True)
+
+    for tel_id, tel_name in zip([1, 2, 3], ['LST-1', 'MAGIC-I', 'MAGIC-II']):
+        n_events = len(data_stereo.query(f'tel_id == {tel_id}'))
+        print(f'{tel_name}:  {n_events} events')
 
     data_stereo['offset_us'] = offset_avg * sec2us
 
     return data_stereo
 
-# ============
-# === Main ===
-# ============
 
 def main():
 
@@ -296,20 +324,22 @@ def main():
     args = arg_parser.parse_args()
 
     # --- perform the event coincidence ---
-    config_lst1_magic = yaml.safe_load(open(args.config_file, "r"))
+    config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
 
     data_stereo = event_coincidence(
-        args.input_data_lst, args.input_data_magic, config_lst1_magic['coincidence']
+        args.input_data_lst, args.input_data_magic, config_lst1_magic['event_coincidence']
     )
 
     # --- store the coincident events list ---
-    print(f'\nOutput data file: {args.output_data}')
     data_stereo.to_hdf(args.output_data, key='events/params')
 
+    print(f'\nOutput data file: {args.output_data}')
+    
     print('\nDone.')
 
     end_time = time.time()
     print(f'\nelapsed time = {end_time - start_time:.0f} [sec]\n')
+
 
 if __name__ == '__main__':
     main()

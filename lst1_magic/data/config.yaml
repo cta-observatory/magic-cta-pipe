@@ -1,3 +1,9 @@
+mc_tel_ids:
+    LST-1: 1
+    MAGIC-I: 2
+    MAGIC-II: 3
+
+    
 LST:
     LocalPeakWindowSum:
         window_shift: 4
@@ -29,32 +35,25 @@ MAGIC:
         pedestalType: 'FromExtractorRndm'
 
 
-coincidence: 
+event_coincidence: 
     type_lst_time: 'dragon_time' 
     type_magic_time: 'MAGIC-I'
-    window_width: 6.0e-7      # unit: [sec]
-    offset_start: -5.0e-6      # unit: [sec] 
+    window_width: 6.0e-7    # unit: [sec]
+    offset_start: -5.0e-6   # unit: [sec] 
     offset_stop: 0          # unit: [sec]
+    keep_magic_stereo: False
+    
 
-
-stereo_reco:
+stereo_reco: 
     subarray: '/fefs/home/yoshiki.ohtani/software/magic-cta-pipe/lst1_magic/data/subarray_lst1_magic.pkl'
-
-
-classifier_rf:
-    settings:
-        n_estimators: 100
-        min_samples_leaf: 10
-        n_jobs: 3
-
-    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+    allowed_tels_num: 3
 
 
 energy_rf:
     settings:
         n_estimators: 100
         min_samples_leaf: 10
-        n_jobs: 3
+        n_jobs: 5
 
     features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
 
@@ -63,11 +62,20 @@ direction_rf:
     settings:
         n_estimators: 100
         min_samples_leaf: 10
-        n_jobs: 3
+        n_jobs: 5
         
     features: 
         disp: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
         pos_angle_shift: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+
+        
+classifier_rf:
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 5
+
+    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
 
     
 

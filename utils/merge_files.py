@@ -10,101 +10,103 @@ __all__ = [
     'merge_mc_run_files'
 ]
 
+
 def merge_data_subrun_files(input_dir):
 
     data_path = input_dir + '/subrun-wise/*.h5'
 
-    path_list = glob.glob(data_path)
-    path_list.sort()
+    paths_list = glob.glob(data_path)
+    paths_list.sort()
 
     # --- check the run_ids ---
-    run_ids = []
+    run_ids_list = []
 
-    for path in path_list:
+    for path in paths_list:
         re_parser = re.findall('(\w+)_Run(\d+)\.(\d+).h5', path)[0]
-        run_ids.append(re_parser[1])
+        run_ids_list.append(re_parser[1])
 
     file_name = re_parser[0]
-    run_ids = np.unique(run_ids)
+    run_ids_list = np.unique(run_ids_list)
 
-    output_list = []
+    outputs_list = []
 
     # --- merge the files ---
-    for run_id in run_ids:
+    for run_id in run_ids_list:
 
         print(f'\n--- Merge Run{run_id} ---')
         data_path = input_dir + f'/subrun-wise/*_Run{run_id}.*.h5'
-        path_list = glob.glob(data_path)
-        path_list.sort()
+        paths_list = glob.glob(data_path)
+        paths_list.sort()
 
-        data_stereo = pd.DataFrame()
+        data = pd.DataFrame()
 
-        for path in path_list:
+        for path in paths_list:
 
             print(f'{path}')
             df = pd.read_hdf(path, key='events/params')
-            data_stereo = pd.concat([data_stereo, df])
+            data = data.append(df)
 
         output_data = input_dir + f'/{file_name}_Run{run_id}.h5'
-        output_list.append(output_data)
+        outputs_list.append(output_data)
 
-        data_stereo.to_hdf(output_data, key='events/params')
+        data.to_hdf(output_data, key='events/params')
 
     print('\nOutput data:')
-    for path in output_list:
+
+    for path in outputs_list:
         print(path)
 
+
 def merge_mc_run_files(input_dir, n_subsets):
+
+    data_path = input_dir + '/run-wise/*.h5'
     
-    print(f'\nChecking the input directory {args.input_dir}')
+    paths_list = glob.glob(data_path)
+    paths_list.sort()
 
-    input_mask = args.input_dir + '/*run-wise/*.h5'
-    data_paths = glob.glob(input_mask)
-    data_paths.sort()
+    file_name = re.findall('(.*)_run(\d+)\.h5', paths_list[0].split('/')[-1])[0][0]
 
-    print(f'--> {len(data_paths)} input files\n')
+    # --- make subsets ---
+    paths_list = np.reshape(paths_list, (n_subsets, int(len(paths_list)/n_subsets)))
 
-    re_parser = re.findall('(.*)_run(\d+)\.h5', data_paths[0].split('/')[-1])[0]
-    file_name = re_parser[0]
+    for i_sub in range(len(paths_list)):
 
-    data_paths = np.reshape(data_paths, (args.num_subsets, int(len(data_paths)/args.num_subsets)))
-
-    for i_col in range(len(data_paths)):
-        print(f'=== subset {i_col} ===')
+        print(f'\n--- subset{i_sub} ---')
         data = pd.DataFrame()
         
-        for path in data_paths[i_col]:
-            print(f'Combine {path}...')
+        for path in paths_list[i_sub]:
+
+            print(f'{path}')
             df = pd.read_hdf(path, key='events/params')
-            data = pd.concat([data, df])
-            del df
+            data = data.append(df)
 
-        output_file = args.input_dir + f'/subset{i_col}.h5'
-        data.to_hdf(output_file, key='events/params')
+        output_data = input_dir + f'/subset{i_sub}.h5'
+        data.to_hdf(output_data, key='events/params')
 
-    print('=== Combine the subsets ===')
+    # --- merge the subsets ---
+    print('\nCombine the subsets...')
 
-    input_mask = args.input_dir + '/subset*.h5'
-    data_paths = glob.glob(input_mask)
-    data_paths.sort()
+    data_path = input_dir + '/subset*.h5'
+    paths_list = glob.glob(data_path)
+    paths_list.sort()
 
     data = pd.DataFrame()
         
-    for path in data_paths:
-        print(f'Combine {path}...')
+    for path in paths_list:
+
+        print(f'{path}')
         df = pd.read_hdf(path, key='events/params')
-        data = pd.concat([data, df])
-        del df
+        data = data.append(df)
 
-    if args.suffix != None:
-        output_path = args.input_dir + f'/{file_name}_{args.suffix}.h5'
-    else:
-        output_path = args.input_dir + f'/{file_name}.h5'
+    output_data = input_dir + f'/{file_name}.h5'
 
-    data.to_hdf(output_path, key='events/params')
+    data.to_hdf(output_data, key='events/params')
 
-    for path in data_paths:
+    for path in paths_list:
         os.remove(path)
+
+    print(f'\nOutput data: {output_data}')
+
 
 def main():
 
@@ -131,6 +133,7 @@ def main():
         merge_mc_run_files(args.input_dir, args.n_subsets)
 
     print('\nDone.\n')
+
 
 if __name__ == '__main__':
     main()
