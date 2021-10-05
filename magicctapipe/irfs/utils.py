@@ -224,6 +224,50 @@ def plot_sensitivity(data, unit, label, ax=None, **kwargs):
     return plt_
 
 
+def plot_en_res_bias(data, label, **kwargs):
+    """Plot energy resolution bias
+
+    Parameters
+    ----------
+    data : astropy QTable
+        angular resolution data
+    label : str
+        label for plot
+    **kwargs : passed to plt.errorbar
+    """
+    e = data["reco_energy_center"]
+    e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
+    plt.errorbar(
+        e.to_value(u.GeV),
+        data["bias"],
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
+        label=label,
+        **kwargs,
+    )
+
+
+def plot_en_res_resolution(data, label, **kwargs):
+    """Plot energy resolution resolution
+
+    Parameters
+    ----------
+    data : astropy QTable
+        angular resolution data
+    label : str
+        label for plot
+    **kwargs : passed to plt.errorbar
+    """
+    e = data["reco_energy_center"]
+    e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
+    plt.errorbar(
+        e.to_value(u.GeV),
+        data["resolution"],
+        xerr=[(e - e_low).to_value(u.GeV), (e_high - e).to_value(u.GeV)],
+        label=label,
+        **kwargs,
+    )
+
+
 def plot_ang_res(data, label, **kwargs):
     """Plot angular resolution
 
