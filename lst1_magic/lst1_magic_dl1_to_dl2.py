@@ -87,20 +87,38 @@ def dl1_to_dl2(data_path, config, energy_rf=None, direction_rf=None, classifier_
 
         data_stereo = reco_direction(data_stereo, direction_rf, tel_discriptions, config['direction_rf'])
 
-        # --- transform Alt/Az to RA/Dec ---
-        df_lst = data_stereo.query('tel_id == 1')
+        is_data = ('mc_energy' not in data_stereo.columns)
 
-        type_lst_time = config['event_coincidence']['type_lst_time']
+        if is_data:
 
-        ra, dec = transform_to_radec(
-            alt=u.Quantity(df_lst['alt_reco_mean'].values, u.rad), 
-            az=u.Quantity(df_lst['az_reco_mean'].values, u.rad),
-            timestamp=Time(df_lst[type_lst_time].values, format='unix', scale='utc')
-        ) 
+            df_lst = data_stereo.query('tel_id == 1')
 
-        for tel_id in [1, 2, 3]:
-            data_stereo.loc[(slice(None), slice(None), tel_id), 'ra_reco_mean'] = ra
-            data_stereo.loc[(slice(None), slice(None), tel_id), 'dec_reco_mean'] = dec
+            type_lst_time = config['event_coincidence']['type_lst_time']
+
+            # --- transform pointing Alt/Az to RA/Dec ---
+            print('Transforming pointing Alt/Az to RA/Dec...')
+
+            ra_tel, dec_tel = transform_to_radec(
+                alt=u.Quantity(df_lst['alt_tel'].values, u.rad),
+                az=u.Quantity(df_lst['az_tel'].values, u.rad),
+                timestamp=Time(df_lst[type_lst_time].values, format='unix', scale='utc')
+            )
+
+            data_stereo.loc[(slice(None), slice(None), 1), 'ra_tel'] = ra_tel.to(u.deg).value
+            data_stereo.loc[(slice(None), slice(None), 1), 'dec_tel'] = dec_tel.to(u.deg).value
+
+            # --- transform reconstructed Alt/Az to RA/Dec ---
+            print('Transforming reconstructed Alt/Az to RA/Dec...')
+            
+            ra_reco_mean, dec_reco_mean = transform_to_radec(
+                alt=u.Quantity(df_lst['alt_reco_mean'].values, u.rad), 
+                az=u.Quantity(df_lst['az_reco_mean'].values, u.rad),
+                timestamp=Time(df_lst[type_lst_time].values, format='unix', scale='utc')
+            ) 
+
+            for tel_id in [1, 2, 3]:
+                data_stereo.loc[(slice(None), slice(None), tel_id), 'ra_reco_mean'] = ra_reco_mean.to(u.deg).value
+                data_stereo.loc[(slice(None), slice(None), tel_id), 'dec_reco_mean'] = dec_reco_mean.to(u.deg).value
 
 
     # --- reconstruct gammaness ---

@@ -67,7 +67,7 @@ def magic_cal_to_dl1(input_data_path, output_data_path, config):
         
         source = MAGICEventSource(input_url=input_data_path)
 
-        geom_camera = source.subarray.tel[tel_id].camera
+        geom_camera = source.subarray.tel[tel_id].camera.geometry
         magic_clean = MAGIC_Cleaning.magic_clean(geom_camera, config_cleaning)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=config_badpixels)
 

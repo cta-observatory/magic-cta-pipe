@@ -6,11 +6,16 @@
 import sys
 import time
 import yaml
+import glob
 import warnings
 import argparse
 import pandas as pd
 import numpy as np
-from event_processing import EventClassifierPandas, DirectionEstimatorPandas, EnergyEstimatorPandas
+from event_processing import EventClassifierPandas
+from event_processing import DirectionEstimatorPandas
+from event_processing import EnergyEstimatorPandas
+from utils import merge_hdf_files
+
 
 warnings.simplefilter('ignore')
 
@@ -79,7 +84,14 @@ def get_weights_classifier(data_gamma, data_bkg):
 
 def load_data(data_path, event_class):
 
-    data = pd.read_hdf(data_path, key='events/params')
+    paths_list = glob.glob(data_path)
+
+    if len(paths_list) == 1:
+        data = pd.read_hdf(data_path, key='events/params')
+
+    elif len(paths_list) > 1:
+        data = merge_hdf_files(data_path)
+    
     data.sort_index(inplace=True)
 
     data['true_event_class'] = event_class
@@ -233,12 +245,12 @@ def main():
 
     arg_parser.add_argument(
         '--input-data-gamma', '-g', dest='input_data_gamma', type=str, 
-        help='Path to an input DL1+stereo gamma-ray data file for training RF, e.f., dl1_stereo_gamma_40deg_180deg.h5'
+        help='Path to input DL1+stereo gamma-ray data file(s) for training RF, e.g., dl1_stereo_gamma_run*.h5'
     )
 
     arg_parser.add_argument(
         '--input-data-bkg', '-b', dest='input_data_bkg', type=str, default=None,
-        help='Path to an input DL1+stereo background data file for training classifier RF, e.f., dl1_stereo_proton_40deg_180deg.h5'
+        help='Path to  input DL1+stereo background data file(s) for training classifier RF, e.g., dl1_stereo_proton_run*.h5'
     )
 
     arg_parser.add_argument(
@@ -257,6 +269,7 @@ def main():
     config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
 
     if args.type_rf == 'energy':
+
         rf = train_energy_rf(args.input_data_gamma, config_lst1_magic['energy_rf'])
 
     elif args.type_rf == 'direction':
@@ -267,6 +280,7 @@ def main():
         rf = train_direction_rf(args.input_data_gamma, tel_discriptions, config_lst1_magic['direction_rf'])
 
     elif args.type_rf == 'classifier':
+
         rf = train_classifier_rf(args.input_data_gamma, args.input_data_bkg, config_lst1_magic['classifier_rf'])
 
     else:

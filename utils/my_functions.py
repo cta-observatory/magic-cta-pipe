@@ -1,14 +1,13 @@
 import numpy as np
 from astropy import units as u
-from astropy.coordinates import EarthLocation, AltAz, SkyCoord  
-
-
+from astropy.coordinates import EarthLocation, AltAz, SkyCoord
 
 __all__ = [
     'calc_impact',
     'calc_nsim',
     'transform_telcoords_cog',
-    'transform_to_radec'
+    'transform_to_radec',
+    'calc_offset_rotation'
 ]
 
 
@@ -27,16 +26,27 @@ def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
 
 def calc_nsim(
         n_events_sim, eslope_sim, emin_sim, emax_sim, cscat_sim, viewcone_sim, 
-        emin, emax, distmin, distmax, angmin, angmax
+        emin=None, emax=None, distmin=None, distmax=None, angmin=None, angmax=None
     ): 
 
-    norm_eng = (emax**(eslope_sim+1) - emin**(eslope_sim+1))/(emax_sim**(eslope_sim+1) - emin_sim**(eslope_sim+1))
-    norm_dist = (distmax**2 - distmin**2)/cscat_sim**2
-    norm_ang = (np.cos(np.deg2rad(angmin)) - np.cos(np.deg2rad(angmax)))/(1 - np.cos(np.deg2rad(viewcone_sim)))
-
-    nsim = norm_eng * norm_dist * norm_ang * n_events_sim
+    if (emin != None) & (emax != None):
+        norm_eng = (emax**(eslope_sim+1) - emin**(eslope_sim+1))/(emax_sim**(eslope_sim+1) - emin_sim**(eslope_sim+1))
+    else:
+        norm_eng = 1
     
-    return nsim
+    if (distmin != None) & (distmax != None):
+        norm_dist = (distmax**2 - distmin**2)/cscat_sim**2
+    else:
+        norm_dist = 1
+
+    if (angmin != None) & (angmax != None):
+        norm_ang = (np.cos(angmin) - np.cos(angmax))/(1 - np.cos(viewcone_sim))
+    else:
+        norm_ang = 1
+
+    nsim = n_events_sim * norm_eng * norm_dist * norm_ang 
+    
+    return nsim.value
 
 
 def transform_telcoords_cog(tel_positions, allowed_tels):
@@ -69,8 +79,26 @@ def transform_to_radec(alt, az, timestamp):
     horizon_frames = AltAz(location=location, obstime=timestamp)
 
     event_coords = SkyCoord(alt=alt, az=az, frame=horizon_frames)
+    event_coords = event_coords.transform_to('icrs')
 
-    print('Transforming Alt/Az to RA/Dec...')
-    event_coords = event_coords.transform_to('fk5')
+    return event_coords.ra, event_coords.dec
 
-    return event_coords.ra.value, event_coords.dec.value
+
+def calc_offset_rotation(ra1, dec1, ra2, dec2):
+    
+    diff_ra = ra2 - ra1
+    diff_dec = dec2 - dec1
+    
+    offset = np.arccos(np.cos(dec1)*np.cos(dec2)*np.cos(diff_ra) + np.sin(dec1)*np.sin(dec2))
+
+    rotation = np.arctan((np.sin(dec2)*np.cos(dec1) - np.sin(dec1)*np.cos(dec2)*np.cos(diff_ra)) / 
+                         (np.cos(dec2)*np.sin(diff_ra)))
+
+    offset = offset.to(u.deg)
+    rotation = rotation.to(u.deg)
+
+    rotation[(diff_ra < 0) & (diff_dec > 0)] += 180*u.deg
+    rotation[(diff_ra < 0) & (diff_dec < 0)] += 180*u.deg
+    rotation[(diff_ra > 0) & (diff_dec < 0)] += 360*u.deg
+
+    return offset, rotation
