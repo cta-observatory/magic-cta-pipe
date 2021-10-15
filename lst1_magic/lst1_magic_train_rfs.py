@@ -85,6 +85,7 @@ def get_weights_classifier(data_gamma, data_bkg):
 def load_data(data_path, event_class):
 
     paths_list = glob.glob(data_path)
+    paths_list.sort()
 
     if len(paths_list) == 1:
         data = pd.read_hdf(data_path, key='events/params')
@@ -284,6 +285,7 @@ def main():
         rf = train_classifier_rf(args.input_data_gamma, args.input_data_bkg, config_lst1_magic['classifier_rf'])
 
     else:
+        
         print(f'Unknown type of RF "{args.type_rf}". Should be "energy", "direction" or "classifier". Exiting')
         sys.exit()
 

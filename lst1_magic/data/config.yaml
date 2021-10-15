@@ -77,5 +77,5 @@ classifier_rf:
 
     features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
 
-    
+
 
