@@ -1,0 +1,81 @@
+mc_tel_ids:
+    LST-1: 1
+    MAGIC-I: 2
+    MAGIC-II: 3
+
+    
+LST:
+    LocalPeakWindowSum:
+        window_shift: 4
+        window_width: 8
+
+    tailcuts_clean:
+        picture_thresh: 6
+        boundary_thresh: 3
+        keep_isolated_pixels: False
+        min_number_picture_neighbors: 1
+
+
+MAGIC:
+    LocalPeakWindowSum:
+        window_shift: 2
+        window_width: 5
+
+    magic_clean:
+        picture_thresh: 6
+        boundary_thresh: 3.5
+        max_time_off: 7.38
+        max_time_diff: 2.46
+        usetime: True
+        usesum: True
+
+    bad_pixels:
+        pedestalLevel: 400
+        pedestalLevelVariance: 4.5
+        pedestalType: 'FromExtractorRndm'
+
+
+event_coincidence: 
+    type_lst_time: 'dragon_time' 
+    type_magic_time: 'MAGIC-I'
+    window_width: 6.0e-7    # unit: [sec]
+    offset_start: -5.0e-6   # unit: [sec] 
+    offset_stop: 0          # unit: [sec]
+    keep_magic_stereo: False
+    
+
+stereo_reco: 
+    subarray: '/fefs/home/yoshiki.ohtani/software/magic-cta-pipe/lst1_magic/data/subarray_lst1_magic.pkl'
+    allowed_tels_num: 3
+
+
+energy_rf:
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 5
+
+    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+
+
+direction_rf:
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 5
+        
+    features: 
+        disp: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+        pos_angle_shift: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+
+        
+classifier_rf:
+    settings:
+        n_estimators: 100
+        min_samples_leaf: 10
+        n_jobs: 5
+
+    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+
+
+
