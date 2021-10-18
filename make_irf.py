@@ -471,11 +471,14 @@ class IRFGenerator:
                                                     bins=[energy_edges, theta_edges])
 
         # add and mod. by Y.Suda on 2020.02.17
+        # mod. by R.Imazawa & Y.Suda 2021.10.18
         ntel = self.sim_shower_data['multiplicity'].iloc[0]
-        #efficiency_matrix = trig_events_matrix / sim_events_matrix
-        efficiency_matrix = trig_events_matrix / sim_events_matrix * ntel
+        efficiency_matrix = trig_events_matrix / sim_events_matrix
+        #efficiency_matrix = trig_events_matrix / sim_events_matrix * ntel
 
-        r_sim = 350.0  # m^2
+        # add and mod. by R.Imazawa & Y.Suda 2021.10.18
+        #r_sim = 350.0  # m^2
+        r_sim = float(pd.read_hdf(mc_file_name, key='dl3/mc_header')['max_scatter_range'][0:1])
         aeff_matrix = np.pi * r_sim**2 * efficiency_matrix
 
         # --------------------------
