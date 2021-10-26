@@ -45,7 +45,7 @@ event_coincidence:
     
 
 stereo_reco: 
-    subarray: '/fefs/home/yoshiki.ohtani/software/magic-cta-pipe/lst1_magic/data/subarray_lst1_magic.pkl'
+    subarray: '/../data/subarray_lst1_magic.pkl'
     allowed_tels_num: 3
 
 
