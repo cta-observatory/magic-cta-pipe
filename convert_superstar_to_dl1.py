@@ -168,12 +168,21 @@ def parse_args(args):
     """
 
     parser = argparse.ArgumentParser(description="", prefix_chars='-')
-    parser.add_argument("--use_mc", action='store_true', help = "Read MC data if flag is specified")
-    parser.add_argument("-in", "--input_mask", nargs = '?', help = "Mask for input files")
+    parser.add_argument("--use_mc", action='store_true', help = "Read MC data if flag is specified.")
+    parser.add_argument("-in", "--input_mask", nargs = '?', help = 'Mask for input files e.g. "20*_S_*.root" (NOTE: the double quotes should be there).')
 
     return parser.parse_args(args)
 
 def write_hdf5_mc(filelist):
+    """
+    Writes an HDF5 file for each file in
+    filelist. Specific for MC files.
+
+    Parameters
+    ----------
+    filelist : list
+        A list of files to be opened.
+    """
 
     obs_id = 0
     columns = columns_mc
@@ -319,6 +328,15 @@ def write_hdf5_mc(filelist):
             obs_id += 1
 
 def write_hdf5_data(filelist):
+    """
+    Writes an HDF5 file for each file in
+    filelist. Specific for real data files.
+
+    Parameters
+    ----------
+    filelist : list
+        A list of files to be opened.
+    """
 
     columns = columns_data
 
@@ -397,6 +415,17 @@ def write_hdf5_data(filelist):
                     writer.write("stereo_params", (event_info[list(event_info.keys())[0]], stereo_params))
 
 def convert_superstar_to_dl1(input_files_mask, is_mc):
+    """
+    Takes files as input and converts them in HDF5
+    format. Real and MC data are treated differently.
+
+    Parameters
+    ----------
+    input_files_mask : str
+        Mask for the superstar input files.
+    is_mc : bool
+        Flag to tell if real or MC data.
+    """
 
     input_files = Path(input_files_mask)
     filelist = sorted(Path(input_files.parent).expanduser().glob(input_files.name))
