@@ -22,7 +22,7 @@ from ctapipe_io_magic import MAGICEventSource
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
 from ctapipe.reco import HillasReconstructor
-from ctapipe.image import hillas_parameters, leakage
+from ctapipe.image import hillas_parameters
 from ctapipe.image.timing import timing_parameters
 from ctapipe.instrument import CameraGeometry
 
@@ -50,6 +50,63 @@ def info_message(text, prefix='info'):
 
     date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     print(f"({prefix:s}) {date_str:s}: {text:s}")
+
+def get_leakage(camera, event_image, clean_mask):
+    """Calculate the leakage with pixels on the border of the image included #IS THIS TRUE?????
+
+    Parameters
+    ----------
+    camera : CameraGeometry
+        Description 
+    clean_mask : np.array
+        Cleaning mask
+    event_image : np.array
+        Event image
+
+    Returns
+    -------
+    LeakageContainer
+    """
+
+    neighbors = camera.neighbor_matrix_sparse
+
+    # find pixels in the outermost ring
+    outermost = []
+    for pix in range(camera.n_pixels):
+        if neighbors[pix].getnnz() < 5:
+            outermost.append(pix)
+
+    # find pixels in the second outermost ring
+    outerring = []
+    for pix in range(camera.n_pixels):
+        if pix in outermostring:
+            continue
+        for neigh in np.where(neighbors[pix][0,:].toarray() == True)[1]:
+            if neigh in outermostring:
+                outerring.append(pix)
+
+    # needed because outerring has some pixels appearing more than once
+    outerring = np.unique(outerring).tolist()
+
+    # intersection between 1st outermost ring and cleaning mask
+    mask1 = np.array(outermost) & clean_mask
+    # intersection between 2nd outermost ring and cleaning mask
+    mask2 = np.array(outerring) & clean_mask
+
+    leakage_pixel1 = np.count_nonzero(mask1)
+    leakage_pixel2 = np.count_nonzero(mask2)
+
+    leakage_intensity1 = np.sum(event_image[mask1])
+    leakage_intensity2 = np.sum(event_image[mask2])
+
+    size = np.sum(event_image[clean_mask])
+
+    return LeakageContainer(
+        pixels_width_1=leakage_pixel1 / camera.n_pixels,
+        pixels_width_2=leakage_pixel2 / camera.n_pixels,
+        intensity_width_1=leakage_intensity1 / size,
+        intensity_width_2=leakage_intensity2 / size,
+    )
 
 def get_num_islands(camera, clean_mask, event_image):
     """Get the number of connected islands in a shower image.
@@ -253,7 +310,7 @@ def process_dataset_mc(input_mask, output_name, cleaning_config):
                             hillas_params,
                             image_mask
                         )
-                        leakage_params[tel_id] = leakage(camera_scaled, event_image, clean_mask)
+                        leakage_params[tel_id] = get_leakage(camera_scaled, event_image, clean_mask)
 
                         computed_hillas_params[tel_id] = hillas_params
 
@@ -388,7 +445,7 @@ def process_dataset_data(input_mask, output_name, cleaning_config, bad_pixels_co
     # Opening the output file
     with HDF5TableWriter(filename=output_name, group_name='dl1', overwrite=True) as writer:
         # Creating an input source
-        source = MAGICEventSource(input_url=input_mask)
+        source = MAGICEventSource(input_url=input_mask) #max_events=1000
 
         camera_old = source.subarray.tel[1].camera.geometry
         camera = reflected_camera_geometry(camera_old)
@@ -450,7 +507,7 @@ def process_dataset_data(input_mask, output_name, cleaning_config, bad_pixels_co
                             hillas_params,
                             image_mask
                         )
-                        leakage_params[tel_id] = leakage(camera_scaled, event_image, clean_mask)
+                        leakage_params[tel_id] = get_leakage(camera_scaled, event_image, clean_mask)
 
                         computed_hillas_params[tel_id] = hillas_params
 
