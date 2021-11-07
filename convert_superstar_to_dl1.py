@@ -175,7 +175,7 @@ def parse_args(args):
 
 def write_hdf5_mc(filelist):
     """
-    Writes an HDF5 file for each file in
+    Writes an HDF5 file for each superstar file in
     filelist. Specific for MC files.
 
     Parameters
@@ -329,7 +329,7 @@ def write_hdf5_mc(filelist):
 
 def write_hdf5_data(filelist):
     """
-    Writes an HDF5 file for each file in
+    Writes an HDF5 file for each superstar file in
     filelist. Specific for real data files.
 
     Parameters
@@ -416,7 +416,7 @@ def write_hdf5_data(filelist):
 
 def convert_superstar_to_dl1(input_files_mask, is_mc):
     """
-    Takes files as input and converts them in HDF5
+    Takes superstar files as input and converts them in HDF5
     format. Real and MC data are treated differently.
 
     Parameters
