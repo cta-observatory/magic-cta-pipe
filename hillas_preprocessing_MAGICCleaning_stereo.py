@@ -94,7 +94,7 @@ def get_leakage(camera, event_image, clean_mask):
     # intersection between 1st outermost ring and cleaning mask
     mask1 = np.array(outermostring_mask) & clean_mask
     # intersection between 2nd outermost ring and cleaning mask
-    mask2 = np.array(outerring) & clean_mask
+    mask2 = np.array(outerring_mask) & clean_mask
 
     leakage_pixel1 = np.count_nonzero(mask1)
     leakage_pixel2 = np.count_nonzero(mask2)
