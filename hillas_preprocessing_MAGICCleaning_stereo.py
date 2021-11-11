@@ -71,7 +71,7 @@ def get_leakage(camera, event_image, clean_mask):
     neighbors = camera.neighbor_matrix_sparse
 
     # find pixels in the outermost ring
-    outermost = []
+    outermostring = []
     for pix in range(camera.n_pixels):
         if neighbors[pix].getnnz() < 5:
             outermostring.append(pix)
