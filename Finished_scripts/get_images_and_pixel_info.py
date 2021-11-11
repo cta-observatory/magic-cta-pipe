@@ -46,7 +46,7 @@ arg_parser.add_argument("--config", default="config.yaml",
 arg_parser.add_argument("--useall",
                         help='Compare images for all events in the input file',
                         action='store_true')
-arg_parser.add_argument("--usesome",
+arg_parser.add_argument("--use_ids_config",
                         help='Compare images for certain events',
                         action='store_true')
 
