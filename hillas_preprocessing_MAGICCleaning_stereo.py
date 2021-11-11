@@ -87,7 +87,10 @@ def get_leakage(camera, event_image, clean_mask):
 
     # needed because outerring has some pixels appearing more than once
     outerring = np.unique(outerring).tolist()
-
+    outermostring_mask = np.zeros(camera.n_pixels, dtype=bool)
+    outermostring_mask[outermostring] = True
+    outerring_mask = np.zeros(camera.n_pixels, dtype=bool)
+    outerring_mask[outerring] = True
     # intersection between 1st outermost ring and cleaning mask
     mask1 = np.array(outermostring_mask) & clean_mask
     # intersection between 2nd outermost ring and cleaning mask
