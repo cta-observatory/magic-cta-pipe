@@ -101,7 +101,7 @@ if parsed_args.useall:
 #       Compare images for only certain events
 #---------------------------------------------------------
     
-elif parsed_args.usesome:
+elif parsed_args.use_ids_config:
      ids_to_compare = config['event_list']
 
 else:
