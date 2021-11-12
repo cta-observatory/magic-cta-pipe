@@ -144,6 +144,9 @@ def process_dataset_mc(input_mask, tel_id, output_name, cleaning_config):
             info_message("Cleaning configuration", prefix='Hillas')
             for item in vars(magic_clean).items():
                 print(f"{item[0]}: {item[1]}")
+            if magic_clean.findhotpixels:
+                for item in vars(magic_clean.pixel_treatment).items():
+                    print(f"{item[0]}: {item[1]}")
 
             # Looping over the events
             for event in source._mono_event_generator(telescope=f'M{tel_id}'):
@@ -263,6 +266,9 @@ def process_dataset_data(input_mask, tel_id, output_name, cleaning_config, bad_p
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
             print(f"{item[0]}: {item[1]}")
+        if magic_clean.findhotpixels:
+            for item in vars(magic_clean.pixel_treatment).items():
+                print(f"{item[0]}: {item[1]}")
 
         info_message("Bad pixel configuration", prefix='Hillas')
         for item in vars(badpixel_calculator).items():

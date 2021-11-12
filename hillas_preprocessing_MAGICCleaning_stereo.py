@@ -204,6 +204,9 @@ def process_dataset_mc(input_mask, output_name, cleaning_config):
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
             print(f"{item[0]}: {item[1]}")
+        if magic_clean.findhotpixels:
+            for item in vars(magic_clean.pixel_treatment).items():
+                print(f"{item[0]}: {item[1]}")
 
         obs_id_last = -1
 
@@ -403,6 +406,9 @@ def process_dataset_data(input_mask, output_name, cleaning_config, bad_pixels_co
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
             print(f"{item[0]}: {item[1]}")
+        if magic_clean.findhotpixels:
+            for item in vars(magic_clean.pixel_treatment).items():
+                print(f"{item[0]}: {item[1]}")
 
         info_message("Bad pixel configuration", prefix='Hillas')
         for item in vars(badpixel_calculator).items():
