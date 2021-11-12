@@ -201,6 +201,10 @@ def process_dataset_mc(input_mask, output_name, cleaning_config):
         camera_scaled = scale_camera_geometry(camera, aberration_factor)
         magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
 
+        info_message("Cleaning configuration", prefix='Hillas')
+        for item in vars(magic_clean).items():
+            print(f"{item[0]}: {item[1]}")
+
         obs_id_last = -1
 
         # Looping over the events
@@ -395,6 +399,14 @@ def process_dataset_data(input_mask, output_name, cleaning_config, bad_pixels_co
         camera_scaled = scale_camera_geometry(camera, aberration_factor)
         magic_clean = MAGIC_Cleaning.magic_clean(camera_scaled,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
+
+        info_message("Cleaning configuration", prefix='Hillas')
+        for item in vars(magic_clean).items():
+            print(f"{item[0]}: {item[1]}")
+
+        info_message("Bad pixel configuration", prefix='Hillas')
+        for item in vars(badpixel_calculator).items():
+            print(f"{item[0]}: {item[1]}")
 
         # Looping over the events
         for event in source:

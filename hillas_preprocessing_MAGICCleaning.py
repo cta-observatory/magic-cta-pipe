@@ -141,6 +141,10 @@ def process_dataset_mc(input_mask, tel_id, output_name, cleaning_config):
             camera = source.subarray.tel[tel_id].camera.geometry
             magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
 
+            info_message("Cleaning configuration", prefix='Hillas')
+            for item in vars(magic_clean).items():
+                print(f"{item[0]}: {item[1]}")
+
             # Looping over the events
             for event in source._mono_event_generator(telescope=f'M{tel_id}'):
                 tels_with_data = event.r1.tels_with_data
@@ -255,6 +259,14 @@ def process_dataset_data(input_mask, tel_id, output_name, cleaning_config, bad_p
         camera = source.subarray.tel[tel_id].camera.geometry
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
+
+        info_message("Cleaning configuration", prefix='Hillas')
+        for item in vars(magic_clean).items():
+            print(f"{item[0]}: {item[1]}")
+
+        info_message("Bad pixel configuration", prefix='Hillas')
+        for item in vars(badpixel_calculator).items():
+            print(f"{item[0]}: {item[1]}")
 
         # Looping over the events
         for event in source._mono_event_generator(telescope=f'M{tel_id}'):
