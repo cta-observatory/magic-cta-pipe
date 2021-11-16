@@ -149,14 +149,14 @@ def read_images(hdf5_files_mask, read_calibrated = False):
     ) as reader:
 
         if read_calibrated:
-            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M1", containers=ImageContainerCalibrated()):
+            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M1", container=ImageContainerCalibrated()):
                 yield image_container
-            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M2", containers=ImageContainerCalibrated()):
+            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M2", container=ImageContainerCalibrated()):
                 yield image_container
         else:
-            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M1", containers=ImageContainerCleaned()):
+            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M1", container=ImageContainerCleaned()):
                 yield image_container
-            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M2", containers=ImageContainerCleaned()):
+            for image_container in reader.read(table_name="dl1/event/telescope/image/MAGIC/M2", container=ImageContainerCleaned()):
                 yield image_container
 
 def save_images(mars_files_mask, save_calibrated = False):
