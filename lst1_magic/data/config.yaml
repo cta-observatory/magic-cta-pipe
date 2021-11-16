@@ -37,16 +37,14 @@ MAGIC:
 
 event_coincidence: 
     type_lst_time: 'dragon_time' 
-    type_magic_time: 'MAGIC-I'
-    window_width: 6.0e-7    # unit: [sec]
-    offset_start: -5.0e-6   # unit: [sec] 
-    offset_stop: 0          # unit: [sec]
-    keep_magic_stereo: False
+    window_width: 6.0e-7      # unit: [sec]
+    offset_start: -5.0e-6     # unit: [sec] 
+    offset_stop: 0.0          # unit: [sec]
     
 
 stereo_reco: 
     subarray: '/fefs/home/yoshiki.ohtani/software/magic-cta-pipe/lst1_magic/data/subarray_lst1_magic.pkl'
-    allowed_tels_num: 3
+    quality_cuts: (intensity > 50) & (width > 0) 
 
 
 energy_rf:
@@ -56,6 +54,7 @@ energy_rf:
         n_jobs: 5
 
     features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+    path_to_file: '/home/yoshiki.ohtani/combined_analysis/mc/LST-1_MAGIC/zd40deg_az90deg/3.train_rfs/data/rfs/energy_rf_zd40deg_az90deg.joblib'
 
 
 direction_rf:
@@ -68,6 +67,8 @@ direction_rf:
         disp: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
         pos_angle_shift: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
 
+    path_to_file: '/home/yoshiki.ohtani/combined_analysis/mc/LST-1_MAGIC/zd40deg_az90deg/3.train_rfs/data/rfs/direction_rf_zd40deg_az90deg.joblib'
+
         
 classifier_rf:
     settings:
@@ -76,6 +77,7 @@ classifier_rf:
         n_jobs: 5
 
     features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+    path_to_file: '/home/yoshiki.ohtani/combined_analysis/mc/LST-1_MAGIC/zd40deg_az90deg/3.train_rfs/data/rfs/classifier_rf_zd40deg_az90deg.joblib'
 
 
 
