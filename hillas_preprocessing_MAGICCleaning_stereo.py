@@ -33,6 +33,7 @@ from utils import MAGIC_Badpixels
 # from utils import bad_pixel_treatment
 from utils import MAGIC_Cleaning
 from utils import calc_impact
+from ctapipe.containers import LeakageContainer
 
 def info_message(text, prefix='info'):
     """
@@ -71,10 +72,10 @@ def get_leakage(camera, event_image, clean_mask):
     neighbors = camera.neighbor_matrix_sparse
 
     # find pixels in the outermost ring
-    outermost = []
+    outermostring = []
     for pix in range(camera.n_pixels):
         if neighbors[pix].getnnz() < 5:
-            outermost.append(pix)
+            outermostring.append(pix)
 
     # find pixels in the second outermost ring
     outerring = []
@@ -88,10 +89,16 @@ def get_leakage(camera, event_image, clean_mask):
     # needed because outerring has some pixels appearing more than once
     outerring = np.unique(outerring).tolist()
 
+    outermostring_mask = np.zeros(camera.n_pixels, dtype=bool)
+    outermostring_mask[outermostring] = True
+    outerring_mask = np.zeros(camera.n_pixels, dtype=bool)
+    outerring_mask[outerring] = True
+
+
     # intersection between 1st outermost ring and cleaning mask
-    mask1 = np.array(outermost) & clean_mask
+    mask1 = np.array(outermostring_mask) & clean_mask
     # intersection between 2nd outermost ring and cleaning mask
-    mask2 = np.array(outerring) & clean_mask
+    mask2 = np.array(outerring_mask) & clean_mask
 
     leakage_pixel1 = np.count_nonzero(mask1)
     leakage_pixel2 = np.count_nonzero(mask2)
