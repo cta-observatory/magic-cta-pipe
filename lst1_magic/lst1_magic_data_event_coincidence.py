@@ -277,29 +277,30 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
         df_events[tel_name] = pd.concat([df_lst, df_magic])
         df_events[tel_name].sort_index(inplace=True)
 
-        container_profile = {
+        df_profile[tel_name] = pd.DataFrame({
             'offset_us': bins_offset * sec2us,
-            f'n_coincidence_m{tel_id}': n_events_stereo,
-            f'n_coincidence_btwn_m{tel_id}': n_events_stereo_btwn
-        }
-
-        df_profile[tel_name] = pd.DataFrame(container_profile)
+            f'n_coincidence_m{tel_id-1}': n_events_stereo,
+            f'n_coincidence_btwn_m{tel_id-1}': n_events_stereo_btwn
+        })
 
         mean_time_unix = np.mean(df_events[tel_name]['timestamp'].values)
         mean_alt_lst = np.mean(np.rad2deg(df_lst['alt_tel'].values))
         mean_alt_magic = np.mean(np.rad2deg(df_magic['alt_tel'].values))
+        mean_az_lst = np.mean(np.rad2deg(df_lst['az_tel'].values))
+        mean_az_magic = np.mean(np.rad2deg(df_magic['az_tel'].values))
 
-        container_features = {
+        df_features[tel_name] = pd.DataFrame({
+            'tel_name': [tel_name],
             'mean_time_unix': [mean_time_unix],
             'mean_alt_lst': [mean_alt_lst],
             'mean_alt_magic': [mean_alt_magic],
+            'mean_az_lst': [mean_az_lst],
+            'mean_az_magic': [mean_az_magic],
             'n_magic': [n_events_magic],
             'n_coincidence': [n_events_at_avg], 
             'ratio': [ratio], 
             'offset_avg_us': [offset_avg * sec2us]
-        }
-
-        df_features[tel_name] = pd.DataFrame(container_features, index=[tel_name])
+        })
 
     # --- check the number of coincident events ---
     data_stereo = pd.concat([df_events['MAGIC-I'], df_events['MAGIC-II']])
@@ -338,7 +339,7 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
     data_profile = pd.merge(df_profile['MAGIC-I'], df_profile['MAGIC-II'], on='offset_us')
     data_profile.to_hdf(output_data, key='coincidence/profile', mode='a')
 
-    data_features = pd.concat([df_features['MAGIC-I'], df_features['MAGIC-II']])
+    data_features = pd.concat([df_features['MAGIC-I'], df_features['MAGIC-II']], ignore_index=True)
     data_features.to_hdf(output_data, key='coincidence/features', mode='a')
     
     print(f'\nOutput data: {output_data}')
