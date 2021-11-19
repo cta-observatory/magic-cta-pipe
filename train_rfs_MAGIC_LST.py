@@ -251,25 +251,25 @@ def train_classifier_rf_stereo(config_file, only_plots=False):
                 alpha=0.3,
             )
 
-            value = performance[tel_id]["metrics"]["acc"]
-            plt.text(
-                0.9,
-                0.9,
-                f"acc={value:.2f}",
-                ha="right",
-                va="top",
-                transform=plt.gca().transAxes,
-            )
+            # value = performance[tel_id]["metrics"]["acc"]
+            # plt.text(
+            #     0.9,
+            #     0.9,
+            #     f"acc={value:.2f}",
+            #     ha="right",
+            #     va="top",
+            #     transform=plt.gca().transAxes,
+            # )
 
-            value = performance[tel_id]["metrics"]["auc_roc"]
-            plt.text(
-                0.9,
-                0.8,
-                f"auc_roc={value:.2f}",
-                ha="right",
-                va="top",
-                transform=plt.gca().transAxes,
-            )
+            # value = performance[tel_id]["metrics"]["auc_roc"]
+            # plt.text(
+            #     0.9,
+            #     0.8,
+            #     f"auc_roc={value:.2f}",
+            #     ha="right",
+            #     va="top",
+            #     transform=plt.gca().transAxes,
+            # )
 
         plt.legend()
 
