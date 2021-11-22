@@ -5,7 +5,7 @@ import sys
 import argparse
 from pathlib import Path
 
-import uproot3 as uproot
+import uproot
 import pandas as pd
 import numpy as np
 
@@ -195,7 +195,7 @@ def write_hdf5_mc(filelist):
             events = QTable()
 
             for column, (branch, kwargs) in columns.items():
-                events[column] = u.Quantity(events_tree[branch].array(), copy=False, **kwargs)
+                events[column] = u.Quantity(events_tree[branch].array(library="np"), copy=False, **kwargs)
 
             events = vstack(events)
             outfile = str(path).replace(".root", ".h5")
@@ -271,7 +271,7 @@ def write_hdf5_mc(filelist):
             originalmc = QTable()
 
             for column, (branch, kwargs) in columns_mc_orig.items():
-                originalmc[column] = u.Quantity(originalmc_tree[branch].array(), copy=False, **kwargs)
+                originalmc[column] = u.Quantity(originalmc_tree[branch].array(library="np"), copy=False, **kwargs)
 
             originalmc = vstack(originalmc)
 
@@ -348,7 +348,7 @@ def write_hdf5_data(filelist):
             events = QTable()
 
             for column, (branch, kwargs) in columns.items():
-                events[column] = u.Quantity(events_tree[branch].array(), copy=False, **kwargs)
+                events[column] = u.Quantity(events_tree[branch].array(library="np"), copy=False, **kwargs)
 
             events = vstack(events)
             outfile = str(path).replace(".root", ".h5")

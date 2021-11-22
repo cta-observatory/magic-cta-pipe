@@ -6,7 +6,7 @@ import argparse
 import yaml
 import datetime
 
-import uproot3 as uproot
+import uproot
 import pandas as pd
 import numpy as np
 
@@ -64,9 +64,9 @@ def read_original_mc_tree(file_mask):
         run_number = int(re.findall(r'.*_M\d_za\d+to\d+_\d_(\d+)_Y_.*', file_name)[0])
 
         with uproot.open(file_name) as input_data:
-            true_energy = input_data['OriginalMC']['MMcEvtBasic.fEnergy'].array()
-            tel_az = input_data['OriginalMC']['MMcEvtBasic.fTelescopePhi'].array()
-            tel_zd = input_data['OriginalMC']['MMcEvtBasic.fTelescopeTheta'].array()
+            true_energy = input_data['OriginalMC']['MMcEvtBasic.fEnergy'].array(library="np")
+            tel_az = input_data['OriginalMC']['MMcEvtBasic.fTelescopePhi'].array(library="np")
+            tel_zd = input_data['OriginalMC']['MMcEvtBasic.fTelescopeTheta'].array(library="np")
 
             true_energy /= 1e3  # GeV -> TeV
             tel_alt = np.pi/2 - tel_zd
@@ -74,8 +74,8 @@ def read_original_mc_tree(file_mask):
             # # Transformation from Monte Carlo to usual azimuth
             # tel_az = -1 * (tel_az - np.pi + np.radians(7))
 
-            cam_x = input_data['OriginalMC']['MSrcPosCam.fX'].array()
-            cam_y = input_data['OriginalMC']['MSrcPosCam.fY'].array()
+            cam_x = input_data['OriginalMC']['MSrcPosCam.fX'].array(library="np")
+            cam_y = input_data['OriginalMC']['MSrcPosCam.fY'].array(library="np")
 
             tel_pointing = AltAz(alt=tel_alt * u.rad,
                                 az=tel_az * u.rad)

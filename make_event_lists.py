@@ -16,7 +16,7 @@ import sys
 sys.path.append('../')
 import gti
 
-import uproot3 as uproot
+import uproot
 
 
 
@@ -219,8 +219,8 @@ for obs_id in obs_ids:
     pointing_dec = -1
 
     with uproot.open(file_list[0]) as input_stream:
-        pointing_ra  = input_stream['RunHeaders']['MRawRunHeader.fTelescopeRA'].array()[0]*(15.0/3600.0) # convert second of hours to degrees
-        pointing_dec = input_stream['RunHeaders']['MRawRunHeader.fTelescopeDEC'].array()[0]/3600.0      # convert arcsec to degrees
+        pointing_ra  = input_stream['RunHeaders']['MRawRunHeader.fTelescopeRA'].array(library="np")[0]*(15.0/3600.0) # convert second of hours to degrees
+        pointing_dec = input_stream['RunHeaders']['MRawRunHeader.fTelescopeDEC'].array(library="np")[0]/3600.0      # convert arcsec to degrees
 
     events_hdu.header['RA_PNT']  = pointing_ra
     events_hdu.header['DEC_PNT'] = pointing_dec
