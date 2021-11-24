@@ -98,9 +98,9 @@ def find_hadronness_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbin
     reco_selected_h = reco_valid.query(event_cuts_h)
     print(f"Number of events after events selection: {len(reco_selected_h.index)}")
 
-    e_step = (np.log10(46415.9) - np.log10(4.64159))/nbinsE
+    e_step = (np.log10(maxeest) - np.log10(mineest))/nbinsE
     h_step = (1.01 + 0.01)/nbinsH
-    had_vs_e, had_vs_e_xe, had_vs_e_ye = np.histogram2d(np.log10(reco_selected_h["reco_energy"]), reco_selected_h["hadroness"], bins=[nbinsE+1, nbinsH+1], range=[[np.log10(4.64159)-e_step, np.log10(46415.9)], [-0.01-h_step, 1.01]])
+    had_vs_e, had_vs_e_xe, had_vs_e_ye = np.histogram2d(np.log10(reco_selected_h["reco_energy"]), reco_selected_h["hadroness"], bins=[nbinsE+1, nbinsH+1], range=[[np.log10(mineest)-e_step, np.log10(maxeest)], [-0.01-h_step, 1.01]])
 
     had_vs_e = had_vs_e.T
 
@@ -113,6 +113,7 @@ def find_hadronness_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbin
         #print(f"Slice integral: {np.sum(project)}")
 
         if np.sum(project) < 1:
+            print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]} < E < {10**had_vs_e_xe[ebin+1]} GeV): {hadcuts[ebin-1]:.5f}")
             continue
 
         if np.sum(project) < 10:
@@ -120,6 +121,7 @@ def find_hadronness_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbin
                 hadcuts[ebin-1] = hadcuts[ebin-2]
             else:
                 hadcuts[ebin-1] = maxH
+            print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]} < E < {10**had_vs_e_xe[ebin+1]} GeV): {hadcuts[ebin-1]:.5f}")
             continue
 
         for hbin in range(1,nbinsH+1):
@@ -127,11 +129,11 @@ def find_hadronness_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbin
                 hadcuts[ebin-1] = min(max(had_vs_e_ye[hbin+1],minH), maxH)
                 break
 
-        print(f"Energy bin {ebin} ({had_vs_e_xe[ebin]} < E < {had_vs_e_xe[ebin+1]} GeV): {hadcuts[ebin-1]}")
+        print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]} < E < {10**had_vs_e_xe[ebin+1]} GeV): {hadcuts[ebin-1]:.5f}")
 
-    return hadcuts
+    return hadcuts, had_vs_e_xe
 
-def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, nbinsTH, hadcuts, minTH = 0.01, maxTH = 0.2, thEff = 0.75):
+def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, nbinsTH, hadcuts, had_vs_e, minTH = 0.01, maxTH = 0.2, thEff = 0.75):
     print("=========== THETA2 CUTS CALCULATION ===========")
     print(f"Number of events before events selection: {len(events.index)}")
 
@@ -140,23 +142,23 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
 
     reco_valid = events[events["reco_energy"] > 0]
     reco_selected_th = reco_valid.query(event_cuts_th)
-    
 
     hadcut = []
     for logenergy in np.log10(reco_selected_th["reco_energy"].values):
         ebin = np.where(had_vs_e_xe>logenergy)[0][0] - 1
         if ebin == 0:
             ebin = 1
-        if ebin == 31:
-            ebin = 30
+        if ebin == nbinsE+1:
+            ebin = nbinsE
         hadcut.append(hadcuts[ebin-1])
     reco_selected_th["hadcut"] = hadcut
 
     reco_selected_th = reco_selected_th[reco_selected_th["hadroness"] <= reco_selected_th["hadcut"]]
     print(f"Number of events after events selection: {len(reco_selected_th.index)}")
 
+    e_step = (np.log10(maxeest) - np.log10(mineest))/nbinsE
     th_step = (0.4)/nbinsTH
-    th_vs_e, th_vs_e_xe, th_vs_e_ye = np.histogram2d(np.log10(reco_selected_th["reco_energy"]), reco_selected_th["theta2"], bins=[nbinsE+1, nbinsTH+1], range=[[np.log10(4.64159)-e_step, np.log10(46415.9)], [0-th_step, 0.4]])
+    th_vs_e, th_vs_e_xe, th_vs_e_ye = np.histogram2d(np.log10(reco_selected_th["reco_energy"]), reco_selected_th["theta2"], bins=[nbinsE+1, nbinsTH+1], range=[[np.log10(mineest)-e_step, np.log10(maxeest)], [0-th_step, 0.4]])
 
     th_vs_e = th_vs_e.T
     e_vs_th = th_vs_e.T
@@ -167,6 +169,7 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
         project = e_vs_th[ebin]
 
         if np.sum(project) < 1:
+            print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]} < E < {10**th_vs_e_xe[ebin+1]} GeV): {thetacuts[ebin-1]}")
             continue
 
         if np.sum(project) < 10:
@@ -174,6 +177,7 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
                 thetacuts[ebin-1] = thetacuts[ebin-2]
             else:
                 thetacuts[ebin-1] = maxTH
+            print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]} < E < {10**th_vs_e_xe[ebin+1]} GeV): {thetacuts[ebin-1]}")
             continue
 
         for thbin in range(1,nbinsTH+1):
@@ -181,7 +185,7 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
                 thetacuts[ebin-1] = min(max(th_vs_e_ye[thbin+1],minTH), maxTH)
                 break
 
-        print(f"Energy bin {ebin} ({th_vs_e_xe[ebin]} < E < {th_vs_e_xe[ebin+1]} GeV): {thetacuts[ebin-1]}")
+        print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]} < E < {10**th_vs_e_xe[ebin+1]} GeV): {thetacuts[ebin-1]}")
 
     return thetacuts
 
@@ -200,5 +204,5 @@ nbinsE = 30
 nbinsH = 4080
 nbinsTH = 40
 
-hadcuts    = find_hadronness_cuts(reco, minsize, minzen, maxzen, mineest, maxeest, nbinsE, nbinsH)
-theta2cuts = find_theta2_cuts(reco, minsize, minzen, maxzen, mineest, maxeest, nbinsE, nbinsTH, hadcuts)
+hadcuts, had_vs_e = find_hadronness_cuts(reco, minsize, minzen, maxzen, mineest, maxeest, nbinsE, nbinsH)
+theta2cuts        = find_theta2_cuts(reco, minsize, minzen, maxzen, mineest, maxeest, nbinsE, nbinsTH, hadcuts, had_vs_e)
