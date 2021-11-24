@@ -145,7 +145,7 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
 
     hadcut = []
     for logenergy in np.log10(reco_selected_th["reco_energy"].values):
-        ebin = np.where(had_vs_e_xe>logenergy)[0][0] - 1
+        ebin = np.where(had_vs_e>logenergy)[0][0] - 1
         if ebin == 0:
             ebin = 1
         if ebin == nbinsE+1:
