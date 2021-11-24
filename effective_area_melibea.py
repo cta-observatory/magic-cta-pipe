@@ -113,7 +113,7 @@ def find_hadronness_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbin
         #print(f"Slice integral: {np.sum(project)}")
 
         if np.sum(project) < 1:
-            print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]} < E < {10**had_vs_e_xe[ebin+1]} GeV): {hadcuts[ebin-1]:.5f}")
+            print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]:.3f} < E < {10**had_vs_e_xe[ebin+1]:.3f} GeV): {hadcuts[ebin-1]:.5f}")
             continue
 
         if np.sum(project) < 10:
@@ -121,7 +121,7 @@ def find_hadronness_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbin
                 hadcuts[ebin-1] = hadcuts[ebin-2]
             else:
                 hadcuts[ebin-1] = maxH
-            print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]} < E < {10**had_vs_e_xe[ebin+1]} GeV): {hadcuts[ebin-1]:.5f}")
+            print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]:.3f} < E < {10**had_vs_e_xe[ebin+1]:.3f} GeV): {hadcuts[ebin-1]:.5f}")
             continue
 
         for hbin in range(1,nbinsH+1):
@@ -129,7 +129,7 @@ def find_hadronness_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbin
                 hadcuts[ebin-1] = min(max(had_vs_e_ye[hbin+1],minH), maxH)
                 break
 
-        print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]} < E < {10**had_vs_e_xe[ebin+1]} GeV): {hadcuts[ebin-1]:.5f}")
+        print(f"Energy bin {ebin} ({10**had_vs_e_xe[ebin]:.3f} < E < {10**had_vs_e_xe[ebin+1]:.3f} GeV): {hadcuts[ebin-1]:.5f}")
 
     return hadcuts, had_vs_e_xe
 
@@ -169,7 +169,7 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
         project = e_vs_th[ebin]
 
         if np.sum(project) < 1:
-            print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]} < E < {10**th_vs_e_xe[ebin+1]} GeV): {thetacuts[ebin-1]:.3f}")
+            print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]:.3f} < E < {10**th_vs_e_xe[ebin+1]:.3f} GeV): {thetacuts[ebin-1]:.3f}")
             continue
 
         if np.sum(project) < 10:
@@ -177,7 +177,7 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
                 thetacuts[ebin-1] = thetacuts[ebin-2]
             else:
                 thetacuts[ebin-1] = maxTH
-            print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]} < E < {10**th_vs_e_xe[ebin+1]} GeV): {thetacuts[ebin-1]:.3f}")
+            print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]:.3f} < E < {10**th_vs_e_xe[ebin+1]:.3f} GeV): {thetacuts[ebin-1]:.3f}")
             continue
 
         for thbin in range(1,nbinsTH+1):
@@ -185,7 +185,7 @@ def find_theta2_cuts(events, minsize, minzen, maxzen, mineest, maxeest, nbinsE, 
                 thetacuts[ebin-1] = min(max(th_vs_e_ye[thbin+1],minTH), maxTH)
                 break
 
-        print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]} < E < {10**th_vs_e_xe[ebin+1]} GeV): {thetacuts[ebin-1]:.3f}")
+        print(f"Energy bin {ebin} ({10**th_vs_e_xe[ebin]:.3f} < E < {10**th_vs_e_xe[ebin+1]:.3f} GeV): {thetacuts[ebin-1]:.3f}")
 
     return thetacuts
 
