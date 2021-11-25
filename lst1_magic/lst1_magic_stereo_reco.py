@@ -80,7 +80,7 @@ def stereo_reco(input_data, output_data, config):
             sys.exit()
 
         else: 
-            print(f'--> All the events are taken with the angular separation less than {theta_lim*60} arcmin.')
+            print(f'--> All the events are taken with the angular separation less than {theta_lim*60} arcmin. Continue.')
 
     # --- apply the quality cuts ---
     print('\nApplying the quality cuts...')
@@ -92,7 +92,28 @@ def stereo_reco(input_data, output_data, config):
 
     groupby = data_stereo.groupby(['obs_id', 'event_id']).size()
 
-    print(f'--> Number of stereo events = {len(groupby)}')
+    # --- check the number of events ---
+    n_events_total = len(data_stereo.groupby(['obs_id', 'event_id']).size()) 
+    print(f'\nIn total {n_events_total} stereo events are found.') 
+
+    print('\nEvents with 2 tels info:')
+
+    tel_ids_dict = {
+        'LST-1 + MAGIC-I': [1, 2],
+        'LST-1 + MAGIC-II': [1, 3],
+        'MAGIC-I + MAGIC-II': [2, 3]
+    }
+
+    for tel_name, tel_ids, in zip(tel_ids_dict.keys(), tel_ids_dict.values()):
+        
+        df = data_stereo.query(f'(tel_id == {list(tel_ids)}) & (multiplicity == 2)')
+        n_events = np.sum(df.groupby(['obs_id', 'event_id']).size().values == 2)
+        print(f'{tel_name}: {n_events} events ({n_events/n_events_total*100:.1f}%)')
+        
+    print('\nEvents with 3 tels info:')
+
+    n_events = len(data_stereo.query(f'multiplicity == 3').groupby(['obs_id', 'event_id']).size())
+    print(f'LST-1 + MAGIC-I + MAGIC-II: {n_events:.0f} events ({n_events/n_events_total*100:.1f}%)')
 
     # --- reconstruct the stereo parameters ---
     print('\nReconstructing the stereo parameters...')
@@ -178,17 +199,17 @@ def main():
 
     arg_parser.add_argument(
         '--input-data', '-i', dest='input_data', type=str, 
-        help='Path to a DL1 data file containing LST-1 and MAGIC events.' 
+        help='Path to a DL1 coincidence data file.' 
     )
 
     arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, 
-        help='Path to an output data file. The output directory will be created if it does not exist.' 
+        '--output-data', '-o', dest='output_data', type=str, default='./dl1_stereo_lst1_magic.h5',
+        help='Path to an output data file with h5 extention.'
     )
 
     arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str,
-       help='Path to a configuration file.' 
+        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
+       help='Path to a configuration file with yaml extention.'
     )
 
     args = arg_parser.parse_args()

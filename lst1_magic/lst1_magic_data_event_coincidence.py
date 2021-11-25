@@ -104,7 +104,7 @@ def load_magic_data(input_data_mask):
         print(path)
 
         df = pd.read_hdf(path, key='events/params')
-        df['tel_id'] = df['tel_id'].values + 1  # MAGIC-I -> 2, MAGIC-II -> 3 
+        df['tel_id'] = df['tel_id'].values + 1   # MAGIC-I -> 2, MAGIC-II -> 3 
         data_magic = pd.concat([data_magic, df])
 
     data_magic.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -140,10 +140,9 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
     mjd = data_magic['mjd'].values[0]
     obs_day = Time(mjd, format='mjd', scale='utc')
 
-    time_lst_tmp = data_lst['timestamp'].values.astype(str)
-    time_lst_tmp = np.array([Decimal(time) for time in time_lst_tmp]) 
+    time_lst_unix = [Decimal(time) for time in data_lst['timestamp'].values.astype(str)]
 
-    time_lst = time_lst_tmp - Decimal(str(obs_day.unix))
+    time_lst = np.array(time_lst_unix) - Decimal(str(obs_day.unix))
     time_lst = time_lst.astype(float)
 
     # --- check the event coincidence ---
@@ -162,10 +161,7 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
 
         window_width = config['window_width']
 
-        bins_offset = np.arange(
-            start=config['offset_start'], stop=config['offset_stop'], step=accuracy_time
-        )
-
+        bins_offset = np.arange(config['offset_start'], config['offset_stop'], step=accuracy_time)
         bins_offset = np.round(bins_offset, precision)
 
         condition_lo = (time_magic > (time_lst[0] + bins_offset[0] - window_width))
@@ -179,7 +175,7 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
 
         else:
             n_events_magic = np.sum(condition)
-            print(f'--> {n_events_magic} events are found.')
+            print(f'--> {n_events_magic} events are found. Continue.')
         
         df_magic = df_magic.iloc[condition]
         time_magic = time_magic[condition]
@@ -210,10 +206,6 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
                     n_events_stereo_btwn[i_off] += int(1)
 
             print(f'time_offset = {offset*sec2us:.01f} [us]  -->  {n_events_stereo[i_off]} events')
-
-        if np.all(n_events_stereo == 0):
-            print(f'\nNo coicident events of LST-1 and {tel_name} are found. Exiting.\n')
-            sys.exit()
 
         n_events_max = np.max(n_events_stereo)
         index_at_max = np.where(n_events_stereo == n_events_max)[0][0]
@@ -310,25 +302,27 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
     data_stereo['multiplicity'] = data_stereo.groupby(['obs_id', 'event_id']).size()
     data_stereo = data_stereo.query('multiplicity == [2, 3]')
 
+    n_events_total = len(data_stereo.groupby(['obs_id', 'event_id']).size()) 
+    print(f'\nIn total {n_events_total} stereo events are found.') 
+
     print('\nEvents with 2 tels info:')
 
-    for tel_id, tel_name in zip([2, 3], ['MAGIC-I', 'MAGIC-II']):
+    tel_ids_dict = {
+        'LST-1 + MAGIC-I': [1, 2],
+        'LST-1 + MAGIC-II': [1, 3],
+        'MAGIC-I + MAGIC-II': [2, 3]
+    }
+
+    for tel_name, tel_ids, in zip(tel_ids_dict.keys(), tel_ids_dict.values()):
         
-        df = data_stereo.query(f'(tel_id == [1, {tel_id}]) & (multiplicity == 2)')
+        df = data_stereo.query(f'(tel_id == {list(tel_ids)}) & (multiplicity == 2)')
         n_events = np.sum(df.groupby(['obs_id', 'event_id']).size().values == 2)
-        print(f'LST-1 + {tel_name}: {n_events} events')
-
-    df = data_stereo.query(f'(tel_id == [2, 3]) & (multiplicity == 2)')
-    n_events = np.sum(df.groupby(['obs_id', 'event_id']).size().values == 2)
-    print(f'MAGIC-I + MAGIC-II: {n_events} events')
-
+        print(f'{tel_name}: {n_events} events ({n_events/n_events_total*100:.1f}%)')
+        
     print('\nEvents with 3 tels info:')
 
-    n_events = len(data_stereo.query(f'multiplicity == 3'))/3
-    print(f'LST-1 + MAGIC-I + MAGIC-II: {n_events:.0f} events')
-
-    n_events = len(data_stereo.groupby(['obs_id', 'event_id']).size()) 
-    print(f'\nIn total {n_events} stereo events are found.') 
+    n_events = len(data_stereo.query(f'multiplicity == 3').groupby(['obs_id', 'event_id']).size())
+    print(f'LST-1 + MAGIC-I + MAGIC-II: {n_events:.0f} events ({n_events/n_events_total*100:.1f}%)')
 
     # --- save the data frames ---
     output_dir = str(Path(output_data).parent)
@@ -358,17 +352,17 @@ def main():
 
     arg_parser.add_argument(
         '--input-data-magic', '-m', dest='input_data_magic', type=str, 
-        help='Path to MAGIC data files with HDF format.'
+        help='Path to MAGIC DL1 or DL2 data files with h5 extention.'
     )
 
     arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str,  
-        help='Path to an output data file. The output directory will be created if it does not exist.'  
+        '--output-data', '-o', dest='output_data', type=str, default='./dl1_lst1_magic.h5',
+        help='Path to an output data file with h5 extention.'
     )
 
     arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, 
-        help='Path to a configuration file.'
+        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
+        help='Path to a configuration file with yaml extention.' 
     )
 
     args = arg_parser.parse_args()

@@ -134,13 +134,13 @@ def main():
     )
 
     arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, 
-        help='Path and name of an output data file. The output directory will be created if it does not exist.' 
+        '--output-data', '-o', dest='output_data', type=str, default='./dl2_lst1_magic.h5',
+        help='Path to an output data file with h5 extention.'
     )
 
     arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str,
-       help='Path to a configuration file.'
+        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
+       help='Path to a configuration file with yaml extention.'
     )
 
     args = arg_parser.parse_args()

@@ -6,6 +6,7 @@ import argparse
 import pandas as pd 
 import numpy as np
 from pathlib import Path
+from utils import get_obs_ids_from_name
 
 __all__ = [
     'merge_hdf_files'
@@ -20,7 +21,7 @@ def merge_hdf_files(input_data_mask, n_files=50, output_data=None):
     dir_tmp = str(Path(paths_list[0]).parent)
 
     # --- merge the files to subset files ---
-    print('\nMerging the input data files to subsets:')
+    print('\nMerging the input data files to subsets...')
 
     i_subset = 1
     data_subset = pd.DataFrame()
@@ -75,24 +76,14 @@ def merge_hdf_files(input_data_mask, n_files=50, output_data=None):
     return data_merged
 
 
-def merge_hdf_files_run_wise(input_data_mask, n_files=50):
+def merge_hdf_files_run_wise(input_data_mask, n_files):
 
-    paths_list = glob.glob(input_data_mask)
-    paths_list.sort()
+    # --- get observation IDs ---
+    obs_ids_list = get_obs_ids_from_name(input_data_mask)
 
-    obs_ids_list = []
+    print(f'\nFound the following observation IDs: {obs_ids_list}')
 
-    for path in paths_list:
-
-        obs_id = re.findall('.*Run(\d+)\..*', path)[0]
-        obs_ids_list.append(obs_id)
-
-    obs_ids_list = np.unique(obs_ids_list)
-
-    file_name = re.findall('(\w+)_Run.*', path)[0]
-
-    print(f'\nThe following observation IDs are found: {obs_ids_list}')
-
+    # --- merge the input data run-wise ---
     parent_dir = str(Path(input_data_mask).parent)
     output_dir = f'{parent_dir}/merged'
 
@@ -103,6 +94,9 @@ def merge_hdf_files_run_wise(input_data_mask, n_files=50):
         print(f'\nRun{obs_id}:')
 
         data_mask = f'{parent_dir}/*Run{obs_id}*'
+
+        file_name = re.findall('(\w+)_Run.*', glob.glob(data_mask)[0])[0]
+
         output_data = f'{output_dir}/{file_name}_Run{obs_id}.h5'
 
         merge_hdf_files(data_mask, n_files, output_data)

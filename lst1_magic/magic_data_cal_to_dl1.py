@@ -37,7 +37,7 @@ class InfoContainer(Container):
     mjd = Field(-1, 'Event time mjd')
     millisec = Field(-1, 'Event time millisec')
     nanosec = Field(-1, 'Event time nanosec')
-    alt_tel = Field(-1, 'Telescope pointintg altitude', unit=u.rad)
+    alt_tel = Field(-1, 'Telescope pointing altitude', unit=u.rad)
     az_tel = Field(-1, 'Telescope pointing azimuth', unit=u.rad)
     n_islands = Field(-1, 'Number of image islands')
 
@@ -70,7 +70,7 @@ def magic_cal_to_dl1(input_data_mask, output_data, config):
     tel_ids_list = np.unique(tel_ids_list)
 
     if len(tel_ids_list) > 1:
-        print('\nM1 and M2 telescopes data are mixed. Run the script with only M1 or M2 input data. Exiting.\n')
+        print('\nM1 and M2 data are mixed. Run the script with only M1 or M2 input data. Exiting.\n')
         sys.exit()
 
     tel_id = int(tel_ids_list[0])
@@ -185,7 +185,8 @@ def magic_cal_to_dl1(input_data_mask, output_data, config):
 
             writer.write('params', (hillas_params, leakage_params, timing_params, event_info)) 
 
-        print(f'\n{i_ev+1} events processed.\n({n_events_skipped} events are skipped)')
+        print(f'\n{i_ev+1} events processed.')
+        print(f'({n_events_skipped} events are skipped)')
 
     print(f'\nOutput data: {output_data}')
 
@@ -198,17 +199,17 @@ def main():
 
     arg_parser.add_argument(
         '--input-data', '-i', dest='input_data', type=str, 
-        help='Path to MAGIC Calibrated data files. Input only M1 or M2 data, not mixing them.'
+        help='Path to M1 or M2 calibrated data files (*_Y_*.root). Do not mix M1 and M2 data.'
     )
 
     arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str,  
-        help='Path to an output data file. The output directory will be created if it does not exist.'  
+        '--output-data', '-o', dest='output_data', type=str, default='./dl1_magic.h5',
+        help='Path to an output data file with h5 extention.'
     )
 
     arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, 
-        help='Path to a configuration file.'
+        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
+        help='Path to a configuration file with yaml extention.'
     )
 
     args = arg_parser.parse_args()
