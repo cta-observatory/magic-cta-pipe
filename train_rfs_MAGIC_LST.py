@@ -205,7 +205,7 @@ def train_classifier_rf_stereo(config_file, only_plots=False):
     # ================
     # === Plotting ===
     # ================
-
+    load_default_plot_settings()
     plt.figure(figsize=tuple(cfg["classifier_rf"]["fig_size"]))
     # labels = ["Gamma", "Hadrons"]
     labels = get_key_if_exists(cfg["classifier_rf"], "labels", ["Gamma", "Hadrons"])
@@ -518,7 +518,7 @@ def train_direction_rf_stereo(config_file):
     # ================
     # === Plotting ===
     # ================
-
+    load_default_plot_settings()
     plt.figure(figsize=tuple(cfg["direction_rf"]["fig_size"]))
     # plt.style.use('presentation')
 
@@ -742,6 +742,7 @@ def train_energy_rf_stereo(config_file):
     # ================
     # === Plotting ===
     # ================
+    load_default_plot_settings()
     plt.figure(figsize=tuple(cfg["energy_rf"]["fig_size"]))
 
     grid_shape = (2, len(tel_ids) + 1)
