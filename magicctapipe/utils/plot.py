@@ -39,3 +39,19 @@ def load_default_plot_settings(grid_bool=True):
         "legend.fontsize": 14,
     }
     plt.rcParams.update(params)
+
+
+def load_default_plot_settings_02(grid_bool=True):
+    """Load default plot settings"""
+    params = {
+        "figure.figsize": (10, 6),
+        "savefig.bbox": "tight",
+        "axes.grid": grid_bool,
+        "errorbar.capsize": 3,
+        "axes.titlesize": 18,
+        "axes.labelsize": 18,
+        "xtick.labelsize": 20,
+        "ytick.labelsize": 20,
+        "legend.fontsize": 20,
+    }
+    plt.rcParams.update(params)
