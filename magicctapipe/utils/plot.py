@@ -25,12 +25,12 @@ def save_plt(n, rdir="", vect="pdf,eps"):
     return
 
 
-def load_default_plot_settings():
+def load_default_plot_settings(grid_bool=True):
     """Load default plot settings"""
     params = {
         "figure.figsize": (10, 6),
         "savefig.bbox": "tight",
-        "axes.grid": True,
+        "axes.grid": grid_bool,
         "errorbar.capsize": 3,
         "axes.titlesize": 16,
         "axes.labelsize": 16,
