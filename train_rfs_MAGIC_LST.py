@@ -761,7 +761,7 @@ def train_energy_rf_stereo(config_file, only_plots=False):
     # ================
     # === Plotting ===
     # ================
-    load_default_plot_settings(grid_bool=False)
+    load_default_plot_settings_02(grid_bool=False)
     plt.figure(figsize=tuple(cfg["energy_rf"]["fig_size"]))
 
     grid_shape = (2, len(tel_ids) + 1)
