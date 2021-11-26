@@ -48,10 +48,10 @@ def load_default_plot_settings_02(grid_bool=True):
         "savefig.bbox": "tight",
         "axes.grid": grid_bool,
         "errorbar.capsize": 3,
-        "axes.titlesize": 18,
-        "axes.labelsize": 18,
-        "xtick.labelsize": 20,
-        "ytick.labelsize": 20,
-        "legend.fontsize": 20,
+        "axes.titlesize": 24,
+        "axes.labelsize": 24,
+        "xtick.labelsize": 26,
+        "ytick.labelsize": 26,
+        "legend.fontsize": 26,
     }
     plt.rcParams.update(params)
