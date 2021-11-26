@@ -624,7 +624,7 @@ def train_direction_rf_stereo(config_file):
     plt.close()
 
 
-def train_energy_rf_stereo(config_file):
+def train_energy_rf_stereo(config_file, only_plots=False):
     print_title("TRAIN ENERGY RFs")
 
     # --- Read the configuration file ---
@@ -636,14 +636,17 @@ def train_energy_rf_stereo(config_file):
     check_folder(cfg["energy_rf"]["save_dir"])
 
     # --- Train sample ---
-    f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
-    f_ = f"{os.path.dirname(f_)}/*{os.path.splitext(f_)[1]}"
-    info_message("Loading train data...", prefix="EnergyRF")
-    info_message(
-        f"Loading train data with the following mask: \n{f_}", prefix="EnergyRF"
-    )
-    info_message(f"Loading files with the following mask:\n{f_}", prefix="EnergyRF")
-    shower_data_train = load_dl1_data_stereo_list(glob.glob(f_), mono_mode=mono_mode)
+    if not only_plots:
+        f_ = cfg["data_files"]["mc"]["train_sample"]["hillas_h5"]
+        f_ = f"{os.path.dirname(f_)}/*{os.path.splitext(f_)[1]}"
+        info_message("Loading train data...", prefix="EnergyRF")
+        info_message(
+            f"Loading train data with the following mask: \n{f_}", prefix="EnergyRF"
+        )
+        info_message(f"Loading files with the following mask:\n{f_}", prefix="EnergyRF")
+        shower_data_train = load_dl1_data_stereo_list(
+            glob.glob(f_), mono_mode=mono_mode
+        )
 
     # --- Test sample ---
     f_ = cfg["data_files"]["mc"]["test_sample"]["hillas_h5"]
@@ -658,42 +661,52 @@ def train_energy_rf_stereo(config_file):
     )
 
     # --- Check intersections ---
-    wt_ = "WARNING: check only on gammas; use it in classifier to check also protons"
-    # useful ONLY if test_file_n == 0
-    wn_ = "WARNING: test_file_n != 0, considering only a selection of the test sample"
-    if "check_train_test" in cfg["energy_rf"].keys():
-        if cfg["energy_rf"]["check_train_test"]:
-            info_message("Check train and test", prefix="EnergyRF")
-            info_message(wt_, prefix="EnergyRF")
-            if cfg["energy_rf"]["test_file_n"] > 0:
-                info_message(wn_, prefix="EnergyRF")
-            test_passed = check_train_test_intersections(
-                shower_data_train, shower_data_test
-            )
-            s_ = "Test PASSED" if test_passed else "Test NOT PASSED"
-            info_message(s_, prefix="EnergyRF")
+    if not only_plots:
+        wt_ = (
+            "WARNING: check only on gammas; use it in classifier to check also protons"
+        )
+        # useful ONLY if test_file_n == 0
+        wn_ = (
+            "WARNING: test_file_n != 0, considering only a selection of the test sample"
+        )
+        if "check_train_test" in cfg["energy_rf"].keys():
+            if cfg["energy_rf"]["check_train_test"]:
+                info_message("Check train and test", prefix="EnergyRF")
+                info_message(wt_, prefix="EnergyRF")
+                if cfg["energy_rf"]["test_file_n"] > 0:
+                    info_message(wn_, prefix="EnergyRF")
+                test_passed = check_train_test_intersections(
+                    shower_data_train, shower_data_test
+                )
+                s_ = "Test PASSED" if test_passed else "Test NOT PASSED"
+                info_message(s_, prefix="EnergyRF")
 
     # Computing event weights
-    info_message("Computing the train sample event weights...", prefix="EnergyRF")
-    alt_edges, intensity_edges = compute_event_weights()
+    if not only_plots:
+        info_message("Computing the train sample event weights...", prefix="EnergyRF")
+        alt_edges, intensity_edges = compute_event_weights()
 
-    mc_weights = get_weights_mc_dir_class(shower_data_train, alt_edges, intensity_edges)
+        mc_weights = get_weights_mc_dir_class(
+            shower_data_train, alt_edges, intensity_edges
+        )
 
-    shower_data_train = shower_data_train.join(mc_weights)
+        shower_data_train = shower_data_train.join(mc_weights)
 
     tel_ids, tel_ids_LST, tel_ids_MAGIC = check_tel_ids(cfg)
 
     # --- Data preparation ---
     l_ = ["obs_id", "event_id"]
-    shower_data_train["multiplicity"] = (
-        shower_data_train["intensity"].groupby(level=l_).count()
-    )
+    if not only_plots:
+        shower_data_train["multiplicity"] = (
+            shower_data_train["intensity"].groupby(level=l_).count()
+        )
     shower_data_test["multiplicity"] = (
         shower_data_test["intensity"].groupby(level=l_).count()
     )
 
     # Applying the cuts
-    shower_data_train = shower_data_train.query(cfg["energy_rf"]["cuts"])
+    if not only_plots:
+        shower_data_train = shower_data_train.query(cfg["energy_rf"]["cuts"])
     shower_data_test = shower_data_test.query(cfg["energy_rf"]["cuts"])
 
     # --- Training the direction RF ---
@@ -702,13 +715,19 @@ def train_energy_rf_stereo(config_file):
     energy_estimator = EnergyEstimatorPandas(
         cfg["energy_rf"]["features"], **cfg["energy_rf"]["settings"]
     )
-    energy_estimator.fit(shower_data_train)
+    if not only_plots:
+        energy_estimator.fit(shower_data_train)
 
-    # --- Save RF data to joblib file ---
-    energy_estimator.save(
-        os.path.join(cfg["energy_rf"]["save_dir"], cfg["energy_rf"]["joblib_name"])
-    )
-    # energy_estimator.load(cfg['energy_rf']['save_name'])
+        # --- Save RF data to joblib file ---
+        energy_estimator.save(
+            os.path.join(cfg["energy_rf"]["save_dir"], cfg["energy_rf"]["joblib_name"])
+        )
+        # energy_estimator.load(cfg['energy_rf']['save_name'])
+    else:
+        # Load the joblib RFs file
+        energy_estimator.load(
+            os.path.join(cfg["energy_rf"]["save_dir"], cfg["energy_rf"]["joblib_name"])
+        )
 
     info_message("Parameter importances", prefix="EnergyRF")
     print("")
@@ -785,7 +804,9 @@ if __name__ == "__main__":
             config_file=kwargs["config_file"], only_plots=kwargs["only_plots"]
         )
     if do_energy:
-        train_energy_rf_stereo(config_file=kwargs["config_file"])
+        train_energy_rf_stereo(
+            config_file=kwargs["config_file"], only_plots=kwargs["only_plots"]
+        )
     if do_direction:
         train_direction_rf_stereo(config_file=kwargs["config_file"])
 
