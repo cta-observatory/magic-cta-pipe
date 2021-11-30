@@ -18,10 +18,11 @@ input_files:
     original_data: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127_M2_05086952.001_Y_CrabNebula-W0.40+035.root"
 
 output_files:
-    file_path: "Files_Alessio/Skript_Test/"
+    file_path: "/path/to/output_directory"
    
 event_list: 
     [1961, 1962]
+
 information:
     tel_id: 2
     run_number: 5086952
