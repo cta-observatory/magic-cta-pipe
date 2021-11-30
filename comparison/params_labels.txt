@@ -1,0 +1,17 @@
+MARS Hillas Params
+Length_M1" : "MHillas_1.fLength", "length_M2" : "MHillas_2.fLength", "width_M1" : "MHillas_1.fWidth", "width_M2" : "MHillas_2.fWidth", "size_M1" : "MHillas_1.fSize", "size_M2" : "MHillas_2.fSize", "slope_M1" : "MHillasTimeFit_1.fP1Grad", "slope_M2" : "MHillasTimeFit_2.fP1Grad", "delta_M1" : "MHillas_1.fDelta", "delta_M2" : "MHillas_2.fDelta", "cogx_M1" : "MHillas_1.fMeanX", "cogx_M2" : "MHillas_2.fMeanX", "cogy_M1" : "MHillas_1.fMeanY", "cogy_M2" : "MHillas_2.fMeanY", "hmax" : "MStereoPar.fMaxHeight", "corex" : "MStereoPar.fCoreX", "corey" : "MStereoPar.fCoreY", "az" : "MStereoPar.fDirectionAz", "zd" : "MStereoPar.fDirectionZd"
+
+labels and units
+ "length_M1" : "Length M1 [mm]", "length_M2" : "Length M2 [mm]", "width_M1" : "Width M1 [mm]", "width_M2" : "Width M2 [mm]", "size_M1" : "Size M1 [phe]", #phe means photoelectrons "size_M2" : "Size M2 [phe]", "delta_M1" : "Delta M1 [rad]", "delta_M2" : "Delta M2 [rad]", "slope_M1" : "Time Gradient M1", "slope_M2" : "Time Gradient M2", "cogx_M1" : "Cog_x M1 [mm]", "cogx_M2" : "Cog_x M2 [mm]", "cogy_M1" : "Cog_y M1 [mm]", "cogy_M2" : "Cog_y M2 [mm]", "hmax" : "Max height [cm]", "corex" : "CoreX [cm]", "corey" : "CoreY [cm]", "az" : "Azimuth [deg]", "zd" : "Zenith [deg]
+
+MCP Hillas Params
+obs_id', 'event_id', 'tel_id', 'mjd', 'tel_alt', 'tel_az', 'n_islands',
+       'intensity', 'x', 'y', 'r', 'phi', 'length', 'width', 'psi', 'skewness',
+       'kurtosis', 'pixels_width_1', 'pixels_width_2', 'intensity_width_1',
+       'intensity_width_2', 'slope', 'slope_err', 'intercept', 'intercept_err',
+       'deviation', 'impact'
+       
+scaling factors
+cta_params : { "length_M1" : "length", "length_M2" : "length", "width_M1" : "width", "width_M2" : "width", "size_M1" : "intensity", "size_M2" : "intensity", "delta_M1" : "psi", "delta_M2" : "psi", "slope_M1" : "slope", "slope_M2" : "slope", "cogx_M1" : "y", "cogx_M2" : "y", "cogy_M1" : "x", "cogy_M2" : "x", "hmax" : "h_max", "corex" : "core_x", "corey" : "core_y", "az" : "az", "zd" : "alt"
+
+scale_factors = { "length_M1" : 1000., "length_M2" : 1000., "width_M1" : 1000., "width_M2" : 1000., "cogx_M1" : -1000., "cogx_M2" : -1000., "cogy_M1" : -1000., "cogy_M2" : -1000., "slope_M1" : 0.001, "slope_M2" : 0.001, "corex" : 100., "corey" : 100., "hmax" : 100.
