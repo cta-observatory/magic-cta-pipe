@@ -25,6 +25,7 @@ from ctapipe.reco import HillasReconstructor
 from ctapipe.image import hillas_parameters
 from ctapipe.image.timing import timing_parameters
 from ctapipe.instrument import CameraGeometry
+from ctapipe.containers import LeakageContainer
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
