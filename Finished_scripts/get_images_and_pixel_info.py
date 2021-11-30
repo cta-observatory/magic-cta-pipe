@@ -1,12 +1,5 @@
-#-------------------COMMENTS------------------
-# if you want to compare the camera images of two different events, you will have to uncomment the lists calles idsimport argparse
-# to get the event ids we use the mcp data
-
-#https://gitlab.mpcdf.mpg.de/ievo/magic-cta-pipe/-/blob/master/utils/MAGIC_Cleaning.py
-#https://gitlab.mpcdf.mpg.de/ievo/magic-cta-pipe/-/blob/master/utils/MAGIC_Badpixels.py
-#MAGICEventSource
-#https://gitlab.mpcdf.mpg.de/ievo/ctapipe_io_magic/-/blob/master/ctapipe_io_magic/__init__.py
-#----------------------------------------------
+#!/usr/bin/env python
+# coding: utf-8
 
 import argparse
 import yaml
@@ -30,6 +23,7 @@ import numpy as np
 from matplotlib.colors import Normalize
 import matplotlib.cm as cm
 from ctapipe.image.morphology import number_of_islands
+from mars_images_to_hdf5 import read_images, ImageContainerCleaned
 
 #----------------------------------------------------------------
 
