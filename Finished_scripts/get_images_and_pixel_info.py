@@ -79,17 +79,16 @@ if parsed_args.useall:
     #does only work for stereo files
     mcp_file = uproot.open(config['input_files']['magic-cta-pipe'])
     #print(mcp_file.keys())
-    if 'Events;2' not in mcp_file.keys():
+    if 'Events' not in mcp_file.keys():
         print("Missing key: Events. Unaccebtable file format. Exiting.")
         exit()
     else:
-        #if f'MRawEvtHeader_{tel_id}.fStereoEvtNumber' not in mcp_file['Events;2'].keys():
-        if 'MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber' not in mcp_file['Events;2'].keys():
+        if 'MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber' not in mcp_file['Events'].keys():
             print(f"Missing key: MRawEvtHeader_{tel_id}.fStereoEvtNumber. Unaccebtable file format. Exiting.")
             exit()
         else:
             df_mcp_data = pd.DataFrame()
-            df_mcp_data['event_id'] = mcp_file['Events;2']['MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber'].array().to_numpy()
+            df_mcp_data['event_id'] = mcp_file['Events']['MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber'].array().to_numpy()
             ids_to_compare = df_mcp_data['event_id'].tolist()
             #the keys depend on the file, there may be a case where they have to be changed
 #--------------------------------------------------------- 
