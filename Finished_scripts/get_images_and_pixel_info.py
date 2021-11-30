@@ -302,8 +302,9 @@ for id_to_compare in ids_to_compare:
         #------------------
         # original calibrated data
         #---------------------
-        
-        data_path = config['input_files']['original_data']
+        #chooses the path for either M1 or M2
+        #specified by the telescope id in the config file
+        data_path = config['input_files'][f'original_data_M{telescope_id}']
         with uproot.open(data_path) as input_data:
             event_ids = input_data['Events']['MRawEvtHeader.fStereoEvtNumber'].array()
             images = input_data['Events']['MCerPhotEvt.fPixels.fPhot'].array()
