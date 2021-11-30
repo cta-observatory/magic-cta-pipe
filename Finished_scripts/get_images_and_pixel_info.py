@@ -156,12 +156,22 @@ for id_to_compare in ids_to_compare:
         #------------------
         #       MARS
         #-----------------
-        #this needs to be a h5 file        
-        mars_input = config['input_files']['mars']
-        sstar = pd.read_hdf(mars_input)
-        image = sstar[0].to_numpy()
-        stereo_id = sstar['event_id'].to_numpy()
 
+        mars_input = config['input_files']['mars']
+
+        image = []      #pixel charges
+        events=[]       #event ids
+        telescope=[]    #telescope id
+        runnum=[]       #run number
+        
+        for image_container in read_images(mars_input):
+            events.append(image_container.event_id)
+            telescope.append(image_container.tel_id)
+            runnnum.append(image_container.obs_id)
+            image.append(image_container.image)
+
+        image = image.to_numpy()
+        stereo_id = events.to_numpy()
 		
         MAGICCAM = CameraDescription.from_name("MAGICCam")
         GEOM = MAGICCAM.geometry
