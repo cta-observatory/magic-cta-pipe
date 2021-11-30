@@ -32,7 +32,8 @@ ids_to_compare = []
 
 #add argparser arguments
 arg_parser = argparse.ArgumentParser(description="""
-This tool compares the images of events processed by MARS and the magic-cta-pipeline. The output is a png file with the camera images and a hdf5 file that contains the pixel information.
+This tool compares the images of events processed by MARS and the magic-cta-pipeline. 
+The output is a png file with the camera images and a hdf5 file that contains the pixel information.
 """)
 
 arg_parser.add_argument("--config", default="config.yaml",
@@ -40,7 +41,7 @@ arg_parser.add_argument("--config", default="config.yaml",
 arg_parser.add_argument("--useall",
                         help='Compare images for all events in the input file',
                         action='store_true')
-arg_parser.add_argument("--usesome",
+arg_parser.add_argument("--use_ids_config",
                         help='Compare images for certain events',
                         action='store_true')
 
@@ -95,7 +96,7 @@ if parsed_args.useall:
 #       Compare images for only certain events
 #---------------------------------------------------------
     
-elif parsed_args.usesome:
+elif parsed_args.use_ids_config:
      ids_to_compare = config['event_list']
 
 else:
