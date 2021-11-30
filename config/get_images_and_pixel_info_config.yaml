@@ -1,0 +1,30 @@
+#use no wildcards in the names for the input files, instead merge it before running the script if needed
+#remember to change before running the script: input files, select right telescope
+
+input_files:
+    #calibrated input data
+    #magic-cta-pipe: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127_M1_05086952.001_Y_CrabNebula-W0.40+035.root"
+    magic-cta-pipe: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127_M2_05086952.001_Y_CrabNebula-W0.40+035.root"
+    
+    #input data that has already been processed by mars
+    #mars: "Files_Alessio/5086952_mars_cleaned_images_M1.h5"
+    mars: "Files_Alessio/5086952_mars_cleaned_images_M2.h5"
+    
+    #for some reason it only works if we use stereo files as our source
+    mcp_source: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127*52.001*.root"
+    
+    #original input data, which is processed by mars, is equal to mcp input
+    #original_data: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127_M1_05086952.001_Y_CrabNebula-W0.40+035.root"
+    original_data: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127_M2_05086952.001_Y_CrabNebula-W0.40+035.root"
+
+output_files:
+    file_path: "/path/to/output_directory"
+   
+event_list: 
+    [1961, 1962]
+
+information:
+    tel_id: 2
+    run_number: 5086952
+
+save_only_when_differences: True
