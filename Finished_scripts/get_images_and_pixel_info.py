@@ -191,7 +191,7 @@ for id_to_compare in ids_to_compare:
             #print(event_image)
             event_image_mars = event_image.copy()
             
-            #compare numbe rof islands
+            #compare number of islands
             num_islands_mars, island_labels_mars = number_of_islands(geometry_mars, (np.array(event_image[:1039]) > 0))
             #print(num_islands_mars)
 
@@ -237,6 +237,22 @@ for id_to_compare in ids_to_compare:
                 event_image = event.dl1.tel[tel_id].image
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
 
+                """ 
+                find different catgories of pixels
+                ------
+                bad: pixel that is unsuitable, defined subrunwise
+                hot: too high charge due to star or not working correctly
+                badrms: the pedestal rms value is over a certain threshhold; this is bad and hot pixels combined
+                    get badrms pixels via badrmspixel_mask
+                    get badrms pixel indices via bad_pixel_indices
+                dead: this pixels is not working at all
+                    get dead pixels via deadpixel_mask 
+                    get dead pixel indices via dead_pixel_indices 
+                unsuitable: union of badrms and dead pixels
+                    get unsuitable pixels via unsuitable_mask
+                ---------
+                """
+
                 badrmspixel_indices = [[None],[None]]
                 
                 badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
@@ -244,8 +260,6 @@ for id_to_compare in ids_to_compare:
                 deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
                 unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
 
-                
-                
                 bad_pixel_indices = [i for i, x in enumerate(badrmspixel_mask[telescope_id-1]) if x]
                 #print("badpixel_indices:", bad_pixel_indices)
                 dead_pixel_indices = [i for i, x in enumerate(deadpixel_mask[telescope_id-1]) if x]
@@ -254,7 +268,7 @@ for id_to_compare in ids_to_compare:
                 for i in bad_pixel_indices:
                     if i not in dead_pixel_indices:
                         bad_not_dead_pixels.append(i)
-                print("bad but not dead pixels:", bad_not_dead_pixels)
+                #print("bad but not dead pixels:", bad_not_dead_pixels)
                 #print(len(bad_pixel_indices))
 
                 clean_mask, event_image, event_pulse_time = magic_clean.clean_image(event_image, event_pulse_time, unsuitable_mask=unsuitable_mask)
@@ -314,7 +328,6 @@ for id_to_compare in ids_to_compare:
             vmax = mcp_max
         else:
             vmax = mars_max
-        print("maximum charge:", vmax)
 
         vmin = 0
        
