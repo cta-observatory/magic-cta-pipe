@@ -20,10 +20,8 @@ input_files:
 output_files:
     file_path: "Files_Alessio/Skript_Test/"
    
-event_list:
-    - 1961
-    - 1962
-#do not write the events as a list, but like this^^
+event_list: 
+    [1961, 1962]
 information:
     tel_id: 2
     run_number: 5086952
