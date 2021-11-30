@@ -212,7 +212,7 @@ for id_to_compare in ids_to_compare:
         #uncomment this list to compare different events
         #ids = [1962]
         
-        for event in source:
+        for event in source._mono_event_generator(telescope=f'{telescope_id}'):
             if event.index.event_id not in ids:
                 continue
             print(f"Event ID: {event.index.event_id}")
