@@ -80,11 +80,11 @@ if parsed_args.useall:
     mcp_file = uproot.open(config['input_files']['magic-cta-pipe'])
     #print(mcp_file.keys())
     if 'Events' not in mcp_file.keys():
-        print("Missing key: Events. Unaccebtable file format. Exiting.")
+        print("Missing key: Events. Unacceptable file format. Exiting.")
         exit()
     else:
         if 'MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber' not in mcp_file['Events'].keys():
-            print(f"Missing key: MRawEvtHeader_{tel_id}.fStereoEvtNumber. Unaccebtable file format. Exiting.")
+            print(f"Missing key: MRawEvtHeader_{tel_id}.fStereoEvtNumber. Unacceptable file format. Exiting.")
             exit()
         else:
             df_mcp_data = pd.DataFrame()
