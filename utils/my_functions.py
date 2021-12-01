@@ -1,14 +1,51 @@
+import re
+import glob
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import EarthLocation, AltAz, SkyCoord
+from astropy.coordinates.builtin_frames import SkyOffsetFrame
+from gammapy.stats import WStatCountsStatistic
+
 
 __all__ = [
+    'crab_magic',
+    'get_obs_ids_from_name',
     'calc_impact',
     'calc_nsim',
     'transform_telcoords_cog',
     'transform_to_radec',
-    'calc_offset_rotation'
+    'calc_offset_rotation',
+    'calc_angular_separation',
 ]
+
+
+def crab_magic(E):
+
+    f0 = 3.23e-11 / u.TeV / u.cm ** 2 / u.s
+    alpha = -2.47
+    beta = -0.24
+    e0 = 1. * u.TeV
+
+    dFdE = f0 * np.power(E / e0, alpha + beta * np.log10(E / e0))
+
+    return dFdE.to(1 / u.cm ** 2 / u.s / u.TeV)
+
+
+def get_obs_ids_from_name(input_data_mask):
+
+    paths_list = glob.glob(input_data_mask)
+    paths_list.sort()
+
+    obs_ids_list = []
+
+    for path in paths_list:
+
+        obs_id = re.findall('.*Run(\d+)\.(\d+)\.h5', path)[0][0]
+        obs_ids_list.append(obs_id)
+
+    obs_ids_list = np.unique(obs_ids_list)
+
+    return obs_ids_list
 
 
 def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
@@ -84,15 +121,15 @@ def transform_to_radec(alt, az, timestamp):
     return event_coords.ra, event_coords.dec
 
 
-def calc_offset_rotation(ra1, dec1, ra2, dec2):
+def calc_offset_rotation(ra_on, dec_on, ra_tel, dec_tel):
+    
+    diff_ra = ra_tel - ra_on
+    diff_dec = dec_tel - dec_on
+    
+    offset = np.arccos(np.cos(dec_on)*np.cos(dec_tel)*np.cos(diff_ra) + np.sin(dec_on)*np.sin(dec_tel))
 
-    diff_ra = ra2 - ra1
-    diff_dec = dec2 - dec1
-
-    offset = np.arccos(np.cos(dec1)*np.cos(dec2)*np.cos(diff_ra) + np.sin(dec1)*np.sin(dec2))
-
-    rotation = np.arctan((np.sin(dec2)*np.cos(dec1) - np.sin(dec1)*np.cos(dec2)*np.cos(diff_ra)) /
-                         (np.cos(dec2)*np.sin(diff_ra)))
+    rotation = np.arctan((np.sin(dec_tel)*np.cos(dec_on) - np.sin(dec_on)*np.cos(dec_tel)*np.cos(diff_ra)) /
+                         (np.cos(dec_tel)*np.sin(diff_ra)))
 
     offset = offset.to(u.deg)
     rotation = rotation.to(u.deg)
@@ -102,3 +139,42 @@ def calc_offset_rotation(ra1, dec1, ra2, dec2):
     rotation[(diff_ra > 0) & (diff_dec < 0)] += 360*u.deg
 
     return offset, rotation
+
+
+def calc_angular_separation(on_coord, event_coords, tel_coords, n_off_region):
+
+    theta_on = on_coord.separation(event_coords)
+
+    offset, rotation = calc_offset_rotation(
+        ra_on=on_coord.ra, dec_on=on_coord.dec, ra_tel=tel_coords.ra, dec_tel=tel_coords.dec
+    )
+
+    mean_offset = np.mean(offset).to(u.deg).value
+    mean_rot = np.mean(rotation).to(u.deg).value
+
+    print(f'mean_offset = {mean_offset:.3f} [deg], mean_rot = {mean_rot:.1f} [deg]')
+
+    skyoffset_frame = SkyOffsetFrame(origin=on_coord, rotation=-mean_rot*u.deg)
+
+    wobble_coord = SkyCoord(mean_offset*u.deg, 0*u.deg, frame=skyoffset_frame)
+    wobble_coord = wobble_coord.transform_to('icrs')
+
+    rots_list = np.arange(mean_rot, mean_rot+359, int(360/(n_off_region+1)))
+    rots_list[rots_list > 360] -= 360
+
+    diff = np.round(np.abs(rots_list - mean_rot), 0)
+    rots_list = rots_list[diff != 180]
+
+    theta_off = {}
+    off_coords = {}
+
+    for i_off, rot in enumerate(rots_list):
+
+        skyoffset_frame = SkyOffsetFrame(origin=wobble_coord, rotation=-rot*u.deg)
+
+        off_coords[i_off+1] = SkyCoord(mean_offset*u.deg, 0*u.deg, frame=skyoffset_frame)
+        off_coords[i_off+1] = off_coords[i_off+1].transform_to('icrs')
+
+        theta_off[i_off+1] = off_coords[i_off+1].separation(event_coords)
+
+    return theta_on, theta_off, off_coords
