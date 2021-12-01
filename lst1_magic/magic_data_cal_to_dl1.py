@@ -22,7 +22,7 @@ from ctapipe.image.timing import timing_parameters
 from ctapipe.image.cleaning import tailcuts_clean
 from ctapipe.image.morphology import number_of_islands 
 from ctapipe_io_magic import MAGICEventSource
-from utils import MAGIC_Badpixels, MAGIC_Cleaning
+from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
 
 warnings.simplefilter('ignore') 
 

@@ -17,7 +17,7 @@ from astropy.coordinates import SkyCoord, AltAz, Angle
 from astropy.coordinates.angle_utilities import angular_separation
 from ctapipe.reco import HillasReconstructor
 from ctapipe.containers import HillasParametersContainer, ReconstructedShowerContainer
-from utils import calc_impact
+from magicctapipe.utils import calc_impact
 
 warnings.simplefilter('ignore')
 

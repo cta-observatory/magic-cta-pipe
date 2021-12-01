@@ -12,10 +12,10 @@ import pandas as pd
 from pathlib import Path
 from astropy import units as u
 from astropy.time import Time
-from event_processing import EnergyEstimatorPandas
-from event_processing import DirectionEstimatorPandas
-from event_processing import EventClassifierPandas
-from utils import transform_to_radec
+from magicctapipe.train.event_processing import EnergyEstimatorPandas
+from magicctapipe.train.event_processing import DirectionEstimatorPandas
+from magicctapipe.train.event_processing import EventClassifierPandas
+from magicctapipe.utils import transform_to_radec
 
 warnings.simplefilter('ignore')
 

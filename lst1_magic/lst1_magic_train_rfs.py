@@ -11,10 +11,10 @@ import warnings
 import argparse
 import pandas as pd
 import numpy as np
-from event_processing import EventClassifierPandas
-from event_processing import DirectionEstimatorPandas
-from event_processing import EnergyEstimatorPandas
-from utils import merge_hdf_files
+from magicctapipe.train.event_processing import EventClassifierPandas
+from magicctapipe.train.event_processing import DirectionEstimatorPandas
+from magicctapipe.train.event_processing import EnergyEstimatorPandas
+from magicctapipe.utils import merge_hdf_files
 
 
 warnings.simplefilter('ignore')

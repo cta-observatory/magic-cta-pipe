@@ -18,7 +18,7 @@ from ctapipe.image import ImageExtractor, hillas_parameters, leakage
 from ctapipe.image.cleaning import tailcuts_clean
 from ctapipe.image.timing import timing_parameters
 from ctapipe.image.morphology import number_of_islands
-from utils import MAGIC_Cleaning, calc_impact
+from magicctapipe.utils import MAGIC_Cleaning, calc_impact
 
 warnings.simplefilter('ignore')
 

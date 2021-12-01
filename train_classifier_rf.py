@@ -9,7 +9,7 @@ import numpy as np
 
 import sklearn.metrics
 
-from event_processing import EventClassifierPandas
+from magicctapipe.train.event_processing import EventClassifierPandas
 
 from astropy import units as u
 

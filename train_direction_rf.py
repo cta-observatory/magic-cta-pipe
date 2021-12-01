@@ -16,7 +16,7 @@ from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
-from event_processing import DirectionEstimatorPandas
+from magicctapipe.train.event_processing import DirectionEstimatorPandas
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz

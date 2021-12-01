@@ -29,11 +29,9 @@ from ctapipe.image.cleaning import tailcuts_clean     # apply_time_delta_cleanin
 from astropy import units as u
 
 
-from utils import MAGIC_Badpixels
+from magicctapipe.utils import MAGIC_Badpixels
 # from utils import bad_pixel_treatment
-from utils import MAGIC_Cleaning
-
-
+from magicctapipe.utils import MAGIC_Cleaning
 
 def info_message(text, prefix='info'):
     """

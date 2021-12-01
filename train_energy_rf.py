@@ -12,7 +12,7 @@ import sklearn.ensemble
 
 import ctapipe
 
-from event_processing import EnergyEstimatorPandas
+from magicctapipe.train.event_processing import EnergyEstimatorPandas
 
 from astropy import units as u
 

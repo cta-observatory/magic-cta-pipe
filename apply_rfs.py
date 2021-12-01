@@ -15,7 +15,11 @@ from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
-from event_processing import EnergyEstimatorPandas, DirectionEstimatorPandas, EventClassifierPandas
+from magicctapipe.train.event_processing import (
+    EnergyEstimatorPandas,
+    DirectionEstimatorPandas,
+    EventClassifierPandas
+)
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import EarthLocation,SkyCoord, AltAz
