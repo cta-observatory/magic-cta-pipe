@@ -271,6 +271,8 @@ def process_dataset_mc(input_mask, output_name, cleaning_config):
 
         obs_id_last = -1
 
+        obs_id_last = -1
+
         # Looping over the events
         for event in source:
 

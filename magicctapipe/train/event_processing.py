@@ -1291,6 +1291,7 @@ class EnergyEstimatorPandas:
         idx = pd.IndexSlice
 
         tel_ids = shower_data.index.levels[2]
+        print("Selected tels:", tel_ids)
 
         self.telescope_regressors = dict()
 
@@ -1324,6 +1325,7 @@ class EnergyEstimatorPandas:
         """
 
         tel_ids = shower_data.index.levels[2]
+        print("Selected tels:", tel_ids)
 
         energy_reco = pd.DataFrame()
 
@@ -1449,6 +1451,7 @@ class DirectionEstimatorPandas:
         """
 
         tel_ids = shower_data.index.levels[2]
+        print("Selected tels:", tel_ids)
 
         result = pd.DataFrame()
 
@@ -1798,6 +1801,7 @@ class DirectionEstimatorPandas:
         idx = pd.IndexSlice
 
         tel_ids = shower_data.index.levels[2]
+        print("Selected tels:", tel_ids)
 
         target_name = kind + '_true'
 
@@ -1845,6 +1849,7 @@ class DirectionEstimatorPandas:
         """
 
         tel_ids = shower_data.index.levels[2]
+        print("Selected tels:", tel_ids)
 
         # -----------------------------------------
         # *** Computing disp and position angle ***
@@ -2098,6 +2103,7 @@ class EventClassifierPandas:
         idx = pd.IndexSlice
 
         tel_ids = shower_data.index.levels[2]
+        print("Selected tels:", tel_ids)
 
         self.telescope_classifiers = dict()
 
@@ -2131,6 +2137,7 @@ class EventClassifierPandas:
         """
 
         tel_ids = shower_data.index.levels[2]
+        print("Selected tels:", tel_ids)
 
         event_class_reco = pd.DataFrame()
 
