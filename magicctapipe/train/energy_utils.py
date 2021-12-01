@@ -8,6 +8,11 @@ from magicctapipe.utils.plot import *
 from magicctapipe.utils.tels import *
 from magicctapipe.utils.filedir import *
 
+__all__ = [
+    "GetHist2D_energy",
+    "evaluate_performance_energy",
+    "plot_migmatrix",
+    ]
 
 def GetHist2D_energy(x, y, bins=30, range=None, weights=None):
     hs, xedges, yedges = np.histogram2d(x, y, bins=bins, range=range, weights=weights)

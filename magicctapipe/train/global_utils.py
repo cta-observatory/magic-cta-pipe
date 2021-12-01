@@ -1,6 +1,11 @@
 import numpy as np
 import pandas as pd
 
+__all__ = [
+    "compute_event_weights",
+    "get_weights_mc_dir_class",
+    "check_train_test_intersections",
+]
 
 def compute_event_weights():
     """Compute event weights for train scripts

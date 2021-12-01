@@ -9,6 +9,14 @@ from magicctapipe.utils.tels import *
 from magicctapipe.utils.filedir import *
 from magicctapipe.train.global_utils import *
 
+__all__ = [
+    "GetHist_classifier",
+    "evaluate_performance_classifier",
+    "get_weights_classifier",
+    "print_par_imp_classifier",
+    "load_init_data_classifier",
+    "check_train_test_intersections_classifier",
+]
 
 def GetHist_classifier(data, bins=30, range=None, weights=None):
     hs, edges = np.histogram(data, bins=bins, range=range, weights=weights)

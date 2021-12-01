@@ -1,6 +1,10 @@
 import numpy as np
 from ctapipe.instrument import CameraGeometry
 
+__all__ = [
+    "MAGICBadPixelsCalc",
+]
+
 class MAGICBadPixelsCalc():
 
     def __init__(self, camera=None, config=None, tool=None, **kwargs):

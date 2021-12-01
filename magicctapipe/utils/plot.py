@@ -2,6 +2,11 @@ import os
 import numpy as np
 import matplotlib.pylab as plt
 
+__all__ = [
+    "save_plt",
+    "load_default_plot_settings",
+    "load_default_plot_settings_02",
+]
 
 def save_plt(n, rdir="", vect="pdf,eps"):
     """Save plot in the required formats

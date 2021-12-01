@@ -6,6 +6,8 @@ from ctapipe.core.container import Container, Field
 from magicctapipe.reco.stereo import *
 from magicctapipe.utils.tels import *
 
+__all__ = ["write_hillas", "check_write_stereo",
+           "check_stereo", "write_stereo"]
 
 def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p, impact_p):
     """Write

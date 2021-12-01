@@ -20,6 +20,12 @@ from magicctapipe.utils.utils import *
 import matplotlib.pylab as plt
 from lstchain.mc import plot_utils
 
+__all__ = ["read_simu_info_mcp_sum_num_showers", "convert_simu_info_mcp_to_pyirf",
+           "read_dl2_mcp_to_pyirf_MAGIC_LST_list", "plot_sensitivity", "plot_en_res_bias",
+           "plot_en_res_resolution", "plot_ang_res", "plot_effective_area",
+           "plot_gamma_eff_gh", "plot_irfs_MAGIC_LST", "plot_MARS_sensitivity",
+           "plot_MAGIC_reference_sensitivity"]
+
 
 def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header"):
     """Function to read simulation information from DL2 files and sum the simultated

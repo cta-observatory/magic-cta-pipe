@@ -4,6 +4,11 @@ import copy
 import numpy as np
 from scipy.sparse.csgraph import connected_components
 
+__all__ = [
+    "magic_clean",
+    "pixel_treatment",
+]
+
 class magic_clean():
 
     def __init__(self, camera, configuration):

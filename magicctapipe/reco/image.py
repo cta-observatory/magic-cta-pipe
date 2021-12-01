@@ -20,6 +20,8 @@ from ctapipe.core.container import Container, Field
 
 from astropy.coordinates import SkyCoord, AltAz
 
+__all__ = ["get_num_islands_MAGIC", "clean_image_params",
+           "eval_impact", "tailcuts_clean_lstchain"]
 
 def get_num_islands_MAGIC(camera, clean_mask, event_image):
     """Eval num islands for MAGIC

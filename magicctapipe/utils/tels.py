@@ -11,6 +11,17 @@ from ctapipe.instrument import TelescopeDescription
 from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 
+__all__ = [
+    "tel_ids_2_num",
+    "num_2_tel_ids",
+    "get_tel_descriptions",
+    "get_array_tel_descriptions",
+    "get_tel_ids_dl1",
+    "convert_positions_dict",
+    "check_tel_ids",
+    "intersec_tel_ids",
+    "get_tel_name",
+]
 
 def tel_ids_2_num(tel_ids):
     """Function to convert a list of tel_ids into a decimal number wich can be

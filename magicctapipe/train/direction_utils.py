@@ -12,6 +12,7 @@ from magicctapipe.utils.plot import *
 from magicctapipe.utils.tels import *
 from magicctapipe.utils.filedir import *
 
+__all__ = ["compute_separation_angle_direction"]
 
 def compute_separation_angle_direction(shower_data_test):
     separation = dict()

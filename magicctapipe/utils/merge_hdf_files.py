@@ -6,10 +6,11 @@ import argparse
 import pandas as pd 
 import numpy as np
 from pathlib import Path
-from utils import get_obs_ids_from_name
+from .my_functions import get_obs_ids_from_name
 
 __all__ = [
-    'merge_hdf_files'
+    "merge_hdf_files",
+    "merge_hdf_files_run_wise",
 ]
 
 
