@@ -16,7 +16,7 @@ import sys
 sys.path.append('../')
 import gti
 
-import uproot3 as uproot
+import uproot
 
 
 
@@ -73,6 +73,7 @@ if is_stereo:
 obs_ids = df.index.levels[0].values
 
 source_name = config['source']['name']
+output_directory = config['event_list']['output_directory']
 
 for obs_id in obs_ids:
     print(f"Processing observation with ID: {obs_id}")
@@ -218,8 +219,8 @@ for obs_id in obs_ids:
     pointing_dec = -1
 
     with uproot.open(file_list[0]) as input_stream:
-        pointing_ra  = input_stream['RunHeaders']['MRawRunHeader.fTelescopeRA'].array()[0]*(15.0/3600.0) # convert second of hours to degrees
-        pointing_dec = input_stream['RunHeaders']['MRawRunHeader.fTelescopeDEC'].array()[0]/3600.0      # convert arcsec to degrees
+        pointing_ra  = input_stream['RunHeaders']['MRawRunHeader.fTelescopeRA'].array(library="np")[0]*(15.0/3600.0) # convert second of hours to degrees
+        pointing_dec = input_stream['RunHeaders']['MRawRunHeader.fTelescopeDEC'].array(library="np")[0]/3600.0      # convert arcsec to degrees
 
     events_hdu.header['RA_PNT']  = pointing_ra
     events_hdu.header['DEC_PNT'] = pointing_dec
@@ -246,7 +247,7 @@ for obs_id in obs_ids:
 
     # Saving to FITS
 
-    output_name = f"events_{source_name}_{obs_id}.fits"
+    output_name = f"{output_directory}/events_{source_name}_{obs_id}.fits"
 
     primary_hdu = pyfits.PrimaryHDU()
 

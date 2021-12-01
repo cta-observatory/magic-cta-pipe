@@ -169,6 +169,7 @@ for data_type in config['data_files']:
     for sample in ['test_sample']:
         shower_data = pd.DataFrame()
         original_mc_data = pd.DataFrame()
+        mc_header_data   = pd.DataFrame()
 
         if is_stereo:
 
@@ -178,7 +179,8 @@ for data_type in config['data_files']:
             stereo_data = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/stereo_params')
 
             if data_type == 'mc':
-                orig_mc = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/original_mc')
+                orig_mc   = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/original_mc')
+                mc_header = pd.read_hdf(config['data_files'][data_type][sample]['magic']['hillas_output'], key='dl1/mc_header')
                 dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy', 'true_core_x', 'true_core_y']
             else:
                 dropped_keys = ['tel_alt','tel_az','n_islands', 'mjd', 'tel_id']
@@ -187,6 +189,7 @@ for data_type in config['data_files']:
             shower_data = hillas_data.merge(stereo_data, on=['obs_id', 'event_id'])
             if data_type == 'mc':
                 original_mc_data = original_mc_data.append(orig_mc)
+                mc_header_data   = mc_header_data.append(mc_header)
 
         else:
 
@@ -202,10 +205,12 @@ for data_type in config['data_files']:
                 if data_type == 'mc':
                     orig_mc = pd.read_hdf(config['data_files'][data_type][sample][telescope]['hillas_output'],
                         key='dl1/original_mc')
+                    mc_header = pd.read_hdf(config['data_files'][data_type][sample][telescope]['hillas_output'], key='dl1/mc_header')
 
                 shower_data = shower_data.append(tel_data)
                 if data_type == 'mc':
                     original_mc_data = original_mc_data.append(orig_mc)
+                    mc_header_data   = mc_header_data.append(mc_header)
 
         # Sorting the data frame for convenience
         shower_data = shower_data.reset_index()
@@ -256,17 +261,19 @@ for data_type in config['data_files']:
 
         # Storing the reconstructed values for the given data sample
         info_message('Saving the reconstructed data', prefix='ApplyRF')
-        
+
         if is_stereo:
             if data_type == 'mc':
                 shower_data['theta2']=compute_theta2_mc(shower_data)
                 original_mc_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],key='dl3/original_mc')
+                mc_header_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],key='dl3/mc_header')
             else:
                 shower_data['theta2']=compute_theta2_real(shower_data)
-            shower_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],key='dl3/reco') 
+            shower_data.to_hdf(config['data_files'][data_type][sample]['magic']['reco_output'],key='dl3/reco')
 
         else:
             for telescope in config['data_files'][data_type][sample]:
                 shower_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'],key='dl3/reco')
                 if data_type == 'mc':
                     original_mc_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'],key='dl3/original_mc')
+                    mc_header_data.to_hdf(config['data_files'][data_type][sample][telescope]['reco_output'],key='dl3/mc_header')

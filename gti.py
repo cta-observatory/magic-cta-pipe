@@ -6,7 +6,7 @@ import argparse
 import datetime
 
 import scipy
-import uproot3 as uproot
+import uproot
 import pandas
 
 
@@ -184,11 +184,11 @@ class GTIGenerator:
                 if self.verbose:
                     info_message(f"processing file {fnum+1} / {len(file_list)}", "GTI generator")
 
-                _tdiff = input_stream['Events']['MRawEvtHeader.fTimeDiff'].array()
+                _tdiff = input_stream['Events']['MRawEvtHeader.fTimeDiff'].array(library="np")
 
-                _mjd = input_stream['Events']['MTime.fMjd'].array()
-                _millisec = input_stream['Events']['MTime.fTime.fMilliSec'].array()
-                _nanosec = input_stream['Events']['MTime.fNanoSec'].array()
+                _mjd = input_stream['Events']['MTime.fMjd'].array(library="np")
+                _millisec = input_stream['Events']['MTime.fTime.fMilliSec'].array(library="np")
+                _nanosec = input_stream['Events']['MTime.fNanoSec'].array(library="np")
 
                 _mjd = _mjd + (_millisec / 1e3 + _nanosec / 1e9) / 86400.0
 
@@ -225,14 +225,14 @@ class GTIGenerator:
                 info_message(f"processing file {fnum+1} / {len(file_list)}", "GTI generator")
 
             with uproot.open(file_name) as input_stream:
-                mjd = input_stream["Camera"]["MTimeCamera.fMjd"].array()
-                millisec = input_stream["Camera"]["MTimeCamera.fTime.fMilliSec"].array()
-                nanosec = input_stream["Camera"]["MTimeCamera.fNanoSec"].array()
+                mjd = input_stream["Camera"]["MTimeCamera.fMjd"].array(library="np")
+                millisec = input_stream["Camera"]["MTimeCamera.fTime.fMilliSec"].array(library="np")
+                nanosec = input_stream["Camera"]["MTimeCamera.fNanoSec"].array(library="np")
 
                 df_ = pandas.DataFrame()
 
                 df_['mjd'] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
-                df_['value'] = input_stream["Camera"]["MReportCamera.fMedianDC"].array()
+                df_['value'] = input_stream["Camera"]["MReportCamera.fMedianDC"].array(library="np")
 
                 df = df.append(df_)
 
@@ -272,14 +272,14 @@ class GTIGenerator:
             info_message(f"processing file {fnum+1} / {len(file_list)}", "GTI generator")
 
             with uproot.open(file_name) as input_stream:
-                mjd = input_stream["Trigger"]["MTimeTrigger.fMjd"].array()
-                millisec = input_stream["Trigger"]["MTimeTrigger.fTime.fMilliSec"].array()
-                nanosec = input_stream["Trigger"]["MTimeTrigger.fNanoSec"].array()
+                mjd = input_stream["Trigger"]["MTimeTrigger.fMjd"].array(library="np")
+                millisec = input_stream["Trigger"]["MTimeTrigger.fTime.fMilliSec"].array(library="np")
+                nanosec = input_stream["Trigger"]["MTimeTrigger.fNanoSec"].array(library="np")
 
                 df_ = pandas.DataFrame()
 
                 df_['mjd'] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
-                df_['value'] = input_stream["Trigger"]["MReportTrigger.fL3Rate"].array()
+                df_['value'] = input_stream["Trigger"]["MReportTrigger.fL3Rate"].array(library="np")
 
 
                 df = df.append(df_)

@@ -77,7 +77,7 @@ def get_num_islands(camera, clean_mask, event_image):
     return num_islands
 
 
-def process_dataset_mc(input_mask, tel_id, output_name):
+def process_dataset_mc(input_mask, tel_id, output_name, cleaning_config):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
     to add this information to the event Hillas parameters when dumping the
@@ -92,6 +92,8 @@ def process_dataset_mc(input_mask, tel_id, output_name):
         Telescope ID
     output_name : str
         Name of the HDF5 output file.
+    cleaning_config: dict
+        Dictionary for cleaning settings
 
     Returns
     -------
@@ -109,15 +111,7 @@ def process_dataset_mc(input_mask, tel_id, output_name):
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
 
-    cleaning_config = dict(
-        picture_thresh = 6,
-        boundary_thresh = 3.5,
-        max_time_off = 4.5 * 1.64,
-        max_time_diff = 1.5 * 1.64,
-        usetime = True,
-        usesum = True,
-        findhotpixels=False,
-    )
+    cleaning_config["findhotpixels"] = False
 
     # Finding available MC files
     input_files = glob.glob(input_mask)
@@ -144,8 +138,15 @@ def process_dataset_mc(input_mask, tel_id, output_name):
             # Event source
             source = MAGICEventSource(input_url=input_file)
 
-            camera = source.subarray.tel[tel_id].camera
+            camera = source.subarray.tel[tel_id].camera.geometry
             magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
+
+            info_message("Cleaning configuration", prefix='Hillas')
+            for item in vars(magic_clean).items():
+                print(f"{item[0]}: {item[1]}")
+            if magic_clean.findhotpixels:
+                for item in vars(magic_clean.pixel_treatment).items():
+                    print(f"{item[0]}: {item[1]}")
 
             # Looping over the events
             for event in source._mono_event_generator(telescope=f'M{tel_id}'):
@@ -208,7 +209,7 @@ def process_dataset_mc(input_mask, tel_id, output_name):
                         f"telescope ID: {tel_id}) did not pass cleaning.")
 
 
-def process_dataset_data(input_mask, tel_id, output_name):
+def process_dataset_data(input_mask, tel_id, output_name, cleaning_config, bad_pixels_config):
     """Create event metadata container to hold event / observation / telescope
     IDs and MC true values for the event energy and direction. We will need it
     to add this information to the event Hillas parameters when dumping the
@@ -223,6 +224,10 @@ def process_dataset_data(input_mask, tel_id, output_name):
         Telescope ID
     output_name : str
         Name of the HDF5 output file.
+    cleaning_config: dict
+        Dictionary for cleaning settings
+    bad_pixels_config: dict
+        Dictionary for bad pixels settings
 
     Returns
     -------
@@ -237,22 +242,6 @@ def process_dataset_data(input_mask, tel_id, output_name):
         tel_alt = Field(-1, "MC telescope altitude", unit=u.rad)
         tel_az = Field(-1, "MC telescope azimuth", unit=u.rad)
         n_islands = Field(-1, "Number of image islands")
-
-    cleaning_config = dict(
-        picture_thresh = 6,
-        boundary_thresh = 3.5,
-        max_time_off = 4.5 * 1.64,
-        max_time_diff = 1.5 * 1.64,
-        usetime = True,
-        usesum = True,
-        findhotpixels=True,
-    )
-
-    bad_pixels_config = dict(
-        pedestalLevel = 400,
-        pedestalLevelVariance = 4.5,
-        pedestalType = 'FromExtractorRndm'
-    )
 
     # Now let's loop over the events and perform:
     #  - image cleaning;
@@ -270,9 +259,20 @@ def process_dataset_data(input_mask, tel_id, output_name):
         # Creating an input source
         source = MAGICEventSource(input_url=input_mask)
 
-        camera = source.subarray.tel[tel_id].camera
+        camera = source.subarray.tel[tel_id].camera.geometry
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
+
+        info_message("Cleaning configuration", prefix='Hillas')
+        for item in vars(magic_clean).items():
+            print(f"{item[0]}: {item[1]}")
+        if magic_clean.findhotpixels:
+            for item in vars(magic_clean.pixel_treatment).items():
+                print(f"{item[0]}: {item[1]}")
+
+        info_message("Bad pixel configuration", prefix='Hillas')
+        for item in vars(badpixel_calculator).items():
+            print(f"{item[0]}: {item[1]}")
 
         # Looping over the events
         for event in source._mono_event_generator(telescope=f'M{tel_id}'):
@@ -448,11 +448,14 @@ for data_type in data_type_to_process:
             tel_id = re.findall('.*([_\d]+)', telescope)[0]
             tel_id = int(tel_id)
 
+            cleaning_config = config['image_cleaning'][telescope_type]
+            bad_pixels_config = config['bad_pixels'][telescope_type]
+
             if is_mc:
                 process_dataset_mc(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                    tel_id=tel_id,
-                                   output_name=config['data_files'][data_type][sample][telescope]['hillas_output'])
+                                   output_name=config['data_files'][data_type][sample][telescope]['hillas_output'], cleaning_config=cleaning_config)
             else:
                 process_dataset_data(input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                                      tel_id=tel_id,
-                                     output_name=config['data_files'][data_type][sample][telescope]['hillas_output'])
+                                     output_name=config['data_files'][data_type][sample][telescope]['hillas_output'], cleaning_config=cleaning_config, bad_pixels_config=bad_pixels_config)
