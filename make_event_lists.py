@@ -16,6 +16,8 @@ import sys
 sys.path.append('../')
 import gti
 
+import uproot
+
 
 
 # =================
@@ -30,6 +32,9 @@ This tools produces the FITS event lists out of the earlier processed files.
 
 arg_parser.add_argument("--config", default="config.yaml",
                         help='Configuration file to steer the code execution.')
+arg_parser.add_argument("--stereo",
+                        help='Use stereo DL1 files.',
+                        action='store_true')
 
 parsed_args = arg_parser.parse_args()
 # --------------------------
@@ -50,13 +55,28 @@ except IOError:
     exit()
 # ------------------------------
 
+if parsed_args.stereo:
+    is_stereo = True
+else:
+    is_stereo = False
 
-path = config['data_files']['data']['test_sample']['magic1']['reco_output']
+if is_stereo:
+    path = config['data_files']['data']['test_sample']['magic']['reco_output']
+else:
+    path = config['data_files']['data']['test_sample']['magic1']['reco_output']
+
 df = pandas.read_hdf(path, key='dl3/reco')
+if is_stereo:
+    df = df.reset_index(level = 'tel_id')
+    df = df[df['tel_id'] == 1]
 
 obs_ids = df.index.levels[0].values
 
+source_name = config['source']['name']
+output_directory = config['event_list']['output_directory']
+
 for obs_id in obs_ids:
+    print(f"Processing observation with ID: {obs_id}")
     obs_df = df.xs(obs_id, level="obs_id")
     obs_df = obs_df.reset_index()
 
@@ -65,6 +85,10 @@ for obs_id in obs_ids:
 
     obs_df = obs_df.query(config['event_list']['cuts']['selection'])
 
+    # if no events survive after cuts, print warning and go to the next obs_id
+    if obs_df.shape[0] == 0:
+        print(f"ObsID {obs_id}: no events surviving cuts. Skipping.")
+        continue
 
     # AltAz -> Eq conversion
 
@@ -81,7 +105,6 @@ for obs_id in obs_ids:
                                     frame=alt_az_frame,
                                     unit='deg')
 
-
     event_ra = event_coord_altaz_ref.fk5.ra
     event_dec = event_coord_altaz_ref.fk5.dec
 
@@ -91,13 +114,17 @@ for obs_id in obs_ids:
     obs_df['mjd'] = 86400 * (obs_df['mjd'] - time_ref)
 
     # GTI generation
-    file_list = glob.glob(config['data_files']['data']['test_sample']['magic1']['input_mask'])
+    if is_stereo:
+        file_list = glob.glob(config['data_files']['data']['test_sample']['magic']['input_mask'])
+    else:
+        file_list = glob.glob(config['data_files']['data']['test_sample']['magic1']['input_mask'])
     file_list.sort()
     file_list = list(filter(lambda name: str(obs_id) in name, file_list))
+    if is_stereo:
+        file_list = list(filter(lambda name: "M1" in name, file_list))
 
     gti_generator = gti.GTIGenerator(config, verbose=True)
     obs_gti_list = gti_generator.process_files(file_list)
-
 
     # Preparing GTI HDU
     gti_start, gti_stop = zip(*obs_gti_list)
@@ -105,18 +132,18 @@ for obs_id in obs_ids:
     gti_start = list(map(lambda t: (t-time_ref)*86400, gti_start))
     gti_stop = list(map(lambda t: (t-time_ref)*86400, gti_stop))
 
-    col_tstart = pyfits.Column(name='START', 
-                            unit='s', 
-                            format='E', 
+    col_tstart = pyfits.Column(name='START',
+                            unit='s',
+                            format='E',
                             array=gti_start)
 
-    col_tstop = pyfits.Column(name='STOP', 
-                            unit='s', 
-                            format='E', 
+    col_tstop = pyfits.Column(name='STOP',
+                            unit='s',
+                            format='E',
                             array=gti_stop)
 
     columns = [
-        col_tstart, 
+        col_tstart,
         col_tstop,
     ]
 
@@ -125,35 +152,41 @@ for obs_id in obs_ids:
     gti_hdu = pyfits.BinTableHDU.from_columns(col_defs)
     gti_hdu.name = 'GTI'
 
+    gti_hdu.header['MJDREFI'] = int(np.floor(time_ref))
+    gti_hdu.header['MJDREFF'] = time_ref - np.floor(time_ref)
+    gti_hdu.header['TIMEUNIT'] = 's'
+    gti_hdu.header['TIMESYS'] = 'UTC'
+    gti_hdu.header['TIMEREF'] = 'LOCAL'
+
     # Preparing Events HDU
 
-    col_event_id = pyfits.Column(name='EVENT_ID', 
-                            unit='', 
-                            format='K', 
+    col_event_id = pyfits.Column(name='EVENT_ID',
+                            unit='',
+                            format='K',
                             array=obs_df['cta_event_id'].values)
 
-    col_time = pyfits.Column(name='TIME', 
-                            unit='s', 
-                            format='E', 
+    col_time = pyfits.Column(name='TIME',
+                            unit='s',
+                            format='E',
                             array=obs_df['mjd'].values)
 
-    col_ra = pyfits.Column(name='RA', 
-                        unit='deg', 
-                        format='E', 
+    col_ra = pyfits.Column(name='RA',
+                        unit='deg',
+                        format='E',
                         array=event_ra.to(units.deg).value)
 
-    col_dec = pyfits.Column(name='DEC', 
-                            unit='deg', 
-                            format='E', 
+    col_dec = pyfits.Column(name='DEC',
+                            unit='deg',
+                            format='E',
                             array=event_dec.to(units.deg).value)
 
-    col_energy = pyfits.Column(name='ENERGY', 
-                            unit='TeV', 
-                            format='E', 
+    col_energy = pyfits.Column(name='ENERGY',
+                            unit='TeV',
+                            format='E',
                             array=obs_df['energy_reco_mean'].values)
 
     columns = [
-        col_event_id, 
+        col_event_id,
         col_time,
         col_ra,
         col_dec,
@@ -182,8 +215,15 @@ for obs_id in obs_ids:
     events_hdu.header['LIVETIME'] = events_hdu.header['TSTOP'] - events_hdu.header['TSTART']
     events_hdu.header['DEADC'] = events_hdu.header['LIVETIME'] / events_hdu.header['ONTIME']
 
-    events_hdu.header['RA_PNT'] = event_ra.mean().to(units.deg).value
-    events_hdu.header['DEC_PNT'] = event_dec.mean().to(units.deg).value
+    pointing_ra  = -1
+    pointing_dec = -1
+
+    with uproot.open(file_list[0]) as input_stream:
+        pointing_ra  = input_stream['RunHeaders']['MRawRunHeader.fTelescopeRA'].array(library="np")[0]*(15.0/3600.0) # convert second of hours to degrees
+        pointing_dec = input_stream['RunHeaders']['MRawRunHeader.fTelescopeDEC'].array(library="np")[0]/3600.0      # convert arcsec to degrees
+
+    events_hdu.header['RA_PNT']  = pointing_ra
+    events_hdu.header['DEC_PNT'] = pointing_dec
 
     events_hdu.header['ALT_PNT'] = -1
     events_hdu.header['AZ_PNT'] = -1
@@ -194,8 +234,10 @@ for obs_id in obs_ids:
     events_hdu.header['TELESCOP'] = 'MAGIC'
     events_hdu.header['INSTRUME'] = 'M12'
     events_hdu.header['CALDB'] = 'dev'
-    events_hdu.header['IRF'] = 'crab'
+    events_hdu.header['IRF'] = source_name
     events_hdu.header['CREATOR'] = 'MAGIC-ctapipe converter'
+
+    events_hdu.header['OBJECT'] = source_name
 
     events_hdu.header['MJDREFI'] = int(np.floor(time_ref))
     events_hdu.header['MJDREFF'] = time_ref - np.floor(time_ref)
@@ -205,9 +247,9 @@ for obs_id in obs_ids:
 
     # Saving to FITS
 
-    output_name = f"events_{obs_id}.fits"
+    output_name = f"{output_directory}/events_{source_name}_{obs_id}.fits"
 
     primary_hdu = pyfits.PrimaryHDU()
-            
+
     hdu_list = pyfits.HDUList([primary_hdu, events_hdu, gti_hdu])
     hdu_list.writeto(output_name, overwrite=True)
