@@ -1230,7 +1230,7 @@ class EnergyEstimatorPandas:
         # features = features.fillna(0).groupby(['obs_id', 'event_id']).sum()
         # features = features.values
         #
-        # target = shower_data_with_energy['true_energy'].groupby(['obs_id', 'event_id']).mean().values
+        # target = shower_data_with_energy['mc_energy'].groupby(['obs_id', 'event_id']).mean().values
         #
         # self.consolidating_regressor = sklearn.ensemble.RandomForestRegressor(self.rf_settings)
         # self.consolidating_regressor.fit(features, target)
@@ -1295,11 +1295,11 @@ class EnergyEstimatorPandas:
         self.telescope_regressors = dict()
 
         for tel_id in tel_ids:
-            input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'true_energy']]
+            input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'mc_energy']]
             input_data.dropna(inplace=True)
 
             x_train = input_data[list(self.feature_names)].values
-            y_train = np.log10(input_data['true_energy'].values)
+            y_train = np.log10(input_data['mc_energy'].values)
             weight = input_data['event_weight'].values
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
@@ -1460,8 +1460,8 @@ class DirectionEstimatorPandas:
 
             this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), shower_data.columns]
 
-            tel_pointing = AltAz(alt=this_telescope['tel_alt'].values * u.rad,
-                                 az=this_telescope['tel_az'].values * u.rad)
+            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
+                                 az=this_telescope['az_tel'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length, 
                                        rotation=camera.geometry.cam_rotation)
@@ -1473,8 +1473,8 @@ class DirectionEstimatorPandas:
                                     frame=camera_frame)
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            event_coord = SkyCoord(this_telescope['true_az'].values * u.rad,
-                                   this_telescope['true_alt'].values * u.rad,
+            event_coord = SkyCoord(this_telescope['mc_az'].values * u.rad,
+                                   this_telescope['mc_alt'].values * u.rad,
                                    frame=AltAz())
             event_coord_in_telescope = event_coord.transform_to(telescope_frame)
 
@@ -1573,8 +1573,8 @@ class DirectionEstimatorPandas:
             this_telescope = reco_df.loc[(slice(None), slice(None), tel_id), reco_df.columns]
 
             # Definining the coordinate systems
-            tel_pointing = AltAz(alt=this_telescope['tel_alt'].values * u.rad,
-                                 az=this_telescope['tel_az'].values * u.rad)
+            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
+                                 az=this_telescope['az_tel'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
@@ -1914,8 +1914,8 @@ class DirectionEstimatorPandas:
             this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), shower_data.columns]
 
             # Definining the coordinate systems
-            tel_pointing = AltAz(alt=this_telescope['tel_alt'].values * u.rad,
-                                 az=this_telescope['tel_az'].values * u.rad)
+            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
+                                 az=this_telescope['az_tel'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
@@ -2046,7 +2046,7 @@ class EventClassifierPandas:
         # features = features.fillna(0).groupby(['obs_id', 'event_id']).sum()
         # features = features.values
         #
-        # target = shower_data_with_energy['true_energy'].groupby(['obs_id', 'event_id']).mean().values
+        # target = shower_data_with_energy['mc_energy'].groupby(['obs_id', 'event_id']).mean().values
         #
         # self.consolidating_regressor = sklearn.ensemble.RandomForestRegressor(self.rf_settings)
         # self.consolidating_regressor.fit(features, target)
@@ -2283,8 +2283,8 @@ class DirectionStereoEstimatorPandas:
             optics = self.telescope_descriptions[tel_id].optics
             camera = self.telescope_descriptions[tel_id].camera
 
-            tel_pointing = AltAz(alt=shower_data[f'tel_alt_{tel_id:d}'].values * u.rad,
-                                 az=shower_data[f'tel_az_{tel_id:d}'].values * u.rad)
+            tel_pointing = AltAz(alt=shower_data[f'alt_tel_{tel_id:d}'].values * u.rad,
+                                 az=shower_data[f'az_tel_{tel_id:d}'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
@@ -2296,8 +2296,8 @@ class DirectionStereoEstimatorPandas:
                                     frame=camera_frame)
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            event_coord = SkyCoord(shower_data[f'true_az_{tel_id:d}'].values * u.rad,
-                                   shower_data[f'true_alt_{tel_id:d}'].values * u.rad,
+            event_coord = SkyCoord(shower_data[f'mc_az_{tel_id:d}'].values * u.rad,
+                                   shower_data[f'mc_alt_{tel_id:d}'].values * u.rad,
                                    frame=AltAz())
             event_coord_in_telescope = event_coord.transform_to(telescope_frame)
 
@@ -2466,8 +2466,8 @@ class DirectionStereoEstimatorPandas:
             optics = self.telescope_descriptions[tel_id].optics
             camera = self.telescope_descriptions[tel_id].camera
 
-            tel_pointing = AltAz(alt=shower_data[f'tel_alt_{tel_id:d}'].values * u.rad,
-                                 az=shower_data[f'tel_az_{tel_id:d}'].values * u.rad)
+            tel_pointing = AltAz(alt=shower_data[f'alt_tel_{tel_id:d}'].values * u.rad,
+                                 az=shower_data[f'az_tel_{tel_id:d}'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
