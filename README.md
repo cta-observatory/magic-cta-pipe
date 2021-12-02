@@ -6,16 +6,19 @@ This repository contains the scripts needed to perform MAGIC+LST analysis with c
 
 
 A brief description:
-1. `CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
-2. `hillas_preprocessing.py`: compute the hillas parameters. Loops over MCs and real data. This script uses the tailcuts cleaning.
-3. `hillas_preprocessing_MAGICCleaning.py`: compute the hillas parameters. Loops over MCs and real data. This script used the MAGIC cleaning implemented in MARS.
-3. `train_energy_rf.py`: trains the energy RF.
-4. `train_direction_rf.py`: trains the direction "disp" RF.
-5. `train_classifier_rf.py`: trains the event classification RF.
-6. `apply_rfs.py`: applies the trained RFs to the "test" event sample.
-7. `add_orig_mc_tree.py`: adds the "original MC" tree info to the MC events tree processed earlier.
-8. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
-9. `make_event_lists.py`: produces the FITS event lists with application of the cuts.
+1. `config/CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
+2. `config/magic-cta-pipe_config_stereo.yaml`: an example of the configuration file for stereo analysis.
+3. `hillas_preprocessing.py`: compute the hillas parameters. Loops over MCs and real data. This script uses the tailcuts cleaning.
+4. `hillas_preprocessing_stereo.py`: compute the hillas and stereo parameters. Loops over MCs and real data. This script uses the tailcuts cleaning.
+5. `hillas_preprocessing_MAGICCleaning.py`: compute the hillas parameters. Loops over MCs and real data. This script used the MAGIC cleaning implemented in MARS.
+6. `hillas_preprocessing_MAGICCleaning_stereo.py`: compute the hillas and stereo parameters. Loops over MCs and real data. This script used the MAGIC cleaning implemented in MARS.
+7. `train_energy_rf.py`: trains the energy RF.
+8. `train_direction_rf.py`: trains the direction "disp" RF.
+9. `train_classifier_rf.py`: trains the event classification RF.
+10. `apply_rfs.py`: applies the trained RFs to the "test" event sample.
+11. `add_orig_mc_tree.py`: adds the "original MC" tree info to the MC events tree processed earlier.
+12. `make_irf.py`: generates IRFs based on the event lists with reconstructed parameters.
+13. `make_event_lists.py`: produces the FITS event lists with application of the cuts.
 
 Moreover, the `utils` directory contains two modules:
 * `MAGIC_Badpixels.py`: finds the so called bad/hot pixels i.e. pixels affected by stars, or pixels turned off or dead.
@@ -40,6 +43,7 @@ The main keys are:
 * `energy_rf`
 * `direction_rf`
 * `classifier_rf`
+* `irf`
 * `event_list`
 
 `data_files` specifies the input and output files, both for simulated (MonteCarlo) and real data, denoted by the `mc`
@@ -74,7 +78,15 @@ leaf and the number of jobs
 is actually a dictionary with two keys, `disp` and `pos_angle_shift`. For each of those keys, a list is used to specify the parameters to be used for
 each of those Random Forests.
 
+The `irf` key has only one sub-key, called `output_name`, which is the name (plus path) of the file where IRF will be stored in FITS format.
+
 Finally, the `event_list` key is used to specify some cuts, `quality` or user `selection` cuts.
+
+### Configuration file magic-cta-pipe\_config\_stereo.yaml ###
+
+This configuration file is very similar to the previous one, but it should be used when stereo analysis has to be performed. In particular, what changes wrt
+`CrabNebula.yaml` is that there is only one telescope name key, namely `magic`. This is because the input mask in this case will specify data from both
+M1 and M2 to allow for stereo reconstruction.
 
 ### hillas\_preprocessing.py ###
 
@@ -121,6 +133,24 @@ The next step in the pipeline is training the Random Forests for event classific
 
 It is similar to `hillas_preprocessing.py`, the only difference is that it uses the MAGIC cleaning implemented in MARS. Its usage is the same as `hillas_preprocessing.py`, see above.
 
+### hillas\_preprocessing\_stereo.py and hillas\_preprocessing\_MAGICCleaning\_stereo.py ###
+
+These script are very similar to `hillas_preprocessing.py` and `hillas_preprocessing_MAGICCleaning.py`, but they include also the reconstruction of stereo parameters.
+
+Running the scripts is straightforward, e.g.:
+
+```bash
+$ python hillas_preprocessing_stereo.py --config=config_stereo.yaml
+```
+
+where `config_stereo.yaml` is the name of the configuration file, the proper one for stereo analysis.
+
+Other available options are:
+* `--usereal`: run the script only over real data
+* `--usemc`: run the script only over MC data
+* `--usetest`: run the script only over test sample data
+* `--usetrain`: run the script only over train sample data
+
 ### train\_energy\_rf.py, train\_direction\_rf.py, train\_classifier\_rf.py ###
 
 These scripts take care of training different Random Forests with different purposes:
@@ -144,6 +174,8 @@ To run these scripts, taking as example `train_energy_rf.py`, just do:
 $ python train_energy_rf.py --config=config.yaml
 ```
 
+If you want to run these three scripts over DL1 data containing the stereo information, i.e. generated by `hillas_preprocessing_stereo.py` or `hillas_preprocessing_MAGICCleaning_stereo.py`, you need to add the `--stereo` option when calling them from the command line.
+
 Once the Random Forests are trained, they can be applied to the data. Before this step, another one must be performed using the script
 `add_orig_mc_tree.py`, described in the following paragraph.
 
@@ -164,6 +196,7 @@ Other available options are:
 * `--usetrain`: run the script only over train sample data
 * `--usem1`: run the script only over M1 data
 * `--usem2`: run the script only over M2 data
+* `--stereo`: run over DL1 data containing stereo information (i.e. generated by `hillas_preprocessing_stereo.py` or `hillas_preprocessing_MAGICCleaning_stereo.py`)
 
 After this step, the Random Forests can be applied to the ON data and simulated data (test sample).
 
@@ -179,10 +212,12 @@ To run the script, just do:
 $ python apply_rfs.py --config=config.yaml
 ```
 
+If you want to run the script over DL1 data containing the stereo information, i.e. generated by `hillas_preprocessing_stereo.py` or `hillas_preprocessing_MAGICCleaning_stereo.py`, you need to add the `--stereo` option when calling them from the command line.
+
 ### make\_irf.py ###
 
 The script `make_irf.py` generates the instrument response functions (IRFs) starting from the test sample of simulated data, after the Random
-Forests have been applied to them. The result is a FITS file containing the following tables (the names are self-explanatory:
+Forests have been applied to them. The result is a FITS file containing the following tables (the names are self-explanatory):
 
 * `POINT SPREAD FUNCTION`
 * `ENERGY DISPERSION`
@@ -196,6 +231,9 @@ to be passed as command line argument:
 $ python make_irf.py --config=config.yaml
 ```
 
+If you run the script `apply_rfs.py` with the `--stereo` option, then also `make_irf.py` should be called with the `--stereo` option.
+
+
 ### make\_event\_lists.py ###
 
 `make_event_lists.py` is the last script of the pipeline and is responsible of creating an event list. First, a list of good time intervals (GTI)
@@ -207,3 +245,5 @@ To run this script:
 ```bash
 $ python make_event_lists.py --config=config.yaml
 ```
+
+If you used the `--stereo` option for the previous scripts, then also `make_event_lists.py` should be called with the `--stereo` option.
