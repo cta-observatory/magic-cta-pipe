@@ -35,7 +35,7 @@ from .global_utils import (
     compute_event_weights,
     get_weights_mc_dir_class,
     check_train_test_intersections,
-    )__
+    )
 
 __all__ = [
     "GetHist_classifier",
