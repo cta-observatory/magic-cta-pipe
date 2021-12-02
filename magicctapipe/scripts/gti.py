@@ -9,24 +9,7 @@ import scipy
 import uproot
 import pandas
 
-
-def info_message(text, prefix='info'):
-    """
-    This function prints the specified text with the prefix of the current date
-
-    Parameters
-    ----------
-    text: str
-
-    Returns
-    -------
-    None
-
-    """
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    print(f"({prefix:s}) {date_str:s}: {text:s}")
-
+from magicctapipe.utils.utils import info_message
 
 def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
     """

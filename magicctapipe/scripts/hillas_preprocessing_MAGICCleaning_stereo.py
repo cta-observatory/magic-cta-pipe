@@ -34,23 +34,7 @@ from magicctapipe.utils import MAGIC_Badpixels
 # from utils import bad_pixel_treatment
 from magicctapipe.utils import MAGIC_Cleaning
 from magicctapipe.utils import calc_impact
-
-def info_message(text, prefix='info'):
-    """
-    This function prints the specified text with the prefix of the current date
-
-    Parameters
-    ----------
-    text: str
-
-    Returns
-    -------
-    None
-
-    """
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    print(f"({prefix:s}) {date_str:s}: {text:s}")
+from magicctapipe.utils.utils import info_message
 
 def get_leakage(camera, event_image, clean_mask):
     """Calculate the leakage with pixels on the border of the image included #IS THIS TRUE?????
@@ -58,7 +42,7 @@ def get_leakage(camera, event_image, clean_mask):
     Parameters
     ----------
     camera : CameraGeometry
-        Description 
+        Description
     clean_mask : np.array
         Cleaning mask
     event_image : np.array

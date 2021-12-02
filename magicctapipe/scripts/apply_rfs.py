@@ -20,30 +20,14 @@ from magicctapipe.train.event_processing import (
     DirectionEstimatorPandas,
     EventClassifierPandas
 )
+from magicctapipe.utils.utils import info_message
+
 from astropy import units as u
 from astropy.time import Time
 from astropy.coordinates import EarthLocation,SkyCoord, AltAz
 from astropy.coordinates.angle_utilities import angular_separation, position_angle
 
 from matplotlib import pyplot, colors
-
-
-def info_message(text, prefix='info'):
-    """
-    This function prints the specified text with the prefix of the current date
-
-    Parameters
-    ----------
-    text: str
-
-    Returns
-    -------
-    None
-
-    """
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    print(f"({prefix:s}) {date_str:s}: {text:s}")
 
 def compute_theta2_real(shower_data_test):
     observatory_location = EarthLocation.of_site("Roque de los Muchachos")

@@ -20,24 +20,7 @@ from astropy.coordinates.angle_utilities import angular_separation, position_ang
 
 from matplotlib import pyplot, colors
 
-
-def info_message(text, prefix='info'):
-    """
-    This function prints the specified text with the prefix of the current date
-
-    Parameters
-    ----------
-    text: str
-
-    Returns
-    -------
-    None
-
-    """
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    print(f"({prefix:s}) {date_str:s}: {text:s}")
-
+from magicctapipe.utils.utils import info_message
 
 class PSFProfileFunctor:
     def __init__(self, r, event_count):

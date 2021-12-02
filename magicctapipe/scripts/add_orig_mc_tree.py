@@ -21,24 +21,7 @@ from ctapipe.instrument import OpticsDescription
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
 
-
-def info_message(text, prefix='info'):
-    """
-    This function prints the specified text with the prefix of the current date
-
-    Parameters
-    ----------
-    text: str
-
-    Returns
-    -------
-    None
-
-    """
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    print(f"({prefix:s}) {date_str:s}: {text:s}")
-
+from magicctapipe.utils.utils import info_message
 
 def read_original_mc_tree(file_mask):
     """Read the OriginalMC trees from input ROOT files and put the information

@@ -28,27 +28,10 @@ from ctapipe.image.cleaning import tailcuts_clean     # apply_time_delta_cleanin
 
 from astropy import units as u
 
-
 from magicctapipe.utils import MAGIC_Badpixels
 # from utils import bad_pixel_treatment
 from magicctapipe.utils import MAGIC_Cleaning
-
-def info_message(text, prefix='info'):
-    """
-    This function prints the specified text with the prefix of the current date
-
-    Parameters
-    ----------
-    text: str
-
-    Returns
-    -------
-    None
-
-    """
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    print(f"({prefix:s}) {date_str:s}: {text:s}")
+from magicctapipe.utils.utils import info_message
 
 def get_num_islands(camera, clean_mask, event_image):
     """Get the number of connected islands in a shower image.

@@ -30,23 +30,7 @@ from ctapipe.instrument import CameraGeometry
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
 
-
-def info_message(text, prefix='info'):
-    """
-    This function prints the specified text with the prefix of the current date
-
-    Parameters
-    ----------
-    text: str
-
-    Returns
-    -------
-    None
-
-    """
-
-    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-    print(f"({prefix:s}) {date_str:s}: {text:s}")
+from magicctapipe.utils.utils import info_message
 
 # Added on 06/07/2019
 def magic_clean_step1(geom, charge_map, core_thresh):
