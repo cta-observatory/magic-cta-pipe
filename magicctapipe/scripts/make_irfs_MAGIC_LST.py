@@ -54,7 +54,6 @@ from magicctapipe.utils.utils import *
 from magicctapipe.utils.tels import *
 
 import matplotlib.pylab as plt
-from lstchain.mc import plot_utils
 
 PARSER = argparse.ArgumentParser(
     description="Apply random forests. For stereo data.",

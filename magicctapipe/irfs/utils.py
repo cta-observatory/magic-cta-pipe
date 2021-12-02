@@ -18,14 +18,12 @@ from magicctapipe.utils.plot import *
 from magicctapipe.utils.utils import *
 
 import matplotlib.pylab as plt
-from lstchain.mc import plot_utils
 
 __all__ = ["read_simu_info_mcp_sum_num_showers", "convert_simu_info_mcp_to_pyirf",
            "read_dl2_mcp_to_pyirf_MAGIC_LST_list", "plot_sensitivity", "plot_en_res_bias",
            "plot_en_res_resolution", "plot_ang_res", "plot_effective_area",
            "plot_gamma_eff_gh", "plot_irfs_MAGIC_LST", "plot_MARS_sensitivity",
            "plot_MAGIC_reference_sensitivity"]
-
 
 def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header"):
     """Function to read simulation information from DL2 files and sum the simultated
@@ -391,15 +389,15 @@ def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     plot_MAGIC_reference_sensitivity(ax)
 
     # Plot Crab SED
-    plot_utils.plot_Crab_SED(
-        ax, 100, 5 * u.GeV, 1e4 * u.GeV, label="100% Crab"
-    )  # Energy in GeV
-    plot_utils.plot_Crab_SED(
-        ax, 10, 5 * u.GeV, 1e4 * u.GeV, linestyle="--", label="10% Crab"
-    )  # Energy in GeV
-    plot_utils.plot_Crab_SED(
-        ax, 1, 5 * u.GeV, 1e4 * u.GeV, linestyle=":", label="1% Crab"
-    )  # Energy in GeV
+    #plot_utils.plot_Crab_SED(
+    #    ax, 100, 5 * u.GeV, 1e4 * u.GeV, label="100% Crab"
+    #)  # Energy in GeV
+    #plot_utils.plot_Crab_SED(
+    #    ax, 10, 5 * u.GeV, 1e4 * u.GeV, linestyle="--", label="10% Crab"
+    #)  # Energy in GeV
+    #plot_utils.plot_Crab_SED(
+    #    ax, 1, 5 * u.GeV, 1e4 * u.GeV, linestyle=":", label="1% Crab"
+    #)  # Energy in GeV
 
     plt.legend()
 
