@@ -5,6 +5,12 @@ test*
 .vscode
 RFs
 
+# Files cretaed when running pip
+build/
+magic_cta_pipe.egg-info/
+magicctapipe/_version.py
+
+
 # Standard files
 *.png
 *.pdf
