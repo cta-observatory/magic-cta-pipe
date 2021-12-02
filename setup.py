@@ -21,10 +21,10 @@ setup(
     packages=find_packages(),
     install_requires=[
         'astropy~=4.2',
-        'ctapipe~=0.12.0',
+        'ctapipe~=0.8.0',
         'ctapipe_io_magic~=0.3.0',
-        'ctaplot~=0.5.5',
-        'eventio>=1.5.1,<2.0.0a0',  # at least 1.1.1, but not 2
+        'ctaplot~=0.5.3',
+        'eventio>=1.1.1,<2.0.0a0',  # at least 1.1.1, but not 2
         'gammapy>=0.18',
         'h5py',
         'joblib',
@@ -38,7 +38,7 @@ setup(
         'scikit-learn',
         'tables',
         'toml',
-        'traitlets~=5.0.5',
+        'traitlets>=4.1,<5.0',
         'setuptools_scm',
     ],
     extras_require={
