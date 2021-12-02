@@ -14,7 +14,7 @@ from astropy.coordinates import EarthLocation, SkyCoord, AltAz
 
 import sys
 sys.path.append('../')
-import gti
+from magicctapipe.utils import gti
 
 import uproot
 

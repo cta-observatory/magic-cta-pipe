@@ -16,6 +16,12 @@ from .filedir import (
     convert_np_list_dict,
 )
 
+from .gti import (
+    identify_time_edges,
+    intersect_time_intervals,
+    GTIGenerator,
+)
+
 from .MAGIC_Badpixels import (
     MAGICBadPixelsCalc,
 )
@@ -84,6 +90,9 @@ __all__ = [
     "read_mc_header",
     "save_yaml_np",
     "convert_np_list_dict",
+    "identify_time_edges",
+    "intersect_time_intervals",
+    "GTIGenerator",
     "MAGICBadPixelsCalc",
     "magic_clean",
     "pixel_treatment",

@@ -9,7 +9,13 @@ import scipy
 import uproot
 import pandas
 
-from magicctapipe.utils.utils import info_message
+from .utils import info_message
+
+__all__ = [
+    "identify_time_edges",
+    "intersect_time_intervals",
+    "GTIGenerator",
+]
 
 def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
     """
@@ -410,47 +416,3 @@ class GTIGenerator:
             joint_intervals = intersect_time_intervals(joint_intervals, time_intervals_list[i])
 
         return joint_intervals
-    
-
-# =================
-# === Main code ===
-# =================
-
-if __name__ == "__main__":
-    # --------------------------
-    # Adding the argument parser
-    arg_parser = argparse.ArgumentParser(description="""
-    This tools fits the direction random forest regressor on the specified events files.
-    """)
-
-    arg_parser.add_argument("--config", default="config.yaml",
-                            help='Configuration file to steer the code execution.')
-
-    parsed_args = arg_parser.parse_args()
-    # --------------------------
-
-    # ------------------------------
-    # Reading the configuration file
-
-    file_not_found_message = """
-    Error: can not load the configuration file {:s}.
-    Please check that the file exists and is of YAML or JSON format.
-    Exiting.
-    """
-
-    try:
-        config = yaml.safe_load(open(parsed_args.config, "r"))
-    except IOError:
-        print(file_not_found_message.format(parsed_args.config))
-        exit()
-
-    if 'event_list' not in config:
-        print('Error: the configuration file is missing the "event_list" section. Exiting.')
-        exit()
-    # ------------------------------
-
-    joint_intervals = gti_generator(config)
-
-    print("--- Identified GTI intervals [MJD] ---")
-    for interval in joint_intervals:
-        print(interval)
