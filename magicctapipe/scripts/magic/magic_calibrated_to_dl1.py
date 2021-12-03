@@ -264,6 +264,7 @@ def process_dataset_mc(input_mask, tel_id, cleaning_config):
 
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
+                    event.dl1.tel[tel_id].parameters = DEFAULT_IMAGE_PARAMETERS
                     # Obtained image
                     event_image = event.dl1.tel[tel_id].image
                     # Pixel arrival time map
@@ -407,6 +408,7 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
 
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
+                    event.dl1.tel[tel_id].parameters = DEFAULT_IMAGE_PARAMETERS
                     # Obtained image
                     event_image = event.dl1.tel[tel_id].image
                     # Pixel arrival time map
