@@ -234,7 +234,7 @@ def process_dataset_mc(input_mask, tel_id, cleaning_config):
 
     for input_file in input_files:
         file_name = Path(input_file).name
-        output_name = file_name.raplace(".root", ".h5")
+        output_name = file_name.replace(".root", ".h5")
         print("")
         print(f"-- Working on {file_name:s} --")
         print("")
@@ -374,7 +374,7 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
 
     for input_file in input_files:
         file_name = Path(input_file).name
-        output_name = file_name.raplace(".root", ".h5")
+        output_name = file_name.replace(".root", ".h5")
         print("")
         print(f"-- Working on {file_name:s} --")
         print("")
