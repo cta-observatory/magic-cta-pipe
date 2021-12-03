@@ -277,7 +277,7 @@ def process_dataset_mc(input_mask, tel_id, cleaning_config):
                     event_image_cleaned = event_image.copy()
                     event_image_cleaned[~clean_mask] = 0
 
-                    event_pulse_time_cleaned = event_pulse_time.copy()
+                    event_pulse_time_cleaned = peak_time.copy()
                     event_pulse_time_cleaned[~clean_mask] = 0
 
                     geom_selected  = geometry[clean_mask]
@@ -424,7 +424,7 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
                     event_image_cleaned = event_image.copy()
                     event_image_cleaned[~clean_mask] = 0
 
-                    event_pulse_time_cleaned = event_pulse_time.copy()
+                    event_pulse_time_cleaned = peak_time.copy()
                     event_pulse_time_cleaned[~clean_mask] = 0
 
                     geom_selected  = geometry[clean_mask]
