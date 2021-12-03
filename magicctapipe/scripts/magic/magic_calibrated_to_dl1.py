@@ -259,7 +259,7 @@ def process_dataset_mc(input_mask, tel_id, cleaning_config):
 
             # Looping over the events
             for event in source:
-                tels_with_data = data.trigger.tels_with_trigger
+                tels_with_data = event.trigger.tels_with_trigger
 
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
@@ -402,7 +402,7 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
 
             # Looping over the events
             for event in source:
-                tels_with_data = data.trigger.tels_with_trigger
+                tels_with_data = event.trigger.tels_with_trigger
 
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
