@@ -28,6 +28,8 @@ from ctapipe.containers import (
     ImageParametersContainer,
     TimingParametersContainer,
     PeakTimeStatisticsContainer,
+    CameraHillasParametersContainer,
+    CameraTimingParametersContainer,
 )
 from ctapipe.containers import LeakageContainer
 from ctapipe.image import (
@@ -45,8 +47,14 @@ from magicctapipe.utils import MAGIC_Badpixels
 from magicctapipe.utils import MAGIC_Cleaning
 from magicctapipe.utils.utils import info_message
 
-DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer()
-DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer()
+DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer(
+                                hillas=CameraHillasParametersContainer(),
+                                timing=CameraTimingParametersContainer(),
+                           )
+DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer(
+                                    hillas=CameraHillasParametersContainer(),
+                                    timing=CameraTimingParametersContainer(),
+                                )
 DEFAULT_TRUE_IMAGE_PARAMETERS.intensity_statistics = IntensityStatisticsContainer(
     max=np.int32(-1),
     min=np.int32(-1),
@@ -264,7 +272,7 @@ def process_dataset_mc(input_mask, tel_id, cleaning_config):
 
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
-                    event.dl1.tel[tel_id].parameters = DEFAULT_IMAGE_PARAMETERS
+                    event.dl1.tel[tel_id].parameters = DEFAULT_TRUE_IMAGE_PARAMETERS
                     # Obtained image
                     event_image = event.dl1.tel[tel_id].image
                     # Pixel arrival time map
