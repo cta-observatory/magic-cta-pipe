@@ -32,6 +32,7 @@ from ctapipe.containers import (
 from ctapipe.containers import LeakageContainer
 from ctapipe.image import (
     concentration_parameters,
+    descriptive_statistics,
     hillas_parameters,
     morphology_parameters,
     timing_parameters,
