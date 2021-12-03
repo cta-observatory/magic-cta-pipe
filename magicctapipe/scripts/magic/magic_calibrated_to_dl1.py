@@ -359,8 +359,6 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
     #  
     # We'll write the result to the HDF5 file that can be used for further processing.
 
-    hillas_reconstructor = HillasReconstructor()
-
     previous_event_id = 0
 
     input_files = glob.glob(input_mask)
