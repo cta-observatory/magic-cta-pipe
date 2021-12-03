@@ -221,6 +221,8 @@ def process_dataset_mc(input_mask, tel_id, cleaning_config):
 
     cleaning_config["findhotpixels"] = False
 
+    aberration_factor = 1./1.0713
+
     # Finding available MC files
     input_files = glob.glob(input_mask)
     input_files.sort()
@@ -361,6 +363,8 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
     # We'll write the result to the HDF5 file that can be used for further processing.
 
     previous_event_id = 0
+
+    aberration_factor = 1./1.0713
 
     input_files = glob.glob(input_mask)
     input_files.sort()
