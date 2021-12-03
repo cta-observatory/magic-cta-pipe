@@ -289,7 +289,7 @@ def process_dataset_mc(input_mask, tel_id, cleaning_config):
                         try:
                             # If event has survived the cleaning, computing the Hillas parameters
                             hillas = hillas_parameters(geom=geom_selected, image=image_selected)
-                            leakage_params = get_leakage(geometry, event_image, clean_mask)
+                            leakage = get_leakage(geometry, event_image, clean_mask)
                             concentration = concentration_parameters(
                                 geom=geom_selected, image=image_selected, hillas_parameters=hillas
                             )
@@ -437,7 +437,7 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
                         try:
                             # If event has survived the cleaning, computing the Hillas parameters
                             hillas = hillas_parameters(geom=geom_selected, image=image_selected)
-                            leakage_params = get_leakage(geometry, event_image, clean_mask)
+                            leakage = get_leakage(geometry, event_image, clean_mask)
                             concentration = concentration_parameters(
                                 geom=geom_selected, image=image_selected, hillas_parameters=hillas
                             )
