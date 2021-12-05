@@ -3,7 +3,6 @@
 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-import os
 import time
 import yaml
 import warnings
@@ -24,7 +23,7 @@ __all__ = ['dl1_to_dl2']
 
 def dl1_to_dl2(input_data, output_data, config):
 
-    print(f'\nLoading the input data file: {input_data}')
+    print(f'\nLoading the input data: {input_data}')
 
     data_stereo = pd.read_hdf(input_data, key='events/params')
     data_stereo.sort_index(inplace=True)
@@ -113,13 +112,10 @@ def dl1_to_dl2(input_data, output_data, config):
             data_stereo[param] = class_reco[param]
 
 
-    # --- store the data ---
-    output_dir = str(Path(output_data).parent)
-    os.makedirs(output_dir, exist_ok=True)
-
+    # --- save the data frame ---
     data_stereo.to_hdf(output_data, key='events/params')
 
-    print(f'\nOutput data file: {output_data}')
+    print(f'\nOutput data: {output_data}')
 
 
 def main():

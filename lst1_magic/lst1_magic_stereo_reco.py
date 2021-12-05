@@ -3,7 +3,6 @@
 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-import os
 import sys
 import time
 import yaml
@@ -16,7 +15,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz, Angle
 from astropy.coordinates.angle_utilities import angular_separation
 from ctapipe.reco import HillasReconstructor
-from ctapipe.containers import HillasParametersContainer, ReconstructedShowerContainer
+from ctapipe.containers import HillasParametersContainer
 from utils import calc_impact
 
 warnings.simplefilter('ignore')
@@ -35,7 +34,7 @@ def stereo_reco(input_data, output_data, config):
     print(f'\nTelescope positions:\n{positions}')
 
     # --- load the input data ---
-    print(f'\nLoading the input data file: {input_data}')
+    print(f'\nLoading the input data: {input_data}')
 
     data_stereo = pd.read_hdf(input_data, key='events/params')
 
@@ -182,13 +181,10 @@ def stereo_reco(input_data, output_data, config):
             
     print(f'{i_ev+1} events processed.')
 
-    # --- store the DL1+stereo data file ---
-    output_dir = str(Path(output_data).parent)
-    os.makedirs(output_dir, exist_ok=True)
-
+    # --- save the data frame ---
     data_stereo.to_hdf(output_data, key='events/params')
 
-    print(f'\nOutput data file: {output_data}')
+    print(f'\nOutput data: {output_data}')
 
 
 def main():

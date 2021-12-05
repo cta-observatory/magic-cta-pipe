@@ -3,7 +3,6 @@
 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-import os
 import sys
 import yaml
 import glob
@@ -56,7 +55,7 @@ def magic_cal_to_dl1(input_data_mask, output_data, config):
     paths_list = glob.glob(input_data_mask)
     paths_list.sort()
 
-    print('\nProcess the following data files:')
+    print('\nProcess the following data:')
 
     tel_ids_list = []
 
@@ -70,15 +69,12 @@ def magic_cal_to_dl1(input_data_mask, output_data, config):
     tel_ids_list = np.unique(tel_ids_list)
 
     if len(tel_ids_list) > 1:
-        print('\nM1 and M2 data are mixed. Run the script with only M1 or M2 input data. Exiting.\n')
+        print('\nM1 and M2 data are mixed. Input only M1 or M2 data. Exiting.\n')
         sys.exit()
 
     tel_id = int(tel_ids_list[0])
 
     # --- process the input data ---
-    output_dir = str(Path(output_data).parent)
-    os.makedirs(output_dir, exist_ok=True)
-
     previous_event_id = 0
     n_events_skipped = 0
 
@@ -98,7 +94,7 @@ def magic_cal_to_dl1(input_data_mask, output_data, config):
                 print(f'{i_ev} events')
 
             if event.index.event_id == previous_event_id:   # exclude pedestal runs?? 
-                
+            
                 print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
                        'Pedestal event (?) found. Skipping.')
                 
@@ -215,7 +211,7 @@ def main():
     args = arg_parser.parse_args()
 
     config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
-
+    
     magic_cal_to_dl1(args.input_data, args.output_data, config_lst1_magic['MAGIC'])
 
     print('\nDone.')
