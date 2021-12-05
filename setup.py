@@ -25,7 +25,8 @@ setup(
         'ctapipe_io_magic~=0.3.0',
         'ctaplot~=0.5.3',
         'eventio>=1.5.1,<2.0.0a0',  # at least 1.1.1, but not 2
-        'gammapy>=0.18',
+        'gammapy~=0.18',
+        'uproot~=4.0',
         'h5py',
         'joblib',
         'matplotlib>=3.5',
