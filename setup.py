@@ -20,7 +20,7 @@ setup(
     use_scm_version={"write_to": os.path.join("magicctapipe", "_version.py")},
     packages=find_packages(),
     install_requires=[
-        'astropy~=4.2',
+        'astropy>=4.0.5,<5',
         'ctapipe~=0.12.0',
         'ctapipe_io_magic~=0.3.0',
         'ctaplot~=0.5.3',
