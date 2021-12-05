@@ -218,9 +218,9 @@ def check_coincidence_overview(input_data_mask, output_file, get_profile='False'
     pyplot.grid()
     pyplot.legend(fontsize=15)
 
-    # --- number of coincident events ---
     for i_tel, tel_name in enumerate(['MAGIC-I', 'MAGIC-II']):
 
+        # --- number of coincident events ---
         pyplot.subplot2grid(grid, (2, i_tel))
         pyplot.title(f'LST-1 & {tel_name}')
         pyplot.xlabel('Unix time [sec]')
@@ -250,9 +250,7 @@ def check_coincidence_overview(input_data_mask, output_file, get_profile='False'
         pyplot.grid()
         pyplot.legend(fontsize=15)
 
-    # --- ratio of the coincidence ---
-    for i_tel, tel_name in enumerate(['MAGIC-I', 'MAGIC-II']):
-
+        # --- ratio of the coincidence ---
         pyplot.subplot2grid(grid, (3, i_tel))
         pyplot.title(f'LST-1 & {tel_name}')
         pyplot.xlabel('Unix time [sec]')
@@ -266,7 +264,7 @@ def check_coincidence_overview(input_data_mask, output_file, get_profile='False'
             for subset in subsets_list:
 
                 df = container[obs_id][subset].query(f'tel_name == "{tel_name}"')
-
+                
                 label = f'ID {int(obs_id)}' if (subset == subsets_list[-1]) else None     
 
                 pyplot.plot(
