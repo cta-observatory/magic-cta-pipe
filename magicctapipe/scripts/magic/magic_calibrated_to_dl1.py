@@ -148,8 +148,6 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
 
                     event.dl1.tel[tel_id].image_mask = clean_mask
 
-                    num_islands = get_num_islands(geometry, clean_mask, event_image)
-
                     event_image_cleaned = event_image.copy()
                     event_image_cleaned[~clean_mask] = 0
 
