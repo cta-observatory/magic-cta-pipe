@@ -9,11 +9,8 @@ import yaml
 import copy
 from pathlib import Path
 
-import pandas as pd
 import numpy as np
-import scipy
 from astropy import units as u
-from scipy.sparse.csgraph import connected_components
 
 from ctapipe_io_magic import MAGICEventSource
 
@@ -62,30 +59,6 @@ DEFAULT_TRUE_IMAGE_PARAMETERS.intensity_statistics = IntensityStatisticsContaine
 )
 DEFAULT_TIMING_PARAMETERS = TimingParametersContainer()
 DEFAULT_PEAKTIME_STATISTICS = PeakTimeStatisticsContainer()
-
-def get_num_islands(camera, clean_mask, event_image):
-    """Get the number of connected islands in a shower image.
-
-    Parameters
-    ----------
-    camera : CameraGeometry
-        Description
-    clean_mask : np.array
-        Cleaning mask
-    event_image : np.array
-        Event image
-
-    Returns
-    -------
-    int
-        Number of islands
-    """
-
-    neighbors = camera.neighbor_matrix_sparse
-    clean_neighbors = neighbors[clean_mask][:, clean_mask]
-    num_islands, labels = connected_components(clean_neighbors, directed=False)
-
-    return num_islands
 
 def process_dataset_mc(input_mask, tel_id, cleaning_config):
     """Create event metadata container to hold event / observation / telescope
