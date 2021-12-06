@@ -12,17 +12,12 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import scipy
+from astropy import units as u
 from scipy.sparse.csgraph import connected_components
-
-import traitlets
-
-import ctapipe
 
 from ctapipe_io_magic import MAGICEventSource
 
 from ctapipe.io import DataWriter
-from ctapipe.core.container import Container, Field
-from ctapipe.instrument import CameraGeometry
 from ctapipe.containers import (
     IntensityStatisticsContainer,
     ImageParametersContainer,
@@ -31,7 +26,7 @@ from ctapipe.containers import (
     CameraHillasParametersContainer,
     CameraTimingParametersContainer,
 )
-from ctapipe.containers import LeakageContainer
+
 from ctapipe.image import (
     concentration_parameters,
     descriptive_statistics,
@@ -40,12 +35,14 @@ from ctapipe.image import (
     timing_parameters,
 )
 
-from astropy import units as u
-
-from magicctapipe.utils import MAGIC_Badpixels
-# from utils import bad_pixel_treatment
-from magicctapipe.utils import MAGIC_Cleaning
-from magicctapipe.utils.utils import info_message
+from magicctapipe.utils import (
+    scale_camera_geometry,
+    reflected_camera_geometry,
+    MAGIC_Badpixels,
+    MAGIC_Cleaning,
+    info_message,
+    get_leakage,
+)
 
 DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer(
                                 hillas=CameraHillasParametersContainer(),
