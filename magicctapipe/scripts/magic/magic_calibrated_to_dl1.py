@@ -66,66 +66,6 @@ DEFAULT_TRUE_IMAGE_PARAMETERS.intensity_statistics = IntensityStatisticsContaine
 DEFAULT_TIMING_PARAMETERS = TimingParametersContainer()
 DEFAULT_PEAKTIME_STATISTICS = PeakTimeStatisticsContainer()
 
-def get_leakage(camera, event_image, clean_mask):
-    """Calculate the leakage with pixels on the border of the image included #IS THIS TRUE?????
-
-    Parameters
-    ----------
-    camera : CameraGeometry
-        Description
-    clean_mask : np.array
-        Cleaning mask
-    event_image : np.array
-        Event image
-
-    Returns
-    -------
-    LeakageContainer
-    """
-
-    neighbors = camera.neighbor_matrix_sparse
-
-    # find pixels in the outermost ring
-    outermostring = []
-    for pix in range(camera.n_pixels):
-        if neighbors[pix].getnnz() < 5:
-            outermostring.append(pix)
-
-    # find pixels in the second outermost ring
-    outerring = []
-    for pix in range(camera.n_pixels):
-        if pix in outermostring:
-            continue
-        for neigh in np.where(neighbors[pix][0,:].toarray() == True)[1]:
-            if neigh in outermostring:
-                outerring.append(pix)
-
-    # needed because outerring has some pixels appearing more than once
-    outerring = np.unique(outerring).tolist()
-    outermostring_mask = np.zeros(camera.n_pixels, dtype=bool)
-    outermostring_mask[outermostring] = True
-    outerring_mask = np.zeros(camera.n_pixels, dtype=bool)
-    outerring_mask[outerring] = True
-    # intersection between 1st outermost ring and cleaning mask
-    mask1 = np.array(outermostring_mask) & clean_mask
-    # intersection between 2nd outermost ring and cleaning mask
-    mask2 = np.array(outerring_mask) & clean_mask
-
-    leakage_pixel1 = np.count_nonzero(mask1)
-    leakage_pixel2 = np.count_nonzero(mask2)
-
-    leakage_intensity1 = np.sum(event_image[mask1])
-    leakage_intensity2 = np.sum(event_image[mask2])
-
-    size = np.sum(event_image[clean_mask])
-
-    return LeakageContainer(
-        pixels_width_1=leakage_pixel1 / camera.n_pixels,
-        pixels_width_2=leakage_pixel2 / camera.n_pixels,
-        intensity_width_1=leakage_intensity1 / size,
-        intensity_width_2=leakage_intensity2 / size,
-    )
-
 def get_num_islands(camera, clean_mask, event_image):
     """Get the number of connected islands in a shower image.
 
@@ -149,61 +89,6 @@ def get_num_islands(camera, clean_mask, event_image):
     num_islands, labels = connected_components(clean_neighbors, directed=False)
 
     return num_islands
-
-def scale_camera_geometry(camera_geom, factor):
-    """Scale given camera geometry of a given (constant) factor
-    
-    Parameters
-    ----------
-    camera : CameraGeometry
-        Camera geometry
-    factor : float
-        Scale factor
-    
-    Returns
-    -------
-    CameraGeometry
-        Scaled camera geometry
-    """
-    pix_x_scaled = factor*camera_geom.pix_x
-    pix_y_scaled = factor*camera_geom.pix_y
-    pix_area_scaled = camera_geom.guess_pixel_area(pix_x_scaled, pix_y_scaled, camera_geom.pix_type)
-
-    return CameraGeometry(
-        camera_name='MAGICCam',
-        pix_id=camera_geom.pix_id,
-        pix_x=pix_x_scaled,
-        pix_y=pix_y_scaled,
-        pix_area=pix_area_scaled,
-        pix_type=camera_geom.pix_type,
-        pix_rotation=camera_geom.pix_rotation,
-        cam_rotation=camera_geom.cam_rotation
-    )
-
-def reflected_camera_geometry(camera_geom):
-    """Reflect camera geometry (x->-y, y->-x)
-
-    Parameters
-    ----------
-    camera_geom : CameraGeometry
-        Camera geometry
-
-    Returns
-    -------
-    CameraGeometry
-        Reflected camera geometry
-    """
-
-    return CameraGeometry(
-        camera_name='MAGICCam',
-        pix_id=camera_geom.pix_id,
-        pix_x=-1.*camera_geom.pix_y,
-        pix_y=-1.*camera_geom.pix_x,
-        pix_area=camera_geom.guess_pixel_area(camera_geom.pix_x, camera_geom.pix_y, camera_geom.pix_type),
-        pix_type=camera_geom.pix_type,
-        pix_rotation=camera_geom.pix_rotation,
-        cam_rotation=camera_geom.cam_rotation
-    )
 
 def process_dataset_mc(input_mask, tel_id, cleaning_config):
     """Create event metadata container to hold event / observation / telescope
