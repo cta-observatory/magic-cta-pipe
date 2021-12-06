@@ -60,156 +60,18 @@ DEFAULT_TRUE_IMAGE_PARAMETERS.intensity_statistics = IntensityStatisticsContaine
 DEFAULT_TIMING_PARAMETERS = TimingParametersContainer()
 DEFAULT_PEAKTIME_STATISTICS = PeakTimeStatisticsContainer()
 
-def process_dataset_mc(input_mask, tel_id, cleaning_config):
-    """Create event metadata container to hold event / observation / telescope
-    IDs and MC true values for the event energy and direction. We will need it
-    to add this information to the event Hillas parameters when dumping the
-    results to disk.
+def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
+    """Process MAGIC calibrated files, both real and simulation, to get
+    DL1 files in the standard CTA format.
+    Custom parts:
+    - MAGIC cleaning
+    - treatment of hot/bad pixels
 
     Parameters
     ----------
     input_mask : str
         Mask for MC input files. Reading of files is managed
         by the MAGICEventSource class.
-    tel_id : int
-        Telescope ID
-    output_name : str
-        Name of the HDF5 output file.
-    cleaning_config: dict
-        Dictionary for cleaning settings
-
-    Returns
-    -------
-    None
-    """
-
-    cleaning_config["findhotpixels"] = False
-
-    aberration_factor = 1./1.0713
-
-    # Finding available MC files
-    input_files = glob.glob(input_mask)
-    input_files.sort()
-
-    # Now let's loop over the events and perform:
-    #  - image cleaning;
-    #  - hillas parameter calculation;
-    #  - time gradient calculation.
-    #  
-    # We'll write the result to the HDF5 file that can be used for further processing.
-
-    for input_file in input_files:
-        file_name = Path(input_file).name
-        output_name = file_name.replace(".root", ".h5")
-        print("")
-        print(f"-- Working on {file_name:s} --")
-        print("")
-        # Event source
-        source = MAGICEventSource(input_url=input_file)
-
-        camera_old = source.subarray.tel[tel_id].camera.geometry
-        camera_refl = reflected_camera_geometry(camera_old)
-        geometry = scale_camera_geometry(camera_refl, aberration_factor)
-        magic_clean = MAGIC_Cleaning.magic_clean(geometry,cleaning_config)
-
-        info_message("Cleaning configuration", prefix='Hillas')
-        for item in vars(magic_clean).items():
-            print(f"{item[0]}: {item[1]}")
-        if magic_clean.findhotpixels:
-            for item in vars(magic_clean.pixel_treatment).items():
-                print(f"{item[0]}: {item[1]}")
-
-        with DataWriter(event_source=source, output_path=output_name, overwrite=True) as write_data:
-
-            # Looping over the events
-            for event in source:
-                tels_with_data = event.trigger.tels_with_trigger
-
-                # Looping over the triggered telescopes
-                for tel_id in tels_with_data:
-                    event.dl1.tel[tel_id].parameters = DEFAULT_TRUE_IMAGE_PARAMETERS
-                    # Obtained image
-                    event_image = event.dl1.tel[tel_id].image
-                    # Pixel arrival time map
-                    peak_time = event.dl1.tel[tel_id].peak_time
-
-                    clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time)
-
-                    event.dl1.tel[tel_id].image_mask = clean_mask
-
-                    num_islands = get_num_islands(geometry, clean_mask, event_image)
-
-                    event_image_cleaned = event_image.copy()
-                    event_image_cleaned[~clean_mask] = 0
-
-                    event_pulse_time_cleaned = peak_time.copy()
-                    event_pulse_time_cleaned[~clean_mask] = 0
-
-                    geom_selected  = geometry[clean_mask]
-                    image_selected = event_image[clean_mask]
-
-                    if np.any(event_image_cleaned):
-                        try:
-                            # If event has survived the cleaning, computing the Hillas parameters
-                            hillas = hillas_parameters(geom=geom_selected, image=image_selected)
-                            leakage = get_leakage(geometry, event_image, clean_mask)
-                            concentration = concentration_parameters(
-                                geom=geom_selected, image=image_selected, hillas_parameters=hillas
-                            )
-                            morphology = morphology_parameters(geom=geometry, image_mask=clean_mask)
-                            intensity_statistics = descriptive_statistics(
-                                image_selected, container_class=IntensityStatisticsContainer
-                            )
-                            if peak_time is not None:
-                                timing = timing_parameters(
-                                    geom=geom_selected,
-                                    image=image_selected,
-                                    peak_time=peak_time[clean_mask],
-                                    hillas_parameters=hillas,
-                                )
-                                peak_time_statistics = descriptive_statistics(
-                                    peak_time[clean_mask],
-                                    container_class=PeakTimeStatisticsContainer,
-                                )
-                            else:
-                                timing = DEFAULT_TIMING_PARAMETERS
-                                peak_time_statistics = DEFAULT_PEAKTIME_STATISTICS
-
-                            event.dl1.tel[tel_id].parameters = ImageParametersContainer(
-                                hillas=hillas,
-                                timing=timing,
-                                leakage=leakage,
-                                morphology=morphology,
-                                concentration=concentration,
-                                intensity_statistics=intensity_statistics,
-                                peak_time_statistics=peak_time_statistics,
-                            )
-
-                        except ValueError:
-                            print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
-                                f"telescope ID: {tel_id}): Hillas calculation failed.")
-                    else:
-                        print(f"Event ID {event.index.event_id} (obs ID: {event.index.obs_id}; "
-                        f"telescope ID: {tel_id}) did not pass cleaning.")
-
-                write_data(event)
-
-
-def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config):
-    """Create event metadata container to hold event / observation / telescope
-    IDs and MC true values for the event energy and direction. We will need it
-    to add this information to the event Hillas parameters when dumping the
-    results to disk.
-
-    Parameters
-    ----------
-    input_mask : str
-        Mask for MC input files. Reading of files is managed
-        by the MAGICEventSource class.
-    tel_id : int
-        Telescope ID
-    output_name : str
-        Name of the HDF5 output file.
     cleaning_config: dict
         Dictionary for cleaning settings
     bad_pixels_config: dict
@@ -220,15 +82,6 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
     None
     """
 
-    # Now let's loop over the events and perform:
-    #  - image cleaning;
-    #  - hillas parameter calculation;
-    #  - time gradient calculation.
-    #  
-    # We'll write the result to the HDF5 file that can be used for further processing.
-
-    previous_event_id = 0
-
     aberration_factor = 1./1.0713
 
     input_files = glob.glob(input_mask)
@@ -249,12 +102,16 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
         print("")
         # Event source
         source = MAGICEventSource(input_url=input_file)
+        is_simulation = source.is_mc
 
-        camera_old = source.subarray.tel[tel_id].camera.geometry
+        camera_old = source.subarray.tel[source.telescope].camera.geometry
         camera_refl = reflected_camera_geometry(camera_old)
         geometry = scale_camera_geometry(camera_refl, aberration_factor)
+        if is_simulation:
+            cleaning_config["findhotpixels"] = False
         magic_clean = MAGIC_Cleaning.magic_clean(geometry,cleaning_config)
-        badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
+        if not is_simulation:
+            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
 
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
@@ -271,17 +128,22 @@ def process_dataset_data(input_mask, tel_id, cleaning_config, bad_pixels_config)
 
                 # Looping over the triggered telescopes
                 for tel_id in tels_with_data:
-                    event.dl1.tel[tel_id].parameters = DEFAULT_IMAGE_PARAMETERS
+                    if is_simulation:
+                        event.dl1.tel[tel_id].parameters = DEFAULT_TRUE_IMAGE_PARAMETERS
+                    else:
+                        event.dl1.tel[tel_id].parameters = DEFAULT_IMAGE_PARAMETERS
                     # Obtained image
                     event_image = event.dl1.tel[tel_id].image
                     # Pixel arrival time map
                     peak_time = event.dl1.tel[tel_id].peak_time
 
-                    badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
-                    deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
-                    unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
-
-                    clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time, unsuitable_mask=unsuitable_mask)
+                    if is_simulation:
+                        clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time)
+                    else:
+                        badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
+                        deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
+                        unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
+                        clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time, unsuitable_mask=unsuitable_mask)
 
                     event.dl1.tel[tel_id].image_mask = clean_mask
 
@@ -442,24 +304,11 @@ for data_type in data_type_to_process:
             if telescope_type not in config['image_cleaning']:
                 raise ValueError(f'Guessed telescope type "{telescope_type}" does not have image cleaning settings')
 
-            is_mc = data_type.lower() == "mc"
-
-            tel_id = re.findall('.*([_\d]+)', telescope)[0]
-            tel_id = int(tel_id)
-
             cleaning_config = config['image_cleaning'][telescope_type]
             bad_pixels_config = config['bad_pixels'][telescope_type]
 
-            if is_mc:
-                process_dataset_mc(
-                    input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
-                    tel_id=tel_id,
-                    cleaning_config=cleaning_config
-                )
-            else:
-                process_dataset_data(
-                    input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
-                    tel_id=tel_id,
-                    cleaning_config=cleaning_config,
-                    bad_pixels_config=bad_pixels_config
-                )
+            magic_calibrated_to_dl1(
+                input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
+                cleaning_config=cleaning_config,
+                bad_pixels_config=bad_pixels_config,
+            )
