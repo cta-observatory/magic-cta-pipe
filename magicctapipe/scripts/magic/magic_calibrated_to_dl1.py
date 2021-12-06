@@ -87,6 +87,8 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
     input_files = glob.glob(input_mask)
     input_files.sort()
 
+    clean_config = copy.deepcopy(cleaning_config)
+
     # Now let's loop over the events and perform:
     #  - image cleaning;
     #  - hillas parameter calculation;
@@ -108,11 +110,11 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
         camera_refl = reflected_camera_geometry(camera_old)
         geometry = scale_camera_geometry(camera_refl, aberration_factor)
         if is_simulation:
-            cleaning_config["findhotpixels"] = False
+            clean_config["findhotpixels"] = False
         else:
             badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
 
-        magic_clean = MAGIC_Cleaning.magic_clean(geometry,cleaning_config)
+        magic_clean = MAGIC_Cleaning.magic_clean(geometry,clean_config)
 
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
