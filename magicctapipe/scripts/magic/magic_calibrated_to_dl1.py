@@ -109,9 +109,10 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
         geometry = scale_camera_geometry(camera_refl, aberration_factor)
         if is_simulation:
             cleaning_config["findhotpixels"] = False
-        magic_clean = MAGIC_Cleaning.magic_clean(geometry,cleaning_config)
-        if not is_simulation:
+        else:
             badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
+
+        magic_clean = MAGIC_Cleaning.magic_clean(geometry,cleaning_config)
 
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
