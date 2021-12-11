@@ -20,7 +20,7 @@ __all__ = ['dl1_to_dl2']
 
 def reco_energy(data, energy_rf, config):
 
-    energy_estimator = EnergyEstimatorPandas(config['features'], **config['settings'])
+    energy_estimator = EnergyEstimatorPandas(config['features'],config['training_conditions'],**config['settings'])
     energy_estimator.load(energy_rf)
 
     print('\nReconstructing energy...')
@@ -35,7 +35,7 @@ def reco_energy(data, energy_rf, config):
 
 def reco_direction(data, direction_rf, tel_discriptions, config):
 
-    direction_estimator = DirectionEstimatorPandas(config['features'], tel_discriptions, **config['settings'])
+    direction_estimator = DirectionEstimatorPandas(config['features'], tel_discriptions,config['training_conditions'], **config['settings'])
     direction_estimator.load(direction_rf)
 
     print('\nReconstructing direction...')
@@ -50,7 +50,7 @@ def reco_direction(data, direction_rf, tel_discriptions, config):
 
 def reco_gammaness(data, classifier_rf, config):
 
-    class_estimator = EventClassifierPandas(config['features'], **config['settings'])
+    class_estimator = EventClassifierPandas(config['features'],config['training_conditions'], **config['settings'])
     class_estimator.load(classifier_rf)
 
     print('\nReconstructing gammaness...')
