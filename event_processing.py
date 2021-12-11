@@ -1188,7 +1188,7 @@ class EnergyEstimatorPandas:
     regressor is applied to combine the per-telescope predictions.
     """
 
-    def __init__(self, feature_names, **rf_settings):
+    def __init__(self, feature_names,training_conditions, **rf_settings):
         """
         Constructor. Gets basic settings.
 
@@ -1206,6 +1206,8 @@ class EnergyEstimatorPandas:
 
         self.telescope_regressors = dict()
         self.consolidating_regressor = None
+        self.weight=training_conditions.get('weight')
+        self.single_RF=training_conditions.get('single_RF')
 
     def fit(self, shower_data):
         """
@@ -1230,7 +1232,7 @@ class EnergyEstimatorPandas:
         # features = features.fillna(0).groupby(['obs_id', 'event_id']).sum()
         # features = features.values
         #
-        # target = shower_data_with_energy['mc_energy'].groupby(['obs_id', 'event_id']).mean().values
+        # target = shower_data_with_energy['true_energy'].groupby(['obs_id', 'event_id']).mean().values
         #
         # self.consolidating_regressor = sklearn.ensemble.RandomForestRegressor(self.rf_settings)
         # self.consolidating_regressor.fit(features, target)
@@ -1253,23 +1255,27 @@ class EnergyEstimatorPandas:
 
         shower_data_with_energy = self.apply_per_telescope_rf(shower_data)
 
-        # Selecting and log-scaling the reconstructed energies
-        energy_reco = shower_data_with_energy['energy_reco'].apply(np.log10)
+        if self.single_RF:
+            shower_data_with_energy=shower_data_with_energy.rename(columns={'energy_reco':'energy_reco_mean'})
+        else:
 
-        # Getting the weights
-        weights = shower_data_with_energy['energy_reco_err']
+            # Selecting and log-scaling the reconstructed energies
+            energy_reco = shower_data_with_energy['energy_reco'].apply(np.log10)
 
-        # Weighted energies
-        weighted = energy_reco * weights
+            # Getting the weights
+            weights = shower_data_with_energy['energy_reco_err']
 
-        # Grouping per-event data
-        weighted_group = weighted.groupby(level=['obs_id', 'event_id'])
-        weight_group = weights.groupby(level=['obs_id', 'event_id'])
+            # Weighted energies
+            weighted = energy_reco * weights
 
-        # Weighted mean log-energy
-        log_energy = weighted_group.sum() / weight_group.sum()
+            # Grouping per-event data
+            weighted_group = weighted.groupby(level=['obs_id', 'event_id'])
+            weight_group = weights.groupby(level=['obs_id', 'event_id'])
 
-        shower_data_with_energy['energy_reco_mean'] = 10 ** log_energy
+            # Weighted mean log-energy
+            log_energy = weighted_group.sum() / weight_group.sum()
+
+            shower_data_with_energy['energy_reco_mean'] = 10 ** log_energy
 
         return shower_data_with_energy
 
@@ -1290,22 +1296,46 @@ class EnergyEstimatorPandas:
 
         idx = pd.IndexSlice
 
-        tel_ids = shower_data.index.levels[2]
-
         self.telescope_regressors = dict()
 
-        for tel_id in tel_ids:
-            input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'mc_energy']]
+        if self.single_RF:
+            input_data = shower_data.loc[idx[:, :], self.feature_names + ['event_weight', 'true_energy']]
             input_data.dropna(inplace=True)
-
             x_train = input_data[list(self.feature_names)].values
-            y_train = np.log10(input_data['mc_energy'].values)
+            y_train = np.log10(input_data['true_energy'].values)
             weight = input_data['event_weight'].values
-
             regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
-            regressor.fit(x_train, y_train, sample_weight=weight)
+            #regressor = RandomForestRegressor(**self.rf_settings)
+            if self.weight==True:
+                regressor.fit(x_train, y_train, sample_weight=weight)
+            else:
+                print('sample_weight=None')
+                regressor.fit(x_train, y_train, sample_weight=None)
 
-            self.telescope_regressors[tel_id] = regressor
+            self.telescope_regressors = regressor
+
+        else:
+
+            tel_ids = shower_data.index.levels[2]
+
+            for tel_id in tel_ids:
+                input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'true_energy']]
+                input_data.dropna(inplace=True)
+
+                x_train = input_data[list(self.feature_names)].values
+                y_train = np.log10(input_data['true_energy'].values)
+                weight = input_data['event_weight'].values
+
+                regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
+                #regressor = RandomForestRegressor(**self.rf_settings)
+                if self.weight == True:
+                    regressor.fit(x_train, y_train, sample_weight=weight)
+                else:
+                    print('sample_weight=None')
+                    regressor.fit(x_train, y_train, sample_weight=None)
+
+                self.telescope_regressors[tel_id] = regressor
+
 
     def apply_per_telescope_rf(self, shower_data):
         """
@@ -1323,22 +1353,18 @@ class EnergyEstimatorPandas:
 
         """
 
-        tel_ids = shower_data.index.levels[2]
-
         energy_reco = pd.DataFrame()
 
-        for tel_id in tel_ids:
-            # Selecting data
-            this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
+        if self.single_RF:
+            this_telescope = shower_data.loc[(slice(None), slice(None)), self.feature_names]
             this_telescope = this_telescope.dropna()
             features = this_telescope.values
-
             # Getting the RF response
-            response = 10**self.telescope_regressors[tel_id].predict(features)
+            response = 10 ** self.telescope_regressors.predict(features)
 
             per_tree_responses = []
-            for tree in self.telescope_regressors[tel_id].estimators_:
-                per_tree_responses.append(10**tree.predict(features))
+            for tree in self.telescope_regressors.estimators_:
+                per_tree_responses.append(10 ** tree.predict(features))
             response_err = np.std(per_tree_responses, axis=0)
 
             # Storing to a data frame
@@ -1347,7 +1373,31 @@ class EnergyEstimatorPandas:
 
             energy_reco = energy_reco.append(df)
 
-        energy_reco.sort_index(inplace=True)
+            energy_reco.sort_index(inplace=True)
+
+        else:
+            tel_ids = shower_data.index.levels[2]
+            for tel_id in tel_ids:
+                # Selecting data
+                this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
+                this_telescope = this_telescope.dropna()
+                features = this_telescope.values
+
+                # Getting the RF response
+                response = 10**self.telescope_regressors[tel_id].predict(features)
+
+                per_tree_responses = []
+                for tree in self.telescope_regressors[tel_id].estimators_:
+                    per_tree_responses.append(10**tree.predict(features))
+                response_err = np.std(per_tree_responses, axis=0)
+
+                # Storing to a data frame
+                result = {'energy_reco': response, 'energy_reco_err': response_err}
+                df = pd.DataFrame(data=result, index=this_telescope.index)
+
+                energy_reco = energy_reco.append(df)
+
+            energy_reco.sort_index(inplace=True)
 
         return energy_reco
 
@@ -1403,7 +1453,7 @@ class DirectionEstimatorPandas:
     regressor is applied to combine the per-telescope predictions.
     """
 
-    def __init__(self, feature_names, tel_descriptions, **rf_settings):
+    def __init__(self, feature_names, tel_descriptions,training_conditions, **rf_settings):
         """
         Constructor. Gets basic settings.
 
@@ -1427,6 +1477,7 @@ class DirectionEstimatorPandas:
         self.rf_settings = rf_settings
 
         self.telescope_rfs = dict(disp={}, pos_angle_shift={})
+        self.weight = training_conditions.get('weight')
 
     def _get_disp_and_position_angle(self, shower_data):
         """
@@ -1460,10 +1511,10 @@ class DirectionEstimatorPandas:
 
             this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), shower_data.columns]
 
-            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
-                                 az=this_telescope['az_tel'].values * u.rad)
+            tel_pointing = AltAz(alt=this_telescope['tel_alt'].values * u.rad,
+                                 az=this_telescope['tel_az'].values * u.rad)
 
-            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length, 
+            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
@@ -1473,8 +1524,8 @@ class DirectionEstimatorPandas:
                                     frame=camera_frame)
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            event_coord = SkyCoord(this_telescope['mc_az'].values * u.rad,
-                                   this_telescope['mc_alt'].values * u.rad,
+            event_coord = SkyCoord(this_telescope['true_az'].values * u.rad,
+                                   this_telescope['true_alt'].values * u.rad,
                                    frame=AltAz())
             event_coord_in_telescope = event_coord.transform_to(telescope_frame)
 
@@ -1573,8 +1624,8 @@ class DirectionEstimatorPandas:
             this_telescope = reco_df.loc[(slice(None), slice(None), tel_id), reco_df.columns]
 
             # Definining the coordinate systems
-            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
-                                 az=this_telescope['az_tel'].values * u.rad)
+            tel_pointing = AltAz(alt=this_telescope['tel_alt'].values * u.rad,
+                                 az=this_telescope['tel_az'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
@@ -1808,7 +1859,6 @@ class DirectionEstimatorPandas:
 
             input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names[kind] + ['event_weight', target_name]]
             input_data.dropna(inplace=True)
-
             x_train = input_data[self.feature_names[kind]].values
             y_train = input_data[target_name].values
             weight = input_data['event_weight'].values
@@ -1819,8 +1869,12 @@ class DirectionEstimatorPandas:
             else:
                 # Regression is needed for "disp"
                 rf = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
+            if self.weight==True:
+                rf.fit(x_train, y_train, sample_weight=weight)
+            else:
+                print('sample_weight=None')
+                rf.fit(x_train, y_train, sample_weight=None)
 
-            rf.fit(x_train, y_train, sample_weight=weight)
 
             telescope_rfs[tel_id] = rf
 
@@ -1914,8 +1968,8 @@ class DirectionEstimatorPandas:
             this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), shower_data.columns]
 
             # Definining the coordinate systems
-            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
-                                 az=this_telescope['az_tel'].values * u.rad)
+            tel_pointing = AltAz(alt=this_telescope['tel_alt'].values * u.rad,
+                                 az=this_telescope['tel_az'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
@@ -2005,7 +2059,7 @@ class EventClassifierPandas:
     to give the final answer.
     """
 
-    def __init__(self, feature_names, **rf_settings):
+    def __init__(self, feature_names,training_conditions, **rf_settings):
         """
         Constructor. Gets basic settings.
 
@@ -2022,6 +2076,7 @@ class EventClassifierPandas:
         self.rf_settings = rf_settings
 
         self.telescope_classifiers = dict()
+        self.weight=training_conditions.get('weight')
 
     def fit(self, shower_data):
         """
@@ -2046,7 +2101,7 @@ class EventClassifierPandas:
         # features = features.fillna(0).groupby(['obs_id', 'event_id']).sum()
         # features = features.values
         #
-        # target = shower_data_with_energy['mc_energy'].groupby(['obs_id', 'event_id']).mean().values
+        # target = shower_data_with_energy['true_energy'].groupby(['obs_id', 'event_id']).mean().values
         #
         # self.consolidating_regressor = sklearn.ensemble.RandomForestRegressor(self.rf_settings)
         # self.consolidating_regressor.fit(features, target)
@@ -2104,13 +2159,17 @@ class EventClassifierPandas:
         for tel_id in tel_ids:
             input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'true_event_class']]
             input_data.dropna(inplace=True)
-
             x_train = input_data[list(self.feature_names)].values
             y_train = input_data['true_event_class'].values
             weight = input_data['event_weight'].values
 
             classifier = sklearn.ensemble.RandomForestClassifier(**self.rf_settings)
-            classifier.fit(x_train, y_train, sample_weight=weight)
+            if self.weight==True:
+                classifier.fit(x_train, y_train, sample_weight=weight)
+            else:
+                print('sample_weight=None')
+                classifier.fit(x_train, y_train, sample_weight=None)
+
 
             self.telescope_classifiers[tel_id] = classifier
 
@@ -2202,11 +2261,11 @@ class DirectionStereoEstimatorPandas:
     """
     This class trains/applies the random forest regressor for event direction,
     using the event parameters, stored in a Pandas data frame.
-    It trains a separate regressor for each telescope. Further outputs of these
+    It trains a separate regressor for eacfh telescope. Further outputs of these
     regressors are combined to deliver the average predictions.
     """
 
-    def __init__(self, feature_names, tel_descriptions, **rf_settings):
+    def __init__(self, feature_names, tel_descriptions,training_conditions, **rf_settings):
         """
         Constructor. Gets basic settings.
 
@@ -2230,6 +2289,7 @@ class DirectionStereoEstimatorPandas:
         self.rf_settings = rf_settings
 
         self.telescope_regressors = dict(disp={}, pos_angle={})
+        self.weight=training_conditions.get('weight')
 
     @staticmethod
     def _get_tel_ids(shower_data):
@@ -2283,8 +2343,8 @@ class DirectionStereoEstimatorPandas:
             optics = self.telescope_descriptions[tel_id].optics
             camera = self.telescope_descriptions[tel_id].camera
 
-            tel_pointing = AltAz(alt=shower_data[f'alt_tel_{tel_id:d}'].values * u.rad,
-                                 az=shower_data[f'az_tel_{tel_id:d}'].values * u.rad)
+            tel_pointing = AltAz(alt=shower_data[f'tel_alt_{tel_id:d}'].values * u.rad,
+                                 az=shower_data[f'tel_az_{tel_id:d}'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
@@ -2296,8 +2356,8 @@ class DirectionStereoEstimatorPandas:
                                     frame=camera_frame)
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            event_coord = SkyCoord(shower_data[f'mc_az_{tel_id:d}'].values * u.rad,
-                                   shower_data[f'mc_alt_{tel_id:d}'].values * u.rad,
+            event_coord = SkyCoord(shower_data[f'true_az_{tel_id:d}'].values * u.rad,
+                                   shower_data[f'true_alt_{tel_id:d}'].values * u.rad,
                                    frame=AltAz())
             event_coord_in_telescope = event_coord.transform_to(telescope_frame)
 
@@ -2466,8 +2526,8 @@ class DirectionStereoEstimatorPandas:
             optics = self.telescope_descriptions[tel_id].optics
             camera = self.telescope_descriptions[tel_id].camera
 
-            tel_pointing = AltAz(alt=shower_data[f'alt_tel_{tel_id:d}'].values * u.rad,
-                                 az=shower_data[f'az_tel_{tel_id:d}'].values * u.rad)
+            tel_pointing = AltAz(alt=shower_data[f'tel_alt_{tel_id:d}'].values * u.rad,
+                                 az=shower_data[f'tel_az_{tel_id:d}'].values * u.rad)
 
             camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
                                        rotation=camera.geometry.cam_rotation)
