@@ -132,7 +132,7 @@ def load_data_sample(sample):
     return shower_data
 
 
-def load_data_sample_stereo(input_file, is_mc):
+def load_data_sample_stereo(input_file, is_mc,is_disp):
     """
     This function loads Hillas and stereo data from input_file.
 
@@ -142,6 +142,9 @@ def load_data_sample_stereo(input_file, is_mc):
         Input HDF5 file
     is_mc: bool
         Flag to denote if data is MC or real
+
+    is_disp: bool
+        Flag to denote if the energy RF training will include aso the DISP, and therefore if the input file already underwent the direction reconstruction
 
     Returns
     -------
@@ -161,9 +164,52 @@ def load_data_sample_stereo(input_file, is_mc):
 
     stereo_data.drop(dropped_keys, axis=1, inplace=True)
 
+    if is_disp:
+        disp_data = pd.read_hdf(input_file, key='dl3/reco')
+        disp_data.drop(['tel_alt', 'tel_az', 'n_islands'], axis=1, inplace=True)
+        disp_data=disp_data.loc[:, ~disp_data.columns.str.contains('true', case=False)]
+
+        hillas_data = hillas_data.merge(disp_data, on=['obs_id', 'event_id', 'tel_id'])
+
     shower_data = hillas_data.merge(stereo_data, on=['obs_id', 'event_id'])
     shower_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     shower_data.sort_index(inplace=True)
+    #log_intensity=np.log10(shower_data['intensity'])
+    for tel_id in [1,2]:
+        shower_data.loc[(slice(None),slice(None),tel_id),'log_intensity']=np.log10(shower_data.loc[(slice(None),slice(None),tel_id),'intensity'])
+
+    return shower_data
+def load_data_sample_recofromMCP(input_file, is_mc):
+    """
+    This function loads Hillas and stereo data from input_file.
+
+    Parameters
+    ----------
+    input_file: str
+        Input HDF5 file
+    is_mc: bool
+        Flag to denote if data is MC or real
+
+    Returns
+    -------
+    pandas.Dataframe
+        Pandas dataframe with Hillas and stereo data
+    """
+
+    shower_data = pd.DataFrame()
+
+    shower_data = pd.read_hdf(input_file)
+
+
+    if is_mc:
+        dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy', 'true_core_x', 'true_core_y']
+    else:
+        dropped_keys = ['tel_alt','tel_az','n_islands', 'mjd', 'tel_id']
+
+
+    log_intensity=np.log10(shower_data['intensity'])
+    for tel_id in [1,2]:
+        shower_data.loc[(slice(None),slice(None),tel_id),'log_intensity']=np.log10(shower_data.loc[(slice(None),slice(None),tel_id),'intensity'])
 
     return shower_data
 
@@ -192,6 +238,21 @@ def get_weights(mc_data, alt_edges, intensity_edges):
     return mc_weight_df
 
 
+def Single_RF_data(shower_data):
+
+    "This function creates a dataframe to be used for the training with a single RF for both telescopes"
+
+    df_1 = shower_data.query(f'(tel_id == 1)')
+    df_2 = shower_data.query(f'(tel_id == 2)')
+    drop_keys = ['tel_alt', 'tel_az', 'n_islands', 'h_max', 'ch_density', 'ch_radius', 'CosBSangle', 'theta2','h_max_uncert', 'is_valid', 'az', 'alt', 'average_intensity', 'goodness_of_fit', 'hadronness','hadronness_rms','stereo_rec_bool']
+    #drop_keys = ['tel_alt', 'tel_az', 'h_max','alt','az']
+    df_2.drop(drop_keys, axis=1, inplace=True)
+    df_2 = df_2.loc[:, ~df_2.columns.str.contains('true', case=False)]
+    df = df_1.merge(df_2, on=['obs_id', 'event_id'], suffixes=('_1', '_2'))
+    if 'event_weight_1' in df.columns:
+        df['event_weight'] = (df['event_weight_1'] + df['event_weight_2']) / 2
+    #print(df)
+    return df
 # =================
 # === Main code ===
 # =================
@@ -207,7 +268,9 @@ arg_parser.add_argument("--config", default="config.yaml",
 arg_parser.add_argument("--stereo",
                         help='Use stereo DL1 files.',
                         action='store_true')
-
+arg_parser.add_argument("--DISP",
+                        help='Use reconstructed Disp for Energy Reconstruction',
+                        action='store_true')
 parsed_args = arg_parser.parse_args()
 # ------------------------------
 # ------------------------------
@@ -234,11 +297,14 @@ if parsed_args.stereo:
     is_stereo = True
 else:
     is_stereo = False
-
+if parsed_args.DISP:
+    is_disp = True
+else:
+    is_disp = False
 # --- Train sample ---
 info_message('Loading MC train data...', prefix='EnergyRF')
 if is_stereo:
-    shower_data_train = load_data_sample_stereo(config['data_files']['mc']['train_sample']['magic']['hillas_output'], True)
+    shower_data_train = load_data_sample_stereo(config['data_files']['mc']['train_sample']['magic']['hillas_output'], True,is_disp)
 else:
     shower_data_train = load_data_sample(config['data_files']['mc']['train_sample'])
 
@@ -255,7 +321,7 @@ shower_data_train = shower_data_train.join(mc_weights)
 # --- Test sample ---
 info_message('Loading MC test data...', prefix='EnergyRF')
 if is_stereo:
-    shower_data_test = load_data_sample_stereo(config['data_files']['mc']['test_sample']['magic']['hillas_output'], True)
+    shower_data_test = load_data_sample_stereo(config['data_files']['mc']['test_sample']['magic']['hillas_output'], True,is_disp)
 else:
     shower_data_test = load_data_sample(config['data_files']['mc']['test_sample'])
 
@@ -272,21 +338,31 @@ shower_data_test = shower_data_test.query(config['energy_rf']['cuts'])
 # --- Training the direction RF ---
 info_message('Training RF...', prefix='EnergyRF')
 
-energy_estimator = EnergyEstimatorPandas(config['energy_rf']['features'],
+energy_estimator = EnergyEstimatorPandas(config['energy_rf']['features'],config['energy_rf']['training_conditions'],
                                          **config['energy_rf']['settings'])
+
+if energy_estimator.single_RF:
+    shower_data_train = Single_RF_data(shower_data_train)
+    shower_data_test = Single_RF_data(shower_data_test)
+
 energy_estimator.fit(shower_data_train)
 energy_estimator.save(config['energy_rf']['save_name'])
 #energy_estimator.load(config['energy_rf']['save_name'])
 
 info_message('Parameter importances', prefix='EnergyRF')
 print('')
-for tel_id in energy_estimator.telescope_regressors:
-    feature_importances = energy_estimator.telescope_regressors[tel_id].feature_importances_
-
-    print(f'  tel_id: {tel_id}')
+if energy_estimator.single_RF :
+    feature_importances = energy_estimator.telescope_regressors.feature_importances_
     for feature, importance in zip(energy_estimator.feature_names, feature_importances):
         print(f"  {feature:.<15s}: {importance:.4f}")
     print('')
+else:
+    for tel_id in energy_estimator.telescope_regressors:
+        feature_importances = energy_estimator.telescope_regressors[tel_id].feature_importances_
+        print(f'  tel_id: {tel_id}')
+        for feature, importance in zip(energy_estimator.feature_names, feature_importances):
+            print(f"  {feature:.<15s}: {importance:.4f}")
+        print('')
 
 info_message('Applying RF...', prefix='EnergyRF')
 energy_reco = energy_estimator.predict(shower_data_test)
@@ -296,11 +372,15 @@ shower_data_test = shower_data_test.join(energy_reco)
 info_message('Evaluating performance...', prefix='EnergyRF')
 
 idx = pd.IndexSlice
+if energy_estimator.single_RF:
 
-m1_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 1], ['true_energy', 'energy_reco']],
-                                    'energy_reco')
-m2_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 2], ['true_energy', 'energy_reco']],
-                                    'energy_reco')
+    m_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :], ['true_energy', 'energy_reco_mean']],
+                                        'energy_reco_mean')
+else:
+    m1_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 1], ['true_energy', 'energy_reco']],
+                                        'energy_reco')
+    m2_migmatrix = evaluate_performance(shower_data_test.loc[idx[:, :, 2], ['true_energy', 'energy_reco']],
+                                        'energy_reco')
 
 migmatrix = evaluate_performance(shower_data_test, 'energy_reco_mean')
 
@@ -312,116 +392,157 @@ migmatrix = evaluate_performance(shower_data_test, 'energy_reco_mean')
 #pyplot.style.use('presentation')
 
 pyplot.figure(figsize=(12, 6))
+if energy_estimator.single_RF:
+    grid_shape = (1, 2)
 
-grid_shape = (2, 3)
+    pyplot.subplot2grid(grid_shape, (0, 0))
+    pyplot.loglog()
+    pyplot.title('Single RF estimation')
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylabel('E$_{est}$, TeV')
 
-pyplot.subplot2grid(grid_shape, (0, 0))
-pyplot.loglog()
-pyplot.title('M1 estimation')
-pyplot.xlabel('E$_{true}$, TeV')
-pyplot.ylabel('E$_{est}$, TeV')
+    pyplot.pcolormesh(10 ** m_migmatrix['XEdges'], 10 ** m_migmatrix['YEdges'], m_migmatrix['Hist'].transpose(),
+                      cmap='jet', norm=colors.LogNorm(vmin=1e-3, vmax=1))
+    pyplot.colorbar()
 
-pyplot.pcolormesh(10**m1_migmatrix['XEdges'], 10**m1_migmatrix['YEdges'], m1_migmatrix['Hist'].transpose(),
-                  cmap='jet', norm=colors.LogNorm(vmin=1e-3, vmax=1))
-pyplot.colorbar()
+    pyplot.subplot2grid(grid_shape, (0, 1))
+    pyplot.semilogx()
+    pyplot.title('Single RF estimation')
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylim(-1, 1)
 
-pyplot.subplot2grid(grid_shape, (1, 0))
-pyplot.semilogx()
-pyplot.title('M1 estimation')
-pyplot.xlabel('E$_{true}$, TeV')
-pyplot.ylim(-1, 1)
+    pyplot.plot(10 ** m_migmatrix['X'], m_migmatrix['68%']['mean'],
+                linestyle='-', color='C0', label='Bias')
 
-pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['mean'],
-            linestyle='-', color='C0', label='Bias')
+    pyplot.plot(10 ** m_migmatrix['X'], m_migmatrix['68%']['rms'],
+                linestyle=':', color='red', label='RMS')
 
-pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['rms'],
-            linestyle=':', color='red', label='RMS')
+    pyplot.plot(10 ** m_migmatrix['X'], m_migmatrix['68%']['upper'],
+                linestyle='--', color='C1', label='68% containment')
+    pyplot.plot(10 ** m_migmatrix['X'], m_migmatrix['68%']['lower'],
+                linestyle='--', color='C1')
 
-pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['upper'],
-            linestyle='--', color='C1', label='68% containment')
-pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['lower'],
-            linestyle='--', color='C1')
+    pyplot.plot(10 ** m_migmatrix['X'], m_migmatrix['95%']['upper'],
+                linestyle=':', color='C2', label='95% containment')
+    pyplot.plot(10 ** m_migmatrix['X'], m_migmatrix['95%']['lower'],
+                linestyle=':', color='C2')
 
-pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['95%']['upper'],
-            linestyle=':', color='C2', label='95% containment')
-pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['95%']['lower'],
-            linestyle=':', color='C2')
+    pyplot.grid(linestyle=':')
+    pyplot.legend()
+    pyplot.tight_layout()
+    pyplot.savefig('Energy_Single_RF_migmatrix.png')
+    pyplot.close()
 
-pyplot.grid(linestyle=':')
-pyplot.legend()
+else:
+    grid_shape = (2, 3)
 
-pyplot.subplot2grid(grid_shape, (0, 1))
-pyplot.loglog()
-pyplot.title('M2 estimation')
-pyplot.xlabel('E$_{true}$, TeV')
-pyplot.ylabel('E$_{est}$, TeV')
+    pyplot.subplot2grid(grid_shape, (0, 0))
+    pyplot.loglog()
+    pyplot.title('M1 estimation')
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylabel('E$_{est}$, TeV')
 
-pyplot.pcolormesh(10**m2_migmatrix['XEdges'], 10**m2_migmatrix['YEdges'], m2_migmatrix['Hist'].transpose(),
-                  cmap='jet', norm=colors.LogNorm(vmin=1e-3, vmax=1))
-pyplot.colorbar()
+    pyplot.pcolormesh(10**m1_migmatrix['XEdges'], 10**m1_migmatrix['YEdges'], m1_migmatrix['Hist'].transpose(),
+                      cmap='jet', norm=colors.LogNorm(vmin=1e-3, vmax=1))
+    pyplot.colorbar()
 
-pyplot.subplot2grid(grid_shape, (1, 1))
-pyplot.semilogx()
-pyplot.title('M2 estimation')
-pyplot.xlabel('E$_{true}$, TeV')
-pyplot.ylim(-1, 1)
+    pyplot.subplot2grid(grid_shape, (1, 0))
+    pyplot.semilogx()
+    pyplot.title('M1 estimation')
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylim(-1, 1)
 
-pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['mean'],
-            linestyle='-', color='C0', label='Bias')
+    pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['mean'],
+                linestyle='-', color='C0', label='Bias')
 
-pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['rms'],
-            linestyle=':', color='red', label='RMS')
+    pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['rms'],
+                linestyle=':', color='red', label='RMS')
 
-pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['upper'],
-            linestyle='--', color='C1', label='68% containment')
-pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['lower'],
-            linestyle='--', color='C1')
+    pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['upper'],
+                linestyle='--', color='C1', label='68% containment')
+    pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['68%']['lower'],
+                linestyle='--', color='C1')
 
-pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['95%']['upper'],
-            linestyle=':', color='C2', label='95% containment')
-pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['95%']['lower'],
-            linestyle=':', color='C2')
+    pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['95%']['upper'],
+                linestyle=':', color='C2', label='95% containment')
+    pyplot.plot(10**m1_migmatrix['X'], m1_migmatrix['95%']['lower'],
+                linestyle=':', color='C2')
 
-pyplot.grid(linestyle=':')
-pyplot.legend()
+    pyplot.grid(linestyle=':')
+    pyplot.legend()
 
-pyplot.subplot2grid(grid_shape, (0, 2))
-pyplot.title('M1+M2 estimation')
-pyplot.loglog()
-pyplot.xlabel('E$_{true}$, TeV')
-pyplot.ylabel('E$_{est}$, TeV')
+    pyplot.subplot2grid(grid_shape, (0, 1))
+    pyplot.loglog()
+    pyplot.title('M2 estimation')
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylabel('E$_{est}$, TeV')
 
-pyplot.pcolormesh(10**migmatrix['XEdges'], 10**migmatrix['YEdges'], migmatrix['Hist'].transpose(),
-                  cmap='jet', norm=colors.LogNorm(vmin=1e-3, vmax=1))
-pyplot.colorbar()
+    pyplot.pcolormesh(10**m2_migmatrix['XEdges'], 10**m2_migmatrix['YEdges'], m2_migmatrix['Hist'].transpose(),
+                      cmap='jet', norm=colors.LogNorm(vmin=1e-3, vmax=1))
+    pyplot.colorbar()
 
-pyplot.subplot2grid(grid_shape, (1, 2))
-pyplot.semilogx()
-pyplot.title('M1+M2 estimation')
-pyplot.xlabel('E$_{true}$, TeV')
-pyplot.ylim(-1, 1)
+    pyplot.subplot2grid(grid_shape, (1, 1))
+    pyplot.semilogx()
+    pyplot.title('M2 estimation')
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylim(-1, 1)
 
-pyplot.plot(10**migmatrix['X'], migmatrix['68%']['mean'],
-            linestyle='-', color='C0', label='Bias')
+    pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['mean'],
+                linestyle='-', color='C0', label='Bias')
 
-pyplot.plot(10**migmatrix['X'], migmatrix['68%']['rms'],
-            linestyle=':', color='red', label='RMS')
+    pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['rms'],
+                linestyle=':', color='red', label='RMS')
 
-pyplot.plot(10**migmatrix['X'], migmatrix['68%']['upper'],
-            linestyle='--', color='C1', label='68% containment')
-pyplot.plot(10**migmatrix['X'], migmatrix['68%']['lower'],
-            linestyle='--', color='C1')
+    pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['upper'],
+                linestyle='--', color='C1', label='68% containment')
+    pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['68%']['lower'],
+                linestyle='--', color='C1')
 
-pyplot.plot(10**migmatrix['X'], migmatrix['95%']['upper'],
-            linestyle=':', color='C2', label='95% containment')
-pyplot.plot(10**migmatrix['X'], migmatrix['95%']['lower'],
-            linestyle=':', color='C2')
+    pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['95%']['upper'],
+                linestyle=':', color='C2', label='95% containment')
+    pyplot.plot(10**m2_migmatrix['X'], m2_migmatrix['95%']['lower'],
+                linestyle=':', color='C2')
 
-pyplot.grid(linestyle=':')
-pyplot.legend()
+    pyplot.grid(linestyle=':')
+    pyplot.legend()
 
-pyplot.tight_layout()
+    pyplot.subplot2grid(grid_shape, (0, 2))
+    pyplot.title('M1+M2 estimation')
+    pyplot.loglog()
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylabel('E$_{est}$, TeV')
 
-#pyplot.show()
-pyplot.savefig('Energy_RF_migmatrix.png')
-pyplot.close()
+    pyplot.pcolormesh(10**migmatrix['XEdges'], 10**migmatrix['YEdges'], migmatrix['Hist'].transpose(),
+                      cmap='jet', norm=colors.LogNorm(vmin=1e-3, vmax=1))
+    pyplot.colorbar()
+
+    pyplot.subplot2grid(grid_shape, (1, 2))
+    pyplot.semilogx()
+    pyplot.title('M1+M2 estimation')
+    pyplot.xlabel('E$_{true}$, TeV')
+    pyplot.ylim(-1, 1)
+
+    pyplot.plot(10**migmatrix['X'], migmatrix['68%']['mean'],
+                linestyle='-', color='C0', label='Bias')
+
+    pyplot.plot(10**migmatrix['X'], migmatrix['68%']['rms'],
+                linestyle=':', color='red', label='RMS')
+
+    pyplot.plot(10**migmatrix['X'], migmatrix['68%']['upper'],
+                linestyle='--', color='C1', label='68% containment')
+    pyplot.plot(10**migmatrix['X'], migmatrix['68%']['lower'],
+                linestyle='--', color='C1')
+
+    pyplot.plot(10**migmatrix['X'], migmatrix['95%']['upper'],
+                linestyle=':', color='C2', label='95% containment')
+    pyplot.plot(10**migmatrix['X'], migmatrix['95%']['lower'],
+                linestyle=':', color='C2')
+
+    pyplot.grid(linestyle=':')
+    pyplot.legend()
+
+    pyplot.tight_layout()
+
+    #pyplot.show()
+    pyplot.savefig('Energy_RF_migmatrix.png')
+    pyplot.close()
