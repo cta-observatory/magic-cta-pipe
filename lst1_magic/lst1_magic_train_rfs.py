@@ -11,6 +11,8 @@ import warnings
 import argparse
 import pandas as pd
 import numpy as np
+import sys
+sys.path.append('/home/gpirola/ctasoft/magic-cta-pipe/')
 from event_processing import EventClassifierPandas
 from event_processing import DirectionEstimatorPandas
 from event_processing import EnergyEstimatorPandas
@@ -117,9 +119,9 @@ def train_energy_rf(data_path, config):
     weights = get_weights(data_train)
 
     data_train['event_weight'] = weights
-
+    data_train['true_energy'] = data_train['mc_energy']
     # --- train RF ---
-    energy_estimator = EnergyEstimatorPandas(config['features'], **config['settings'])
+    energy_estimator = EnergyEstimatorPandas(config['features'],config['training_conditions'], **config['settings'])
 
     print('\nTraining the energy RF...')
 
@@ -159,10 +161,13 @@ def train_direction_rf(data_path, tel_discriptions, config):
     data_train['event_weight'] = weights
 
     # --- train RF ---
-    direction_estimator = DirectionEstimatorPandas(config['features'], tel_discriptions, **config['settings'])
+    direction_estimator = DirectionEstimatorPandas(config['features'], tel_discriptions, config['training_conditions'] ,**config['settings'])
 
     print('\nTraining the direction RF...')
-
+    data_train['tel_alt'] = data_train['alt_tel']
+    data_train['tel_az'] = data_train['az_tel']
+    data_train['true_az'] = data_train['mc_az']
+    data_train['true_alt'] = data_train['mc_alt']
     direction_estimator.fit(data_train)
 
     # --- check the parameter importances ---
@@ -207,7 +212,7 @@ def train_classifier_rf(data_path_gamma, data_path_bkg, config):
     # --- train RF ---
     data_train = data_gamma.append(data_bkg)
 
-    class_estimator = EventClassifierPandas(config['features'], **config['settings'])
+    class_estimator = EventClassifierPandas(config['features'], config['training_conditions'],**config['settings'])
 
     print('\nTraining the classifier RF...')
 

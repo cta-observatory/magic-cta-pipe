@@ -45,7 +45,7 @@ event_coincidence:
     
 
 stereo_reco: 
-    subarray: '/../data/subarray_lst1_magic.pkl'
+    subarray: "/home/gpirola/ctasoft/magic-cta-pipe/lst1_magic/data/subarray_lst1_magic.pkl"
     allowed_tels_num: 3
 
 
@@ -54,8 +54,10 @@ energy_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 5
-
-    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
+    training_conditions:
+        weight: False
+        single_RF: False
+    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max','intensity_width_1']
 
 
 direction_rf:
@@ -63,7 +65,9 @@ direction_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 5
-        
+    training_conditions:
+        weight: False
+        single_RF: False
     features: 
         disp: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
         pos_angle_shift: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
@@ -74,7 +78,9 @@ classifier_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 5
-
+    training_conditions:
+        weight: False
+        single_RF: False
     features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
 
 
