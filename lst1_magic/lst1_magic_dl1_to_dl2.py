@@ -10,6 +10,8 @@ import argparse
 import pandas as pd
 from astropy import units as u
 from astropy.time import Time
+import sys
+sys.path.append('/home/gpirola/ctasoft/magic-cta-pipe/')
 from event_processing import EnergyEstimatorPandas, DirectionEstimatorPandas, EventClassifierPandas
 from utils import transform_to_radec
 
