@@ -2,19 +2,19 @@ data_files:
     mc:
         train_sample:
             magic1:
-                input_mask: "../../../MCs/MAGIC/ST.03.07/za05to35/Train_sample/1.Calibrated/GA_M1*root"
-                hillas_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Train_sample/2.Hillas/iv_hillas_m1.h5"
+                input_mask: "/home/giorgio/Desktop/data/mc/MAGIC_stereo/Calibrated/train/M1/GA*_Y_*.root"
+                hillas_output: "/home/giorgio/Desktop/data/mc/MAGIC_stereo/MC_train_hillas_M1.h5"
             magic2:
-                input_mask: "../../../MCs/MAGIC/ST.03.07/za05to35/Train_sample/1.Calibrated/GA_M2*root"
-                hillas_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Train_sample/2.Hillas/iv_hillas_m2.h5"
+                input_mask: "/home/giorgio/Desktop/data/mc/MAGIC_stereo/Calibrated/train/M2/GA*_Y_*.root"
+                hillas_output: "/home/giorgio/Desktop/data/mc/MAGIC_stereo/MC_train_hillas_M2.h5"
                 
         test_sample:
             magic1:
-                input_mask: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/1.Calibrated/GA_M1*root"
+                input_mask: "/home/giorgio/Desktop/data/mc/MAGIC_stereo/Calibrated/test/M1/GA*_Y_*.root"
                 hillas_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/2.Hillas/iv_hillas_m1.h5"
                 reco_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/3.Reco/iv_reco_m1.h5"
             magic2:
-                input_mask: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/1.Calibrated/GA_M2*root"
+                input_mask: "/home/giorgio/Desktop/data/mc/MAGIC_stereo/Calibrated/test/M2/GA*_Y_*.root"
                 hillas_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/2.Hillas/iv_hillas_m2.h5"
                 reco_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/3.Reco/iv_reco_m2.h5"
                 
