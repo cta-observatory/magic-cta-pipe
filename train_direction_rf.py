@@ -274,8 +274,9 @@ shower_data_test = shower_data_test.query(config['direction_rf']['cuts'])
 info_message('Training the RF\n', prefix='DirectionRF')
 
 direction_estimator = DirectionEstimatorPandas(config['direction_rf']['features'],
-                                               magic_tel_descriptions,
+                                               magic_tel_descriptions,config['energy_rf']['training_conditions'],
                                                **config['direction_rf']['settings'])
+
 direction_estimator.fit(shower_data_train)
 direction_estimator.save(config['direction_rf']['save_name'])
 #direction_estimator.load(config['direction_rf']['save_name'])

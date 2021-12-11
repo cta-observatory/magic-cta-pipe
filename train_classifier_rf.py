@@ -136,7 +136,7 @@ def load_data_sample_stereo(input_file, is_mc):
     if is_mc:
         dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id', 'true_alt', 'true_az', 'true_energy', 'true_core_x', 'true_core_y']
     else:
-        dropped_keys = ['tel_alt','tel_az','n_islands', 'mjd', 'tel_id']
+        dropped_keys = ['tel_alt','tel_az','n_islands', 'tel_id']# 'mjd', 'tel_id']
 
     stereo_data.drop(dropped_keys, axis=1, inplace=True)
 
@@ -253,7 +253,7 @@ bkg_data['true_event_class'] = 1
 bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
 
 # Dropping extra keys
-bkg_data.drop('mjd', axis=1, inplace=True)
+#bkg_data.drop('mjd', axis=1, inplace=True)
 mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
 # Computing event weights
@@ -274,6 +274,7 @@ shower_data_train = mc_data.append(bkg_data)
 
 # -------------------
 # --- Test sample ---
+'''
 info_message('Loading MC test data...', prefix='ClassifierRF')
 if is_stereo:
     mc_data = load_data_sample_stereo(config['data_files']['mc']['test_sample']['magic']['hillas_output'], True)
@@ -294,29 +295,29 @@ bkg_data['true_event_class'] = 1
 bkg_data = bkg_data.query('tel_alt < 1.5707963267948966')
 
 # Dropping extra keys
-bkg_data.drop('mjd', axis=1, inplace=True)
+#bkg_data.drop('mjd', axis=1, inplace=True)
 mc_data.drop(['true_energy', 'true_alt', 'true_az'], axis=1, inplace=True)
 
 # Merging the test sample
 shower_data_test = mc_data.append(bkg_data)
 # -------------------
-
+'''
 
 info_message('Preprocessing...', prefix='ClassifierRF')
 
 # --- Data preparation ---
 shower_data_train['multiplicity'] = shower_data_train['intensity'].groupby(level=['obs_id', 'event_id']).count()
-shower_data_test['multiplicity'] = shower_data_test['intensity'].groupby(level=['obs_id', 'event_id']).count()
+#shower_data_test['multiplicity'] = shower_data_test['intensity'].groupby(level=['obs_id', 'event_id']).count()
 
 # Applying the cuts
 shower_data_train = shower_data_train.query(config['classifier_rf']['cuts'])
-shower_data_test = shower_data_test.query(config['classifier_rf']['cuts'])
+#shower_data_test = shower_data_test.query(config['classifier_rf']['cuts'])
 
 # --- Training the direction RF ---
 info_message('Training RF...', prefix='ClassifierRF')
 
-class_estimator = EventClassifierPandas(config['classifier_rf']['features'],
-                                         **config['classifier_rf']['settings'])
+class_estimator = EventClassifierPandas(config['classifier_rf']['features'],config['energy_rf']['training_conditions'],
+                                        **config['classifier_rf']['settings'])
 class_estimator.fit(shower_data_train)
 class_estimator.save(config['classifier_rf']['save_name'])
 #class_estimator.load(config['classifier_rf']['save_name'])
