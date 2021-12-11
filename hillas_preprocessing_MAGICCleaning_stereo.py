@@ -135,7 +135,7 @@ def process_dataset_mc(input_mask, output_name):
         # Event source
         source = MAGICEventSource(input_url=input_mask)
         
-        camera = source.subarray.tel[1].camera
+        camera = source.subarray.tel[1].camera.geometry
 
         magic_clean = MAGIC_Cleaning.magic_clean(camera,cleaning_config)
 
