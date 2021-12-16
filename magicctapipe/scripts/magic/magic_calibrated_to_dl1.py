@@ -14,7 +14,6 @@ from astropy import units as u
 
 from ctapipe_io_magic import MAGICEventSource
 
-from ctapipe.io import DataWriter
 from ctapipe.containers import (
     IntensityStatisticsContainer,
     ImageParametersContainer,
@@ -23,6 +22,10 @@ from ctapipe.containers import (
     CameraHillasParametersContainer,
     CameraTimingParametersContainer,
 )
+
+from ctapipe.coordinates import TelescopeFrame
+
+from ctapipe.io import DataWriter
 
 from ctapipe.image import (
     concentration_parameters,
@@ -41,14 +44,8 @@ from magicctapipe.utils import (
     get_leakage,
 )
 
-DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer(
-                                hillas=CameraHillasParametersContainer(),
-                                timing=CameraTimingParametersContainer(),
-                           )
-DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer(
-                                    hillas=CameraHillasParametersContainer(),
-                                    timing=CameraTimingParametersContainer(),
-                                )
+DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer()
+DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer()
 DEFAULT_TRUE_IMAGE_PARAMETERS.intensity_statistics = IntensityStatisticsContainer(
     max=np.int32(-1),
     min=np.int32(-1),
@@ -106,9 +103,11 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
         source = MAGICEventSource(input_url=input_file)
         is_simulation = source.is_mc
 
-        camera_old = source.subarray.tel[source.telescope].camera.geometry
-        camera_refl = reflected_camera_geometry(camera_old)
-        geometry = scale_camera_geometry(camera_refl, aberration_factor)
+        geometry_camera_frame = source.subarray.tel[source.telescope].camera.geometry
+        geometry = geometry_camera_frame.transform_to(TelescopeFrame())
+        #camera_old = source.subarray.tel[source.telescope].camera.geometry
+        #camera_refl = reflected_camera_geometry(camera_old)
+        #geometry = scale_camera_geometry(camera_refl, aberration_factor)
         if is_simulation:
             clean_config["findhotpixels"] = False
         else:
