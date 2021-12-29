@@ -111,7 +111,10 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
         if is_simulation:
             clean_config["findhotpixels"] = False
         else:
-            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config)
+            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
+                is_simulation=is_simulation,
+                config=bad_pixels_config
+            )
 
         magic_clean = MAGIC_Cleaning.magic_clean(geometry,clean_config)
 
