@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 import glob
 import time
@@ -46,7 +46,7 @@ def check_pointing_directions(input_data_mask_lst, input_data_mask_magic, output
 
         azimuths = np.array([])
         zeniths = np.array([])
-        
+
         data_mask = f'{parent_dir}/*Run{obs_id}*.h5'
 
         paths_list = glob.glob(data_mask)
@@ -54,7 +54,7 @@ def check_pointing_directions(input_data_mask_lst, input_data_mask_magic, output
 
         for i_path, path in enumerate(paths_list):
 
-            if (i_path % 10 == 0) or (path == paths_list[-1]): 
+            if (i_path % 10 == 0) or (path == paths_list[-1]):
 
                 print(path)
 
@@ -82,9 +82,9 @@ def check_pointing_directions(input_data_mask_lst, input_data_mask_magic, output
             obs_id = int(input_data['RunHeaders']['MRawRunHeader_1./MRawRunHeader_1.fRunNumber'].array()[0])
             azimuths = np.array(input_data['Events'][f'MPointingPos_1.fAz'].array())
             zeniths = np.array(np.array(input_data['Events'][f'MPointingPos_1.fZd'].array()))
-            
+
         pyplot.plot(
-            azimuths, zeniths, linewidth=10, alpha=0.5, 
+            azimuths, zeniths, linewidth=10, alpha=0.5,
             color=color_cycle[i_path%10], label=f'MAGIC ID {obs_id}'
         )
 
@@ -95,21 +95,21 @@ def check_pointing_directions(input_data_mask_lst, input_data_mask_magic, output
     pyplot.savefig(output_file)
 
     print(f'\nOutput file: {output_file}')
-        
+
 
 def main():
 
     start_time = time.time()
 
-    arg_parser = argparse.ArgumentParser() 
+    arg_parser = argparse.ArgumentParser()
 
     arg_parser.add_argument(
-        '--input-data-lst', '-l', dest='input_data_lst', type=str, 
+        '--input-data-lst', '-l', dest='input_data_lst', type=str,
         help='Path to LST-1 DL1 data files.'
     )
 
     arg_parser.add_argument(
-        '--input-data-magic', '-m', dest='input_data_magic', type=str, 
+        '--input-data-magic', '-m', dest='input_data_magic', type=str,
         help='Path to MAGIC SuperStar data files.'
     )
 

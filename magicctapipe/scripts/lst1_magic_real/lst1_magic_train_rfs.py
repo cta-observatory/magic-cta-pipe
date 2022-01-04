@@ -240,12 +240,12 @@ def main():
     arg_parser = argparse.ArgumentParser()
 
     arg_parser.add_argument(
-        '--type-rf', '-t', dest='type_rf', type=str, 
-        help='Type of RF which will be trained, "energy", "direction" or "classifier"'  
+        '--type-rf', '-t', dest='type_rf', type=str,
+        help='Type of RF which will be trained, "energy", "direction" or "classifier"'
     )
 
     arg_parser.add_argument(
-        '--input-data-gamma', '-g', dest='input_data_gamma', type=str, 
+        '--input-data-gamma', '-g', dest='input_data_gamma', type=str,
         help='Path to input DL1+stereo gamma-ray data file(s) for training RF, e.g., dl1_stereo_gamma_run*.h5'
     )
 
@@ -255,7 +255,7 @@ def main():
     )
 
     arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, 
+        '--output-data', '-o', dest='output_data', type=str,
         help='Path and name of an output data file of trained RF with joblib format, e.g., classifier_rf.joblib'
     )
 

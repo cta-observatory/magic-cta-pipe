@@ -59,12 +59,12 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
     config_lst = config['LST']
     config_magic = config['MAGIC']
 
-    config_magic['magic_clean']['findhotpixels'] = False   # for MC data 
+    config_magic['magic_clean']['findhotpixels'] = False   # for MC data
 
     print(f'\nConfiguration for LST data process:\n{config_lst}')
     print(f'\nConfiguration for MAGIC data process:\n{config_magic}')
 
-    # --- configure the processors --- 
+    # --- configure the processors ---
     extractor_lst = ImageExtractor.from_name(
         'LocalPeakWindowSum', subarray=subarray, config=Config(config_lst['LocalPeakWindowSum'])
     )
@@ -84,7 +84,7 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
 
     # --- process the input data ---
     with HDF5TableWriter(filename=output_data_path, group_name='events', overwrite=True) as writer:
-        
+
         for tel_type in mc_tel_ids.keys():
 
             print(f'\nProcessing the {tel_type} events...')
@@ -110,20 +110,20 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
                     signal_pixels = tailcuts_clean(
                         geom_camera[tel_id], image, **config_lst['tailcuts_clean']
                     )
-                    
+
                     num_islands, island_labels = number_of_islands(geom_camera[tel_id], signal_pixels)
 
                     n_pixels_on_island = np.bincount(island_labels.astype(np.int))
-                    n_pixels_on_island[0] = 0  
+                    n_pixels_on_island[0] = 0
 
                     max_island_label = np.argmax(n_pixels_on_island)
                     signal_pixels[island_labels != max_island_label] = False
 
                 elif ( tel_type == 'MAGIC-I' ) or ( tel_type == 'MAGIC-II' ):
 
-                    # --- calibration --- 
+                    # --- calibration ---
                     calibrator_magic(event)
-                    
+
                     # --- image cleaning (sum image clean) ---
                     signal_pixels, image, peak_time = magic_clean.clean_image(
                         event.dl1.tel[tel_id].image, event.dl1.tel[tel_id].peak_time
@@ -140,30 +140,30 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
                 if np.any(image_cleaned):
 
                     # --- Hillas parameter calculation ---
-                    try:    
+                    try:
                         hillas_params = hillas_parameters(geom_camera[tel_id], image_cleaned)
-                    
+
                     except:
                         print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
                             'Hillas parameter calculation failed. Skipping.')
                         continue
-                        
+
                     # --- Timing parameter calculation ---
-                    try:    
+                    try:
                         timing_params = timing_parameters(
                             geom_camera[tel_id], image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
                         )
-                    
+
                     except:
                         print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
                             'Timing parameter calculation failed. Skipping.')
                         continue
-                    
-                    # --- Leakage parameter calculation --- 
+
+                    # --- Leakage parameter calculation ---
                     try:
                         leakage_params = leakage(geom_camera[tel_id], image, signal_pixels)
-                    
-                    except: 
+
+                    except:
                         print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
                             'Leakage parameter calculation failed. Skipping.')
                         continue
@@ -194,12 +194,12 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
 
                     elif tel_type == 'MAGIC-I':
                         event_info.tel_id = 2
-                    
+
                     elif tel_type == 'MAGIC-II':
                         event_info.tel_id = 3
 
                     writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
-                    
+
                 else:
                     print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
                             'Could not survive the image cleaning. Skipping.')
@@ -216,23 +216,23 @@ def main():
     arg_parser = argparse.ArgumentParser()
 
     arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str, 
+        '--input-data', '-i', dest='input_data', type=str,
         help='Path to an input MC DL0 data file, e.g., gamma_40deg_90deg_run1___*.simtel.gz'
     )
 
     arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, 
+        '--output-data', '-o', dest='output_data', type=str,
         help='Path and name of an output data file with HDF5 format, e.g., dl1_gamma_40deg_90deg.h5'
     )
 
     arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, 
+        '--config-file', '-c', dest='config_file', type=str,
         help='Path to a config file with yaml format, e.g., config.yaml'
     )
 
     args = arg_parser.parse_args()
 
-    # --- process the MC DL0 data to DL1 --- 
+    # --- process the MC DL0 data to DL1 ---
     config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
 
     mc_dl0_to_dl1(args.input_data, args.output_data, config_lst1_magic)
