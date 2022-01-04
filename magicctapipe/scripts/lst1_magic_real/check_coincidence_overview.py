@@ -3,9 +3,7 @@
 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-import os
 import re
-import copy
 import time
 import glob
 import argparse
@@ -13,6 +11,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from matplotlib import pyplot
+from utils import get_obs_ids_from_name
 
 pyplot.rcParams['figure.figsize'] = (20, 7)
 pyplot.rcParams['font.size'] = 20
@@ -21,29 +20,17 @@ pyplot.rcParams['grid.linestyle'] = ':'
 color_cycle = pyplot.rcParams['axes.prop_cycle'].by_key()['color']
 
 
-def check_coincidence_overview(input_dir, output_dir, get_profile='False'):
+def check_coincidence_overview(input_data_mask, output_file, get_profile='False'):
 
-    input_data_mask = f'{input_dir}/*.h5'
+    obs_ids_list = get_obs_ids_from_name(input_data_mask)
 
-    # --- get observation IDs ---
-    paths_list = glob.glob(input_data_mask)
-    paths_list.sort()
-
-    obs_ids_list = []
-
-    for path in paths_list:
-
-        obs_id = re.findall('.*Run(\d+)\.(\d+)\.h5', path)[0][0]
-        obs_ids_list.append(obs_id)
-
-    obs_ids_list = np.unique(obs_ids_list)
-
-    print(f'\nLST observation IDs: {obs_ids_list}')
-
+    print(f'\nFound the following observation IDs: {obs_ids_list}')
+    
     # --- check the overview of the coincidence ---
-    container = {}
+    parent_dir = str(Path(input_data_mask).parent)
+    output_dir = str(Path(output_file).parent)
 
-    os.makedirs(output_dir, exist_ok=True)
+    container = {}
 
     print('\nLoading the following input data files:')
 
@@ -51,7 +38,7 @@ def check_coincidence_overview(input_dir, output_dir, get_profile='False'):
 
         print(f'\nRun{obs_id}:')
 
-        data_mask = f'{input_dir}/*Run{obs_id}.*.h5'
+        data_mask = f'{parent_dir}/*Run{obs_id}.*.h5'
 
         paths_list = glob.glob(data_mask)
         paths_list.sort()
@@ -110,6 +97,7 @@ def check_coincidence_overview(input_dir, output_dir, get_profile='False'):
 
                     pyplot.savefig(f'{output_dir}/profile_{tel_type}_Run{obs_id}.{subrun_id}.pdf')
                     pyplot.close()
+
 
     print('\nMaking an overview plot...')
 
@@ -230,9 +218,9 @@ def check_coincidence_overview(input_dir, output_dir, get_profile='False'):
     pyplot.grid()
     pyplot.legend(fontsize=15)
 
-    # --- number of coincident events ---
     for i_tel, tel_name in enumerate(['MAGIC-I', 'MAGIC-II']):
 
+        # --- number of coincident events ---
         pyplot.subplot2grid(grid, (2, i_tel))
         pyplot.title(f'LST-1 & {tel_name}')
         pyplot.xlabel('Unix time [sec]')
@@ -262,9 +250,7 @@ def check_coincidence_overview(input_dir, output_dir, get_profile='False'):
         pyplot.grid()
         pyplot.legend(fontsize=15)
 
-    # --- ratio of the coincidence ---
-    for i_tel, tel_name in enumerate(['MAGIC-I', 'MAGIC-II']):
-
+        # --- ratio of the coincidence ---
         pyplot.subplot2grid(grid, (3, i_tel))
         pyplot.title(f'LST-1 & {tel_name}')
         pyplot.xlabel('Unix time [sec]')
@@ -278,7 +264,7 @@ def check_coincidence_overview(input_dir, output_dir, get_profile='False'):
             for subset in subsets_list:
 
                 df = container[obs_id][subset].query(f'tel_name == "{tel_name}"')
-
+                
                 label = f'ID {int(obs_id)}' if (subset == subsets_list[-1]) else None     
 
                 pyplot.plot(
@@ -289,9 +275,9 @@ def check_coincidence_overview(input_dir, output_dir, get_profile='False'):
         pyplot.grid()
         pyplot.legend(fontsize=15)
 
-    pyplot.savefig(f'{output_dir}/overview.pdf')
+    pyplot.savefig(output_file)
 
-    print(f'\nOutput dir: {output_dir}')
+    print(f'\nOutput directory: {output_dir}')
 
 
 def main():
@@ -301,23 +287,23 @@ def main():
     arg_parser = argparse.ArgumentParser() 
 
     arg_parser.add_argument(
-        '--input-dir', '-i', dest='input_dir', type=str, 
-        help='Path to a directory where input data files are saved.'
+        '--input-data', '-i', dest='input_data', type=str, 
+        help='Path to input DL1 coincidence data files.'
     )
 
     arg_parser.add_argument(
-        '--output-dir', '-o', dest='output_dir', type=str,  
-        help='Path to a directory where output PDF files are saved.'
+        '--output-file', '-o', dest='output_file', type=str, default='./overview.pdf',
+        help='Path to an output overview file.'
     )
 
     arg_parser.add_argument(
         '--get-profile', '-p', dest='get_profile', type=str, default='False',
-        help='Whether the profile of the coincidence scan will be output or not, "True" or "False".'
+        help='If "True" the profiles of the coincidence scan will be also output.'
     )
 
     args = arg_parser.parse_args()
 
-    check_coincidence_overview(args.input_dir, args.output_dir, args.get_profile)
+    check_coincidence_overview(args.input_data, args.output_file, args.get_profile)
     
     print('\nDone.')
     print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')  

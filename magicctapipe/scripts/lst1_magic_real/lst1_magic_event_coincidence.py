@@ -3,7 +3,6 @@
 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-import os
 import sys
 import glob
 import yaml
@@ -24,7 +23,7 @@ __all__ = ['event_coincidence']
 
 def load_lst_data(input_data, type_lst_time):
 
-    print(f'\nLoading the LST-1 data file: {input_data}')
+    print(f'\nLoading the LST-1 data: {input_data}')
 
     with h5py.File(input_data, 'r') as f:
         keys = f.keys()
@@ -59,7 +58,7 @@ def load_lst_data(input_data, type_lst_time):
     data_lst.rename(columns=column_names, inplace=True)
     data_lst.set_index(['obs_id_lst', 'event_id_lst', 'tel_id'], inplace=True)
 
-    # --- remove unnecessary columns ---
+    # --- remove the unnecessary columns ---
     columns_list = [
         'log_intensity', 'n_pixels', 'mc_type', 'tel_pos_x', 'tel_pos_y', 'tel_pos_z',
         'calibration_id', 'trigger_type', 'ucts_trigger_type', 'mc_core_distance',
@@ -92,7 +91,7 @@ def load_lst_data(input_data, type_lst_time):
 
 def load_magic_data(input_data_mask):
 
-    print('\nLoading the following MAGIC data files:')
+    print('\nLoading the following MAGIC data:')
 
     data_magic = pd.DataFrame()
 
@@ -136,7 +135,7 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
     # --- load the MAGIC input data ---
     data_magic = load_magic_data(input_data_mask_magic)
     
-    # --- arange the LST-1 timestamps ---
+    # --- arrange the LST-1 timestamps ---
     mjd = data_magic['mjd'].values[0]
     obs_day = Time(mjd, format='mjd', scale='utc')
 
@@ -157,7 +156,7 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
         time_magic = df_magic['millisec'].values * ms2sec + df_magic['nanosec'].values * ns2sec
         time_magic = np.round(time_magic, precision)
 
-        print(f'\nExtracting the {tel_name} events within the LST-1 data observation time window...')
+        print(f'\nExtracting the {tel_name} events within the LST-1 observation time window...')
 
         window_width = config['window_width']
 
@@ -170,7 +169,7 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
         condition = (condition_lo & condition_hi)
 
         if np.sum(condition) == 0:
-            print(f'--> No {tel_name} events are found within the LST-1 data observation time window. Exiting.\n')
+            print(f'--> No {tel_name} events are found within the LST-1 observation time window. Exiting.\n')
             sys.exit()
 
         else:
@@ -249,7 +248,7 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
         obs_ids_magic = df_magic.iloc[indices_magic].index.get_level_values('obs_id')
         event_ids_magic = df_magic.iloc[indices_magic].index.get_level_values('event_id')
 
-        # --- arrange data frames ---
+        # --- arrange the data frames ---
         df_lst = data_lst.iloc[indices_lst]
 
         df_lst['obs_id'] = obs_ids_magic
@@ -325,9 +324,6 @@ def event_coincidence(input_data_lst, input_data_mask_magic, output_data, config
     print(f'LST-1 + MAGIC-I + MAGIC-II: {n_events:.0f} events ({n_events/n_events_total*100:.1f}%)')
 
     # --- save the data frames ---
-    output_dir = str(Path(output_data).parent)
-    os.makedirs(output_dir, exist_ok=True)
-
     data_stereo.to_hdf(output_data, key='events/params', mode='w') 
 
     data_profile = pd.merge(df_profile['MAGIC-I'], df_profile['MAGIC-II'], on='offset_us')

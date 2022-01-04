@@ -3,27 +3,25 @@
 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-import os
 import sys
 import time
 import yaml
 import argparse
 import warnings
-import numpy as np 
+import numpy as np
 import pandas as pd
-from pathlib import Path
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz, Angle
 from astropy.coordinates.angle_utilities import angular_separation
 from ctapipe.reco import HillasReconstructor
-from ctapipe.containers import HillasParametersContainer, ReconstructedShowerContainer
+from ctapipe.containers import HillasParametersContainer
 from magicctapipe.utils import calc_impact
 
 warnings.simplefilter('ignore')
 
 __all__ = ['stereo_reco']
 
- 
+
 def stereo_reco(input_data, output_data, config):
 
     print(f'\nConfiguration for the stereo reconstruction:\n{config}')
@@ -35,7 +33,7 @@ def stereo_reco(input_data, output_data, config):
     print(f'\nTelescope positions:\n{positions}')
 
     # --- load the input data ---
-    print(f'\nLoading the input data file: {input_data}')
+    print(f'\nLoading the input data: {input_data}')
 
     data_stereo = pd.read_hdf(input_data, key='events/params')
 
@@ -75,11 +73,11 @@ def stereo_reco(input_data, output_data, config):
         n_events_sep = np.sum(theta.to(u.deg) > theta_lim)
 
         if n_events_sep > 0:
-            print(f'--> {n_events_sep}/{n_events_lst} events are taken with the angular separation ' \
-                  f'larger than {theta_lim*60} arcmin. Exiting.\n')
+            print(f'--> {n_events_sep}/{n_events_lst} events are taken with the angular separation '
+                    f'larger than {theta_lim*60} arcmin. Exiting.\n')
             sys.exit()
 
-        else: 
+        else:
             print(f'--> All the events are taken with the angular separation less than {theta_lim*60} arcmin. Continue.')
 
     # --- apply the quality cuts ---
@@ -93,8 +91,8 @@ def stereo_reco(input_data, output_data, config):
     groupby = data_stereo.groupby(['obs_id', 'event_id']).size()
 
     # --- check the number of events ---
-    n_events_total = len(data_stereo.groupby(['obs_id', 'event_id']).size()) 
-    print(f'\nIn total {n_events_total} stereo events are found.') 
+    n_events_total = len(data_stereo.groupby(['obs_id', 'event_id']).size())
+    print(f'\nIn total {n_events_total} stereo events are found.')
 
     print('\nEvents with 2 tels info:')
 
@@ -109,7 +107,7 @@ def stereo_reco(input_data, output_data, config):
         df = data_stereo.query(f'(tel_id == {list(tel_ids)}) & (multiplicity == 2)')
         n_events = np.sum(df.groupby(['obs_id', 'event_id']).size().values == 2)
         print(f'{tel_name}: {n_events} events ({n_events/n_events_total*100:.1f}%)')
-        
+
     print('\nEvents with 3 tels info:')
 
     n_events = len(data_stereo.query(f'multiplicity == 3').groupby(['obs_id', 'event_id']).size())
@@ -124,23 +122,23 @@ def stereo_reco(input_data, output_data, config):
     event_ids_list = groupby.index.get_level_values('event_id').values
 
     for i_ev, (obs_id, event_id) in enumerate(zip(obs_ids_list, event_ids_list)):
-    
-        if i_ev%100 == 0:
+
+        if i_ev % 100 == 0:
             print(f'{i_ev} events')
-        
+
         df_ev = data_stereo.query(f'(obs_id == {obs_id}) & (event_id == {event_id})')
         tel_ids_list = df_ev.index.get_level_values('tel_id')
 
         array_pointing = SkyCoord(
             alt=u.Quantity(np.mean(df_ev['alt_tel'].values), u.rad),
-            az=u.Quantity(np.mean(df_ev['az_tel'].values), u.rad), 
+            az=u.Quantity(np.mean(df_ev['az_tel'].values), u.rad),
             frame=AltAz()
         )
-        
+
         hillas_params = {}
-        
-        for tel_id in tel_ids_list:    
-        
+
+        for tel_id in tel_ids_list:
+
             df_tel = df_ev.query(f'tel_id == {tel_id}')
 
             hillas_params[tel_id] = HillasParametersContainer()
@@ -154,11 +152,11 @@ def stereo_reco(input_data, output_data, config):
             hillas_params[tel_id].psi = Angle(df_tel['psi'].values[0], u.deg)
             hillas_params[tel_id].skewness = float(df_tel['skewness'].values[0])
             hillas_params[tel_id].kurtosis = float(df_tel['kurtosis'].values[0])
-        
+
         stereo_params = hillas_reconstructor.predict(hillas_params, subarray, array_pointing)
 
         if stereo_params.az < 0:
-                stereo_params.az = stereo_params.az + u.Quantity(2*np.pi, u.rad)
+            stereo_params.az = stereo_params.az + u.Quantity(2*np.pi, u.rad)
 
         for tel_id in tel_ids_list:
 
@@ -179,16 +177,13 @@ def stereo_reco(input_data, output_data, config):
             data_stereo.loc[(obs_id, event_id, tel_id), 'impact'] = impact.to(u.m).value
             data_stereo.loc[(obs_id, event_id, tel_id), 'h_max'] = stereo_params.h_max.to(u.m).value
             data_stereo.loc[(obs_id, event_id, tel_id), 'h_max_uncert'] = stereo_params.h_max_uncert.to(u.m).value
-            
+
     print(f'{i_ev+1} events processed.')
 
-    # --- store the DL1+stereo data file ---
-    output_dir = str(Path(output_data).parent)
-    os.makedirs(output_dir, exist_ok=True)
-
+    # --- save the data frame ---
     data_stereo.to_hdf(output_data, key='events/params')
 
-    print(f'\nOutput data file: {output_data}')
+    print(f'\nOutput data: {output_data}')
 
 
 def main():
@@ -198,8 +193,8 @@ def main():
     arg_parser = argparse.ArgumentParser()
 
     arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str, 
-        help='Path to a DL1 coincidence data file.' 
+        '--input-data', '-i', dest='input_data', type=str,
+        help='Path to a DL1 coincidence data file.'
     )
 
     arg_parser.add_argument(
@@ -209,7 +204,7 @@ def main():
 
     arg_parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-       help='Path to a configuration file with yaml extention.'
+        help='Path to a configuration file with yaml extention.'
     )
 
     args = arg_parser.parse_args()
@@ -219,7 +214,7 @@ def main():
     stereo_reco(args.input_data, args.output_data, config_lst1_magic['stereo_reco'])
 
     print('\nDone.')
-    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n') 
+    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':
