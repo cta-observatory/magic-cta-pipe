@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 import os
-import re 
+import re
 import time
 import glob
 import argparse
-import pandas as pd 
-import numpy as np
+import pandas as pd
 from pathlib import Path
 
 __all__ = [
@@ -51,7 +50,6 @@ def merge_hdf_files(input_data_mask, n_files=50, output_data=None):
             data_merged = pd.DataFrame()
 
             print(f'--> {output_data_subset}\n')
-            
 
     # --- merge the subset data ---
     print('Merging the subset data:')
@@ -66,7 +64,7 @@ def merge_hdf_files(input_data_mask, n_files=50, output_data=None):
         os.remove(path)
 
     if output_data != None:
-        
+
         # --- save the data frame ---
         data_merged.to_hdf(output_data, key='events/params')
 
@@ -101,7 +99,7 @@ def main():
     merge_hdf_files(args.input_data, args.n_files, args.output_data)
 
     print('\nDone.')
-    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')  
+    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':
