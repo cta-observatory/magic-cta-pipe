@@ -4,7 +4,6 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import EarthLocation, AltAz, SkyCoord
 from astropy.coordinates.builtin_frames import SkyOffsetFrame
-from gammapy.stats import WStatCountsStatistic
 
 
 __all__ = [

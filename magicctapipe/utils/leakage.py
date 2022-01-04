@@ -39,7 +39,7 @@ def get_border_masks_mars(geom):
     for pix in range(geom.n_pixels):
         if pix in outermostring:
             continue
-        for neigh in np.where(neighbors[pix][0,:].toarray() == True)[1]:
+        for neigh in np.where(neighbors[pix][0, :].toarray() == True)[1]:
             if neigh in outermostring:
                 outerring.append(pix)
 

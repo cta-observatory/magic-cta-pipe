@@ -1,9 +1,7 @@
 import os
 import sys
-import glob
 import yaml
 import copy
-import datetime
 import pandas as pd
 import numpy as np
 
@@ -24,6 +22,7 @@ __all__ = [
     "save_yaml_np",
     "convert_np_list_dict",
 ]
+
 
 def load_cfg_file(config_file):
     """Loads the configuration file (yaml format)
@@ -418,4 +417,3 @@ def convert_np_list_dict(d):
         elif type(d[k]) == np.ndarray:
             d[k] = d[k].tolist()
     return d
-

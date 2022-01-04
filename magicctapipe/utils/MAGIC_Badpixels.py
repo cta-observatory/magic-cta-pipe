@@ -5,6 +5,7 @@ __all__ = [
     "MAGICBadPixelsCalc",
 ]
 
+
 class MAGICBadPixelsCalc():
 
     def __init__(self, is_simulation, camera=None, config=None, tool=None, **kwargs):

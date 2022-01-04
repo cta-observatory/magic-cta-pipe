@@ -5,6 +5,7 @@ __all__ = [
     "reflected_camera_geometry",
 ]
 
+
 def scale_camera_geometry(camera_geom, factor):
     """Scale given camera geometry of a given (constant) factor
     
@@ -34,6 +35,7 @@ def scale_camera_geometry(camera_geom, factor):
         pix_rotation=camera_geom.pix_rotation,
         cam_rotation=camera_geom.cam_rotation
     )
+
 
 def reflected_camera_geometry(camera_geom):
     """Reflect camera geometry (x->-y, y->-x)
