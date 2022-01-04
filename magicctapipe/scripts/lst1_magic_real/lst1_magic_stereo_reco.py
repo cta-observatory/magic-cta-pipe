@@ -14,7 +14,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz, Angle
 from astropy.coordinates.angle_utilities import angular_separation
 from ctapipe.reco import HillasReconstructor
-from ctapipe.containers import HillasParametersContainer
+from ctapipe.containers import CameraHillasParametersContainer
 from magicctapipe.utils import calc_impact
 
 warnings.simplefilter('ignore')
@@ -141,19 +141,24 @@ def stereo_reco(input_data, output_data, config):
 
             df_tel = df_ev.query(f'tel_id == {tel_id}')
 
-            hillas_params[tel_id] = HillasParametersContainer()
-            hillas_params[tel_id].intensity = float(df_tel['intensity'].values[0])
-            hillas_params[tel_id].x = u.Quantity(df_tel['x'].values[0], u.m)
-            hillas_params[tel_id].y = u.Quantity(df_tel['y'].values[0], u.m)
-            hillas_params[tel_id].r = u.Quantity(df_tel['r'].values[0], u.m)
-            hillas_params[tel_id].phi = Angle(df_tel['phi'].values[0], u.deg)
-            hillas_params[tel_id].length = u.Quantity(df_tel['length'].values[0], u.m)
-            hillas_params[tel_id].width = u.Quantity(df_tel['width'].values[0], u.m)
-            hillas_params[tel_id].psi = Angle(df_tel['psi'].values[0], u.deg)
-            hillas_params[tel_id].skewness = float(df_tel['skewness'].values[0])
-            hillas_params[tel_id].kurtosis = float(df_tel['kurtosis'].values[0])
+            hillas_params[tel_id] = CameraHillasParametersContainer(
+                intensity=float(df_tel['intensity'].values[0]),
+                x=u.Quantity(df_tel['x'].values[0], u.m),
+                y=u.Quantity(df_tel['y'].values[0], u.m),
+                r=u.Quantity(df_tel['r'].values[0], u.m),
+                phi=Angle(df_tel['phi'].values[0], u.deg),
+                length=u.Quantity(df_tel['length'].values[0], u.m),
+                width=u.Quantity(df_tel['width'].values[0], u.m),
+                psi=Angle(df_tel['psi'].values[0], u.deg),
+                skewness=float(df_tel['skewness'].values[0]),
+                kurtosis=float(df_tel['kurtosis'].values[0]),
+            )
 
-        stereo_params = hillas_reconstructor.predict(hillas_params, subarray, array_pointing)
+        stereo_params = hillas_reconstructor._predict(
+            hillas_params,
+            subarray,
+            array_pointing
+        )
 
         if stereo_params.az < 0:
             stereo_params.az = stereo_params.az + u.Quantity(2*np.pi, u.rad)
