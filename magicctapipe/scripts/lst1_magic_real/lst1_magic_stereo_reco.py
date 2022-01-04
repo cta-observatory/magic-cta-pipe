@@ -14,7 +14,11 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz, Angle
 from astropy.coordinates.angle_utilities import angular_separation
 from ctapipe.reco import HillasReconstructor
-from ctapipe.containers import CameraHillasParametersContainer
+from ctapipe.containers import (
+    ArrayEventContainer,
+    ImageParametersContainer,
+    CameraHillasParametersContainer,
+)
 from magicctapipe.utils import calc_impact
 
 warnings.simplefilter('ignore')
@@ -121,6 +125,8 @@ def stereo_reco(input_data, output_data, config):
     obs_ids_list = groupby.index.get_level_values('obs_id').values
     event_ids_list = groupby.index.get_level_values('event_id').values
 
+    event_array = ArrayEventContainer()
+
     for i_ev, (obs_id, event_id) in enumerate(zip(obs_ids_list, event_ids_list)):
 
         if i_ev % 100 == 0:
@@ -136,6 +142,8 @@ def stereo_reco(input_data, output_data, config):
         )
 
         hillas_params = {}
+
+        event_array.dl1.tel.clear()
 
         for tel_id in tel_ids_list:
 
@@ -154,7 +162,10 @@ def stereo_reco(input_data, output_data, config):
                 kurtosis=float(df_tel['kurtosis'].values[0]),
             )
 
+            event_array.dl1.tel[tel_id].parameters = ImageParametersContainer()
+
         stereo_params = hillas_reconstructor._predict(
+            event_array,
             hillas_params,
             subarray,
             array_pointing
