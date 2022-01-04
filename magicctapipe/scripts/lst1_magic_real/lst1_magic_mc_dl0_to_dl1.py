@@ -10,11 +10,11 @@ import warnings
 import numpy as np
 from traitlets.config import Config
 from astropy import units as u
-from ctapipe.io import event_source
+from ctapipe.io import EventSource
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
 from ctapipe.calib import CameraCalibrator
-from ctapipe.image import ImageExtractor, hillas_parameters, leakage
+from ctapipe.image import ImageExtractor, hillas_parameters, leakage_parameters
 from ctapipe.image.cleaning import tailcuts_clean
 from ctapipe.image.timing import timing_parameters
 from ctapipe.image.morphology import number_of_islands
@@ -45,7 +45,7 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
 
     print(f'\nInput data file:\n{input_data_path}')
 
-    source = event_source(input_data_path)
+    source = EventSource(input_data_path)
     subarray = source.subarray
 
     positions = subarray.positions
@@ -91,11 +91,11 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
 
             tel_id = mc_tel_ids[tel_type]
 
-            source = event_source(input_data_path, allowed_tels=[tel_id])
+            source = EventSource(input_data_path, allowed_tels=[tel_id])
 
             for i_ev, event in enumerate(source):
 
-                if i_ev%100 == 0:
+                if i_ev % 100 == 0:
                     print(f'{i_ev} events')
 
                 if tel_type == 'LST-1':
@@ -161,7 +161,7 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
 
                     # --- Leakage parameter calculation ---
                     try:
-                        leakage_params = leakage(geom_camera[tel_id], image, signal_pixels)
+                        leakage_params = leakage_parameters(geom_camera[tel_id], image, signal_pixels)
 
                     except:
                         print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
