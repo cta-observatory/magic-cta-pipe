@@ -7,7 +7,6 @@ import re
 import time
 import glob
 import argparse
-import numpy as np
 import pandas as pd
 from pathlib import Path
 from matplotlib import pyplot
