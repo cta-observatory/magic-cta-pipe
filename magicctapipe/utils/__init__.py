@@ -42,7 +42,6 @@ from .MAGIC_Cleaning import (
 
 from .merge_hdf_files import (
     merge_hdf_files,
-    merge_hdf_files_run_wise,
 )
 
 from .my_functions import (
@@ -84,6 +83,8 @@ from .utils import (
 )
 
 __all__ = [
+    "scale_camera_geometry",
+    "reflected_camera_geometry",
     "load_cfg_file",
     "load_cfg_file_check",
     "check_folder",
@@ -102,11 +103,11 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
+    "get_leakage",
     "MAGICBadPixelsCalc",
     "magic_clean",
     "pixel_treatment",
     "merge_hdf_files",
-    "merge_hdf_files_run_wise",
     "crab_magic",
     "get_obs_ids_from_name",
     "calc_impact",
@@ -134,4 +135,3 @@ __all__ = [
     "make_title_str",
     "get_key_if_exists",
 ]
-
