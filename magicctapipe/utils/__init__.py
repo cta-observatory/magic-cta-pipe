@@ -71,7 +71,6 @@ from .utils import (
     make_elapsed_time_str,
     print_title,
     make_title_str,
-    get_key_if_exists,
 )
 
 __all__ = [
@@ -123,6 +122,5 @@ __all__ = [
     "make_elapsed_time_str",
     "print_title",
     "make_title_str",
-    "get_key_if_exists",
 ]
 
