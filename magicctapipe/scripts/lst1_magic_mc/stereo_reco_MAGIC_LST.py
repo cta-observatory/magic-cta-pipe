@@ -139,7 +139,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
     consider_MAGIC = len(tel_ids_MAGIC) > 0
 
     if consider_MAGIC:
-        use_MARS_cleaning = get_key_if_exists(cfg["MAGIC"], "use_MARS_cleaning", True)
+        use_MARS_cleaning = cfg["MAGIC"].get("use_MARS_cleaning", True)
 
     file_list = glob.glob(cfg["data_files"][k1][k2]["mask_sim"])
     print(file_list)
