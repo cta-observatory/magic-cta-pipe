@@ -1,23 +1,47 @@
-mc_tel_ids:
+mc_allowed_tels:
     LST-1: 1
     MAGIC-I: 2
-    MAGIC-II: 3
+    MAGIC-II : 3
 
     
 LST:
-    LocalPeakWindowSum:
+    image_extractor:
+        name: 'LocalPeakWindowSum'
         window_shift: 4
         window_width: 8
 
+    increase_nsb:
+        use: true
+        extra_noise_in_dim_pixels: 1.5
+        extra_bias_in_dim_pixels: 0.6
+        transition_charge: 8
+        extra_noise_in_bright_pixels: 1.44
+    
+    increase_psf: 
+        use: true
+        smeared_light_fraction: 0.175
+
     tailcuts_clean:
-        picture_thresh: 6
-        boundary_thresh: 3
-        keep_isolated_pixels: False
-        min_number_picture_neighbors: 1
+        picture_thresh: 8
+        boundary_thresh: 4
+        keep_isolated_pixels: false
+        min_number_picture_neighbors: 2
+        use_only_main_island: false
+
+    time_delta_cleaning:
+        use: true
+        min_number_neighbors: 1
+        time_limit: 2
+
+    dynamic_cleaning:
+        use: true
+        threshold: 267
+        fraction: 0.03
 
 
 MAGIC:
-    LocalPeakWindowSum:
+    image_extractor:
+        name: 'LocalPeakWindowSum'
         window_shift: 2
         window_width: 5
 
@@ -26,8 +50,8 @@ MAGIC:
         boundary_thresh: 3.5
         max_time_off: 7.38
         max_time_diff: 2.46
-        usetime: True
-        usesum: True
+        usetime: true
+        usesum: true
 
     bad_pixels:
         pedestalLevel: 400
@@ -44,40 +68,81 @@ event_coincidence:
 
 stereo_reco: 
     subarray: '/fefs/home/yoshiki.ohtani/software/magic-cta-pipe/lst1_magic/data/subarray_lst1_magic.pkl'
-    quality_cuts: (intensity > 50) & (width > 0)
+    quality_cuts: '(intensity > 50) & (width > 0)'
 
 
 energy_rf:
     settings:
-        n_estimators: 100
-        min_samples_leaf: 10
+        n_estimators: 150
+        criterion: "mse"
+        max_depth: 50
+        min_samples_split: 2
+        min_samples_leaf: 2
+        min_weight_fraction_leaf: 0.0
+        max_features: "auto"
+        max_leaf_nodes: null
+        min_impurity_decrease: 0.0
+        min_impurity_split: null
+        bootstrap: true
+        oob_score: false
         n_jobs: 5
+        random_state: 42
+        verbose: 0
+        warm_start: false
+        ccp_alpha: 0.0
+        max_samples: null
 
-    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
-    path_to_file: '/home/yoshiki.ohtani/combined_analysis/mc/LST-1_MAGIC/zd40deg_az90deg/3.train_rfs/data/rfs/energy_rf_zd40deg_az90deg.joblib'
+    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'intensity_width_2', 'h_max', 'impact']
 
 
 direction_rf:
     settings:
-        n_estimators: 100
-        min_samples_leaf: 10
+        n_estimators: 150
+        criterion: "mse"
+        max_depth: 50
+        min_samples_split: 2
+        min_samples_leaf: 2
+        min_weight_fraction_leaf: 0.0
+        max_features: "auto"
+        max_leaf_nodes: null
+        min_impurity_decrease: 0.0
+        min_impurity_split: null
+        bootstrap: true
+        oob_score: false
         n_jobs: 5
+        random_state: 42
+        verbose: 0
+        warm_start: false
+        ccp_alpha: 0.0
+        max_samples: null
         
-    features: 
-        disp: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
-        pos_angle_shift: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
-
-    path_to_file: '/home/yoshiki.ohtani/combined_analysis/mc/LST-1_MAGIC/zd40deg_az90deg/3.train_rfs/data/rfs/direction_rf_zd40deg_az90deg.joblib'
+    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'intensity_width_2', 'h_max', 'impact']
 
         
 classifier_rf:
     settings:
         n_estimators: 100
-        min_samples_leaf: 10
+        criterion: "gini"
+        max_depth: 100
+        min_samples_split: 2
+        min_samples_leaf: 2
+        min_weight_fraction_leaf: 0.0
+        max_features: "auto"
+        max_leaf_nodes: null
+        min_impurity_decrease: 0.0
+        min_impurity_split: null
+        bootstrap: true
+        oob_score: false
         n_jobs: 5
+        random_state: 42
+        verbose: 0.0
+        warm_start: false
+        class_weight: null
+        ccp_alpha: 0.0
+        max_samples: null
 
-    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'impact', 'h_max']
-    path_to_file: '/home/yoshiki.ohtani/combined_analysis/mc/LST-1_MAGIC/zd40deg_az90deg/3.train_rfs/data/rfs/classifier_rf_zd40deg_az90deg.joblib'
+    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'intensity_width_2', 'h_max', 'impact']
+    
 
 
 

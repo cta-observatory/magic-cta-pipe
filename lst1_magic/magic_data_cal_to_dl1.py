@@ -1,102 +1,111 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+"""
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+
+Process MAGIC calibrated data (*_Y_*.root) with MARS-like image cleaning method, 
+and compute the DL1 parameters (i.e., Hillas, timing, and leakage parameters).
+Do NOT input both M1 and M2 data at the same time when running the script.
+
+Usage:
+$ python magic_data_cal_to_dl1.py 
+--input-files "./data/calibrated/20201119_M1_05093174.*_Y_CrabNebula-W0.40+035.root"
+--output-file "./data/dl1/dl1_M1_run05093174.h5"
+--config-file "./config.yaml"
+"""
 
 import sys
-import yaml
-import glob
 import copy
+import glob
 import time
+import yaml
 import uproot
 import argparse
-import warnings 
+import warnings
 import numpy as np
-from pathlib import Path
 from astropy import units as u
 from ctapipe.io import HDF5TableWriter
-from ctapipe.core.container import Container, Field
 from ctapipe.image import hillas_parameters, leakage
-from ctapipe.image.timing import timing_parameters
-from ctapipe.image.cleaning import tailcuts_clean
-from ctapipe.image.morphology import number_of_islands 
+from ctapipe.image.morphology import number_of_islands
+from ctapipe.core.container import Container, Field
 from ctapipe_io_magic import MAGICEventSource
-from utils import MAGIC_Badpixels, MAGIC_Cleaning
+from utils import MAGIC_Badpixels, MAGIC_Cleaning, timing_parameters
 
-warnings.simplefilter('ignore') 
+warnings.simplefilter('ignore')
 
 __all__ = ['magic_cal_to_dl1']
 
 
-class InfoContainer(Container):
+class EventInfoContainer(Container):
     
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
-    mjd = Field(-1, 'Event time mjd')
+    mjd = Field(-1, 'Event time MJD')
     millisec = Field(-1, 'Event time millisec')
     nanosec = Field(-1, 'Event time nanosec')
-    alt_tel = Field(-1, 'Telescope pointing altitude', unit=u.rad)
-    az_tel = Field(-1, 'Telescope pointing azimuth', unit=u.rad)
+    alt_tel = Field(-1, 'Telescope pointing altitude', u.deg)
+    az_tel = Field(-1, 'Telescope pointing azimuth', u.deg)
     n_islands = Field(-1, 'Number of image islands')
+    n_pixels = Field(-1, 'Number of pixels of cleaned images')
 
 
-def magic_cal_to_dl1(input_data_mask, output_data, config):
+def magic_cal_to_dl1(input_files, output_file, config):
 
-    config_cleaning = config['magic_clean']
-    config_badpixels = config['bad_pixels']
+    config_cleaning = config['MAGIC']['magic_clean']
+    config_badpixels = config['MAGIC']['bad_pixels']
 
-    config_cleaning['findhotpixels'] = True  
+    config_cleaning['findhotpixels'] = True   # True for real data, False for MC data 
 
-    print(f'\nConfiguration for image cleaning:\n{config_cleaning}')
-    print(f'\nConfiguration for bad pixels calculation:\n{config_badpixels}')
+    print(f'\nConfiguration for the image cleaning:\n{config_cleaning}')
+    print(f'\nConfiguration for the bad pixels calculation:\n{config_badpixels}')
 
     # --- check the input data ---
-    paths_list = glob.glob(input_data_mask)
-    paths_list.sort()
+    file_paths = glob.glob(input_files)
+    file_paths.sort()
 
     print('\nProcess the following data:')
 
-    tel_ids_list = []
+    telescope_ids = []
 
-    for path in paths_list:
+    for path in file_paths:
 
         print(path)
-
+        
         with uproot.open(path) as f:
-            tel_ids_list.append(np.array(f['RunHeaders']['MRawRunHeader.fTelescopeNumber'].array())[0])
+            tel_id = int(f['RunHeaders']['MRawRunHeader.fTelescopeNumber'].array()[0])
+            telescope_ids.append(tel_id)
 
-    tel_ids_list = np.unique(tel_ids_list)
-
-    if len(tel_ids_list) > 1:
+    if len(set(telescope_ids)) > 1:
         print('\nM1 and M2 data are mixed. Input only M1 or M2 data. Exiting.\n')
         sys.exit()
 
-    tel_id = int(tel_ids_list[0])
-
     # --- process the input data ---
-    previous_event_id = 0
+    previous_event_id = -10
     n_events_skipped = 0
 
-    with HDF5TableWriter(filename=output_data, group_name='events', overwrite=True) as writer:
+    with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
         
-        source = MAGICEventSource(input_url=input_data_mask)
+        source = MAGICEventSource(input_url=input_files)
 
-        geom_camera = source.subarray.tel[tel_id].camera.geometry
-        magic_clean = MAGIC_Cleaning.magic_clean(geom_camera, config_cleaning)
+        camera_geom = source.subarray.tel[tel_id].camera.geometry
+        magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_cleaning)
         badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=config_badpixels)
 
         print('\nProcessing the events...')
 
-        for i_ev, event in enumerate(source._mono_event_generator(telescope=f'M{tel_id}')):  
+        mono_event_generator = source._mono_event_generator(telescope=f'M{tel_id}')
 
-            if i_ev%100 == 0:  
+        for i_ev, event in enumerate(mono_event_generator):
+
+            if (i_ev % 100) == 0:
                 print(f'{i_ev} events')
 
-            if event.index.event_id == previous_event_id:   # exclude pedestal runs?? 
+            if event.index.event_id == previous_event_id:   # exclude pedestal runs??
             
-                print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                       'Pedestal event (?) found. Skipping.')
+                print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                      'Pedestal event (?) found. Skipping.')
                 
                 n_events_skipped += 1
                 continue
@@ -118,56 +127,57 @@ def magic_cal_to_dl1(input_data_mask, output_data, config):
             peak_time_cleaned = peak_time.copy()
             peak_time_cleaned[~signal_pixels] = 0
 
-            num_islands, island_labels = number_of_islands(geom_camera, signal_pixels)
+            n_islands, _ = number_of_islands(camera_geom, signal_pixels)
+            n_pixels = np.count_nonzero(signal_pixels)
 
-            if np.sum(image_cleaned) == 0: 
+            if np.all(image_cleaned == 0):
                 
-                print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                       'Could not survive the image cleaning. Skipping.')
+                print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                      'Could not survive the image cleaning. Skipping.')
                 
                 n_events_skipped += 1
                 continue
             
-            # --- Hillas parameter calculation ---  
+            # --- hillas parameters calculation ---
             try:
-                hillas_params = hillas_parameters(geom_camera, image_cleaned)
+                hillas_params = hillas_parameters(camera_geom, image_cleaned)
 
             except:
                 
-                print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                        'Hillas parameter calculation failed. Skipping.')
+                print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                      'Hillas parameters calculation failed. Skipping.')
                 
                 n_events_skipped += 1
                 continue
                 
-            # --- Timing parameter calculation ---    
+            # --- timing parameters calculation ---
             try:
                 timing_params = timing_parameters(
-                    geom_camera, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
+                    camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
                 )
 
             except:
                 
-                print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                        'Timing parameter calculation failed. Skipping.')
+                print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                      'Timing parameters calculation failed. Skipping.')
                 
                 n_events_skipped += 1
                 continue
             
-            # --- Leakage parameter calculation ---
+            # --- leakage parameters calculation ---
             try:
-                leakage_params = leakage(geom_camera, image, signal_pixels)
+                leakage_params = leakage(camera_geom, image, signal_pixels)
                 
-            except: 
+            except:
                 
-                print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                        'Leakage parameter calculation failed. Skipping.')
+                print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                      'Leakage parameters calculation failed. Skipping.')
 
                 n_events_skipped += 1
                 continue
 
-            # --- save the event information ---
-            event_info = InfoContainer(
+            # --- save the parameters ---
+            event_info = EventInfoContainer(
                 obs_id=event.index.obs_id,
                 event_id=event.index.event_id,
                 tel_id=tel_id,
@@ -176,46 +186,49 @@ def magic_cal_to_dl1(input_data_mask, output_data, config):
                 nanosec=event.trigger.nanosec,
                 alt_tel=event.pointing.tel[tel_id].altitude,
                 az_tel=event.pointing.tel[tel_id].azimuth,
-                n_islands=num_islands
+                n_islands=n_islands,
+                n_pixels=n_pixels
             )
 
-            writer.write('params', (hillas_params, leakage_params, timing_params, event_info)) 
+            writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
 
-        print(f'\n{i_ev+1} events processed.')
+        print(f'{i_ev+1} events processed.')
         print(f'({n_events_skipped} events are skipped)')
 
-    print(f'\nOutput data: {output_data}')
+    print(f'\nOutput data file: {output_file}')
 
 
 def main():
 
     start_time = time.time()
 
-    arg_parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str, 
-        help='Path to M1 or M2 calibrated data files (*_Y_*.root). Do not mix M1 and M2 data.'
+    parser.add_argument(
+        '--input-files', '-i', dest='input_files', type=str,
+        help='Path to input MAGIC calibrated data files (*_Y_*.root). Do not mix M1 and M2 data.'
     )
 
-    arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, default='./dl1_magic.h5',
-        help='Path to an output data file with h5 extention.'
+    parser.add_argument(
+        '--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5',
+        help='Path to an output DL1 data file.'
     )
 
-    arg_parser.add_argument(
+    parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a configuration file with yaml extention.'
+        help='Path to a configuration file.'
     )
 
-    args = arg_parser.parse_args()
+    args = parser.parse_args()
 
-    config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
-    
-    magic_cal_to_dl1(args.input_data, args.output_data, config_lst1_magic['MAGIC'])
+    config = yaml.safe_load(open(args.config_file, 'r'))
+
+    magic_cal_to_dl1(args.input_files, args.output_file, config)
 
     print('\nDone.')
-    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')
+
+    end_time = time.time()
+    print(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':

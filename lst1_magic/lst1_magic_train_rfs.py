@@ -1,303 +1,290 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+"""
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+
+Train the energy, direction and classifier RFs with the DL1-stereo data samples. 
+The RFs will be trained per telescope combination and per telescope type.
+The number of gamma MC and background training samples will be automatically
+adjusted to the same value when training the classifer RFs.
+
+Usage:
+$ python lst1_magic_train_rfs.py 
+--type-rf "all"
+--input-file-gamma "./data/dl1_stereo/gamma_off0.4deg/merged/dl1_stereo_lst1_magic_gamma_40deg_90deg_off0.4_run1_to_350.h5"
+--input-file-bkg "./data/dl1_stereo/proton/merged/dl1_stereo_lst1_magic_proton_40deg_90deg_run1_to_3500.h5"
+--output-dir "./data/rfs"
+--config-file "./config.yaml"
+"""
 
 import sys
 import time
 import yaml
-import glob
-import warnings
+import random
 import argparse
-import pandas as pd
+import warnings
 import numpy as np
-from event_processing import EventClassifierPandas
-from event_processing import DirectionEstimatorPandas
-from event_processing import EnergyEstimatorPandas
-from utils import merge_hdf_files
+import pandas as pd
 
+from utils import (
+    EnergyEstimatorPandas,
+    DirectionEstimatorPandas,
+    EventClassifierPandas
+)
 
 warnings.simplefilter('ignore')
 
 __all__ = [
-    'train_energy_rf',
-    'train_direction_rf',
-    'train_classifier_rf'
+    'train_energy_rfs',
+    'train_direction_rfs',
+    'train_classifier_rfs'
 ]
 
 
-def get_weights(data):
+def load_data(input_file, feature_names, event_class=None):
 
-    sin_edges = np.linspace(0, 1, num=51)
-    alt_edges = np.lib.scimath.arcsin(sin_edges)
-    intensity_edges = np.logspace(1, 6, num=51)
+    tel_combinations = {
+        'm1_m2': [2, 3], 
+        'lst1_m1': [1, 2], 
+        'lst1_m2': [1, 3],  
+        'lst1_m1_m2': [1, 2, 3]   
+    }
 
-    hist, _, _ = np.histogram2d(data['alt_tel'], data['intensity'], bins=[alt_edges, intensity_edges])
-    availability_hist = np.clip(hist, 0, 1)
-
-    bins_alt = np.digitize(data['alt_tel'], alt_edges) - 1
-    bins_intensity = np.digitize(data['intensity'], intensity_edges) - 1
-
-    # --- treating the out-of-range events ---
-    bins_alt[bins_alt == len(alt_edges) - 1] = len(alt_edges) - 2
-    bins_intensity[bins_intensity == len(intensity_edges) - 1] = len(intensity_edges) - 2
-
-    weights = 1 / hist[bins_alt, bins_intensity]
-    weights *= availability_hist[bins_alt, bins_intensity]
-
-    return weights
-
-
-def get_weights_classifier(data_gamma, data_bkg):
-
-    sin_edges = np.linspace(0, 1, num=51)
-    alt_edges = np.lib.scimath.arcsin(sin_edges)
-    intensity_edges = np.logspace(1, 6, num=51)
-    
-    hist_gamma, _, _ = np.histogram2d(data_gamma['alt_tel'], data_gamma['intensity'], bins=[alt_edges, intensity_edges])
-    hist_bkg, _, _ = np.histogram2d(data_bkg['alt_tel'], data_bkg['intensity'], bins=[alt_edges, intensity_edges])
-
-    availability_hist = np.clip(hist_gamma, 0, 1) * np.clip(hist_bkg, 0, 1)
-
-    # --- weights for gamma-ray samples ---
-    bins_alt_gamma = np.digitize(data_gamma['alt_tel'], alt_edges) - 1
-    bins_intensity_gamma = np.digitize(data_gamma['intensity'], intensity_edges) - 1
-
-    bins_alt_gamma[bins_alt_gamma == len(alt_edges) - 1] = len(alt_edges) - 2
-    bins_intensity_gamma[bins_intensity_gamma == len(intensity_edges) - 1] = len(intensity_edges) - 2
-
-    weights_gamma = 1 / hist_gamma[bins_alt_gamma, bins_intensity_gamma]
-    weights_gamma *= availability_hist[bins_alt_gamma, bins_intensity_gamma]
-
-    # --- weights for background samples ---
-    bins_alt_bkg = np.digitize(data_bkg['alt_tel'], alt_edges) - 1
-    bins_intensity_bkg = np.digitize(data_bkg['intensity'], intensity_edges) - 1
-
-    bins_alt_bkg[bins_alt_bkg == len(alt_edges) - 1] = len(alt_edges) - 2
-    bins_intensity_bkg[bins_intensity_bkg == len(intensity_edges) - 1] = len(intensity_edges) - 2
-
-    weights_bkg = 1 / hist_bkg[bins_alt_bkg, bins_intensity_bkg]
-    weights_bkg *= availability_hist[bins_alt_bkg, bins_intensity_bkg]
-
-    return weights_gamma, weights_bkg
-
-
-def load_data(data_path, event_class):
-
-    paths_list = glob.glob(data_path)
-    paths_list.sort()
-
-    if len(paths_list) == 1:
-        data = pd.read_hdf(data_path, key='events/params')
-
-    elif len(paths_list) > 1:
-        data = merge_hdf_files(data_path)
-    
+    data = pd.read_hdf(input_file, key='events/params')
     data.sort_index(inplace=True)
 
-    data['true_event_class'] = event_class
+    if event_class != None:
+        data['event_class'] = event_class
 
-    for tel_id, tel_name in zip([1, 2, 3], ['LST-1', 'MAGIC-I', 'MAGIC-II']):
-        n_events = len(data.query(f'tel_id == {tel_id}'))
-        print(f'{tel_name}: {n_events} events')
+    data_return = {}
 
-    return data
+    for tel_combo, tel_ids in zip(tel_combinations.keys(), tel_combinations.values()):
+
+        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
+        df.dropna(subset=feature_names, inplace=True)
+
+        df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
+        df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
+
+        n_events = len(df.groupby(['obs_id', 'event_id']).size())
+        print(f'{tel_combo}: {n_events} events')
+
+        if n_events > 0:
+            data_return[tel_combo] = df
+        
+    return data_return
 
 
-def train_energy_rf(data_path, config):
+def check_importances(telescope_rfs, features):
 
-    print('\nConfiguration for training energy RF:\n{}'.format(config))
+    telescope_ids = telescope_rfs.keys()
 
-    # --- load the input gamma-ray data ---
-    print(f'\nLoading the input data file: {data_path}')
-    
-    data_train = load_data(data_path, event_class=0)
+    for tel_id in telescope_ids:
 
-    # --- get the event weights ---
-    weights = get_weights(data_train)
+        print(f'\nTelescope {tel_id}')
 
-    data_train['event_weight'] = weights
-
-    # --- train RF ---
-    energy_estimator = EnergyEstimatorPandas(config['features'], **config['settings'])
-
-    print('\nTraining the energy RF...')
-
-    energy_estimator.fit(data_train)
-
-    # --- check the parameter importances ---
-    print('\nParameter importances:')
-
-    for tel_id, tel_name in zip([1, 2, 3], ['LST-1', 'MAGIC-I', 'MAGIC-II']):
-
-        print(f'  {tel_name}:')
-
-        importances = energy_estimator.telescope_regressors[tel_id].feature_importances_
-        indices = np.argsort(importances)[::-1]
-
+        importances = telescope_rfs[tel_id].feature_importances_
         importances_sort = np.sort(importances)[::-1]
-        params_sort = np.array(config['features'])[indices]
 
-        for i_par, param in enumerate(params_sort):
-            print(f'    {param}: {importances_sort[i_par]}')
-
-    return energy_estimator
-
-
-def train_direction_rf(data_path, tel_discriptions, config):
-
-    print('\nConfiguration for training direction RF:\n{}'.format(config))
-
-    # --- load the input gamma-ray data ---
-    print(f'\nLoading the input data file: {data_path}')
-    
-    data_train = load_data(data_path, event_class=0)
-
-    # --- get the event weights ---
-    weights = get_weights(data_train)
-
-    data_train['event_weight'] = weights
-
-    # --- train RF ---
-    direction_estimator = DirectionEstimatorPandas(config['features'], tel_discriptions, **config['settings'])
-
-    print('\nTraining the direction RF...')
-
-    direction_estimator.fit(data_train)
-
-    # --- check the parameter importances ---
-    print('\nParameter importances (disp):')
-
-    for tel_id, tel_name in zip([1, 2, 3], ['LST-1', 'MAGIC-I', 'MAGIC-II']):
-
-        print(f'  {tel_name}:')
-
-        importances = direction_estimator.telescope_rfs['disp'][tel_id].feature_importances_
         indices = np.argsort(importances)[::-1]
+        params_sort = np.array(features)[indices]
 
-        importances_sort = np.sort(importances)[::-1]
-        params_sort = np.array(config['features']['disp'])[indices]
-
-        for i_par, param in enumerate(params_sort):
-            print(f'    {param}: {importances_sort[i_par]}')
-
-    return direction_estimator
+        for param, importance in zip(params_sort, importances_sort):
+            print(f'{param}: {importance}')
 
 
-def train_classifier_rf(data_path_gamma, data_path_bkg, config):
+def get_events_at_random(data, n_events):
 
-    print('\nConfiguration for training classifier RF:\n{}'.format(config))
+    group = data.groupby(['obs_id', 'event_id']).size()
+    indices = random.sample(range(len(group)), n_events)
 
-    # --- load the input gamma-ray data ---
-    print(f'\nLoading the input MC gamma-ray data file: {data_path_gamma}')
-    
-    data_gamma = load_data(data_path_gamma, event_class=0)
+    telescope_ids = np.unique(data.index.get_level_values('tel_id'))
+    data_return = pd.DataFrame()
 
-    # --- load the input background data ---
-    print(f'\nLoading the input background data file: {data_path_bkg}')
+    for tel_id in telescope_ids: 
 
-    data_bkg = load_data(data_path_bkg, event_class=1)
+        df = data.query(f'tel_id == {tel_id}')
+        df = df.iloc[indices]
 
-    # --- get the event weights ---
-    weights_gamma, weights_bkg = get_weights_classifier(data_gamma, data_bkg)
+        data_return = data_return.append(df)
 
-    data_gamma['event_weight'] = weights_gamma
-    data_bkg['event_weight'] = weights_bkg
+    data_return.sort_index(inplace=True)
 
-    # --- train RF ---
-    data_train = data_gamma.append(data_bkg)
+    return data_return
 
-    class_estimator = EventClassifierPandas(config['features'], **config['settings'])
 
-    print('\nTraining the classifier RF...')
+def train_energy_rfs(input_file, output_dir, config):
 
-    class_estimator.fit(data_train)
+    config_rf = config['energy_rf']
 
-    # --- check the parameter importances ---
-    print('\nParameter importances:')
+    print(f'\nConfiguration for training the energy RFs:\n{config_rf}')
 
-    for tel_id, tel_name in zip([1, 2, 3], ['LST-1', 'MAGIC-I', 'MAGIC-II']):
+    # --- load the input data file ---
+    print(f'\nLoading the input data file:\n{input_file}')
 
-        print(f'  {tel_name}:')
+    data_train = load_data(input_file, config_rf['features'])
 
-        importances = class_estimator.telescope_classifiers[tel_id].feature_importances_
-        indices = np.argsort(importances)[::-1]
+    # --- train the energy RFs ---
+    for tel_combo in data_train.keys():
 
-        importances_sort = np.sort(importances)[::-1]
-        params_sort = np.array(config['features'])[indices]
+        print(f'\nTraining the energy RFs for "{tel_combo}" events...')
 
-        for i_par, param in enumerate(params_sort):
-            print(f'    {param}: {importances_sort[i_par]}')
+        data_train[tel_combo]['event_weight'] = 1 
 
-    return class_estimator
+        energy_estimator = EnergyEstimatorPandas(config_rf['features'], config_rf['settings'])
+        energy_estimator.fit(data_train[tel_combo])
+
+        print('\nParameter importances:')
+
+        check_importances(energy_estimator.telescope_rfs, config_rf['features'])
+
+        # --- save the trained RFs ---
+        output_file = f'{output_dir}/energy_rfs_{tel_combo}.joblib'
+        energy_estimator.save(output_file)
+
+
+def train_direction_rfs(input_file, output_dir, config):
+
+    config_rf = config['direction_rf']
+
+    print(f'\nConfiguration for training the direction RF:\n{config_rf}')
+
+    # --- load the input data file ---
+    print(f'\nLoading the input data file:\n{input_file}')
+
+    data_train = load_data(input_file, config_rf['features'])
+
+    # --- train the direction RFs ---
+    subarray = pd.read_pickle(config['stereo_reco']['subarray'])
+
+    for tel_combo in data_train.keys():
+
+        print(f'\nTraining the direction RF for "{tel_combo}" events...')
+
+        data_train[tel_combo]['event_weight'] = 1 
+
+        direction_estimator = DirectionEstimatorPandas(config_rf['features'], subarray.tels, config_rf['settings'])
+        direction_estimator.fit(data_train[tel_combo])
+
+        print('\nParameter importances:')
+
+        check_importances(direction_estimator.telescope_rfs, config_rf['features'])
+
+        # --- save the trained RFs ---
+        output_file = f'{output_dir}/direction_rfs_{tel_combo}.joblib'
+        direction_estimator.save(output_file)
+
+
+def train_classifier_rfs(input_file_gamma, input_file_bkg, output_dir, config):
+
+    config_rf = config['classifier_rf']
+
+    print(f'\nConfiguration for training the classifier RF:\n{config_rf}')
+
+    # --- load the input data file ---
+    print(f'\nLoading the input gamma MC data file:\n{input_file_gamma}')
+
+    data_gamma = load_data(input_file_gamma, config_rf['features'], event_class=0)
+
+    print(f'\nLoading the input background data file:\n{input_file_bkg}')
+
+    data_bkg = load_data(input_file_bkg, config_rf['features'], event_class=1)
+
+    # --- train the classifier RFs ---
+    tel_combinations = set(data_gamma.keys()) & set(data_bkg.keys())
+
+    for tel_combo in sorted(tel_combinations, key=['m1_m2', 'lst1_m1', 'lst1_m2', 'lst1_m1_m2'].index):
+
+        print(f'\nTraining the classifier RF for "{tel_combo}" events...')
+
+        n_events_gamma = len(data_gamma[tel_combo].groupby(['obs_id', 'event_id']).size())
+        n_events_bkg = len(data_bkg[tel_combo].groupby(['obs_id', 'event_id']).size())
+
+        if n_events_gamma > n_events_bkg:
+            data_gamma[tel_combo] = get_events_at_random(data_gamma[tel_combo], n_events_bkg)
+            n_events_gamma = len(data_gamma[tel_combo].groupby(['obs_id', 'event_id']).size())
+
+        elif n_events_bkg > n_events_gamma:
+            data_bkg[tel_combo] = get_events_at_random(data_bkg[tel_combo], n_events_gamma)
+            n_events_bkg = len(data_bkg[tel_combo].groupby(['obs_id', 'event_id']).size())
+
+        print(f'--> n_events_gamma = {n_events_gamma}, n_events_bkg = {n_events_bkg}')
+
+        data_gamma[tel_combo]['event_weight'] = 1
+        data_bkg[tel_combo]['event_weight'] = 1
+
+        data_train = data_gamma[tel_combo].append(data_bkg[tel_combo])
+
+        event_classifier = EventClassifierPandas(config_rf['features'], config_rf['settings'])
+        event_classifier.fit(data_train)
+
+        print('\nParameter importances:')
+
+        check_importances(event_classifier.telescope_rfs, config_rf['features'])
+        
+        # --- save the trained RFs ---
+        output_file = f'{output_dir}/classifier_rfs_{tel_combo}.joblib'
+        event_classifier.save(output_file)
 
 
 def main():
 
     start_time = time.time()
 
-    # --- get the arguments ---
-    arg_parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    arg_parser.add_argument(
+    parser.add_argument(
         '--type-rf', '-t', dest='type_rf', type=str, 
-        help='Type of RF which will be trained, "energy", "direction" or "classifier"'  
+        help='Type of RF that will be trained, "energy", "direction", "classifier" or "all".'  
     )
 
-    arg_parser.add_argument(
-        '--input-data-gamma', '-g', dest='input_data_gamma', type=str, 
-        help='Path to input DL1+stereo gamma-ray data file(s) for training RF, e.g., dl1_stereo_gamma_run*.h5'
+    parser.add_argument(
+        '--input-file-gamma', '-g', dest='input_file_gamma', type=str, 
+        help='Path to an input DL1-stereo gamma MC data file.'
     )
 
-    arg_parser.add_argument(
-        '--input-data-bkg', '-b', dest='input_data_bkg', type=str, default=None,
-        help='Path to  input DL1+stereo background data file(s) for training classifier RF, e.g., dl1_stereo_proton_run*.h5'
+    parser.add_argument(
+        '--input-file-bkg', '-b', dest='input_file_bkg', type=str, default=None,
+        help='Path to an input DL1-stereo background data file.'
     )
 
-    arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, 
-        help='Path and name of an output data file of trained RF with joblib format, e.g., classifier_rf.joblib'
+    parser.add_argument(
+        '--output-dir', '-o', dest='output_dir', type=str, default='.',
+        help='Path to a directory where the output RFs are saved.'
     )
 
-    arg_parser.add_argument(
+    parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a config file with yaml format, e.g., config.yaml'
+        help='Path to a configuration file.'
     )
 
-    args = arg_parser.parse_args()
+    args = parser.parse_args()
 
-    # --- train RF ---
-    config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
+    config = yaml.safe_load(open(args.config_file, 'r'))
 
     if args.type_rf == 'energy':
-
-        rf = train_energy_rf(args.input_data_gamma, config_lst1_magic['energy_rf'])
+        train_energy_rfs(args.input_file_gamma, args.output_dir, config)
 
     elif args.type_rf == 'direction':
-
-        subarray = pd.read_pickle(config_lst1_magic['stereo_reco']['subarray'])
-        tel_discriptions = subarray.tels
-
-        rf = train_direction_rf(args.input_data_gamma, tel_discriptions, config_lst1_magic['direction_rf'])
+        train_direction_rfs(args.input_file_gamma, args.output_dir, config)
 
     elif args.type_rf == 'classifier':
+        train_classifier_rfs(args.input_file_gamma, args.input_file_bkg, args.output_dir, config)
 
-        rf = train_classifier_rf(args.input_data_gamma, args.input_data_bkg, config_lst1_magic['classifier_rf'])
+    elif args.type_rf == 'all':
+        train_energy_rfs(args.input_file_gamma, args.output_dir, config)
+        train_direction_rfs(args.input_file_gamma, args.output_dir, config)
+        train_classifier_rfs(args.input_file_gamma, args.input_file_bkg, args.output_dir, config)
 
     else:
-        
-        print(f'Unknown type of RF "{args.type_rf}". Should be "energy", "direction" or "classifier". Exiting')
+        print(f'Unknown type of RF "{args.type_rf}". Input "energy", "direction", "classifier" or "all". Exiting.\n')
         sys.exit()
-
-    # --- store the trained RF ---
-    rf.save(args.output_data)
-
-    print(f'\nOutput file: {args.output_data}')
 
     print('\nDone.')
 
     end_time = time.time()
-    print(f'\nelapsed time = {end_time - start_time:.0f} [sec]\n')
+    print(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':

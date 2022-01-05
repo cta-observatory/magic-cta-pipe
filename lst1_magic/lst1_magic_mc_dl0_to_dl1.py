@@ -1,135 +1,221 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+"""
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+
+Process the simtel MC DL0 data (simtel.gz) containing LST-1 or MAGIC events.
+The allowed telescopes specified in the configuration file will only be processed.
+The telescope IDs are reset to the following values when saving to an output file:
+LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
+
+Usage:
+$ python lst1_magic_mc_dl0_to_dl1.py 
+--input-file "./data/dl0/gamma_40deg_90deg_run1___cta-prod5-lapalma_LST-1_MAGIC_desert-2158m_mono_off0.4.simtel.gz"
+--output-file "./data/dl1/dl1_lst1_magic_gamma_40deg_90deg_off0.4_run1.h5"
+--config-file "./config.yaml"
+"""
 
 import time
 import yaml
 import argparse
 import warnings
 import numpy as np
-from traitlets.config import Config
 from astropy import units as u
+from astropy.coordinates import AltAz, SkyCoord
+from astropy.coordinates.angle_utilities import angular_separation
+from traitlets.config import Config
 from ctapipe.io import event_source
 from ctapipe.io import HDF5TableWriter
-from ctapipe.core.container import Container, Field
 from ctapipe.calib import CameraCalibrator
 from ctapipe.image import ImageExtractor, hillas_parameters, leakage
 from ctapipe.image.cleaning import tailcuts_clean
-from ctapipe.image.timing import timing_parameters
 from ctapipe.image.morphology import number_of_islands
-from utils import MAGIC_Cleaning, calc_impact
+from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from ctapipe.core.container import Container, Field
+
+from utils import (
+    add_noise_in_pixels,
+    smear_light_in_pixels,
+    apply_time_delta_cleaning,
+    apply_dynamic_cleaning,
+    MAGIC_Cleaning, 
+    timing_parameters, 
+    calc_impact
+)
 
 warnings.simplefilter('ignore')
 
 __all__ = ['mc_dl0_to_dl1']
 
 
-class InfoContainer(Container):
+class EventInfoContainer(Container):
 
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
-    mc_energy = Field(-1, 'MC event energy', unit=u.TeV)
-    mc_alt = Field(-1, 'MC event altitude', unit=u.rad)
-    mc_az = Field(-1, 'MC event azimuth', unit=u.rad)
-    mc_core_x = Field(-1, 'MC Core X', unit=u.m)
-    mc_core_y = Field(-1, 'MC Core Y', unit=u.m)
-    mc_impact = Field(-1, 'MC Impact', unit=u.m)
-    alt_tel = Field(-1, 'Telescope altitude', unit=u.rad)
-    az_tel = Field(-1, 'Telescope azimuth', unit=u.rad)
+    alt_tel = Field(-1, 'Telescope altitude', u.deg)
+    az_tel = Field(-1, 'Telescope azimuth', u.deg)
+    mc_energy = Field(-1, 'MC event energy', u.TeV)
+    mc_alt = Field(-1, 'MC event altitude', u.deg)
+    mc_az = Field(-1, 'MC event azimuth', u.deg)
+    mc_disp = Field(-1, 'MC event disp', u.deg)
+    mc_core_x = Field(-1, 'MC core x', u.m)
+    mc_core_y = Field(-1, 'MC core y', u.m)
+    mc_impact = Field(-1, 'MC impact', u.m)
     n_islands = Field(-1, 'Number of image islands')
+    n_pixels = Field(-1, 'Number of pixels of cleaned images')
+    magic_stereo = Field(-1, 'True if M1 and M2 are triggered')
 
 
-def mc_dl0_to_dl1(input_data_path, output_data_path, config):
+class SimInfoContainer(Container):
 
-    print(f'\nInput data file:\n{input_data_path}')
+    nshow = Field(-1, 'Number of showers simulated')
+    nscat = Field(-1, 'Numbers of uses of each shower')
+    eslope = Field(-1, 'Power-law spectral index of spectrum')
+    emin = Field(-1, 'Lower limit of energy range of primary particle', u.TeV)
+    emax = Field(-1, 'Upper limit of energy range of primary particle', u.TeV)
+    cscat = Field(-1, 'Maximum scatter range', u.m)
+    viewcone = Field(-1, 'Maximum viewcone radius', u.deg)
 
-    source = event_source(input_data_path)
+
+def mc_dl0_to_dl1(input_file, output_file, config):
+
+    print(f'\nInput data file:\n{input_file}')
+
+    source = event_source(input_file)
     subarray = source.subarray
-
-    positions = subarray.positions
 
     print(f'\nSubarray configuration:\n{subarray.tels}')
 
-    mc_tel_ids = config['mc_tel_ids']
+    allowed_tel_ids = config['mc_allowed_tels']
 
-    print(f'\nAllowed telescopes:\n{mc_tel_ids}')
+    print(f'\nAllowed telescopes:\n{allowed_tel_ids}')
 
-    config_lst = config['LST']
-    config_magic = config['MAGIC']
+    process_lst1 = ('LST-1' in allowed_tel_ids.keys())
+    process_m1 = ('MAGIC-I' in allowed_tel_ids.keys())
+    process_m2 = ('MAGIC-II' in allowed_tel_ids.keys())
 
-    config_magic['magic_clean']['findhotpixels'] = False   # for MC data 
+    if process_lst1:
 
-    print(f'\nConfiguration for LST data process:\n{config_lst}')
-    print(f'\nConfiguration for MAGIC data process:\n{config_magic}')
+        config_lst = config['LST']
 
-    # --- configure the processors --- 
-    extractor_lst = ImageExtractor.from_name(
-        'LocalPeakWindowSum', subarray=subarray, config=Config(config_lst['LocalPeakWindowSum'])
-    )
+        print(f'\nConfiguration for LST data process:\n{config_lst}')
 
-    extractor_magic = ImageExtractor.from_name(
-        'LocalPeakWindowSum', subarray=subarray, config=Config(config_magic['LocalPeakWindowSum'])
-    )
+        increase_nsb = config_lst['increase_nsb'].pop('use')
+        increase_psf = config_lst['increase_psf'].pop('use')
 
-    calibrator_lst = CameraCalibrator(subarray, image_extractor=extractor_lst)
-    calibrator_magic = CameraCalibrator(subarray, image_extractor=extractor_magic)
+        if increase_nsb:
+            rng = np.random.default_rng(source.obs_id)
 
-    geom_camera = {tel_id: subarray.tel[tel_id].camera.geometry for tel_id in mc_tel_ids.values()}
+        use_only_main_island = config_lst['tailcuts_clean'].pop('use_only_main_island')
+        use_time_delta_cleaning = config_lst['time_delta_cleaning'].pop('use')
+        use_dynamic_cleaning = config_lst['dynamic_cleaning'].pop('use')
 
-    magic_clean = MAGIC_Cleaning.magic_clean(
-        geom_camera[mc_tel_ids['MAGIC-I']], config_magic['magic_clean']
-    )
+        extractor_name_lst = config_lst['image_extractor'].pop('name')
 
-    # --- process the input data ---
-    with HDF5TableWriter(filename=output_data_path, group_name='events', overwrite=True) as writer:
+        extractor_lst = ImageExtractor.from_name(
+            extractor_name_lst, subarray=subarray, config=Config(config_lst['image_extractor'])
+        )
+
+        calibrator_lst = CameraCalibrator(subarray, image_extractor=extractor_lst)
+
+    if process_m1 or process_m2:
+
+        config_magic = config['MAGIC']
+        config_magic['magic_clean']['findhotpixels'] = False   # False for MC data, True for real data
+
+        print(f'\nConfiguration for MAGIC data process:\n{config_magic}')
+
+        extractor_name_magic = config_magic['image_extractor'].pop('name')
+
+        extractor_magic = ImageExtractor.from_name(
+            extractor_name_magic, subarray=subarray, config=Config(config_magic['image_extractor'])
+        )
+
+        calibrator_magic = CameraCalibrator(subarray, image_extractor=extractor_magic)
+
+    # --- process the events ---
+    with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
         
-        for tel_type in mc_tel_ids.keys():
+        for tel_name, tel_id in zip(allowed_tel_ids.keys(), allowed_tel_ids.values()):
 
-            print(f'\nProcessing the {tel_type} events...')
+            print(f'\nProcessing the {tel_name} events...')
 
-            tel_id = mc_tel_ids[tel_type]
+            source = event_source(input_file, allowed_tels=[tel_id])
+            camera_geom = source.subarray.tel[tel_id].camera.geometry
+            tel_positions = source.subarray.positions[tel_id]
 
-            source = event_source(input_data_path, allowed_tels=[tel_id])
+            camera_frame = CameraFrame(
+                focal_length=source.subarray.tel[tel_id].optics.equivalent_focal_length, 
+                rotation=camera_geom.cam_rotation
+            )
+
+            if np.any(tel_name == np.array(['MAGIC-I', 'MAGIC-II'])):
+                magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_magic['magic_clean'])
+            
+            magic_stereo = None
+            n_events_skipped = 0
 
             for i_ev, event in enumerate(source):
 
                 if i_ev%100 == 0:
                     print(f'{i_ev} events')
 
-                if tel_type == 'LST-1':
+                if process_m1 and process_m2:
+
+                    trigger_m1 = (allowed_tel_ids['MAGIC-I'] in event.trigger.tels_with_trigger)
+                    trigger_m2 = (allowed_tel_ids['MAGIC-II'] in event.trigger.tels_with_trigger)
+                
+                    magic_stereo = (trigger_m1 & trigger_m2)
+
+                if tel_name == 'LST-1':
 
                     # --- calibration ---
                     calibrator_lst(event)
 
-                    # --- image cleaning (lstchain v0.6.3) ---
                     image = event.dl1.tel[tel_id].image
                     peak_time = event.dl1.tel[tel_id].peak_time
 
-                    signal_pixels = tailcuts_clean(
-                        geom_camera[tel_id], image, **config_lst['tailcuts_clean']
-                    )
-                    
-                    num_islands, island_labels = number_of_islands(geom_camera[tel_id], signal_pixels)
+                    # --- image modification ---
+                    if increase_nsb:
+                        image = add_noise_in_pixels(rng, image, **config_lst['increase_nsb'])
 
-                    n_pixels_on_island = np.bincount(island_labels.astype(np.int))
-                    n_pixels_on_island[0] = 0  
+                    if increase_psf:
+                        image = smear_light_in_pixels(image, camera_geom, **config_lst['increase_psf'])
 
-                    max_island_label = np.argmax(n_pixels_on_island)
-                    signal_pixels[island_labels != max_island_label] = False
+                    # --- image cleaning ---
+                    signal_pixels = tailcuts_clean(camera_geom, image, **config_lst['tailcuts_clean'])
 
-                elif ( tel_type == 'MAGIC-I' ) or ( tel_type == 'MAGIC-II' ):
+                    if use_only_main_island:
+
+                        _, island_labels = number_of_islands(camera_geom, signal_pixels)
+                        n_pixels_on_island = np.bincount(island_labels)
+                        n_pixels_on_island[0] = 0  
+                        max_island_label = np.argmax(n_pixels_on_island)
+                        signal_pixels[island_labels != max_island_label] = False
+
+                    if use_time_delta_cleaning:
+
+                        signal_pixels = apply_time_delta_cleaning(
+                            camera_geom, signal_pixels, peak_time, **config_lst['time_delta_cleaning']
+                        )
+
+                    if use_dynamic_cleaning:
+                        signal_pixels = apply_dynamic_cleaning(image, signal_pixels, **config_lst['dynamic_cleaning'])
+
+                elif np.any(tel_name == np.array(['MAGIC-I', 'MAGIC-II'])):
 
                     # --- calibration --- 
                     calibrator_magic(event)
                     
-                    # --- image cleaning (sum image clean) ---
+                    # --- image cleaning ---
                     signal_pixels, image, peak_time = magic_clean.clean_image(
                         event.dl1.tel[tel_id].image, event.dl1.tel[tel_id].peak_time
                     )
 
-                num_islands, island_labels = number_of_islands(geom_camera[tel_id], signal_pixels)
+                n_islands, _ = number_of_islands(camera_geom, signal_pixels)
+                n_pixels = np.count_nonzero(signal_pixels)
 
                 image_cleaned = image.copy()
                 image_cleaned[~signal_pixels] = 0
@@ -137,112 +223,147 @@ def mc_dl0_to_dl1(input_data_path, output_data_path, config):
                 peak_time_cleaned = peak_time.copy()
                 peak_time_cleaned[~signal_pixels] = 0
 
-                if np.any(image_cleaned):
+                if np.all(image_cleaned == 0): 
 
-                    # --- Hillas parameter calculation ---
-                    try:    
-                        hillas_params = hillas_parameters(geom_camera[tel_id], image_cleaned)
-                    
-                    except:
-                        print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                            'Hillas parameter calculation failed. Skipping.')
-                        continue
-                        
-                    # --- Timing parameter calculation ---
-                    try:    
-                        timing_params = timing_parameters(
-                            geom_camera[tel_id], image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
-                        )
-                    
-                    except:
-                        print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                            'Timing parameter calculation failed. Skipping.')
-                        continue
-                    
-                    # --- Leakage parameter calculation --- 
-                    try:
-                        leakage_params = leakage(geom_camera[tel_id], image, signal_pixels)
-                    
-                    except: 
-                        print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                            'Leakage parameter calculation failed. Skipping.')
-                        continue
+                    print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                          'Could not survive the image cleaning. Skipping.')
 
-                    # --- calculate the MC impact parameter ---
-                    mc_impact = calc_impact(
-                        event.mc.core_x, event.mc.core_y, event.mc.az, event.mc.alt,
-                        positions[tel_id][0], positions[tel_id][1], positions[tel_id][2],
-                    )
-
-                    # --- write the event information ---
-                    event_info = InfoContainer(
-                        obs_id=event.index.obs_id,
-                        event_id=event.index.event_id,
-                        mc_energy=event.mc.energy,
-                        mc_alt=event.mc.alt,
-                        mc_az=event.mc.az,
-                        mc_core_x=event.mc.core_x,
-                        mc_core_y=event.mc.core_y,
-                        mc_impact = mc_impact,
-                        alt_tel=event.pointing.tel[tel_id].altitude,
-                        az_tel=event.pointing.tel[tel_id].azimuth,
-                        n_islands=num_islands
-                    )
-
-                    if tel_type == 'LST-1':
-                        event_info.tel_id = 1
-
-                    elif tel_type == 'MAGIC-I':
-                        event_info.tel_id = 2
-                    
-                    elif tel_type == 'MAGIC-II':
-                        event_info.tel_id = 3
-
-                    writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
-                    
-                else:
-                    print(f'--> {i_ev} event (event ID = {event.index.event_id}): ' \
-                            'Could not survive the image cleaning. Skipping.')
+                    n_events_skipped += 1
                     continue
 
-            print(f'{i_ev+1} events')
+                # --- hillas parameters calculation ---
+                try:    
+                    hillas_params = hillas_parameters(camera_geom, image_cleaned)
+                
+                except:
+
+                    print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                          'Hillas parameters calculation failed. Skipping.')
+
+                    n_events_skipped += 1
+                    continue
+                    
+                # --- timing parameters calculation ---
+                try:    
+                    timing_params = timing_parameters(
+                        camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
+                    )
+                
+                except:
+
+                    print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                          'Timing parameters calculation failed. Skipping.')
+
+                    n_events_skipped += 1
+                    continue
+                
+                # --- leakage parameters calculation --- 
+                try:
+                    leakage_params = leakage(camera_geom, image, signal_pixels)
+                
+                except: 
+
+                    print(f'--> {i_ev} event (event ID: {event.index.event_id}): ' \
+                          'Leakage parameters calculation failed. Skipping.')
+
+                    n_events_skipped += 1
+                    continue
+
+                # --- calculate additional parameters ---
+                tel_pointing = AltAz(alt=event.pointing.tel[tel_id].altitude, az=event.pointing.tel[tel_id].azimuth)
+                telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
+
+                event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_frame)
+                event_coord = event_coord.transform_to(telescope_frame)
+
+                mc_disp = angular_separation(
+                    lon1=event_coord.altaz.az, lat1=event_coord.altaz.alt, lon2=event.mc.az, lat2=event.mc.alt
+                )
+
+                mc_impact = calc_impact(
+                    event.mc.core_x, event.mc.core_y, event.mc.az, event.mc.alt,
+                    tel_positions[0], tel_positions[1], tel_positions[2]
+                )
+
+                # --- save the event information ---
+                event_info = EventInfoContainer(
+                    obs_id=event.index.obs_id,
+                    event_id=event.index.event_id,
+                    alt_tel=event.pointing.tel[tel_id].altitude,
+                    az_tel=event.pointing.tel[tel_id].azimuth,
+                    mc_energy=event.mc.energy,
+                    mc_alt=event.mc.alt,
+                    mc_az=event.mc.az,
+                    mc_disp=mc_disp,
+                    mc_core_x=event.mc.core_x,
+                    mc_core_y=event.mc.core_y,
+                    mc_impact=mc_impact,
+                    n_islands=n_islands,
+                    n_pixels=n_pixels,
+                    magic_stereo=magic_stereo
+                )
+
+                if tel_name == 'LST-1':
+                    event_info.tel_id = 1
+
+                elif tel_name == 'MAGIC-I':
+                    event_info.tel_id = 2
+                
+                elif tel_name == 'MAGIC-II':
+                    event_info.tel_id = 3
+
+                writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
+
+            print(f'{i_ev+1} events processed.')
+            print(f'({n_events_skipped} events are skipped)')
+
+    # --- save the simulation parameters ---
+    with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
+
+        sim_info = SimInfoContainer(
+            nshow=event.mcheader.num_showers,
+            nscat=event.mcheader.shower_reuse,
+            eslope=event.mcheader.spectral_index,
+            emin=event.mcheader.energy_range_min,
+            emax=event.mcheader.energy_range_max,
+            cscat=event.mcheader.max_scatter_range,
+            viewcone=event.mcheader.max_viewcone_radius
+        )
+
+        writer.write('params', sim_info)
 
 
 def main():
 
     start_time = time.time()
 
-    # --- get the arguments ---
-    arg_parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str, 
-        help='Path to an input MC DL0 data file, e.g., gamma_40deg_90deg_run1___*.simtel.gz'
+    parser.add_argument(
+        '--input-file', '-i', dest='input_file', type=str, 
+        help='Path to an input simtel DL0 data file (*.simtel.gz).'
     )
 
-    arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, 
-        help='Path and name of an output data file with HDF5 format, e.g., dl1_gamma_40deg_90deg.h5'
+    parser.add_argument(
+        '--output-file', '-o', dest='output_file', type=str, default='./dl1_mc.h5',
+        help='Path to an output DL1 data file.'
     )
 
-    arg_parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, 
-        help='Path to a config file with yaml format, e.g., config.yaml'
+    parser.add_argument(
+        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
+        help='Path to a configuration file.'
     )
 
-    args = arg_parser.parse_args()
+    args = parser.parse_args()
 
-    # --- process the MC DL0 data to DL1 --- 
-    config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
+    config = yaml.safe_load(open(args.config_file, 'r'))
 
-    mc_dl0_to_dl1(args.input_data, args.output_data, config_lst1_magic)
-
-    print(f'\nOutput data file: {args.output_data}')
+    mc_dl0_to_dl1(args.input_file, args.output_file, config)
 
     print('\nDone.')
 
     end_time = time.time()
-    print(f'\nelapsed time = {end_time - start_time:.0f} [sec]\n')
+    print(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':

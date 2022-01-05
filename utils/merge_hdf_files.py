@@ -12,65 +12,65 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
-__all__ = [
-    'merge_hdf_files'
-]
+__all__ = ['merge_hdf_files']
 
 
-def merge_hdf_files(input_data_mask, n_files=50, output_data=None):
+def merge_hdf_files(input_files, output_file=None, n_files=50):
 
-    paths_list = glob.glob(input_data_mask)
-    paths_list.sort()
+    file_paths = glob.glob(input_files)
+    file_paths.sort()
 
     # --- merge the input data to subsets ---
-    print('\nMerging the input data to subsets...')
+    print('\nMerging the input data to subsets:')
 
-    dir_tmp = str(Path(paths_list[0]).parent)
+    output_dir_tmp = str(Path(file_paths[0]).parent)
 
+    subset_paths = []
     data_merged = pd.DataFrame()
-    subsets_list = []
 
-    for i_file, path in enumerate(paths_list):
+    for i_file, path in enumerate(file_paths):
 
         print(path)
 
         if len(data_merged) == 0:
-            filename_start = re.findall('(\S+).h5', path.split('/')[-1])[0]
+            file_name_start = re.findall('(\S+).h5', Path(path).name)[0]
 
         df = pd.read_hdf(path, key='events/params')
         data_merged = data_merged.append(df)
 
-        if ( (i_file+1) % n_files == 0 ) or ( path == paths_list[-1] ):
+        if ( (i_file+1) % n_files == 0 ) or ( path == file_paths[-1] ):
 
-            filename_end = re.findall('(\S+).h5', path.split('/')[-1])[0]
-            output_data_subset = f'{dir_tmp}/subset_{filename_start}_to_{filename_end}.h5'
+            file_name_end = re.findall('(\S+).h5', Path(path).name)[0]
+            subset_file = f'{output_dir_tmp}/subset_{file_name_start}_to_{file_name_end}.h5'
 
-            data_merged.to_hdf(output_data_subset, key='events/params')
-            subsets_list.append(output_data_subset)
+            subset_paths.append(subset_file)
 
+            data_merged.to_hdf(subset_file, key='events/params')
             data_merged = pd.DataFrame()
-
-            print(f'--> {output_data_subset}\n')
             
+            print(f'--> {subset_file}\n')
 
-    # --- merge the subset data ---
-    print('Merging the subset data:')
+    # --- merge the subsets ---
+    print('Merging the subsets:')
 
-    for path in subsets_list:
+    for path in subset_paths:
 
-        print(path)
+        print(Path(path).name)
 
         df = pd.read_hdf(path, key='events/params')
         data_merged = data_merged.append(df)
 
         os.remove(path)
 
-    if output_data != None:
+    if output_file != None:
         
         # --- save the data frame ---
-        data_merged.to_hdf(output_data, key='events/params')
+        output_dir = str(Path(output_file).parent)
+        os.makedirs(output_dir, exist_ok=True)
 
-        print(f'\nOutput data: {output_data}')
+        data_merged.to_hdf(output_file, key='events/params')
+
+        print(f'\nOutput data file: {output_file}')
 
     return data_merged
 
@@ -79,29 +79,31 @@ def main():
 
     start_time = time.time()
 
-    arg_parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str,
-        help='Path to input data files with h5 extention.'
+    parser.add_argument(
+        '--input-files', '-i', dest='input_files', type=str,
+        help='Path to input HDF data files.'
     )
 
-    arg_parser.add_argument(
+    parser.add_argument(
+        '--output-file', '-o', dest='output_file', type=str, default='./merged_data.h5',
+        help='Path to an output HDF data file. The output directory will be created if it does NOT exist.'
+    )
+
+    parser.add_argument(
         '--n-files', '-n', dest='n_files', type=int, default=50,
-        help='Number of data files merged to a subset data file.'
+        help='Number of data files merged to a subset.'
     )
 
-    arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, default='./merged_data.h5',
-        help='Path to an output data file with h5 extention.'
-    )
+    args = parser.parse_args()
 
-    args = arg_parser.parse_args()
-
-    merge_hdf_files(args.input_data, args.n_files, args.output_data)
+    merge_hdf_files(args.input_files, args.output_file, args.n_files) 
 
     print('\nDone.')
-    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')  
+
+    end_time = time.time()
+    print(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':
