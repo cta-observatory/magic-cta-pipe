@@ -582,6 +582,7 @@ class EnergyRegressor(RegressorClassifierBase):
         """
         return super().load(path, cam_id_list, unit)
 
+
 class HillasFeatureSelector(ABC):
     """
     The base class that handles the event Hillas parameter extraction
