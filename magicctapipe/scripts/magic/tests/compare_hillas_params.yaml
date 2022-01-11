@@ -1,0 +1,14 @@
+magic-cta-pipe-input:
+  Data:
+    Test: "/remote/magicdata5/ejobst/Crab_CTA/Data/Test/19_11_27/Hillas/hillas_stereo_MAGICCleaning_v20211006.h5"
+    Train: "/remote/magicdata5/ejobst/Crab_CTA/Data/Train/Hillas/hillas_stereo_MAGICCleaning_v20211006.h5"
+  MC:
+    Test: "/remote/magicdata5/ejobst/Crab_CTA/MC/Test/Hillas/hillas_stereo_MAGICCleaning_v20211116.h5"
+    Train: "/remote/magicdata5/ejobst/Crab_CTA/MC/Train/Hillas/hillas_stereo_MAGICCleaning_v20211116.h5"
+MARS-input:
+  MARS-path: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/SuperStar/20191127_05086952_S_CrabNebula-W0.40+035.root"
+Hillas-params:
+  Params: ["leakage_M1", "leakage_M2", "width_M1", "width_M2", "length_M1", "length_M2", "size_M1", "size_M2"] #, "width_M1", "size_M1", "leakage_M1"]
+Output_paths:
+  file_output_directory: "test-hillas" #"/output/path/file.h5"
+  image_output_directory: "test-hillas" # ouput/path/for/image/"
