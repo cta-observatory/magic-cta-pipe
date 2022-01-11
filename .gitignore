@@ -3,7 +3,6 @@ test_data
 # Folders
 utils/__pycache__/
 __pycache__
-test*
 .vscode
 RFs
 
