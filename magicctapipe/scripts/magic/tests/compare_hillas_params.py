@@ -87,7 +87,7 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 			df_hillas["relative_error"]=(df_hillas[f"{par}"+"_mars"]-df_hillas[f"{par}"+"_mcp"])/df_hillas[f"{par}"+"_mcp"]	
 			error = df_hillas.loc[(df_hillas["relative_error"]>threshold[par])].to_numpy()
 
-		if error.size <= len(df_hillas)*0.00: #percentage of the events, that is allowed to have errors bigger than the specified threshold
+		if error.size <= len(df_hillas)*0.01: #percentage of the events, that is allowed to have errors bigger than the specified threshold
 			errors_found = False
 		else:
 			errors_found = True
