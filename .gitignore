@@ -1,1 +1,29 @@
+# Folders
 utils/__pycache__/
+__pycache__
+test*
+.vscode
+RFs
+
+# Files cretaed when running pip
+build/
+magic_cta_pipe.egg-info/
+magicctapipe/_version.py
+
+# Standard files
+*.png
+*.pdf
+*.eps
+
+# MAGIC/CTA files
+*.root
+*.joblib
+*.gz
+*.h5
+
+# Other
+TODO.txt
+test.ipynb
+.ipynb_checkpoints
+*.tmp
+*.stats
