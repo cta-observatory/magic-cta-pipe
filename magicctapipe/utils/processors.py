@@ -5,8 +5,7 @@ import numpy as np
 import pandas as pd
 import sklearn.ensemble
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord
-from astropy.coordinates.angle_utilities import angular_separation
+from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
 
 logger = logging.getLogger(__name__)

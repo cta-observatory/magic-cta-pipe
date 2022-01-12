@@ -49,7 +49,6 @@ def load_lst_data(input_file, type_lst_time):
         data_level = 'dl2' if ('dl2' in f.keys()) else 'dl1'
 
     data_lst = pd.read_hdf(input_file, key=f'{data_level}/event/telescope/parameters/LST_LSTCam')
-
     logger.info(f'LST-1: {len(data_lst)} events')
 
     # --- check the duplication of event IDs ---
@@ -58,14 +57,13 @@ def load_lst_data(input_file, type_lst_time):
     if np.any(counts > 1):
 
         event_ids_dup = event_ids[counts > 1].tolist()
-
         logger.info(f'\nExclude the following events due to the duplication of event IDs: {event_ids_dup}')
-        data_lst.query(f'event_id != {event_ids_dup}', inplace=True)
 
+        data_lst.query(f'event_id != {event_ids_dup}', inplace=True)
         logger.info(f'--> LST-1: {len(data_lst)} events')
 
     # --- change the column names ---
-    param_names = {
+    params_rename = {
         'obs_id': 'obs_id_lst',
         'event_id': 'event_id_lst',
         'leakage_pixels_width_1': 'pixels_width_1',
@@ -75,42 +73,40 @@ def load_lst_data(input_file, type_lst_time):
         'time_gradient': 'slope'
     } 
 
-    data_lst.rename(columns=param_names, inplace=True)
+    data_lst.rename(columns=params_rename, inplace=True)
     data_lst.set_index(['obs_id_lst', 'event_id_lst', 'tel_id'], inplace=True)
 
     # --- remove the unnecessary columns ---
-    param_names = [
+    params_drop = [
         'log_intensity', 'mc_type', 'tel_pos_x', 'tel_pos_y', 'tel_pos_z',
         'calibration_id', 'trigger_type', 'ucts_trigger_type', 'mc_core_distance',
         'concentration_cog', 'concentration_core', 'concentration_pixel', 'wl', 'event_type'
     ]
 
-    for param in param_names:
+    for param in params_drop:
         if param in data_lst.columns:
             data_lst.drop(param, axis=1, inplace=True)
 
     # --- define the timestamps ---
-    time_names = np.array(['dragon_time', 'tib_time', 'ucts_time', 'trigger_time'])
+    params_time = np.array(['dragon_time', 'tib_time', 'ucts_time', 'trigger_time'])
 
-    data_lst.drop(time_names[time_names != type_lst_time], axis=1, inplace=True)
+    data_lst.drop(params_time[params_time != type_lst_time], axis=1, inplace=True)
     data_lst.rename(columns={type_lst_time: 'timestamp'}, inplace=True)
 
     # --- drop the non-reconstructed events ---
     logger.info('\nDropping the non-reconstructed events...')
 
-    param_names = ['intensity', 'slope', 'intensity_width_2', 'alt_tel', 'az_tel']
-    data_lst.dropna(subset=param_names, inplace=True)
-
+    data_lst.dropna(subset=['intensity', 'slope', 'alt_tel', 'az_tel'], inplace=True)
     logger.info(f'--> LST-1: {len(data_lst)} events')
 
-    # --- change the unit from [deg] to [m] ---
+    # --- change the unit from degree to meter ---
     optics = pd.read_hdf(input_file, key='configuration/instrument/telescope/optics')
     foclen = optics['equivalent_focal_length'].values[0]
 
     data_lst['length'] = foclen * np.tan(np.deg2rad(data_lst['length']))
     data_lst['width'] = foclen * np.tan(np.deg2rad(data_lst['width']))
 
-    # --- change the unit from [rad] to [deg] ---
+    # --- change the unit from radian to degree ---
     data_lst['alt_tel'] = np.rad2deg(data_lst['alt_tel'])
     data_lst['az_tel'] = np.rad2deg(data_lst['az_tel'])
     data_lst['phi'] = np.rad2deg(data_lst['phi'])
@@ -134,7 +130,6 @@ def load_magic_data(input_files):
 
         df = pd.read_hdf(path, key='events/params')
         df['tel_id'] += 1   # M1: tel_id -> 2,  M2: tel_id -> 3
-
         data_magic = data_magic.append(df)
 
     data_magic.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -146,7 +141,7 @@ def load_magic_data(input_files):
 
         tel_name = 'M1' if (tel_id == 2) else 'M2'
         n_events = len(data_magic.query(f'tel_id == {tel_id}'))
-    
+
         logger.info(f'{tel_name}: {n_events} events')
 
     return data_magic
@@ -158,7 +153,6 @@ def event_coincidence(input_file_lst, input_files_magic, output_file, config):
     precision = int(-np.log10(accuracy_time))
 
     config_evco = config['event_coincidence']
-
     logger.info(f'\nConfiguration for the event coincidence:\n{config_evco}')
 
     # --- load the input data files ---
@@ -188,8 +182,8 @@ def event_coincidence(input_file_lst, input_files_magic, output_file, config):
 
     for tel_id in telescope_ids:
         
-        df_magic = data_magic.query(f'tel_id == {tel_id}')
         tel_name = 'M1' if (tel_id == 2) else 'M2'
+        df_magic = data_magic.query(f'tel_id == {tel_id}')
 
         time_sec = np.round(df_magic['time_sec'].values - obs_day)
         time_nanosec = np.round(df_magic['time_nanosec'].values * nsec2sec, decimals=precision)
@@ -340,6 +334,7 @@ def event_coincidence(input_file_lst, input_files_magic, output_file, config):
     df_profile.to_hdf(output_file, key='coincidence/profile', mode='a')
     
     logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
@@ -365,7 +360,7 @@ def main():
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a configuration file.'
+        help='Path to a yaml configuration file.'
     )
 
     args = parser.parse_args()
@@ -375,8 +370,6 @@ def main():
 
     event_coincidence(args.input_file_lst, args.input_files_magic, args.output_file, config)
     
-    logger.info('\nDone.')
-
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 

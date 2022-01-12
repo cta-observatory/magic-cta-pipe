@@ -4,7 +4,7 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-Process the simtel MC DL0 data (simtel.gz) containing LST-1 or MAGIC events.
+Process the simtel MC DL0 data (*.simtel.gz) containing LST-1 or MAGIC events.
 The allowed telescopes specified in the configuration file will only be processed.
 The telescope IDs are automatically reset to the following values when saving to an output file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
@@ -91,24 +91,21 @@ def mc_dl0_to_dl1(input_file, output_file, config):
     logger.info(f'\nInput data file:\n{input_file}')
 
     source = EventSource(input_file)
-
     obs_id = source.obs_ids[0]
-    subarray = source.subarray
 
+    subarray = source.subarray
     logger.info(f'\nSubarray configuration:\n{subarray.tels}')
 
     allowed_tel_ids = config['mc_allowed_tels']
-
     logger.info(f'\nAllowed telescopes:\n{allowed_tel_ids}')
 
-    process_lst1_events = ('LST-1' in allowed_tel_ids.keys())
-    process_m1_events = ('MAGIC-I' in allowed_tel_ids.keys())
-    process_m2_events = ('MAGIC-II' in allowed_tel_ids.keys())
+    process_lst1_events = ('LST-1' in allowed_tel_ids)
+    process_m1_events = ('MAGIC-I' in allowed_tel_ids)
+    process_m2_events = ('MAGIC-II' in allowed_tel_ids)
 
     if process_lst1_events:
 
         config_lst = config['LST']
-
         logger.info(f'\nConfiguration for LST data process:\n{config_lst}')
 
         increase_nsb = config_lst['increase_nsb'].pop('use')
@@ -120,9 +117,9 @@ def mc_dl0_to_dl1(input_file, output_file, config):
         if increase_psf:
             set_numba_seed(obs_id)
 
-        use_only_main_island = config_lst['tailcuts_clean'].pop('use_only_main_island')
         use_time_delta_cleaning = config_lst['time_delta_cleaning'].pop('use')
         use_dynamic_cleaning = config_lst['dynamic_cleaning'].pop('use')
+        use_only_main_island = config_lst['use_only_main_island']
 
         extractor_name_lst = config_lst['image_extractor'].pop('name')
         config_extractor_lst = Config({extractor_name_lst: config_lst['image_extractor']})
@@ -149,6 +146,11 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
         calibrator_magic = CameraCalibrator(subarray, image_extractor=extractor_magic)
 
+    if process_m1_events and process_m2_events:
+        
+        tel_id_m1 = allowed_tel_ids['MAGIC-I']
+        tel_id_m2 = allowed_tel_ids['MAGIC-II']
+
     # --- process the events ---
     with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
         
@@ -157,12 +159,14 @@ def mc_dl0_to_dl1(input_file, output_file, config):
             logger.info(f'\nProcessing the {tel_name} events...')
 
             source = EventSource(input_file, allowed_tels=[tel_id])
-            camera_geom = source.subarray.tel[tel_id].camera.geometry
-            tel_positions = source.subarray.positions[tel_id]
+            subarray = source.subarray
+
+            tel_positions = subarray.positions[tel_id]
+            camera_geom = subarray.tel[tel_id].camera.geometry
+            focal_length = subarray.tel[tel_id].optics.equivalent_focal_length
 
             camera_frame = CameraFrame(
-                focal_length=source.subarray.tel[tel_id].optics.equivalent_focal_length, 
-                rotation=camera_geom.cam_rotation
+                rotation=camera_geom.cam_rotation, focal_length=focal_length, 
             )
 
             if np.any(tel_name == np.array(['MAGIC-I', 'MAGIC-II'])):
@@ -173,13 +177,15 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
             for event in source:
 
-                if event.count % 100 == 0:
+                if (event.count % 100) == 0:
                     logger.info(f'{event.count} events')
 
                 if process_m1_events and process_m2_events:
 
-                    trigger_m1 = (allowed_tel_ids['MAGIC-I'] in event.trigger.tels_with_trigger)
-                    trigger_m2 = (allowed_tel_ids['MAGIC-II'] in event.trigger.tels_with_trigger)
+                    tels_with_trigger = event.trigger.tels_with_trigger
+
+                    trigger_m1 = (tel_id_m1 in tels_with_trigger)
+                    trigger_m2 = (tel_id_m2 in tels_with_trigger)
                 
                     magic_stereo = (trigger_m1 & trigger_m2)
 
@@ -226,7 +232,6 @@ def mc_dl0_to_dl1(input_file, output_file, config):
                         max_island_label = np.argmax(n_pixels_on_island)
                         signal_pixels[island_labels != max_island_label] = False
 
-
                 elif np.any(tel_name == np.array(['MAGIC-I', 'MAGIC-II'])):
 
                     # --- calibration ---
@@ -259,7 +264,6 @@ def mc_dl0_to_dl1(input_file, output_file, config):
                     hillas_params = hillas_parameters(camera_geom, image_cleaned)
                 
                 except:
-
                     logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                 'Hillas parameters calculation failed. Skipping.')
 
@@ -273,7 +277,6 @@ def mc_dl0_to_dl1(input_file, output_file, config):
                     )
                 
                 except:
-
                     logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                 'Timing parameters calculation failed. Skipping.')
 
@@ -282,10 +285,9 @@ def mc_dl0_to_dl1(input_file, output_file, config):
                 
                 # --- leakage parameters calculation --- 
                 try:
-                    leakage_params = leakage_parameters(camera_geom, image, signal_pixels)
+                    leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
                 
                 except: 
-
                     logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                 'Leakage parameters calculation failed. Skipping.')
 
@@ -342,11 +344,13 @@ def mc_dl0_to_dl1(input_file, output_file, config):
             logger.info(f'{event.count+1} events processed.')
             logger.info(f'({n_events_skipped} events are skipped)')
 
-    # --- save the simulation parameters ---
+    # --- save the simulation configuration ---
+    logger.info('\nSaving the simulation configuration...')
+
     with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
 
         sim_config = source.simulation_config
-
+        
         sim_info = SimInfoContainer(
             nshow=sim_config.num_showers,
             nscat=sim_config.shower_reuse,
@@ -358,6 +362,9 @@ def mc_dl0_to_dl1(input_file, output_file, config):
         )
 
         writer.write('config', sim_info)
+
+    logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
@@ -378,7 +385,7 @@ def main():
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a configuration file.'
+        help='Path to a yaml configuration file.'
     )
 
     args = parser.parse_args()
@@ -387,8 +394,6 @@ def main():
         config = yaml.safe_load(f)
 
     mc_dl0_to_dl1(args.input_file, args.output_file, config)
-
-    logger.info('\nDone.')
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

@@ -4,9 +4,8 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-Process MAGIC calibrated data (*_Y_*.root) with MARS-like image cleaning method, 
+Process the MAGIC calibrated data (*_Y_*.root) with MARS-like image cleaning method, 
 and compute the DL1 parameters (i.e., Hillas, timing and leakage parameters).
-Note that only one subrun file is now allowed for the input data.
 
 Usage:
 $ python magic_data_cal_to_dl1.py 
@@ -73,12 +72,13 @@ def magic_cal_to_dl1(input_file, output_file, config):
     source = MAGICEventSource(input_url=input_file)
 
     tel_id = source.telescope
+    is_simulation = source.is_mc
 
     camera_geom = source.subarray.tel[tel_id].camera.geometry
     magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_cleaning)
 
     badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-        is_simulation=source.is_mc, config=config_badpixels
+        is_simulation=is_simulation, config=config_badpixels
     )
 
     n_events_skipped = 0
@@ -142,7 +142,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
             
             # --- leakage parameters calculation ---
             try:
-                leakage_params = leakage_parameters(camera_geom, image, signal_pixels)
+                leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
                 
             except:
                 logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
@@ -153,7 +153,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
 
             # --- save the parameters ---
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
-
+            
             time_sec = np.round(np.modf(timestamp)[1])
             time_nanosec = np.round(np.modf(timestamp)[0] * sec2nsec, decimals=-2)
 
@@ -175,6 +175,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
         logger.info(f'({n_events_skipped} events are skipped)')
 
     logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
@@ -195,7 +196,7 @@ def main():
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a configuration file.'
+        help='Path to a yaml configuration file.'
     )
 
     args = parser.parse_args()
@@ -204,8 +205,6 @@ def main():
         config = yaml.safe_load(f)
 
     magic_cal_to_dl1(args.input_file, args.output_file, config)
-
-    logger.info('\nDone.')
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

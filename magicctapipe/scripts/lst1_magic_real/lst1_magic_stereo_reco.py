@@ -76,7 +76,6 @@ def stereo_reco(input_file, output_file, config):
     }
 
     config_sterec = config['stereo_reco']
-
     logger.info(f'\nConfiguration for the stereo reconstruction:\n{config_sterec}')
 
     subarray = pd.read_pickle(config_sterec['subarray'])
@@ -151,9 +150,8 @@ def stereo_reco(input_file, output_file, config):
 
     # --- apply the quality cuts ---
     logger.info('\nApplying the quality cuts...')
-
+    
     data_joint.query(config_sterec['quality_cuts'], inplace=True)
-
     data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
     data_joint.query('multiplicity > 1', inplace=True)
 
@@ -226,7 +224,7 @@ def stereo_reco(input_file, output_file, config):
             # --- calculate the impact parameter ---
             impact = calc_impact(
                 core_x=stereo_params.core_x, core_y=stereo_params.core_y, az=stereo_params.az, alt=stereo_params.alt,
-                tel_pos_x=tel_positions[tel_id][0], tel_pos_y=tel_positions[tel_id][1], tel_pos_z=tel_positions[tel_id][2],
+                tel_pos_x=tel_positions[tel_id][0], tel_pos_y=tel_positions[tel_id][1], tel_pos_z=tel_positions[tel_id][2]
             )
 
             # --- save the reconstructed parameters ---
@@ -250,6 +248,7 @@ def stereo_reco(input_file, output_file, config):
             df.to_hdf(output_file, key='simulation/config', mode='a')
 
     logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
@@ -270,7 +269,7 @@ def main():
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-       help='Path to a configuration file.'
+       help='Path to a yaml configuration file.'
     )
 
     args = parser.parse_args()
@@ -279,8 +278,6 @@ def main():
         config = yaml.safe_load(f)
 
     stereo_reco(args.input_file, args.output_file, config)
-
-    logger.info('\nDone.')
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

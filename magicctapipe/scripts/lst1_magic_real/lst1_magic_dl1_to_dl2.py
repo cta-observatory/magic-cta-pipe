@@ -50,9 +50,9 @@ def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, cla
 
     data_type = 'mc' if ('mc_energy' in data_joint.columns) else 'real'
 
+    # --- reconstruct energy ---
     if energy_rfs != None:
 
-        # --- reconstruct energy ---
         logger.info('\nLoading the following energy RFs:')
         
         file_paths = glob.glob(energy_rfs)
@@ -91,9 +91,9 @@ def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, cla
 
         del energy_estimator
     
+    # --- reconstruct arrival direction ---
     if direction_rfs != None:
 
-        # --- reconstruct arrival direction ---
         logger.info('\nLoading the following direction RFs:')
 
         file_paths = glob.glob(direction_rfs)
@@ -130,9 +130,9 @@ def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, cla
         reco_params.sort_index(inplace=True)
         data_joint = data_joint.join(reco_params)
 
+        # --- transform Alt/Az to RA/Dec coordinate ---
         if data_type == 'real':
 
-            # --- transform Alt/Az to RA/Dec coordinate ---
             logger.info('Transforming Alt/Az to RA/Dec coordinate...\n')
 
             timestamps = Time(data_joint['timestamp'].values, format='unix', scale='utc')
@@ -172,9 +172,9 @@ def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, cla
 
         del direction_estimator
 
+    # --- reconstruct gammaness ---
     if classifier_rfs != None:
 
-        # --- reconstruct gammaness ---
         logger.info('\nLoading the following classifier RFs:')
         
         file_paths = glob.glob(classifier_rfs)
@@ -217,6 +217,7 @@ def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, cla
     data_joint.to_hdf(output_file, key='events/params')
 
     logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
@@ -253,8 +254,6 @@ def main():
     args = parser.parse_args()
 
     dl1_to_dl2(args.input_file, args.output_file, args.energy_rfs, args.direction_rfs, args.classifier_rfs)
-
-    logger.info('\nDone.')
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

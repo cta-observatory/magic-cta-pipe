@@ -22,6 +22,7 @@ import sys
 import time
 import yaml
 import random
+import logging
 import argparse
 import warnings
 import numpy as np
@@ -62,7 +63,7 @@ def load_data(input_file, feature_names, event_class=None):
 
     data_return = {}
 
-    for tel_combo, tel_ids in zip(tel_combinations.keys(), tel_combinations.values()):
+    for tel_combo, tel_ids in tel_combinations.items():
 
         df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
         df.dropna(subset=feature_names, inplace=True)
@@ -120,12 +121,10 @@ def get_events_at_random(data, n_events):
 def train_energy_rfs(input_file, output_dir, config):
 
     config_rf = config['energy_rf']
-
     logger.info(f'\nConfiguration for training the energy RFs:\n{config_rf}')
 
     # --- load the input data file ---
     logger.info(f'\nLoading the input data file:\n{input_file}')
-
     data_train = load_data(input_file, config_rf['features'])
 
     # --- train the energy RFs ---
@@ -139,23 +138,23 @@ def train_energy_rfs(input_file, output_dir, config):
         energy_estimator.fit(data_train[tel_combo])
 
         logger.info('\nParameter importances:')
-
         check_importances(energy_estimator.telescope_rfs, config_rf['features'])
 
         # --- save the trained RFs ---
         output_file = f'{output_dir}/energy_rfs_{tel_combo}.joblib'
         energy_estimator.save(output_file)
 
+    logger.info(f'\nOutput directory: {output_dir}')
+    logger.info('\nDone.')
+
 
 def train_direction_rfs(input_file, output_dir, config):
 
     config_rf = config['direction_rf']
-
     logger.info(f'\nConfiguration for training the direction RF:\n{config_rf}')
 
     # --- load the input data file ---
     logger.info(f'\nLoading the input data file:\n{input_file}')
-
     data_train = load_data(input_file, config_rf['features'])
 
     # --- train the direction RFs ---
@@ -171,27 +170,26 @@ def train_direction_rfs(input_file, output_dir, config):
         direction_estimator.fit(data_train[tel_combo])
 
         logger.info('\nParameter importances:')
-
         check_importances(direction_estimator.telescope_rfs, config_rf['features'])
 
         # --- save the trained RFs ---
         output_file = f'{output_dir}/direction_rfs_{tel_combo}.joblib'
         direction_estimator.save(output_file)
 
+    logger.info(f'\nOutput directory: {output_dir}')
+    logger.info('\nDone.')
+
 
 def train_classifier_rfs(input_file_gamma, input_file_bkg, output_dir, config):
 
     config_rf = config['classifier_rf']
-
     logger.info(f'\nConfiguration for training the classifier RF:\n{config_rf}')
 
     # --- load the input data file ---
     logger.info(f'\nLoading the input gamma MC data file:\n{input_file_gamma}')
-
     data_gamma = load_data(input_file_gamma, config_rf['features'], event_class=0)
 
     logger.info(f'\nLoading the input background data file:\n{input_file_bkg}')
-
     data_bkg = load_data(input_file_bkg, config_rf['features'], event_class=1)
 
     # --- train the classifier RFs ---
@@ -223,12 +221,14 @@ def train_classifier_rfs(input_file_gamma, input_file_bkg, output_dir, config):
         event_classifier.fit(data_train)
 
         logger.info('\nParameter importances:')
-
         check_importances(event_classifier.telescope_rfs, config_rf['features'])
         
         # --- save the trained RFs ---
         output_file = f'{output_dir}/classifier_rfs_{tel_combo}.joblib'
         event_classifier.save(output_file)
+
+    logger.info(f'\nOutput directory: {output_dir}')
+    logger.info('\nDone.')
 
 
 def main():
@@ -259,7 +259,7 @@ def main():
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a configuration file.'
+        help='Path to a yaml configuration file.'
     )
 
     args = parser.parse_args()
@@ -283,8 +283,6 @@ def main():
     else:
         logger.error(f'Unknown type of RF "{args.type_rf}". Input "energy", "direction", "classifier" or "all". Exiting.\n')
         sys.exit()
-
-    logger.info('\nDone.')
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

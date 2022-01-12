@@ -31,7 +31,6 @@ LST:
         boundary_thresh: 4
         keep_isolated_pixels: false
         min_number_picture_neighbors: 2
-        use_only_main_island: false
 
     time_delta_cleaning:
         use: true
@@ -42,6 +41,8 @@ LST:
         use: true
         threshold: 267
         fraction: 0.03
+
+    use_only_main_island: false
 
 
 MAGIC:
