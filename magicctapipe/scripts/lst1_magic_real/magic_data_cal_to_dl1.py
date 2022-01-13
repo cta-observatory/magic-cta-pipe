@@ -4,8 +4,9 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-Process the MAGIC calibrated data (*_Y_*.root) with MARS-like image cleaning method, 
+Process the MAGIC calibrated data (*_Y_*.root) with MARS-like cleaning method, 
 and compute the DL1 parameters (i.e., Hillas, timing and leakage parameters).
+The events that all the DL1 parameters are computed will be stored in the output file.
 
 Usage:
 $ python magic_data_cal_to_dl1.py 
@@ -29,8 +30,8 @@ from ctapipe.image import (
     leakage_parameters
 )
 from ctapipe.core import Container, Field
+from magicctapipe.utils import MAGIC_Cleaning, MAGICBadPixelsCalc
 from ctapipe_io_magic import MAGICEventSource
-from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -66,22 +67,19 @@ def magic_cal_to_dl1(input_file, output_file, config):
     logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}')
     logger.info(f'\nConfiguration for the bad pixels calculation:\n{config_badpixels}')
 
-    # --- process the input data ---
-    logger.info('\nProcessing the events...')
-
     source = MAGICEventSource(input_url=input_file)
+    subarray = source.subarray
 
     tel_id = source.telescope
     is_simulation = source.is_mc
 
-    camera_geom = source.subarray.tel[tel_id].camera.geometry
+    camera_geom = subarray.tel[tel_id].camera.geometry
     magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_cleaning)
+    badpixel_calculator = MAGICBadPixelsCalc(is_simulation=is_simulation, config=config_badpixels)
 
-    badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-        is_simulation=is_simulation, config=config_badpixels
-    )
-
+    # --- process the input data ---
     n_events_skipped = 0
+    logger.info('\nProcessing the events...')
 
     with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
 
@@ -174,6 +172,10 @@ def magic_cal_to_dl1(input_file, output_file, config):
         logger.info(f'{event.count+1} events processed.')
         logger.info(f'({n_events_skipped} events are skipped)')
 
+    # --- save the subarray description ---
+    logger.info('\nSaving the subarray description...')
+    subarray.to_hdf(output_file)
+    
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')
 

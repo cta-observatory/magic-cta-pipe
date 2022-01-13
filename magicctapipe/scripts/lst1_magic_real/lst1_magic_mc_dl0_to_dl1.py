@@ -37,6 +37,7 @@ from ctapipe.image import (
     timing_parameters, 
     leakage_parameters
 )
+from ctapipe.instrument import SubarrayDescription
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
 from magicctapipe.utils import (
     add_noise_in_pixels,
@@ -75,17 +76,6 @@ class EventInfoContainer(Container):
     magic_stereo = Field(-1, 'True if M1 and M2 are triggered')
 
 
-class SimInfoContainer(Container):
-
-    nshow = Field(-1, 'Number of showers simulated')
-    nscat = Field(-1, 'Numbers of uses of each shower')
-    eslope = Field(-1, 'Power-law spectral index of spectrum')
-    emin = Field(-1, 'Lower limit of energy range of primary particle', u.TeV)
-    emax = Field(-1, 'Upper limit of energy range of primary particle', u.TeV)
-    cscat = Field(-1, 'Maximum scatter range', u.m)
-    viewcone = Field(-1, 'Maximum viewcone radius', u.deg)
-    
-
 def mc_dl0_to_dl1(input_file, output_file, config):
 
     logger.info(f'\nInput data file:\n{input_file}')
@@ -94,14 +84,28 @@ def mc_dl0_to_dl1(input_file, output_file, config):
     obs_id = source.obs_ids[0]
 
     subarray = source.subarray
-    logger.info(f'\nSubarray configuration:\n{subarray.tels}')
+    logger.info(f'\nSubarray configuration:\n{subarray.tels}\n{subarray.positions}')
 
-    allowed_tel_ids = config['mc_allowed_tels']
-    logger.info(f'\nAllowed telescopes:\n{allowed_tel_ids}')
+    # --- define allowed tels subarray ---
+    allowed_tels = config['mc_allowed_tels']
+    logger.info(f'\nAllowed telescopes:\n{allowed_tels}')
 
-    process_lst1_events = ('LST-1' in allowed_tel_ids)
-    process_m1_events = ('MAGIC-I' in allowed_tel_ids)
-    process_m2_events = ('MAGIC-II' in allowed_tel_ids)
+    telescope_ids = allowed_tels.values()
+    logger.info('\nTransforming telescope positions to the CoG coordinate...')
+
+    positions = np.array([subarray.positions[tel_id].value for tel_id in telescope_ids])
+    positions_cog = np.round(positions - positions.mean(axis=0), 2)
+    positions_cog = {tel_id: u.Quantity(positions_cog[i_tel], u.m) for i_tel, tel_id in enumerate(telescope_ids)}   
+
+    logger.info(f'--> {positions_cog}')
+
+    tel_descriptions = {tel_id: subarray.tels[tel_id] for tel_id in telescope_ids}
+    subarray = SubarrayDescription(subarray.name, positions_cog, tel_descriptions)
+
+    # --- define the processors ---
+    process_lst1_events = ('LST-1' in allowed_tels)
+    process_m1_events = ('MAGIC-I' in allowed_tels)
+    process_m2_events = ('MAGIC-II' in allowed_tels)
 
     if process_lst1_events:
 
@@ -148,13 +152,13 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
     if process_m1_events and process_m2_events:
         
-        tel_id_m1 = allowed_tel_ids['MAGIC-I']
-        tel_id_m2 = allowed_tel_ids['MAGIC-II']
+        tel_id_m1 = allowed_tels['MAGIC-I']
+        tel_id_m2 = allowed_tels['MAGIC-II']
 
     # --- process the events ---
     with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
         
-        for tel_name, tel_id in allowed_tel_ids.items():
+        for tel_name, tel_id in allowed_tels.items():
 
             logger.info(f'\nProcessing the {tel_name} events...')
 
@@ -345,23 +349,15 @@ def mc_dl0_to_dl1(input_file, output_file, config):
             logger.info(f'({n_events_skipped} events are skipped)')
 
     # --- save the simulation configuration ---
+    sim_config = source.simulation_config
     logger.info('\nSaving the simulation configuration...')
 
     with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
+        writer.write('config', sim_config)
 
-        sim_config = source.simulation_config
-        
-        sim_info = SimInfoContainer(
-            nshow=sim_config.num_showers,
-            nscat=sim_config.shower_reuse,
-            eslope=sim_config.spectral_index,
-            emin=sim_config.energy_range_min,
-            emax=sim_config.energy_range_max,
-            cscat=sim_config.max_scatter_range,
-            viewcone=sim_config.max_viewcone_radius
-        )
-
-        writer.write('config', sim_info)
+    # --- save the subarray description ---
+    logger.info('Saving the subarray description...')
+    subarray.to_hdf(output_file)
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')

@@ -78,12 +78,6 @@ def stereo_reco(input_file, output_file, config):
     config_sterec = config['stereo_reco']
     logger.info(f'\nConfiguration for the stereo reconstruction:\n{config_sterec}')
 
-    subarray = pd.read_pickle(config_sterec['subarray'])
-    tel_positions = subarray.positions
-
-    logger.info(f'\nSubarray configuration:\n{subarray.tels}')
-    logger.info(f'\nTelescope positions:\n{tel_positions}')
-
     # --- load the input data file ---
     logger.info(f'\nLoading the input data file:\n{input_file}')
 
@@ -94,7 +88,6 @@ def stereo_reco(input_file, output_file, config):
 
         data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
         data_joint.sort_index(inplace=True)
-
         data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
         data_joint.query('multiplicity > 1', inplace=True)
 
@@ -106,6 +99,11 @@ def stereo_reco(input_file, output_file, config):
         df = data_joint.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
         n_events = np.sum(df.groupby(['obs_id', 'event_id']).size() == len(tel_ids))
         logger.info(f'{tel_combo}: {n_events} events ({n_events/n_events_total*100:.1f}%)')
+
+    subarray = SubarrayDescription.from_hdf(input_file)
+    tel_positions = subarray.positions
+
+    logger.info(f'\nSubarray configuration:\n{subarray.tels}\n{tel_positions}')
 
     # --- check the angular separation ---
     tel_id_lst = 1
@@ -217,7 +215,7 @@ def stereo_reco(input_file, output_file, config):
         stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
             
         if stereo_params.az < 0:
-                stereo_params.az += u.Quantity(360, u.deg)
+            stereo_params.az += u.Quantity(360, u.deg)
 
         for tel_id in telescope_ids:
 

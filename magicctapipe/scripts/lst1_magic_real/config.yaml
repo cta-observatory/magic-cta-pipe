@@ -66,14 +66,13 @@ MAGIC:
 
 
 event_coincidence: 
-    type_lst_time: 'dragon_time' 
+    time_type_lst: 'dragon_time' 
     window_width: 6.0e-7      # unit: [sec]
     offset_start: -5.0e-6     # unit: [sec] 
     offset_stop: 0.0          # unit: [sec]
     
 
 stereo_reco: 
-    subarray: '/home/yoshiki.ohtani/software/magic-cta-pipe/magicctapipe/scripts/lst1_magic_real/data/subarray_lst1_magic.pickle'
     quality_cuts: '(intensity > 50) & (width > 0)'
 
 
@@ -98,7 +97,17 @@ energy_rf:
         ccp_alpha: 0.0
         max_samples: null
 
-    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'intensity_width_2', 'h_max', 'impact']
+    features: [
+        'intensity', 
+        'length',
+        'width',
+        'skewness',
+        'kurtosis',
+        'slope',
+        'intensity_width_2',
+        'h_max',
+        'impact'
+    ]
 
 
 direction_rf:
@@ -122,7 +131,17 @@ direction_rf:
         ccp_alpha: 0.0
         max_samples: null
         
-    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'intensity_width_2', 'h_max', 'impact']
+    features: [
+        'intensity',
+        'length',
+        'width',
+        'skewness',
+        'kurtosis',
+        'slope',
+        'intensity_width_2',
+        'h_max',
+        'impact'
+    ]
 
         
 classifier_rf:
@@ -147,7 +166,17 @@ classifier_rf:
         ccp_alpha: 0.0
         max_samples: null
 
-    features: ['intensity', 'length', 'width', 'skewness', 'kurtosis', 'slope', 'intensity_width_2', 'h_max', 'impact']
+    features: [
+        'intensity',
+        'length',
+        'width',
+        'skewness',
+        'kurtosis',
+        'slope',
+        'intensity_width_2',
+        'h_max',
+        'impact'
+    ]
     
 
 

@@ -22,7 +22,7 @@ setup(
     install_requires=[
         'astropy>=4.0.5,<5',
         'ctapipe~=0.12.0',
-        'ctapipe_io_magic',
+        'ctapipe_io_magic~=0.4.0',
         'ctaplot~=0.5.3',
         'eventio>=1.5.1,<2.0.0a0',  # at least 1.1.1, but not 2
         'gammapy>=0.18,<0.19',
