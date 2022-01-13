@@ -1,44 +1,52 @@
 # A conda environment with all useful package for ctapipe developers
-name: magic-lst
+name: magic-lst1
 channels:
-  - conda-forge
   - default
+  - cta-observatory
 dependencies:
-  - python=3.8
-  - numpy>=1.17
-  - astropy>=4.0.5,<5
+  - python=3.7
   - pip
-  - corsikaio
-  - ctapipe~=0.12
-  - eventio>=1.5.1,<2.0.0a0
-  - gammapy=0.18.2
+  - astropy
+  - black
+  - bokeh=1
+  - conda-forge::nbsphinx
+  - conda-forge::ctapipe=0.12
+  - conda-forge::gammapy=0.18.2
+  - cython
+  - graphviz
   - h5py
+  - iminuit>=2
   - ipython
-  - jupyter
-  - matplotlib>=3.5
-  - notebook
-  - numba
+  - ipywidgets
   - joblib
-  - pyparsing
+  - jupyter
+  - matplotlib
+  - numba
+  - numpy>=1.17
+  - numpydoc
+  - pandas
+  - pre-commit
+  - psutil
   - pytables
   - pytest
   - pytest-cov
   - pytest-runner
+  - pyyaml
   - scikit-learn
   - scipy
-  - seaborn
   - setuptools
-  - sphinx~=4.2
+  - sphinx=3.5
   - sphinx-automodapi
   - sphinx_rtd_theme
-  - sphinx-argparse
-  - vitables
-  - nbsphinx
-  - numpydoc
   - tqdm
-  - toml
-  - traitlets~=5.0.5
-  - pandas
+  - traitlets
+  - vitables
+  - wheel
+  - xz
+  - zlib
+  - zstandard
+  - conda-forge::eventio>=1.5.0
+  - conda-forge::corsikaio
   - pip:
       - ctapipe_io_magic~=0.4.0
       - uproot~=4.1
