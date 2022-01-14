@@ -1,209 +1,219 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+"""
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-import os
-import yaml
-import glob
-import copy
+Process the MAGIC calibrated data (*_Y_*.root) with MARS-like cleaning method, 
+and compute the DL1 parameters (i.e., Hillas, timing and leakage parameters).
+The events that all the DL1 parameters are computed will be stored in the output file.
+
+Please note that currently only one subrun file is allowed for input data,
+and when the input data contains only one drive report, the script stops
+showing an error about the interpolation of pointing direction. 
+This issue will be solved in the coming release of ctapipe_io_magic.
+
+Usage:
+$ python magic_data_cal_to_dl1.py 
+--input-file "./data/calibrated/20201119_M1_05093174.001_Y_CrabNebula-W0.40+035.root"
+--output-file "./data/dl1/dl1_M1_run05093174.001.h5"
+--config-file "./config.yaml"
+"""
+
 import time
+import yaml
+import logging
 import argparse
 import warnings
 import numpy as np
-from pathlib import Path
 from astropy import units as u
 from ctapipe.io import HDF5TableWriter
-from ctapipe.core.container import Container, Field
 from ctapipe.image import (
-    hillas_parameters,
-    leakage_parameters,
-    timing_parameters,
+    number_of_islands,
+    hillas_parameters, 
+    timing_parameters, 
+    leakage_parameters
 )
-from ctapipe.image.morphology import number_of_islands
+from ctapipe.core import Container, Field
+from magicctapipe.utils import MAGIC_Cleaning, MAGICBadPixelsCalc
 from ctapipe_io_magic import MAGICEventSource
-from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
 
 warnings.simplefilter('ignore')
+
+sec2nsec = 1e9
 
 __all__ = ['magic_cal_to_dl1']
 
 
-class InfoContainer(Container):
+class EventInfoContainer(Container):
     
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
-    mjd = Field(-1, 'Event time mjd')
-    millisec = Field(-1, 'Event time millisec')
-    nanosec = Field(-1, 'Event time nanosec')
-    alt_tel = Field(-1, 'Telescope pointing altitude', unit=u.rad)
-    az_tel = Field(-1, 'Telescope pointing azimuth', unit=u.rad)
+    time_sec = Field(-1, 'Event time second')
+    time_nanosec = Field(-1, 'Event time nanosecond')
+    alt_tel = Field(-1, 'Telescope pointing altitude', u.deg)
+    az_tel = Field(-1, 'Telescope pointing azimuth', u.deg)
     n_islands = Field(-1, 'Number of image islands')
+    n_pixels = Field(-1, 'Number of pixels of cleaned images')
 
 
-def magic_cal_to_dl1(input_data_mask, output_data, config):
+def magic_cal_to_dl1(input_file, output_file, config):
 
-    config_cleaning = config['magic_clean']
-    config_badpixels = config['bad_pixels']
+    config_cleaning = config['MAGIC']['magic_clean']
+    config_badpixels = config['MAGIC']['bad_pixels']
 
-    config_cleaning['findhotpixels'] = True
+    config_cleaning['findhotpixels'] = True   # True for real data, False for MC data 
 
-    print(f'\nConfiguration for image cleaning:\n{config_cleaning}')
-    print(f'\nConfiguration for bad pixels calculation:\n{config_badpixels}')
+    logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}')
+    logger.info(f'\nConfiguration for the bad pixels calculation:\n{config_badpixels}')
 
-    # --- check the input data ---
-    paths_list = glob.glob(input_data_mask)
-    paths_list.sort()
+    source = MAGICEventSource(input_url=input_file)
+    subarray = source.subarray
+
+    tel_id = source.telescope
+    is_simulation = source.is_mc
+
+    camera_geom = subarray.tel[tel_id].camera.geometry
+    magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_cleaning)
+    badpixel_calculator = MAGICBadPixelsCalc(is_simulation=is_simulation, config=config_badpixels)
 
     # --- process the input data ---
-    output_dir = str(Path(output_data).parent)
-    os.makedirs(output_dir, exist_ok=True)
-
-    previous_event_id = 0
     n_events_skipped = 0
+    logger.info('\nProcessing the events...')
 
-    with HDF5TableWriter(
-        filename=output_data,
-        group_name='events',
-        overwrite=True
-    ) as writer:
+    with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
 
-        for path in paths_list:
-            print(f"\nProcessing {path.name}...")
+        for event in source:
 
-            source = MAGICEventSource(input_url=input_data_mask)
+            if (event.count % 100) == 0:
+                logger.info(f'{event.count} events')
 
-            tel_id = source.telescope
-            is_simulation = source.is_mc
+            # --- image cleaning ---
+            badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
+            deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
+            unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
 
-            geom_camera = source.subarray.tel[tel_id].camera.geometry
-            magic_clean = MAGIC_Cleaning.magic_clean(geom_camera, config_cleaning)
-            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-                is_simulation=is_simulation,
-                config=config_badpixels,
+            signal_pixels, image, peak_time = magic_clean.clean_image(
+                event.dl1.tel[tel_id].image, event.dl1.tel[tel_id].peak_time, unsuitable_mask=unsuitable_mask
             )
 
-            print('\nProcessing the events...')
+            image_cleaned = image.copy()
+            image_cleaned[~signal_pixels] = 0
 
-            for i_ev, event in enumerate(source):
+            peak_time_cleaned = peak_time.copy()
+            peak_time_cleaned[~signal_pixels] = 0
 
-                if i_ev % 100 == 0:
-                    print(f'{i_ev} events')
+            n_islands, _ = number_of_islands(camera_geom, signal_pixels)
+            n_pixels = np.count_nonzero(signal_pixels)
 
-                if event.index.event_id == previous_event_id:   # exclude pedestal runs??
-                    print(f'--> {i_ev} event (event ID = {event.index.event_id}): '
-                        f'Pedestal event (?) found. Skipping.')
-                    n_events_skipped += 1
-                    continue
+            if np.all(image_cleaned == 0):
 
-                previous_event_id = copy.copy(event.index.event_id)
+                logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                            'Could not survive the image cleaning. Skipping.')
+                
+                n_events_skipped += 1
+                continue
+            
+            # --- hillas parameters calculation ---
+            try:
+                hillas_params = hillas_parameters(camera_geom, image_cleaned)
 
-                # --- image cleaning ---
-                badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
-                deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
-                unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
-
-                signal_pixels, image, peak_time = magic_clean.clean_image(
-                    event.dl1.tel[tel_id].image, event.dl1.tel[tel_id].peak_time, unsuitable_mask=unsuitable_mask
+            except:
+                logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                            'Hillas parameters calculation failed. Skipping.')
+                
+                n_events_skipped += 1
+                continue
+                
+            # --- timing parameters calculation ---
+            try:
+                timing_params = timing_parameters(
+                    camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
                 )
 
-                image_cleaned = image.copy()
-                image_cleaned[~signal_pixels] = 0
+            except:
+                logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                            'Timing parameters calculation failed. Skipping.')
+                
+                n_events_skipped += 1
+                continue
+            
+            # --- leakage parameters calculation ---
+            try:
+                leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
+                
+            except:
+                logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                            'Leakage parameters calculation failed. Skipping.')
 
-                peak_time_cleaned = peak_time.copy()
-                peak_time_cleaned[~signal_pixels] = 0
+                n_events_skipped += 1
+                continue
 
-                num_islands, island_labels = number_of_islands(geom_camera, signal_pixels)
+            # --- save the parameters ---
+            timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
+            
+            time_sec = np.round(np.modf(timestamp)[1])
+            time_nanosec = np.round(np.modf(timestamp)[0] * sec2nsec, decimals=-2)
 
-                if np.sum(image_cleaned) == 0:
-                    print(f'--> {i_ev} event (event ID = {event.index.event_id}): '
-                        f'Could not survive the image cleaning. Skipping.')
-                    n_events_skipped += 1
-                    continue
+            event_info = EventInfoContainer(
+                obs_id=event.index.obs_id,
+                event_id=event.index.event_id,
+                tel_id=tel_id,
+                time_sec=int(time_sec),
+                time_nanosec=int(time_nanosec),
+                alt_tel=event.pointing.tel[tel_id].altitude,
+                az_tel=event.pointing.tel[tel_id].azimuth,
+                n_islands=n_islands,
+                n_pixels=n_pixels
+            )
 
-                # --- Hillas parameter calculation ---
-                try:
-                    hillas_params = hillas_parameters(geom_camera, image_cleaned)
+            writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
 
-                except:
-                    print(f'--> {i_ev} event (event ID = {event.index.event_id}): '
-                        f'Hillas parameter calculation failed. Skipping.')
-                    n_events_skipped += 1
-                    continue
+        logger.info(f'{event.count+1} events processed.')
+        logger.info(f'({n_events_skipped} events are skipped)')
 
-                # --- Timing parameter calculation ---
-                try:
-                    timing_params = timing_parameters(
-                        geom_camera, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
-                    )
-
-                except:
-                    print(f'--> {i_ev} event (event ID = {event.index.event_id}): '
-                        f'Timing parameter calculation failed. Skipping.')
-                    n_events_skipped += 1
-                    continue
-
-                # --- Leakage parameter calculation ---
-                try:
-                    leakage_params = leakage_parameters(geom_camera, image, signal_pixels)
-
-                except:
-                    print(f'--> {i_ev} event (event ID = {event.index.event_id}): '
-                        f'Leakage parameter calculation failed. Skipping.')
-                    n_events_skipped += 1
-                    continue
-
-                # --- save the event information ---
-                event_info = InfoContainer(
-                    obs_id=event.index.obs_id,
-                    event_id=event.index.event_id,
-                    tel_id=tel_id,
-                    mjd=event.trigger.mjd,
-                    millisec=event.trigger.millisec,
-                    nanosec=event.trigger.nanosec,
-                    alt_tel=event.pointing.tel[tel_id].altitude,
-                    az_tel=event.pointing.tel[tel_id].azimuth,
-                    n_islands=num_islands
-                )
-
-                writer.write('params', (hillas_params, leakage_params, timing_params, event_info))
-
-        print(f'\n{i_ev+1} events processed.')
-        print(f'({n_events_skipped} events are skipped)')
-
-    print(f'\nOutput data: {output_data}')
+    # --- save the subarray description ---
+    subarray.to_hdf(output_file)
+    
+    logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
 
     start_time = time.time()
 
-    arg_parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str,
-        help='Path to M1 or M2 calibrated data files (*_Y_*.root). Do not mix M1 and M2 data.'
+    parser.add_argument(
+        '--input-file', '-i', dest='input_file', type=str,
+        help='Path to an input MAGIC calibrated data file (*_Y_*.root).'
     )
 
-    arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, default='./dl1_magic.h5',
-        help='Path to an output data file with h5 extention.'
+    parser.add_argument(
+        '--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5',
+        help='Path to an output DL1 data file.'
     )
 
-    arg_parser.add_argument(
+    parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a configuration file with yaml extention.'
+        help='Path to a yaml configuration file.'
     )
 
-    args = arg_parser.parse_args()
+    args = parser.parse_args()
 
-    config_lst1_magic = yaml.safe_load(open(args.config_file, 'r'))
+    with open(args.config_file, 'rb') as f:
+        config = yaml.safe_load(f)
 
-    magic_cal_to_dl1(args.input_data, args.output_data, config_lst1_magic['MAGIC'])
+    magic_cal_to_dl1(args.input_file, args.output_file, config)
 
-    print('\nDone.')
-    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')
+    end_time = time.time()
+    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':

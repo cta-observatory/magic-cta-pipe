@@ -46,12 +46,9 @@ from .merge_hdf_files import (
 
 from .my_functions import (
     crab_magic,
-    get_obs_ids_from_name,
     calc_impact,
     calc_nsim,
-    transform_telcoords_cog,
     transform_to_radec,
-    calc_offset_rotation,
     calc_angular_separation,
 )
 
@@ -79,7 +76,22 @@ from .utils import (
     make_elapsed_time_str,
     print_title,
     make_title_str,
-    get_key_if_exists,
+)
+
+from .cleaning import (
+    apply_dynamic_cleaning
+)
+
+from .modifier import (
+    add_noise_in_pixels,
+    set_numba_seed,
+    random_psf_smearer
+)
+
+from .processors import (
+    EnergyEstimator,
+    DirectionEstimator,
+    EventClassifier
 )
 
 __all__ = [
@@ -109,12 +121,9 @@ __all__ = [
     "pixel_treatment",
     "merge_hdf_files",
     "crab_magic",
-    "get_obs_ids_from_name",
     "calc_impact",
     "calc_nsim",
-    "transform_telcoords_cog",
     "transform_to_radec",
-    "calc_offset_rotation",
     "calc_angular_separation",
     "save_plt",
     "load_default_plot_settings",
@@ -134,4 +143,12 @@ __all__ = [
     "print_title",
     "make_title_str",
     "get_key_if_exists",
+    "apply_dynamic_cleaning",
+    "add_noise_in_pixels",
+    "set_numba_seed",
+    "random_psf_smearer",
+    "EnergyEstimator",
+    "DirectionEstimator",
+    "EventClassifier"
 ]
+

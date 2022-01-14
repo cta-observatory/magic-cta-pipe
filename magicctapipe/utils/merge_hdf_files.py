@@ -3,103 +3,86 @@
 
 # Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-import os
-import re
 import time
 import glob
+import tables
+import logging
 import argparse
-import pandas as pd
-from pathlib import Path
+from ctapipe.instrument import SubarrayDescription
 
-__all__ = [
-    'merge_hdf_files'
-]
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
+__all__ = ['merge_hdf_files']
 
 
-def merge_hdf_files(input_data_mask, n_files=50, output_data=None):
+def merge_hdf_files(input_files, output_file):
 
-    paths_list = glob.glob(input_data_mask)
-    paths_list.sort()
+    file_paths = glob.glob(input_files)
+    file_paths.sort()
 
-    # --- merge the input data to subsets ---
-    print('\nMerging the input data to subsets...')
+    # --- merging the event/simulation data ---    
+    with tables.open_file(output_file, mode='w') as merged_file:
 
-    dir_tmp = str(Path(paths_list[0]).parent)
+        logger.info('\nMerging the following data files:')
+        logger.info(file_paths[0])
 
-    data_merged = pd.DataFrame()
-    subsets_list = []
+        with tables.open_file(file_paths[0]) as input_data:
 
-    for i_file, path in enumerate(paths_list):
+            event_params = input_data.root.events.params
+            merged_file.create_table('/events', 'params', createparents=True, obj=event_params.read())
 
-        print(path)
+            for attribute in event_params.attrs._f_list():
+                merged_file.root.events.params.attrs[attribute] = event_params.attrs[attribute]
 
-        if len(data_merged) == 0:
-            filename_start = re.findall('(\S+).h5', path.split('/')[-1])[0]
+            if 'simulation' in input_data.root:
 
-        df = pd.read_hdf(path, key='events/params')
-        data_merged = data_merged.append(df)
+                sim_config = input_data.root.simulation.config
+                merged_file.create_table('/simulation', 'config', createparents=True, obj=sim_config.read())
 
-        if ( (i_file+1) % n_files == 0 ) or ( path == paths_list[-1] ):
+                for attribute in sim_config.attrs._f_list():
+                    merged_file.root.simulation.config.attrs[attribute] = sim_config.attrs[attribute]
 
-            filename_end = re.findall('(\S+).h5', path.split('/')[-1])[0]
-            output_data_subset = f'{dir_tmp}/subset_{filename_start}_to_{filename_end}.h5'
+        for path in file_paths[1:]:
 
-            data_merged.to_hdf(output_data_subset, key='events/params')
-            subsets_list.append(output_data_subset)
+            logger.info(path)
 
-            data_merged = pd.DataFrame()
+            with tables.open_file(path) as input_data:
+                
+                event_params = input_data.root.events.params
+                merged_file.root.events.params.append(event_params.read())
 
-            print(f'--> {output_data_subset}\n')
+    # --- saving the subarray description ---
+    subarray = SubarrayDescription.from_hdf(file_paths[0])
+    subarray.to_hdf(output_file)    
 
-    # --- merge the subset data ---
-    print('Merging the subset data:')
-
-    for path in subsets_list:
-
-        print(path)
-
-        df = pd.read_hdf(path, key='events/params')
-        data_merged = data_merged.append(df)
-
-        os.remove(path)
-
-    if output_data != None:
-
-        # --- save the data frame ---
-        data_merged.to_hdf(output_data, key='events/params')
-
-        print(f'\nOutput data: {output_data}')
-
-    return data_merged
+    logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
 
     start_time = time.time()
 
-    arg_parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str,
-        help='Path to input data files with h5 extention.'
+    parser.add_argument(
+        '--input-files', '-i', dest='input_files', type=str,
+        help='Path to input HDF data files.'
     )
 
-    arg_parser.add_argument(
-        '--n-files', '-n', dest='n_files', type=int, default=50,
-        help='Number of data files merged to a subset data file.'
+    parser.add_argument(
+        '--output-file', '-o', dest='output_file', type=str, default='./merged_data.h5',
+        help='Path to an output HDF data file.'
     )
 
-    arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, default='./merged_data.h5',
-        help='Path to an output data file with h5 extention.'
-    )
+    args = parser.parse_args()
 
-    args = arg_parser.parse_args()
+    merge_hdf_files(args.input_files, args.output_file) 
 
-    merge_hdf_files(args.input_data, args.n_files, args.output_data)
-
-    print('\nDone.')
-    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')
+    end_time = time.time()
+    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':
