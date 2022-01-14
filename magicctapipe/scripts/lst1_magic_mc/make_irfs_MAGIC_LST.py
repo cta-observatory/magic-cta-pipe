@@ -80,7 +80,7 @@ def make_irfs_MAGIC_LST(config_file):
 
     cfg = load_cfg_file(config_file)
 
-    consider_electron = get_key_if_exists(cfg["irfs"], "consider_electron", False)
+    consider_electron = cfg["irfs"].get("consider_electron", False)
 
     # --- Check out folder ---
     check_folder(cfg["irfs"]["save_dir"])
@@ -107,10 +107,8 @@ def make_irfs_MAGIC_LST(config_file):
     MAX_GH_CUT_EFFICIENCY = cfg["irfs"]["MAX_GH_CUT_EFFICIENCY"]
     GH_CUT_EFFICIENCY_STEP = cfg["irfs"]["GH_CUT_EFFICIENCY_STEP"]
 
-    MIN_GH_CUT_EFFICIENCY = get_key_if_exists(
-        cfg["irfs"], "MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP
-    )
-    cuts = get_key_if_exists(cfg["irfs"], "cuts", "")
+    MIN_GH_CUT_EFFICIENCY = cfg["irfs"].get("MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP)
+    cuts = cfg["irfs"].get("cuts", "")
     # if "cuts" not in cfg["irfs"]:
     #     INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
     #     LEAKAGE1_CUT = cfg["irfs"]["LEAKAGE1_CUT"]
@@ -118,19 +116,19 @@ def make_irfs_MAGIC_LST(config_file):
     particles = {
         "gamma": {
             "file": cfg["irfs"]["gamma_dl2"],
-            "max_files": get_key_if_exists(cfg["irfs"], "max_files_gamma", 0),
+            "max_files": cfg["irfs"].get("max_files_gamma", 0),
             "target_spectrum": CRAB_HEGRA,
         },
         "proton": {
             "file": cfg["irfs"]["proton_dl2"],
-            "max_files": get_key_if_exists(cfg["irfs"], "max_files_proton", 0),
+            "max_files": cfg["irfs"].get("max_files_proton", 0),
             "target_spectrum": IRFDOC_PROTON_SPECTRUM,
         },
     }
     if consider_electron:
         particles["electron"] = {
             "file": cfg["irfs"]["electron_dl2"],
-            "max_files": get_key_if_exists(cfg["irfs"], "max_files_electron", 0),
+            "max_files": cfg["irfs"].get("max_files_electron", 0),
             "target_spectrum": IRFDOC_ELECTRON_SPECTRUM,
         }
 
@@ -142,16 +140,16 @@ def make_irfs_MAGIC_LST(config_file):
         log.info(f"Simulated {particle_type.title()} Events:")
         p["events"], p["simulation_info"] = read_dl2_mcp_to_pyirf_MAGIC_LST_list(
             file_mask=p["file"],
-            useless_cols=get_key_if_exists(cfg["irfs"], "useless_cols", []),
+            useless_cols=cfg["irfs"].get("useless_cols", []),
             max_files=p["max_files"],
-            verbose=get_key_if_exists(cfg["irfs"], "verbose", False),
+            verbose=cfg["irfs"].get("verbose", False),
             eval_mean_events=True,
             cuts=cuts,
         )
 
         # # Applying cuts (if not already done)
         # if "cuts" not in cfg["irfs"]:
-        #     cut_mult = get_key_if_exists(cfg["irfs"], "cut_on_multiplicity", 2)
+        #     cut_mult = cfg["irfs"].get("cut_on_multiplicity", 2)
         #     p["events"] = p["events"][p["events"]["multiplicity"] >= cut_mult].copy()
         #     good_ = (p["events"]["intensity"] >= INTENSITY_CUT) & (
         #         p["events"]["intensity_width_1"] <= LEAKAGE1_CUT
