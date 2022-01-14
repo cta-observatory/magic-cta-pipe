@@ -8,6 +8,11 @@ Process the MAGIC calibrated data (*_Y_*.root) with MARS-like cleaning method,
 and compute the DL1 parameters (i.e., Hillas, timing and leakage parameters).
 The events that all the DL1 parameters are computed will be stored in the output file.
 
+Please note that currently only one subrun file is allowed for input data,
+and when the input data contains only one drive report, the script stops
+showing an error about the interpolation of pointing direction. 
+This issue will be solved in the coming release of ctapipe_io_magic.
+
 Usage:
 $ python magic_data_cal_to_dl1.py 
 --input-file "./data/calibrated/20201119_M1_05093174.001_Y_CrabNebula-W0.40+035.root"
@@ -173,7 +178,6 @@ def magic_cal_to_dl1(input_file, output_file, config):
         logger.info(f'({n_events_skipped} events are skipped)')
 
     # --- save the subarray description ---
-    logger.info('\nSaving the subarray description...')
     subarray.to_hdf(output_file)
     
     logger.info(f'\nOutput data file: {output_file}')

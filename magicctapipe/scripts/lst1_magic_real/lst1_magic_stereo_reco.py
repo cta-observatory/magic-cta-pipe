@@ -33,6 +33,7 @@ from ctapipe.containers import (
     ImageParametersContainer,
     CameraHillasParametersContainer
 )
+from ctapipe.instrument  import SubarrayDescription
 from magicctapipe.utils import calc_impact
 
 logger = logging.getLogger(__name__)
@@ -74,9 +75,6 @@ def stereo_reco(input_file, output_file, config):
         'lst1_m2': [1, 3],
         'lst1_m1_m2': [1, 2, 3]
     }
-
-    config_sterec = config['stereo_reco']
-    logger.info(f'\nConfiguration for the stereo reconstruction:\n{config_sterec}')
 
     # --- load the input data file ---
     logger.info(f'\nLoading the input data file:\n{input_file}')
@@ -147,14 +145,15 @@ def stereo_reco(input_file, output_file, config):
             logger.info(f'--> Maximum angular separation is {theta.to(u.arcmin).value.max():.3f} arcmin. Continue.')
 
     # --- apply the quality cuts ---
-    logger.info('\nApplying the quality cuts...')
+    quality_cuts = config['stereo_reco']['quality_cuts']
+    logger.info(f'\nApplying the following quality cuts:\n{quality_cuts}')
     
-    data_joint.query(config_sterec['quality_cuts'], inplace=True)
+    data_joint.query(quality_cuts, inplace=True)
     data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
     data_joint.query('multiplicity > 1', inplace=True)
 
     n_events_total = len(data_joint.groupby(['obs_id', 'event_id']).size()) 
-    logger.info(f'--> {n_events_total} stereo events are survived:') 
+    logger.info(f'\nIn total {n_events_total} stereo events are survived:') 
 
     for tel_combo, tel_ids in tel_combinations.items():
         
@@ -237,13 +236,16 @@ def stereo_reco(input_file, output_file, config):
             
     logger.info(f'{i_ev+1} events processed.')
 
-    # --- save the data frame ---
+    # --- save in the output file  ---
     data_joint.to_hdf(output_file, key='events/params')
+    subarray.to_hdf(output_file)
 
     with h5py.File(input_file, 'r') as f:
-        if 'simulation' in f.keys():
-            df = pd.read_hdf(input_file, key='simulation/config')
-            df.to_hdf(output_file, key='simulation/config', mode='a')
+        keys = f.keys()
+
+    if 'simulation' in keys:
+        df = pd.read_hdf(input_file, key='simulation/config')
+        df.to_hdf(output_file, key='simulation/config', mode='a')
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')

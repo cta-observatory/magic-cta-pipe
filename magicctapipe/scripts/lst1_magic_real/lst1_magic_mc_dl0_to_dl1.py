@@ -86,26 +86,16 @@ def mc_dl0_to_dl1(input_file, output_file, config):
     subarray = source.subarray
     logger.info(f'\nSubarray configuration:\n{subarray.tels}\n{subarray.positions}')
 
-    # --- define allowed tels subarray ---
     allowed_tels = config['mc_allowed_tels']
     logger.info(f'\nAllowed telescopes:\n{allowed_tels}')
-
-    telescope_ids = allowed_tels.values()
-    logger.info('\nTransforming telescope positions to the CoG coordinate...')
-
-    positions = np.array([subarray.positions[tel_id].value for tel_id in telescope_ids])
-    positions_cog = np.round(positions - positions.mean(axis=0), 2)
-    positions_cog = {tel_id: u.Quantity(positions_cog[i_tel], u.m) for i_tel, tel_id in enumerate(telescope_ids)}   
-
-    logger.info(f'--> {positions_cog}')
-
-    tel_descriptions = {tel_id: subarray.tels[tel_id] for tel_id in telescope_ids}
-    subarray = SubarrayDescription(subarray.name, positions_cog, tel_descriptions)
 
     # --- define the processors ---
     process_lst1_events = ('LST-1' in allowed_tels)
     process_m1_events = ('MAGIC-I' in allowed_tels)
     process_m2_events = ('MAGIC-II' in allowed_tels)
+
+    tel_descriptions = {}
+    tel_positions = {}
 
     if process_lst1_events:
 
@@ -134,6 +124,10 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
         calibrator_lst = CameraCalibrator(subarray, image_extractor=extractor_lst)
 
+        tel_id_lst = allowed_tels['LST-1']
+        tel_descriptions[1] = subarray.tel[tel_id_lst]
+        tel_positions[1] = subarray.positions[tel_id_lst]
+
     if process_m1_events or process_m2_events:
 
         config_magic = config['MAGIC']
@@ -150,10 +144,15 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
         calibrator_magic = CameraCalibrator(subarray, image_extractor=extractor_magic)
 
-    if process_m1_events and process_m2_events:
-        
-        tel_id_m1 = allowed_tels['MAGIC-I']
-        tel_id_m2 = allowed_tels['MAGIC-II']
+        if process_m1_events:
+            tel_id_m1 = allowed_tels['MAGIC-I']
+            tel_descriptions[2] = subarray.tel[tel_id_m1]
+            tel_positions[2] = subarray.positions[tel_id_m1]
+
+        if process_m2_events:
+            tel_id_m2 = allowed_tels['MAGIC-II']
+            tel_descriptions[3] = subarray.tel[tel_id_m2]
+            tel_positions[3] = subarray.positions[tel_id_m2]
 
     # --- process the events ---
     with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
@@ -161,17 +160,14 @@ def mc_dl0_to_dl1(input_file, output_file, config):
         for tel_name, tel_id in allowed_tels.items():
 
             logger.info(f'\nProcessing the {tel_name} events...')
-
             source = EventSource(input_file, allowed_tels=[tel_id])
-            subarray = source.subarray
 
-            tel_positions = subarray.positions[tel_id]
+            subarray = source.subarray
+            position = subarray.positions[tel_id]
+
             camera_geom = subarray.tel[tel_id].camera.geometry
             focal_length = subarray.tel[tel_id].optics.equivalent_focal_length
-
-            camera_frame = CameraFrame(
-                rotation=camera_geom.cam_rotation, focal_length=focal_length, 
-            )
+            camera_frame = CameraFrame(rotation=camera_geom.cam_rotation, focal_length=focal_length)
 
             if np.any(tel_name == np.array(['MAGIC-I', 'MAGIC-II'])):
                 magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_magic['magic_clean'])
@@ -186,10 +182,8 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
                 if process_m1_events and process_m2_events:
 
-                    tels_with_trigger = event.trigger.tels_with_trigger
-
-                    trigger_m1 = (tel_id_m1 in tels_with_trigger)
-                    trigger_m2 = (tel_id_m2 in tels_with_trigger)
+                    trigger_m1 = (tel_id_m1 in event.trigger.tels_with_trigger)
+                    trigger_m2 = (tel_id_m2 in event.trigger.tels_with_trigger)
                 
                     magic_stereo = (trigger_m1 & trigger_m2)
 
@@ -313,7 +307,7 @@ def mc_dl0_to_dl1(input_file, output_file, config):
                 mc_impact = calc_impact(
                     core_x=event.simulation.shower.core_x, core_y=event.simulation.shower.core_y,
                     az=event.simulation.shower.az, alt=event.simulation.shower.alt,
-                    tel_pos_x=tel_positions[0], tel_pos_y=tel_positions[1], tel_pos_z=tel_positions[2]
+                    tel_pos_x=position[0], tel_pos_y=position[1], tel_pos_z=position[2]
                 )
 
                 # --- save the event information ---
@@ -348,16 +342,18 @@ def mc_dl0_to_dl1(input_file, output_file, config):
             logger.info(f'{event.count+1} events processed.')
             logger.info(f'({n_events_skipped} events are skipped)')
 
-    # --- save the simulation configuration ---
-    sim_config = source.simulation_config
-    logger.info('\nSaving the simulation configuration...')
+    # --- save in the output file ---
+    telescope_ids = tel_positions.keys()
+
+    tel_positions = np.array([tel_positions[tel_id].value for tel_id in telescope_ids])
+    tel_positions = np.round(tel_positions - tel_positions.mean(axis=0), 2)
+    tel_positions = {tel_id: u.Quantity(tel_positions[i_tel], u.m) for i_tel, tel_id in enumerate(telescope_ids)}   
+
+    subarray = SubarrayDescription(subarray.name, tel_positions, tel_descriptions)
+    subarray.to_hdf(output_file)
 
     with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
-        writer.write('config', sim_config)
-
-    # --- save the subarray description ---
-    logger.info('Saving the subarray description...')
-    subarray.to_hdf(output_file)
+        writer.write('config', source.simulation_config)
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')

@@ -11,13 +11,12 @@ and the events finally containing more than two telescopes information are saved
 Usage:
 $ python lst1_magic_event_coincidence.py 
 --input-file-lst "./data/dl1/LST-1/dl1_LST-1.Run02923.0040.h5"
---input-files-magic "./data/dl1/MAGIC/dl1_MAGIC_run*.h5"
---output-file "./data/dl1_coincidence/dl1_lst1_magic_Run02923.0040.h5"
+--input-file-magic "./data/dl1/MAGIC/dl1_magic_run05093174_to_05093175_merged.h5"
+--output-file "./data/dl1_coincidence/dl1_lst1_magic_run02923.0040.h5"
 --config-file "./config.yaml"
 """
 
 import sys
-import glob
 import h5py
 import time
 import yaml
@@ -49,7 +48,7 @@ tel_positions = {
 __all__ = ['event_coincidence']
 
 
-def load_lst_data(input_file, time_type):
+def load_lst_data(input_file, type_lst_time):
 
     logger.info(f'\nLoading the LST-1 data file:\n{input_file}')
 
@@ -98,7 +97,7 @@ def load_lst_data(input_file, time_type):
     # --- define the timestamps ---
     params_time = np.array(['dragon_time', 'tib_time', 'ucts_time', 'trigger_time'])
 
-    data.drop(params_time[params_time != time_type], axis=1, inplace=True)
+    data.drop(params_time[params_time != type_lst_time], axis=1, inplace=True)
     data.rename(columns={type_lst_time: 'timestamp'}, inplace=True)
 
     # --- drop the non-reconstructed events ---
@@ -126,23 +125,12 @@ def load_lst_data(input_file, time_type):
     return data, subarray
 
 
-def load_magic_data(input_files):
+def load_magic_data(input_file):
 
-    logger.info('\nLoading the following MAGIC data files:')
+    logger.info(f'\nLoading the MAGIC data file:\n{input_file}')
 
-    file_paths = glob.glob(input_files)
-    file_paths.sort()
-
-    data = pd.DataFrame()
-
-    for path in file_paths:
-
-        logger.info(path)
-
-        df = pd.read_hdf(path, key='events/params')
-        df['tel_id'] += 1   # M1: tel_id -> 2,  M2: tel_id -> 3
-        data = data.append(df)
-
+    data = pd.read_hdf(input_file, key='events/params')
+    data['tel_id'] += 1   # M1: tel_id -> 2,  M2: tel_id -> 3
     data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     data.sort_index(inplace=True)
 
@@ -155,12 +143,12 @@ def load_magic_data(input_files):
 
         logger.info(f'{tel_name}: {n_events} events')
 
-    subarray = SubarrayDescription.from_hdf(file_paths[0])
+    subarray = SubarrayDescription.from_hdf(input_file)
 
     return data, subarray
 
 
-def event_coincidence(input_file_lst, input_files_magic, output_file, config):
+def event_coincidence(input_file_lst, input_file_magic, output_file, config):
 
     accuracy_time = 1e-7  # unit: [sec]
     precision = int(-np.log10(accuracy_time))
@@ -169,8 +157,8 @@ def event_coincidence(input_file_lst, input_files_magic, output_file, config):
     logger.info(f'\nConfiguration for the event coincidence:\n{config_evco}')
 
     # --- load the input data files ---
-    data_lst, subarray_lst = load_lst_data(input_file_lst, config_evco['time_type_lst'])
-    data_magic, subarray_magic = load_magic_data(input_files_magic)
+    data_lst, subarray_lst = load_lst_data(input_file_lst, config_evco['type_lst_time'])
+    data_magic, subarray_magic = load_magic_data(input_file_magic)
 
     tel_descriptions = {
         1: subarray_lst.tels[1],     # LST-1
@@ -178,7 +166,7 @@ def event_coincidence(input_file_lst, input_files_magic, output_file, config):
         3: subarray_magic.tels[2]    # MAGIC-II
     }
 
-    subarray = SubarrayDescription('LST-MAGIC-Array', tel_descriptions, tel_positions)
+    subarray = SubarrayDescription('LST-MAGIC-Array', tel_positions, tel_descriptions)
     
     # --- arrange the LST-1 timestamps ---
     time_lst_unix = np.array([Decimal(str(time)) for time in data_lst['timestamp'].values])
@@ -349,15 +337,11 @@ def event_coincidence(input_file_lst, input_files_magic, output_file, config):
         n_events = np.sum(df.groupby(['obs_id', 'event_id']).size().values == len(tel_ids))
         logger.info(f'{tel_combo}: {n_events} events ({n_events / n_events_total * 100:.1f}%)')
 
-    # --- save the data frames ---
-    logger.info('\nSaving the data frames...')
-
+    # --- save in the output file ---
     df_events.to_hdf(output_file, key='events/params', mode='w') 
     df_features.to_hdf(output_file, key='coincidence/features', mode='a')
     df_profile.to_hdf(output_file, key='coincidence/profile', mode='a')
 
-    # --- save the subarray description ---
-    logger.info('Saving the subarray description...')
     subarray.to_hdf(output_file)
     
     logger.info(f'\nOutput data file: {output_file}')
@@ -376,8 +360,8 @@ def main():
     )
 
     parser.add_argument(
-        '--input-files-magic', '-m', dest='input_files_magic', type=str,
-        help='Path to input MAGIC DL1 or DL2 data files.'
+        '--input-file-magic', '-m', dest='input_file_magic', type=str,
+        help='Path to an input MAGIC DL1 or DL2 data file.'
     )
 
     parser.add_argument(
@@ -395,7 +379,7 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    event_coincidence(args.input_file_lst, args.input_files_magic, args.output_file, config)
+    event_coincidence(args.input_file_lst, args.input_file_magic, args.output_file, config)
     
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
