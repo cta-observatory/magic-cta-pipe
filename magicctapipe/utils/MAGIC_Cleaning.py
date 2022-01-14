@@ -1,4 +1,3 @@
-import glob, sys, re
 import itertools
 import copy
 import numpy as np
@@ -8,6 +7,7 @@ __all__ = [
     "magic_clean",
     "pixel_treatment",
 ]
+
 
 class magic_clean():
 

@@ -1,15 +1,11 @@
-import os
-import sys
-import datetime
-import pandas as pd
 from astropy import units as u
 import numpy as np
 
-import ctapipe
-from ctapipe.instrument import CameraGeometry
-from ctapipe.instrument import TelescopeDescription
-from ctapipe.instrument import OpticsDescription
-from ctapipe.instrument import SubarrayDescription
+from ctapipe.instrument import (
+    CameraGeometry,
+    TelescopeDescription,
+    OpticsDescription
+)
 
 __all__ = [
     "tel_ids_2_num",
@@ -22,6 +18,7 @@ __all__ = [
     "intersec_tel_ids",
     "get_tel_name",
 ]
+
 
 def tel_ids_2_num(tel_ids):
     """Function to convert a list of tel_ids into a decimal number wich can be

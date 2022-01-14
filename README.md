@@ -1,10 +1,31 @@
-# ICRR-MPP analysis pipeline for MAGIC and LST data
+# magic-cta-pipe
 
-This repository contains the scripts needed to perform MAGIC+LST analysis with ctapipe.
+Repository for the analysis of MAGIC and MAGIC+LST1 data, based on [*ctapipe*](https://github.com/cta-observatory/ctapipe).
+
+* Code: https://github.com/cta-observatory/magic-cta-pipe
 
 ### Note: This package is under heavy development. Usage at your own risk, it is recommended to contact one of the latest committers if you plan to use this package.
 
+# Installation for users
 
+*magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
+first, to isolate the installed version and dependencies from your master environment (this is optional).
+
+The following command will set up a conda virtual environment, add the necessary package channels, and install *magic-cta-pipe* and its dependencies::
+
+    wget https://raw.githubusercontent.com/cta-observatory/magic-cta-pipe/master/environment.yml
+    conda env create -n magic-lst1 -f environment.yml
+    conda activate magic-lst1
+    pip install magic-cta-pipe
+
+# Available scripts
+
+*magic-cta-pipe* scripts to perform the analysis of MAGIC only and MAGIC+LST1 data. Within the *scripts* folder we have the subdirectories:
+
+* *magic*: scripts for the analysis of MAGIC data (currently under heavy restructuring in order to be used with ctapipe v0.12)
+* *lst1_magic_real*: scripts for the MAGIC+LST1 analysis (updated to be used with ctapipe v0.12)
+
+<!--
 A brief description:
 1. `config/CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
 2. `config/magic-cta-pipe_config_stereo.yaml`: an example of the configuration file for stereo analysis.
@@ -247,3 +268,4 @@ $ python make_event_lists.py --config=config.yaml
 ```
 
 If you used the `--stereo` option for the previous scripts, then also `make_event_lists.py` should be called with the `--stereo` option.
+-->

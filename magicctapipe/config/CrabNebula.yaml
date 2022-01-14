@@ -36,21 +36,26 @@ data_files:
                input_mask: "../../../Data/MAGIC/CrabNebula/1.Calibrated/20*_M2_*root"
                hillas_output: "../../../Data/MAGIC/CrabNebula/ctapipe/2.Hillas/iv_hillas_m2.h5"
                reco_output: "../../../Data/MAGIC/CrabNebula/ctapipe/3.Reco/reco_m2.h5"
-                
 
 image_cleaning:
     magic:
-        charge_thresholds:
-            picture_thresh: 6
-            boundary_thresh: 3.5
-            min_number_picture_neighbors: 1
+        picture_thresh: 6
+        boundary_thresh: 3.5
+        min_number_picture_neighbors: 1
+        # 1.5 slices x 1.64 GHz
+        max_time_diff: 2.46
+        # 4.5 slices x 1.64 GHz
+        max_time_off: 7.38
+        min_number_neighbors: 3
+        usetime : True
+        usesum : True
+        findhotpixels : True
 
-        time_thresholds:
-            # 1.5 slices x 1.64 GHz
-            max_time_diff: 2.46
-            # 4.5 slices x 1.64 GHz
-            max_time_off: 7.38
-            min_number_neighbors: 1
+bad_pixels:
+    magic:
+        pedestalLevel: 400
+        pedestalLevelVariance: 4.5
+        pedestalType: "FromExtractorRndm"
 
 energy_rf:
     save_name: "RFs/energy_rf.joblib"

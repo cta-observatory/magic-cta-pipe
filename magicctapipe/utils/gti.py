@@ -1,10 +1,5 @@
 # coding: utf-8
 
-import glob
-import yaml
-import argparse
-import datetime
-
 import scipy
 import uproot
 import pandas
@@ -16,6 +11,7 @@ __all__ = [
     "intersect_time_intervals",
     "GTIGenerator",
 ]
+
 
 def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
     """
@@ -118,8 +114,7 @@ def intersect_time_intervals(intervals1, intervals2):
 
     """
 
-
-    joined_intervals  = []
+    joined_intervals = []
 
     # Comparing 1st to 2nd
     for interv1 in intervals1:
@@ -141,6 +136,7 @@ def intersect_time_intervals(intervals1, intervals2):
             joined_intervals.append([tstart, tstop])
 
     return joined_intervals
+
 
 class GTIGenerator:
     def __init__(self, config=None, verbose=False):
@@ -270,7 +266,6 @@ class GTIGenerator:
                 df_['mjd'] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
                 df_['value'] = input_stream["Trigger"]["MReportTrigger.fL3Rate"].array(library="np")
 
-
                 df = df.append(df_)
 
         df = df.sort_values(by=['mjd'])
@@ -291,7 +286,6 @@ class GTIGenerator:
         )
 
         return time_intervals
-
 
     def process_files(self, file_list):
         """
