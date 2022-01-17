@@ -64,23 +64,6 @@ class MAGICBadPixelsCalc():
         # Allow processing of MCs (do nothing, but also don't crash)
         self.is_mc = is_simulation
 
-    def _check_new_run(self, event):
-        """
-        Initializes or resets for each new run subrun-wise dead pixel samples
-        or pedestal info with computed outlier masks.
-        """
-
-        if event.index.obs_id != self.current_obs_id:
-
-            self.sample_times_ped = [[], []]
-            self.n_samples_ped = np.zeros(2, dtype=np.int16) - 1
-            self.charge_std_outliers = [[], []]
-            #self.charge_std = [[], []]
-
-            self.sample_ranges_dead = [None, None]
-            self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
-
-            self.current_obs_id = event.index.obs_id
 
     def _check_pedestal_rms(self, charge_std):
         """
@@ -101,7 +84,7 @@ class MAGICBadPixelsCalc():
         npix = 0
         for i in range(self.n_camera_pixels):
 
-            if (charge_std[i] <= 0 or charge_std[i] >= 200 * self._getpixratiosqrt(i)):
+            if (charge_std[i] <= 0 or charge_std[i] >= 200):
                 continue
 
             #const Byte_t aidx = (*fGeomCam)[i].GetAidx();
@@ -167,10 +150,6 @@ class MAGICBadPixelsCalc():
 
         return True;
 
-    def _getpixratiosqrt(self, i_pix):
-#         i_pixzero = np.where(self.geom.pix_id == 0)[0][0]
-#         return np.sqrt(self.geom.pix_area[i_pix] / self.geom.pix_area[i_pixzero])
-        return 1.
 
     def get_badrmspixel_mask(self, event):
         """
@@ -187,8 +166,6 @@ class MAGICBadPixelsCalc():
             for tel_id in event.trigger.tels_with_trigger:
                 badrmspixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
             return badrmspixel_mask
-
-        self._check_new_run(event)
 
         event_time = event.trigger.time.unix
 
@@ -277,8 +254,6 @@ class MAGICBadPixelsCalc():
                 deadpixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
             return deadpixel_mask
 
-        self._check_new_run(event)
-
         event_time = event.trigger.time.unix
 
         for tel_id in event.trigger.tels_with_trigger:
@@ -323,28 +298,4 @@ class MAGICBadPixelsCalc():
             badpixel_mask[tel_id - 1] = np.logical_or(badrmspixel_mask[tel_id - 1], deadpixel_mask[tel_id - 1])
 
         return badpixel_mask
-#     def get_charge_std(self, event):
-#         """
-#         Fetch the pedestal RMS pixel values for a given event, that is the event time.
-# 
-#         Returns
-#         -------
-#         charge_std: has two dimensions: M1 and/or M2.
-#         """
-# 
-#         charge_std = [None, None]
-#         event_time = event.trigger.time.unix
-# 
-#         for tel_id in event.trigger.tels_with_trigger:
-# 
-#             self._check_pedvar_fields(tel_id, event)
-# 
-#             # now find monitoring data sample matching to this event by time stamp:
-#             if event_time <= self.sample_times_ped[tel_id - 1][0]:
-#                 i_min = 0
-#             else:
-#                 i_min = np.where(event_time > self.sample_times_ped[tel_id - 1])[0][-1]
-# 
-#             charge_std[tel_id - 1] = self.charge_std[tel_id - 1][i_min]
-# 
-#         return charge_std
+
