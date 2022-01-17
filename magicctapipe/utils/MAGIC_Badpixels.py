@@ -276,26 +276,28 @@ class MAGICBadPixelsCalc():
 
         return deadpixel_mask
 
-    def get_badpixel_mask(self, event):
+
+    def __call__(self, event):
         """
-        Fetch the union of bad RMS and bad pixels for a given event, that is the event time.
+        Fetch the union of bad RMS and dead pixels for a given event.
 
         Returns
         -------
         badpixel_mask: has two dimensions: Masks for M1 and/or M2.
         """
-        badpixel_mask = [[None],[None]]
 
-        if self.is_mc:
+        badpixel_mask = {}
+
+        if self.is_simulation:
             for tel_id in event.trigger.tels_with_trigger:
-                badpixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
-            return badpixel_mask
+                badpixel_mask[tel_id] = np.zeros(self.n_camera_pixels, dtype=np.bool)
+       
+        else:
+            badrmspixel_mask = self.get_badrmspixel_mask(event)
+            deadpixel_mask = self.get_deadpixel_mask(event)
 
-        badrmspixel_mask = self.get_badrmspixel_mask(event)
-        deadpixel_mask = self.get_deadpixel_mask(event)
-
-        for tel_id in event.trigger.tels_with_trigger:
-            badpixel_mask[tel_id - 1] = np.logical_or(badrmspixel_mask[tel_id - 1], deadpixel_mask[tel_id - 1])
+            for tel_id in event.trigger.tels_with_trigger:
+                badpixel_mask[tel_id] = np.logical_or(badrmspixel_mask[tel_id], deadpixel_mask[tel_id])
 
         return badpixel_mask
 
