@@ -82,8 +82,7 @@ Each telescope key is used to specify the input and output files at different st
 
 * `input_mask`: it specifies the input files to the pipeline; absolute and relative paths can be used; wildcards are allowed;
 * `hillas_output`: it specifies the name of the output file of the script `hillas_preprocessing.py`;
-* `reco_output`: it specifies the name of the output file after applying the Random Forests to the data. **NB:** this key must be set
-only for the `test_sample` data, either simulated or real.
+* `reco_output`: it specifies the name of the output file after applying the Random Forests to the data. **NB:** this key must be set only for the `test_sample` data, either simulated or real.
 
 The `image_cleaning` key is used to specify the cleaning parameters. In particular, since for both MAGIC telescopes the cleaning settings
 are the same, only one key called `magic` is used. As for `data_files`, when in the future LST1 will be added in the analysis, an additional
@@ -94,11 +93,8 @@ Each of these keys have other sub-keys:
 
 * `save_name` is the name of the output file for the specific Random Forest
 * `cuts` is a string to be applied on the input data to the Random Forests
-* `settings` is a set of keys specifying the settings for each Random Forest e.g. the number of estimators, the minimum number of events in each
-leaf and the number of jobs
-* `features` is a list of strings specifying the parameters to be used in the Random Forests training. **NB:** for the `direction_rf` key, `features`
-is actually a dictionary with two keys, `disp` and `pos_angle_shift`. For each of those keys, a list is used to specify the parameters to be used for
-each of those Random Forests.
+* `settings` is a set of keys specifying the settings for each Random Forest e.g. the number of estimators, the minimum number of events in each leaf and the number of jobs
+* `features` is a list of strings specifying the parameters to be used in the Random Forests training. **NB:** for the `direction_rf` key, `features` is actually a dictionary with two keys, `disp` and `pos_angle_shift`. For each of those keys, a list is used to specify the parameters to be used for each of those Random Forests.
 
 The `irf` key has only one sub-key, called `output_name`, which is the name (plus path) of the file where IRF will be stored in FITS format.
 
