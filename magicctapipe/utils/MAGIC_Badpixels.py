@@ -6,7 +6,7 @@ __all__ = [
 ]
 
 
-class MAGICBadPixelsCalc():
+class MAGICBadPixelsCalc:
 
     def __init__(self, is_simulation, camera=None, config=None, tool=None, **kwargs):
 
@@ -16,8 +16,7 @@ class MAGICBadPixelsCalc():
 
         self.n_camera_pixels = camera.n_pixels
 
-        # initialize bad pixel mask. Will updated for each telescope/sample by
-        # self._check_pedvar_fields()
+        # initialize bad pixel mask. Will updated for each telescope/sample by self._check_pedvar_fields()
         self.badrmspixel_mask = np.zeros(self.n_camera_pixels, dtype=np.bool)
 
         self.config = config
@@ -47,17 +46,14 @@ class MAGICBadPixelsCalc():
 
         self.current_obs_id = -1
 
-        # Pedestal sample times and outlier masks are reduced to the unique
-        # outlier masks: In MARS files, mayn duplicate entries are present,
-        # and removing them onces significantly speeds up searching the correct
-        # mask for a given event.
+        # Pedestal sample times and outlier masks are reduced to the unique outlier masks: 
+        # In MARS files, mayn duplicate entries are present, and removing them onces 
+        # significantly speeds up searching the correct mask for a given event.
         self.sample_times_ped = [[], []]
         self.n_samples_ped = np.zeros(2, dtype=np.int16) - 1
         self.charge_std_outliers = [[], []]
-        #self.charge_std = [[], []]
 
-        # Dead pixels masks change for every subrun and are directly used from
-        # the MARS data
+        # Dead pixels masks change for every subrun and are directly used from the MARS data
         self.sample_ranges_dead = [None, None]
         self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
 
@@ -87,13 +83,12 @@ class MAGICBadPixelsCalc():
             if (charge_std[i] <= 0 or charge_std[i] >= 200):
                 continue
 
-            #const Byte_t aidx = (*fGeomCam)[i].GetAidx();
             meanrms += charge_std[i]
             npix += 1
 
         # if no pixel has a minimum signal, return
         if meanrms == 0:
-            return False;
+            return False
 
         meanrms /= npix
 
@@ -142,13 +137,10 @@ class MAGICBadPixelsCalc():
                 continue
 
             self.badrmspixel_mask[i] = True
-#             if (charge_std[i] <= lolim1 or charge_std[i] <= lolim2):
-#                 self.coldpixels[i] = True
-#             elif (charge_std[i] > uplim1 or charge_std[i] > uplim2):
-#                 self.hotpixels[i] = True
+
             bads += 1
 
-        return True;
+        return True
 
 
     def get_badrmspixel_mask(self, event):
@@ -231,11 +223,9 @@ class MAGICBadPixelsCalc():
                     self.badrmspixel_mask = np.zeros(self.n_camera_pixels, dtype=np.bool)
                     self._check_pedestal_rms(charge_std)
                     self.charge_std_outliers[tel_id - 1].append(self.badrmspixel_mask)
-                    #self.charge_std[tel_id - 1].append(charge_std)
 
             self.sample_times_ped[tel_id - 1] = np.array(self.sample_times_ped[tel_id - 1])
             self.charge_std_outliers[tel_id - 1] = np.array(self.charge_std_outliers[tel_id - 1], dtype=np.bool)
-            #self.charge_std[tel_id - 1] = np.array(self.charge_std[tel_id - 1])
             print("done.")
 
     def get_deadpixel_mask(self, event):
