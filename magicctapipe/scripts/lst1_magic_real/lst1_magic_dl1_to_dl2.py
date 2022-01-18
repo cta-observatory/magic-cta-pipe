@@ -20,6 +20,7 @@ $ python lst1_magic_dl1_to_dl2.py
 import glob
 import time
 import yaml
+import logging
 import argparse
 import warnings
 import pandas as pd
