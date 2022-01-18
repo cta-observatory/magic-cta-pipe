@@ -11,7 +11,7 @@ class MAGICBadPixelsCalc():
     def __init__(self, is_simulation, camera=None, config=None, tool=None, **kwargs):
 
         # MAGIC telescope description
-        if camera == None:
+        if camera is None:
             camera = CameraGeometry.from_name('MAGICCam')
 
         self.n_camera_pixels = camera.n_pixels
