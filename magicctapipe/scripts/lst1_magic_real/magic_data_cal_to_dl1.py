@@ -80,7 +80,11 @@ def magic_cal_to_dl1(input_file, output_file, config):
 
     camera_geom = subarray.tel[tel_id].camera.geometry
     magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_cleaning)
-    badpixel_calculator = MAGICBadPixelsCalc(is_simulation=is_simulation, config=config_badpixels)
+    badpixel_calculator = MAGICBadPixelsCalc(
+        is_simulation=is_simulation,
+        camera=camera_geom,
+        config=config_badpixels
+    )
 
     # --- process the input data ---
     n_events_skipped = 0
