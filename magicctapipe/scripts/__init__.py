@@ -1,4 +1,4 @@
-from .lst1_magic_real import (
+from .lst1_magic import (
     dl1_to_dl2,
     event_coincidence,
     mc_dl0_to_dl1,
