@@ -6,7 +6,9 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 Process the MAGIC calibrated data (*_Y_*.root) with MARS-like cleaning method, 
 and compute the DL1 parameters (i.e., Hillas, timing and leakage parameters).
-The events that all the DL1 parameters are computed will be stored in the output file.
+The events that all the DL1 parameters are computed will be saved in the output file.
+The telescope IDs are automatically reset to the following values when saving to an output file:
+MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 Please note that currently only one subrun file is allowed for input data,
 and when the input data contains only one drive report, the script stops
@@ -15,8 +17,8 @@ This issue will be solved in the coming release of ctapipe_io_magic.
 
 Usage:
 $ python magic_data_cal_to_dl1.py 
---input-file "./data/calibrated/20201119_M1_05093174.001_Y_CrabNebula-W0.40+035.root"
---output-file "./data/dl1/dl1_M1_run05093174.001.h5"
+--input-file "./data/calibrated/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root"
+--output-file "./data/dl1/dl1_M1_run05093711.001.h5"
 --config-file "./config.yaml"
 """
 
@@ -27,14 +29,16 @@ import argparse
 import warnings
 import numpy as np
 from astropy import units as u
+
 from ctapipe.io import HDF5TableWriter
+from ctapipe.core import Container, Field
 from ctapipe.image import (
     number_of_islands,
     hillas_parameters, 
     timing_parameters, 
     leakage_parameters
 )
-from ctapipe.core import Container, Field
+from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import MAGIC_Cleaning, MAGICBadPixelsCalc
 from ctapipe_io_magic import MAGICEventSource
 
@@ -56,8 +60,8 @@ class EventInfoContainer(Container):
     tel_id = Field(-1, 'Telescope ID')
     time_sec = Field(-1, 'Event time second')
     time_nanosec = Field(-1, 'Event time nanosecond')
-    alt_tel = Field(-1, 'Telescope pointing altitude', u.deg)
-    az_tel = Field(-1, 'Telescope pointing azimuth', u.deg)
+    alt_tel = Field(-1, 'Telescope pointing altitude', u.rad)
+    az_tel = Field(-1, 'Telescope pointing azimuth', u.rad)
     n_islands = Field(-1, 'Number of image islands')
     n_pixels = Field(-1, 'Number of pixels of cleaned images')
 
@@ -72,11 +76,11 @@ def magic_cal_to_dl1(input_file, output_file, config):
     logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}')
     logger.info(f'\nConfiguration for the bad pixels calculation:\n{config_badpixels}')
 
-    source = MAGICEventSource(input_url=input_file)
-    subarray = source.subarray
+    event_source = MAGICEventSource(input_url=input_file)
+    subarray = event_source.subarray
 
-    tel_id = source.telescope
-    is_simulation = source.is_mc
+    tel_id = event_source.telescope
+    is_simulation = event_source.is_mc
 
     camera_geom = subarray.tel[tel_id].camera.geometry
     magic_clean = MAGIC_Cleaning.magic_clean(camera_geom, config_cleaning)
@@ -88,7 +92,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
 
     with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
 
-        for event in source:
+        for event in event_source:
 
             if (event.count % 100) == 0:
                 logger.info(f'{event.count} events')
@@ -163,7 +167,6 @@ def magic_cal_to_dl1(input_file, output_file, config):
             event_info = EventInfoContainer(
                 obs_id=event.index.obs_id,
                 event_id=event.index.event_id,
-                tel_id=tel_id,
                 time_sec=int(time_sec),
                 time_nanosec=int(time_nanosec),
                 alt_tel=event.pointing.tel[tel_id].altitude,
@@ -172,14 +175,28 @@ def magic_cal_to_dl1(input_file, output_file, config):
                 n_pixels=n_pixels
             )
 
+            if tel_id == 1:
+                event_info.tel_id = 2   # MAGIC-I tel_id: 1 -> 2
+            
+            elif tel_id == 2:
+                event_info.tel_id = 3   # MAGIC-II tel_id: 2 -> 3
+
             writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
 
-        logger.info(f'{event.count+1} events processed.')
+        logger.info(f'{event.count + 1} events processed.')
         logger.info(f'({n_events_skipped} events are skipped)')
 
     # --- save the subarray description ---
+    tel_positions = {
+        2: u.Quantity([35.25, -23.99, -0.58], u.m),
+        3: u.Quantity([-35.25, 23.99, 0.58], u.m)
+    }  
+
+    tel_descriptions = {tel_id + 1: subarray.tel[tel_id] for tel_id in subarray.tel.keys()}
+
+    subarray = SubarrayDescription(subarray.name, tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
-    
+
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')
 
