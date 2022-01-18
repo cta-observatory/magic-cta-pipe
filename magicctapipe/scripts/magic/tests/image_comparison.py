@@ -24,7 +24,7 @@ from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
 from astropy.coordinates import Angle
 
 from ctapipe.image.morphology import number_of_islands
-from magicctapipe.scripts.mars.mars_images_to_hdf5 import read_images, ImageContainerCleaned, ImageContainerCalibrated
+from magicctapipe.scripts import read_images, ImageContainerCleaned, ImageContainerCalibrated
 
 #define camera geometry
 def new_camera_geometry(camera_geom):
