@@ -8,6 +8,7 @@ from .lst1_magic_train_rfs import (
     train_classifier_rfs
 )
 from .magic_data_cal_to_dl1 import magic_cal_to_dl1
+from .merge_hdf_files import merge_hdf_files
 
 __all__ = [
     "dl1_to_dl2",
@@ -18,4 +19,5 @@ __all__ = [
     "train_direction_rfs",
     "train_classifier_rfs",
     "magic_cal_to_dl1",
+    "merge_hdf_files",
 ]

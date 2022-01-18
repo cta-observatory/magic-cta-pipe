@@ -1,13 +1,24 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+"""
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+
+Merge the HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
+
+Usage:
+$ python merge_hdf_files.py 
+--input-files "./data/dl1/dl1_*.h5"
+--output-file "./data/dl1/dl1_magic_run05093711_to_05093714_merged.h5"
+"""
 
 import time
 import glob
 import tables
 import logging
 import argparse
+from pathlib import Path
+
 from ctapipe.instrument import SubarrayDescription
 
 logger = logging.getLogger(__name__)
@@ -22,14 +33,15 @@ def merge_hdf_files(input_files, output_file):
     file_paths = glob.glob(input_files)
     file_paths.sort()
 
-    # --- merging the event/simulation data ---    
+    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+
     with tables.open_file(output_file, mode='w') as merged_file:
 
         logger.info('\nMerging the following data files:')
         logger.info(file_paths[0])
 
         with tables.open_file(file_paths[0]) as input_data:
-
+            
             event_params = input_data.root.events.params
             merged_file.create_table('/events', 'params', createparents=True, obj=event_params.read())
 
@@ -37,7 +49,6 @@ def merge_hdf_files(input_files, output_file):
                 merged_file.root.events.params.attrs[attribute] = event_params.attrs[attribute]
 
             if 'simulation' in input_data.root:
-
                 sim_config = input_data.root.simulation.config
                 merged_file.create_table('/simulation', 'config', createparents=True, obj=sim_config.read())
 
@@ -45,15 +56,13 @@ def merge_hdf_files(input_files, output_file):
                     merged_file.root.simulation.config.attrs[attribute] = sim_config.attrs[attribute]
 
         for path in file_paths[1:]:
-
+            
             logger.info(path)
 
             with tables.open_file(path) as input_data:
-                
                 event_params = input_data.root.events.params
                 merged_file.root.events.params.append(event_params.read())
 
-    # --- saving the subarray description ---
     subarray = SubarrayDescription.from_hdf(file_paths[0])
     subarray.to_hdf(output_file)    
 

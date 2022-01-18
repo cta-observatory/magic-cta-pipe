@@ -11,9 +11,9 @@ adjusted to the same value when training the classifer RFs.
 
 Usage:
 $ python lst1_magic_train_rfs.py 
---type-rf "all"
---input-file-gamma "./data/dl1_stereo/gamma_off0.4deg/merged/dl1_stereo_lst1_magic_gamma_40deg_90deg_off0.4_run1_to_400.h5"
---input-file-bkg "./data/dl1_stereo/proton/merged/dl1_stereo_lst1_magic_proton_40deg_90deg_run1_to_4000.h5"
+--type-rf "classifier"
+--input-file-gamma "./data/dl1_stereo/dl1_stereo_lst1_magic_gamma_40deg_90deg_off0.4_run1_to_400.h5"
+--input-file-bkg "./data/dl1_stereo/dl1_stereo_lst1_magic_proton_40deg_90deg_run1_to_4000.h5"
 --output-dir "./data/rfs"
 --config-file "./config.yaml"
 """
@@ -28,8 +28,8 @@ import warnings
 import numpy as np
 import pandas as pd
 from magicctapipe.utils import (
-    EnergyEstimator,
-    DirectionEstimator,
+    EnergyRegressor,
+    DirectionRegressor,
     EventClassifier
 )
 
@@ -40,9 +40,8 @@ logger.setLevel(logging.INFO)
 warnings.simplefilter('ignore')
 
 __all__ = [
-    'train_energy_rfs',
-    'train_direction_rfs',
-    'train_classifier_rfs'
+    'train_rf_regressor',
+    'train_rf_classifier',
 ]
 
 
@@ -56,8 +55,10 @@ def load_data(input_file, feature_names, event_class=None):
     }
 
     data = pd.read_hdf(input_file, key='events/params')
+    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    data.dropna(subset=feature_names, inplace=True)
     data.sort_index(inplace=True)
-
+    
     if event_class != None:
         data['event_class'] = event_class
 
@@ -66,8 +67,6 @@ def load_data(input_file, feature_names, event_class=None):
     for tel_combo, tel_ids in tel_combinations.items():
 
         df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-        df.dropna(subset=feature_names, inplace=True)
-
         df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
         df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
@@ -80,19 +79,19 @@ def load_data(input_file, feature_names, event_class=None):
     return data_return
 
 
-def check_importances(telescope_rfs, features):
+def check_importances(estimator):
 
-    telescope_ids = telescope_rfs.keys()
+    telescope_ids = estimator.telescope_rfs.keys()
 
     for tel_id in telescope_ids:
-
+        
         logger.info(f'\nTelescope {tel_id}')
 
-        importances = telescope_rfs[tel_id].feature_importances_
+        importances = estimator.telescope_rfs[tel_id].feature_importances_
         importances_sort = np.sort(importances)[::-1]
 
         indices = np.argsort(importances)[::-1]
-        params_sort = np.array(features)[indices]
+        params_sort = np.array(estimator.feature_names)[indices]
 
         for param, importance in zip(params_sort, importances_sort):
             logger.info(f'{param}: {importance}')
@@ -102,15 +101,14 @@ def get_events_at_random(data, n_events):
 
     group = data.groupby(['obs_id', 'event_id']).size()
     indices = random.sample(range(len(group)), n_events)
-
-    telescope_ids = np.unique(data.index.get_level_values('tel_id'))
+    
     data_return = pd.DataFrame()
+    telescope_ids = np.unique(data.index.get_level_values('tel_id'))
 
     for tel_id in telescope_ids: 
 
         df = data.query(f'tel_id == {tel_id}')
         df = df.iloc[indices]
-
         data_return = data_return.append(df)
 
     data_return.sort_index(inplace=True)
@@ -118,86 +116,59 @@ def get_events_at_random(data, n_events):
     return data_return
 
 
-def train_energy_rfs(input_file, output_dir, config):
+def train_rf_regressor(type_rf, input_file, output_dir, config):
 
-    config_rf = config['energy_rf']
-    logger.info(f'\nConfiguration for training the energy RFs:\n{config_rf}')
+    config_rf = config[f'{type_rf}_regressor']
+    logger.info(f'\nConfiguration for training the {type_rf} RF regressors:')
 
-    # --- load the input data file ---
+    for key, value in config_rf.items():
+        logger.info(f'{key}: {value}')
+
     logger.info(f'\nLoading the input data file:\n{input_file}')
     data_train = load_data(input_file, config_rf['features'])
 
-    # --- train the energy RFs ---
     for tel_combo in data_train.keys():
 
-        logger.info(f'\nTraining the energy RFs for "{tel_combo}" events...')
-
+        logger.info(f'\nTraining the {type_rf} RF regressors for "{tel_combo}" events...')
         data_train[tel_combo]['event_weight'] = 1 
 
-        energy_estimator = EnergyEstimator(config_rf['features'], config_rf['settings'])
-        energy_estimator.fit(data_train[tel_combo])
+        if type_rf == 'energy':
+            regressor = EnergyRegressor(config_rf['features'], config_rf['settings'])
+
+        elif type_rf == 'direction':
+            regressor = DirectionRegressor(config_rf['features'], config_rf['settings'])
+        
+        regressor.fit(data_train[tel_combo])
 
         logger.info('\nParameter importances:')
-        check_importances(energy_estimator.telescope_rfs, config_rf['features'])
+        check_importances(regressor)
 
-        # --- save the trained RFs ---
-        output_file = f'{output_dir}/energy_rfs_{tel_combo}.joblib'
-        energy_estimator.save(output_file)
+        output_file = f'{output_dir}/{type_rf}_regressors_{tel_combo}.joblib'
+        regressor.save(output_file)
 
     logger.info(f'\nOutput directory: {output_dir}')
     logger.info('\nDone.')
 
 
-def train_direction_rfs(input_file, output_dir, config):
+def train_rf_classifier(input_file_gamma, input_file_bkg, output_dir, config):
 
-    config_rf = config['direction_rf']
-    logger.info(f'\nConfiguration for training the direction RF:\n{config_rf}')
+    config_rf = config['event_classifier']
+    logger.info(f'\nConfiguration for training the event classifiers:')
 
-    # --- load the input data file ---
-    logger.info(f'\nLoading the input data file:\n{input_file}')
-    data_train = load_data(input_file, config_rf['features'])
+    for key, value in config_rf.items():
+        logger.info(f'{key}: {value}')
 
-    # --- train the direction RFs ---
-    subarray = pd.read_pickle(config['stereo_reco']['subarray'])
-
-    for tel_combo in data_train.keys():
-
-        logger.info(f'\nTraining the direction RF for "{tel_combo}" events...')
-
-        data_train[tel_combo]['event_weight'] = 1 
-
-        direction_estimator = DirectionEstimator(config_rf['features'], subarray.tels, config_rf['settings'])
-        direction_estimator.fit(data_train[tel_combo])
-
-        logger.info('\nParameter importances:')
-        check_importances(direction_estimator.telescope_rfs, config_rf['features'])
-
-        # --- save the trained RFs ---
-        output_file = f'{output_dir}/direction_rfs_{tel_combo}.joblib'
-        direction_estimator.save(output_file)
-
-    logger.info(f'\nOutput directory: {output_dir}')
-    logger.info('\nDone.')
-
-
-def train_classifier_rfs(input_file_gamma, input_file_bkg, output_dir, config):
-
-    config_rf = config['classifier_rf']
-    logger.info(f'\nConfiguration for training the classifier RF:\n{config_rf}')
-
-    # --- load the input data file ---
     logger.info(f'\nLoading the input gamma MC data file:\n{input_file_gamma}')
     data_gamma = load_data(input_file_gamma, config_rf['features'], event_class=0)
 
     logger.info(f'\nLoading the input background data file:\n{input_file_bkg}')
     data_bkg = load_data(input_file_bkg, config_rf['features'], event_class=1)
 
-    # --- train the classifier RFs ---
     tel_combinations = set(data_gamma.keys()) & set(data_bkg.keys())
 
     for tel_combo in sorted(tel_combinations, key=['m1_m2', 'lst1_m1', 'lst1_m2', 'lst1_m1_m2'].index):
 
-        logger.info(f'\nTraining the classifier RF for "{tel_combo}" events...')
+        logger.info(f'\nTraining the event classifiers for "{tel_combo}" events...')
 
         n_events_gamma = len(data_gamma[tel_combo].groupby(['obs_id', 'event_id']).size())
         n_events_bkg = len(data_bkg[tel_combo].groupby(['obs_id', 'event_id']).size())
@@ -217,15 +188,14 @@ def train_classifier_rfs(input_file_gamma, input_file_bkg, output_dir, config):
 
         data_train = data_gamma[tel_combo].append(data_bkg[tel_combo])
 
-        event_classifier = EventClassifier(config_rf['features'], config_rf['settings'])
-        event_classifier.fit(data_train)
+        classifier = EventClassifier(config_rf['features'], config_rf['settings'])
+        classifier.fit(data_train)
 
         logger.info('\nParameter importances:')
-        check_importances(event_classifier.telescope_rfs, config_rf['features'])
+        check_importances(classifier)
         
-        # --- save the trained RFs ---
-        output_file = f'{output_dir}/classifier_rfs_{tel_combo}.joblib'
-        event_classifier.save(output_file)
+        output_file = f'{output_dir}/event_classifiers_{tel_combo}.joblib'
+        classifier.save(output_file)
 
     logger.info(f'\nOutput directory: {output_dir}')
     logger.info('\nDone.')
@@ -239,7 +209,7 @@ def main():
 
     parser.add_argument(
         '--type-rf', '-t', dest='type_rf', type=str, 
-        help='Type of RF that will be trained, "energy", "direction", "classifier" or "all".'  
+        help='Type of RF that will be trained, "energy", "direction" or "classifier".'  
     )
 
     parser.add_argument(
@@ -264,24 +234,17 @@ def main():
 
     args = parser.parse_args()
 
-    config = yaml.safe_load(open(args.config_file, 'r'))
+    with open(args.config_file, 'rb') as f:
+        config = yaml.safe_load(f)
 
-    if args.type_rf == 'energy':
-        train_energy_rfs(args.input_file_gamma, args.output_dir, config)
-
-    elif args.type_rf == 'direction':
-        train_direction_rfs(args.input_file_gamma, args.output_dir, config)
+    if np.any(args.type_rf == np.array(['energy', 'direction'])):
+        train_rf_regressor(args.type_rf, args.input_file_gamma, args.output_dir, config)
 
     elif args.type_rf == 'classifier':
-        train_classifier_rfs(args.input_file_gamma, args.input_file_bkg, args.output_dir, config)
-
-    elif args.type_rf == 'all':
-        train_energy_rfs(args.input_file_gamma, args.output_dir, config)
-        train_direction_rfs(args.input_file_gamma, args.output_dir, config)
-        train_classifier_rfs(args.input_file_gamma, args.input_file_bkg, args.output_dir, config)
+        train_rf_classifier(args.input_file_gamma, args.input_file_bkg, args.output_dir, config)
 
     else:
-        logger.error(f'Unknown type of RF "{args.type_rf}". Input "energy", "direction", "classifier" or "all". Exiting.\n')
+        logger.error(f'Unknown RF type "{args.type_rf}". Input "energy", "direction", "classifier". Exiting.\n')
         sys.exit()
 
     end_time = time.time()

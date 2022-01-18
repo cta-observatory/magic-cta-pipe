@@ -76,10 +76,10 @@ stereo_reco:
     quality_cuts: '(intensity > 50) & (width > 0)'
 
 
-energy_rf:
+energy_regressor:
     settings:
         n_estimators: 150
-        criterion: "mse"
+        criterion: "squared_error"
         max_depth: 50
         min_samples_split: 2
         min_samples_leaf: 2
@@ -87,7 +87,6 @@ energy_rf:
         max_features: "auto"
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
-        min_impurity_split: null
         bootstrap: true
         oob_score: false
         n_jobs: 5
@@ -110,10 +109,10 @@ energy_rf:
     ]
 
 
-direction_rf:
+direction_regressor:
     settings:
         n_estimators: 150
-        criterion: "mse"
+        criterion: "squared_error"
         max_depth: 50
         min_samples_split: 2
         min_samples_leaf: 2
@@ -121,7 +120,6 @@ direction_rf:
         max_features: "auto"
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
-        min_impurity_split: null
         bootstrap: true
         oob_score: false
         n_jobs: 5
@@ -144,7 +142,7 @@ direction_rf:
     ]
 
         
-classifier_rf:
+event_classifier:
     settings:
         n_estimators: 100
         criterion: "gini"
@@ -155,7 +153,6 @@ classifier_rf:
         max_features: "auto"
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
-        min_impurity_split: null
         bootstrap: true
         oob_score: false
         n_jobs: 5
