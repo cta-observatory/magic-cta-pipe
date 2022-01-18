@@ -59,7 +59,7 @@ def load_data(input_file, feature_names, event_class=None):
     data.dropna(subset=feature_names, inplace=True)
     data.sort_index(inplace=True)
 
-    if event_class != None:
+    if event_class is not None:
         data['event_class'] = event_class
 
     data_return = {}

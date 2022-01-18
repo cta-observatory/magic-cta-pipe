@@ -72,7 +72,7 @@ def apply_rfs(data, rfs_mask, estimator, tel_descriptions=None):
 
         logger.info(f'--> {n_events} events are found. Applying...')
 
-        if tel_descriptions != None:
+        if tel_descriptions is not None:
             df_reco = estimator.predict(df, tel_descriptions)
         else:
             df_reco = estimator.predict(df)
@@ -99,7 +99,7 @@ def dl1_to_dl2(
     subarray = SubarrayDescription.from_hdf(input_file)
 
     # --- reconstruct energy ---
-    if energy_regressors != None:
+    if energy_regressors is not None:
 
         estimator = EnergyRegressor()
         logger.info('\nReconstucting the energy...')
@@ -108,7 +108,7 @@ def dl1_to_dl2(
         data_joint = data_joint.join(reco_params)
 
     # --- reconstruct direction ---
-    if direction_regressors != None:
+    if direction_regressors is not None:
 
         estimator = DirectionRegressor()
         logger.info('\nReconstructing the direction...')
@@ -158,7 +158,7 @@ def dl1_to_dl2(
             data_joint['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
 
     # --- classify event type ---
-    if event_classifiers != None:
+    if event_classifiers is not None:
 
         estimator = EventClassifier()
         logger.info('\nClassifying the event type...')
