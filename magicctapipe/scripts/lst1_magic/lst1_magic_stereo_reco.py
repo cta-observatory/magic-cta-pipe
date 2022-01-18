@@ -2,22 +2,21 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 Reconstruct the stereo parameters of the events containing more that two telescopes information.
 The quality cuts specified in the configuration file will be applied before the reconstruction.
-If real data is input and it contains both LST-1 and MAGIC events, the angular separation between 
-the telescope systems are checked, and the script stops if they are separated by more than 0.1 degree. 
+If real data is input and it contains both LST-1 and MAGIC events, the angular separation between
+the telescope systems are checked, and the script stops if they are separated by more than 0.1 degree.
 
 Usage:
-$ python lst1_magic_stereo_reco.py 
+$ python lst1_magic_stereo_reco.py
 --input-file "./data/dl1_coincidence/dl1_lst1_magic_run03265.0040.h5"
 --output-file "./data/dl1_stereo/dl1_stereo_lst1_magic_run03265.0040.h5"
 --config-file "./config.yaml"
 """
 
 import sys
-import h5py
 import time
 import yaml
 import tables
@@ -35,7 +34,7 @@ from ctapipe.containers import (
     ImageParametersContainer,
     CameraHillasParametersContainer
 )
-from ctapipe.instrument  import SubarrayDescription
+from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import calc_impact
 
 logger = logging.getLogger(__name__)
@@ -57,10 +56,10 @@ def check_num_events(data):
     }
 
     n_events_total = len(data.groupby(['obs_id', 'event_id']).size())
-    logger.info(f'\nIn total {n_events_total} stereo events:') 
+    logger.info(f'\nIn total {n_events_total} stereo events:')
 
     for tel_combo, tel_ids in tel_combinations.items():
-        
+
         df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
         n_events = np.sum(df.groupby(['obs_id', 'event_id']).size() == len(tel_ids))
         logger.info(f'{tel_combo}: {n_events} events ({n_events / n_events_total * 100:.1f}%)')
@@ -78,7 +77,7 @@ def calc_tel_mean_pointing(data):
         z=z_coords.groupby(['obs_id', 'event_id']).mean().to_numpy(),
         representation_type='cartesian'
     )
-        
+
     df_mean = pd.DataFrame(
         data={'alt_tel_mean': coord_mean.spherical.lat.to(u.rad).value,
               'az_tel_mean': coord_mean.spherical.lon.to(u.rad).value},
@@ -87,7 +86,7 @@ def calc_tel_mean_pointing(data):
 
     return df_mean
 
- 
+
 def stereo_reco(input_file, output_file, config):
 
     logger.info(f'\nLoading the input data file:\n{input_file}')
@@ -104,7 +103,7 @@ def stereo_reco(input_file, output_file, config):
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_positions = subarray.positions
 
-    logger.info(f'\nSubarray configuration:')
+    logger.info('\nSubarray configuration:')
     for tel_id in subarray.tel.keys():
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
 
@@ -128,13 +127,13 @@ def stereo_reco(input_file, output_file, config):
         df_magic.reset_index(level='tel_id', inplace=True)
         df_magic = df_magic.loc[multi_indices]
         df_magic.sort_index(inplace=True)
-        
+
         df_magic_pointing = calc_tel_mean_pointing(df_magic)
 
         theta = angular_separation(
-            lon1=u.Quantity(df_lst['az_tel'].to_numpy(), u.rad), 
+            lon1=u.Quantity(df_lst['az_tel'].to_numpy(), u.rad),
             lat1=u.Quantity(df_lst['alt_tel'].to_numpy(), u.rad),
-            lon2=u.Quantity(df_magic_pointing['az_tel_mean'].to_numpy(), u.rad), 
+            lon2=u.Quantity(df_magic_pointing['az_tel_mean'].to_numpy(), u.rad),
             lat2=u.Quantity(df_magic_pointing['alt_tel_mean'].to_numpy(), u.rad)
         )
 
@@ -151,7 +150,7 @@ def stereo_reco(input_file, output_file, config):
     # --- apply the quality cuts ---
     quality_cuts = config['stereo_reco']['quality_cuts']
     logger.info(f'\nApplying the following quality cuts:\n{quality_cuts}')
-    
+
     data_joint.query(quality_cuts, inplace=True)
     data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
     data_joint.query('multiplicity > 1', inplace=True)
@@ -172,17 +171,17 @@ def stereo_reco(input_file, output_file, config):
     event_ids = group.index.get_level_values('event_id')
 
     for i_ev, (obs_id, ev_id) in enumerate(zip(observation_ids, event_ids)):
-    
+
         if (i_ev % 100) == 0:
             logger.info(f'{i_ev} events')
-    
+
         df_ev = data_joint.query(f'(obs_id == {obs_id}) & (event_id == {ev_id})')
 
         event = ArrayEventContainer()
 
         event.pointing.array_altitude = u.Quantity(df_ev['alt_tel_mean'].to_numpy()[0], u.rad)
         event.pointing.array_azimuth = u.Quantity(df_ev['az_tel_mean'].to_numpy()[0], u.rad)
-        
+
         telescope_ids = df_ev.index.get_level_values('tel_id')
 
         for tel_id in telescope_ids:
@@ -209,7 +208,7 @@ def stereo_reco(input_file, output_file, config):
 
         hillas_reconstructor(event)
         stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
-            
+
         if stereo_params.az < 0:
             stereo_params.az += u.Quantity(360, u.deg)
 
@@ -230,7 +229,7 @@ def stereo_reco(input_file, output_file, config):
             data_joint.loc[(obs_id, ev_id, tel_id), 'core_x'] = stereo_params.core_x.to(u.m).value
             data_joint.loc[(obs_id, ev_id, tel_id), 'core_y'] = stereo_params.core_y.to(u.m).value
             data_joint.loc[(obs_id, ev_id, tel_id), 'impact'] = impact.to(u.m).value
-            
+
     logger.info(f'{i_ev+1} events processed.')
 
     # --- save in the output file  ---
@@ -261,8 +260,8 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file', '-i', dest='input_file', type=str, 
-        help='Path to an input DL1 data file containing events triggering multiple telescopes.' 
+        '--input-file', '-i', dest='input_file', type=str,
+        help='Path to an input DL1 data file containing events triggering multiple telescopes.'
     )
 
     parser.add_argument(

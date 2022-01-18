@@ -6,7 +6,7 @@ mc_allowed_tels:
 
 LST:
 
-    # The following settings are derived from lstchain v0.8.4: 
+    # The following settings are derived from lstchain v0.8.4:
     # - lstchain_standard_config.json
     # - lstchain/data/lstchain_dl1ab_tune_MC_to_Crab_config.json
 
@@ -21,7 +21,7 @@ LST:
         extra_bias_in_dim_pixels: 0.5
         transition_charge: 8
         extra_noise_in_bright_pixels: 1.2
-    
+
     increase_psf:
         use: true
         smeared_light_fraction: 0.125
@@ -65,14 +65,14 @@ MAGIC:
         pedestalType: 'FromExtractorRndm'
 
 
-event_coincidence: 
-    type_lst_time: 'dragon_time' 
+event_coincidence:
+    type_lst_time: 'dragon_time'
     window_width: 6.0e-7      # unit: [sec]
-    offset_start: -5.0e-6     # unit: [sec] 
+    offset_start: -5.0e-6     # unit: [sec]
     offset_stop: 0.0          # unit: [sec]
-    
 
-stereo_reco: 
+
+stereo_reco:
     quality_cuts: '(intensity > 50) & (width > 0)'
 
 
@@ -97,7 +97,7 @@ energy_regressor:
         max_samples: null
 
     features: [
-        'intensity', 
+        'intensity',
         'length',
         'width',
         'skewness',
@@ -128,7 +128,7 @@ direction_regressor:
         warm_start: false
         ccp_alpha: 0.0
         max_samples: null
-        
+
     features: [
         'intensity',
         'length',
@@ -141,7 +141,7 @@ direction_regressor:
         'impact'
     ]
 
-        
+
 event_classifier:
     settings:
         n_estimators: 100
@@ -174,7 +174,3 @@ event_classifier:
         'h_max',
         'impact'
     ]
-    
-
-
-

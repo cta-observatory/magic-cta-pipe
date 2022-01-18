@@ -23,8 +23,8 @@ The following command will set up a conda virtual environment, add the necessary
 
 *magic-cta-pipe* scripts to perform the analysis of MAGIC only and MAGIC+LST1 data. Within the *scripts* folder we have the subdirectories:
 
-* *magic*: scripts for the analysis of MAGIC data (currently under heavy restructuring in order to be used with ctapipe v0.12)
-* *lst1_magic_real*: scripts for the MAGIC+LST1 analysis (updated to be used with ctapipe v0.12)
+* *magic*: scripts for the analysis of MAGIC data (**currently under heavy restructuring in order to be used with ctapipe v0.12**)
+* *lst1_magic*: scripts for the MAGIC+LST1 analysis (updated to be used with ctapipe v0.12)
 
 <!--
 A brief description:
