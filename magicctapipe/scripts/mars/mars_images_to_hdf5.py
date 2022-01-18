@@ -39,6 +39,11 @@ def parse_args(args):
         nargs='?',
         help='Mask for input files e.g. "20*_S_*.root" (NOTE: the double quotes should be there).'
     )
+    parser.add_argument(
+        "--max_events",
+        nargs='?',
+        help='Maximum number of events.'
+    )
 
     return parser.parse_args(args)
 
@@ -203,7 +208,7 @@ def read_images(hdf5_files_mask, read_calibrated=False):
                 yield image_container
 
 
-def save_images(mars_files_mask, save_calibrated=False):
+def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
     """
     Saves cleaned images (and possibly calibrated) in a HDF5 file.
 
@@ -282,11 +287,16 @@ def save_images(mars_files_mask, save_calibrated=False):
                             "UprootImageOrigClean_2",
                             "MRawEvtHeader_2.fStereoEvtNumber"
                         ]
+
+                events_count = 0
+
                 for batch in events.iterate(
                         step_size="10 MB",
                         expressions=branches,
                         library="np"
                 ):
+                    if events_count > max_events and max_events > 0:
+                        break
                     print(f"Writing batch of events {batch_no+1}")
                     if datalevel == 1:
                         for j in range(len(batch["MRawEvtHeader.fStereoEvtNumber"])):
@@ -315,6 +325,9 @@ def save_images(mars_files_mask, save_calibrated=False):
                                     table_name=f'telescope/image/MAGIC/M{telescope}',
                                     containers=image_container
                                 )
+                            events_count += 1
+                            if events_count > max_events and max_events > 0:
+                                break
                     else:
                         for j in range(len(batch["MRawEvtHeader_1.fStereoEvtNumber"])):
                             if save_calibrated:
@@ -365,6 +378,9 @@ def save_images(mars_files_mask, save_calibrated=False):
                                     table_name='telescope/image/MAGIC/M2',
                                     containers=image_container
                                 )
+                            events_count += 1
+                            if events_count > max_events and max_events > 0:
+                                break
                     batch_no += 1
 
 
@@ -373,8 +389,9 @@ def main(*args):
 
     save_calibrated = flags.calibrated
     input_mask = flags.input_mask
+    max_events = flags.max_events
 
-    save_images(input_mask, save_calibrated)
+    save_images(input_mask, save_calibrated, max_events)
 
 
 if __name__ == '__main__':
