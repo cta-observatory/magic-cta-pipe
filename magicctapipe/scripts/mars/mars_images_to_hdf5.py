@@ -389,7 +389,7 @@ def main(*args):
 
     save_calibrated = flags.calibrated
     input_mask = flags.input_mask
-    max_events = flags.max_events
+    max_events = int(flags.max_events)
 
     save_images(input_mask, save_calibrated, max_events)
 
