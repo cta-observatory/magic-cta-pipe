@@ -17,7 +17,6 @@ $ python lst1_magic_stereo_reco.py
 """
 
 import sys
-import h5py
 import time
 import yaml
 import tables
@@ -35,7 +34,7 @@ from ctapipe.containers import (
     ImageParametersContainer,
     CameraHillasParametersContainer
 )
-from ctapipe.instrument  import SubarrayDescription
+from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import calc_impact
 
 logger = logging.getLogger(__name__)
@@ -104,7 +103,7 @@ def stereo_reco(input_file, output_file, config):
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_positions = subarray.positions
 
-    logger.info(f'\nSubarray configuration:')
+    logger.info('\nSubarray configuration:')
     for tel_id in subarray.tel.keys():
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
 

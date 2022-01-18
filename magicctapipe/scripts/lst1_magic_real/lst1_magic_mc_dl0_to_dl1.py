@@ -86,7 +86,7 @@ def mc_dl0_to_dl1(input_file, output_file, config):
     obs_id = event_source.obs_ids[0]
 
     subarray = event_source.subarray
-    logger.info(f'\nSubarray configuration:')
+    logger.info('\nSubarray configuration:')
 
     for tel_id in subarray.tel.keys():
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {subarray.positions[tel_id]}')
@@ -105,7 +105,7 @@ def mc_dl0_to_dl1(input_file, output_file, config):
     if process_lst1_events:
 
         config_lst = config['LST']
-        logger.info(f'\nConfiguration for LST data process:')
+        logger.info('\nConfiguration for LST data process:')
 
         for key, value in config_lst.items():
             logger.info(f'{key}: {value}')
@@ -141,7 +141,7 @@ def mc_dl0_to_dl1(input_file, output_file, config):
         config_magic = config['MAGIC']
         config_magic['magic_clean']['findhotpixels'] = False   # False for MC data, True for real data
 
-        logger.info(f'\nConfiguration for MAGIC data process:')
+        logger.info('\nConfiguration for MAGIC data process:')
 
         for key, value in config_magic.items():
             logger.info(f'{key}: {value}')
@@ -362,7 +362,7 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
     subarray = SubarrayDescription(subarray.name, tel_positions, tel_descriptions)
 
-    logger.info(f'\nSaving the adjusted subarray description:')
+    logger.info('\nSaving the adjusted subarray description:')
     for tel_id in subarray.tel.keys():
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {subarray.positions[tel_id]}')
 
