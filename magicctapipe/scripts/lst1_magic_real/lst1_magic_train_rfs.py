@@ -2,15 +2,15 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-Train the energy, direction and classifier RFs with the DL1-stereo data samples. 
+Train the energy, direction and classifier RFs with the DL1-stereo data samples.
 The RFs will be trained per telescope combination and per telescope type.
 The number of gamma MC and background training samples will be automatically
 adjusted to the same value when training the classifer RFs.
 
 Usage:
-$ python lst1_magic_train_rfs.py 
+$ python lst1_magic_train_rfs.py
 --type-rf "classifier"
 --input-file-gamma "./data/dl1_stereo/dl1_stereo_lst1_magic_gamma_40deg_90deg_off0.4_run1_to_400.h5"
 --input-file-bkg "./data/dl1_stereo/dl1_stereo_lst1_magic_proton_40deg_90deg_run1_to_4000.h5"
@@ -48,17 +48,17 @@ __all__ = [
 def load_data(input_file, feature_names, event_class=None):
 
     tel_combinations = {
-        'm1_m2': [2, 3], 
-        'lst1_m1': [1, 2], 
-        'lst1_m2': [1, 3],  
-        'lst1_m1_m2': [1, 2, 3]   
+        'm1_m2': [2, 3],
+        'lst1_m1': [1, 2],
+        'lst1_m2': [1, 3],
+        'lst1_m1_m2': [1, 2, 3]
     }
 
     data = pd.read_hdf(input_file, key='events/params')
     data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     data.dropna(subset=feature_names, inplace=True)
     data.sort_index(inplace=True)
-    
+
     if event_class != None:
         data['event_class'] = event_class
 
@@ -75,7 +75,7 @@ def load_data(input_file, feature_names, event_class=None):
 
         if n_events > 0:
             data_return[tel_combo] = df
-        
+
     return data_return
 
 
@@ -84,7 +84,7 @@ def check_importances(estimator):
     telescope_ids = estimator.telescope_rfs.keys()
 
     for tel_id in telescope_ids:
-        
+
         logger.info(f'\nTelescope {tel_id}')
 
         importances = estimator.telescope_rfs[tel_id].feature_importances_
@@ -101,11 +101,11 @@ def get_events_at_random(data, n_events):
 
     group = data.groupby(['obs_id', 'event_id']).size()
     indices = random.sample(range(len(group)), n_events)
-    
+
     data_return = pd.DataFrame()
     telescope_ids = np.unique(data.index.get_level_values('tel_id'))
 
-    for tel_id in telescope_ids: 
+    for tel_id in telescope_ids:
 
         df = data.query(f'tel_id == {tel_id}')
         df = df.iloc[indices]
@@ -130,14 +130,14 @@ def train_rf_regressor(type_rf, input_file, output_dir, config):
     for tel_combo in data_train.keys():
 
         logger.info(f'\nTraining the {type_rf} RF regressors for "{tel_combo}" events...')
-        data_train[tel_combo]['event_weight'] = 1 
+        data_train[tel_combo]['event_weight'] = 1
 
         if type_rf == 'energy':
             regressor = EnergyRegressor(config_rf['features'], config_rf['settings'])
 
         elif type_rf == 'direction':
             regressor = DirectionRegressor(config_rf['features'], config_rf['settings'])
-        
+
         regressor.fit(data_train[tel_combo])
 
         logger.info('\nParameter importances:')
@@ -193,7 +193,7 @@ def train_rf_classifier(input_file_gamma, input_file_bkg, output_dir, config):
 
         logger.info('\nParameter importances:')
         check_importances(classifier)
-        
+
         output_file = f'{output_dir}/event_classifiers_{tel_combo}.joblib'
         classifier.save(output_file)
 
@@ -208,12 +208,12 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--type-rf', '-t', dest='type_rf', type=str, 
-        help='Type of RF that will be trained, "energy", "direction" or "classifier".'  
+        '--type-rf', '-t', dest='type_rf', type=str,
+        help='Type of RF that will be trained, "energy", "direction" or "classifier".'
     )
 
     parser.add_argument(
-        '--input-file-gamma', '-g', dest='input_file_gamma', type=str, 
+        '--input-file-gamma', '-g', dest='input_file_gamma', type=str,
         help='Path to an input DL1-stereo gamma MC data file.'
     )
 

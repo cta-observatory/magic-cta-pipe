@@ -2,12 +2,12 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 Merge the HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
 
 Usage:
-$ python merge_hdf_files.py 
+$ python merge_hdf_files.py
 --input-files "./data/dl1/dl1_*.h5"
 --output-file "./data/dl1/dl1_magic_run05093711_to_05093714_merged.h5"
 """
@@ -41,7 +41,7 @@ def merge_hdf_files(input_files, output_file):
         logger.info(file_paths[0])
 
         with tables.open_file(file_paths[0]) as input_data:
-            
+
             event_params = input_data.root.events.params
             merged_file.create_table('/events', 'params', createparents=True, obj=event_params.read())
 
@@ -56,7 +56,7 @@ def merge_hdf_files(input_files, output_file):
                     merged_file.root.simulation.config.attrs[attribute] = sim_config.attrs[attribute]
 
         for path in file_paths[1:]:
-            
+
             logger.info(path)
 
             with tables.open_file(path) as input_data:
@@ -64,7 +64,7 @@ def merge_hdf_files(input_files, output_file):
                 merged_file.root.events.params.append(event_params.read())
 
     subarray = SubarrayDescription.from_hdf(file_paths[0])
-    subarray.to_hdf(output_file)    
+    subarray.to_hdf(output_file)
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')
@@ -88,7 +88,7 @@ def main():
 
     args = parser.parse_args()
 
-    merge_hdf_files(args.input_files, args.output_file) 
+    merge_hdf_files(args.input_files, args.output_file)
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

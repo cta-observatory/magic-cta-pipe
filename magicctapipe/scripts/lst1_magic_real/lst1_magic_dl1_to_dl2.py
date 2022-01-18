@@ -2,14 +2,14 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 Reconstruct the DL2 parameters (i.e., energy, direction and gammaness) with trained RFs.
 The RFs will be applied per telescope combination and per telescope type.
-If real data is input, the parameters in the Alt/Az coordinate will be transformed to the RA/Dec coordinate. 
+If real data is input, the parameters in the Alt/Az coordinate will be transformed to the RA/Dec coordinate.
 
 Usage:
-$ python lst1_magic_dl1_to_dl2.py 
+$ python lst1_magic_dl1_to_dl2.py
 --input-file "./data/dl1_stereo/dl1_stereo_lst1_magic_run03265.0040.h5"
 --output-file "./data/dl2/dl2_lst1_magic_run03265.0040.h5"
 --energy-regressors "./data/rfs/energy_regressors_*.joblib"
@@ -58,7 +58,7 @@ def apply_rfs(data, rfs_mask, estimator, tel_descriptions=None):
         estimator.load(path)
 
         tel_ids = list(estimator.telescope_rfs.keys())
-        
+
         df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
         df.dropna(subset=estimator.feature_names, inplace=True)
         df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
@@ -69,14 +69,14 @@ def apply_rfs(data, rfs_mask, estimator, tel_descriptions=None):
         if n_events == 0:
             logger.info('--> No corresponding events are found. Skipping.')
             continue
-        
+
         logger.info(f'--> {n_events} events are found. Applying...')
 
         if tel_descriptions != None:
             df_reco = estimator.predict(df, tel_descriptions)
         else:
             df_reco = estimator.predict(df)
-            
+
         reco_params = reco_params.append(df_reco)
 
     reco_params.sort_index(inplace=True)
@@ -85,7 +85,7 @@ def apply_rfs(data, rfs_mask, estimator, tel_descriptions=None):
 
 
 def dl1_to_dl2(
-        input_file, output_file, 
+        input_file, output_file,
         energy_regressors=None, direction_regressors=None, event_classifiers=None
     ):
 
@@ -101,12 +101,12 @@ def dl1_to_dl2(
     # --- reconstruct energy ---
     if energy_regressors != None:
 
-        estimator = EnergyRegressor() 
+        estimator = EnergyRegressor()
         logger.info('\nReconstucting the energy...')
-        
+
         reco_params = apply_rfs(data_joint, energy_regressors, estimator)
         data_joint = data_joint.join(reco_params)
-        
+
     # --- reconstruct direction ---
     if direction_regressors != None:
 
@@ -135,25 +135,25 @@ def dl1_to_dl2(
                 az=u.Quantity(data_joint['az_tel_mean'].values, u.rad),
                 timestamp=timestamps
             )
-            
+
             reco_ra, reco_dec = transform_to_radec(
-                alt=u.Quantity(data_joint['reco_alt'].values, u.deg), 
+                alt=u.Quantity(data_joint['reco_alt'].values, u.deg),
                 az=u.Quantity(data_joint['reco_az'].values, u.deg),
                 timestamp=timestamps
-            ) 
+            )
 
             reco_ra_mean, reco_dec_mean = transform_to_radec(
-                alt=u.Quantity(data_joint['reco_alt_mean'].values, u.deg), 
+                alt=u.Quantity(data_joint['reco_alt_mean'].values, u.deg),
                 az=u.Quantity(data_joint['reco_az_mean'].values, u.deg),
                 timestamp=timestamps
-            ) 
+            )
 
             data_joint['ra_tel'] = ra_tel.to(u.deg).value
             data_joint['dec_tel'] = dec_tel.to(u.deg).value
             data_joint['ra_tel_mean'] = ra_tel_mean.to(u.deg).value
             data_joint['dec_tel_mean'] = dec_tel_mean.to(u.deg).value
             data_joint['reco_ra'] = reco_ra.to(u.deg).value
-            data_joint['reco_dec'] = reco_dec.to(u.deg).value  
+            data_joint['reco_dec'] = reco_dec.to(u.deg).value
             data_joint['reco_ra_mean'] = reco_ra_mean.to(u.deg).value
             data_joint['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
 
@@ -162,7 +162,7 @@ def dl1_to_dl2(
 
         estimator = EventClassifier()
         logger.info('\nClassifying the event type...')
-        
+
         reco_params = apply_rfs(data_joint, event_classifiers, estimator)
         data_joint = data_joint.join(reco_params)
 
@@ -194,7 +194,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file', '-i', dest='input_file', type=str, 
+        '--input-file', '-i', dest='input_file', type=str,
         help='Path to an input DL1-stereo data file.'
     )
 
@@ -221,7 +221,7 @@ def main():
     args = parser.parse_args()
 
     dl1_to_dl2(
-        args.input_file, args.output_file, 
+        args.input_file, args.output_file,
         args.energy_regressors, args.direction_regressors, args.event_classifiers
     )
 

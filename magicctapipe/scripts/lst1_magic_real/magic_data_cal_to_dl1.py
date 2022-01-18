@@ -2,9 +2,9 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-Process the MAGIC calibrated data (*_Y_*.root) with MARS-like cleaning method, 
+Process the MAGIC calibrated data (*_Y_*.root) with MARS-like cleaning method,
 and compute the DL1 parameters (i.e., Hillas, timing and leakage parameters).
 The events that all the DL1 parameters are computed will be saved in the output file.
 The telescope IDs are automatically reset to the following values when saving to an output file:
@@ -12,11 +12,11 @@ MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 Please note that currently only one subrun file is allowed for input data,
 and when the input data contains only one drive report, the script stops
-showing an error about the interpolation of pointing direction. 
+showing an error about the interpolation of pointing direction.
 This issue will be solved in the coming release of ctapipe_io_magic.
 
 Usage:
-$ python magic_data_cal_to_dl1.py 
+$ python magic_data_cal_to_dl1.py
 --input-file "./data/calibrated/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root"
 --output-file "./data/dl1/dl1_M1_run05093711.001.h5"
 --config-file "./config.yaml"
@@ -34,8 +34,8 @@ from ctapipe.io import HDF5TableWriter
 from ctapipe.core import Container, Field
 from ctapipe.image import (
     number_of_islands,
-    hillas_parameters, 
-    timing_parameters, 
+    hillas_parameters,
+    timing_parameters,
     leakage_parameters
 )
 from ctapipe.instrument import SubarrayDescription
@@ -54,7 +54,7 @@ __all__ = ['magic_cal_to_dl1']
 
 
 class EventInfoContainer(Container):
-    
+
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
@@ -71,7 +71,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
     config_cleaning = config['MAGIC']['magic_clean']
     config_badpixels = config['MAGIC']['bad_pixels']
 
-    config_cleaning['findhotpixels'] = True   # True for real data, False for MC data 
+    config_cleaning['findhotpixels'] = True   # True for real data, False for MC data
 
     logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}')
     logger.info(f'\nConfiguration for the bad pixels calculation:\n{config_badpixels}')
@@ -123,10 +123,10 @@ def magic_cal_to_dl1(input_file, output_file, config):
 
                 logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                             'Could not survive the image cleaning. Skipping.')
-                
+
                 n_events_skipped += 1
                 continue
-            
+
             # --- hillas parameters calculation ---
             try:
                 hillas_params = hillas_parameters(camera_geom, image_cleaned)
@@ -134,10 +134,10 @@ def magic_cal_to_dl1(input_file, output_file, config):
             except:
                 logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                             'Hillas parameters calculation failed. Skipping.')
-                
+
                 n_events_skipped += 1
                 continue
-                
+
             # --- timing parameters calculation ---
             try:
                 timing_params = timing_parameters(
@@ -147,14 +147,14 @@ def magic_cal_to_dl1(input_file, output_file, config):
             except:
                 logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                             'Timing parameters calculation failed. Skipping.')
-                
+
                 n_events_skipped += 1
                 continue
-            
+
             # --- leakage parameters calculation ---
             try:
                 leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
-                
+
             except:
                 logger.info(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                             'Leakage parameters calculation failed. Skipping.')
@@ -164,7 +164,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
 
             # --- save the parameters ---
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
-            
+
             time_sec = np.round(np.modf(timestamp)[1])
             time_nanosec = np.round(np.modf(timestamp)[0] * sec2nsec, decimals=-2)
 
@@ -181,7 +181,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
 
             if tel_id == 1:
                 event_info.tel_id = 2   # MAGIC-I tel_id: 1 -> 2
-            
+
             elif tel_id == 2:
                 event_info.tel_id = 3   # MAGIC-II tel_id: 2 -> 3
 
@@ -194,7 +194,7 @@ def magic_cal_to_dl1(input_file, output_file, config):
     tel_positions = {
         2: u.Quantity([35.25, -23.99, -0.58], u.m),
         3: u.Quantity([-35.25, 23.99, 0.58], u.m)
-    }  
+    }
 
     tel_descriptions = {tel_id + 1: subarray.tel[tel_id] for tel_id in subarray.tel.keys()}
 

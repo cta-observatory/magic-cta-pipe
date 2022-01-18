@@ -2,14 +2,14 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 Find the coincident events from LST-1 and MAGIC joint observation data by offline with their timestamps.
-The coincidence is checked for each telescope combination, i.e., (LST1 + M1) and (LST1 + M2), 
+The coincidence is checked for each telescope combination, i.e., (LST1 + M1) and (LST1 + M2),
 and the events finally containing more than two telescopes information are saved to an output file.
 
 Usage:
-$ python lst1_magic_event_coincidence.py 
+$ python lst1_magic_event_coincidence.py
 --input-file-lst "./data/dl1/LST-1/dl1_LST-1.Run03265.0040.h5"
 --input-file-magic "./data/dl1/MAGIC/dl1_magic_run05093711_to_05093714_merged.h5"
 --output-file "./data/dl1_coincidence/dl1_lst1_magic_run03265.0040.h5"
@@ -87,7 +87,7 @@ def load_lst_data(input_file, type_lst_time):
         'leakage_intensity_width_1': 'intensity_width_1',
         'leakage_intensity_width_2': 'intensity_width_2',
         'time_gradient': 'slope'
-    } 
+    }
 
     data.rename(columns=params_rename, inplace=True)
     data.set_index(['obs_id_lst', 'event_id_lst', 'tel_id'], inplace=True)
@@ -135,7 +135,7 @@ def load_magic_data(input_file):
 
         tel_name = 'M1' if (tel_id == 2) else 'M2'
         n_events = len(data.query(f'tel_id == {tel_id}'))
-        
+
         logger.info(f'{tel_name}: {n_events} events')
 
     subarray = SubarrayDescription.from_hdf(input_file)
@@ -169,7 +169,7 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
     }
 
     subarray = SubarrayDescription('LST-MAGIC-Array', tel_positions, tel_descriptions)
-    
+
     # --- arrange the LST-1 timestamps ---
     time_lst_unix = np.array([Decimal(str(time)) for time in data_lst['timestamp']])
 
@@ -192,7 +192,7 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
     telescope_ids = np.unique(data_magic.index.get_level_values('tel_id'))
 
     for tel_id in telescope_ids:
-        
+
         tel_name = 'M1' if (tel_id == 2) else 'M2'
         df_magic = data_magic.query(f'tel_id == {tel_id}')
 
@@ -214,7 +214,7 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
 
         n_events_magic = np.sum(condition)
         logger.info(f'--> {n_events_magic} events are found. Checking the event coincidence...\n')
-        
+
         df_magic = df_magic.iloc[condition]
         time_magic = time_magic[condition]
 
@@ -265,7 +265,7 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
         indices_lst = []
 
         offset = bins_offset[bins_offset < offset_avg][-1]
-        
+
         time_lim_lo = np.round(time_lst - window_width/2 + offset, decimals=precision)
         time_lim_hi = np.round(time_lst + window_width/2 + offset, decimals=precision)
 
@@ -279,7 +279,7 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
                 index_magic = np.where(condition_lo & condition_hi)[0][0]
                 indices_magic.append(index_magic)
                 indices_lst.append(i_ev)
-                
+
         # --- arrange the data frames ---
         df_lst = data_lst.iloc[indices_lst]
         df_lst['obs_id'] = df_magic.iloc[indices_magic].index.get_level_values('obs_id')
@@ -298,7 +298,7 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
                   'mean_az_lst': [df_lst['az_tel'].mean()],
                   'mean_az_magic': [df_magic['az_tel'].mean()],
                   'offset_avg_usec': [offset_avg * sec2usec],
-                  'n_coincidence': [n_events_at_avg], 
+                  'n_coincidence': [n_events_at_avg],
                   'n_magic': [n_events_magic]}
         )
 
@@ -322,11 +322,11 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
     df_events['multiplicity'] = df_events.groupby(['obs_id', 'event_id']).size()
     df_events = df_events.query('multiplicity == [2, 3]')
 
-    n_events_total = len(df_events.groupby(['obs_id', 'event_id']).size()) 
-    logger.info(f'\nIn total {n_events_total} stereo events are found:') 
+    n_events_total = len(df_events.groupby(['obs_id', 'event_id']).size())
+    logger.info(f'\nIn total {n_events_total} stereo events are found:')
 
     for tel_combo, tel_ids in tel_combinations.items():
-        
+
         df = df_events.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
         n_events = np.sum(df.groupby(['obs_id', 'event_id']).size() == len(tel_ids))
         logger.info(f'{tel_combo}: {n_events} events ({n_events / n_events_total * 100:.1f}%)')
@@ -345,7 +345,7 @@ def event_coincidence(input_file_lst, input_file_magic, output_file, config):
     df_profile.to_hdf(output_file, key='coincidence/profile', mode='a', format='table')
 
     subarray.to_hdf(output_file)
-    
+
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')
 
@@ -382,7 +382,7 @@ def main():
         config = yaml.safe_load(f)
 
     event_coincidence(args.input_file_lst, args.input_file_magic, args.output_file, config)
-    
+
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
