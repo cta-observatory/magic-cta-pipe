@@ -4,8 +4,9 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
 
-Process the simtel MC DL0 data (*.simtel.gz) containing LST-1 or MAGIC events.
+Process the simtel MC DL0 data (*.simtel.gz) containing LST-1 or MAGIC events to DL1.
 The allowed telescopes specified in the configuration file will only be processed.
+The events that all the DL1 parameters are computed will be saved in the output file.
 The telescope IDs are automatically reset to the following values when saving to an output file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
@@ -25,6 +26,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from traitlets.config import Config
+
 from ctapipe.io import EventSource, HDF5TableWriter
 from ctapipe.core import Container, Field
 from ctapipe.calib import CameraCalibrator
@@ -62,8 +64,8 @@ class EventInfoContainer(Container):
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
-    alt_tel = Field(-1, 'Telescope altitude', u.deg)
-    az_tel = Field(-1, 'Telescope azimuth', u.deg)
+    alt_tel = Field(-1, 'Telescope altitude', u.rad)
+    az_tel = Field(-1, 'Telescope azimuth', u.rad)
     mc_energy = Field(-1, 'MC event energy', u.TeV)
     mc_alt = Field(-1, 'MC event altitude', u.deg)
     mc_az = Field(-1, 'MC event azimuth', u.deg)
@@ -80,11 +82,14 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
     logger.info(f'\nInput data file:\n{input_file}')
 
-    source = EventSource(input_file)
-    obs_id = source.obs_ids[0]
+    event_source = EventSource(input_file)
+    obs_id = event_source.obs_ids[0]
 
-    subarray = source.subarray
-    logger.info(f'\nSubarray configuration:\n{subarray.tels}\n{subarray.positions}')
+    subarray = event_source.subarray
+    logger.info(f'\nSubarray configuration:')
+    
+    for tel_id in subarray.tel.keys():
+        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {subarray.positions[tel_id]}')
 
     allowed_tels = config['mc_allowed_tels']
     logger.info(f'\nAllowed telescopes:\n{allowed_tels}')
@@ -100,8 +105,11 @@ def mc_dl0_to_dl1(input_file, output_file, config):
     if process_lst1_events:
 
         config_lst = config['LST']
-        logger.info(f'\nConfiguration for LST data process:\n{config_lst}')
+        logger.info(f'\nConfiguration for LST data process:')
 
+        for key, value in config_lst.items():
+            logger.info(f'{key}: {value}')
+        
         increase_nsb = config_lst['increase_nsb'].pop('use')
         increase_psf = config_lst['increase_psf'].pop('use')
 
@@ -133,7 +141,10 @@ def mc_dl0_to_dl1(input_file, output_file, config):
         config_magic = config['MAGIC']
         config_magic['magic_clean']['findhotpixels'] = False   # False for MC data, True for real data
 
-        logger.info(f'\nConfiguration for MAGIC data process:\n{config_magic}')
+        logger.info(f'\nConfiguration for MAGIC data process:')
+
+        for key, value in config_magic.items():
+            logger.info(f'{key}: {value}')
 
         extractor_name_magic = config_magic['image_extractor'].pop('name')
         config_extractor_magic = Config({extractor_name_magic: config_magic['image_extractor']})
@@ -160,9 +171,9 @@ def mc_dl0_to_dl1(input_file, output_file, config):
         for tel_name, tel_id in allowed_tels.items():
 
             logger.info(f'\nProcessing the {tel_name} events...')
-            source = EventSource(input_file, allowed_tels=[tel_id])
+            event_source = EventSource(input_file, allowed_tels=[tel_id])
 
-            subarray = source.subarray
+            subarray = event_source.subarray
             position = subarray.positions[tel_id]
 
             camera_geom = subarray.tel[tel_id].camera.geometry
@@ -175,7 +186,7 @@ def mc_dl0_to_dl1(input_file, output_file, config):
             magic_stereo = None
             n_events_skipped = 0
 
-            for event in source:
+            for event in event_source:
 
                 if (event.count % 100) == 0:
                     logger.info(f'{event.count} events')
@@ -339,7 +350,7 @@ def mc_dl0_to_dl1(input_file, output_file, config):
 
                 writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
 
-            logger.info(f'{event.count+1} events processed.')
+            logger.info(f'{event.count + 1} events processed.')
             logger.info(f'({n_events_skipped} events are skipped)')
 
     # --- save in the output file ---
@@ -350,10 +361,15 @@ def mc_dl0_to_dl1(input_file, output_file, config):
     tel_positions = {tel_id: u.Quantity(tel_positions[i_tel], u.m) for i_tel, tel_id in enumerate(telescope_ids)}   
 
     subarray = SubarrayDescription(subarray.name, tel_positions, tel_descriptions)
+    
+    logger.info(f'\nSaving the adjusted subarray description:')
+    for tel_id in subarray.tel.keys():
+        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {subarray.positions[tel_id]}')
+
     subarray.to_hdf(output_file)
 
     with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
-        writer.write('config', source.simulation_config)
+        writer.write('config', event_source.simulation_config)
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')

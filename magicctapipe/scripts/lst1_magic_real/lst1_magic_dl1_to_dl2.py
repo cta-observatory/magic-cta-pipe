@@ -10,27 +10,32 @@ If real data is input, the parameters in the Alt/Az coordinate will be transform
 
 Usage:
 $ python lst1_magic_dl1_to_dl2.py 
---input-file "./data/dl1_stereo/dl1_stereo_lst1_magic_Run02923.0040.h5"
---output-file "./data/dl2/dl2_lst1_magic_Run02923.0040.h5"
---energy-rfs "./data/rfs/energy_rfs_*.joblib"
---direction-rfs "./data/rfs/direction_rfs_*.joblib"
---classifier-rfs "./data/rfs/classifier_rfs_*.joblib"
+--input-file "./data/dl1_stereo/dl1_stereo_lst1_magic_run03265.0040.h5"
+--output-file "./data/dl2/dl2_lst1_magic_run03265.0040.h5"
+--energy-regressors "./data/rfs/energy_regressors_*.joblib"
+--direction-regressors "./data/rfs/direction_regressors_*.joblib"
+--event-classifiers "./data/rfs/event_classifiers_*.joblib"
 """
 
 import glob
 import time
 import yaml
+import tables
+import logging
 import argparse
 import warnings
+import numpy as np
 import pandas as pd
 from astropy import units as u
 from astropy.time import Time
 from magicctapipe.utils import (
-    EnergyEstimator,
-    DirectionEstimator,
+    EnergyRegressor,
+    DirectionRegressor,
     EventClassifier,
     transform_to_radec
 )
+
+from ctapipe.instrument import SubarrayDescription
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -41,96 +46,79 @@ warnings.simplefilter('ignore')
 __all__ = ['dl1_to_dl2']
 
 
-def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, classifier_rfs=None):
+def apply_rfs(data, rfs_mask, estimator, tel_descriptions=None):
+
+    file_paths = glob.glob(rfs_mask)
+    file_paths.sort()
+
+    reco_params = pd.DataFrame()
+
+    for path in file_paths:
+
+        logger.info(path)
+        estimator.load(path)
+
+        tel_ids = list(estimator.telescope_rfs.keys())
+        
+        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
+        df.dropna(subset=estimator.feature_names, inplace=True)
+        df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
+        df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
+
+        n_events = len(df.groupby(['obs_id', 'event_id']).size())
+
+        if n_events == 0:
+            logger.info('--> No corresponding events are found. Skipping.')
+            continue
+        
+        logger.info(f'--> {n_events} events are found. Applying...')
+
+        if tel_descriptions != None:
+            df_reco = estimator.predict(df, tel_descriptions)
+        else:
+            df_reco = estimator.predict(df)
+            
+        reco_params = reco_params.append(df_reco)
+
+    reco_params.sort_index(inplace=True)
+
+    return reco_params
+
+
+def dl1_to_dl2(
+        input_file, output_file, 
+        energy_regressors=None, direction_regressors=None, event_classifiers=None
+    ):
 
     logger.info(f'\nLoading the input data file:\n{input_file}')
 
     data_joint = pd.read_hdf(input_file, key='events/params')
+    data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     data_joint.sort_index(inplace=True)
 
     data_type = 'mc' if ('mc_energy' in data_joint.columns) else 'real'
+    subarray = SubarrayDescription.from_hdf(input_file)
 
     # --- reconstruct energy ---
-    if energy_rfs != None:
+    if energy_regressors != None:
 
-        logger.info('\nLoading the following energy RFs:')
+        estimator = EnergyRegressor() 
+        logger.info('\nReconstucting the energy...')
         
-        file_paths = glob.glob(energy_rfs)
-        file_paths.sort()
+        reco_params = apply_rfs(data_joint, energy_regressors, estimator)
+        data_joint = data_joint.join(reco_params)
+        
+    # --- reconstruct direction ---
+    if direction_regressors != None:
 
-        reco_params = pd.DataFrame()
+        estimator = DirectionRegressor()
+        logger.info('\nReconstructing the direction...')
 
-        for path in file_paths:
+        tel_descriptions = subarray.tel
 
-            logger.info(path)
-
-            energy_estimator = EnergyEstimator()
-            energy_estimator.load(path)
-
-            tel_ids = list(energy_estimator.telescope_rfs.keys())
-            
-            df = data_joint.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-            df.dropna(subset=energy_estimator.feature_names, inplace=True)
-
-            df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
-            df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
-
-            n_events = len(df.groupby(['obs_id', 'event_id']).size())
-
-            if n_events > 0:
-                logger.info(f'--> {n_events} events are found. Applying...\n')
-                df_reco_energy = energy_estimator.predict(df)
-                reco_params = reco_params.append(df_reco_energy)
-
-            else:
-                logger.info('--> No corresponding events are found. Skipping.\n')
-                continue
-
-        reco_params.sort_index(inplace=True)
+        reco_params = apply_rfs(data_joint, direction_regressors, estimator, tel_descriptions)
         data_joint = data_joint.join(reco_params)
 
-        del energy_estimator
-    
-    # --- reconstruct arrival direction ---
-    if direction_rfs != None:
-
-        logger.info('\nLoading the following direction RFs:')
-
-        file_paths = glob.glob(direction_rfs)
-        file_paths.sort()
-
-        reco_params = pd.DataFrame()
-
-        for path in file_paths:
-
-            logger.info(path)
-
-            direction_estimator = DirectionEstimator()
-            direction_estimator.load(path)
-
-            tel_ids = list(direction_estimator.telescope_rfs.keys())
-            
-            df = data_joint.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-            df.dropna(subset=direction_estimator.feature_names, inplace=True)
-
-            df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
-            df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
-
-            n_events = len(df.groupby(['obs_id', 'event_id']).size())
-
-            if n_events > 0:
-                logger.info(f'--> {n_events} events are found. Applying...\n')
-                df_reco_direction = direction_estimator.predict(df)
-                reco_params = reco_params.append(df_reco_direction)
-
-            else:
-                logger.info('--> No corresponding events are found. Skipping.\n')
-                continue
-
-        reco_params.sort_index(inplace=True)
-        data_joint = data_joint.join(reco_params)
-
-        # --- transform Alt/Az to RA/Dec coordinate ---
         if data_type == 'real':
 
             logger.info('Transforming Alt/Az to RA/Dec coordinate...\n')
@@ -138,14 +126,14 @@ def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, cla
             timestamps = Time(data_joint['timestamp'].values, format='unix', scale='utc')
 
             ra_tel, dec_tel = transform_to_radec(
-                alt=u.Quantity(data_joint['alt_tel'].values, u.deg),
-                az=u.Quantity(data_joint['az_tel'].values, u.deg),
+                alt=u.Quantity(data_joint['alt_tel'].values, u.rad),
+                az=u.Quantity(data_joint['az_tel'].values, u.rad),
                 timestamp=timestamps
             )
 
             ra_tel_mean, dec_tel_mean = transform_to_radec(
-                alt=u.Quantity(data_joint['alt_tel_mean'].values, u.deg),
-                az=u.Quantity(data_joint['az_tel_mean'].values, u.deg),
+                alt=u.Quantity(data_joint['alt_tel_mean'].values, u.rad),
+                az=u.Quantity(data_joint['az_tel_mean'].values, u.rad),
                 timestamp=timestamps
             )
             
@@ -170,51 +158,31 @@ def dl1_to_dl2(input_file, output_file, energy_rfs=None, direction_rfs=None, cla
             data_joint['reco_ra_mean'] = reco_ra_mean.to(u.deg).value
             data_joint['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
 
-        del direction_estimator
+    # --- classify event type ---
+    if event_classifiers != None:
 
-    # --- reconstruct gammaness ---
-    if classifier_rfs != None:
-
-        logger.info('\nLoading the following classifier RFs:')
+        estimator = EventClassifier()
+        logger.info('\nClassifying the event type...')
         
-        file_paths = glob.glob(classifier_rfs)
-        file_paths.sort()
-
-        reco_params = pd.DataFrame()
-
-        for path in file_paths:
-
-            logger.info(path)
-
-            event_classifier = EventClassifier()
-            event_classifier.load(path)
-
-            tel_ids = event_classifier.telescope_rfs.keys()
-
-            df = data_joint.query(f'(tel_id == {list(tel_ids)}) & (multiplicity == {len(tel_ids)})')
-            df.dropna(subset=event_classifier.feature_names, inplace=True)
-
-            df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
-            df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
-
-            n_events = len(df.groupby(['obs_id', 'event_id']).size())
-
-            if n_events > 0:
-                logger.info(f'--> {n_events} events are found. Applying...\n')
-                df_reco_class = event_classifier.predict(df)
-                reco_params = reco_params.append(df_reco_class)
-
-            else:
-                logger.info('--> No corresponding events are found. Skipping.\n')
-                continue
-
-        reco_params.sort_index(inplace=True)
+        reco_params = apply_rfs(data_joint, event_classifiers, estimator)
         data_joint = data_joint.join(reco_params)
 
-        del event_classifier
-
     # --- save the data frame ---
-    data_joint.to_hdf(output_file, key='events/params')
+    with tables.open_file(output_file, mode='w') as f_out:
+
+        data_joint.reset_index(inplace=True)
+        event_values = [tuple(array) for array in data_joint.to_numpy()]
+        dtypes = np.dtype([(name, dtype) for name, dtype in zip(data_joint.dtypes.index, data_joint.dtypes)])
+
+        event_table = np.array(event_values, dtype=dtypes)
+        f_out.create_table('/events', 'params', createparents=True, obj=event_table)
+
+        if data_type == 'mc':
+            with tables.open_file(input_file) as f_in:
+                sim_table = f_in.root.simulation.config.read()
+                f_out.create_table('/simulation', 'config', createparents=True, obj=sim_table)
+
+    subarray.to_hdf(output_file)
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')
@@ -237,23 +205,26 @@ def main():
     )
 
     parser.add_argument(
-        '--energy-rfs', '-e', dest='energy_rfs', type=str, default=None,
-        help='Path to trained energy RFs.'
+        '--energy-regressors', '-e', dest='energy_regressors', type=str, default=None,
+        help='Path to trained energy regressors.'
     )
 
     parser.add_argument(
-        '--direction-rfs', '-d', dest='direction_rfs', type=str, default=None,
-        help='Path to trained direction RFs.'
+        '--direction-regressors', '-d', dest='direction_regressors', type=str, default=None,
+        help='Path to trained direction regressors.'
     )
 
     parser.add_argument(
-        '--classifier-rfs', '-c', dest='classifier_rfs', type=str, default=None,
-        help='Path to trained classifier RFs.'
+        '--event-classifiers', '-c', dest='event_classifiers', type=str, default=None,
+        help='Path to trained event classifiers.'
     )
 
     args = parser.parse_args()
 
-    dl1_to_dl2(args.input_file, args.output_file, args.energy_rfs, args.direction_rfs, args.classifier_rfs)
+    dl1_to_dl2(
+        args.input_file, args.output_file, 
+        args.energy_regressors, args.direction_regressors, args.event_classifiers
+    )
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

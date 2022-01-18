@@ -40,11 +40,7 @@ from .MAGIC_Cleaning import (
     pixel_treatment,
 )
 
-from .merge_hdf_files import (
-    merge_hdf_files,
-)
-
-from .my_functions import (
+from .functions import (
     crab_magic,
     calc_impact,
     calc_nsim,
@@ -89,8 +85,8 @@ from .modifier import (
 )
 
 from .processors import (
-    EnergyEstimator,
-    DirectionEstimator,
+    EnergyRegressor,
+    DirectionRegressor,
     EventClassifier
 )
 
@@ -119,7 +115,6 @@ __all__ = [
     "MAGICBadPixelsCalc",
     "magic_clean",
     "pixel_treatment",
-    "merge_hdf_files",
     "crab_magic",
     "calc_impact",
     "calc_nsim",
@@ -147,8 +142,8 @@ __all__ = [
     "add_noise_in_pixels",
     "set_numba_seed",
     "random_psf_smearer",
-    "EnergyEstimator",
-    "DirectionEstimator",
+    "EnergyRegressor",
+    "DirectionRegressor",
     "EventClassifier"
 ]
 
