@@ -19,6 +19,13 @@ import tables
 from ctapipe.core.container import Container, Field
 from ctapipe.io import HDF5TableWriter, HDF5TableReader
 
+__all__ = [
+    "read_images",
+    "save_images",
+    "ImageContainerCalibrated",
+    "ImageContainerCleaned",
+]
+
 def parse_args(args):
     """
     Parse command line options and arguments.
