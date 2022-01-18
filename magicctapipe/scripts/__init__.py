@@ -3,10 +3,10 @@ from .lst1_magic import (
     event_coincidence,
     mc_dl0_to_dl1,
     stereo_reco,
-    train_energy_rfs,
-    train_direction_rfs,
-    train_classifier_rfs,
+    train_rf_regressor,
+    train_rf_classifier,
     magic_cal_to_dl1,
+    merge_hdf_files,
     )
 
 __all__ = [
@@ -14,8 +14,8 @@ __all__ = [
     "event_coincidence",
     "mc_dl0_to_dl1",
     "stereo_reco",
-    "train_energy_rfs",
-    "train_direction_rfs",
-    "train_classifier_rfs",
+    "train_rf_regressor",
+    "train_rf_classifier",
     "magic_cal_to_dl1",
+    "merge_hdf_files",
 ]
