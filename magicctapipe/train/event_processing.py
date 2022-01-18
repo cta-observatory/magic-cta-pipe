@@ -14,11 +14,11 @@ import pandas as pd
 import joblib
 
 from ctapipe.image import tailcuts_clean, hillas_parameters
-from ctapipe.io import event_source
+from ctapipe.io import EventSource
 from ctapipe.containers import ReconstructedContainer, ReconstructedEnergyContainer, ParticleClassificationContainer
-from ctapipe.reco.HillasReconstructor import TooFewTelescopesException
-
+from ctapipe.reco.reco_algorithms import TooFewTelescopesException
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
+
 from astropy.coordinates import AltAz, SkyCoord
 from astropy import units as u
 from astropy.coordinates.angle_utilities import angular_separation, position_angle
@@ -596,6 +596,7 @@ class EnergyRegressor(RegressorClassifierBase):
         """
         return super().load(path, cam_id_list, unit)
 
+
 class HillasFeatureSelector(ABC):
     """
     The base class that handles the event Hillas parameter extraction
@@ -981,7 +982,7 @@ class EventProcessor:
 
         """
 
-        with event_source(input_url=file_name) as source:
+        with EventSource(input_url=file_name) as source:
             event_generator = source._generator()
 
             if not append_to_existing_events:

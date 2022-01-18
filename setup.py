@@ -20,12 +20,13 @@ setup(
     use_scm_version={"write_to": os.path.join("magicctapipe", "_version.py")},
     packages=find_packages(),
     install_requires=[
-        'astropy~=4.2',
-        'ctapipe~=0.8.0',
-        'ctapipe_io_magic~=0.3.0',
+        'astropy>=4.0.5,<5',
+        'ctapipe~=0.12.0',
+        'ctapipe_io_magic~=0.4.1',
         'ctaplot~=0.5.3',
-        'eventio>=1.1.1,<2.0.0a0',  # at least 1.1.1, but not 2
-        'gammapy>=0.18',
+        'eventio>=1.5.1,<2.0.0a0',  # at least 1.1.1, but not 2
+        'gammapy>=0.18,<0.19',
+        'uproot~=4.1',
         'h5py',
         'joblib',
         'matplotlib>=3.5',
@@ -38,7 +39,7 @@ setup(
         'scikit-learn',
         'tables',
         'toml',
-        'traitlets>=4.1,<5.0',
+        'traitlets~=5.0.5',
         'setuptools_scm',
     ],
     extras_require={

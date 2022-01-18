@@ -1,17 +1,23 @@
 test_data
+.pytest_cache
 
-# Folders
-utils/__pycache__/
+# Compiled files
+*.py[co]
+*.a
+*.o
+*.so
 __pycache__
 .vscode
 RFs
 
 # Files cretaed when running pip
-build/
-magic_cta_pipe.egg-info/
 magicctapipe/_version.py
+magicctapipe/_version_cache.py
 
 .coverage
+# Eclipse editor project files
+.project
+.pydevproject
 
 # Standard files
 *.png
@@ -29,3 +35,23 @@ TODO.txt
 test.ipynb
 .ipynb_checkpoints
 *.tmp
+*.stats
+
+# Packages/installer info
+*.egg
+*.eggs
+*.egg-info
+dist
+build
+eggs
+parts
+bin
+var
+sdist
+develop-eggs
+.installed.cfg
+distribute-*.tar.gz
+
+# Other generated files
+htmlcov
+.coverage

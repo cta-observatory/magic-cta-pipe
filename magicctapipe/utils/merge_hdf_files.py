@@ -1,144 +1,88 @@
-import re 
-import os
+#!/usr/bin/env python
+# coding: utf-8
+
+# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+
 import time
 import glob
+import tables
+import logging
 import argparse
-import pandas as pd 
-import numpy as np
-from pathlib import Path
-from .my_functions import get_obs_ids_from_name
+from ctapipe.instrument import SubarrayDescription
 
-__all__ = [
-    "merge_hdf_files",
-    "merge_hdf_files_run_wise",
-]
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
+__all__ = ['merge_hdf_files']
 
 
-def merge_hdf_files(input_data_mask, n_files=50, output_data=None):
+def merge_hdf_files(input_files, output_file):
 
-    paths_list = glob.glob(input_data_mask)
-    paths_list.sort()
+    file_paths = glob.glob(input_files)
+    file_paths.sort()
 
-    dir_tmp = str(Path(paths_list[0]).parent)
+    # --- merging the event/simulation data ---    
+    with tables.open_file(output_file, mode='w') as merged_file:
 
-    # --- merge the files to subset files ---
-    print('\nMerging the input data files to subsets...')
+        logger.info('\nMerging the following data files:')
+        logger.info(file_paths[0])
 
-    i_subset = 1
-    data_subset = pd.DataFrame()
+        with tables.open_file(file_paths[0]) as input_data:
 
-    print(f'Subset {i_subset}')
+            event_params = input_data.root.events.params
+            merged_file.create_table('/events', 'params', createparents=True, obj=event_params.read())
 
-    for i_file, path in enumerate(paths_list):
+            for attribute in event_params.attrs._f_list():
+                merged_file.root.events.params.attrs[attribute] = event_params.attrs[attribute]
 
-        print(path)
+            if 'simulation' in input_data.root:
 
-        df = pd.read_hdf(path, key='events/params')
-        data_subset = data_subset.append(df)
+                sim_config = input_data.root.simulation.config
+                merged_file.create_table('/simulation', 'config', createparents=True, obj=sim_config.read())
 
-        if path == paths_list[-1]:
-            data_subset.to_hdf(f'{dir_tmp}/subset{i_subset}.h5', key='events/params')
+                for attribute in sim_config.attrs._f_list():
+                    merged_file.root.simulation.config.attrs[attribute] = sim_config.attrs[attribute]
 
-        elif (i_file+1) % n_files == 0:
+        for path in file_paths[1:]:
 
-            data_subset.to_hdf(f'{dir_tmp}/subset{i_subset}.h5', key='events/params')
+            logger.info(path)
 
-            i_subset += 1
-            data_subset = pd.DataFrame()
+            with tables.open_file(path) as input_data:
+                
+                event_params = input_data.root.events.params
+                merged_file.root.events.params.append(event_params.read())
 
-            print(f'Subset {i_subset}')
+    # --- saving the subarray description ---
+    subarray = SubarrayDescription.from_hdf(file_paths[0])
+    subarray.to_hdf(output_file)    
 
-    # --- merge the subset files ---
-    paths_list = glob.glob(f'{dir_tmp}/subset*.h5')
-    paths_list.sort()
-
-    data_merged = pd.DataFrame()
-
-    print('\nMerging the subset files:')
-
-    for path in paths_list:
-
-        print(path)
-
-        df = pd.read_hdf(path, key='events/params')
-        data_merged = data_merged.append(df)
-
-        os.remove(path)
-
-    if output_data != None:
-        
-        output_dir = str(Path(output_data).parent)
-        os.makedirs(output_dir, exist_ok=True)
-
-        data_merged.to_hdf(output_data, key='events/params')
-
-        print(f'\nOutput data file: {output_data}')
-
-    return data_merged
-
-
-def merge_hdf_files_run_wise(input_data_mask, n_files):
-
-    # --- get observation IDs ---
-    obs_ids_list = get_obs_ids_from_name(input_data_mask)
-
-    print(f'\nFound the following observation IDs: {obs_ids_list}')
-
-    # --- merge the input data run-wise ---
-    parent_dir = str(Path(input_data_mask).parent)
-    output_dir = f'{parent_dir}/merged'
-
-    print(f'\nOutput directory: {output_dir}')
-
-    for obs_id in obs_ids_list:
-
-        print(f'\nRun{obs_id}:')
-
-        data_mask = f'{parent_dir}/*Run{obs_id}*'
-
-        file_name = re.findall('(\w+)_Run.*', glob.glob(data_mask)[0])[0]
-
-        output_data = f'{output_dir}/{file_name}_Run{obs_id}.h5'
-
-        merge_hdf_files(data_mask, n_files, output_data)
+    logger.info(f'\nOutput data file: {output_file}')
+    logger.info('\nDone.')
 
 
 def main():
 
     start_time = time.time()
 
-    arg_parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()
 
-    arg_parser.add_argument(
-        '--input-data', '-i', dest='input_data', type=str,
-        help='Path to input data files.'
+    parser.add_argument(
+        '--input-files', '-i', dest='input_files', type=str,
+        help='Path to input HDF data files.'
     )
 
-    arg_parser.add_argument(
-        '--n-files', '-n', dest='n_files', type=int, default=50,
-        help='Number of data files merged to a subset file.'
+    parser.add_argument(
+        '--output-file', '-o', dest='output_file', type=str, default='./merged_data.h5',
+        help='Path to an output HDF data file.'
     )
 
-    arg_parser.add_argument(
-        '--run-wise', '-r', dest='run_wise', type=str, default='False',
-        help='Whether the input data files are merged run-wise or not, "True" or "False"'
-    )
+    args = parser.parse_args()
 
-    arg_parser.add_argument(
-        '--output-data', '-o', dest='output_data', type=str, default=None,
-        help='Path to an output data file. The output directory will be created if it does not exist.'
-    )
+    merge_hdf_files(args.input_files, args.output_file) 
 
-    args = arg_parser.parse_args()
-
-    if args.run_wise == 'True':
-        merge_hdf_files_run_wise(args.input_data, args.n_files)
-
-    elif args.run_wise == 'False':
-        merge_hdf_files(args.input_data, args.n_files, args.output_data)
-
-    print('\nDone.')
-    print(f'\nelapsed time = {time.time() - start_time:.0f} [sec]\n')  
+    end_time = time.time()
+    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':

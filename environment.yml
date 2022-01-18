@@ -1,0 +1,54 @@
+# A conda environment with all useful package for ctapipe developers
+name: magic-lst1
+channels:
+  - default
+  - cta-observatory
+dependencies:
+  - python=3.7
+  - pip
+  - astropy
+  - black
+  - bokeh=1
+  - conda-forge::nbsphinx
+  - conda-forge::ctapipe=0.12
+  - conda-forge::gammapy=0.18.2
+  - cython
+  - graphviz
+  - h5py
+  - iminuit>=2
+  - ipython
+  - ipywidgets
+  - joblib
+  - jupyter
+  - matplotlib
+  - numba
+  - numpy>=1.17
+  - numpydoc
+  - pandas
+  - pre-commit
+  - psutil
+  - pytables
+  - pytest
+  - pytest-cov
+  - pytest-runner
+  - pyyaml
+  - scikit-learn
+  - scipy
+  - setuptools
+  - sphinx=3.5
+  - sphinx-automodapi
+  - sphinx_rtd_theme
+  - tqdm
+  - traitlets
+  - vitables
+  - wheel
+  - xz
+  - zlib
+  - zstandard
+  - conda-forge::eventio>=1.5.0
+  - conda-forge::corsikaio
+  - pip:
+      - ctapipe_io_magic~=0.4.1
+      - uproot~=4.1
+      - ctaplot~=0.5.3
+      - pyirf~=0.5.0

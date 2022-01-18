@@ -1,10 +1,32 @@
-# ICRR-MPP analysis pipeline for MAGIC and LST data
+# magic-cta-pipe
 
-This repository contains the scripts needed to perform MAGIC+LST analysis with ctapipe.
+Repository for the analysis of MAGIC and MAGIC+LST1 data, based on [*ctapipe*](https://github.com/cta-observatory/ctapipe).
+
+* Code: https://github.com/cta-observatory/magic-cta-pipe
 
 ### Note: This package is under heavy development. Usage at your own risk, it is recommended to contact one of the latest committers if you plan to use this package.
 
+# Installation for users
 
+*magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
+first, to isolate the installed version and dependencies from your master environment (this is optional).
+
+The following command will set up a conda virtual environment, add the necessary package channels, and install *magic-cta-pipe* and its dependencies::
+
+    git clone https://github.com/cta-observatory/magic-cta-pipe.git
+    cd magic-cta-pipe
+    conda env create -n magic-lst1 -f environment.yml
+    conda activate magic-lst1
+    pip install .
+
+# Available scripts
+
+*magic-cta-pipe* scripts to perform the analysis of MAGIC only and MAGIC+LST1 data. Within the *scripts* folder we have the subdirectories:
+
+* *magic*: scripts for the analysis of MAGIC data (currently under heavy restructuring in order to be used with ctapipe v0.12)
+* *lst1_magic_real*: scripts for the MAGIC+LST1 analysis (updated to be used with ctapipe v0.12)
+
+<!--
 A brief description:
 1. `config/CrabNebula.yaml`: an example of the configuration file, used by all the scripts.
 2. `config/magic-cta-pipe_config_stereo.yaml`: an example of the configuration file for stereo analysis.
@@ -60,8 +82,7 @@ Each telescope key is used to specify the input and output files at different st
 
 * `input_mask`: it specifies the input files to the pipeline; absolute and relative paths can be used; wildcards are allowed;
 * `hillas_output`: it specifies the name of the output file of the script `hillas_preprocessing.py`;
-* `reco_output`: it specifies the name of the output file after applying the Random Forests to the data. **NB:** this key must be set
-only for the `test_sample` data, either simulated or real.
+* `reco_output`: it specifies the name of the output file after applying the Random Forests to the data. **NB:** this key must be set only for the `test_sample` data, either simulated or real.
 
 The `image_cleaning` key is used to specify the cleaning parameters. In particular, since for both MAGIC telescopes the cleaning settings
 are the same, only one key called `magic` is used. As for `data_files`, when in the future LST1 will be added in the analysis, an additional
@@ -72,11 +93,8 @@ Each of these keys have other sub-keys:
 
 * `save_name` is the name of the output file for the specific Random Forest
 * `cuts` is a string to be applied on the input data to the Random Forests
-* `settings` is a set of keys specifying the settings for each Random Forest e.g. the number of estimators, the minimum number of events in each
-leaf and the number of jobs
-* `features` is a list of strings specifying the parameters to be used in the Random Forests training. **NB:** for the `direction_rf` key, `features`
-is actually a dictionary with two keys, `disp` and `pos_angle_shift`. For each of those keys, a list is used to specify the parameters to be used for
-each of those Random Forests.
+* `settings` is a set of keys specifying the settings for each Random Forest e.g. the number of estimators, the minimum number of events in each leaf and the number of jobs
+* `features` is a list of strings specifying the parameters to be used in the Random Forests training. **NB:** for the `direction_rf` key, `features` is actually a dictionary with two keys, `disp` and `pos_angle_shift`. For each of those keys, a list is used to specify the parameters to be used for each of those Random Forests.
 
 The `irf` key has only one sub-key, called `output_name`, which is the name (plus path) of the file where IRF will be stored in FITS format.
 
@@ -247,3 +265,4 @@ $ python make_event_lists.py --config=config.yaml
 ```
 
 If you used the `--stereo` option for the previous scripts, then also `make_event_lists.py` should be called with the `--stereo` option.
+-->

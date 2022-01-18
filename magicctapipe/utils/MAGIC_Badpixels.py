@@ -5,9 +5,10 @@ __all__ = [
     "MAGICBadPixelsCalc",
 ]
 
+
 class MAGICBadPixelsCalc():
 
-    def __init__(self, camera=None, config=None, tool=None, **kwargs):
+    def __init__(self, is_simulation, camera=None, config=None, tool=None, **kwargs):
 
         # MAGIC telescope description
         if camera == None:
@@ -61,8 +62,7 @@ class MAGICBadPixelsCalc():
         self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
 
         # Allow processing of MCs (do nothing, but also don't crash)
-        self.is_mc = False
-        self.check_is_mc = False
+        self.is_mc = is_simulation
 
     def _check_new_run(self, event):
         """
@@ -81,23 +81,6 @@ class MAGICBadPixelsCalc():
             self.n_samples_dead = np.zeros(2, dtype=np.int16) - 1
 
             self.current_obs_id = event.index.obs_id
-
-    def _check_is_mc(self, event):
-        """
-        Checks once whether MC events are passed and avoids crashing.
-
-        Returns
-        -------
-         self.is_mc, self.check_is_mc
-        """
-
-        if not self.check_is_mc:
-            if event.meta['is_simulation'] == True:
-                self.is_mc = True
-
-                print("Bad pixel finder run on MCs, will do nothing.")
-            self.check_is_mc = True
-        return
 
     def _check_pedestal_rms(self, charge_std):
         """
@@ -200,7 +183,6 @@ class MAGICBadPixelsCalc():
 
         badrmspixel_mask = [None, None]
 
-        self._check_is_mc(event)
         if self.is_mc:
             for tel_id in event.trigger.tels_with_trigger:
                 badrmspixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
@@ -234,7 +216,6 @@ class MAGICBadPixelsCalc():
         """
         badrmspixel_indices = [[None],[None]]
 
-        self._check_is_mc(event)
         if self.is_mc:
             return badrmspixel_indices
 
@@ -291,7 +272,6 @@ class MAGICBadPixelsCalc():
 
         deadpixel_mask = [[None],[None]]
 
-        self._check_is_mc(event)
         if self.is_mc:
             for tel_id in event.trigger.tels_with_trigger:
                 deadpixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
@@ -331,7 +311,6 @@ class MAGICBadPixelsCalc():
         """
         badpixel_mask = [[None],[None]]
 
-        self._check_is_mc(event)
         if self.is_mc:
             for tel_id in event.trigger.tels_with_trigger:
                 badpixel_mask[tel_id - 1] = np.zeros(self.n_camera_pixels, dtype=np.bool)
