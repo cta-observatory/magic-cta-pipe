@@ -7,7 +7,7 @@ from .lst1_magic import (
     train_rf_classifier,
     magic_cal_to_dl1,
     merge_hdf_files,
-    )
+)
 
 __all__ = [
     "dl1_to_dl2",
