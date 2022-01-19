@@ -13,18 +13,18 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 __all__ = [
-    'EnergyEstimator',
-    'DirectionEstimator',
+    'EnergyRegressor',
+    'DirectionRegressor',
     'EventClassifier'
 ]
 
-class EnergyEstimator:
+class EnergyRegressor:
 
     def __init__(self, feature_names=[], rf_settings={}):
 
         self.feature_names = feature_names
         self.rf_settings = rf_settings
-        self.telescope_rfs = dict()
+        self.telescope_rfs = {}
 
     def fit(self, input_data):
 
@@ -92,7 +92,7 @@ class EnergyEstimator:
 
     def save(self, file_name):
 
-        output_data = dict()
+        output_data = {}
 
         output_data['feature_names'] = self.feature_names
         output_data['rf_settings'] = self.rf_settings 
@@ -109,14 +109,13 @@ class EnergyEstimator:
         self.telescope_rfs = input_data['telescope_rfs']
 
 
-class DirectionEstimator:
+class DirectionRegressor:
 
-    def __init__(self, feature_names=[], tel_descriptions={}, rf_settings={}):
+    def __init__(self, feature_names=[], rf_settings={}):
 
         self.feature_names = feature_names
-        self.tel_descriptions = tel_descriptions
         self.rf_settings = rf_settings
-        self.telescope_rfs = dict()
+        self.telescope_rfs = {}
 
     def fit(self, input_data):
 
@@ -140,7 +139,7 @@ class DirectionEstimator:
 
             self.telescope_rfs[tel_id] = regressor
 
-    def predict(self, input_data):
+    def predict(self, input_data, tel_descriptions):
 
         param_names = self.feature_names + ['alt_tel', 'az_tel', 'x', 'y', 'psi']
 
@@ -164,14 +163,14 @@ class DirectionEstimator:
 
             # --- reconstruct the Alt/Az directions per flip ---
             tel_pointing = AltAz(
-                alt=u.Quantity(df_tel['alt_tel'].values, u.deg), az=u.Quantity(df_tel['az_tel'].values, u.deg)
+                alt=u.Quantity(df_tel['alt_tel'].values, u.rad), az=u.Quantity(df_tel['az_tel'].values, u.rad)
             )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
             camera_frame = CameraFrame(
-                focal_length=self.tel_descriptions[tel_id].optics.equivalent_focal_length, 
-                rotation=self.tel_descriptions[tel_id].camera.geometry.cam_rotation
+                focal_length=tel_descriptions[tel_id].optics.equivalent_focal_length, 
+                rotation=tel_descriptions[tel_id].camera.geometry.cam_rotation
             )
 
             event_coord = SkyCoord(
@@ -254,7 +253,7 @@ class DirectionEstimator:
         reco_params.sort_index(inplace=True)
 
         df_dist = pd.DataFrame(
-            data={'dist_min': distances_min}, index=reco_params.groupby(['obs_id', 'event_id']).size().index
+            data={'dist_sum': distances_min}, index=reco_params.groupby(['obs_id', 'event_id']).size().index
         )
 
         reco_params = reco_params.join(df_dist)
@@ -296,10 +295,9 @@ class DirectionEstimator:
 
     def save(self, file_name):
 
-        output_data = dict()
+        output_data = {}
 
         output_data['feature_names'] = self.feature_names
-        output_data['tel_descriptions'] = self.tel_descriptions
         output_data['rf_settings'] = self.rf_settings
         output_data['telescope_rfs'] = self.telescope_rfs
 
@@ -310,7 +308,6 @@ class DirectionEstimator:
         input_data = joblib.load(file_name)
 
         self.feature_names = input_data['feature_names']
-        self.tel_descriptions = input_data['tel_descriptions']
         self.rf_settings = input_data['rf_settings']
         self.telescope_rfs = input_data['telescope_rfs']
         
@@ -321,7 +318,7 @@ class EventClassifier:
 
         self.feature_names = feature_names
         self.rf_settings = rf_settings
-        self.telescope_rfs = dict()
+        self.telescope_rfs = {}
 
     def fit(self, input_data):
 
@@ -377,7 +374,7 @@ class EventClassifier:
 
     def save(self, file_name):
 
-        output_data = dict()
+        output_data = {}
 
         output_data['feature_names'] = self.feature_names
         output_data['rf_settings'] = self.rf_settings 
