@@ -8,7 +8,6 @@ by magic-cta-pipe.
 """
 
 import sys
-import re
 import argparse
 from pathlib import Path
 
@@ -19,7 +18,7 @@ import tables
 from ctapipe.core.container import Container, Field
 from ctapipe.io import HDF5TableWriter, HDF5TableReader
 
-from ctapipe_io_magic import MAGICEventSource
+from ctapipe_io_magic import MAGICEventSource, MARSDataLevel
 
 
 def parse_args(args):
@@ -74,32 +73,6 @@ class ImageContainerCleaned(Container):
         None,
         "Numpy array of pixels after cleaning." "Shape: (n_pixel)", dtype=">f8", ndim=1,
     )
-
-
-def get_run_info_from_name(file_name):
-    file_name = Path(file_name)
-    file_name = file_name.name
-    mask_data = r".*\d+_(\d+)_S_.*"
-    mask_mc = r".*_M\d_za\d+to\d+_\d_(\d+)_Y_.*"
-    mask_mc_alt = r".*_M\d_\d_(\d+)_.*"
-    if re.findall(mask_data, file_name):
-        parsed_info = re.findall(mask_data, file_name)
-        is_mc = False
-    elif re.findall(mask_mc, file_name):
-        parsed_info = re.findall(mask_mc, file_name)
-        is_mc = True
-    else:
-        parsed_info = re.findall(mask_mc_alt, file_name)
-        is_mc = True
-
-    try:
-        run_number = int(parsed_info[0])
-    except IndexError:
-        raise IndexError(
-            'Can not identify the run number and type (data/MC) of the file '
-            '{:s}'.format(file_name))
-
-    return run_number, is_mc
 
 
 def build_image_container_calibrated(run_number, event_id, tel, image_calibrated, image_cleaned):
@@ -259,7 +232,7 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
 
                 batch_no = 0
                 if save_calibrated:
-                    if datalevel == 1:
+                    if datalevel == MARSDataLevel.STAR:
                         branches = [
                             "UprootImageOrig",
                             "UprootImageOrigClean",
@@ -275,7 +248,7 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                             "MRawEvtHeader_2.fStereoEvtNumber"
                         ]
                 else:
-                    if datalevel == 1:
+                    if datalevel == MARSDataLevel.STAR:
                         branches = [
                             "UprootImageOrigClean",
                             "MRawEvtHeader.fStereoEvtNumber"
@@ -298,13 +271,13 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                     if events_count > max_events and max_events > 0:
                         break
                     print(f"Writing batch of events {batch_no+1}")
-                    if datalevel == 1:
+                    if datalevel == MARSDataLevel.STAR:
                         for j in range(len(batch["MRawEvtHeader.fStereoEvtNumber"])):
                             if save_calibrated:
                                 image_container = build_image_container_calibrated(
                                     run_number,
                                     batch["MRawEvtHeader.fStereoEvtNumber"][j],
-                                    1,
+                                    telescope,
                                     np.array(batch["UprootImageOrig"][j]),
                                     np.array(batch["UprootImageOrigClean"][j])
                                     )
@@ -317,7 +290,7 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                 image_container = build_image_container_cleaned(
                                         run_number,
                                         batch["MRawEvtHeader.fStereoEvtNumber"][j],
-                                        1,
+                                        telescope,
                                         np.array(batch["UprootImageOrigClean"][j])
                                     )
                                 # write image first, so we are sure nothing here modifies it
