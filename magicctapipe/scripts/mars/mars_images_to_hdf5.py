@@ -7,6 +7,7 @@ This can be later used to compare the cleaned images as produced by MARS and
 by magic-cta-pipe.
 """
 
+import re
 import sys
 import argparse
 from pathlib import Path
@@ -45,6 +46,98 @@ def parse_args(args):
     )
 
     return parser.parse_args(args)
+
+
+def get_run_info_from_name(file_name):
+    """
+    This internal method extracts the run number and
+    type (data/MC) from the specified file name.
+
+    Parameters
+    ----------
+    file_name : str
+        A file name to process.
+
+    Returns
+    -------
+    run_number: int
+        The run number of the file.
+    is_mc: Bool
+        Flag to tag MC files
+    telescope: int
+        Number of the telescope
+    datalevel: MARSDataLevel
+        Data level according to MARS
+
+    Raises
+    ------
+    IndexError
+        Description
+    """
+
+    file_name = str(file_name)
+    mask_data_calibrated = r"\d{8}_M(\d+)_(\d+)\.\d+_Y_.*"
+    mask_data_star = r"\d{8}_M(\d+)_(\d+)\.\d+_I_.*"
+    mask_data_superstar = r"\d{8}_(\d+)_S_.*"
+    mask_data_melibea = r"\d{8}_(\d+)_Q_.*"
+    mask_mc_calibrated = r"GA_M(\d)_za\d+to\d+_\d_(\d+)_Y_.*"
+    mask_mc_star = r"GA_M(\d)_za\d+to\d+_\d_(\d+)_I_.*"
+    mask_mc_superstar = r"GA_za\d+to\d+_\d_S_.*"
+    mask_mc_melibea = r"GA_za\d+to\d+_\d_Q_.*"
+    if re.match(mask_data_calibrated, file_name) is not None:
+        parsed_info = re.match(mask_data_calibrated, file_name)
+        telescope = int(parsed_info.group(1))
+        run_number = int(parsed_info.group(2))
+        datalevel = MARSDataLevel.CALIBRATED
+        is_mc = False
+    elif re.match(mask_data_star, file_name) is not None:
+        parsed_info = re.match(mask_data_star, file_name)
+        telescope = int(parsed_info.group(1))
+        run_number = int(parsed_info.group(2))
+        datalevel = MARSDataLevel.STAR
+        is_mc = False
+    elif re.match(mask_data_superstar, file_name) is not None:
+        parsed_info = re.match(mask_data_superstar, file_name)
+        telescope = None
+        run_number = int(parsed_info.grou(1))
+        datalevel = MARSDataLevel.SUPERSTAR
+        is_mc = False
+    elif re.match(mask_data_melibea, file_name) is not None:
+        parsed_info = re.match(mask_data_melibea, file_name)
+        telescope = None
+        run_number = int(parsed_info.grou(1))
+        datalevel = MARSDataLevel.MELIBEA
+        is_mc = False
+    elif re.match(mask_mc_calibrated, file_name) is not None:
+        parsed_info = re.match(mask_mc_calibrated, file_name)
+        telescope = int(parsed_info.group(1))
+        run_number = int(parsed_info.group(2))
+        datalevel = MARSDataLevel.CALIBRATED
+        is_mc = True
+    elif re.match(mask_mc_star, file_name) is not None:
+        parsed_info = re.match(mask_mc_star, file_name)
+        telescope = int(parsed_info.group(1))
+        run_number = int(parsed_info.group(2))
+        datalevel = MARSDataLevel.STAR
+        is_mc = True
+    elif re.match(mask_mc_superstar, file_name) is not None:
+        parsed_info = re.match(mask_mc_superstar, file_name)
+        telescope = None
+        run_number = None
+        datalevel = MARSDataLevel.SUPERSTAR
+        is_mc = True
+    elif re.match(mask_mc_melibea, file_name) is not None:
+        parsed_info = re.match(mask_mc_melibea, file_name)
+        telescope = None
+        run_number = None
+        datalevel = MARSDataLevel.MELIBEA
+        is_mc = True
+    else:
+        raise IndexError(
+            'Can not identify the run number and type (data/MC) of the file'
+            '{:s}'.format(file_name))
+
+    return run_number, is_mc, telescope, datalevel
 
 
 class ImageContainerCalibrated(Container):
@@ -105,6 +198,8 @@ def build_image_container_calibrated(run_number, event_id, tel, image_calibrated
         image_calibrated=image_calibrated,
         image_cleaned=image_cleaned,
     )
+    # add parameters:
+    # size, width, length, cog, slope, delta, leakage
 
 
 def build_image_container_cleaned(run_number, event_id, tel, image_cleaned):
@@ -205,7 +300,7 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
             bitshuffle=False,       # for BLOSC, shuffle bits for better compression
         )
 
-        output_filename = Path(mars_file).name.replace(".root", ".h5")
+        output_filename = Path(mars_file).with_suffix('.h5')
 
         with HDF5TableWriter(
             filename=output_filename,
@@ -216,11 +311,11 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
             # overwrite=True,
         ) as writer:
 
-            source = MAGICEventSource(input_url=mars_file)
+            run_info = get_run_info_from_name(Path(mars_file).name)
 
-            run_number = source.obs_ids[0]
-            telescope = source.telescope
-            datalevel = source.mars_datalevel
+            run_number = run_info[0]
+            telescope = run_info[2]
+            datalevel = run_info[3]
             print(f"Opening {mars_file} ...")
 
             with uproot.open(mars_file) as sstar:
