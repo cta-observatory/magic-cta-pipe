@@ -216,12 +216,11 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
             # overwrite=True,
         ) as writer:
 
-            with MAGICEventSource(input_url=mars_file) as source:
-                run_info = source.get_run_info_from_name(mars_file)
+            source = MAGICEventSource(input_url=mars_file)
 
-            run_number = run_info[0]
-            telescope = run_info[2]
-            datalevel = run_info[3]
+            run_number = source.obs_ids[0]
+            telescope = source.telescope
+            datalevel = source.mars_datalevel
             print(f"Opening {mars_file} ...")
 
             with uproot.open(mars_file) as sstar:
