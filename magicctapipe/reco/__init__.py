@@ -5,17 +5,17 @@ from .classifier_utils import (
     print_par_imp_classifier,
     load_init_data_classifier,
     check_train_test_intersections_classifier,
-    )
+)
 
 from .direction_utils import (
     compute_separation_angle_direction,
-    )
+)
 
 from .energy_utils import (
     GetHist2D_energy,
     evaluate_performance_energy,
     plot_migmatrix,
-    )
+)
 
 from .event_processing import (
     RegressorClassifierBase,
@@ -29,13 +29,19 @@ from .event_processing import (
     DirectionEstimatorPandas,
     EventClassifierPandas,
     DirectionStereoEstimatorPandas,
-    )
+)
 
 from .global_utils import (
     compute_event_weights,
     get_weights_mc_dir_class,
     check_train_test_intersections,
-    )
+)
+
+from .processors import (
+    'EnergyRegressor',
+    'DirectionRegressor',
+    'EventClassifier',
+)
 
 __all__ = [
     "GetHist_classifier",
@@ -62,5 +68,8 @@ __all__ = [
     "compute_event_weights",
     "get_weights_mc_dir_class",
     "check_train_test_intersections",
+    "EnergyRegressor",
+    "DirectionRegressor",
+    "EventClassifier",
 ]
 
