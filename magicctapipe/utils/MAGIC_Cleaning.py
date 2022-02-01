@@ -4,12 +4,12 @@ import numpy as np
 from scipy.sparse.csgraph import connected_components
 
 __all__ = [
-    "magic_clean",
-    "pixel_treatment",
+    'MAGICClean',
+    'PixelTreatment',
 ]
 
 
-class magic_clean():
+class MAGICClean:
 
     def __init__(self, camera, configuration):
 
@@ -172,7 +172,7 @@ class magic_clean():
             self.event_image[self.unmapped_mask] = 0.0
 
         else:
- 
+
             self.event_image = copy.copy(event_image)
             self.event_pulse_time = copy.copy(event_pulse_time)
             self.unmapped_mask = []
@@ -329,7 +329,7 @@ class magic_clean():
             return mask
 
     def magic_clean_step2b(self, mask):
-        
+
         if np.sum(mask) == 0:
             return mask
 
@@ -350,7 +350,7 @@ class magic_clean():
             island_sizes = np.zeros(num_islands)
             for i in range(num_islands):
                 island_sizes[i] = self.event_image[mask][labels == i].sum()
-              
+
             # Disabling pixels for all islands save the brightest one
             brightest_id = island_sizes.argmax() + 1
 
@@ -377,11 +377,10 @@ class magic_clean():
 
         selection = []
         core_mask = mask.copy()
-        
+
         pixels_with_picture_neighbors_matrix = copy.copy(self.camera.neighbor_matrix)
 
         for pixel in np.where(self.event_image)[0]:
-            
 
             if pixel in np.where(core_mask)[0]:
                 continue
@@ -391,7 +390,7 @@ class magic_clean():
 
             hasNeighbor = False
             if self.configuration['usetime']:
-                
+
                 neighbors = np.where(pixels_with_picture_neighbors_matrix[pixel])[0]
 
                 for neighbor in neighbors:
@@ -409,12 +408,12 @@ class magic_clean():
 
                 if not hasNeighbor:
                     continue
-                
+
             if not pixels_with_picture_neighbors_matrix.dot(core_mask)[pixel]:
                 continue
-            
+
             selection.append(pixel)
-            
+
         mask[selection] = True
         return mask
 
@@ -445,7 +444,7 @@ class magic_clean():
             hasNeighbor = np.minimum(np.sum(time_selection*neighbors,axis=1),1).astype(bool)
             pixels = boundary_pixels[hasNeighbor]
 
-        selection = pixels[pixels_with_picture_neighbors_matrix.dot(core_mask)[pixels]]         
+        selection = pixels[pixels_with_picture_neighbors_matrix.dot(core_mask)[pixels]]
         mask[selection] = True
         return mask
 
@@ -457,7 +456,7 @@ class magic_clean():
         mask[pixels_to_remove] = False
         return mask
 
-class pixel_treatment():
+class PixelTreatment:
 
     def __init__(self, camera, configuration):
 
