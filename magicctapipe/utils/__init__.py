@@ -27,10 +27,6 @@ from .gti import (
     GTIGenerator,
 )
 
-from .leakage import (
-    get_leakage,
-)
-
 from .functions import (
     crab_magic,
     calc_impact,
@@ -86,7 +82,6 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
-    "get_leakage",
     "crab_magic",
     "calc_impact",
     "calc_nsim",
