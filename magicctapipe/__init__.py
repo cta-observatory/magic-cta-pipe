@@ -1,16 +1,16 @@
-from . import reco
+from . import image
 from . import irfs
-from . import train
-from . import utils
+from . import reco
 from . import scripts
+from . import utils
 
 from .version import __version__
 
 __all__ = [
-    "reco",
+    "image",
     "irfs",
-    "train",
-    "utils",
+    "reco",
     "scripts",
+    "utils",
     "__version__",
 ]

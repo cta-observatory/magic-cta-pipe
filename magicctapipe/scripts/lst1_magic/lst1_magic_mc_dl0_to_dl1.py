@@ -41,14 +41,14 @@ from ctapipe.image import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
-from magicctapipe.utils import (
+from magicctapipe.image import (
     add_noise_in_pixels,
     set_numba_seed,
     random_psf_smearer,
     apply_dynamic_cleaning,
-    MAGIC_Cleaning,
-    calc_impact
+    MAGICClean,
 )
+from magicctapipe.utils import calc_impact
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())

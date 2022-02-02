@@ -27,7 +27,7 @@ import argparse
 import warnings
 import numpy as np
 import pandas as pd
-from magicctapipe.utils import (
+from magicctapipe.reco import (
     EnergyRegressor,
     DirectionRegressor,
     EventClassifier

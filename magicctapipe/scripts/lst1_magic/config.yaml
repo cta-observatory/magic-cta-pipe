@@ -56,13 +56,11 @@ MAGIC:
         boundary_thresh: 3.5
         max_time_off: 7.38
         max_time_diff: 2.46
-        usetime: true
-        usesum: true
+        use_time: true
+        use_sum: true
+        find_hotpixels: 'auto'
 
-    bad_pixels:
-        pedestalLevel: 400
-        pedestalLevelVariance: 4.5
-        pedestalType: 'FromExtractorRndm'
+    process_run: false
 
 
 event_coincidence:
