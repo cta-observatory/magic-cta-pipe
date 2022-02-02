@@ -38,9 +38,16 @@ from .global_utils import (
 )
 
 from .processors import (
-    'EnergyRegressor',
-    'DirectionRegressor',
-    'EventClassifier',
+    EnergyRegressor,
+    DirectionRegressor,
+    EventClassifier,
+)
+
+from .stereo import (
+    write_hillas,
+    check_write_stereo,
+    check_stereo,
+    write_stereo,
 )
 
 __all__ = [
@@ -71,5 +78,9 @@ __all__ = [
     "EnergyRegressor",
     "DirectionRegressor",
     "EventClassifier",
+    "write_hillas",
+    "check_write_stereo",
+    "check_stereo",
+    "write_stereo",
 ]
 
