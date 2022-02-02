@@ -12,7 +12,7 @@ from ctapipe.image import (
     number_of_islands,
     hillas_parameters,
     timing_parameters,
-    leakage_parametes,
+    leakage_parameters,
     apply_time_delta_cleaning,
 )
 
@@ -105,12 +105,12 @@ class MAGICClean:
                 fast = False
 
             treatment_config = dict(
-                use_interpolation = use_interpolation,
-                use_process_pedestal_evt = use_process_pedestal_evt,
-                use_process_times = use_process_times,
-                minimum_number_of_neighbors = minimum_number_of_neighbors,
-                fast = fast,
-                )
+                use_interpolation=use_interpolation,
+                use_process_pedestal_evt=use_process_pedestal_evt,
+                use_process_times=use_process_times,
+                minimum_number_of_neighbors=minimum_number_of_neighbors,
+                fast=fast,
+            )
 
             self.pixel_treatment = PixelTreatment(self.camera,treatment_config)
 

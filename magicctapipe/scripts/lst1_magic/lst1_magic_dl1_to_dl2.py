@@ -27,14 +27,17 @@ import numpy as np
 import pandas as pd
 from astropy import units as u
 from astropy.time import Time
-from magicctapipe.utils import (
+
+from ctapipe.instrument import SubarrayDescription
+
+from magicctapipe.reco import (
     EnergyRegressor,
     DirectionRegressor,
     EventClassifier,
-    transform_to_radec
 )
 
-from ctapipe.instrument import SubarrayDescription
+from magicctapipe.utils import transform_to_radec
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
