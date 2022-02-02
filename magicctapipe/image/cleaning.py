@@ -33,11 +33,11 @@ class MAGICClean:
         self.configuration = configuration
         self.camera = camera
 
-        if configuration['usesum']:
+        if configuration['use_sum']:
 
-            self.NN2 = self.GetListOfNN(NN_size = 2)
-            self.NN3 = self.GetListOfNN(NN_size = 3)
-            self.NN4 = self.GetListOfNN(NN_size = 4)
+            self.NN2 = self.GetListOfNN(NN_size=2)
+            self.NN3 = self.GetListOfNN(NN_size=3)
+            self.NN4 = self.GetListOfNN(NN_size=4)
 
         # Set the XNN thresholds and windows if they have not already been defined.
         # The defaults are from the expert values values in the star_MX_OSA.rc file.
@@ -72,12 +72,12 @@ class MAGICClean:
         else:
             self.Window4NN = 1.80
 
-        if 'findhotpixels' in configuration:
-            self.findhotpixels = configuration['findhotpixels']
+        if 'find_hotpixels' in configuration:
+            self.find_hotpixels = configuration['find_hotpixels']
         else:
-            self.findhotpixels = False
+            self.find_hotpixels = False
 
-        if self.findhotpixels:
+        if self.find_hotpixels:
 
             if 'use_interpolation' in configuration:
                 use_interpolation = configuration['use_interpolation']
@@ -112,9 +112,9 @@ class MAGICClean:
                 fast = fast,
                 )
 
-            self.pixel_treatment = pixel_treatment(self.camera,treatment_config)
+            self.pixel_treatment = PixelTreatment(self.camera,treatment_config)
 
-    def GetListOfNN(self,NN_size = 2, bad_pixels=None):
+    def GetListOfNN(self, NN_size=2, bad_pixels=None):
 
         NN = []
         pixels = list(range(self.camera.n_pixels))
@@ -178,12 +178,12 @@ class MAGICClean:
 
         return np.unique(NN,axis=0)
 
-    def clean_image(self,event_image,event_pulse_time, unsuitable_mask = None):
+    def clean_image(self, event_image, event_pulse_time, unsuitable_mask=None):
 
-        if unsuitable_mask is None and self.findhotpixels:
-            raise ValueError("findhotpixels set to %s but not unsuitable_mask provided." % self.findhotpixels)
+        if unsuitable_mask is None and self.find_hotpixels:
+            raise ValueError("find_hotpixels set to %s but not unsuitable_mask provided." % self.find_hotpixels)
 
-        if self.findhotpixels:
+        if self.find_hotpixels:
 
             self.event_image, self.event_pulse_time, self.unsuitable_mask, self.unmapped_mask = self.pixel_treatment.treat(event_image, event_pulse_time,unsuitable_mask)
             self.event_image[self.unmapped_mask] = 0.0
@@ -198,7 +198,7 @@ class MAGICClean:
         # try:
         clean_mask = np.asarray([False]*self.camera.n_pixels)
 
-        if self.configuration['usesum']:
+        if self.configuration['use_sum']:
             clean_mask = self.magic_clean_step1Sum()
         else:
             clean_mask = self.magic_clean_step1()
@@ -240,9 +240,9 @@ class MAGICClean:
 
     def magic_clean_step1Sum(self):
 
-        sumthresh2NN = self.SumThresh2NNPerPixel * 2 * self.configuration['picture_thresh'];
-        sumthresh3NN = self.SumThresh3NNPerPixel * 3 * self.configuration['picture_thresh'];
-        sumthresh4NN = self.SumThresh4NNPerPixel * 4 * self.configuration['picture_thresh'];
+        sumthresh2NN = self.SumThresh2NNPerPixel * 2 * self.configuration['picture_thresh']
+        sumthresh3NN = self.SumThresh3NNPerPixel * 3 * self.configuration['picture_thresh']
+        sumthresh4NN = self.SumThresh4NNPerPixel * 4 * self.configuration['picture_thresh']
 
         clip2NN = 2.2  * sumthresh2NN/2.
         clip3NN = 1.05 * sumthresh3NN/3.
@@ -250,7 +250,7 @@ class MAGICClean:
 
         mask = np.asarray([False]*len(self.event_image))
 
-        if self.findhotpixels:
+        if self.find_hotpixels:
 
             bad_pixels = np.where(self.unmapped_mask)[0]
 
@@ -284,7 +284,7 @@ class MAGICClean:
         mask = self.event_image <= self.configuration['picture_thresh']
         return ~mask
 
-    def magic_clean_step2(self,mask):
+    def magic_clean_step2(self, mask):
 
         if np.sum(mask) == 0:
             return mask
@@ -293,7 +293,7 @@ class MAGICClean:
             n = 0
             size = 0
 
-            if self.configuration['usetime']:
+            if self.configuration['use_time']:
 
                 neighbors = copy.copy(self.camera.neighbor_matrix)
                 neighbors[self.unmapped_mask][:,self.unmapped_mask] = False
@@ -371,7 +371,7 @@ class MAGICClean:
             # Disabling pixels for all islands save the brightest one
             brightest_id = island_sizes.argmax() + 1
 
-            if self.configuration['usetime']:
+            if self.configuration['use_time']:
                 brightest_pixel_times = self.event_pulse_time[mask & (island_ids == brightest_id)]
                 brightest_pixel_charges = self.event_image[mask & (island_ids == brightest_id)]
 
@@ -406,7 +406,7 @@ class MAGICClean:
                 continue
 
             hasNeighbor = False
-            if self.configuration['usetime']:
+            if self.configuration['use_time']:
 
                 neighbors = np.where(pixels_with_picture_neighbors_matrix[pixel])[0]
 
@@ -446,7 +446,7 @@ class MAGICClean:
 
         pixels = np.where(boundary_threshold_selection)[0]
 
-        if self.configuration['usetime']:
+        if self.configuration['use_time']:
             boundary_pixels = copy.copy(pixels)
             neighbors = pixels_with_picture_neighbors_matrix[boundary_pixels]
             neighbors[:,~core_mask]=False
@@ -509,7 +509,7 @@ class PixelTreatment:
         self.neighbors_array = self.camera.neighbor_matrix
         self.npix = self.camera.n_pixels
 
-    def treat(self,event_image,event_pulse_time,unsuitable_mask):
+    def treat(self, event_image, event_pulse_time, unsuitable_mask):
 
         self.event_image = event_image
         self.event_pulse_time = event_pulse_time
@@ -535,7 +535,7 @@ class PixelTreatment:
         neighbors_unsuitable[:,self.unsuitable_mask] = False
 
         number_of_neighbors = np.sum(neighbors_unsuitable,axis=1)
-        number_of_neighbors_selection = number_of_neighbors > self.minimum_number_of_neighbors - 1 
+        number_of_neighbors_selection = number_of_neighbors > self.minimum_number_of_neighbors - 1
 
         unsuitable_mask = np.asarray([False]*self.npix)
         unsuitable_mask[self.unsuitable_pixels[number_of_neighbors_selection]] = True
@@ -553,7 +553,7 @@ class PixelTreatment:
         self.unsuitable_mask_new = unsuitable_mask
         self.unsuitable_pixels_new = np.where(self.unsuitable_mask_new)[0]
 
-    def find_two_closest_times(self,times_arr):
+    def find_two_closest_times(self, times_arr):
         n0 = len(times_arr)
         minval = 1e10
         p0 = -1
@@ -602,6 +602,7 @@ class PixelTreatment:
     def interpolate_pedestals(self):
         pass
 
+
 # This function is derived from cta-lstchain v0.8.4 (lstchain/image/cleaning.py)
 def apply_dynamic_cleaning(image, signal_pixels, threshold, fraction):
     """
@@ -636,6 +637,7 @@ def apply_dynamic_cleaning(image, signal_pixels, threshold, fraction):
     mask_dynamic_cleaning = (image >= dynamic_threshold) & signal_pixels
 
     return mask_dynamic_cleaning
+
 
 def get_num_islands_MAGIC(camera, clean_mask, event_image):
     """Eval num islands for MAGIC
