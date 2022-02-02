@@ -18,13 +18,6 @@ from .modifier import (
     random_psf_smearer,
 )
 
-from .stereo import (
-    write_hillas,
-    check_write_stereo,
-    check_stereo,
-    write_stereo,
-)
-
 __all__ = [
     'MAGICClean',
     'PixelTreatment',
@@ -36,10 +29,6 @@ __all__ = [
     'get_leakage',
     'add_noise_in_pixels',
     'set_numba_seed',
-    'random_psf_smearer'
-    'write_hillas',
-    'check_write_stereo',
-    'check_stereo',
-    'write_stereo',
+    'random_psf_smearer',
 ]
 
