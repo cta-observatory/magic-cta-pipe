@@ -249,6 +249,20 @@ def write_hdf5_mc(filelist):
         print(f'Opening {path}')
         with uproot.open(path) as f:
 
+            outfile = str(path).replace(".root", ".h5")
+
+            writer = HDF5TableWriter(filename=outfile, mode="a")
+
+            tr_tel_list_to_mask = subarray.tel_ids_to_mask
+
+            writer.add_column_transform_regexp(
+                table_regexp="dl1/.*",
+                col_regexp="tel_ids",
+                transform=tr_tel_list_to_mask,
+            )
+
+            print(f'Writing in {outfile}')
+
             events_tree = f['Events']
             events = QTable()
 
@@ -256,98 +270,111 @@ def write_hdf5_mc(filelist):
                 events[column] = u.Quantity(events_tree[branch].array(library="np"), copy=False, **kwargs)
 
             events = vstack(events)
-            outfile = str(path).replace(".root", ".h5")
 
-            with HDF5TableWriter(filename=outfile, group_name='dl1', overwrite=True) as writer:
-                print(f'Writing in {outfile}')
-                event_info = dict()
-                hillas_params = dict()
-                timing_params = dict()
-                leakage_params = dict()
-                id_prev = events[0]["event_id"]
-                for event in events:
-                    id_current = event["event_id"]
-                    if id_current < id_prev:
-                        obs_id += 1
-                    # correction needed for true_az since it is in the corsika
-                    # reference frame. Also, wrapped in [-180, 180] interval
-                    # see e.g. MHMcEnergyMigration.cc lines 567-570
-                    true_az = np.pi - event["true_az"].value + magic_bdec.value
-                    if true_az > np.pi:
-                        true_az -= 2*np.pi
-                    # correction needed for tel_az since it is in the corsika
-                    # reference frame. Also, wrapped in [0, 360] interval
-                    # see e.g. MPointingPosCalc.cc lines 149-153
-                    tel_az = np.pi - event["true_pointing_az"].value + magic_bdec.value
-                    if tel_az < 0:
-                        tel_az += 2*np.pi
-                    if tel_az > 2*np.pi:
-                        tel_az -= 2*np.pi
-                    if event["is_valid"] > 0:
-                        is_valid = True
-                    else:
-                        is_valid = False
-                    event_info[1] = InfoContainerMC(
-                            obs_id=obs_id,
-                            event_id=event["event_id"],
-                            tel_id=1,
-                            true_energy=event["true_energy"].to(u.TeV),
-                            true_alt=(90. * u.deg).to(u.rad) - event["true_zd"],
-                            true_az=u.Quantity(true_az, u.rad),
-                            true_core_x=event["true_core_x"].to(u.m),
-                            true_core_y=event["true_core_y"].to(u.m),
-                            tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd"],
-                            tel_az=u.Quantity(tel_az, u.rad),)
-                    event_info[2] = InfoContainerMC(
-                            obs_id=obs_id,
-                            event_id=event["event_id"],
-                            tel_id=2,
-                            true_energy=event["true_energy"].to(u.TeV),
-                            true_alt=(90. * u.deg).to(u.rad) - event["true_zd"],
-                            true_core_x=event["true_core_x"].to(u.m),
-                            true_core_y=event["true_core_y"].to(u.m),
-                            true_az=u.Quantity(true_az, u.rad),
-                            tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd"],
-                            tel_az=u.Quantity(tel_az, u.rad),)
-                    hillas_params[1] = CameraHillasParametersContainer(
-                            x=event["x1"].to(u.m),
-                            y=event["y1"].to(u.m),
-                            intensity=event["size1"],
-                            length=event["length1"].to(u.m),
-                            width=event["width1"].to(u.m),
-                            psi=event["psi1"].to(u.deg),)
-                    hillas_params[2] = CameraHillasParametersContainer(
-                            x=event["x2"].to(u.m),
-                            y=event["y2"].to(u.m),
-                            intensity=event["size2"],
-                            length=event["length2"].to(u.m),
-                            width=event["width2"].to(u.m),
-                            psi=event["psi2"].to(u.deg),)
-                    timing_params[1] = CameraTimingParametersContainer(
-                            slope=event["slope1"].to(1/u.m))
-                    timing_params[2] = CameraTimingParametersContainer(
-                            slope=event["slope2"].to(1/u.m))
-                    leakage_params[1] = LeakageContainer(
-                            intensity_width_1=event["leakage1_1"],
-                            intensity_width_2=event["leakage2_1"],)
-                    leakage_params[2] = LeakageContainer(
-                            intensity_width_1=event["leakage1_2"],
-                            intensity_width_2=event["leakage2_2"],)
-                    stereo_params = ReconstructedGeometryContainer(
-                            alt=(90. * u.deg) - event["reco_zd"],
-                            az=event["reco_az"],
-                            core_x=event["reco_core_x"].to(u.m),
-                            core_y=event["reco_core_y"].to(u.m),
-                            tel_ids=[h for h in hillas_params.keys()],
-                            average_intensity=np.mean([h.intensity for h in hillas_params.values()]),
-                            is_valid=is_valid,
-                            h_max=event["hmax"].to(u.m),)
-                    for tel_id in list(event_info.keys()):
-                        writer.write("hillas_params", (event_info[tel_id], hillas_params[tel_id], leakage_params[tel_id], timing_params[tel_id]))
-                    event_info[list(event_info.keys())[0]].tel_id = -1
-                    # Storing the result
-                    writer.write("stereo_params", (event_info[list(event_info.keys())[0]], stereo_params))
-                    id_prev = event["event_id"]
+            event_info = dict()
+            hillas_params = dict()
+            timing_params = dict()
+            leakage_params = dict()
+            id_prev = events[0]["event_id"]
+            for event in events:
+                id_current = event["event_id"]
+                if id_current < id_prev:
+                    obs_id += 1
+                # correction needed for true_az since it is in the corsika
+                # reference frame. Also, wrapped in [-180, 180] interval
+                # see e.g. MHMcEnergyMigration.cc lines 567-570
+                true_az = np.pi - event["true_az"].value + magic_bdec.value
+                if true_az > np.pi:
+                    true_az -= 2*np.pi
+                # correction needed for tel_az since it is in the corsika
+                # reference frame. Also, wrapped in [0, 360] interval
+                # see e.g. MPointingPosCalc.cc lines 149-153
+                tel_az = np.pi - event["true_pointing_az"].value + magic_bdec.value
+                if tel_az < 0:
+                    tel_az += 2*np.pi
+                if tel_az > 2*np.pi:
+                    tel_az -= 2*np.pi
+                if event["is_valid"] > 0:
+                    is_valid = True
+                else:
+                    is_valid = False
+                event_info[1] = InfoMC(
+                        obs_id=obs_id,
+                        event_id=event["event_id"],
+                        tel_id=1,
+                        true_energy=event["true_energy"].to(u.TeV),
+                        true_alt=(90. * u.deg).to(u.rad) - event["true_zd"],
+                        true_az=u.Quantity(true_az, u.rad),
+                        true_core_x=event["true_core_x"].to(u.m),
+                        true_core_y=event["true_core_y"].to(u.m),
+                        tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd"],
+                        tel_az=u.Quantity(tel_az, u.rad),)
+                event_info[2] = InfoMC(
+                        obs_id=obs_id,
+                        event_id=event["event_id"],
+                        tel_id=2,
+                        true_energy=event["true_energy"].to(u.TeV),
+                        true_alt=(90. * u.deg).to(u.rad) - event["true_zd"],
+                        true_core_x=event["true_core_x"].to(u.m),
+                        true_core_y=event["true_core_y"].to(u.m),
+                        true_az=u.Quantity(true_az, u.rad),
+                        tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd"],
+                        tel_az=u.Quantity(tel_az, u.rad),)
+                hillas_params[1] = CameraHillasParametersContainer(
+                        x=event["x1"].to(u.m),
+                        y=event["y1"].to(u.m),
+                        intensity=event["size1"],
+                        length=event["length1"].to(u.m),
+                        width=event["width1"].to(u.m),
+                        psi=event["psi1"].to(u.deg),)
+                hillas_params[2] = CameraHillasParametersContainer(
+                        x=event["x2"].to(u.m),
+                        y=event["y2"].to(u.m),
+                        intensity=event["size2"],
+                        length=event["length2"].to(u.m),
+                        width=event["width2"].to(u.m),
+                        psi=event["psi2"].to(u.deg),)
+                timing_params[1] = CameraTimingParametersContainer(
+                        slope=event["slope1"].to(1/u.m))
+                timing_params[2] = CameraTimingParametersContainer(
+                        slope=event["slope2"].to(1/u.m))
+                leakage_params[1] = LeakageContainer(
+                        intensity_width_1=event["leakage1_1"],
+                        intensity_width_2=event["leakage2_1"],)
+                leakage_params[2] = LeakageContainer(
+                        intensity_width_1=event["leakage1_2"],
+                        intensity_width_2=event["leakage2_2"],)
+                stereo_params = ReconstructedGeometryContainer(
+                        alt=(90. * u.deg) - event["reco_zd"],
+                        az=event["reco_az"],
+                        core_x=event["reco_core_x"].to(u.m),
+                        core_y=event["reco_core_y"].to(u.m),
+                        tel_ids=[h for h in hillas_params.keys()],
+                        average_intensity=np.mean([h.intensity for h in hillas_params.values()]),
+                        is_valid=is_valid,
+                        h_max=event["hmax"].to(u.m),)
+                for tel_id in list(event_info.keys()):
+                    writer.write(
+                        table_name="dl1/hillas_params",
+                        containers=[
+                            event_info[tel_id],
+                            hillas_params[tel_id],
+                            leakage_params[tel_id],
+                            timing_params[tel_id],
+                        ]
+                    )
+                common_info = ExtraInfo(
+                    obs_id=obs_id,
+                    event_id=event["event_id"],
+                )
+                writer.write(
+                    table_name="dl1/stereo_params",
+                    containers=[
+                        common_info,
+                        stereo_params,
+                    ]
+                )
+                id_prev = event["event_id"]
 
             originalmc_tree = f['OriginalMC']
             originalmc = QTable()
@@ -357,57 +384,40 @@ def write_hdf5_mc(filelist):
 
             originalmc = vstack(originalmc)
 
-            shower_data = pd.DataFrame()
+            original_info = dict()
+            for event in originalmc:
+                # correction needed for tel_az since it is in the corsika
+                # reference frame. Also, wrapped in [0, 360] interval
+                # see e.g. MPointingPosCalc.cc lines 149-153
+                tel_az_1 = np.pi - event["true_pointing_az_1"].value + magic_bdec.value
+                if tel_az_1 < 0:
+                    tel_az_1 += 2*np.pi
+                if tel_az_1 > 2*np.pi:
+                    tel_az_1 -= 2*np.pi
+                tel_az_2 = np.pi - event["true_pointing_az_2"].value + magic_bdec.value
+                if tel_az_2 < 0:
+                    tel_az_2 += 2*np.pi
+                if tel_az_2 > 2*np.pi:
+                    tel_az_2 -= 2*np.pi
+                original_info[1] = InfoOriginalMC(
+                        tel_id=1,
+                        true_energy=event["true_energy_1"].to(u.TeV),
+                        tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd_1"],
+                        tel_az=u.Quantity(tel_az_1, u.rad),)
+                original_info[2] = InfoOriginalMC(
+                        tel_id=2,
+                        true_energy=event["true_energy_2"].to(u.TeV),
+                        tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd_2"],
+                        tel_az=u.Quantity(tel_az_2, u.rad),)
+                for tel_id in list(original_info.keys()):
+                    writer.write(
+                        table_name="dl1/original_mc",
+                        containers=[
+                            original_info[tel_id],
+                        ]
+                    )
 
-            for telescope in [1, 2]:
-
-                true_energy = originalmc[f'true_energy_{telescope}'].to(u.TeV)
-                tel_az = originalmc[f'tel_az_{telescope}']
-                tel_alt = (90. * u.deg).to(u.rad) - originalmc[f'tel_zd_{telescope}']
-
-                # # Transformation from Monte Carlo to usual azimuth
-                # tel_az = -1 * (tel_az - np.pi + np.radians(7))
-
-                cam_x = originalmc[f'cam_x_{telescope}']
-                cam_y = originalmc[f'cam_y_{telescope}']
-
-                tel_pointing = AltAz(alt=tel_alt, az=tel_az)
-
-                optics = magic_tel_descriptions[telescope].optics
-                camera = magic_tel_descriptions[telescope].camera.geometry
-
-                camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length, rotation=camera.cam_rotation)
-
-                telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
-
-                camera_coord = SkyCoord(-cam_y, cam_x, frame=camera_frame)
-                shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
-
-                true_az = shower_coord_in_telescope.altaz.az.to(u.rad)
-                true_alt = shower_coord_in_telescope.altaz.alt.to(u.rad)
-
-                evt_id = np.arange(len(tel_az))
-                run_id = np.arange(len(tel_az))
-                tel_id = np.repeat(telescope, len(tel_az))
-
-                data_ = {
-                    'obs_id': run_id,
-                    'tel_id': tel_id,
-                    'event_id': evt_id,
-                    'tel_az': tel_az,
-                    'tel_alt': tel_alt,
-                    'true_az': true_az,
-                    'true_alt': true_alt,
-                    'true_energy': true_energy
-                }
-
-                df_ = pd.DataFrame(data=data_)
-                shower_data = shower_data.append(df_)
-
-            shower_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-            shower_data.to_hdf(outfile, key='dl1/original_mc', mode='a')
-
-            obs_id += 1
+            writer.close()
 
 
 def write_hdf5_data(filelist):
@@ -427,6 +437,20 @@ def write_hdf5_data(filelist):
         print(f'Opening {path}')
         with uproot.open(path) as f:
 
+            outfile = str(path).replace(".root", ".h5")
+
+            writer = HDF5TableWriter(filename=outfile, mode="a")
+
+            tr_tel_list_to_mask = subarray.tel_ids_to_mask
+
+            writer.add_column_transform_regexp(
+                table_regexp="dl1/.*",
+                col_regexp="tel_ids",
+                transform=tr_tel_list_to_mask,
+            )
+
+            print(f'Writing in {outfile}')
+
             events_tree = f['Events']
             events = QTable()
 
@@ -434,74 +458,89 @@ def write_hdf5_data(filelist):
                 events[column] = u.Quantity(events_tree[branch].array(library="np"), copy=False, **kwargs)
 
             events = vstack(events)
-            outfile = str(path).replace(".root", ".h5")
             run_info = get_run_info_from_name(path)
             run_number = run_info[0]
 
-            with HDF5TableWriter(filename=outfile, group_name='dl1', overwrite=True) as writer:
-                print(f'Writing in {outfile}')
-                event_info = dict()
-                hillas_params = dict()
-                timing_params = dict()
-                leakage_params = dict()
-                for event in events:
-                    event_mjd = event["mjd1"] + (event["millisec1"] / 1.0e3 + event["nanosec1"] / 1.0e9) / 86400.0
-                    if event["is_valid"] > 0:
-                        is_valid = True
-                    else:
-                        is_valid = False
-                    event_info[1] = InfoContainerData(
-                            obs_id=run_number,
-                            event_id=event["event_id"],
-                            tel_id=1,
-                            mjd=event_mjd.value,
-                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
-                            tel_az=event["pointing_az"].to(u.rad),)
-                    event_info[2] = InfoContainerData(
-                            obs_id=run_number,
-                            event_id=event["event_id"],
-                            tel_id=2,
-                            mjd=event_mjd.value,
-                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
-                            tel_az=event["pointing_az"].to(u.rad),)
-                    hillas_params[1] = CameraHillasParametersContainer(
-                            x=event["x1"].to(u.m),
-                            y=event["y1"].to(u.m),
-                            intensity=event["size1"],
-                            length=event["length1"].to(u.m),
-                            width=event["width1"].to(u.m),
-                            psi=event["psi1"].to(u.deg),)
-                    hillas_params[2] = CameraHillasParametersContainer(
-                            x=event["x2"].to(u.m),
-                            y=event["y2"].to(u.m),
-                            intensity=event["size2"],
-                            length=event["length2"].to(u.m),
-                            width=event["width2"].to(u.m),
-                            psi=event["psi2"].to(u.deg),)
-                    timing_params[1] = CameraTimingParametersContainer(
-                            slope=event["slope1"].to(1/u.m))
-                    timing_params[2] = CameraTimingParametersContainer(
-                            slope=event["slope2"].to(1/u.m))
-                    leakage_params[1] = LeakageContainer(
-                            intensity_width_1=event["leakage1_1"],
-                            intensity_width_2=event["leakage2_1"],)
-                    leakage_params[2] = LeakageContainer(
-                            intensity_width_1=event["leakage1_2"],
-                            intensity_width_2=event["leakage2_2"],)
-                    stereo_params = ReconstructedGeometryContainer(
-                            alt=(90. * u.deg) - event["reco_zd"],
-                            az=event["reco_az"],
-                            core_x=event["reco_core_x"].to(u.m),
-                            core_y=event["reco_core_y"].to(u.m),
-                            tel_ids=[h for h in hillas_params.keys()],
-                            average_intensity=np.mean([h.intensity for h in hillas_params.values()]),
-                            is_valid=is_valid,
-                            h_max=event["hmax"].to(u.m),)
-                    for tel_id in list(event_info.keys()):
-                        writer.write("hillas_params", (event_info[tel_id], hillas_params[tel_id], leakage_params[tel_id], timing_params[tel_id]))
-                    event_info[list(event_info.keys())[0]].tel_id = -1
-                    # Storing the result
-                    writer.write("stereo_params", (event_info[list(event_info.keys())[0]], stereo_params))
+            event_info = dict()
+            hillas_params = dict()
+            timing_params = dict()
+            leakage_params = dict()
+            for event in events:
+                event_mjd = event["mjd1"] + (event["millisec1"] / 1.0e3 + event["nanosec1"] / 1.0e9) / 86400.0
+                if event["is_valid"] > 0:
+                    is_valid = True
+                else:
+                    is_valid = False
+                event_info[1] = InfoData(
+                        obs_id=run_number,
+                        event_id=event["event_id"],
+                        tel_id=1,
+                        mjd=event_mjd.value,
+                        tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
+                        tel_az=event["pointing_az"].to(u.rad),)
+                event_info[2] = InfoData(
+                        obs_id=run_number,
+                        event_id=event["event_id"],
+                        tel_id=2,
+                        mjd=event_mjd.value,
+                        tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
+                        tel_az=event["pointing_az"].to(u.rad),)
+                hillas_params[1] = CameraHillasParametersContainer(
+                        x=event["x1"].to(u.m),
+                        y=event["y1"].to(u.m),
+                        intensity=event["size1"],
+                        length=event["length1"].to(u.m),
+                        width=event["width1"].to(u.m),
+                        psi=event["psi1"].to(u.deg),)
+                hillas_params[2] = CameraHillasParametersContainer(
+                        x=event["x2"].to(u.m),
+                        y=event["y2"].to(u.m),
+                        intensity=event["size2"],
+                        length=event["length2"].to(u.m),
+                        width=event["width2"].to(u.m),
+                        psi=event["psi2"].to(u.deg),)
+                timing_params[1] = CameraTimingParametersContainer(
+                        slope=event["slope1"].to(1/u.m))
+                timing_params[2] = CameraTimingParametersContainer(
+                        slope=event["slope2"].to(1/u.m))
+                leakage_params[1] = LeakageContainer(
+                        intensity_width_1=event["leakage1_1"],
+                        intensity_width_2=event["leakage2_1"],)
+                leakage_params[2] = LeakageContainer(
+                        intensity_width_1=event["leakage1_2"],
+                        intensity_width_2=event["leakage2_2"],)
+                stereo_params = ReconstructedGeometryContainer(
+                        alt=(90. * u.deg) - event["reco_zd"],
+                        az=event["reco_az"],
+                        core_x=event["reco_core_x"].to(u.m),
+                        core_y=event["reco_core_y"].to(u.m),
+                        tel_ids=[h for h in hillas_params.keys()],
+                        average_intensity=np.mean([h.intensity for h in hillas_params.values()]),
+                        is_valid=is_valid,
+                        h_max=event["hmax"].to(u.m),)
+                for tel_id in list(event_info.keys()):
+                    writer.write(
+                        table_name="dl1/hillas_params",
+                        containers=[
+                            event_info[tel_id],
+                            hillas_params[tel_id],
+                            leakage_params[tel_id],
+                            timing_params[tel_id],
+                        ]
+                    )
+                common_info = ExtraInfo(
+                    obs_id=run_number,
+                    event_id=event["event_id"],
+                )
+                writer.write(
+                    table_name="dl1/stereo_params",
+                    containers=[
+                        common_info,
+                        stereo_params,
+                    ]
+                )
+
+            writer.close()
 
 
 def convert_superstar_to_dl1(input_files_mask, is_mc):
