@@ -1,13 +1,24 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+"""
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+
+Merge the HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
+
+Usage:
+$ python merge_hdf_files.py
+--input-files "./data/dl1/dl1_*.h5"
+--output-file "./data/dl1/dl1_magic_run05093711_to_05093714_merged.h5"
+"""
 
 import time
 import glob
 import tables
 import logging
 import argparse
+from pathlib import Path
+
 from ctapipe.instrument import SubarrayDescription
 
 logger = logging.getLogger(__name__)
@@ -22,7 +33,8 @@ def merge_hdf_files(input_files, output_file):
     file_paths = glob.glob(input_files)
     file_paths.sort()
 
-    # --- merging the event/simulation data ---    
+    Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+
     with tables.open_file(output_file, mode='w') as merged_file:
 
         logger.info('\nMerging the following data files:')
@@ -37,7 +49,6 @@ def merge_hdf_files(input_files, output_file):
                 merged_file.root.events.params.attrs[attribute] = event_params.attrs[attribute]
 
             if 'simulation' in input_data.root:
-
                 sim_config = input_data.root.simulation.config
                 merged_file.create_table('/simulation', 'config', createparents=True, obj=sim_config.read())
 
@@ -49,13 +60,11 @@ def merge_hdf_files(input_files, output_file):
             logger.info(path)
 
             with tables.open_file(path) as input_data:
-                
                 event_params = input_data.root.events.params
                 merged_file.root.events.params.append(event_params.read())
 
-    # --- saving the subarray description ---
     subarray = SubarrayDescription.from_hdf(file_paths[0])
-    subarray.to_hdf(output_file)    
+    subarray.to_hdf(output_file)
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')
@@ -79,7 +88,7 @@ def main():
 
     args = parser.parse_args()
 
-    merge_hdf_files(args.input_files, args.output_file) 
+    merge_hdf_files(args.input_files, args.output_file)
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

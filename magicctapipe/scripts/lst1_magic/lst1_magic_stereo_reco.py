@@ -2,24 +2,24 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp) 
+Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 Reconstruct the stereo parameters of the events containing more that two telescopes information.
 The quality cuts specified in the configuration file will be applied before the reconstruction.
-If real data is input and it contains both LST-1 and MAGIC events, the angular separation between 
-the telescope systems are checked, and the script stops if they are separated by more than 0.1 degree. 
+If real data is input and it contains both LST-1 and MAGIC events, the angular separation between
+the telescope systems are checked, and the script stops if they are separated by more than 0.1 degree.
 
 Usage:
-$ python lst1_magic_stereo_reco.py 
---input-file "./data/dl1_coincidence/dl1_lst1_magic_Run02923.0040.h5"
---output-file "./data/dl1_stereo/dl1_stereo_lst1_magic_Run02923.0040.h5"
+$ python lst1_magic_stereo_reco.py
+--input-file "./data/dl1_coincidence/dl1_lst1_magic_run03265.0040.h5"
+--output-file "./data/dl1_stereo/dl1_stereo_lst1_magic_run03265.0040.h5"
 --config-file "./config.yaml"
 """
 
 import sys
-import h5py
 import time
 import yaml
+import tables
 import logging
 import argparse
 import warnings
@@ -27,13 +27,14 @@ import numpy as np
 import pandas as pd
 from astropy import units as u
 from astropy.coordinates import SkyCoord, Angle, angular_separation
+
 from ctapipe.reco import HillasReconstructor
 from ctapipe.containers import (
     ArrayEventContainer,
     ImageParametersContainer,
     CameraHillasParametersContainer
 )
-from ctapipe.instrument  import SubarrayDescription
+from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import calc_impact
 
 logger = logging.getLogger(__name__)
@@ -45,29 +46,7 @@ warnings.simplefilter('ignore')
 __all__ = ['stereo_reco']
 
 
-def calc_tel_mean_pointing(data):
-
-    x_coords = np.cos(np.deg2rad(data['alt_tel'])) * np.cos(np.deg2rad(data['az_tel']))
-    y_coords = np.cos(np.deg2rad(data['alt_tel'])) * np.sin(np.deg2rad(data['az_tel']))
-    z_coords = np.sin(np.deg2rad(data['alt_tel']))
-
-    coord_mean = SkyCoord(
-        x=x_coords.groupby(['obs_id', 'event_id']).mean().values,
-        y=y_coords.groupby(['obs_id', 'event_id']).mean().values,
-        z=z_coords.groupby(['obs_id', 'event_id']).mean().values,
-        representation_type='cartesian'
-    )
-        
-    df_mean = pd.DataFrame(
-        data={'alt_tel_mean': coord_mean.spherical.lat.to(u.deg).value,
-              'az_tel_mean': coord_mean.spherical.lon.to(u.deg).value},
-        index=data.groupby(['obs_id', 'event_id']).mean().index
-    )
-
-    return df_mean
-
- 
-def stereo_reco(input_file, output_file, config):
+def check_num_events(data):
 
     tel_combinations = {
         'm1_m2': [2, 3],
@@ -76,32 +55,57 @@ def stereo_reco(input_file, output_file, config):
         'lst1_m1_m2': [1, 2, 3]
     }
 
-    # --- load the input data file ---
+    n_events_total = len(data.groupby(['obs_id', 'event_id']).size())
+    logger.info(f'\nIn total {n_events_total} stereo events:')
+
+    for tel_combo, tel_ids in tel_combinations.items():
+
+        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
+        n_events = np.sum(df.groupby(['obs_id', 'event_id']).size() == len(tel_ids))
+        logger.info(f'{tel_combo}: {n_events} events ({n_events / n_events_total * 100:.1f}%)')
+
+
+def calc_tel_mean_pointing(data):
+
+    x_coords = np.cos(data['alt_tel']) * np.cos(data['az_tel'])
+    y_coords = np.cos(data['alt_tel']) * np.sin(data['az_tel'])
+    z_coords = np.sin(data['alt_tel'])
+
+    coord_mean = SkyCoord(
+        x=x_coords.groupby(['obs_id', 'event_id']).mean().to_numpy(),
+        y=y_coords.groupby(['obs_id', 'event_id']).mean().to_numpy(),
+        z=z_coords.groupby(['obs_id', 'event_id']).mean().to_numpy(),
+        representation_type='cartesian'
+    )
+
+    df_mean = pd.DataFrame(
+        data={'alt_tel_mean': coord_mean.spherical.lat.to(u.rad).value,
+              'az_tel_mean': coord_mean.spherical.lon.to(u.rad).value},
+        index=data.groupby(['obs_id', 'event_id']).mean().index
+    )
+
+    return df_mean
+
+
+def stereo_reco(input_file, output_file, config):
+
     logger.info(f'\nLoading the input data file:\n{input_file}')
 
     data_joint = pd.read_hdf(input_file, key='events/params')
+    data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    data_joint.sort_index(inplace=True)
+    data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
+    data_joint.query('multiplicity > 1', inplace=True)
+
+    check_num_events(data_joint)
     data_type = 'mc' if ('mc_energy' in data_joint.columns) else 'real'
-
-    if data_type == 'mc':
-
-        data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-        data_joint.sort_index(inplace=True)
-        data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
-        data_joint.query('multiplicity > 1', inplace=True)
-
-    n_events_total = len(data_joint.groupby(['obs_id', 'event_id']).size())
-    logger.info(f'\nIn total {n_events_total} stereo events:') 
-
-    for tel_combo, tel_ids in tel_combinations.items():
-        
-        df = data_joint.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-        n_events = np.sum(df.groupby(['obs_id', 'event_id']).size() == len(tel_ids))
-        logger.info(f'{tel_combo}: {n_events} events ({n_events/n_events_total*100:.1f}%)')
 
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_positions = subarray.positions
 
-    logger.info(f'\nSubarray configuration:\n{subarray.tels}\n{tel_positions}')
+    logger.info('\nSubarray configuration:')
+    for tel_id in subarray.tel.keys():
+        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
 
     # --- check the angular separation ---
     tel_id_lst = 1
@@ -110,7 +114,6 @@ def stereo_reco(input_file, output_file, config):
     if (data_type == 'real') and (tel_id_lst in telescope_ids):
 
         logger.info('\nChecking the angular separation of LST-1 and MAGIC pointing directions...')
-
         theta_lim = u.Quantity(0.1, u.deg)
 
         df_lst = data_joint.query('tel_id == 1')
@@ -124,14 +127,14 @@ def stereo_reco(input_file, output_file, config):
         df_magic.reset_index(level='tel_id', inplace=True)
         df_magic = df_magic.loc[multi_indices]
         df_magic.sort_index(inplace=True)
-        
+
         df_magic_pointing = calc_tel_mean_pointing(df_magic)
 
         theta = angular_separation(
-            lon1=u.Quantity(df_lst['az_tel'].values, u.deg), 
-            lat1=u.Quantity(df_lst['alt_tel'].values, u.deg),
-            lon2=u.Quantity(df_magic_pointing['az_tel_mean'].values, u.deg), 
-            lat2=u.Quantity(df_magic_pointing['alt_tel_mean'].values, u.deg)
+            lon1=u.Quantity(df_lst['az_tel'].to_numpy(), u.rad),
+            lat1=u.Quantity(df_lst['alt_tel'].to_numpy(), u.rad),
+            lon2=u.Quantity(df_magic_pointing['az_tel_mean'].to_numpy(), u.rad),
+            lat2=u.Quantity(df_magic_pointing['alt_tel_mean'].to_numpy(), u.rad)
         )
 
         n_events_sep = np.sum(theta > theta_lim)
@@ -147,19 +150,12 @@ def stereo_reco(input_file, output_file, config):
     # --- apply the quality cuts ---
     quality_cuts = config['stereo_reco']['quality_cuts']
     logger.info(f'\nApplying the following quality cuts:\n{quality_cuts}')
-    
+
     data_joint.query(quality_cuts, inplace=True)
     data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
     data_joint.query('multiplicity > 1', inplace=True)
 
-    n_events_total = len(data_joint.groupby(['obs_id', 'event_id']).size()) 
-    logger.info(f'\nIn total {n_events_total} stereo events are survived:') 
-
-    for tel_combo, tel_ids in tel_combinations.items():
-        
-        df = data_joint.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-        n_events = np.sum(df.groupby(['obs_id', 'event_id']).size() == len(tel_ids))
-        logger.info(f'{tel_combo}: {n_events} events ({n_events/n_events_total*100:.1f}%)')
+    check_num_events(data_joint)
 
     # --- reconstruct the stereo parameters ---
     logger.info('\nReconstructing the stereo parameters...')
@@ -171,48 +167,48 @@ def stereo_reco(input_file, output_file, config):
 
     group = data_joint.groupby(['obs_id', 'event_id']).size()
 
-    observation_ids = group.index.get_level_values('obs_id').values
-    event_ids = group.index.get_level_values('event_id').values
+    observation_ids = group.index.get_level_values('obs_id')
+    event_ids = group.index.get_level_values('event_id')
 
     for i_ev, (obs_id, ev_id) in enumerate(zip(observation_ids, event_ids)):
-    
+
         if (i_ev % 100) == 0:
             logger.info(f'{i_ev} events')
-    
+
         df_ev = data_joint.query(f'(obs_id == {obs_id}) & (event_id == {ev_id})')
 
         event = ArrayEventContainer()
 
-        event.pointing.array_altitude = u.Quantity(df_ev['alt_tel_mean'].values[0], u.deg)
-        event.pointing.array_azimuth = u.Quantity(df_ev['az_tel_mean'].values[0], u.deg)
-        
+        event.pointing.array_altitude = u.Quantity(df_ev['alt_tel_mean'].to_numpy()[0], u.rad)
+        event.pointing.array_azimuth = u.Quantity(df_ev['az_tel_mean'].to_numpy()[0], u.rad)
+
         telescope_ids = df_ev.index.get_level_values('tel_id')
 
         for tel_id in telescope_ids:
 
             df_tel = df_ev.query(f'tel_id == {tel_id}')
 
-            event.pointing.tel[tel_id].altitude = u.Quantity(df_tel['alt_tel'].values[0], u.deg)
-            event.pointing.tel[tel_id].azimuth = u.Quantity(df_tel['az_tel'].values[0], u.deg)
+            event.pointing.tel[tel_id].altitude = u.Quantity(df_tel['alt_tel'].to_numpy()[0], u.rad)
+            event.pointing.tel[tel_id].azimuth = u.Quantity(df_tel['az_tel'].to_numpy()[0], u.rad)
 
             hillas_params = CameraHillasParametersContainer(
-                intensity=float(df_tel['intensity'].values[0]),
-                x=u.Quantity(df_tel['x'].values[0], u.m),
-                y=u.Quantity(df_tel['y'].values[0], u.m),
-                r=u.Quantity(df_tel['r'].values[0], u.m),
-                phi=Angle(df_tel['phi'].values[0], u.deg),
-                length=u.Quantity(df_tel['length'].values[0], u.m),
-                width=u.Quantity(df_tel['width'].values[0], u.m),
-                psi=Angle(df_tel['psi'].values[0], u.deg),
-                skewness=float(df_tel['skewness'].values[0]),
-                kurtosis=float(df_tel['kurtosis'].values[0]),
+                intensity=float(df_tel['intensity'].to_numpy()[0]),
+                x=u.Quantity(df_tel['x'].to_numpy()[0], u.m),
+                y=u.Quantity(df_tel['y'].to_numpy()[0], u.m),
+                r=u.Quantity(df_tel['r'].to_numpy()[0], u.m),
+                phi=Angle(df_tel['phi'].to_numpy()[0], u.deg),
+                length=u.Quantity(df_tel['length'].to_numpy()[0], u.m),
+                width=u.Quantity(df_tel['width'].to_numpy()[0], u.m),
+                psi=Angle(df_tel['psi'].to_numpy()[0], u.deg),
+                skewness=float(df_tel['skewness'].to_numpy()[0]),
+                kurtosis=float(df_tel['kurtosis'].to_numpy()[0]),
             )
 
             event.dl1.tel[tel_id].parameters = ImageParametersContainer(hillas=hillas_params)
 
         hillas_reconstructor(event)
         stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
-            
+
         if stereo_params.az < 0:
             stereo_params.az += u.Quantity(360, u.deg)
 
@@ -233,19 +229,25 @@ def stereo_reco(input_file, output_file, config):
             data_joint.loc[(obs_id, ev_id, tel_id), 'core_x'] = stereo_params.core_x.to(u.m).value
             data_joint.loc[(obs_id, ev_id, tel_id), 'core_y'] = stereo_params.core_y.to(u.m).value
             data_joint.loc[(obs_id, ev_id, tel_id), 'impact'] = impact.to(u.m).value
-            
+
     logger.info(f'{i_ev+1} events processed.')
 
     # --- save in the output file  ---
-    data_joint.to_hdf(output_file, key='events/params')
+    with tables.open_file(output_file, mode='w') as f_out:
+
+        data_joint.reset_index(inplace=True)
+        event_values = [tuple(array) for array in data_joint.to_numpy()]
+        dtypes = np.dtype([(name, dtype) for name, dtype in zip(data_joint.dtypes.index, data_joint.dtypes)])
+
+        event_table = np.array(event_values, dtype=dtypes)
+        f_out.create_table('/events', 'params', createparents=True, obj=event_table)
+
+        if data_type == 'mc':
+            with tables.open_file(input_file) as f_in:
+                sim_table = f_in.root.simulation.config.read()
+                f_out.create_table('/simulation', 'config', createparents=True, obj=sim_table)
+
     subarray.to_hdf(output_file)
-
-    with h5py.File(input_file, 'r') as f:
-        keys = f.keys()
-
-    if 'simulation' in keys:
-        df = pd.read_hdf(input_file, key='simulation/config')
-        df.to_hdf(output_file, key='simulation/config', mode='a')
 
     logger.info(f'\nOutput data file: {output_file}')
     logger.info('\nDone.')
@@ -258,8 +260,8 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file', '-i', dest='input_file', type=str, 
-        help='Path to an input DL1 data file containing events triggering multiple telescopes.' 
+        '--input-file', '-i', dest='input_file', type=str,
+        help='Path to an input DL1 data file containing events triggering multiple telescopes.'
     )
 
     parser.add_argument(

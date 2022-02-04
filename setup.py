@@ -7,12 +7,13 @@ import os
 
 entry_points = {}
 entry_points["console_scripts"] = [
-    "lst1_magic_dl1_to_dl2 = magicctapipe.scripts.lst1_magic_real.lst1_magic_dl1_to_dl2:main",
-    "lst1_magic_event_coincidence = magicctapipe.scripts.lst1_magic_real.lst1_magic_event_coincidence:main",
-    "lst1_magic_mc_dl0_to_dl1 = magicctapipe.scripts.lst1_magic_real.lst1_magic_mc_dl0_to_dl1:main",
-    "lst1_magic_stereo_reco = magicctapipe.scripts.lst1_magic_real.lst1_magic_stereo_reco:main",
-    "lst1_magic_train_rfs = magicctapipe.scripts.lst1_magic_real.lst1_magic_train_rfs:main",
-    "magic_data_cal_to_dl1 = magicctapipe.scripts.lst1_magic_real.magic_data_cal_to_dl1:main",
+    "lst1_magic_dl1_to_dl2 = magicctapipe.scripts.lst1_magic.lst1_magic_dl1_to_dl2:main",
+    "lst1_magic_event_coincidence = magicctapipe.scripts.lst1_magic.lst1_magic_event_coincidence:main",
+    "lst1_magic_mc_dl0_to_dl1 = magicctapipe.scripts.lst1_magic.lst1_magic_mc_dl0_to_dl1:main",
+    "lst1_magic_stereo_reco = magicctapipe.scripts.lst1_magic.lst1_magic_stereo_reco:main",
+    "lst1_magic_train_rfs = magicctapipe.scripts.lst1_magic.lst1_magic_train_rfs:main",
+    "magic_data_cal_to_dl1 = magicctapipe.scripts.lst1_magic.magic_data_cal_to_dl1:main",
+    "merge_hdf_files = magicctapipe.scripts.lst1_magic.merge_hdf_files:main",
 ]
 
 tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
