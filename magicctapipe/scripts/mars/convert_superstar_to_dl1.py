@@ -31,7 +31,7 @@ magic_tel_descriptions = {1: magic_tel_description,
                           2: magic_tel_description}
 
 columns_mc = {
-        'event_id': ('MMcEvt_1.fEvtNumber', dict(dtype=int)),
+        'event_id': ('MRawEvtHeader_1.fStereoEvtNumber', dict(dtype=int)),
         'true_energy': ('MMcEvt_1.fEnergy', dict(unit=u.GeV)),
         'reco_source_x': ('MStereoPar.fDirectionX', dict(unit=u.deg)),
         'reco_source_y': ('MStereoPar.fDirectionY', dict(unit=u.deg)),
