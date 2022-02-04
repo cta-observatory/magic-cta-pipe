@@ -19,7 +19,7 @@ import tables
 from ctapipe.core.container import Container, Field
 from ctapipe.io import HDF5TableWriter, HDF5TableReader
 
-from ctapipe_io_magic import MAGICEventSource, MARSDataLevel
+from ctapipe_io_magic import MARSDataLevel
 
 
 def parse_args(args):
@@ -375,7 +375,6 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                     np.array(batch["UprootImageOrig"][j]),
                                     np.array(batch["UprootImageOrigClean"][j])
                                     )
-                                # write image first, so we are sure nothing here modifies it
                                 writer.write(
                                     table_name=f'telescope/image/MAGIC/M{telescope}',
                                     containers=image_container
@@ -387,7 +386,6 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         telescope,
                                         np.array(batch["UprootImageOrigClean"][j])
                                     )
-                                # write image first, so we are sure nothing here modifies it
                                 writer.write(
                                     table_name=f'telescope/image/MAGIC/M{telescope}',
                                     containers=image_container
@@ -405,7 +403,6 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         np.array(batch["UprootImageOrig_1"][j]),
                                         np.array(batch["UprootImageOrigClean_1"][j])
                                     )
-                                # write image first, so we are sure nothing here modifies it
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M1',
                                     containers=image_container
@@ -417,7 +414,6 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         np.array(batch["UprootImageOrig_2"][j]),
                                         np.array(batch["UprootImageOrigClean_2"][j])
                                     )
-                                # write image first, so we are sure nothing here modifies it
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M2',
                                     containers=image_container
@@ -429,7 +425,6 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         1,
                                         np.array(batch["UprootImageOrigClean_1"][j])
                                     )
-                                # write image first, so we are sure nothing here modifies it
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M1',
                                     containers=image_container
@@ -440,7 +435,6 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         2,
                                         np.array(batch["UprootImageOrigClean_2"][j])
                                     )
-                                # write image first, so we are sure nothing here modifies it
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M2',
                                     containers=image_container
