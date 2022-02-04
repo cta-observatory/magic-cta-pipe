@@ -6,7 +6,6 @@ import argparse
 from pathlib import Path
 
 import uproot
-import pandas as pd
 import numpy as np
 
 from astropy.table import QTable, vstack
@@ -20,8 +19,7 @@ from ctapipe.containers import (
 )
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
-from astropy.coordinates import AltAz, SkyCoord
-from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from ctapipe.coordinates import CameraFrame
 from ctapipe.instrument import (
     TelescopeDescription,
     SubarrayDescription,
