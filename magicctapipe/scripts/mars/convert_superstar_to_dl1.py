@@ -142,7 +142,6 @@ class InfoContainerMC(Container):
     true_core_y = Field(-1 * u.m, "MC event y-core position", unit=u.m)
     tel_alt = Field(-1 * u.rad, "MC telescope altitude", unit=u.rad)
     tel_az = Field(-1 * u.rad, "MC telescope azimuth", unit=u.rad)
-    n_islands = Field(-1, "Number of image islands")
 
 
 class InfoContainerData(Container):
@@ -152,7 +151,6 @@ class InfoContainerData(Container):
     mjd = Field(-1, "Event MJD", dtype=np.float64)
     tel_alt = Field(-1, "Telescope altitude", unit=u.rad)
     tel_az = Field(-1, "Telescope azimuth", unit=u.rad)
-    n_islands = Field(-1, "Number of image islands")
 
 
 def get_run_info_from_name(file_name):
