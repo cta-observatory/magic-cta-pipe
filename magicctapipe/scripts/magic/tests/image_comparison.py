@@ -1,30 +1,22 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import argparse
 import yaml
 import pandas as pd
-import h5py
 import uproot
 import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
-import astropy.units as u
-import matplotlib.cm as cm
-from matplotlib.colors import Normalize
-
 
 from ctapipe_io_magic import MAGICEventSource
 from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry, CameraDescription
 from ctapipe.image import hillas_parameters
 from ctapipe.image.timing import timing_parameters
-from ctapipe.containers import HillasParametersContainer
 from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
-from astropy.coordinates import Angle
 
 from ctapipe.image.morphology import number_of_islands
-from magicctapipe.scripts import read_images, ImageContainerCleaned, ImageContainerCalibrated
+from magicctapipe.scripts import read_images
 
 #define camera geometry
 def new_camera_geometry(camera_geom):

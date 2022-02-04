@@ -3,7 +3,6 @@ import uproot
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
-import h5py
 import yaml
 
 from math import *
