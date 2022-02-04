@@ -167,31 +167,26 @@ columns_data = {
 }
 
 
-class InfoContainerOriginalMC(Container):
+class ExtraInfo(Container):
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
-    tel_id = Field(-1, "Telescope ID")
-    true_energy = Field(-1 * u.TeV, "MC event energy", unit=u.TeV)
-    true_alt = Field(-1 * u.rad, "MC event altitude", unit=u.rad)
-    true_az = Field(-1 * u.rad, "MC event azimuth", unit=u.rad)
 
 
-class InfoContainerMC(InfoContainerOriginalMC):
-    obs_id = Field(-1, "Observation ID")
-    event_id = Field(-1, "Event ID")
+class InfoOriginalMC(ExtraInfo):
     tel_id = Field(-1, "Telescope ID")
     true_energy = Field(-1 * u.TeV, "MC event energy", unit=u.TeV)
-    true_alt = Field(-1 * u.rad, "MC event altitude", unit=u.rad)
-    true_az = Field(-1 * u.rad, "MC event azimuth", unit=u.rad)
-    true_core_x = Field(-1 * u.m, "MC event x-core position", unit=u.m)
-    true_core_y = Field(-1 * u.m, "MC event y-core position", unit=u.m)
     tel_alt = Field(-1 * u.rad, "MC telescope altitude", unit=u.rad)
     tel_az = Field(-1 * u.rad, "MC telescope azimuth", unit=u.rad)
 
 
-class InfoContainerData(Container):
-    obs_id = Field(-1, "Observation ID")
-    event_id = Field(-1, "Event ID")
+class InfoMC(InfoOriginalMC):
+    true_core_x = Field(-1 * u.m, "MC event x-core position", unit=u.m)
+    true_core_y = Field(-1 * u.m, "MC event y-core position", unit=u.m)
+    true_alt = Field(-1 * u.rad, "MC event altitude", unit=u.rad)
+    true_az = Field(-1 * u.rad, "MC event azimuth", unit=u.rad)
+
+
+class InfoData(ExtraInfo):
     tel_id = Field(-1, "Telescope ID")
     mjd = Field(-1, "Event MJD", dtype=np.float64)
     tel_alt = Field(-1, "Telescope altitude", unit=u.rad)
