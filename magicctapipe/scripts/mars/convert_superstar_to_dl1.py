@@ -73,6 +73,9 @@ columns_mc = {
         'slope2': ('MHillasTimeFit_2.fP1Grad', dict(unit=1/u.mm)),
         'zd': ('MStereoPar.fDirectionZd', dict(unit=u.deg)),
         'az': ('MStereoPar.fDirectionAz', dict(unit=u.deg)),
+        'reco_core_x': ('MStereoPar.fCoreX', dict(unit=u.cm)),
+        'reco_core_y': ('MStereoPar.fCoreY', dict(unit=u.cm)),
+        'is_valid': ('MStereoPar.fValid', dict(dtype=int)),
 }
 
 columns_mc_orig = {
@@ -122,6 +125,9 @@ columns_data = {
         'slope2': ('MHillasTimeFit_2.fP1Grad', dict(unit=1/u.mm)),
         'zd': ('MStereoPar.fDirectionZd', dict(unit=u.deg)),
         'az': ('MStereoPar.fDirectionAz', dict(unit=u.deg)),
+        'reco_core_x': ('MStereoPar.fCoreX', dict(unit=u.cm)),
+        'reco_core_y': ('MStereoPar.fCoreY', dict(unit=u.cm)),
+        'is_valid': ('MStereoPar.fValid', dict(dtype=int)),
 }
 
 
@@ -239,6 +245,10 @@ def write_hdf5_mc(filelist):
                         tel_az += 2*np.pi
                     if tel_az > 2*np.pi:
                         tel_az -= 2*np.pi
+                    if event["is_valid"] > 0:
+                        is_valid = True
+                    else:
+                        is_valid = False
                     event_info[1] = InfoContainerMC(
                             obs_id=obs_id,
                             event_id=event["event_id"],
@@ -281,12 +291,14 @@ def write_hdf5_mc(filelist):
                     leakage_params[2] = LeakageContainer(
                             intensity_width_1=event["leakage1_2"],
                             intensity_width_2=event["leakage2_2"],)
-                    stereo_params = ReconstructedShowerContainer(
+                    stereo_params = ReconstructedGeometryContainer(
                             alt=(90. * u.deg) - event["zd"],
                             az=event["az"],
+                            core_x=event["reco_core_x"].to(u.m),
+                            core_y=event["reco_core_y"].to(u.m),
                             tel_ids=[h for h in hillas_params.keys()],
                             average_intensity=np.mean([h.intensity for h in hillas_params.values()]),
-                            is_valid=True,
+                            is_valid=is_valid,
                             h_max=event["hmax"].to(u.m),)
                     for tel_id in list(event_info.keys()):
                         writer.write("hillas_params", (event_info[tel_id], hillas_params[tel_id], leakage_params[tel_id], timing_params[tel_id]))
@@ -390,6 +402,10 @@ def write_hdf5_data(filelist):
                 hillas_params = dict()
                 timing_params = dict()
                 leakage_params = dict()
+                if event["is_valid"] > 0:
+                        is_valid = True
+                    else:
+                        is_valid = False
                 for event in events:
                     event_mjd = event["mjd1"] + (event["millisec1"] / 1.0e3 + event["nanosec1"] / 1.0e9) / 86400.0
                     event_info[1] = InfoContainerData(
@@ -430,12 +446,14 @@ def write_hdf5_data(filelist):
                     leakage_params[2] = LeakageContainer(
                             intensity_width_1=event["leakage1_2"],
                             intensity_width_2=event["leakage2_2"],)
-                    stereo_params = ReconstructedShowerContainer(
+                    stereo_params = ReconstructedGeometryContainer(
                             alt=(90. * u.deg) - event["zd"],
                             az=event["az"],
+                            core_x=event["reco_core_x"].to(u.m),
+                            core_y=event["reco_core_y"].to(u.m),
                             tel_ids=[h for h in hillas_params.keys()],
                             average_intensity=np.mean([h.intensity for h in hillas_params.values()]),
-                            is_valid=True,
+                            is_valid=is_valid,
                             h_max=event["hmax"].to(u.m),)
                     for tel_id in list(event_info.keys()):
                         writer.write("hillas_params", (event_info[tel_id], hillas_params[tel_id], leakage_params[tel_id], timing_params[tel_id]))
