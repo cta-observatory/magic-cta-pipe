@@ -12,14 +12,21 @@ import numpy as np
 from astropy.table import QTable, vstack
 import astropy.units as u
 
-from ctapipe.containers import HillasParametersContainer, LeakageContainer, TimingParametersContainer, ReconstructedShowerContainer
+from ctapipe.containers import (
+    HillasParametersContainer,
+    LeakageContainer,
+    TimingParametersContainer,
+    ReconstructedShowerContainer,
+)
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
 from astropy.coordinates import AltAz, SkyCoord
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
-from ctapipe.instrument import CameraDescription
-from ctapipe.instrument import TelescopeDescription
-from ctapipe.instrument import OpticsDescription
+from ctapipe.instrument import (
+    CameraDescription,
+    TelescopeDescription,
+    OpticsDescription,
+)
 
 magic_optics = OpticsDescription.from_name('MAGIC')
 magic_cam = CameraDescription.from_name('MAGICCam')
@@ -40,15 +47,15 @@ columns_mc = {
         'true_zen': ('MMcEvt_1.fTheta', dict(unit=u.rad)),
         'true_az': ('MMcEvt_1.fPhi', dict(unit=u.rad)),
         'particle_id': ('MMcEvt_1.fPartId', dict()),
-        'theta2' : ('MStereoPar.fTheta2', dict(unit=u.deg**2)),
-        'length1' : ('MHillas_1.fLength', dict(unit=u.mm)),
-        'length2' : ('MHillas_2.fLength', dict(unit=u.mm)),
-        'psi1' : ('MHillas_1.fDelta', dict(unit=u.rad)),
-        'psi2' : ('MHillas_2.fDelta', dict(unit=u.rad)),
-        'width1' : ('MHillas_1.fWidth', dict(unit=u.mm)),
-        'width2' : ('MHillas_2.fWidth', dict(unit=u.mm)),
-        'size1' : ('MHillas_1.fSize', dict()),
-        'size2' : ('MHillas_2.fSize', dict()),
+        'theta2': ('MStereoPar.fTheta2', dict(unit=u.deg**2)),
+        'length1': ('MHillas_1.fLength', dict(unit=u.mm)),
+        'length2': ('MHillas_2.fLength', dict(unit=u.mm)),
+        'psi1': ('MHillas_1.fDelta', dict(unit=u.rad)),
+        'psi2': ('MHillas_2.fDelta', dict(unit=u.rad)),
+        'width1': ('MHillas_1.fWidth', dict(unit=u.mm)),
+        'width2': ('MHillas_2.fWidth', dict(unit=u.mm)),
+        'size1': ('MHillas_1.fSize', dict()),
+        'size2': ('MHillas_2.fSize', dict()),
         'hmax': ('MStereoPar.fMaxHeight', dict(unit=u.cm)),
         'impact1': ('MStereoPar.fM1Impact', dict(unit=u.cm)),
         'impact2': ('MStereoPar.fM2Impact', dict(unit=u.cm)),
@@ -67,37 +74,37 @@ columns_mc = {
 }
 
 columns_mc_orig = {
-        'true_energy_1' : ('MMcEvtBasic_1.fEnergy', dict(unit=u.GeV)),
-        'tel_az_1' : ('MMcEvtBasic_1.fTelescopePhi', dict(unit=u.rad)),
-        'tel_zd_1' : ('MMcEvtBasic_1.fTelescopeTheta', dict(unit=u.rad)),
-        'cam_x_1' : ('MSrcPosCam_1.fX', dict(unit=u.mm)),
-        'cam_y_1' : ('MSrcPosCam_1.fY', dict(unit=u.mm)),
-        'true_energy_2' : ('MMcEvtBasic_2.fEnergy', dict(unit=u.GeV)),
-        'tel_az_2' : ('MMcEvtBasic_2.fTelescopePhi', dict(unit=u.rad)),
-        'tel_zd_2' : ('MMcEvtBasic_2.fTelescopeTheta', dict(unit=u.rad)),
-        'cam_x_2' : ('MSrcPosCam_2.fX', dict(unit=u.mm)),
-        'cam_y_2' : ('MSrcPosCam_2.fY', dict(unit=u.mm)),
+        'true_energy_1': ('MMcEvtBasic_1.fEnergy', dict(unit=u.GeV)),
+        'tel_az_1': ('MMcEvtBasic_1.fTelescopePhi', dict(unit=u.rad)),
+        'tel_zd_1': ('MMcEvtBasic_1.fTelescopeTheta', dict(unit=u.rad)),
+        'cam_x_1': ('MSrcPosCam_1.fX', dict(unit=u.mm)),
+        'cam_y_1': ('MSrcPosCam_1.fY', dict(unit=u.mm)),
+        'true_energy_2': ('MMcEvtBasic_2.fEnergy', dict(unit=u.GeV)),
+        'tel_az_2': ('MMcEvtBasic_2.fTelescopePhi', dict(unit=u.rad)),
+        'tel_zd_2': ('MMcEvtBasic_2.fTelescopeTheta', dict(unit=u.rad)),
+        'cam_x_2': ('MSrcPosCam_2.fX', dict(unit=u.mm)),
+        'cam_y_2': ('MSrcPosCam_2.fY', dict(unit=u.mm)),
 }
 
 columns_data = {
         'event_id': ('MRawEvtHeader_1.fStereoEvtNumber', dict(dtype=int)),
         'pointing_zen': ('MPointingPos_1.fZd', dict(unit=u.deg)),
         'pointing_az': ('MPointingPos_1.fAz', dict(unit=u.deg)),
-        'mjd1' : ('MTime_1.fMjd', dict(dtype=float)),
-        'mjd2' : ('MTime_2.fMjd', dict(dtype=float)),
-        'millisec1' : ('MTime_1.fTime.fMilliSec', dict(dtype=float)),
-        'millisec2' : ('MTime_2.fTime.fMilliSec', dict(dtype=float)),
-        'nanosec1' : ('MTime_1.fNanoSec', dict(dtype=float)),
-        'nanosec2' : ('MTime_2.fNanoSec', dict(dtype=float)),
-        'theta2' : ('MStereoPar.fTheta2', dict(unit=u.deg**2)),
-        'length1' : ('MHillas_1.fLength', dict(unit=u.mm)),
-        'length2' : ('MHillas_2.fLength', dict(unit=u.mm)),
-        'psi1' : ('MHillas_1.fDelta', dict(unit=u.rad)),
-        'psi2' : ('MHillas_2.fDelta', dict(unit=u.rad)),
-        'width1' : ('MHillas_1.fWidth', dict(unit=u.mm)),
-        'width2' : ('MHillas_2.fWidth', dict(unit=u.mm)),
-        'size1' : ('MHillas_1.fSize', dict()),
-        'size2' : ('MHillas_2.fSize', dict()),
+        'mjd1': ('MTime_1.fMjd', dict(dtype=float)),
+        'mjd2': ('MTime_2.fMjd', dict(dtype=float)),
+        'millisec1': ('MTime_1.fTime.fMilliSec', dict(dtype=float)),
+        'millisec2': ('MTime_2.fTime.fMilliSec', dict(dtype=float)),
+        'nanosec1': ('MTime_1.fNanoSec', dict(dtype=float)),
+        'nanosec2': ('MTime_2.fNanoSec', dict(dtype=float)),
+        'theta2': ('MStereoPar.fTheta2', dict(unit=u.deg**2)),
+        'length1': ('MHillas_1.fLength', dict(unit=u.mm)),
+        'length2': ('MHillas_2.fLength', dict(unit=u.mm)),
+        'psi1': ('MHillas_1.fDelta', dict(unit=u.rad)),
+        'psi2': ('MHillas_2.fDelta', dict(unit=u.rad)),
+        'width1': ('MHillas_1.fWidth', dict(unit=u.mm)),
+        'width2': ('MHillas_2.fWidth', dict(unit=u.mm)),
+        'size1': ('MHillas_1.fSize', dict()),
+        'size2': ('MHillas_2.fSize', dict()),
         'hmax': ('MStereoPar.fMaxHeight', dict(unit=u.cm)),
         'impact1': ('MStereoPar.fM1Impact', dict(unit=u.cm)),
         'impact2': ('MStereoPar.fM2Impact', dict(unit=u.cm)),
@@ -115,6 +122,7 @@ columns_data = {
         'az': ('MStereoPar.fDirectionAz', dict(unit=u.deg)),
 }
 
+
 class InfoContainerMC(Container):
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
@@ -128,6 +136,7 @@ class InfoContainerMC(Container):
     tel_az = Field(-1 * u.rad, "MC telescope azimuth", unit=u.rad)
     n_islands = Field(-1, "Number of image islands")
 
+
 class InfoContainerData(Container):
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
@@ -136,6 +145,7 @@ class InfoContainerData(Container):
     tel_alt = Field(-1, "Telescope altitude", unit=u.rad)
     tel_az = Field(-1, "Telescope azimuth", unit=u.rad)
     n_islands = Field(-1, "Number of image islands")
+
 
 def get_run_info_from_name(file_name):
     file_name = Path(file_name)
@@ -162,16 +172,18 @@ def get_run_info_from_name(file_name):
 
     return run_number, is_mc
 
+
 def parse_args(args):
     """
     Parse command line options and arguments.
     """
 
     parser = argparse.ArgumentParser(description="", prefix_chars='-')
-    parser.add_argument("--use_mc", action='store_true', help = "Read MC data if flag is specified.")
-    parser.add_argument("-in", "--input_mask", nargs = '?', help = 'Mask for input files e.g. "20*_S_*.root" (NOTE: the double quotes should be there).')
+    parser.add_argument("--use_mc", action='store_true', help="Read MC data if flag is specified.")
+    parser.add_argument("-in", "--input_mask", nargs='?', help='Mask for input files e.g. "20*_S_*.root" (NOTE: the double quotes should be there).')
 
     return parser.parse_args(args)
+
 
 def write_hdf5_mc(filelist):
     """
@@ -212,23 +224,23 @@ def write_hdf5_mc(filelist):
                     if id_current < id_prev:
                         obs_id += 1
                     event_info[1] = InfoContainerMC(
-                            obs_id = obs_id,
-                            event_id = event["event_id"],
-                            tel_id = 1,
-                            true_energy = event["true_energy"],
-                            true_alt = (90. * u.deg).to(u.rad) - event["true_zen"],
-                            true_az = event["true_az"],
-                            tel_alt = (90. * u.deg).to(u.rad) - event["pointing_zen"],
-                            tel_az = event["pointing_az"],)
+                            obs_id=obs_id,
+                            event_id=event["event_id"],
+                            tel_id=1,
+                            true_energy=event["true_energy"],
+                            true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
+                            true_az=event["true_az"],
+                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
+                            tel_az=event["pointing_az"],)
                     event_info[2] = InfoContainerMC(
-                            obs_id = obs_id,
-                            event_id = event["event_id"],
-                            tel_id = 2,
-                            true_energy = event["true_energy"],
-                            true_alt = (90. * u.deg).to(u.rad) - event["true_zen"],
-                            true_az = event["true_az"],
-                            tel_alt = (90. * u.deg).to(u.rad) - event["pointing_zen"],
-                            tel_az = event["pointing_az"],)
+                            obs_id=obs_id,
+                            event_id=event["event_id"],
+                            tel_id=2,
+                            true_energy=event["true_energy"],
+                            true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
+                            true_az=event["true_az"],
+                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
+                            tel_az=event["pointing_az"],)
                     hillas_params[1] = HillasParametersContainer(
                             x=event["x1"].to(u.m),
                             y=event["y1"].to(u.m),
@@ -277,7 +289,7 @@ def write_hdf5_mc(filelist):
 
             shower_data = pd.DataFrame()
 
-            for telescope in [1,2]:
+            for telescope in [1, 2]:
 
                 true_energy = originalmc[f'true_energy_{telescope}'].to(u.TeV)
                 tel_az = originalmc[f'tel_az_{telescope}']
@@ -327,6 +339,7 @@ def write_hdf5_mc(filelist):
 
             obs_id += 1
 
+
 def write_hdf5_data(filelist):
     """
     Writes an HDF5 file for each superstar file in
@@ -364,19 +377,19 @@ def write_hdf5_data(filelist):
                 for event in events:
                     event_mjd = event["mjd1"] + (event["millisec1"] / 1.0e3 + event["nanosec1"] / 1.0e9) / 86400.0
                     event_info[1] = InfoContainerData(
-                            obs_id = run_number,
-                            event_id = event["event_id"],
-                            tel_id = 1,
-                            mjd = event_mjd.value,
-                            tel_alt = (90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
-                            tel_az = event["pointing_az"].to(u.rad),)
+                            obs_id=run_number,
+                            event_id=event["event_id"],
+                            tel_id=1,
+                            mjd=event_mjd.value,
+                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
+                            tel_az=event["pointing_az"].to(u.rad),)
                     event_info[2] = InfoContainerData(
-                            obs_id = run_number,
-                            event_id = event["event_id"],
-                            tel_id = 2,
-                            mjd = event_mjd.value,
-                            tel_alt = (90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
-                            tel_az = event["pointing_az"].to(u.rad),)
+                            obs_id=run_number,
+                            event_id=event["event_id"],
+                            tel_id=2,
+                            mjd=event_mjd.value,
+                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
+                            tel_az=event["pointing_az"].to(u.rad),)
                     hillas_params[1] = HillasParametersContainer(
                             x=event["x1"].to(u.m),
                             y=event["y1"].to(u.m),
@@ -414,6 +427,7 @@ def write_hdf5_data(filelist):
                     # Storing the result
                     writer.write("stereo_params", (event_info[list(event_info.keys())[0]], stereo_params))
 
+
 def convert_superstar_to_dl1(input_files_mask, is_mc):
     """
     Takes superstar files as input and converts them in HDF5
@@ -435,6 +449,7 @@ def convert_superstar_to_dl1(input_files_mask, is_mc):
     else:
         write_hdf5_data(filelist)
 
+
 def main(*args):
     flags = parse_args(args)
 
@@ -442,6 +457,7 @@ def main(*args):
     input_mask = flags.input_mask
 
     convert_superstar_to_dl1(input_mask, is_mc)
+
 
 if __name__ == '__main__':
     main(*sys.argv[1:])
