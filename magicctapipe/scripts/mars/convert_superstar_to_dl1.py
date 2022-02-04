@@ -133,7 +133,16 @@ columns_data = {
 }
 
 
-class InfoContainerMC(Container):
+class InfoContainerOriginalMC(Container):
+    obs_id = Field(-1, "Observation ID")
+    event_id = Field(-1, "Event ID")
+    tel_id = Field(-1, "Telescope ID")
+    true_energy = Field(-1 * u.TeV, "MC event energy", unit=u.TeV)
+    true_alt = Field(-1 * u.rad, "MC event altitude", unit=u.rad)
+    true_az = Field(-1 * u.rad, "MC event azimuth", unit=u.rad)
+
+
+class InfoContainerMC(InfoContainerOriginalMC):
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
     tel_id = Field(-1, "Telescope ID")
