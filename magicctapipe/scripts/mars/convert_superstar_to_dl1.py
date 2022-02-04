@@ -13,7 +13,7 @@ from astropy.table import QTable, vstack
 import astropy.units as u
 
 from ctapipe.containers import (
-    HillasParametersContainer,
+    CameraHillasParametersContainer,
     LeakageContainer,
     TimingParametersContainer,
     ReconstructedGeometryContainer,
@@ -267,14 +267,14 @@ def write_hdf5_mc(filelist):
                             true_az=u.Quantity(true_az, u.rad),
                             tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
                             tel_az=u.Quantity(tel_az, u.rad),)
-                    hillas_params[1] = HillasParametersContainer(
+                    hillas_params[1] = CameraHillasParametersContainer(
                             x=event["x1"].to(u.m),
                             y=event["y1"].to(u.m),
                             intensity=event["size1"],
                             length=event["length1"].to(u.m),
                             width=event["width1"].to(u.m),
                             psi=event["psi1"].to(u.deg),)
-                    hillas_params[2] = HillasParametersContainer(
+                    hillas_params[2] = CameraHillasParametersContainer(
                             x=event["x2"].to(u.m),
                             y=event["y2"].to(u.m),
                             intensity=event["size2"],
@@ -422,14 +422,14 @@ def write_hdf5_data(filelist):
                             mjd=event_mjd.value,
                             tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"].to(u.rad),
                             tel_az=event["pointing_az"].to(u.rad),)
-                    hillas_params[1] = HillasParametersContainer(
+                    hillas_params[1] = CameraHillasParametersContainer(
                             x=event["x1"].to(u.m),
                             y=event["y1"].to(u.m),
                             intensity=event["size1"],
                             length=event["length1"].to(u.m),
                             width=event["width1"].to(u.m),
                             psi=event["psi1"].to(u.deg),)
-                    hillas_params[2] = HillasParametersContainer(
+                    hillas_params[2] = CameraHillasParametersContainer(
                             x=event["x2"].to(u.m),
                             y=event["y2"].to(u.m),
                             intensity=event["size2"],
