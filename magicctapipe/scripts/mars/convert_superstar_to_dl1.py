@@ -48,6 +48,8 @@ columns_mc = {
         'pointing_az': ('MMcEvt_1.fTelescopePhi', dict(unit=u.rad)),
         'true_zen': ('MMcEvt_1.fTheta', dict(unit=u.rad)),
         'true_az': ('MMcEvt_1.fPhi', dict(unit=u.rad)),
+        'true_core_x': ('MMcEvt_1.fCoreX', dict(unit=u.cm)),
+        'true_core_y': ('MMcEvt_1.fCoreY', dict(unit=u.cm)),
         'particle_id': ('MMcEvt_1.fPartId', dict()),
         'theta2': ('MStereoPar.fTheta2', dict(unit=u.deg**2)),
         'length1': ('MHillas_1.fLength', dict(unit=u.mm)),
@@ -254,6 +256,8 @@ def write_hdf5_mc(filelist):
                             true_energy=event["true_energy"].to(u.TeV),
                             true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
                             true_az=u.Quantity(true_az, u.rad),
+                            true_core_x=event["true_core_x"].to(u.m),
+                            true_core_y=event["true_core_y"].to(u.m),
                             tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
                             tel_az=u.Quantity(tel_az, u.rad),)
                     event_info[2] = InfoContainerMC(
@@ -262,6 +266,8 @@ def write_hdf5_mc(filelist):
                             tel_id=2,
                             true_energy=event["true_energy"].to(u.TeV),
                             true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
+                            true_core_x=event["true_core_x"].to(u.m),
+                            true_core_y=event["true_core_y"].to(u.m),
                             true_az=u.Quantity(true_az, u.rad),
                             tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
                             tel_az=u.Quantity(tel_az, u.rad),)
