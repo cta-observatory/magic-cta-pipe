@@ -116,13 +116,13 @@ columns_mc = {
 
 columns_mc_orig = {
         'true_energy_1': ('MMcEvtBasic_1.fEnergy', dict(unit=u.GeV)),
-        'tel_az_1': ('MMcEvtBasic_1.fTelescopePhi', dict(unit=u.rad)),
-        'tel_zd_1': ('MMcEvtBasic_1.fTelescopeTheta', dict(unit=u.rad)),
+        'true_pointing_az_1': ('MMcEvtBasic_1.fTelescopePhi', dict(unit=u.rad)),
+        'true_pointing_zd_1': ('MMcEvtBasic_1.fTelescopeTheta', dict(unit=u.rad)),
         'cam_x_1': ('MSrcPosCam_1.fX', dict(unit=u.mm)),
         'cam_y_1': ('MSrcPosCam_1.fY', dict(unit=u.mm)),
         'true_energy_2': ('MMcEvtBasic_2.fEnergy', dict(unit=u.GeV)),
-        'tel_az_2': ('MMcEvtBasic_2.fTelescopePhi', dict(unit=u.rad)),
-        'tel_zd_2': ('MMcEvtBasic_2.fTelescopeTheta', dict(unit=u.rad)),
+        'true_pointing_az_2': ('MMcEvtBasic_2.fTelescopePhi', dict(unit=u.rad)),
+        'true_pointing_zd_2': ('MMcEvtBasic_2.fTelescopeTheta', dict(unit=u.rad)),
         'cam_x_2': ('MSrcPosCam_2.fX', dict(unit=u.mm)),
         'cam_y_2': ('MSrcPosCam_2.fY', dict(unit=u.mm)),
 }
