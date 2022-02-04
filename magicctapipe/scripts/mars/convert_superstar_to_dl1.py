@@ -23,19 +23,53 @@ from ctapipe.core.container import Container, Field
 from astropy.coordinates import AltAz, SkyCoord
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
 from ctapipe.instrument import (
-    CameraDescription,
     TelescopeDescription,
+    SubarrayDescription,
     OpticsDescription,
+    CameraDescription,
+    CameraReadout,
 )
 
-magic_optics = OpticsDescription.from_name('MAGIC')
+magic_optics = OpticsDescription(
+    'MAGIC',
+    num_mirrors=1,
+    equivalent_focal_length=u.Quantity(16.97, u.m),
+    mirror_area=u.Quantity(239.0, u.m**2),
+    num_mirror_tiles=964,
+)
+
+magic_tel_positions = {
+    1: [31.80, -28.10, 0.00] * u.m,
+    2: [-31.80, 28.10, 0.00] * u.m
+}
+
 magic_cam = CameraDescription.from_name('MAGICCam')
-magic_tel_description = TelescopeDescription(name='MAGIC',
-                                             tel_type='MAGIC',
-                                             optics=magic_optics,
-                                             camera=magic_cam)
-magic_tel_descriptions = {1: magic_tel_description,
-                          2: magic_tel_description}
+
+pulse_shape_lo_gain = np.array([0., 1., 2., 1., 0.])
+pulse_shape_hi_gain = np.array([1., 2., 3., 2., 1.])
+pulse_shape = np.vstack((pulse_shape_lo_gain, pulse_shape_hi_gain))
+camera_readout = CameraReadout(
+    camera_name='MAGICCam',
+    sampling_rate=u.Quantity(1.64, u.GHz),
+    reference_pulse_shape=pulse_shape,
+    reference_pulse_sample_width=u.Quantity(0.5, u.ns)
+)
+
+magic_cam.readout = camera_readout
+
+magic_cam.geometry.frame = CameraFrame(focal_length=magic_optics.equivalent_focal_length)
+
+magic_tel_description = TelescopeDescription(
+    name='MAGIC', tel_type='MAGIC', optics=magic_optics, camera=magic_cam
+)
+
+magic_tel_descriptions = {1: magic_tel_description, 2: magic_tel_description}
+
+subarray = SubarrayDescription(
+    name='MAGIC',
+    tel_positions=magic_tel_positions,
+    tel_descriptions=magic_tel_descriptions
+)
 
 magic_bdec = u.Quantity(-7.0, u.deg).to(u.rad)
 
