@@ -15,7 +15,7 @@ import astropy.units as u
 from ctapipe.containers import (
     CameraHillasParametersContainer,
     LeakageContainer,
-    TimingParametersContainer,
+    CameraTimingParametersContainer,
     ReconstructedGeometryContainer,
 )
 from ctapipe.io import HDF5TableWriter
@@ -281,9 +281,9 @@ def write_hdf5_mc(filelist):
                             length=event["length2"].to(u.m),
                             width=event["width2"].to(u.m),
                             psi=event["psi2"].to(u.deg),)
-                    timing_params[1] = TimingParametersContainer(
+                    timing_params[1] = CameraTimingParametersContainer(
                             slope=event["slope1"].to(1/u.m))
-                    timing_params[2] = TimingParametersContainer(
+                    timing_params[2] = CameraTimingParametersContainer(
                             slope=event["slope2"].to(1/u.m))
                     leakage_params[1] = LeakageContainer(
                             intensity_width_1=event["leakage1_1"],
@@ -436,9 +436,9 @@ def write_hdf5_data(filelist):
                             length=event["length2"].to(u.m),
                             width=event["width2"].to(u.m),
                             psi=event["psi2"].to(u.deg),)
-                    timing_params[1] = TimingParametersContainer(
+                    timing_params[1] = CameraTimingParametersContainer(
                             slope=event["slope1"].to(1/u.m))
-                    timing_params[2] = TimingParametersContainer(
+                    timing_params[2] = CameraTimingParametersContainer(
                             slope=event["slope2"].to(1/u.m))
                     leakage_params[1] = LeakageContainer(
                             intensity_width_1=event["leakage1_1"],
