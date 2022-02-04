@@ -402,12 +402,12 @@ def write_hdf5_data(filelist):
                 hillas_params = dict()
                 timing_params = dict()
                 leakage_params = dict()
-                if event["is_valid"] > 0:
+                for event in events:
+                    event_mjd = event["mjd1"] + (event["millisec1"] / 1.0e3 + event["nanosec1"] / 1.0e9) / 86400.0
+                    if event["is_valid"] > 0:
                         is_valid = True
                     else:
                         is_valid = False
-                for event in events:
-                    event_mjd = event["mjd1"] + (event["millisec1"] / 1.0e3 + event["nanosec1"] / 1.0e9) / 86400.0
                     event_info[1] = InfoContainerData(
                             obs_id=run_number,
                             event_id=event["event_id"],
