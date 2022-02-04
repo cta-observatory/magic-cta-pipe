@@ -42,9 +42,9 @@ magic_bdec = u.Quantity(-7.0, u.deg).to(u.rad)
 columns_mc = {
         'event_id': ('MRawEvtHeader_1.fStereoEvtNumber', dict(dtype=int)),
         'true_energy': ('MMcEvt_1.fEnergy', dict(unit=u.GeV)),
-        'pointing_zen': ('MMcEvt_1.fTelescopeTheta', dict(unit=u.rad)),
-        'pointing_az': ('MMcEvt_1.fTelescopePhi', dict(unit=u.rad)),
-        'true_zen': ('MMcEvt_1.fTheta', dict(unit=u.rad)),
+        'true_pointing_zd': ('MMcEvt_1.fTelescopeTheta', dict(unit=u.rad)),
+        'true_pointing_az': ('MMcEvt_1.fTelescopePhi', dict(unit=u.rad)),
+        'true_zd': ('MMcEvt_1.fTheta', dict(unit=u.rad)),
         'true_az': ('MMcEvt_1.fPhi', dict(unit=u.rad)),
         'true_core_x': ('MMcEvt_1.fCoreX', dict(unit=u.cm)),
         'true_core_y': ('MMcEvt_1.fCoreY', dict(unit=u.cm)),
@@ -240,7 +240,7 @@ def write_hdf5_mc(filelist):
                     # correction needed for tel_az since it is in the corsika
                     # reference frame. Also, wrapped in [0, 360] interval
                     # see e.g. MPointingPosCalc.cc lines 149-153
-                    tel_az = np.pi - event["pointing_az"].value + magic_bdec.value
+                    tel_az = np.pi - event["true_pointing_az"].value + magic_bdec.value
                     if tel_az < 0:
                         tel_az += 2*np.pi
                     if tel_az > 2*np.pi:
@@ -254,22 +254,22 @@ def write_hdf5_mc(filelist):
                             event_id=event["event_id"],
                             tel_id=1,
                             true_energy=event["true_energy"].to(u.TeV),
-                            true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
+                            true_alt=(90. * u.deg).to(u.rad) - event["true_zd"],
                             true_az=u.Quantity(true_az, u.rad),
                             true_core_x=event["true_core_x"].to(u.m),
                             true_core_y=event["true_core_y"].to(u.m),
-                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
+                            tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd"],
                             tel_az=u.Quantity(tel_az, u.rad),)
                     event_info[2] = InfoContainerMC(
                             obs_id=obs_id,
                             event_id=event["event_id"],
                             tel_id=2,
                             true_energy=event["true_energy"].to(u.TeV),
-                            true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
+                            true_alt=(90. * u.deg).to(u.rad) - event["true_zd"],
                             true_core_x=event["true_core_x"].to(u.m),
                             true_core_y=event["true_core_y"].to(u.m),
                             true_az=u.Quantity(true_az, u.rad),
-                            tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
+                            tel_alt=(90. * u.deg).to(u.rad) - event["true_pointing_zd"],
                             tel_az=u.Quantity(tel_az, u.rad),)
                     hillas_params[1] = CameraHillasParametersContainer(
                             x=event["x1"].to(u.m),
