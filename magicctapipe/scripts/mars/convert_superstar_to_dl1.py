@@ -16,7 +16,7 @@ from ctapipe.containers import (
     HillasParametersContainer,
     LeakageContainer,
     TimingParametersContainer,
-    ReconstructedShowerContainer,
+    ReconstructedGeometryContainer,
 )
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core.container import Container, Field
