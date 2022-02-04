@@ -37,6 +37,8 @@ magic_tel_description = TelescopeDescription(name='MAGIC',
 magic_tel_descriptions = {1: magic_tel_description,
                           2: magic_tel_description}
 
+magic_bdec = u.Quantity(-7.0, u.deg).to(u.rad)
+
 columns_mc = {
         'event_id': ('MRawEvtHeader_1.fStereoEvtNumber', dict(dtype=int)),
         'true_energy': ('MMcEvt_1.fEnergy', dict(unit=u.GeV)),
@@ -223,24 +225,38 @@ def write_hdf5_mc(filelist):
                     id_current = event["event_id"]
                     if id_current < id_prev:
                         obs_id += 1
+                    # correction needed for true_az since it is in the corsika
+                    # reference frame. Also, wrapped in [-180, 180] interval
+                    # see e.g. MHMcEnergyMigration.cc lines 567-570
+                    true_az = np.pi - event["true_az"].value + magic_bdec.value
+                    if true_az > np.pi:
+                        true_az -= 2*np.pi
+                    # correction needed for tel_az since it is in the corsika
+                    # reference frame. Also, wrapped in [0, 360] interval
+                    # see e.g. MPointingPosCalc.cc lines 149-153
+                    tel_az = np.pi - event["pointing_az"].value + magic_bdec.value
+                    if tel_az < 0:
+                        tel_az += 2*np.pi
+                    if tel_az > 2*np.pi:
+                        tel_az -= 2*np.pi
                     event_info[1] = InfoContainerMC(
                             obs_id=obs_id,
                             event_id=event["event_id"],
                             tel_id=1,
                             true_energy=event["true_energy"],
                             true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
-                            true_az=event["true_az"],
+                            true_az=u.Quantity(true_az, u.rad),
                             tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
-                            tel_az=event["pointing_az"],)
+                            tel_az=u.Quantity(tel_az, u.rad),)
                     event_info[2] = InfoContainerMC(
                             obs_id=obs_id,
                             event_id=event["event_id"],
                             tel_id=2,
                             true_energy=event["true_energy"],
                             true_alt=(90. * u.deg).to(u.rad) - event["true_zen"],
-                            true_az=event["true_az"],
+                            true_az=u.Quantity(true_az, u.rad),
                             tel_alt=(90. * u.deg).to(u.rad) - event["pointing_zen"],
-                            tel_az=event["pointing_az"],)
+                            tel_az=u.Quantity(tel_az, u.rad),)
                     hillas_params[1] = HillasParametersContainer(
                             x=event["x1"].to(u.m),
                             y=event["y1"].to(u.m),
