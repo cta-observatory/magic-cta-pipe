@@ -86,7 +86,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
     elif mode == "use_ids_config":
         ids_to_compare = config["event_list"]
 
-    if not ids_to_compare:
+    if len(ids_to_compare) == 0:
         print("List with event ids to compare is empty. Exiting.")
         sys.exit(1)
 
