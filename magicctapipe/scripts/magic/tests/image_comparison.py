@@ -13,7 +13,7 @@ import numpy as np
 from ctapipe_io_magic import MAGICEventSource
 from ctapipe.io import EventSeeker
 from ctapipe.visualization import CameraDisplay
-from ctapipe.instrument import CameraGeometry, CameraDescription
+from ctapipe.instrument import CameraGeometry
 from ctapipe.image import hillas_parameters
 from ctapipe.image.timing import timing_parameters
 from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
