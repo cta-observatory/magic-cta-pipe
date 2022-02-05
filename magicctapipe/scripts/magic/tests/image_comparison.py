@@ -97,6 +97,23 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
     run_num = config["information"]["run_number"]
     out_path = config["output_files"]["file_path"]
 
+    mars_input = config["input_files"]["mars_images"]
+
+    image_mars = []  # pixel charges
+    events_mars = []  # event ids
+    telescope = []  # telescope id
+    runnum_mars = []  # run number
+
+    # get data from HDF5 containing calibrated and cleaned images
+
+    for image_container in read_images(mars_input, read_calibrated=True, allowed_tels=[telescope_id]):
+        events_mars.append(image_container.event_id)
+        telescope.append(image_container.tel_id)
+        runnum_mars.append(image_container.obs_id)
+        image_mars.append(image_container.image_cleaned)
+
+    image_mars = np.array(image_mars)
+    stereo_id_mars = np.array(events_mars)
     # #compare events one at a time
     # ids = []
     # for id_to_compare in ids_to_compare:
