@@ -48,7 +48,7 @@ def parse_args(args):
         "-m",
         "--mode",
         nargs='?',
-        choices=["all", "use_ids_config"],
+        choices=["useall", "use_ids_config"],
         default="use_ids_config",
         help='Mode of comparison: "all" to compare all events, "use_ids_config" to compare specific event ids.'
         )
