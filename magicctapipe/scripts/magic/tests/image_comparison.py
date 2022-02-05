@@ -54,7 +54,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         tel_id = config["information"]["tel_id"]
         # does only work for stereo files
         df_mcp_data = pd.DataFrame()
-        with uproot.open(config["input_files"]["magic-cta-pipe"]) as mcp_file:
+        with uproot.open(mcp_input) as mcp_file:
             df_mcp_data["event_id"] = (
                 mcp_file["Events"][
                     "MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber"
