@@ -43,11 +43,11 @@ def parse_args(args):
     """
 
     parser = argparse.ArgumentParser(description="", prefix_chars='-')
-    parser.add_argument("-c", "--config", nargs=1, help="Path to configuration file.")
+    parser.add_argument("-c", "--config", nargs='?', help="Path to configuration file.")
     parser.add_argument(
         "-m",
         "--mode",
-        nargs=1,
+        nargs='?',
         choices=["all", "use_ids_config"],
         default="use_ids_config",
         help='Mode of comparison: "all" to compare all events, "use_ids_config" to compare specific event ids.'
