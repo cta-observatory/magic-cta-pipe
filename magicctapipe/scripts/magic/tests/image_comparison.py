@@ -114,12 +114,43 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
 
     image_mars = np.array(image_mars)
     stereo_id_mars = np.array(events_mars)
-    # #compare events one at a time
-    # ids = []
-    # for id_to_compare in ids_to_compare:
-    #    ids.append(id_to_compare)
-    #    print("EVENT ID:", ids)
-    # for id_event in ids:
+
+    # prepare event source from calibrated file
+
+    source = MAGICEventSource(
+        input_url=magic_calibrated_file,
+        process_run=False,
+    )
+    if source.is_simulation:
+        find_hot_pixels = False
+    else:
+        find_hot_pixels = True
+    # check for correct values!!
+    cleaning_config = dict(
+        picture_thresh=6,
+        boundary_thresh=3.5,
+        max_time_off=4.5 * 1.64,
+        max_time_diff=1.5 * 1.64,
+        usetime=True,
+        usesum=True,
+        findhotpixels=find_hot_pixels,
+    )
+
+    bad_pixels_config = dict(
+        pedestalLevel=400,
+        pedestalLevelVariance=4.5,
+        pedestalType="FromExtractorRndm",
+    )
+
+    tel_id = source.telescope
+    geometry_old = source.subarray.tel[tel_id].camera.geometry
+    geometry_mcp = new_camera_geometry(geometry_old)
+    magic_clean = MAGIC_Cleaning.magic_clean(
+        geometry_mcp, cleaning_config
+    )
+    badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
+        config=bad_pixels_config, is_simulation=source.is_simulation
+    )
     for id_event in ids_to_compare:
         print("Event ID:", id_event)
         # ------------------
