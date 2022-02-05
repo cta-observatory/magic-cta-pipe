@@ -169,7 +169,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
                     geometry_mcp, cleaning_config
                 )
                 badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-                    config=bad_pixels_config, is_simulation=source.is_mc
+                    config=bad_pixels_config, is_simulation=source.is_simulation
                 )
                 event_image = event.dl1.tel[tel_id].image
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
