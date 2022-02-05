@@ -6,6 +6,7 @@ from .lst1_magic import (
     train_rf_regressor,
     train_rf_classifier,
     magic_cal_to_dl1,
+    merge_hdf_files,
 )
 
 from .mars import (
@@ -13,7 +14,6 @@ from .mars import (
     save_images,
     ImageContainerCalibrated,
     ImageContainerCleaned,
-    merge_hdf_files,
 )
 
 __all__ = [
@@ -24,9 +24,9 @@ __all__ = [
     "train_rf_regressor",
     "train_rf_classifier",
     "magic_cal_to_dl1",
+    "merge_hdf_files",
     "read_images",
     "save_images",
     "ImageContainerCalibrated",
     "ImageContainerCleaned",
-    "merge_hdf_files",
 ]
