@@ -145,9 +145,9 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
 
     tel_id = source.telescope
     geometry_old = source.subarray.tel[tel_id].camera.geometry
-    geometry_mcp = new_camera_geometry(geometry_old)
+    geometry_mars = new_camera_geometry(geometry_old)
     magic_clean = MAGIC_Cleaning.magic_clean(
-        geometry_mcp, cleaning_config
+        geometry_mars, cleaning_config
     )
     badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
         config=bad_pixels_config, is_simulation=source.is_simulation
@@ -160,10 +160,6 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         # ------------------
         #      MARS
         # -----------------
-
-        MAGICCAM = CameraDescription.from_name("MAGICCam")
-        GEOM = MAGICCAM.geometry
-        geometry_mars = new_camera_geometry(GEOM)
 
         # get image from MARS, if present (if it did not pass MARS
         # cleaning, it will be in the calibrated files but not
@@ -243,11 +239,11 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
 
         if np.any(event_image_cleaned):
             hillas_params = hillas_parameters(
-                geometry_mcp, event_image_cleaned
+                geometry_mars, event_image_cleaned
             )
             image_mask = event_image_cleaned > 0
             timing_params = timing_parameters(
-                geometry_mcp,
+                geometry_mars,
                 event_image_cleaned,
                 event_pulse_time_cleaned,
                 hillas_params,
@@ -259,7 +255,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
 
         # compare number of islands
         num_islands_mcp, island_labels_mcp = number_of_islands(
-            geometry_mcp, (np.array(event_image_cleaned[:1039]) > 0)
+            geometry_mars, (np.array(event_image_cleaned[:1039]) > 0)
         )
 
         mcp_max = np.amax(event_image_cleaned[clean_mask])
@@ -368,8 +364,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         # original data
         plt.subplot2grid(grid_shape, (0, 0))
 
-        geom = CameraGeometry.from_name("MAGICCamMars")
-        disp = CameraDisplay(geom, calibrated_data_image)
+        disp = CameraDisplay(geometry_mars, calibrated_data_image)
         # pixels whose original value is negative
         negative_mask = calibrated_data_image < 0
         disp.highlight_pixels(
@@ -397,7 +392,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         # mcp_data
         plt.subplot2grid(grid_shape, (0, 2))
 
-        disp_mcp = CameraDisplay(geometry_mcp, image=event_image_cleaned)
+        disp_mcp = CameraDisplay(geometry_mars, image=event_image_cleaned)
         # disp_mcp.highlight_pixels(clean_mask, color='white', alpha=0.5, linewidth=1)
         disp_mcp.add_colorbar(label="pixel charge")
         disp_mcp.set_limits_minmax(vmin, vmax)
@@ -410,7 +405,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         # differences between MARS and mcp
         plt.subplot2grid(grid_shape, (1, 0))
 
-        disp = CameraDisplay(geom, pix_image[:1039])
+        disp = CameraDisplay(geometry_mars, pix_image[:1039])
         disp.add_colorbar(label="pixel charge")
         disp.highlight_pixels(
             clean_mask_pixels, color="red", alpha=1, linewidth=1
@@ -436,7 +431,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         pix_diff_mars_copy = np.array(pix_diff_mars).copy()
         pix_diff_mars_copy[np.array(event_image_mars[:1039]) == 0] = 0
 
-        disp = CameraDisplay(geom, pix_diff_mars_copy > 0)
+        disp = CameraDisplay(geometry_mars, pix_diff_mars_copy > 0)
         # disp.highlight_pixels(clean_mask_pixels, color='red', alpha=1, linewidth=1)
         disp.highlight_pixels(
             np.array(event_image_mars[:1039]) != 0,
@@ -455,7 +450,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         pix_diff_mcp_copy = np.array(pix_diff_mcp).copy()
         pix_diff_mcp_copy[np.array(event_image_cleaned) == 0] = 0
 
-        disp = CameraDisplay(geom, pix_diff_mcp_copy > 0)
+        disp = CameraDisplay(geometry_mars, pix_diff_mcp_copy > 0)
         disp.highlight_pixels(
             np.array(event_image_cleaned) != 0,
             color="white",
