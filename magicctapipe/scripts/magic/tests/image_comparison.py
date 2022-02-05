@@ -80,8 +80,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
                 mcp_file["Events"][
                     "MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber"
                 ]
-                .array()
-                .to_numpy()
+                .array(library="np")
             )
             ids_to_compare = df_mcp_data["event_id"].tolist()
             # the keys depend on the file, there may be a case where they have to be changed
