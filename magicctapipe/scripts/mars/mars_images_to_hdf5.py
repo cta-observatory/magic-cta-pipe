@@ -238,7 +238,7 @@ def build_image_container_cleaned(run_number, event_id, tel, image_cleaned):
     )
 
 
-def read_images(hdf5_files_mask, read_calibrated=False):
+def read_images(hdf5_files_mask, read_calibrated=False, allowed_tels=[]):
     """
     Reads images from a HDF5 file.
 
@@ -259,26 +259,19 @@ def read_images(hdf5_files_mask, read_calibrated=False):
         filename=hdf5_files_mask,
     ) as reader:
 
+        tel_ids = [1, 2]
+        if len(allowed_tels):
+            tel_ids = np.intersect1d(tel_ids, allowed_tels)
+
         if read_calibrated:
-            for image_container in reader.read(
-                table_name="/dl1/event/telescope/image/MAGIC/M1",
-                containers=ImageContainerCalibrated()
-            ):
-                yield image_container
-            for image_container in reader.read(
-                table_name="/dl1/event/telescope/image/MAGIC/M2",
-                containers=ImageContainerCalibrated()
-            ):
-                yield image_container
+            container = ImageContainerCalibrated()
         else:
+            container = ImageContainerCleaned()
+
+        for tel_id in tel_ids:
             for image_container in reader.read(
-                table_name="/dl1/event/telescope/image/MAGIC/M1",
-                containers=ImageContainerCleaned()
-            ):
-                yield image_container
-            for image_container in reader.read(
-                table_name="/dl1/event/telescope/image/MAGIC/M2",
-                containers=ImageContainerCleaned()
+                table_name=f"/dl1/event/telescope/image/MAGIC/M{tel_id}",
+                containers=container
             ):
                 yield image_container
 
