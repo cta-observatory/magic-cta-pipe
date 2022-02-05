@@ -131,7 +131,8 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         # -----------------------------
 
         source = MAGICEventSource(
-            input_url=config["input_files"]["mcp_source"]
+            input_url=config["input_files"]["mcp_source"],
+            process_run=False,
         )
         # check for correct values!!
         cleaning_config = dict(
