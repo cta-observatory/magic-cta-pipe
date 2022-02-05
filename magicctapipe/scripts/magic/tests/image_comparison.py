@@ -72,19 +72,15 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
 
     ids_to_compare = []
 
+    magic_calibrated_file = config["input_files"]["mars_calibrated"]
+
     if mode == "useall":
-        mcp_input = config["input_files"]["magic-cta-pipe"]
-        tel_id = config["information"]["tel_id"]
-        # does only work for stereo files
-        df_mcp_data = pd.DataFrame()
-        with uproot.open(mcp_input) as mcp_file:
-            df_mcp_data["event_id"] = (
-                mcp_file["Events"][
-                    "MRawEvtHeader./MRawEvtHeader.fStereoEvtNumber"
-                ]
-                .array(library="np")
-            )
-            ids_to_compare = df_mcp_data["event_id"].tolist()
+        with uproot.open(magic_calibrated_file) as mcp_file:
+            trigger_pattern = mcp_file["Events"]['MTriggerPattern.fPrescaled'].array(library="np")
+            ids_to_compare = mcp_file["Events"][
+                    "MRawEvtHeader.fStereoEvtNumber"
+                ].array(library="np")
+            ids_to_compare = ids_to_compare[np.where(trigger_pattern == 128)].tolist()
             # the keys depend on the file, there may be a case where they have to be changed
 
     elif mode == "use_ids_config":
