@@ -70,6 +70,8 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
 
     # errors?
 
+    ids_to_compare = []
+
     if mode == "useall":
         mcp_input = config["input_files"]["magic-cta-pipe"]
         tel_id = config["information"]["tel_id"]
@@ -87,6 +89,10 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
 
     elif mode == "use_ids_config":
         ids_to_compare = config["event_list"]
+
+    if not ids_to_compare:
+        print("List with event ids to compare is empty. Exiting.")
+        sys.exit(1)
 
     print(len(ids_to_compare), "events will be compared")
 
