@@ -2,6 +2,8 @@
 # coding: utf-8
 
 import yaml
+import argparse
+import sys
 import pandas as pd
 import uproot
 import matplotlib.pyplot as plt
@@ -33,6 +35,25 @@ def new_camera_geometry(camera_geom):
         pix_rotation=camera_geom.pix_rotation,
         cam_rotation=camera_geom.cam_rotation,
     )
+
+
+def parse_args(args):
+    """
+    Parse command line options and arguments.
+    """
+
+    parser = argparse.ArgumentParser(description="", prefix_chars='-')
+    parser.add_argument("-c", "--config", nargs=1, help="Path to configuration file.")
+    parser.add_argument(
+        "-m",
+        "--mode",
+        nargs=1,
+        choices=["all", "use_ids_config"],
+        default="use_ids_config",
+        help='Mode of comparison: "all" to compare all events, "use_ids_config" to compare specific event ids.'
+        )
+
+    return parser.parse_args(args)
 
 
 def image_comparison(config_file="config.yaml", mode="use_ids_config"):
@@ -492,6 +513,17 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
     return comparison
 
 
-image_comparison(
-    config_file="image_comparison_config.yaml", mode="use_ids_config"
-)
+def main(*args):
+    flags = parse_args(args)
+
+    config = flags.config
+    mode = flags.mode
+
+    image_comparison(
+        config_file=config,
+        mode=mode
+    )
+
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])
