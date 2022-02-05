@@ -11,6 +11,7 @@ import matplotlib
 import numpy as np
 
 from ctapipe_io_magic import MAGICEventSource
+from ctapipe.io import EventSeeker
 from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry, CameraDescription
 from ctapipe.image import hillas_parameters
@@ -151,6 +152,8 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
     badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
         config=bad_pixels_config, is_simulation=source.is_simulation
     )
+
+    seeker = EventSeeker(event_source=source)
     for id_event in ids_to_compare:
         print("Event ID:", id_event)
         # ------------------
