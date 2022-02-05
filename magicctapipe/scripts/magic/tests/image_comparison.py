@@ -134,6 +134,10 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
             input_url=config["input_files"]["mcp_source"],
             process_run=False,
         )
+        if source.is_simulation:
+            find_hot_pixels = False
+        else:
+            find_hot_pixels = True
         # check for correct values!!
         cleaning_config = dict(
             picture_thresh=6,
@@ -142,7 +146,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
             max_time_diff=1.5 * 1.64,
             usetime=True,
             usesum=True,
-            findhotpixels=True,
+            findhotpixels=find_hot_pixels,
         )
 
         bad_pixels_config = dict(
