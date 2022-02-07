@@ -109,6 +109,4 @@ __all__ = [
     "make_elapsed_time_str",
     "print_title",
     "make_title_str",
-    "get_key_if_exists",
 ]
-
