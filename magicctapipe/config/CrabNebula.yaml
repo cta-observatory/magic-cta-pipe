@@ -7,7 +7,7 @@ data_files:
             magic2:
                 input_mask: "../../../MCs/MAGIC/ST.03.07/za05to35/Train_sample/1.Calibrated/GA_M2*root"
                 hillas_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Train_sample/2.Hillas/iv_hillas_m2.h5"
-                
+
         test_sample:
             magic1:
                 input_mask: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/1.Calibrated/GA_M1*root"
@@ -17,7 +17,7 @@ data_files:
                 input_mask: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/1.Calibrated/GA_M2*root"
                 hillas_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/2.Hillas/iv_hillas_m2.h5"
                 reco_output: "../../../MCs/MAGIC/ST.03.07/za05to35/Test_sample/3.Reco/iv_reco_m2.h5"
-                
+
     data:
        train_sample:
            magic1:
@@ -26,7 +26,7 @@ data_files:
            magic2:
                input_mask: "../../../Data/MAGIC/Off/Train_sample/1.Calibrated/20*_M2_*root"
                hillas_output: "../../../Data/MAGIC/Off/Train_sample/2.Hillas/iv_hillas_m2.h5"
-               
+
        test_sample:
            magic1:
                input_mask: "../../../Data/MAGIC/CrabNebula/1.Calibrated/20*_M1_*root"
@@ -47,9 +47,9 @@ image_cleaning:
         # 4.5 slices x 1.64 GHz
         max_time_off: 7.38
         min_number_neighbors: 3
-        usetime : True
-        usesum : True
-        findhotpixels : True
+        use_time : True
+        use_sum : True
+        find_hotpixels : True
 
 bad_pixels:
     magic:
@@ -64,7 +64,7 @@ energy_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
-    
+
     features:
         ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2']
 
@@ -75,7 +75,7 @@ direction_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
-    
+
     features:
         'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
         'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi']
@@ -87,7 +87,7 @@ classifier_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
-    
+
     features:
         ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands']
 
