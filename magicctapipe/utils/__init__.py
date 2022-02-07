@@ -1,3 +1,7 @@
+from .badpixels import (
+    MAGICBadPixelsCalc,
+)
+
 from .camera_geometry import (
     scale_camera_geometry,
     reflected_camera_geometry,
@@ -62,6 +66,7 @@ from .utils import (
 )
 
 __all__ = [
+    "MAGICBadPixelsCalc",
     "scale_camera_geometry",
     "reflected_camera_geometry",
     "load_cfg_file",
