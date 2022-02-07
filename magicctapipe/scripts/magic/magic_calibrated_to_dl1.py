@@ -106,14 +106,14 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config, writ
         #camera_refl = reflected_camera_geometry(camera_old)
         #geometry = scale_camera_geometry(camera_refl, aberration_factor)
         if is_simulation:
-            clean_config["findhotpixels"] = False
+            clean_config["find_hotpixels"] = False
 
         magic_clean = MAGICClean(geometry, clean_config)
 
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
             print(f"{item[0]}: {item[1]}")
-        if magic_clean.findhotpixels:
+        if magic_clean.find_hotpixels:
             for item in vars(magic_clean.pixel_treatment).items():
                 print(f"{item[0]}: {item[1]}")
 
