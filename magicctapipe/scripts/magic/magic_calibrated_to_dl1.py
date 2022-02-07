@@ -33,10 +33,12 @@ from ctapipe.image import (
 
 from magicctapipe.utils import (
     info_message,
-    get_leakage,
 )
 
-from magicctapipe.image import MAGICClean
+from magicctapipe.image import (
+    MAGICClean,
+    get_leakage,
+)
 
 DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer()
 DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer()
