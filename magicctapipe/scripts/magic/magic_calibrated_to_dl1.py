@@ -10,7 +10,6 @@ import copy
 from pathlib import Path
 
 import numpy as np
-from astropy import units as u
 
 from ctapipe_io_magic import MAGICEventSource
 
@@ -19,8 +18,6 @@ from ctapipe.containers import (
     ImageParametersContainer,
     TimingParametersContainer,
     PeakTimeStatisticsContainer,
-    CameraHillasParametersContainer,
-    CameraTimingParametersContainer,
 )
 
 from ctapipe.coordinates import TelescopeFrame
@@ -36,13 +33,12 @@ from ctapipe.image import (
 )
 
 from magicctapipe.utils import (
-    scale_camera_geometry,
-    reflected_camera_geometry,
-    MAGIC_Badpixels,
-    MAGIC_Cleaning,
+    MAGICBadPixelsCalc,
     info_message,
     get_leakage,
 )
+
+from magicctapipe.image import MAGICClean
 
 DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer()
 DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer()
@@ -90,7 +86,7 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
     #  - image cleaning;
     #  - hillas parameter calculation;
     #  - time gradient calculation.
-    #  
+    #
     # We'll write the result to the HDF5 file that can be used for further processing.
 
     for input_file in input_files:
@@ -111,12 +107,12 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
         if is_simulation:
             clean_config["findhotpixels"] = False
         else:
-            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
+            badpixel_calculator = MAGICBadPixelsCalc(
                 is_simulation=is_simulation,
                 config=bad_pixels_config
             )
 
-        magic_clean = MAGIC_Cleaning.magic_clean(geometry,clean_config)
+        magic_clean = MAGICClean(geometry, clean_config)
 
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
@@ -259,7 +255,7 @@ except IOError:
 if 'data_files' not in config:
     print('Error: the configuration file is missing the "data_files" section. Exiting.')
     exit()
-    
+
 if 'image_cleaning' not in config:
     print('Error: the configuration file is missing the "image_cleaning" section. Exiting.')
     exit()
