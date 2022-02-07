@@ -51,7 +51,8 @@ DEFAULT_TRUE_IMAGE_PARAMETERS.intensity_statistics = IntensityStatisticsContaine
 DEFAULT_TIMING_PARAMETERS = TimingParametersContainer()
 DEFAULT_PEAKTIME_STATISTICS = PeakTimeStatisticsContainer()
 
-def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
+
+def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config, write_images):
     """Process MAGIC calibrated files, both real and simulation, to get
     DL1 files in the standard CTA format.
     Custom parts:
@@ -114,7 +115,12 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
             for item in vars(magic_clean.pixel_treatment).items():
                 print(f"{item[0]}: {item[1]}")
 
-        with DataWriter(event_source=source, output_path=output_name, overwrite=True) as write_data:
+        with DataWriter(
+            event_source=source,
+            output_path=output_name,
+            overwrite=True,
+            write_images=write_images
+        ) as write_data:
 
             # Looping over the events
             for event in source:
@@ -147,7 +153,7 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
                     event_pulse_time_cleaned = peak_time.copy()
                     event_pulse_time_cleaned[~clean_mask] = 0
 
-                    geom_selected  = geometry[clean_mask]
+                    geom_selected = geometry[clean_mask]
                     image_selected = event_image[clean_mask]
 
                     if np.any(event_image_cleaned):
@@ -226,6 +232,9 @@ arg_parser.add_argument("--usem1",
 arg_parser.add_argument("--usem2",
                         help='Process only M2 files.',
                         action='store_true')
+arg_parser.add_argument("--write_images",
+                        help='Write images in the output file.',
+                        action='store_true')
 
 parsed_args = arg_parser.parse_args()
 # --------------------------
@@ -303,4 +312,5 @@ for data_type in data_type_to_process:
                 input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                 cleaning_config=cleaning_config,
                 bad_pixels_config=bad_pixels_config,
+                write_images=parsed_args.write_images,
             )
