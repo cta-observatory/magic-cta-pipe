@@ -1,4 +1,6 @@
+import sys
 import argparse
+
 from ctapipe.io import EventSource
 
 
@@ -40,3 +42,19 @@ def compare_dl1_images(input_file_1, input_file_2):
 
     if event_ids_1 != event_ids_2:
         print("The two files have different event ids.")
+
+
+def main(*args):
+    flags = parse_args(args)
+
+    input_1 = flags.input1
+    input_2 = flags.input2
+
+    compare_dl1_images(
+        input_file_1=input_1,
+        input_file_2=input_2
+    )
+
+
+if __name__ == '__main__':
+    main(*sys.argv[1:])
