@@ -7,7 +7,7 @@ from magicctapipe.utils.utils import *
 from magicctapipe.utils.plot import *
 from magicctapipe.utils.tels import *
 from magicctapipe.utils.filedir import *
-from magicctapipe.train.global_utils import *
+from magicctapipe.reco.global_utils import *
 
 __all__ = [
     "GetHist_classifier",
