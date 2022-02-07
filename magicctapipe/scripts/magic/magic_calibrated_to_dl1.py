@@ -33,7 +33,6 @@ from ctapipe.image import (
 )
 
 from magicctapipe.utils import (
-    MAGICBadPixelsCalc,
     info_message,
     get_leakage,
 )
@@ -106,11 +105,6 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
         #geometry = scale_camera_geometry(camera_refl, aberration_factor)
         if is_simulation:
             clean_config["findhotpixels"] = False
-        else:
-            badpixel_calculator = MAGICBadPixelsCalc(
-                is_simulation=is_simulation,
-                config=bad_pixels_config
-            )
 
         magic_clean = MAGICClean(geometry, clean_config)
 
@@ -141,9 +135,9 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
                     if is_simulation:
                         clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time)
                     else:
-                        badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
-                        deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
-                        unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
+                        dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels
+                        badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
+                        unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
                         clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time, unsuitable_mask=unsuitable_mask)
 
                     event.dl1.tel[tel_id].image_mask = clean_mask
