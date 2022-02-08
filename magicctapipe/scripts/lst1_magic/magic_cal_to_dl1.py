@@ -4,16 +4,16 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-Process the MAGIC calibrated data (*_Y_*.root) with MARS-like cleaning method,
-and calculate the DL1 parameters (i.e., Hillas, timing and leakage parameters).
-The events that all the DL1 parameters are reconstructed will be saved in the output file.
-The telescope IDs are automatically reset to the following values when saving to an output file:
+This script processes MAGIC calibrated level data (*_Y_*.root) with the MARS-like
+cleaning method, and compute DL1 parameters (i.e., Hillas, timing, and leakage parameters).
+Only the events that all the DL1 parameters are reconstructed will be saved in an output file.
+Telescope IDs are automatically reset to the following values when saving to the output file:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-The MAGICEventSource automatically searches for all the subrun files with the same observation ID
-of the input file existing in the input directoly, and reads the drive reports from them.
-Then, if the "process_run" option is True, the MAGICEventSource not only reads the drive reports
-but also process all the subrun files together with the input subrun file.
+All sub-run files that belong to the same observation ID of an input sub-run file will be automatically
+searched for by the MAGICEventSource module, and drive reports are read from all the sub-run files.
+Then, if the "process_run" option is set to True in a configuration file, the MAGICEventSource not only
+reads the drive reports but also processes all the sub-run files together with the input sub-run file.
 
 Usage:
 $ python magic_cal_to_dl1.py
@@ -29,7 +29,6 @@ import argparse
 import warnings
 import numpy as np
 from astropy import units as u
-
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core import Container, Field
 from ctapipe.image import (
@@ -50,16 +49,18 @@ warnings.simplefilter('ignore')
 
 sec2nsec = 1e9
 
-__all__ = ['cal_to_dl1']
+tel_positions_simtel = {
+    2: u.Quantity([35.25, -23.99, -0.58], u.m),   # MAGIC-I
+    3: u.Quantity([-35.25, 23.99, 0.58], u.m),    # MAGIC-II
+}
+
+__all__ = [
+    'cal_to_dl1',
+]
 
 
 class EventInfoContainer(Container):
-    """
-    Store general event information:
-    - observation/event/telescope IDs
-    - telescope pointing parameters
-    - parameters of cleaned image
-    """
+    """ Container to store general event information """
 
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
@@ -71,14 +72,14 @@ class EventInfoContainer(Container):
 
 
 class TimingInfoContainer(Container):
-    """ Store the event timing information """
+    """ Container to store event timing information """
 
     time_sec = Field(-1, 'Event time second')
     time_nanosec = Field(-1, 'Event time nanosecond')
 
 
 class SimInfoContainer(Container):
-    """ Store the simulated event information """
+    """ Container to store simulated event information """
 
     mc_energy = Field(-1, 'Event MC energy', u.TeV)
     mc_alt = Field(-1, 'Event MC altitude', u.deg)
@@ -89,7 +90,7 @@ class SimInfoContainer(Container):
 
 def cal_to_dl1(input_file, output_file, config):
     """
-    Process the MAGIC calibrated level data to DL1.
+    This function processes MAGIC calibrated level data to DL1.
 
     Parameters
     ----------
@@ -98,7 +99,7 @@ def cal_to_dl1(input_file, output_file, config):
     output_file: str
         Path to an output DL1 data file
     config: dict
-        Configuration of the data process
+        Configuration for data processes
     """
 
     process_run = config['MAGIC']['process_run']
@@ -109,10 +110,10 @@ def cal_to_dl1(input_file, output_file, config):
     )
 
     subarray = event_source.subarray
-    tel_id = event_source.telescope
     is_simulation = event_source.is_simulation
+    tel_id = event_source.telescope
 
-    logger.info(f'\nProcess the following subrun file(s) (process_run = {process_run}):')
+    logger.info(f'\nProcessing the following sub-run file(s) (process_run = {process_run}):')
     for root_file in event_source.file_list:
         logger.info(root_file)
 
@@ -120,24 +121,20 @@ def cal_to_dl1(input_file, output_file, config):
 
     # Check the "find_hotpixels" option:
     if is_simulation and config_cleaning['find_hotpixels'] is not False:
-        logger.warning('\nThe hot pixels do not exist in simulation. Setting the option to False...')
+        logger.warning('\nHot pixels do not exist in a simulation. Setting the option to False...')
         config_cleaning.update({'find_hotpixels': False})
 
     elif config_cleaning['find_hotpixels'] == 'auto':
         config_cleaning.update({'find_hotpixels': True})
 
-    logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}\n')
+    logger.info(f'\nConfiguration for image cleaning:\n{config_cleaning}\n')
 
     # Initialize the MAGIC cleaning:
     camera_geom = subarray.tel[tel_id].camera.geometry
     magic_clean = MAGICClean(camera_geom, config_cleaning)
 
-    # Start processing the events:
-    with HDF5TableWriter(
-        filename=output_file,
-        group_name='events',
-        overwrite=True,
-    ) as writer:
+    # Start processing events:
+    with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
 
         n_events_skipped = 0
 
@@ -146,7 +143,7 @@ def cal_to_dl1(input_file, output_file, config):
             if (event.count % 100) == 0:
                 logger.info(f'{event.count} events')
 
-            # Cleaning the image:
+            # Image cleaning:
             if is_simulation:
                 signal_pixels, image, peak_time = magic_clean.clean_image(
                     event_image=event.dl1.tel[tel_id].image,
@@ -178,36 +175,36 @@ def cal_to_dl1(input_file, output_file, config):
                 n_events_skipped += 1
                 continue
 
-            # Hillas parameters calculation:
+            # Compute the Hillas parameters:
             try:
                 hillas_params = hillas_parameters(camera_geom, image_cleaned)
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
-                               'Hillas parameters calculation failed. Skipping.')
+                               'Hillas parameters computation failed. Skipping.')
                 n_events_skipped += 1
                 continue
 
-            # Timing parameters calculation:
+            # Compute the timing parameters:
             try:
                 timing_params = timing_parameters(
                     camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
                 )
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
-                               'Timing parameters calculation failed. Skipping.')
+                               'Timing parameters computation failed. Skipping.')
                 n_events_skipped += 1
                 continue
 
-            # Leakage parameters calculation:
+            # Compute the leakage parameters:
             try:
                 leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
-                               'Leakage parameters calculation failed. Skipping.')
+                               'Leakage parameters computation failed. Skipping.')
                 n_events_skipped += 1
                 continue
 
-            # Save the event info:
+            # Save the general event information:
             event_info = EventInfoContainer(
                 obs_id=event.index.obs_id,
                 event_id=event.index.event_id,
@@ -217,9 +214,8 @@ def cal_to_dl1(input_file, output_file, config):
                 n_pixels=n_pixels,
             )
 
-            # The MAGIC telescope IDs are reset to the following values for the
-            # convenience of the combined analysis with LST-1, which has telescope ID 1.
-
+            # The telescope IDs are reset to the following values for the convenience
+            # of the combined analysis with LST-1, which has the telescope ID 1:
             if tel_id == 1:
                 event_info.tel_id = 2
 
@@ -227,7 +223,7 @@ def cal_to_dl1(input_file, output_file, config):
                 event_info.tel_id = 3
 
             if is_simulation:
-
+                # Save the simulated event information:
                 sim_info = SimInfoContainer(
                     mc_energy=event.simulation.shower.energy,
                     mc_alt=event.simulation.shower.alt,
@@ -239,9 +235,9 @@ def cal_to_dl1(input_file, output_file, config):
                 writer.write('params', (event_info, sim_info, hillas_params, timing_params, leakage_params))
 
             else:
-                # The integral and fractional part of the timestamps are separately stored
-                # as "time_sec" and "time_nanosec", respectively, to keep the precision.
-
+                # Save the event timing information.
+                # The integral and fractional part of timestamp are separately stored
+                # as "time_sec" and "time_nanosec", respectively, to keep the precision:
                 timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
                 fractional, integral = np.modf(timestamp)
 
@@ -258,7 +254,7 @@ def cal_to_dl1(input_file, output_file, config):
         n_events_processed = event.count + 1
 
         logger.info(f'{n_events_processed} events processed.')
-        logger.info(f'({n_events_skipped} events are skipped)')
+        logger.info(f'({n_events_skipped} events skipped)')
 
     # Save the subarray description:
     tel_descriptions = {
@@ -266,22 +262,23 @@ def cal_to_dl1(input_file, output_file, config):
         3: subarray.tel[2],   # MAGIC-II
     }
 
-    # In case of real data, the updated telescope positions are set which are
-    # precisely measured recently and are used also for the sim_telarray simulation.
-
     if is_simulation:
         tel_positions = {
             2: subarray.positions[1],   # MAGIC-I
             3: subarray.positions[2],   # MAGIC-II
         }
     else:
-        tel_positions = {
-            2: u.Quantity([35.25, -23.99, -0.58], u.m),   # MAGIC-I
-            3: u.Quantity([-35.25, 23.99, 0.58], u.m),    # MAGIC-II
-        }
+        # In case of real data, the updated telescope positions are saved which are
+        # precisely measured recently and are also used for sim_telarray simulations:
+        tel_positions = tel_positions_simtel
 
     subarray = SubarrayDescription(subarray.name, tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
+
+    # Save the simulation configuration:
+    if is_simulation:
+        with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
+            writer.write('config', event_source.simulation_config)
 
     logger.info(f'\nOutput data file:\n{output_file}')
     logger.info('\nDone.')
