@@ -59,7 +59,7 @@ def compare_dl1_images(input_file_1, input_file_2):
         if not np.array_equal(clean_mask_1, clean_mask_2):
             print(f"Event ID {event_ids_1[event_i]} has different cleaning masks.")
             clean_mask_diff = clean_mask_1 == clean_mask_2
-            print(np.where(clean_mask_diff is False)[0][0])
+            print(np.where(clean_mask_diff is False)[0])
 
 
 def main(*args):
