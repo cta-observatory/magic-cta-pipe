@@ -5,21 +5,21 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated level data (*_Y_*.root) with the MARS-like
-cleaning method, and compute DL1 parameters (i.e., Hillas, timing, and leakage parameters).
+cleaning method and compute DL1 parameters (i.e., Hillas, timing, and leakage parameters).
 Only the events that all the DL1 parameters are reconstructed will be saved in an output file.
 Telescope IDs are automatically reset to the following values when saving to the output file:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 All sub-run files that belong to the same observation ID of an input sub-run file will be automatically
 searched for by the MAGICEventSource module, and drive reports are read from all the sub-run files.
-Then, if the "process_run" option is set to True in a configuration file, the MAGICEventSource not only
+If the "process_run" option is set to True in a configuration file, the MAGICEventSource not only
 reads the drive reports but also processes all the sub-run files together with the input sub-run file.
 
 Usage:
 $ python magic_cal_to_dl1.py
---input-file "./data/calibrated/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root"
---output-file "./data/dl1/dl1_M1_run05093711.001.h5"
---config-file "./config.yaml"
+--input-file ./data/calibrated/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
+--output-dir ./data/dl1
+--config-file ./config.yaml
 """
 
 import time
@@ -28,6 +28,7 @@ import logging
 import argparse
 import warnings
 import numpy as np
+from pathlib import Path
 from astropy import units as u
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core import Container, Field
@@ -88,7 +89,7 @@ class SimInfoContainer(Container):
     mc_core_y = Field(-1, 'Event MC core Y', u.m)
 
 
-def cal_to_dl1(input_file, output_file, config):
+def cal_to_dl1(input_file, output_dir, config):
     """
     This function processes MAGIC calibrated level data to DL1.
 
@@ -96,21 +97,19 @@ def cal_to_dl1(input_file, output_file, config):
     ----------
     input_file: str
         Path to an input MAGIC calibrated data file
-    output_file: str
-        Path to an output DL1 data file
+    output_dir: str
+        Path to a directory where to save an output DL1 data file
     config: dict
         Configuration for data processes
     """
 
     process_run = config['MAGIC']['process_run']
-
-    event_source = MAGICEventSource(
-        input_url=input_file,
-        process_run=process_run,
-    )
+    event_source = MAGICEventSource(input_url=input_file, process_run=process_run, max_events=100)
 
     subarray = event_source.subarray
     is_simulation = event_source.is_simulation
+
+    obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
     logger.info(f'\nProcessing the following sub-run file(s) (process_run = {process_run}):')
@@ -133,8 +132,29 @@ def cal_to_dl1(input_file, output_file, config):
     camera_geom = subarray.tel[tel_id].camera.geometry
     magic_clean = MAGICClean(camera_geom, config_cleaning)
 
+    # Prepare for saving data to an output file.
+    # The output directory will be created if it doesn't exist:
+    Path(output_dir).mkdir(exist_ok=True, parents=True)
+
+    if is_simulation:
+        sim_config = event_source.simulation_config[obs_id]
+        zd_min = np.round(90 - sim_config.max_alt.to(u.deg).value).astype(int)
+        zd_max = np.round(90 - sim_config.min_alt.to(u.deg).value).astype(int)
+        # Assume MAGIC standard gamma MC:
+        output_file = f'{output_dir}/dl1_m{tel_id}_gamma_za{zd_min}to{zd_max}_run{obs_id}.h5'
+
+    else:
+        metadata = event_source.metadata
+        source_name = metadata['source_name'][0]
+
+        if process_run:
+            output_file = f'{output_dir}/dl1_m{tel_id}_{source_name}_run{obs_id:08}.h5'
+        else:
+            subrun_id = metadata['subrun_number'][0]
+            output_file = f'{output_dir}/dl1_m{tel_id}_{source_name}_run{obs_id:08}.{subrun_id:03}.h5'
+
     # Start processing events:
-    with HDF5TableWriter(filename=output_file, group_name='events', overwrite=True) as writer:
+    with HDF5TableWriter(filename=output_file, group_name='events') as writer:
 
         n_events_skipped = 0
 
@@ -150,7 +170,7 @@ def cal_to_dl1(input_file, output_file, config):
                     event_pulse_time=event.dl1.tel[tel_id].peak_time,
                 )
             else:
-                dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels
+                dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
                 badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
                 unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
@@ -204,7 +224,7 @@ def cal_to_dl1(input_file, output_file, config):
                 n_events_skipped += 1
                 continue
 
-            # Save the general event information:
+            # Set the general event information:
             event_info = EventInfoContainer(
                 obs_id=event.index.obs_id,
                 event_id=event.index.event_id,
@@ -217,13 +237,13 @@ def cal_to_dl1(input_file, output_file, config):
             # The telescope IDs are reset to the following values for the convenience
             # of the combined analysis with LST-1, which has the telescope ID 1:
             if tel_id == 1:
-                event_info.tel_id = 2
+                event_info.tel_id = 2   # MAGIC-I
 
             elif tel_id == 2:
-                event_info.tel_id = 3
+                event_info.tel_id = 3   # MAGIC-II
 
             if is_simulation:
-                # Save the simulated event information:
+                # Set the simulated event information:
                 sim_info = SimInfoContainer(
                     mc_energy=event.simulation.shower.energy,
                     mc_alt=event.simulation.shower.alt,
@@ -235,8 +255,8 @@ def cal_to_dl1(input_file, output_file, config):
                 writer.write('params', (event_info, sim_info, hillas_params, timing_params, leakage_params))
 
             else:
-                # Save the event timing information.
-                # The integral and fractional part of timestamp are separately stored
+                # Set the event timing information.
+                # The integral and fractional part of timestamp are separately saved
                 # as "time_sec" and "time_nanosec", respectively, to keep the precision:
                 timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
                 fractional, integral = np.modf(timestamp)
@@ -263,6 +283,7 @@ def cal_to_dl1(input_file, output_file, config):
     }
 
     if is_simulation:
+        # Save the positions used in MAGIC standard MCs:
         tel_positions = {
             2: subarray.positions[1],   # MAGIC-I
             3: subarray.positions[2],   # MAGIC-II
@@ -272,13 +293,13 @@ def cal_to_dl1(input_file, output_file, config):
         # precisely measured recently and are also used for sim_telarray simulations:
         tel_positions = tel_positions_simtel
 
-    subarray = SubarrayDescription(subarray.name, tel_positions, tel_descriptions)
+    subarray = SubarrayDescription('MAGIC', tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
 
-    # Save the simulation configuration:
     if is_simulation:
+        # Save the simulation configuration:
         with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
-            writer.write('config', event_source.simulation_config)
+            writer.write('config', sim_config)
 
     logger.info(f'\nOutput data file:\n{output_file}')
     logger.info('\nDone.')
@@ -296,8 +317,8 @@ def main():
     )
 
     parser.add_argument(
-        '--output-file', '-o', dest='output_file', type=str, default='./dl1_magic.h5',
-        help='Path to an output DL1 data file.',
+        '--output-dir', '-o', dest='output_dir', type=str, default='./data',
+        help='Path to a directory where to save an ouptut DL1 data file.',
     )
 
     parser.add_argument(
@@ -310,7 +331,7 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    cal_to_dl1(args.input_file, args.output_file, config)
+    cal_to_dl1(args.input_file, args.output_dir, config)
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
