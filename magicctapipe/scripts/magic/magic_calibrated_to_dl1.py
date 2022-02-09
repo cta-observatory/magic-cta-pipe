@@ -142,7 +142,7 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config, writ
                     if is_simulation:
                         clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time)
                     else:
-                        dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels
+                        dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
                         badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
                         unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
                         clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time, unsuitable_mask=unsuitable_mask)
