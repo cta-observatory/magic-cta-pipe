@@ -45,6 +45,7 @@ def compare_dl1_images(input_file_1, input_file_2):
         print("The two files have different event ids.")
 
     for event_i in range(len(event_ids_1)):
+        assert event_ids_1[event_i] == event_ids_2[event_i]
         image_1 = np.array(images_1[event_i])
         image_2 = np.array(images_2[event_i])
         image_diff = np.absolute(image_1 - image_2)
