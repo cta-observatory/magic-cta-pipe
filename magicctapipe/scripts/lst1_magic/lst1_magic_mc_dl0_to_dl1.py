@@ -223,7 +223,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
             magic_stereo = None
             n_events_skipped = 0
 
-            event_source_per_tel = EventSource(input_file, allowed_tels=[tel_id], max_events=100)
+            event_source_per_tel = EventSource(input_file, allowed_tels=[tel_id])
 
             for event in event_source_per_tel:
 
