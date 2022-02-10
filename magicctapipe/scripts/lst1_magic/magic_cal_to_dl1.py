@@ -128,7 +128,7 @@ def cal_to_dl1(input_file, output_dir, config):
 
     logger.info(f'\nConfiguration for image cleaning:\n{config_cleaning}\n')
 
-    # Initialize the MAGIC cleaning:
+    # Configure the MAGIC cleaning:
     camera_geom = subarray.tel[tel_id].camera.geometry
     magic_clean = MAGICClean(camera_geom, config_cleaning)
 
@@ -163,7 +163,7 @@ def cal_to_dl1(input_file, output_dir, config):
             if (event.count % 100) == 0:
                 logger.info(f'{event.count} events')
 
-            # Image cleaning:
+            # Apply the image cleaning:
             if is_simulation:
                 signal_pixels, image, peak_time = magic_clean.clean_image(
                     event_image=event.dl1.tel[tel_id].image,
@@ -195,7 +195,7 @@ def cal_to_dl1(input_file, output_dir, config):
                 n_events_skipped += 1
                 continue
 
-            # Compute the Hillas parameters:
+            # Try to compute the Hillas parameters:
             try:
                 hillas_params = hillas_parameters(camera_geom, image_cleaned)
             except:
@@ -204,7 +204,7 @@ def cal_to_dl1(input_file, output_dir, config):
                 n_events_skipped += 1
                 continue
 
-            # Compute the timing parameters:
+            # Try to compute the timing parameters:
             try:
                 timing_params = timing_parameters(
                     camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
@@ -215,7 +215,7 @@ def cal_to_dl1(input_file, output_dir, config):
                 n_events_skipped += 1
                 continue
 
-            # Compute the leakage parameters:
+            # Try to compute the leakage parameters:
             try:
                 leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
             except:
