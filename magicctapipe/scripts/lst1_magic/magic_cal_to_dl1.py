@@ -104,7 +104,7 @@ def cal_to_dl1(input_file, output_dir, config):
     """
 
     process_run = config['MAGIC']['process_run']
-    event_source = MAGICEventSource(input_url=input_file, process_run=process_run, max_events=100)
+    event_source = MAGICEventSource(input_url=input_file, process_run=process_run)
 
     subarray = event_source.subarray
     is_simulation = event_source.is_simulation
@@ -312,7 +312,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file', '-i', dest='input_file', type=str,
+        '--input-file', '-i', dest='input_file', type=str, required=True,
         help='Path to an input MAGIC calibrated data file (*_Y_*.root).',
     )
 
