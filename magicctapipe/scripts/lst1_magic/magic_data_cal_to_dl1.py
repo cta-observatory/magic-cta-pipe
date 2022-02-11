@@ -51,8 +51,8 @@ warnings.simplefilter('ignore')
 sec2nsec = 1e9
 
 tel_positions_simtel = {
-    2: u.Quantity([35.25, -23.99, -0.58], u.m),   # MAGIC-I
-    3: u.Quantity([-35.25, 23.99, 0.58], u.m),    # MAGIC-II
+    2: u.Quantity([39.3, -62.55, -0.97], u.m),    # MAGIC-I
+    3: u.Quantity([-31.21, -14.57, 0.2], u.m),    # MAGIC-II
 }
 
 __all__ = [
@@ -61,32 +61,23 @@ __all__ = [
 
 
 class EventInfoContainer(Container):
-    """ Container to store general event information """
+    """
+    Container to store general event information:
+    - observation/event/telescope IDs
+    - telescope pointing direction
+    - event timing information
+    - parameters of cleaned image
+    """
 
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
     alt_tel = Field(-1, 'Telescope pointing altitude', u.rad)
     az_tel = Field(-1, 'Telescope pointing azimuth', u.rad)
-    n_islands = Field(-1, 'Number of islands of cleaned image')
-    n_pixels = Field(-1, 'Number of pixels of cleaned image')
-
-
-class TimingInfoContainer(Container):
-    """ Container to store event timing information """
-
     time_sec = Field(-1, 'Event time second')
     time_nanosec = Field(-1, 'Event time nanosecond')
-
-
-class SimInfoContainer(Container):
-    """ Container to store simulated event information """
-
-    mc_energy = Field(-1, 'Event MC energy', u.TeV)
-    mc_alt = Field(-1, 'Event MC altitude', u.deg)
-    mc_az = Field(-1, 'Event MC azimuth', u.deg)
-    mc_core_x = Field(-1, 'Event MC core X', u.m)
-    mc_core_y = Field(-1, 'Event MC core Y', u.m)
+    n_islands = Field(-1, 'Number of islands of cleaned image')
+    n_pixels = Field(-1, 'Number of pixels of cleaned image')
 
 
 def cal_to_dl1(input_file, output_dir, config):
@@ -107,8 +98,6 @@ def cal_to_dl1(input_file, output_dir, config):
     event_source = MAGICEventSource(input_url=input_file, process_run=process_run)
 
     subarray = event_source.subarray
-    is_simulation = event_source.is_simulation
-
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
@@ -119,11 +108,7 @@ def cal_to_dl1(input_file, output_dir, config):
     config_cleaning = config['MAGIC']['magic_clean']
 
     # Check the "find_hotpixels" option:
-    if is_simulation and config_cleaning['find_hotpixels'] is not False:
-        logger.warning('\nHot pixels do not exist in a simulation. Setting the option to False...')
-        config_cleaning.update({'find_hotpixels': False})
-
-    elif config_cleaning['find_hotpixels'] == 'auto':
+    if config_cleaning['find_hotpixels'] == 'auto':
         config_cleaning.update({'find_hotpixels': True})
 
     logger.info(f'\nConfiguration for image cleaning:\n{config_cleaning}\n')
@@ -136,22 +121,11 @@ def cal_to_dl1(input_file, output_dir, config):
     # The output directory will be created if it doesn't exist:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    if is_simulation:
-        sim_config = event_source.simulation_config[obs_id]
-        zd_min = np.round(90 - sim_config.max_alt.to(u.deg).value).astype(int)
-        zd_max = np.round(90 - sim_config.min_alt.to(u.deg).value).astype(int)
-        # Assume MAGIC standard gamma MC:
-        output_file = f'{output_dir}/dl1_m{tel_id}_gamma_za{zd_min}to{zd_max}_run{obs_id}.h5'
-
+    if process_run:
+        output_file = f'{output_dir}/dl1_m{tel_id}_run{obs_id:08}.h5'
     else:
-        metadata = event_source.metadata
-        source_name = metadata['source_name'][0]
-
-        if process_run:
-            output_file = f'{output_dir}/dl1_m{tel_id}_{source_name}_run{obs_id:08}.h5'
-        else:
-            subrun_id = metadata['subrun_number'][0]
-            output_file = f'{output_dir}/dl1_m{tel_id}_{source_name}_run{obs_id:08}.{subrun_id:03}.h5'
+        subrun_id = event_source.metadata['subrun_number'][0]
+        output_file = f'{output_dir}/dl1_m{tel_id}_run{obs_id:08}.{subrun_id:03}.h5'
 
     # Start processing events:
     with HDF5TableWriter(filename=output_file, group_name='events') as writer:
@@ -164,21 +138,15 @@ def cal_to_dl1(input_file, output_dir, config):
                 logger.info(f'{event.count} events')
 
             # Apply the image cleaning:
-            if is_simulation:
-                signal_pixels, image, peak_time = magic_clean.clean_image(
-                    event_image=event.dl1.tel[tel_id].image,
-                    event_pulse_time=event.dl1.tel[tel_id].peak_time,
-                )
-            else:
-                dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
-                badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
-                unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
+            dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
+            badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
+            unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
-                signal_pixels, image, peak_time = magic_clean.clean_image(
-                    event_image=event.dl1.tel[tel_id].image,
-                    event_pulse_time=event.dl1.tel[tel_id].peak_time,
-                    unsuitable_mask=unsuitable_mask,
-                )
+            signal_pixels, image, peak_time = magic_clean.clean_image(
+                event_image=event.dl1.tel[tel_id].image,
+                event_pulse_time=event.dl1.tel[tel_id].peak_time,
+                unsuitable_mask=unsuitable_mask,
+            )
 
             image_cleaned = image.copy()
             image_cleaned[~signal_pixels] = 0
@@ -224,82 +192,52 @@ def cal_to_dl1(input_file, output_dir, config):
                 n_events_skipped += 1
                 continue
 
-            # Set the general event information:
+            # Set the general event information to the container.
+            # The integral and fractional part of timestamp are separately saved
+            # as "time_sec" and "time_nanosec", respectively, to keep the precision:
+            timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
+            fractional, integral = np.modf(timestamp)
+
+            time_sec = np.round(integral).astype(int)
+            time_nanosec = np.round(fractional * sec2nsec, decimals=-2).astype(int)
+
             event_info = EventInfoContainer(
                 obs_id=event.index.obs_id,
                 event_id=event.index.event_id,
                 alt_tel=event.pointing.tel[tel_id].altitude,
                 az_tel=event.pointing.tel[tel_id].azimuth,
+                time_sec=time_sec,
+                time_nanosec=time_nanosec,
                 n_islands=n_islands,
                 n_pixels=n_pixels,
             )
 
-            # The telescope IDs are reset to the following values for the convenience
-            # of the combined analysis with LST-1, which has the telescope ID 1:
+            # The telescope IDs are reset to the following values for
+            # the convenience of the combined analysis with LST-1 (tel_id = 1):
             if tel_id == 1:
                 event_info.tel_id = 2   # MAGIC-I
 
             elif tel_id == 2:
                 event_info.tel_id = 3   # MAGIC-II
 
-            if is_simulation:
-                # Set the simulated event information:
-                sim_info = SimInfoContainer(
-                    mc_energy=event.simulation.shower.energy,
-                    mc_alt=event.simulation.shower.alt,
-                    mc_az=event.simulation.shower.az,
-                    mc_core_x=event.simulation.shower.core_x,
-                    mc_core_y=event.simulation.shower.core_y,
-                )
-
-                writer.write('params', (event_info, sim_info, hillas_params, timing_params, leakage_params))
-
-            else:
-                # Set the event timing information.
-                # The integral and fractional part of timestamp are separately saved
-                # as "time_sec" and "time_nanosec", respectively, to keep the precision:
-                timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
-                fractional, integral = np.modf(timestamp)
-
-                time_sec = np.round(integral).astype(int)
-                time_nanosec = np.round(fractional * sec2nsec, decimals=-2).astype(int)
-
-                time_info = TimingInfoContainer(
-                    time_sec=time_sec,
-                    time_nanosec=time_nanosec,
-                )
-
-                writer.write('params', (event_info, time_info, hillas_params, timing_params, leakage_params))
+            writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
 
         n_events_processed = event.count + 1
 
         logger.info(f'{n_events_processed} events processed.')
         logger.info(f'({n_events_skipped} events skipped)')
 
-    # Save the subarray description:
+    # Reset the IDs also for the telescope descriptions:
     tel_descriptions = {
         2: subarray.tel[1],   # MAGIC-I
         3: subarray.tel[2],   # MAGIC-II
     }
 
-    if is_simulation:
-        # Save the positions used in MAGIC standard MCs:
-        tel_positions = {
-            2: subarray.positions[1],   # MAGIC-I
-            3: subarray.positions[2],   # MAGIC-II
-        }
-    else:
-        # In case of real data, the updated telescope positions are saved which are
-        # precisely measured recently and are also used for sim_telarray simulations:
-        tel_positions = tel_positions_simtel
-
-    subarray = SubarrayDescription('MAGIC', tel_positions, tel_descriptions)
+    # Save the subarray description.
+    # Here we save the MAGIC telescope positions relative to the center of LST-1 + MAGIC array,
+    # which are also used for LST-1 + MAGIC sim_telarray simulations:
+    subarray = SubarrayDescription('MAGIC', tel_positions_simtel, tel_descriptions)
     subarray.to_hdf(output_file)
-
-    if is_simulation:
-        # Save the simulation configuration:
-        with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
-            writer.write('config', sim_config)
 
     logger.info(f'\nOutput data file:\n{output_file}')
     logger.info('\nDone.')

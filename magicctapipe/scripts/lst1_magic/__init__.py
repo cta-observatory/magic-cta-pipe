@@ -6,7 +6,7 @@ from .lst1_magic_train_rfs import (
     train_rf_regressor,
     train_rf_classifier,
 )
-from .magic_cal_to_dl1 import cal_to_dl1
+from .magic_data_cal_to_dl1 import cal_to_dl1
 from .merge_hdf_files import merge_hdf_files
 
 __all__ = [

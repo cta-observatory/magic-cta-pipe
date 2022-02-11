@@ -5,7 +5,7 @@ from .lst1_magic import (
     stereo_reco,
     train_rf_regressor,
     train_rf_classifier,
-    magic_cal_to_dl1,
+    cal_to_dl1,
     merge_hdf_files,
 )
 
@@ -16,6 +16,6 @@ __all__ = [
     "stereo_reco",
     "train_rf_regressor",
     "train_rf_classifier",
-    "magic_cal_to_dl1",
+    "cal_to_dl1",
     "merge_hdf_files",
 ]

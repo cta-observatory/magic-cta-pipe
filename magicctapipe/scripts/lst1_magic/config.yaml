@@ -1,15 +1,13 @@
-mc_allowed_tels:
+mc_tel_ids:
     LST-1: 1
     MAGIC-I: 2
     MAGIC-II : 3
 
 
 LST:
-
-    # The following settings are derived from lstchain v0.8.4:
+    # The following settings are derived from lstchain v0.9.0:
     # - lstchain_standard_config.json
     # - lstchain/data/lstchain_dl1ab_tune_MC_to_Crab_config.json
-
     image_extractor:
         name: 'LocalPeakWindowSum'
         window_shift: 4
@@ -58,15 +56,15 @@ MAGIC:
         max_time_diff: 2.46
         use_time: true
         use_sum: true
-        find_hotpixels: 'auto'
+        find_hotpixels: true
 
-    process_run: false
+    process_run: true
 
 
 event_coincidence:
     type_lst_time: 'dragon_time'
     window_width: 6.0e-7      # unit: [sec]
-    offset_start: -5.0e-6     # unit: [sec]
+    offset_start: -1.0e-5     # unit: [sec]
     offset_stop: 0.0          # unit: [sec]
 
 
@@ -77,12 +75,12 @@ stereo_reco:
 energy_regressor:
     settings:
         n_estimators: 150
-        criterion: "squared_error"
+        criterion: 'squared_error'
         max_depth: 50
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: "auto"
+        max_features: 'auto'
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
         bootstrap: true
@@ -103,19 +101,19 @@ energy_regressor:
         'slope',
         'intensity_width_2',
         'h_max',
-        'impact'
+        'impact',
     ]
 
 
 direction_regressor:
     settings:
         n_estimators: 150
-        criterion: "squared_error"
+        criterion: 'squared_error'
         max_depth: 50
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: "auto"
+        max_features: 'auto'
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
         bootstrap: true
@@ -136,19 +134,19 @@ direction_regressor:
         'slope',
         'intensity_width_2',
         'h_max',
-        'impact'
+        'impact',
     ]
 
 
 event_classifier:
     settings:
         n_estimators: 100
-        criterion: "gini"
+        criterion: 'gini'
         max_depth: 100
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: "auto"
+        max_features: 'auto'
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
         bootstrap: true
@@ -170,5 +168,5 @@ event_classifier:
         'slope',
         'intensity_width_2',
         'h_max',
-        'impact'
+        'impact',
     ]
