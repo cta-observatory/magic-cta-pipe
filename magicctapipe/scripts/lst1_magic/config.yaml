@@ -9,7 +9,7 @@ LST:
     # - lstchain_standard_config.json
     # - lstchain/data/lstchain_dl1ab_tune_MC_to_Crab_config.json
     image_extractor:
-        name: 'LocalPeakWindowSum'
+        type: 'LocalPeakWindowSum'
         window_shift: 4
         window_width: 8
 
@@ -45,7 +45,7 @@ LST:
 
 MAGIC:
     image_extractor:
-        name: 'LocalPeakWindowSum'
+        type: 'LocalPeakWindowSum'
         window_shift: 2
         window_width: 5
 

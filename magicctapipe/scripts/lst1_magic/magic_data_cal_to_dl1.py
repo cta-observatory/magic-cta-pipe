@@ -4,10 +4,10 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script processes MAGIC calibrated level data (*_Y_*.root) with the MARS-like
-cleaning method and compute DL1 parameters (i.e., Hillas, timing, and leakage parameters).
+This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning
+method and compute DL1 parameters (i.e., Hillas, timing, and leakage parameters).
 Only the events that all the DL1 parameters are reconstructed will be saved in an output file.
-Telescope IDs are automatically reset to the following values when saving to the output file:
+Telescope IDs are reset to the following values when saving to the output file:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 All sub-run files that belong to the same observation ID of an input sub-run file will be automatically
@@ -16,7 +16,7 @@ If the "process_run" option is set to True, the MAGICEventSource not only reads 
 but also processes all the sub-run files together with the input sub-run file.
 
 Usage:
-$ python magic_cal_to_dl1.py
+$ python magic_data_cal_to_dl1.py
 --input-file ./data/calibrated/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 --output-dir ./data/dl1
 --config-file ./config.yaml
@@ -76,13 +76,13 @@ class EventInfoContainer(Container):
     az_tel = Field(-1, 'Telescope pointing azimuth', u.rad)
     time_sec = Field(-1, 'Event time second')
     time_nanosec = Field(-1, 'Event time nanosecond')
-    n_islands = Field(-1, 'Number of islands of cleaned image')
     n_pixels = Field(-1, 'Number of pixels of cleaned image')
+    n_islands = Field(-1, 'Number of islands of cleaned image')
 
 
 def cal_to_dl1(input_file, output_dir, config):
     """
-    This function processes MAGIC calibrated level data to DL1.
+    This function processes MAGIC calibrated data to DL1.
 
     Parameters
     ----------
@@ -97,7 +97,6 @@ def cal_to_dl1(input_file, output_dir, config):
     process_run = config['MAGIC']['process_run']
     event_source = MAGICEventSource(input_url=input_file, process_run=process_run)
 
-    subarray = event_source.subarray
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
@@ -114,7 +113,7 @@ def cal_to_dl1(input_file, output_dir, config):
     logger.info(f'\nConfiguration for image cleaning:\n{config_cleaning}\n')
 
     # Configure the MAGIC cleaning:
-    camera_geom = subarray.tel[tel_id].camera.geometry
+    camera_geom = event_source.subarray.tel[tel_id].camera.geometry
     magic_clean = MAGICClean(camera_geom, config_cleaning)
 
     # Prepare for saving data to an output file.
@@ -137,11 +136,12 @@ def cal_to_dl1(input_file, output_dir, config):
             if (event.count % 100) == 0:
                 logger.info(f'{event.count} events')
 
-            # Apply the image cleaning:
+            # Get bad pixel information:
             dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
             badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
             unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
+            # Apply the image cleaning:
             signal_pixels, image, peak_time = magic_clean.clean_image(
                 event_image=event.dl1.tel[tel_id].image,
                 event_pulse_time=event.dl1.tel[tel_id].peak_time,
@@ -154,8 +154,8 @@ def cal_to_dl1(input_file, output_dir, config):
             peak_time_cleaned = peak_time.copy()
             peak_time_cleaned[~signal_pixels] = 0
 
-            n_islands, _ = number_of_islands(camera_geom, signal_pixels)
             n_pixels = np.count_nonzero(signal_pixels)
+            n_islands, _ = number_of_islands(camera_geom, signal_pixels)
 
             if n_pixels == 0:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
@@ -208,8 +208,8 @@ def cal_to_dl1(input_file, output_dir, config):
                 az_tel=event.pointing.tel[tel_id].azimuth,
                 time_sec=time_sec,
                 time_nanosec=time_nanosec,
-                n_islands=n_islands,
                 n_pixels=n_pixels,
+                n_islands=n_islands,
             )
 
             # The telescope IDs are reset to the following values for
@@ -227,10 +227,10 @@ def cal_to_dl1(input_file, output_dir, config):
         logger.info(f'{n_events_processed} events processed.')
         logger.info(f'({n_events_skipped} events skipped)')
 
-    # Reset the IDs also for the telescope descriptions:
+    # Reset the IDs of the telescope descriptions:
     tel_descriptions = {
-        2: subarray.tel[1],   # MAGIC-I
-        3: subarray.tel[2],   # MAGIC-II
+        2: event_source.subarray.tel[1],   # MAGIC-I
+        3: event_source.subarray.tel[2],   # MAGIC-II
     }
 
     # Save the subarray description.
