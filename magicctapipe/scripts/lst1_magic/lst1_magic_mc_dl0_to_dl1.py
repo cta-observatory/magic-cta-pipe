@@ -178,7 +178,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     )
 
     # Prepare for saving data to an output file.
-    # The output directory will be created if it doesn't exist.
+    # The output directory will be created if it doesn't exist:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     # Try to parse run information from the input file name.
@@ -223,7 +223,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 magic_clean = MAGICClean(camera_geom, config_magic['magic_clean'])
 
             n_events_skipped = 0
-            event_source_per_tel = EventSource(input_file, allowed_tels=[tel_id], max_events=100)
+            event_source_per_tel = EventSource(input_file, allowed_tels=[tel_id])
 
             for event in event_source_per_tel:
 
