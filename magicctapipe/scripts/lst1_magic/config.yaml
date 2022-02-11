@@ -56,9 +56,9 @@ MAGIC:
         max_time_diff: 2.46
         use_time: true
         use_sum: true
-        find_hotpixels: true
+        find_hotpixels: 'auto'
 
-    process_run: true
+    process_run: false
 
 
 event_coincidence:
