@@ -12,8 +12,8 @@ MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 All sub-run files that belong to the same observation ID of an input sub-run file will be automatically
 searched for by the MAGICEventSource module, and drive reports are read from all the sub-run files.
-If the "process_run" option is set to True in a configuration file, the MAGICEventSource not only
-reads the drive reports but also processes all the sub-run files together with the input sub-run file.
+If the "process_run" option is set to True, the MAGICEventSource not only reads the drive reports
+but also processes all the sub-run files together with the input sub-run file.
 
 Usage:
 $ python magic_cal_to_dl1.py
@@ -189,7 +189,7 @@ def cal_to_dl1(input_file, output_dir, config):
             n_islands, _ = number_of_islands(camera_geom, signal_pixels)
             n_pixels = np.count_nonzero(signal_pixels)
 
-            if np.all(image_cleaned == 0):
+            if n_pixels == 0:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                'Could not survive the image cleaning. Skipping.')
                 n_events_skipped += 1
