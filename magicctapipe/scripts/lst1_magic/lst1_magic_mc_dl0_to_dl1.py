@@ -5,7 +5,7 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes simtel MC DL0 data (*.simtel.gz) containing LST-1 and MAGIC events
-and compute DL1 parameters (i.e., Hillas, timing, and leakage parameters).
+and computes DL1 parameters (i.e., Hillas, timing, and leakage parameters).
 Only the events that all the DL1 parameters are computed will be saved in an output file.
 Telescope IDs are reset to the following values when saving to the output file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
@@ -103,10 +103,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     output_dir: str
         Path to a directory where to save an output DL1 data file
     config: dict
-        Configuration for data processes
+        Configuration for the LST-1 + MAGIC analysis
     """
 
-    logger.info(f'\nInput data file:\n{input_file}')
+    logger.info(f'\nInput file:\n{input_file}')
     event_source = EventSource(input_file)
 
     obs_id = event_source.obs_ids[0]
@@ -177,28 +177,24 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
-    # Prepare for saving data to an output file.
-    # The output directory will be created if it doesn't exist:
+    # Prepare for saving data to an output file. Here we try to parse run information from
+    # the input file name, but if it fails, simply name the output file with the observation ID:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    # Try to parse run information from the input file name.
-    # If it doesn't follow the convention, simply name the output file with the observation ID:
     base_name = Path(input_file).resolve().name
-    regex_mc_off = r'(\w+)_run\d+_.*off(\S+)\.simtel.gz'
-    regex_mc = r'(\w+)_run\d+_.*\.simtel.gz'
+    regex_mc_off = r'(\w+)_run(\d+)_.*off(\S+)\.simtel.gz'
+    regex_mc = r'(\w+)_run(\d+)_.*\.simtel.gz'
 
     if re.fullmatch(regex_mc_off, base_name):
         parser = re.findall(regex_mc_off, base_name)[0]
-        output_file = f'{output_dir}/dl1_lst1_magic_{parser[0]}_off{parser[1]}_run{obs_id}.h5'
+        output_file = f'{output_dir}/dl1_lst1_magic_{parser[0]}_off{parser[2]}_run{parser[1]}.h5'
 
     elif re.fullmatch(regex_mc, base_name):
         parser = re.findall(regex_mc, base_name)[0]
-        output_file = f'{output_dir}/dl1_lst1_magic_{parser}_run{obs_id}.h5'
+        output_file = f'{output_dir}/dl1_lst1_magic_{parser[0]}_run{parser[1]}.h5'
 
     else:
-        logger.warning('\nCould not parse run information from the input file name. ' \
-                       'Simply name the output file with the observation ID.')
-
+        logger.warning('\nCould not parse run information from the input file name. Simply name the output file.')
         output_file = f'{output_dir}/dl1_lst1_magic_mc_run{obs_id}.h5'
 
     # Start processing events:
@@ -227,13 +223,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
             for event in event_source_per_tel:
 
-                if (event.count % 100) == 0:
+                if event.count % 100 == 0:
                     logger.info(f'{event.count} events')
 
                 trigger_m1 = (tel_id_m1 in event.trigger.tels_with_trigger)
                 trigger_m2 = (tel_id_m2 in event.trigger.tels_with_trigger)
 
-                magic_stereo = (trigger_m1 and trigger_m2)
+                magic_stereo = np.logical_and(trigger_m1, trigger_m2)
 
                 if tel_name == 'LST-1':
 
@@ -378,7 +374,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     magic_stereo=magic_stereo,
                 )
 
-                # The telescope IDs are reset to the following values:
+                # Reset the telescope IDs:
                 if tel_name == 'LST-1':
                     event_info.tel_id = 1
 
@@ -388,6 +384,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 elif tel_name == 'MAGIC-II':
                     event_info.tel_id = 3
 
+                # Save the parameters to the output file:
                 writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
 
             n_events_processed = event.count + 1
@@ -395,7 +392,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
             logger.info(f'{n_events_processed} events processed.')
             logger.info(f'({n_events_skipped} events skipped)')
 
-    # Reset the IDs of the telescope positions.
+    # Reset the telescope IDs of the telescope positions.
     # Also, the coordinate will be changed to the one relative to the center of LST-1 + MAGIC array:
     positions = np.array([subarray.positions[tel_id].value for tel_id in mc_tel_ids.values()])
     positions_cog = np.round(positions - positions.mean(axis=0), decimals=2)
@@ -406,7 +403,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         3: u.Quantity(positions_cog[2,:], u.m),    # MAGIC-II
     }
 
-    # Reset the IDs of the telescope descriptions:
+    # Reset the telescope IDs of the telescope descriptions:
     tel_descriptions = {
         1: subarray.tel[tel_id_lst],   # LST-1
         2: subarray.tel[tel_id_m1],    # MAGIC-I
@@ -421,7 +418,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     with HDF5TableWriter(filename=output_file, group_name='simulation', mode='a') as writer:
         writer.write('config', event_source.simulation_config)
 
-    logger.info(f'\nOutput data file:\n{output_file}')
+    logger.info(f'\nOutput file:\n{output_file}')
     logger.info('\nDone.')
 
 

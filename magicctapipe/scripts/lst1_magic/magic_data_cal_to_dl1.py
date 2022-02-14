@@ -5,15 +5,16 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning
-method and compute DL1 parameters (i.e., Hillas, timing, and leakage parameters).
+method and computes DL1 parameters (i.e., Hillas, timing, and leakage parameters).
 Only the events that all the DL1 parameters are reconstructed will be saved in an output file.
-Telescope IDs are reset to the following values when saving to the output file:
+Telescope IDs are reset to the following values when saving to the output file for the convenience
+of the combined analysis with LST-1, which has the telescope ID 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-All sub-run files that belong to the same observation ID of an input sub-run file will be automatically
-searched for by the MAGICEventSource module, and drive reports are read from all the sub-run files.
-If the "process_run" option is set to True, the MAGICEventSource not only reads the drive reports
-but also processes all the sub-run files together with the input sub-run file.
+All sub-run files that are stored in the same directory of an input sub-run file with the same
+observation ID will be automatically searched for by the MAGICEventSource module, and drive reports
+are read from all the sub-run files. If the "process_run" option is set to True, the MAGICEventSource
+not only reads the drive reports but also processes all the sub-run files together with the input sub-run file.
 
 Usage:
 $ python magic_data_cal_to_dl1.py
@@ -39,8 +40,8 @@ from ctapipe.image import (
     leakage_parameters,
 )
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.image import MAGICClean
 from ctapipe_io_magic import MAGICEventSource
+from magicctapipe.image import MAGICClean
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -50,7 +51,7 @@ warnings.simplefilter('ignore')
 
 sec2nsec = 1e9
 
-tel_positions_simtel = {
+tel_positions = {
     2: u.Quantity([39.3, -62.55, -0.97], u.m),    # MAGIC-I
     3: u.Quantity([-31.21, -14.57, 0.2], u.m),    # MAGIC-II
 }
@@ -91,7 +92,7 @@ def cal_to_dl1(input_file, output_dir, config):
     output_dir: str
         Path to a directory where to save an output DL1 data file
     config: dict
-        Configuration for data processes
+        Configuration for the LST-1 + MAGIC analysis
     """
 
     process_run = config['MAGIC']['process_run']
@@ -100,13 +101,12 @@ def cal_to_dl1(input_file, output_dir, config):
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
-    logger.info(f'\nProcessing the following sub-run file(s) (process_run = {process_run}):')
+    logger.info(f'\nProcessing the following data (process_run = {process_run}):')
     for root_file in event_source.file_list:
         logger.info(root_file)
 
     config_cleaning = config['MAGIC']['magic_clean']
 
-    # Check the "find_hotpixels" option:
     if config_cleaning['find_hotpixels'] == 'auto':
         config_cleaning.update({'find_hotpixels': True})
 
@@ -116,8 +116,7 @@ def cal_to_dl1(input_file, output_dir, config):
     camera_geom = event_source.subarray.tel[tel_id].camera.geometry
     magic_clean = MAGICClean(camera_geom, config_cleaning)
 
-    # Prepare for saving data to an output file.
-    # The output directory will be created if it doesn't exist:
+    # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     if process_run:
@@ -133,7 +132,7 @@ def cal_to_dl1(input_file, output_dir, config):
 
         for event in event_source:
 
-            if (event.count % 100) == 0:
+            if event.count % 100 == 0:
                 logger.info(f'{event.count} events')
 
             # Get bad pixel information:
@@ -193,8 +192,8 @@ def cal_to_dl1(input_file, output_dir, config):
                 continue
 
             # Set the general event information to the container.
-            # The integral and fractional part of timestamp are separately saved
-            # as "time_sec" and "time_nanosec", respectively, to keep the precision:
+            # In order to keep the precision, the integral and fractional part of
+            # timestamp are separately saved as "time_sec" and "time_nanosec", respectively:
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
             fractional, integral = np.modf(timestamp)
 
@@ -212,14 +211,14 @@ def cal_to_dl1(input_file, output_dir, config):
                 n_islands=n_islands,
             )
 
-            # The telescope IDs are reset to the following values for
-            # the convenience of the combined analysis with LST-1 (tel_id = 1):
+            # Reset the telescope IDs:
             if tel_id == 1:
                 event_info.tel_id = 2   # MAGIC-I
 
             elif tel_id == 2:
                 event_info.tel_id = 3   # MAGIC-II
 
+            # Save the parameters to the output file:
             writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
 
         n_events_processed = event.count + 1
@@ -227,19 +226,19 @@ def cal_to_dl1(input_file, output_dir, config):
         logger.info(f'{n_events_processed} events processed.')
         logger.info(f'({n_events_skipped} events skipped)')
 
-    # Reset the IDs of the telescope descriptions:
+    # Reset the telescope IDs of the telescope descriptions:
     tel_descriptions = {
         2: event_source.subarray.tel[1],   # MAGIC-I
         3: event_source.subarray.tel[2],   # MAGIC-II
     }
 
     # Save the subarray description.
-    # Here we save the MAGIC telescope positions relative to the center of LST-1 + MAGIC array,
-    # which are also used for LST-1 + MAGIC sim_telarray simulations:
-    subarray = SubarrayDescription('MAGIC', tel_positions_simtel, tel_descriptions)
+    # Here we save the MAGIC telescope positions relative to the center of
+    # LST-1 + MAGIC array, which are also used for sim_telarray simulations:
+    subarray = SubarrayDescription('MAGIC', tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
 
-    logger.info(f'\nOutput data file:\n{output_file}')
+    logger.info(f'\nOutput file:\n{output_file}')
     logger.info('\nDone.')
 
 
