@@ -4,17 +4,16 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning
-method and computes DL1 parameters (i.e., Hillas, timing, and leakage parameters).
-Only the events that all the DL1 parameters are reconstructed will be saved in an output file.
-Telescope IDs are reset to the following values when saving to the output file for the convenience
-of the combined analysis with LST-1, which has the telescope ID 1:
+This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
+the DL1 parameters (i.e., Hillas, timing, and leakage parameters). It will save only the events in an output file
+that succeed in reconstructing all the parameters. Telescope IDs are reset to the following values when saving
+to the output file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-All sub-run files that are stored in the same directory of an input sub-run file with the same
-observation ID will be automatically searched for by the MAGICEventSource module, and drive reports
-are read from all the sub-run files. If the "process_run" option is set to True, the MAGICEventSource
-not only reads the drive reports but also processes all the sub-run files together with the input sub-run file.
+The MAGICEventSource module searches for all the sub-run files belonging to the same observation ID and stored in
+the same directory of an input sub-run file. The module reads drive reports from the files and uses the information
+to reconstruct the telescope pointing directions, so it is best to store the files in the same directory.
+If one gives the "--process-run" argument, the module also processes all the files together with the input file.
 
 Usage:
 $ python magic_data_cal_to_dl1.py
@@ -81,7 +80,12 @@ class EventInfoContainer(Container):
     n_islands = Field(-1, 'Number of islands of cleaned image')
 
 
-def cal_to_dl1(input_file, output_dir, config):
+def magic_cal_to_dl1(
+    input_file,
+    output_dir,
+    config,
+    process_run=False,
+):
     """
     This function processes MAGIC calibrated data to DL1.
 
@@ -92,11 +96,17 @@ def cal_to_dl1(input_file, output_dir, config):
     output_dir: str
         Path to a directory where to save an output DL1 data file
     config: dict
-        Configuration for the LST-1 + MAGIC analysis
+        Configuration for LST-1 + MAGIC analysis
+    process_run: bool
+        If True, it processes all sub-run files of the same
+        observation ID together with the input file (default: False)
     """
 
-    process_run = config['MAGIC']['process_run']
-    event_source = MAGICEventSource(input_url=input_file, process_run=process_run)
+    event_source = MAGICEventSource(
+        input_url=input_file,
+        process_run=process_run,
+        max_events=100,
+    )
 
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
@@ -110,7 +120,7 @@ def cal_to_dl1(input_file, output_dir, config):
     if config_cleaning['find_hotpixels'] == 'auto':
         config_cleaning.update({'find_hotpixels': True})
 
-    logger.info(f'\nConfiguration for image cleaning:\n{config_cleaning}\n')
+    logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}\n')
 
     # Configure the MAGIC cleaning:
     camera_geom = event_source.subarray.tel[tel_id].camera.geometry
@@ -126,9 +136,9 @@ def cal_to_dl1(input_file, output_dir, config):
         output_file = f'{output_dir}/dl1_m{tel_id}_run{obs_id:08}.{subrun_id:03}.h5'
 
     # Start processing events:
-    with HDF5TableWriter(filename=output_file, group_name='events') as writer:
+    n_events_skipped = 0
 
-        n_events_skipped = 0
+    with HDF5TableWriter(filename=output_file, group_name='events', mode='w') as writer:
 
         for event in event_source:
 
@@ -192,8 +202,8 @@ def cal_to_dl1(input_file, output_dir, config):
                 continue
 
             # Set the general event information to the container.
-            # In order to keep the precision, the integral and fractional part of
-            # timestamp are separately saved as "time_sec" and "time_nanosec", respectively:
+            # To keep the precision, the integral and fractional parts of
+            # the timestamp are separately saved as "time_sec" and "time_nanosec" respectively:
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
             fractional, integral = np.modf(timestamp)
 
@@ -263,12 +273,22 @@ def main():
         help='Path to a yaml configuration file.',
     )
 
+    parser.add_argument(
+        '--process-run', dest='process_run', action='store_true',
+        help='Process all sub-run files of the same observation ID at once.',
+    )
+
     args = parser.parse_args()
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    cal_to_dl1(args.input_file, args.output_dir, config)
+    magic_cal_to_dl1(
+        input_file=args.input_file,
+        output_dir=args.output_dir,
+        config=config,
+        process_run=args.process_run,
+    )
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
