@@ -5,8 +5,8 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes simtel MC DL0 data (*.simtel.gz) containing LST-1 and MAGIC events
-and computes DL1 parameters (i.e., Hillas, timing, and leakage parameters).
-Only the events that all the DL1 parameters are computed will be saved in an output file.
+and computes the DL1 parameters (i.e., Hillas, timing, and leakage parameters).
+It will save only the events in an output file that all the parameters are reconstructed.
 Telescope IDs are reset to the following values when saving to the output file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
@@ -103,7 +103,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     output_dir: str
         Path to a directory where to save an output DL1 data file
     config: dict
-        Configuration for the LST-1 + MAGIC analysis
+        Configuration for LST-1 + MAGIC analysis
     """
 
     logger.info(f'\nInput file:\n{input_file}')
@@ -114,8 +114,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     logger.info('\nSubarray configuration:')
     for tel_id in subarray.tel.keys():
-        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, ' \
-                    f'position = {subarray.positions[tel_id]}')
+        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {subarray.positions[tel_id]}')
 
     mc_tel_ids = config['mc_tel_ids']
     logger.info(f'\nThe telescopes that will be processed:\n{mc_tel_ids}')
@@ -143,7 +142,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     use_time_delta_cleaning = config_lst['time_delta_cleaning'].pop('use')
     use_dynamic_cleaning = config_lst['dynamic_cleaning'].pop('use')
-    use_only_main_island = config_lst['use_only_main_island']
+    use_only_main_island = config_lst['tailcuts_clean'].pop('use_only_main_island')
 
     extractor_type_lst = config_lst['image_extractor'].pop('type')
     config_extractor_lst = Config({extractor_type_lst: config_lst['image_extractor']})
@@ -178,7 +177,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     )
 
     # Prepare for saving data to an output file. Here we try to parse run information from
-    # the input file name, but if it fails, simply name the output file with the observation ID:
+    # the input file name, but if it fails simply name the output file with the observation ID:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
@@ -198,7 +197,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         output_file = f'{output_dir}/dl1_lst1_magic_mc_run{obs_id}.h5'
 
     # Start processing events:
-    with HDF5TableWriter(filename=output_file, group_name='events') as writer:
+    with HDF5TableWriter(filename=output_file, group_name='events', mode='w') as writer:
 
         # Process events telescope-wise:
         for tel_name, tel_id in mc_tel_ids.items():
@@ -214,7 +213,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 focal_length=focal_length,
             )
 
-            # Configure the MAGIC Cleaning:
+            # Configure the MAGIC cleaning:
             if tel_name in ['MAGIC-I', 'MAGIC-II']:
                 magic_clean = MAGICClean(camera_geom, config_magic['magic_clean'])
 
@@ -229,7 +228,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 trigger_m1 = (tel_id_m1 in event.trigger.tels_with_trigger)
                 trigger_m2 = (tel_id_m2 in event.trigger.tels_with_trigger)
 
-                magic_stereo = np.logical_and(trigger_m1, trigger_m2)
+                magic_stereo = (trigger_m1 and trigger_m2)
 
                 if tel_name == 'LST-1':
 
@@ -393,7 +392,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
             logger.info(f'({n_events_skipped} events skipped)')
 
     # Reset the telescope IDs of the telescope positions.
-    # Also, the coordinate will be changed to the one relative to the center of LST-1 + MAGIC array:
+    # In addition, the coordinate will be changed to the one relative to the center of LST-1 + MAGIC array:
     positions = np.array([subarray.positions[tel_id].value for tel_id in mc_tel_ids.values()])
     positions_cog = np.round(positions - positions.mean(axis=0), decimals=2)
 
@@ -448,7 +447,11 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    mc_dl0_to_dl1(args.input_file, args.output_dir, config)
+    mc_dl0_to_dl1(
+        input_file=args.input_file,
+        output_dir=args.output_dir,
+        config=config,
+    )
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')

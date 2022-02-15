@@ -6,7 +6,7 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
 the DL1 parameters (i.e., Hillas, timing, and leakage parameters). It will save only the events in an output file
-that succeed in reconstructing all the parameters. Telescope IDs are reset to the following values when saving
+that all the parameters are reconstructed. Telescope IDs are reset to the following values when saving
 to the output file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
@@ -105,7 +105,6 @@ def magic_cal_to_dl1(
     event_source = MAGICEventSource(
         input_url=input_file,
         process_run=process_run,
-        max_events=100,
     )
 
     obs_id = event_source.obs_ids[0]
