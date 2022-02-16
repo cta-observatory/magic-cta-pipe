@@ -142,8 +142,6 @@ def merge_hdf_files(
             subrun_ids = np.append(subrun_ids, parser[2])
 
     run_ids_unique = np.unique(run_ids)
-    logger.info(f'\nThe following run IDs are found:\n{run_ids_unique}')
-
     file_names_unique = np.unique(file_names)
 
     if len(file_names_unique) > 1:
@@ -156,10 +154,11 @@ def merge_hdf_files(
         file_name = file_names_unique[0]
 
     # Merge input files:
-    logger.info('\nMerging the following files:')
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     if subrun_wise:
+        logger.info('\nMerging the input files subrun-wise:')
+
         for run_id in run_ids_unique:
             subrun_ids_unique = np.unique(subrun_ids[run_ids == run_id])
 
@@ -170,6 +169,8 @@ def merge_hdf_files(
                 write_to_table(file_mask, output_file)
 
     elif run_wise:
+        logger.info('\nMerging the input files run-wise:')
+
         for run_id in run_ids_unique:
             file_mask = f'{input_dir}/*_run{run_id}.*'
             output_file = f'{output_dir}/{file_name}_run{run_id}.h5'
@@ -177,8 +178,19 @@ def merge_hdf_files(
             write_to_table(file_mask, output_file)
 
     else:
+        logger.info('\nMerging the input files:')
+
         file_mask = f'{input_dir}/*.h5'
-        output_file = f'{output_dir}/{file_name}_run{run_ids_unique[0]}_to_run{run_ids_unique[-1]}.h5'
+        str_lengths_unique = np.unique([len(x) for x in run_ids_unique])
+
+        if len(str_lengths_unique) == 1:
+            run_id_min = run_ids_unique[0]
+            run_id_max = run_ids_unique[-1]
+        else:
+            run_id_min = run_ids_unique.astype(int).min()
+            run_id_max = run_ids_unique.astype(int).max()
+
+        output_file = f'{output_dir}/{file_name}_run{run_id_min}_to_run{run_id_max}.h5'
 
         write_to_table(file_mask, output_file)
 
