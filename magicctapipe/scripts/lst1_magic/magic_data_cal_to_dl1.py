@@ -55,6 +55,12 @@ tel_positions = {
     3: u.Quantity([-31.21, -14.57, 0.2], u.m),    # MAGIC-II
 }
 
+pedestal_types = [
+    'fundamental',
+    'from_extractor',
+    'from_extractor_rndm',
+]
+
 __all__ = [
     'cal_to_dl1',
 ]
@@ -119,11 +125,17 @@ def magic_cal_to_dl1(
     if config_cleaning['find_hotpixels'] == 'auto':
         config_cleaning.update({'find_hotpixels': True})
 
+    if config_cleaning['pedestal_type'] not in pedestal_types:
+        raise KeyError(f'The pedestal type should be one of {pedestal_types}')
+
     logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}\n')
 
     # Configure the MAGIC cleaning:
     camera_geom = event_source.subarray.tel[tel_id].camera.geometry
     magic_clean = MAGICClean(camera_geom, config_cleaning)
+
+    ped_type = config_cleaning.pop('pedestal_type')
+    i_ped_type = np.where(np.array(pedestal_types) == ped_type)[0][0]
 
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -146,7 +158,7 @@ def magic_cal_to_dl1(
 
             # Get bad pixel information:
             dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
-            badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
+            badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
             unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
             # Apply the image cleaning:

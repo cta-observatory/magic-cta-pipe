@@ -29,6 +29,7 @@ LST:
         boundary_thresh: 4
         keep_isolated_pixels: false
         min_number_picture_neighbors: 2
+        use_only_main_island: false
 
     time_delta_cleaning:
         use: true
@@ -40,8 +41,6 @@ LST:
         threshold: 267
         fraction: 0.03
 
-    use_only_main_island: false
-
 
 MAGIC:
     image_extractor:
@@ -50,15 +49,14 @@ MAGIC:
         window_width: 5
 
     magic_clean:
+        use_time: true
+        use_sum: true
         picture_thresh: 6
         boundary_thresh: 3.5
         max_time_off: 7.38
         max_time_diff: 2.46
-        use_time: true
-        use_sum: true
         find_hotpixels: 'auto'
-
-    process_run: false
+        pedestal_type: 'from_extractor_rndm'
 
 
 event_coincidence:
@@ -70,6 +68,7 @@ event_coincidence:
 
 stereo_reco:
     cuts: '(intensity > 50) & (width > 0)'
+    uplim_angle: 0.1
 
 
 energy_regressor:
