@@ -67,8 +67,7 @@ event_coincidence:
 
 
 stereo_reco:
-    cuts: '(intensity > 50) & (width > 0)'
-
+    event_cuts: '(intensity > 50) & (width > 0)'
 
 energy_regressor:
     settings:
