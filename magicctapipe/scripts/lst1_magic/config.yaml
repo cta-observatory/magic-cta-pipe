@@ -62,7 +62,7 @@ MAGIC:
 event_coincidence:
     type_lst_time: 'dragon_time'
     window_width: 6.0e-7      # unit: [sec]
-    offset_start: -1.0e-6     # unit: [sec]
+    offset_start: -1.0e-5     # unit: [sec]
     offset_stop: 0.0          # unit: [sec]
 
 
