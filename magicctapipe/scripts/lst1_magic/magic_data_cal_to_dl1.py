@@ -5,14 +5,14 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
-the DL1 parameters (i.e., Hillas, timing, and leakage parameters). It will save only the events in an output file
-that all the parameters are reconstructed. Telescope IDs are reset to the following values when saving
-to the output file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
+the DL1 parameters (i.e., Hillas, timing, and leakage parameters). The script saves events in an output file
+only when it reconstructs all the DL1 parameters. Telescope IDs are reset to the following values when saving
+to the file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 The MAGICEventSource module searches for all the sub-run files belonging to the same observation ID and stored in
 the same directory of an input sub-run file. The module reads drive reports from the files and uses the information
-to reconstruct the telescope pointing directions, so it is best to store the files in the same directory.
+to reconstruct the telescope pointing direction, so it is best to store the files in the same directory.
 If one gives the "--process-run" argument, the module also processes all the files together with the input file.
 
 Usage:
@@ -62,13 +62,13 @@ pedestal_types = [
 ]
 
 __all__ = [
-    'cal_to_dl1',
+    'magic_cal_to_dl1',
 ]
 
 
 class EventInfoContainer(Container):
     """
-    Container to store general event information:
+    Container to store event information:
     - observation/event/telescope IDs
     - telescope pointing direction
     - event timing information
@@ -104,8 +104,8 @@ def magic_cal_to_dl1(
     config: dict
         Configuration for LST-1 + MAGIC analysis
     process_run: bool
-        If True, it processes all sub-run files of the same
-        observation ID together with the input file (default: False)
+        If True, it processes all the sub-run files belonging to the
+        same observation ID of an input sub-run file (default: False)
     """
 
     event_source = MAGICEventSource(
@@ -116,7 +116,7 @@ def magic_cal_to_dl1(
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
-    logger.info(f'\nProcessing the following data (process_run = {process_run}):')
+    logger.info(f'\nProcess the following data (process_run = {process_run}):')
     for root_file in event_source.file_list:
         logger.info(root_file)
 
@@ -156,7 +156,7 @@ def magic_cal_to_dl1(
             if event.count % 100 == 0:
                 logger.info(f'{event.count} events')
 
-            # Get bad pixel information:
+            # Get the bad pixel information:
             dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
             badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
             unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
@@ -212,9 +212,9 @@ def magic_cal_to_dl1(
                 n_events_skipped += 1
                 continue
 
-            # Set the general event information to the container.
-            # To keep the precision, the integral and fractional parts of
-            # the timestamp are separately saved as "time_sec" and "time_nanosec" respectively:
+            # Set the event information to the container.
+            # To keep the precision of timestamp, here we set the integral and
+            # fractional parts separately as "time_sec" and "time_nanosec":
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
             fractional, integral = np.modf(timestamp)
 
@@ -254,7 +254,7 @@ def magic_cal_to_dl1(
     }
 
     # Save the subarray description.
-    # Here we save the MAGIC telescope positions relative to the center of
+    # Here we save the MAGIC telescope positions relative to the center of the
     # LST-1 + MAGIC array, which are also used for sim_telarray simulations:
     subarray = SubarrayDescription('MAGIC', tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)

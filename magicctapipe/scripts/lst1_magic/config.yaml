@@ -62,13 +62,12 @@ MAGIC:
 event_coincidence:
     type_lst_time: 'dragon_time'
     window_width: 6.0e-7      # unit: [sec]
-    offset_start: -5.0e-6     # unit: [sec]
+    offset_start: -1.0e-6     # unit: [sec]
     offset_stop: 0.0          # unit: [sec]
 
 
 stereo_reco:
     cuts: '(intensity > 50) & (width > 0)'
-    uplim_angle: 0.1
 
 
 energy_regressor:

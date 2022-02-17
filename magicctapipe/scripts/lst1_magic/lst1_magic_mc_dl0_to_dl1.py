@@ -6,8 +6,8 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes simtel MC DL0 data (*.simtel.gz) containing LST-1 and MAGIC events
 and computes the DL1 parameters (i.e., Hillas, timing, and leakage parameters).
-It will save only the events in an output file that all the parameters are reconstructed.
-Telescope IDs are reset to the following values when saving to the output file:
+The script saves events in an output file only when it reconstructs all the DL1 parameters.
+Telescope IDs are reset to the following values when saving to the file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 Usage:
@@ -67,7 +67,7 @@ __all__ = [
 
 class EventInfoContainer(Container):
     """
-    Container to store general event information:
+    Container to store event information:
     - observation/event/telescope IDs
     - telescope pointing direction
     - simulated event parameters
@@ -123,11 +123,11 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     tel_id_m1 = mc_tel_ids['MAGIC-I']
     tel_id_m2 = mc_tel_ids['MAGIC-II']
 
-    # Configure LST data processes.
+    # Configure the LST data processors.
     # Process events with the method used in lstchain:
     config_lst = config['LST']
 
-    logger.info('\nConfiguration for LST data process:')
+    logger.info('\nConfiguration for the LST data processors:')
     for key, value in config_lst.items():
         logger.info(f'{key}: {value}')
 
@@ -153,15 +153,15 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
-    # Configure MAGIC data processes.
-    # The cleaning method will be configured later:
+    # Configure the MAGIC data processors.
+    # The image cleaning will be configured later:
     config_magic = config['MAGIC']
 
     if config_magic['magic_clean']['find_hotpixels'] is not False:
         logger.warning('\nHot pixels do not exist in a simulation. Setting the option to False...')
         config_magic['magic_clean'].update({'find_hotpixels': False})
 
-    logger.info('\nConfiguration for MAGIC data process:')
+    logger.info('\nConfiguration for the MAGIC data processors:')
 
     for key, value in config_magic.items():
         if key != 'process_run':
@@ -355,7 +355,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     tel_pos_z=tel_position[2],
                 )
 
-                # Set the general event information:
+                # Set the event information:
                 event_info = EventInfoContainer(
                     obs_id=event.index.obs_id,
                     event_id=event.index.event_id,
@@ -392,7 +392,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
             logger.info(f'({n_events_skipped} events skipped)')
 
     # Reset the telescope IDs of the telescope positions.
-    # In addition, the coordinate will be changed to the one relative to the center of LST-1 + MAGIC array:
+    # In addition, we change the coordinate to the one relative to the center of the LST-1 + MAGIC array:
     positions = np.array([subarray.positions[tel_id].value for tel_id in mc_tel_ids.values()])
     positions_cog = np.round(positions - positions.mean(axis=0), decimals=2)
 

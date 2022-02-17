@@ -6,7 +6,7 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script merges HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
 It parses information from file names, so they should follow the convention (*_run*.h5 or *_run*.*.h5).
-If one gives "--run-wise" or "--subrun-wise" arguments, it merges input files run-wise or subrun-wise respectively.
+If one gives "--run-wise" or "--subrun-wise" arguments, the script merges input files run-wise or subrun-wise respectively.
 
 Usage:
 $ python merge_hdf_files.py
@@ -34,12 +34,17 @@ __all__ = [
 
 
 class MultiFileTypesError(Exception):
+    """
+    Exception raised when multiple types of files
+    are found in an input directory.
+    """
     pass
 
 
 def write_to_table(input_file_mask, output_file):
     """
-    This function creates a new table and writes input data.
+    This function creates a new table and writes
+    the information of input files.
 
     Parameters
     ----------
@@ -54,9 +59,9 @@ def write_to_table(input_file_mask, output_file):
 
     with tables.open_file(output_file, mode='w') as merged_file:
 
-        # Create a new table and write the data of the first input file:
         logger.info(input_files[0])
 
+        # First create a new table with the first input file:
         with tables.open_file(input_files[0]) as input_data:
 
             event_params = input_data.root.events.params
@@ -107,9 +112,9 @@ def merge_hdf_files(
     output_dir: str
         Path to a directory where to save merged HDF files
     run_wise: bool
-        If True, input files are merged run-wise
+        If True, it merges input files run-wise
     subrun_wise: bool
-        If True, input files are merged subrun-wise
+        If True, it merges input files subrun-wise
     """
 
     logger.info(f'\nInput directory:\n{input_dir}')
@@ -194,7 +199,7 @@ def merge_hdf_files(
 
         write_to_table(file_mask, output_file)
 
-    logger.info('\nDone.')
+    logger.info('Done.')
 
 
 def main():

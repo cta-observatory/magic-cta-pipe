@@ -5,12 +5,12 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script finds coincident events from LST-1 and MAGIC joint observation data offline using their timestamps.
-In the MAGIC standard stereo analysis, shower events are discarded when one of the telescope images cannot survive the
+The MAGIC standard stereo analysis discards shower events when one of the telescope images cannot survive the
 cleaning or fail to compute the DL1 parameters. However, it's possible to perform the stereo analysis if LST-1 sees the events.
-Thus, the event coincidence is performed for each telescope combination (i.e., LST-1 + M1 and LST-1 + M2) using each
-MAGIC timestamp, and the events eventually containing more than two telescope information are saved to an output file.
+Thus, the script checks the event coincidence for each telescope combination (i.e., LST-1 + M1 and LST-1 + M2) using each
+MAGIC timestamp. Then, it saves the events containing more than two telescope information to an output file.
 
-The time offsets and the coincidence window apply to LST-1 events, and coincident events are searched for
+The time offsets and the coincidence window apply to LST-1 events, and the script searches for coincident events
 within an offset region specified in a configuration file. A peak is usually found in -10 < offset < 0 [us].
 Since an optimal time offset changes depending on the telescope distance along the pointing direction,
 it is best to input a sub-run file for LST data, whose observation duration is usually ~10 seconds.
@@ -21,6 +21,7 @@ $ python lst1_magic_event_coincidence.py
 --input-dir-magic ./data/dl1/MAGIC
 --output-dir ./data/dl1_coincidence
 --config-file ./config.yaml
+--
 """
 
 import re
@@ -89,7 +90,7 @@ def load_lst_data(input_file, type_lst_time):
     Returns
     -------
     data: pandas.core.frame.DataFrame
-        pandas data frame containing LST-1 events
+        Pandas data frame containing LST-1 events
     subarray: SubarrayDescription
         LST-1 subarray description
     """
@@ -105,8 +106,8 @@ def load_lst_data(input_file, type_lst_time):
     logger.info(f'LST-1: {len(data)} events')
 
     # Exclude the events that are not reconstructed:
-    logger.info('\nExcluding the non-reconstructed events...')
-    params_basic = np.array(['intensity', 'time_gradient', 'alt_tel', 'az_tel'])
+    logger.info('\nExcluding non-reconstructed events...')
+    params_basic = ['intensity', 'time_gradient', 'alt_tel', 'az_tel']
 
     data.dropna(subset=params_basic, inplace=True)
     logger.info(f'--> LST-1: {len(data)} events')
@@ -131,7 +132,7 @@ def load_lst_data(input_file, type_lst_time):
     data.rename(columns={type_lst_time: 'timestamp'}, inplace=True)
 
     # Rename the column names, which lstchain renamed, to the default ones to make them consistent with MC data.
-    # In addition, put the suffix "_lst" to the observation/event IDs to avoid the confusion from the MAGIC ones:
+    # In addition, put the suffix "_lst" to the observation/event IDs to avoid a confusion from the MAGIC ones:
     params_rename = {
         'obs_id': 'obs_id_lst',
         'event_id': 'event_id_lst',
@@ -179,9 +180,15 @@ def load_magic_data(input_dir):
 
     logger.info(f'\nLoading the following MAGIC data files:')
 
+    if not Path(input_dir).is_dir():
+        raise TypeError(f'{input_dir} is not a directory.')
+
     # Load and merge the input files:
     file_paths = glob.glob(f'{input_dir}/dl*.h5')
     file_paths.sort()
+
+    if file_paths == []:
+        raise FileNotFoundError('Could not find MAGIC data files in the input directory.')
 
     data = pd.DataFrame()
 
@@ -206,7 +213,13 @@ def load_magic_data(input_dir):
     return data, subarray
 
 
-def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
+def event_coincidence(
+    input_file_lst,
+    input_dir_magic,
+    output_dir,
+    config,
+    keep_all_params=False,
+):
     """
     This function finds coincident events from LST-1 and MAGIC
     joint observation data offline using their timestamps.
@@ -220,7 +233,10 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     output_dir: str
         Path to a directory where to save an output coincidence data file
     config: dict
-        Configuration for the LST-1 + MAGIC analysis
+        Configuration for LST-1 + MAGIC analysis
+    keep_all_params: bool
+        If True, it saves all the parameters of LST-1 and MAGIC events
+        in an output file (default: False)
     """
 
     config_evco = config['event_coincidence']
@@ -243,24 +259,24 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     data_magic, subarray_magic = load_magic_data(input_dir_magic)
 
     tel_descriptions = {
-        1: subarray_lst.tel[1],     # LST-1
-        2: subarray_magic.tel[2],   # MAGIC-I
+        1: subarray_lst.tel[1],      # LST-1
+        2: subarray_magic.tel[2],    # MAGIC-I
         3: subarray_magic.tel[3],    # MAGIC-II
     }
 
     subarray_lst1_magic = SubarrayDescription('LST1-MAGIC-Array', tel_positions, tel_descriptions)
 
-    # Keep only the parameters common to both LST and MAGIC data except the event timing information:
-    params_lst = set(data_lst.columns) ^ set(['timestamp'])
-    params_magic = set(data_magic.columns) ^ set(['time_sec', 'time_nanosec'])
-    params_non_common = list(params_lst ^ params_magic)
+    if not keep_all_params:
+        # Exclude the parameters non-common to both LST and MAGIC data except the event timing information:
+        params_lst = set(data_lst.columns) ^ set(['timestamp'])
+        params_magic = set(data_magic.columns) ^ set(['time_sec', 'time_nanosec'])
+        params_non_common = list(params_lst ^ params_magic)
 
-    data_lst.drop(params_non_common, axis=1, errors='ignore', inplace=True)
-    data_magic.drop(params_non_common, axis=1, errors='ignore', inplace=True)
+        data_lst.drop(params_non_common, axis=1, errors='ignore', inplace=True)
+        data_magic.drop(params_non_common, axis=1, errors='ignore', inplace=True)
 
-    # Arrange the LST timestamp. It is originally stored in the UNIX format with 17 digits, which is
-    # too long to precisely find coincident events due to the rounding issue. It is possible to keep
-    # the precision of timestamp by using the Decimal module, but the event coincidence takes time.
+    # Arrange the LST timestamp. It is originally stored in the UNIX format with 17 digits,
+    # which is too long to precisely find coincident events due to the rounding issue.
     # Thus, here we arrange the timestamp so that it starts from an observation day, i.e.,　subtract
     # the UNIX time of an observation day from the timestamp. As a result, the timestamp becomes
     # ten digits and can be safely handled by keeping the precision with the float type.
@@ -271,7 +287,11 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     # Use the Decimal module to safely subtract the UNIX time of an observation day:
     time_lst_unix = np.array([Decimal(str(time)) for time in data_lst['timestamp']])
-    time_lst = np.float64(time_lst_unix - Decimal(str(obs_day_unix)))
+    time_lst = time_lst_unix - Decimal(str(obs_day_unix))
+
+    # Get back to the float format, because the coincidence algorithm takes time if we keep
+    # using the Decimal module. It if confirmed that using the float type doesn't change the results:
+    time_lst = time_lst.astype(float)
 
     df_events = pd.DataFrame()
     df_features = pd.DataFrame()
@@ -297,12 +317,9 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         # Extract the MAGIC events taken when LST observes:
         logger.info(f'\nExtracting the {tel_name} events within the LST-1 observation time window...')
 
-        lolim = time_lst[0] + bins_offset[0] - window_width
-        uplim = time_lst[-1] + bins_offset[-1] + window_width
-
         condition = np.logical_and(
-            time_magic > lolim,
-            time_magic < uplim,
+            time_magic > time_lst[0] + bins_offset[0] - window_width,
+            time_magic < time_lst[-1] + bins_offset[-1] + window_width,
         )
 
         n_events_magic = np.count_nonzero(condition)
@@ -318,12 +335,12 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
         # Start the event coincidence. The time offset and the coincidence window apply to LST-1 events, and
         # the MAGIC events existing in the window (including the edges) are recognized as coincident events.
-        # At first, the number of events is scanned in each time offset, and find the time offset where
-        # the number of events is maximized. Then, the averaged offset weighted by the number of events is
-        # computed around the maximizing one. Finally, coincident events are checked again at the average
-        # one and are stored in the data container.
+        # At first, we scan the number of coincident events in each time offset, and find the time offset
+        # where the number of events becomes maximum. Then, we compute the averaged offset weighted by the
+        # number of events around the maximizing offset. Finally, we again check coincident events at the
+        # average offset and store the events in the data container.
 
-        # Please note that there are two conditions for the event coincidence. The first one includes
+        # Note that there are two conditions for the event coincidence. The first one includes
         # both edges of the coincidence window, and the other one includes only the right edge.
         # The latter means the number of coincident events between the time offset steps:
 
@@ -363,24 +380,20 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
             logger.info(f'time offset: {offset * sec2usec:.1f} [us]  -->  {n_events_stereo[i_off]} events')
 
-        n_events_max = np.max(n_events_stereo)
-        offset_at_max = bins_offset[n_events_stereo == n_events_max]
+        offsets_at_max = bins_offset[n_events_stereo == np.max(n_events_stereo)]
 
-        offset_lolim = np.round(offset_at_max - window_width, decimals=precision)
-        offset_uplim = np.round(offset_at_max + window_width, decimals=precision)
-
-        average_region = np.logical_and(
-            bins_offset >= offset_lolim,
-            bins_offset <= offset_uplim,
+        mask = np.logical_and(
+            bins_offset >= np.round(offsets_at_max[0] - window_width, decimals=precision),
+            bins_offset <= np.round(offsets_at_max[-1] + window_width, decimals=precision),
         )
 
-        offset_avg = np.average(bins_offset[average_region], weights=n_events_stereo[average_region])
+        offset_avg = np.average(bins_offset[mask], weights=n_events_stereo[mask])
         n_events_at_avg = n_events_stereo_btwn[bins_offset < offset_avg][-1]
 
         logger.info(f'\nAveraged offset: {offset_avg * sec2usec:.3f} [us]')
         logger.info(f'--> Number of coincident events: {n_events_at_avg}')
         logger.info(f'--> Ratio over the {tel_name} events: {n_events_at_avg}/{n_events_magic} ' \
-                    f'= {n_events_at_avg/n_events_magic * 100:.1f}%')
+                    f'= {n_events_at_avg / n_events_magic * 100:.1f}%')
 
         # Check the coincidence at the avereged offset:
         indices_lst = []
@@ -400,8 +413,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
             if np.count_nonzero(condition) == 1:
                 indices_lst.append(i_ev)
-                index_magic = np.where(condition)[0][0]
-                indices_magic.append(index_magic)
+                indices_magic.append(np.where(condition)[0][0])
 
         # Arrange the data frames:
         df_lst = data_lst.iloc[indices_lst]
@@ -413,8 +425,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df_magic['timestamp'] = df_magic['time_sec'] + df_magic['time_nanosec'] * nsec2sec
         df_magic.drop(['time_sec', 'time_nanosec'], axis=1, inplace=True)
 
-        # Define the coincidence ID, which is the combination of
-        # the telescope IDs that is used for the event coincidence:
+        # Define the coincidence ID, which is the combination of the telescope IDs:
         coincidence_id = '1' + str(tel_id)
 
         features_per_combo = pd.DataFrame({
@@ -448,7 +459,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         logger.info('\nNo coincident events are found. Exiting.\n')
         sys.exit()
 
-    # Since we merge the two data frames, LST-1 + M1 and LST-1 + M2,
+    # Since we merge two data frames, LST-1 + M1 and LST-1 + M2,
     # the LST-1 events are duplicated and so here we exclude them:
     df_events.sort_index(inplace=True)
     df_events.drop_duplicates(inplace=True)
@@ -469,13 +480,13 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
         df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
-        n_events = len(df)/len(tel_ids)
+        n_events = len(df.groupby(['obs_id', 'event_id']).size())
         logger.info(f'{tel_combo}: {n_events:.0f} events ({n_events / n_events_total * 100:.1f}%)')
 
         df_events.loc[df.index, 'event_type'] = event_type
 
     # Prepare for saving data to an output file. Here we try to parse run information from
-    # the input file name, but if it fails, simply name the output file with the observation ID:
+    # the input file name, but if it fails simply name the output file with the observation ID:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file_lst).resolve().name
@@ -534,12 +545,23 @@ def main():
         help='Path to a yaml configuration file.'
     )
 
+    parser.add_argument(
+        '--keep-all-params', dest='keep_all_params', action='store_true',
+        help='Keep all the parameters of LST-1 and MAGIC events.'
+    )
+
     args = parser.parse_args()
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    event_coincidence(args.input_file_lst, args.input_dir_magic, args.output_dir, config)
+    event_coincidence(
+        input_file_lst=args.input_file_lst,
+        input_dir_magic=args.input_dir_magic,
+        output_dir=args.output_dir,
+        config=config,
+        keep_all_params=args.keep_all_params,
+    )
 
     end_time = time.time()
     logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
