@@ -67,7 +67,7 @@ __all__ = [
 
 def calc_tel_mean_pointing(data):
     """
-    This function calculates the mean telescope pointing direction.
+    Calculates the mean telescope pointing direction.
 
     Parameters
     ----------
@@ -106,8 +106,8 @@ def calc_tel_mean_pointing(data):
 
 def stereo_reco(input_file, output_dir, config):
     """
-    This function reconstructs the stereo parameters of
-    the events containing more than one telescope information.
+    Reconstructs the stereo parameters of the events
+    containing more than one telescope information.
 
     Parameters
     ----------
@@ -219,7 +219,6 @@ def stereo_reco(input_file, output_dir, config):
     # Loop over observation/event IDs.
     # Since the HillasReconstructor requires the ArrayEventContainer,
     # here we set the necessary information to it event-by-event:
-
     for i_ev, (obs_id, ev_id) in enumerate(zip(observation_ids, event_ids)):
 
         if i_ev % 100 == 0:
@@ -274,7 +273,7 @@ def stereo_reco(input_file, output_dir, config):
                 tel_pos_z=tel_positions[tel_id][2],
             )
 
-            # Save the stereo parameters:
+            # Set the stereo parameters:
             data_joint.loc[(obs_id, ev_id, tel_id), 'h_max'] = stereo_params.h_max.to(u.m).value
             data_joint.loc[(obs_id, ev_id, tel_id), 'alt'] = stereo_params.alt.to(u.deg).value
             data_joint.loc[(obs_id, ev_id, tel_id), 'alt_uncert'] = stereo_params.alt_uncert.to(u.deg).value
@@ -288,11 +287,12 @@ def stereo_reco(input_file, output_dir, config):
     logger.info(f'{n_events_processed} events processed.')
 
     # Prepare for saving the data to an output file:
+    # Here we parse run information from the input file name:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
-    regex_run = r'dl1_(\w+)_run(\d+)\.h5'
-    regex_subrun = rf'dl1_(\w+)_run(\d+)\.(\d+)\.h5'
+    regex_run = r'dl1_(\S+)_run(\d+)\.h5'
+    regex_subrun = rf'dl1_(\S+)_run(\d+)\.(\d+)\.h5'
 
     if re.fullmatch(regex_run, base_name):
         parser = re.findall(regex_run, base_name)[0]
@@ -302,11 +302,7 @@ def stereo_reco(input_file, output_dir, config):
         parser = re.findall(regex_subrun, base_name)[0]
         output_file = f'{output_dir}/dl1_stereo_{parser[0]}_run{parser[1]}.{parser[2]}.h5'
 
-    else:
-        logger.warning('\nCould not parse run information from the input file name. Simply name the output file.')
-        output_file = f'{output_dir}/dl1_stereo.h5'
-
-    # Save the data in the file:
+    # Save in the output file:
     with tables.open_file(output_file, mode='w') as f_out:
 
         data_joint.reset_index(inplace=True)

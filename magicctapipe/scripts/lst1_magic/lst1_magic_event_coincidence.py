@@ -6,11 +6,11 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script finds coincident events from LST-1 and MAGIC joint observation data offline using their timestamps.
 The MAGIC standard stereo analysis discards shower events when one of the telescope images cannot survive the
-cleaning or fail to compute the DL1 parameters. However, it's possible to perform the stereo analysis if LST-1 sees the events.
+cleaning or fail to compute the DL1 parameters. However, it's possible to perform the stereo analysis if LST-1 sees these events.
 Thus, the script checks the event coincidence for each telescope combination (i.e., LST-1 + M1 and LST-1 + M2) using each
 MAGIC timestamp. Then, it saves the events containing more than two telescope information to an output file.
 
-The time offsets and the coincidence window apply to LST-1 events, and the script searches for coincident events
+Time offsets and a coincidence window apply to LST-1 events, and the script searches for coincident events
 within an offset region specified in a configuration file. A peak is usually found in -10 < offset < 0 [us].
 Since an optimal time offset changes depending on the telescope distance along the pointing direction,
 it is best to input a sub-run file for LST data, whose observation duration is usually ~10 seconds.
@@ -78,7 +78,7 @@ __all__ = [
 
 def load_lst_data(input_file, type_lst_time):
     """
-    This function loads an input LST-1 data file.
+    Loads an input LST-1 data file.
 
     Parameters
     ----------
@@ -105,7 +105,7 @@ def load_lst_data(input_file, type_lst_time):
 
     logger.info(f'LST-1: {len(data)} events')
 
-    # Exclude the events that are not reconstructed:
+    # Exclude the events that lstchain could not reconstruct:
     logger.info('\nExcluding non-reconstructed events...')
     params_basic = ['intensity', 'time_gradient', 'alt_tel', 'az_tel']
 
@@ -113,7 +113,7 @@ def load_lst_data(input_file, type_lst_time):
     logger.info(f'--> LST-1: {len(data)} events')
 
     # It sometimes happens that cosmic and pedestal events have the same event IDs,
-    # and so let's check the duplication of the IDs and exclude them if they exist.
+    # so let's check the duplication of the IDs and exclude them if they exist.
     # ToBeChecked: if the duplication still happens in the latest data or not:
     event_ids, counts = np.unique(data['event_id'], return_counts=True)
 
@@ -163,7 +163,7 @@ def load_lst_data(input_file, type_lst_time):
 
 def load_magic_data(input_dir):
     """
-    This function loads input MAGIC data files.
+    Loads input MAGIC data files.
 
     Parameters
     ----------
@@ -173,22 +173,16 @@ def load_magic_data(input_dir):
     Returns
     -------
     data: pandas.core.frame.DataFrame
-        pandas data frame containing MAGIC events
+        Pandas data frame containing MAGIC events
     subarray: SubarrayDescription
         MAGIC subarray description
     """
 
     logger.info(f'\nLoading the following MAGIC data files:')
 
-    if not Path(input_dir).is_dir():
-        raise TypeError(f'{input_dir} is not a directory.')
-
     # Load and merge the input files:
     file_paths = glob.glob(f'{input_dir}/dl*.h5')
     file_paths.sort()
-
-    if file_paths == []:
-        raise FileNotFoundError('Could not find MAGIC data files in the input directory.')
 
     data = pd.DataFrame()
 
@@ -221,7 +215,7 @@ def event_coincidence(
     keep_all_params=False,
 ):
     """
-    This function finds coincident events from LST-1 and MAGIC
+    Finds coincident events from LST-1 and MAGIC
     joint observation data offline using their timestamps.
 
     Parameters
@@ -279,7 +273,7 @@ def event_coincidence(
     # which is too long to precisely find coincident events due to the rounding issue.
     # Thus, here we arrange the timestamp so that it starts from an observation day, i.e.,　subtract
     # the UNIX time of an observation day from the timestamp. As a result, the timestamp becomes
-    # ten digits and can be safely handled by keeping the precision with the float type.
+    # ten digits and can be safely handled by keeping the precision.
 
     # Get the UNIX time of an observation day by rounding the first event timing information:
     obs_day_mjd = np.round(Time(data_lst['timestamp'].iloc[0], format='unix', scale='utc').mjd)
@@ -485,8 +479,8 @@ def event_coincidence(
 
         df_events.loc[df.index, 'event_type'] = event_type
 
-    # Prepare for saving data to an output file. Here we try to parse run information from
-    # the input file name, but if it fails simply name the output file with the observation ID:
+    # Prepare for saving the data to an output file.
+    # Here we parse run information from the input file name:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file_lst).resolve().name
@@ -495,9 +489,6 @@ def event_coincidence(
     if re.fullmatch(regex, base_name):
         parser = re.findall(regex, base_name)[0]
         output_file = f'{output_dir}/dl{parser[0]}_lst1_magic_run{parser[1]}.{parser[2]}.h5'
-    else:
-        logger.warning('\nCould not parse run information from the input file name. Simply name the output file.')
-        output_file = f'{output_dir}/lst1_magic_coincidence.h5'
 
     # Save in the output file:
     with tables.open_file(output_file, mode='w') as f_out:
@@ -527,27 +518,27 @@ def main():
 
     parser.add_argument(
         '--input-file-lst', '-l', dest='input_file_lst', type=str, required=True,
-        help='Path to an input LST-1 data file.'
+        help='Path to an input LST-1 data file.',
     )
 
     parser.add_argument(
         '--input-dir-magic', '-m', dest='input_dir_magic', type=str, required=True,
-        help='Path to a directory where input MAGIC data files are stored.'
+        help='Path to a directory where input MAGIC data files are stored.',
     )
 
     parser.add_argument(
         '--output-dir', '-o', dest='output_dir', type=str, default='./data',
-        help='Path to a directory where to save an output coincidence data file.'
+        help='Path to a directory where to save an output coincidence data file.',
     )
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a yaml configuration file.'
+        help='Path to a yaml configuration file.',
     )
 
     parser.add_argument(
         '--keep-all-params', dest='keep_all_params', action='store_true',
-        help='Keep all the parameters of LST-1 and MAGIC events.'
+        help='Keep all the parameters of LST-1 and MAGIC events.',
     )
 
     args = parser.parse_args()

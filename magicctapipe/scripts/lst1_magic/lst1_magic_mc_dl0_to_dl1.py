@@ -7,7 +7,7 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 This script processes simtel MC DL0 data (*.simtel.gz) containing LST-1 and MAGIC events
 and computes the DL1 parameters (i.e., Hillas, timing, and leakage parameters).
 The script saves events in an output file only when it reconstructs all the DL1 parameters.
-Telescope IDs are reset to the following values when saving to the file:
+The telescope IDs are reset to the following values when saving to the file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 Usage:
@@ -67,7 +67,7 @@ __all__ = [
 
 class EventInfoContainer(Container):
     """
-    Container to store event information:
+    Container to store the following event information:
     - observation/event/telescope IDs
     - telescope pointing direction
     - simulated event parameters
@@ -94,7 +94,7 @@ class EventInfoContainer(Container):
 
 def mc_dl0_to_dl1(input_file, output_dir, config):
     """
-    This function processes simtel DL0 data to DL1.
+    Processes simtel DL0 data to DL1.
 
     Parameters
     ----------
@@ -176,33 +176,29 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
-    # Prepare for saving data to an output file. Here we try to parse run information from
-    # the input file name, but if it fails simply name the output file with the observation ID:
+    # Prepare for saving data to an output file.
+    # Here we parse run information from the input file name:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
-    regex_mc_off = r'(\w+)_run(\d+)_.*off(\S+)\.simtel.gz'
-    regex_mc = r'(\w+)_run(\d+)_.*\.simtel.gz'
+    regex_mc = r'(\S+)_run(\d+)_.*\.simtel.gz'
+    regex_mc_off = r'(\S+)_run(\d+)_.*off(\S+)\.simtel.gz'
 
-    if re.fullmatch(regex_mc_off, base_name):
-        parser = re.findall(regex_mc_off, base_name)[0]
-        output_file = f'{output_dir}/dl1_lst1_magic_{parser[0]}_off{parser[2]}_run{parser[1]}.h5'
-
-    elif re.fullmatch(regex_mc, base_name):
+    if re.fullmatch(regex_mc, base_name):
         parser = re.findall(regex_mc, base_name)[0]
         output_file = f'{output_dir}/dl1_lst1_magic_{parser[0]}_run{parser[1]}.h5'
 
-    else:
-        logger.warning('\nCould not parse run information from the input file name. Simply name the output file.')
-        output_file = f'{output_dir}/dl1_lst1_magic_mc_run{obs_id}.h5'
+    elif re.fullmatch(regex_mc_off, base_name):
+        parser = re.findall(regex_mc_off, base_name)[0]
+        output_file = f'{output_dir}/dl1_lst1_magic_{parser[0]}_off{parser[2]}_run{parser[1]}.h5'
 
-    # Start processing events:
+    # Start processing the input events:
     with HDF5TableWriter(filename=output_file, group_name='events', mode='w') as writer:
 
-        # Process events telescope-wise:
+        # Process the events telescope-wise:
         for tel_name, tel_id in mc_tel_ids.items():
 
-            logger.info(f'\nProcessing {tel_name} events...')
+            logger.info(f'\nProcessing the {tel_name} events...')
 
             tel_position = subarray.positions[tel_id]
             camera_geom = subarray.tel[tel_id].camera.geometry
@@ -225,6 +221,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 if event.count % 100 == 0:
                     logger.info(f'{event.count} events')
 
+                # Check if the event triggers both M1 and M2 or not:
                 trigger_m1 = (tel_id_m1 in event.trigger.tels_with_trigger)
                 trigger_m2 = (tel_id_m2 in event.trigger.tels_with_trigger)
 
@@ -239,7 +236,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     peak_time = event.dl1.tel[tel_id].peak_time
 
                     if increase_nsb:
-                        # Add noise in pixels:
+                        # Add noises in pixels:
                         image = add_noise_in_pixels(rng, image, **config_lst['increase_nsb'])
 
                     if increase_psf:
@@ -344,7 +341,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     lat2=event.simulation.shower.alt,
                 )
 
-                # Compute the impact parameter:
+                # Calculate the impact parameter:
                 mc_impact = calc_impact(
                     core_x=event.simulation.shower.core_x,
                     core_y=event.simulation.shower.core_y,
@@ -392,7 +389,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
             logger.info(f'({n_events_skipped} events skipped)')
 
     # Reset the telescope IDs of the telescope positions.
-    # In addition, we change the coordinate to the one relative to the center of the LST-1 + MAGIC array:
+    # In addition, we convert the coordinate to the one relative to the center of the LST-1 + MAGIC array:
     positions = np.array([subarray.positions[tel_id].value for tel_id in mc_tel_ids.values()])
     positions_cog = np.round(positions - positions.mean(axis=0), decimals=2)
 
@@ -429,17 +426,17 @@ def main():
 
     parser.add_argument(
         '--input-file', '-i', dest='input_file', type=str, required=True,
-        help='Path to an input simtel DL0 data file (*.simtel.gz).'
+        help='Path to an input simtel DL0 data file (*.simtel.gz).',
     )
 
     parser.add_argument(
         '--output-dir', '-o', dest='output_dir', type=str, default='./data',
-        help='Path to a directory where to save an output DL1 data file.'
+        help='Path to a directory where to save an output DL1 data file.',
     )
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a yaml configuration file.'
+        help='Path to a yaml configuration file.',
     )
 
     args = parser.parse_args()

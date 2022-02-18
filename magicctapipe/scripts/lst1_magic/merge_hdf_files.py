@@ -33,18 +33,9 @@ __all__ = [
 ]
 
 
-class MultiFileTypesError(Exception):
-    """
-    Exception raised when multiple types of files
-    are found in an input directory.
-    """
-    pass
-
-
 def write_to_table(input_file_mask, output_file):
     """
-    This function creates a new table and writes
-    the information of input files.
+    Creates a new table and writes the information of input files.
 
     Parameters
     ----------
@@ -61,7 +52,7 @@ def write_to_table(input_file_mask, output_file):
 
         logger.info(input_files[0])
 
-        # First create a new table with the first input file:
+        # Create a new table with the first input file:
         with tables.open_file(input_files[0]) as input_data:
 
             event_params = input_data.root.events.params
@@ -103,7 +94,7 @@ def merge_hdf_files(
     subrun_wise=False,
 ):
     """
-    This function merges input HDF files.
+    Merges input HDF files.
 
     Parameters
     ----------
@@ -123,7 +114,7 @@ def merge_hdf_files(
     input_files = glob.glob(input_file_mask)
     input_files.sort()
 
-    # Parse information from input file names:
+    # Parse information from the input file names:
     regex_run = r'(\S+)_run(\d+)\.h5'
     regex_subrun = r'(\S+)_run(\d+)\.(\d+)\.h5'
 
@@ -149,16 +140,13 @@ def merge_hdf_files(
     run_ids_unique = np.unique(run_ids)
     file_names_unique = np.unique(file_names)
 
-    if len(file_names_unique) > 1:
-        if file_names_unique.tolist() == ['dl1_m1', 'dl1_m2']:
-            file_name = 'dl1_magic'
-        else:
-            raise MultiFileTypesError('Multiple types of files exist in the input directory.')
-
-    else:
+    if len(file_names_unique) == 1:
         file_name = file_names_unique[0]
 
-    # Merge input files:
+    elif file_names_unique.tolist() == ['dl1_m1', 'dl1_m2']:
+        file_name = 'dl1_magic'
+
+    # Merge the input files:
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     if subrun_wise:

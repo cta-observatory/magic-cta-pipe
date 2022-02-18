@@ -6,13 +6,13 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
 the DL1 parameters (i.e., Hillas, timing, and leakage parameters). The script saves events in an output file
-only when it reconstructs all the DL1 parameters. Telescope IDs are reset to the following values when saving
+only when it reconstructs all the DL1 parameters. The telescope IDs are reset to the following values when saving
 to the file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 The MAGICEventSource module searches for all the sub-run files belonging to the same observation ID and stored in
 the same directory of an input sub-run file. The module reads drive reports from the files and uses the information
-to reconstruct the telescope pointing direction, so it is best to store the files in the same directory.
+to reconstruct the telescope pointing direction. Thus, it is best to store the files in the same directory.
 If one gives the "--process-run" argument, the module also processes all the files together with the input file.
 
 Usage:
@@ -68,7 +68,7 @@ __all__ = [
 
 class EventInfoContainer(Container):
     """
-    Container to store event information:
+    Container to store the following event information:
     - observation/event/telescope IDs
     - telescope pointing direction
     - event timing information
@@ -93,7 +93,7 @@ def magic_cal_to_dl1(
     process_run=False,
 ):
     """
-    This function processes MAGIC calibrated data to DL1.
+    Processes MAGIC calibrated data to DL1.
 
     Parameters
     ----------
@@ -125,9 +125,6 @@ def magic_cal_to_dl1(
     if config_cleaning['find_hotpixels'] == 'auto':
         config_cleaning.update({'find_hotpixels': True})
 
-    if config_cleaning['pedestal_type'] not in pedestal_types:
-        raise KeyError(f'The pedestal type should be one of {pedestal_types}')
-
     logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}\n')
 
     # Configure the MAGIC cleaning:
@@ -146,7 +143,7 @@ def magic_cal_to_dl1(
         subrun_id = event_source.metadata['subrun_number'][0]
         output_file = f'{output_dir}/dl1_m{tel_id}_run{obs_id:08}.{subrun_id:03}.h5'
 
-    # Start processing events:
+    # Start processing the input events:
     n_events_skipped = 0
 
     with HDF5TableWriter(filename=output_file, group_name='events', mode='w') as writer:
@@ -213,7 +210,7 @@ def magic_cal_to_dl1(
                 continue
 
             # Set the event information to the container.
-            # To keep the precision of timestamp, here we set the integral and
+            # To keep the precision of a timestamp, here we set the integral and
             # fractional parts separately as "time_sec" and "time_nanosec":
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
             fractional, integral = np.modf(timestamp)
@@ -286,7 +283,7 @@ def main():
 
     parser.add_argument(
         '--process-run', dest='process_run', action='store_true',
-        help='Process all sub-run files of the same observation ID at once.',
+        help='Processes all the sub-run files of the same observation ID at once.',
     )
 
     args = parser.parse_args()
