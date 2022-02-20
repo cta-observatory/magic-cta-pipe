@@ -6,12 +6,12 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script trains energy, direction regressors and event classifiers with DL1-stereo data samples.
 So far, they are trained per telescope combination and per telescope type.
-The number of gamma and background training samples is automatically adjusted to the same number when training the classifiers.
+When training the classifiers, the number of gamma and background training samples is automatically adjusted to the same number.
 
 Usage:
 $ python lst1_magic_train_rfs.py
---input-file-gamma ./data/dl1_stereo/dl1_stereo_lst1_magic_gamma_40deg_90deg_off0.4_run1_to_400.h5
---input-file-bkg ./data/dl1_stereo/dl1_stereo_lst1_magic_proton_40deg_90deg_run1_to_4000.h5
+--input-file-gamma ./data/dl1_stereo/dl1_stereo_gamma_40deg_90deg_off0.4deg_LST-1_MAGIC_run1_to_run400.h5
+--input-file-bkg ./data/dl1_stereo/dl1_stereo_proton_40deg_90deg_LST-1_MAGIC_run1_to_run4000.h5
 --output-dir ./data/rfs
 --config-file ./config.yaml
 --train-energy
@@ -28,6 +28,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from ctapipe.instrument import SubarrayDescription
 from magicctapipe.reco import (
     EnergyRegressor,
     DirectionRegressor,
@@ -47,6 +48,9 @@ tel_combinations = {
     'lst1_m1_m2': [1, 2, 3],
 }
 
+event_class_gamma = 0
+event_class_bkg = 1
+
 __all__ = [
     'train_rf_regressor',
     'train_rf_classifier',
@@ -55,8 +59,8 @@ __all__ = [
 
 def load_data(input_file, feature_names, event_class=None):
     """
-    Loads an input DL1-stere file and separates the data
-    telescope combination wise.
+    Loads an input DL1-stereo data file and separates
+    the data telescope combination wise.
 
     Parameters
     ----------
@@ -65,8 +69,7 @@ def load_data(input_file, feature_names, event_class=None):
     feature_names: list
         Parameters used for training RFs
     event_class: int
-        True event class of an input data,
-        0 for gamma MC, 1 for backgrounds
+        True event class of an input data
 
     Returns
     -------
@@ -87,7 +90,6 @@ def load_data(input_file, feature_names, event_class=None):
     # So far, the event weight is set to 1, meaning no weights:
     data['event_weight'] = 1
 
-    # Separate the data telescope combination wise:
     data_return = {}
 
     for tel_combo, tel_ids in tel_combinations.items():
@@ -112,7 +114,7 @@ def check_importances(estimator):
     Parameters
     ----------
     estimator: EnergyRegressor, DirectionRegressor or EventClassifier
-        Trained energy, direction or event class estimators
+        trained estimators
     """
 
     telescope_ids = estimator.telescope_rfs.keys()
@@ -139,7 +141,7 @@ def get_events_at_random(data, n_events):
     Parameters
     ----------
     data: pandas.core.frame.DataFrame
-        Pandas data frame
+        Pandas data frame containing training samples
     n_events:
         The number of events to be extracted at random
 
@@ -165,12 +167,7 @@ def get_events_at_random(data, n_events):
     return data_return
 
 
-def train_rf_regressor(
-    input_file,
-    output_dir,
-    config,
-    rf_type,
-):
+def train_rf_regressor(input_file, output_dir, config, rf_type):
     """
     Trains RF regressors with input gamma MC samples.
 
@@ -181,7 +178,7 @@ def train_rf_regressor(
     output_dir: str
         Path to a directory where to save output trained regressors
     config: dict
-        Configuration for LST-1 + MAGIC analysis
+        Configuration for the LST-1 + MAGIC analysis
     rf_type: str
         Type of regressors, "energy" or "direction"
     """
@@ -193,23 +190,31 @@ def train_rf_regressor(
         logger.info(f'{key}: {value}')
 
     # Load the input file:
-    logger.info(f'\nLoading the input data file:\n{input_file}')
+    logger.info('\nLoading the input file:')
+    logger.info(input_file)
+
     data_train = load_data(input_file, config_rf['features'])
+    subarray = SubarrayDescription.from_hdf(input_file)
+
+    if rf_type == 'energy':
+        regressor = EnergyRegressor(
+            feature_names=config_rf['features'],
+            rf_settings=config_rf['settings'],
+        )
+
+    elif rf_type == 'direction':
+        regressor = DirectionRegressor(
+            feature_names=config_rf['features'],
+            rf_settings=config_rf['settings'],
+            tel_descriptions=subarray.tel,
+        )
 
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     # Train the regressors per telescope combination:
     for tel_combo in data_train.keys():
 
-        logger.info(f'\nTraining the {rf_type} RF regressors for "{tel_combo}" events...')
-
-        if rf_type == 'energy':
-            regressor = EnergyRegressor(config_rf['features'], config_rf['settings'])
-
-        elif rf_type == 'direction':
-            regressor = DirectionRegressor(config_rf['features'], config_rf['settings'])
-
-        # Train the regressors:
+        logger.info(f'\nTraining the regressors for "{tel_combo}" events...')
         regressor.fit(data_train[tel_combo])
 
         logger.info('\nParameter importances:')
@@ -218,20 +223,16 @@ def train_rf_regressor(
         output_file = f'{output_dir}/{rf_type}_regressors_{tel_combo}.joblib'
         regressor.save(output_file)
 
-        logger.info(f'\nOutput file:\n{output_file}')
+        logger.info(f'Output file:')
+        logger.info(output_file)
 
     logger.info('\nDone.')
 
 
-def train_rf_classifier(
-    input_file_gamma,
-    input_file_bkg,
-    output_dir,
-    config,
-):
+def train_rf_classifier(input_file_gamma, input_file_bkg, output_dir, config):
     """
     Trains RF classifiers with input gamma MC and
-    background DL1-stere data files.
+    background DL1-stereo samples.
 
     Parameters
     ----------
@@ -242,7 +243,7 @@ def train_rf_classifier(
     output_dir: str
         Path to a directory where to save output trained classifiers
     config: dict
-        Configuration for LST-1 + MAGIC analysis
+        Configuration for the LST-1 + MAGIC analysis
     """
 
     config_rf = config['event_classifier']
@@ -251,12 +252,18 @@ def train_rf_classifier(
     for key, value in config_rf.items():
         logger.info(f'{key}: {value}')
 
-    # Load the input files:
-    logger.info(f'\nLoading the input gamma MC data file:\n{input_file_gamma}')
-    data_gamma = load_data(input_file_gamma, config_rf['features'], event_class=0)
+    classifier = EventClassifier(config_rf['features'], config_rf['settings'])
 
-    logger.info(f'\nLoading the input background data file:\n{input_file_bkg}')
-    data_bkg = load_data(input_file_bkg, config_rf['features'], event_class=1)
+    # Load the input files:
+    logger.info('\nLoading the input gamma MC data file:')
+    logger.info(input_file_gamma)
+
+    data_gamma = load_data(input_file_gamma, config_rf['features'], event_class=event_class_gamma)
+
+    logger.info('\nLoading the input background data file:')
+    logger.info(input_file_bkg)
+
+    data_bkg = load_data(input_file_bkg, config_rf['features'], event_class=event_class_bkg)
 
     # Check the telescope combinations common to both gamma and background samples:
     tel_combinations = set(data_gamma.keys()) & set(data_bkg.keys())
@@ -279,11 +286,8 @@ def train_rf_classifier(
             n_events_bkg = len(data_bkg[tel_combo].groupby(['obs_id', 'event_id']).size())
 
         logger.info(f'--> n_events_gamma = {n_events_gamma}, n_events_bkg = {n_events_bkg}')
+
         data_train = data_gamma[tel_combo].append(data_bkg[tel_combo])
-
-        classifier = EventClassifier(config_rf['features'], config_rf['settings'])
-
-        # Train the classifiers:
         classifier.fit(data_train)
 
         logger.info('\nParameter importances:')
@@ -292,7 +296,8 @@ def train_rf_classifier(
         output_file = f'{output_dir}/event_classifiers_{tel_combo}.joblib'
         classifier.save(output_file)
 
-        logger.info(f'\nOutput file:\n{output_file}')
+        logger.info('\nOutput file:')
+        logger.info(output_file)
 
     logger.info('\nDone.')
 
@@ -325,17 +330,17 @@ def main():
 
     parser.add_argument(
         '--train-energy', dest='train_energy', action='store_true',
-        help='Train energy regressors.',
+        help='Trains energy regressors.',
     )
 
     parser.add_argument(
         '--train-direction', dest='train_direction', action='store_true',
-        help='Train direction regressors.',
+        help='Trains direction regressors.',
     )
 
     parser.add_argument(
         '--train-classifier', dest='train_classifier', action='store_true',
-        help='Train event classifiers.',
+        help='Trains event classifiers.',
     )
 
     args = parser.parse_args()
@@ -344,31 +349,16 @@ def main():
         config = yaml.safe_load(f)
 
     if args.train_energy:
-        train_rf_regressor(
-            input_file=args.input_file_gamma,
-            output_dir=args.output_dir,
-            config=config,
-            rf_type='energy',
-        )
+        train_rf_regressor(args.input_file_gamma, args.output_dir, config, 'energy')
 
     if args.train_direction:
-        train_rf_regressor(
-            input_file=args.input_file_gamma,
-            output_dir=args.output_dir,
-            config=config,
-            rf_type='direction',
-        )
+        train_rf_regressor(args.input_file_gamma, args.output_dir, config, 'direction')
 
     if args.train_classifier:
-        train_rf_classifier(
-            input_file_gamma=args.input_file_gamma,
-            input_file_bkg=args.input_file_bkg,
-            output_dir=args.output_dir,
-            config=config,
-        )
+        train_rf_classifier(args.input_file_gamma, args.input_file_bkg, args.output_dir, config)
 
-    end_time = time.time()
-    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
+    process_time = time.time() - start_time
+    logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':
