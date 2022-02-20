@@ -37,7 +37,7 @@ from .global_utils import (
     check_train_test_intersections,
 )
 
-from .processors import (
+from .estimators import (
     EnergyRegressor,
     DirectionRegressor,
     EventClassifier,
