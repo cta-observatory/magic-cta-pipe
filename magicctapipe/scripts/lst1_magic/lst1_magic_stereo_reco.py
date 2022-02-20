@@ -5,14 +5,14 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script reconstructs the stereo parameters of the events containing more than one telescope information.
-The cuts specified in a configuration file apply to events before the reconstruction. The script checks the
-angular distance of the pointing directions when an input file is "real" data containing LST-1 and MAGIC events.
-Then, the process stops when it is more than 0.1 degree to avoid the reconstruction of mispointing data.
-For example, the event coincidence can happen even though the wobble offsets are different.
+The cuts specified in a configuration file apply to events before the reconstruction. When an input file is
+"real" data containing LST-1 and MAGIC events, the script checks the angular distance of the LST-1 and MAGIC
+pointing directions. Then, if the distance is more than 0.1 degree, it stops the process to avoid the reconstruction
+of mis-pointing data. For example, the event coincidence can happen even though wobble offsets are different.
 
 Usage:
 $ python lst1_magic_stereo_reco.py
---input-file ./data/dl1_coincidence/dl1_lst1_magic_run03265.0040.h5
+--input-file ./data/dl1_coincidence/dl1_LST-1_MAGIC.Run03265.0040.h5
 --output-dir ./data/dl1_stereo
 --config-file ./config.yaml
 """
@@ -67,7 +67,7 @@ __all__ = [
 
 def calc_tel_mean_pointing(data):
     """
-    Calculates the mean telescope pointing direction.
+    Calculates the mean of the telescope pointing directions.
 
     Parameters
     ----------
@@ -77,7 +77,7 @@ def calc_tel_mean_pointing(data):
     Returns
     -------
     pointing: pandas.core.frame.DataFrame
-        Pandas data frame containing the mean pointing direction
+        Pandas data frame containing the mean of the pointing directions
     """
 
     x_coords = np.cos(data['alt_tel']) * np.cos(data['az_tel'])
@@ -116,10 +116,11 @@ def stereo_reco(input_file, output_dir, config):
     output_dir: str
         Path to a directory where to save an output DL1-stereo data file
     config: dict
-        Configuration for LST-1 + MAGIC analysis
+        Configuration for the LST-1 + MAGIC analysis
     """
 
-    logger.info(f'\nLoading the input data file:\n{input_file}')
+    logger.info('\nLoading the input file:')
+    logger.info(input_file)
 
     data_joint = pd.read_hdf(input_file, key='events/params')
     data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -164,11 +165,11 @@ def stereo_reco(input_file, output_dir, config):
 
         data_joint.loc[df.index, 'event_type'] = event_type
 
-    # Check the angular separation if the input file is "real" data:
     telescope_ids = np.unique(data_joint.index.get_level_values('tel_id'))
 
     if (not is_simulation) and (tel_id_lst in telescope_ids):
 
+        # Check the angular distance:
         logger.info('\nChecking the angular distance of LST-1 and MAGIC pointing directions...')
 
         df_lst = data_joint.query('tel_id == 1')
@@ -176,13 +177,15 @@ def stereo_reco(input_file, output_dir, config):
         obs_ids_joint = list(df_lst.index.get_level_values('obs_id'))
         event_ids_joint = list(df_lst.index.get_level_values('event_id'))
 
-        multi_indices = pd.MultiIndex.from_arrays([obs_ids_joint, event_ids_joint], names=['obs_id', 'event_id'])
+        multi_indices = pd.MultiIndex.from_arrays(
+            [obs_ids_joint, event_ids_joint], names=['obs_id', 'event_id']
+        )
 
         df_magic = data_joint.query('tel_id == [2, 3]')
         df_magic.reset_index(level='tel_id', inplace=True)
         df_magic = df_magic.loc[multi_indices]
 
-        # Calculate the mean pointing direction of the MAGIC telescopes:
+        # Calculate the mean of the MAGIC pointing directions:
         df_magic_pointing = calc_tel_mean_pointing(df_magic)
 
         theta = angular_separation(
@@ -200,9 +203,9 @@ def stereo_reco(input_file, output_dir, config):
             sys.exit()
         else:
             angle_max = np.max(theta.to(u.arcmin).value)
-            logger.info(f'--> Maximum angular separation is {angle_max:.3f} arcmin. Continue.')
+            logger.info(f'--> Maximum angular distance is {angle_max:.3f} arcmin. Continue.')
 
-    # Start reconstructing the stereo parameters:
+    # Process the events:
     logger.info('\nReconstructing the stereo parameters...')
 
     event = ArrayEventContainer()
@@ -284,23 +287,18 @@ def stereo_reco(input_file, output_dir, config):
             data_joint.loc[(obs_id, ev_id, tel_id), 'impact'] = impact.to(u.m).value
 
     n_events_processed = i_ev + 1
-    logger.info(f'{n_events_processed} events processed.')
+    logger.info(f'{n_events_processed} events')
 
     # Prepare for saving the data to an output file:
     # Here we parse run information from the input file name:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
-    regex_run = r'dl1_(\S+)_run(\d+)\.h5'
-    regex_subrun = rf'dl1_(\S+)_run(\d+)\.(\d+)\.h5'
+    regex = r'dl1_(\S+)\.h5'
 
-    if re.fullmatch(regex_run, base_name):
-        parser = re.findall(regex_run, base_name)[0]
-        output_file = f'{output_dir}/dl1_stereo_{parser[0]}_run{parser[1]}.h5'
-
-    elif re.fullmatch(regex_subrun, base_name):
-        parser = re.findall(regex_subrun, base_name)[0]
-        output_file = f'{output_dir}/dl1_stereo_{parser[0]}_run{parser[1]}.{parser[2]}.h5'
+    if re.fullmatch(regex, base_name):
+        parser = re.findall(regex, base_name)[0]
+        output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
 
     # Save in the output file:
     with tables.open_file(output_file, mode='w') as f_out:
@@ -320,7 +318,9 @@ def stereo_reco(input_file, output_dir, config):
     # Save the subarray description:
     subarray.to_hdf(output_file)
 
-    logger.info(f'\nOutput file:\n{output_file}')
+    logger.info('\nOutput file:')
+    logger.info(output_file)
+
     logger.info('\nDone.')
 
 
@@ -350,14 +350,10 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    stereo_reco(
-        input_file=args.input_file,
-        output_dir=args.output_dir,
-        config=config,
-    )
+    stereo_reco(args.input_file, args.output_dir, config)
 
-    end_time = time.time()
-    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
+    process_time = time.time() - start_time
+    logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':

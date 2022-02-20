@@ -104,7 +104,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         Configuration for the LST-1 + MAGIC analysis
     """
 
-    logger.info('\nInput file:')
+    logger.info('\nLoading the input file:')
     logger.info(input_file)
 
     event_source = EventSource(input_file)
