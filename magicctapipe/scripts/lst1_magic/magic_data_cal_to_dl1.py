@@ -103,14 +103,6 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
         same observation ID of an input sub-run file (default: false)
     """
 
-    config_cleaning = config['MAGIC']['magic_clean']
-
-    if config_cleaning['find_hotpixels'] == 'auto':
-        config_cleaning.update({'find_hotpixels': True})
-
-    logger.info('\nConfiguration for the image cleaning:')
-    logger.info(config_cleaning)
-
     event_source = MAGICEventSource(input_file, process_run=process_run)
 
     obs_id = event_source.obs_ids[0]
@@ -121,6 +113,14 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
         logger.info(root_file)
 
     # Configure the MAGIC cleaning:
+    config_cleaning = config['MAGIC']['magic_clean']
+
+    if config_cleaning['find_hotpixels'] == 'auto':
+        config_cleaning.update({'find_hotpixels': True})
+
+    logger.info('\nConfiguration for the image cleaning:')
+    logger.info(config_cleaning)
+
     ped_type = config_cleaning.pop('pedestal_type')
     i_ped_type = np.where(np.array(pedestal_types) == ped_type)[0][0]
 
