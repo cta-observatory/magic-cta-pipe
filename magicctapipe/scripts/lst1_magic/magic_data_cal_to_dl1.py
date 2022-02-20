@@ -247,7 +247,9 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
     subarray = SubarrayDescription('MAGIC', tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
 
-    logger.info(f'\nOutput file:\n{output_file}')
+    logger.info('\nOutput file:')
+    logger.info(output_file)
+
     logger.info('\nDone.')
 
 
@@ -282,9 +284,7 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    magic_cal_to_dl1(
-        args.input_file, args.output_dir, config, args.process_run,
-    )
+    magic_cal_to_dl1(args.input_file, args.output_dir, config, args.process_run)
 
     process_time = time.time() - start_time
     logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
