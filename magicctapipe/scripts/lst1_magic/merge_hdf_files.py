@@ -105,7 +105,7 @@ def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
         If true, it merges input files subrun-wise (only for real data)
     """
 
-    logger.info(f'\nInput directory:')
+    logger.info('\nInput directory:')
     logger.info(input_dir)
 
     input_file_mask = f'{input_dir}/*.h5'

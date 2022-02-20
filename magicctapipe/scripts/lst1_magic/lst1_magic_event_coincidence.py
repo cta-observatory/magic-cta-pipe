@@ -10,10 +10,10 @@ cleaning or fail to compute the DL1 parameters. However, it's possible to perfor
 Thus, the script checks the event coincidence for each telescope combination (i.e., LST-1 + M1 and LST-1 + M2) using each
 MAGIC timestamp. Then, it saves the events containing more than two telescope information to an output file.
 
-Time offsets and a coincidence window apply to LST-1 events, and the script searches for coincident events
-within an offset region specified in a configuration file. A peak is usually found in -10 < offset < 0 [us].
-Since an optimal time offset changes depending on the telescope distance along the pointing direction,
-it is best to input a sub-run file for LST data, whose observation duration is usually ~10 seconds.
+Time offsets and the coincidence window apply to LST-1 events, and the script searches for coincident events
+within the offset region specified in a configuration file. A peak is usually found in -10 < offset < 0 [us].
+Since the optimal time offset changes depending on the telescope distance along the pointing direction,
+it requires to input a sub-run file for LST data, whose observation duration is usually ~10 seconds.
 
 Usage:
 $ python lst1_magic_event_coincidence.py
@@ -21,7 +21,6 @@ $ python lst1_magic_event_coincidence.py
 --input-dir-magic ./data/dl1/MAGIC
 --output-dir ./data/dl1_coincidence
 --config-file ./config.yaml
---
 """
 
 import re
@@ -50,7 +49,7 @@ warnings.simplefilter('ignore')
 nsec2sec = 1e-9
 sec2usec = 1e6
 
-accuracy_time = 1e-7   # final degit of timestamp, unit: [sec]
+accuracy_time = 1e-7   # final digit of timestamp, unit: [sec]
 
 tel_names = {
     1: 'LST-1',
@@ -95,7 +94,8 @@ def load_lst_data(input_file, type_lst_time):
         LST-1 subarray description
     """
 
-    logger.info(f'\nLoading the input LST-1 data file:\n{input_file}')
+    logger.info('\nLoading the input LST-1 data file:')
+    logger.info(input_file)
 
     # Try to read DL2 data, but if it does not exist, read DL1 data:
     try:
@@ -178,11 +178,15 @@ def load_magic_data(input_dir):
         MAGIC subarray description
     """
 
-    logger.info(f'\nLoading the following MAGIC data files:')
-
-    # Load and merge the input files:
     file_paths = glob.glob(f'{input_dir}/dl*.h5')
     file_paths.sort()
+
+    if file_paths == []:
+        logger.error('\nCould not find MAGIC data files in the input directory. Exiting.')
+        sys.exit()
+
+    # Load and merge the input files:
+    logger.info('\nLoading the following MAGIC data files:')
 
     data = pd.DataFrame()
 
@@ -227,16 +231,16 @@ def event_coincidence(
     output_dir: str
         Path to a directory where to save an output coincidence data file
     config: dict
-        Configuration for LST-1 + MAGIC analysis
+        Configuration for the LST-1 + MAGIC analysis
     keep_all_params: bool
-        If True, it saves all the parameters of LST-1 and MAGIC events
-        in an output file (default: False)
+        If true, it also saves the parameters
+        non-common to LST-1 and MAGIC events (default: false)
     """
 
     config_evco = config['event_coincidence']
     logger.info(f'\nConfiguration for the event coincidence:\n{config_evco}')
 
-    # Configure the event coincideince:
+    # Configure the event coincidence:
     precision = int(-np.log10(accuracy_time))
     window_width = config_evco['window_width']
 
@@ -327,8 +331,8 @@ def event_coincidence(
         df_magic = df_magic.iloc[condition]
         time_magic = time_magic[condition]
 
-        # Start the event coincidence. The time offset and the coincidence window apply to LST-1 events, and
-        # the MAGIC events existing in the window (including the edges) are recognized as coincident events.
+        # Start the event coincidence. The time offsets and the coincidence window apply to the LST-1 events,
+        # and the MAGIC events existing in the window (including the edges) are recognized as coincident events.
         # At first, we scan the number of coincident events in each time offset, and find the time offset
         # where the number of events becomes maximum. Then, we compute the averaged offset weighted by the
         # number of events around the maximizing offset. Finally, we again check coincident events at the
@@ -389,7 +393,7 @@ def event_coincidence(
         logger.info(f'--> Ratio over the {tel_name} events: {n_events_at_avg}/{n_events_magic} ' \
                     f'= {n_events_at_avg / n_events_magic * 100:.1f}%')
 
-        # Check the coincidence at the avereged offset:
+        # Check the coincidence at the averaged offset:
         indices_lst = []
         indices_magic = []
 
@@ -459,7 +463,7 @@ def event_coincidence(
     df_events.drop_duplicates(inplace=True)
 
     # Keep only the events containing two or three telescope information.
-    # Sometimes it happens that a MAGIC stereo event is coincident with two
+    # Sometimes it happens that one MAGIC stereo event is coincident with two
     # different LST-1 events, and at the moment we exclude that kind of events:
     df_events['multiplicity'] = df_events.groupby(['obs_id', 'event_id']).size()
     df_events = df_events.query('multiplicity == [2, 3]')
@@ -484,11 +488,11 @@ def event_coincidence(
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file_lst).resolve().name
-    regex = r'dl(\d)_LST-1\.Run(\d{5})\.(\d{4})\.h5'
+    regex = r'(\S+)_LST-1\.(\S+)\.h5'
 
     if re.fullmatch(regex, base_name):
         parser = re.findall(regex, base_name)[0]
-        output_file = f'{output_dir}/dl{parser[0]}_lst1_magic_run{parser[1]}.{parser[2]}.h5'
+        output_file = f'{output_dir}/{parser[0]}_LST-1_MAGIC.{parser[1]}.h5'
 
     # Save in the output file:
     with tables.open_file(output_file, mode='w') as f_out:
@@ -506,7 +510,9 @@ def event_coincidence(
     # Save the subarray description:
     subarray_lst1_magic.to_hdf(output_file)
 
-    logger.info(f'\nOutput file:\n{output_file}')
+    logger.info('\nOutput file:')
+    logger.info(output_file)
+
     logger.info('\nDone.')
 
 
@@ -538,7 +544,7 @@ def main():
 
     parser.add_argument(
         '--keep-all-params', dest='keep_all_params', action='store_true',
-        help='Keep all the parameters of LST-1 and MAGIC events.',
+        help='Keeps all the parameters of LST-1 and MAGIC events.',
     )
 
     args = parser.parse_args()
@@ -547,15 +553,15 @@ def main():
         config = yaml.safe_load(f)
 
     event_coincidence(
-        input_file_lst=args.input_file_lst,
-        input_dir_magic=args.input_dir_magic,
-        output_dir=args.output_dir,
-        config=config,
-        keep_all_params=args.keep_all_params,
+        args.input_file_lst,
+        args.input_dir_magic,
+        args.output_dir,
+        config,
+        args.keep_all_params,
     )
 
-    end_time = time.time()
-    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
+    process_time = time.time() - start_time
+    logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':
