@@ -5,7 +5,7 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
-the DL1 parameters (i.e., Hillas, timing, and leakage parameters). The script saves events in an output file
+the DL1 parameters (i.e., Hillas, timing and leakage parameters). The script saves an event in an output file
 only when it reconstructs all the DL1 parameters. The telescope IDs are reset to the following values when saving
 to the file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
@@ -72,7 +72,7 @@ class EventInfoContainer(Container):
     - observation/event/telescope IDs
     - telescope pointing direction
     - event timing information
-    - parameters of cleaned image
+    - parameters of a cleaned image
     """
 
     obs_id = Field(-1, 'Observation ID')
@@ -82,16 +82,11 @@ class EventInfoContainer(Container):
     az_tel = Field(-1, 'Telescope pointing azimuth', u.rad)
     time_sec = Field(-1, 'Event time second')
     time_nanosec = Field(-1, 'Event time nanosecond')
-    n_pixels = Field(-1, 'Number of pixels of cleaned image')
-    n_islands = Field(-1, 'Number of islands of cleaned image')
+    n_pixels = Field(-1, 'Number of pixels of a cleaned image')
+    n_islands = Field(-1, 'Number of islands of a cleaned image')
 
 
-def magic_cal_to_dl1(
-    input_file,
-    output_dir,
-    config,
-    process_run=False,
-):
+def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
     """
     Processes MAGIC calibrated data to DL1.
 
@@ -102,16 +97,21 @@ def magic_cal_to_dl1(
     output_dir: str
         Path to a directory where to save an output DL1 data file
     config: dict
-        Configuration for LST-1 + MAGIC analysis
+        Configuration for the LST-1 + MAGIC analysis
     process_run: bool
-        If True, it processes all the sub-run files belonging to the
-        same observation ID of an input sub-run file (default: False)
+        If true, it processes all the sub-run files belonging to the
+        same observation ID of an input sub-run file (default: false)
     """
 
-    event_source = MAGICEventSource(
-        input_url=input_file,
-        process_run=process_run,
-    )
+    config_cleaning = config['MAGIC']['magic_clean']
+
+    if config_cleaning['find_hotpixels'] == 'auto':
+        config_cleaning.update({'find_hotpixels': True})
+
+    logger.info('\nConfiguration for the image cleaning:')
+    logger.info(config_cleaning)
+
+    event_source = MAGICEventSource(input_file, process_run=process_run)
 
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
@@ -120,49 +120,40 @@ def magic_cal_to_dl1(
     for root_file in event_source.file_list:
         logger.info(root_file)
 
-    config_cleaning = config['MAGIC']['magic_clean']
-
-    if config_cleaning['find_hotpixels'] == 'auto':
-        config_cleaning.update({'find_hotpixels': True})
-
-    logger.info(f'\nConfiguration for the image cleaning:\n{config_cleaning}\n')
-
     # Configure the MAGIC cleaning:
-    camera_geom = event_source.subarray.tel[tel_id].camera.geometry
-    magic_clean = MAGICClean(camera_geom, config_cleaning)
-
     ped_type = config_cleaning.pop('pedestal_type')
     i_ped_type = np.where(np.array(pedestal_types) == ped_type)[0][0]
+
+    camera_geom = event_source.subarray.tel[tel_id].camera.geometry
+    magic_clean = MAGICClean(camera_geom, config_cleaning)
 
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     if process_run:
-        output_file = f'{output_dir}/dl1_m{tel_id}_run{obs_id:08}.h5'
+        output_file = f'{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.h5'
     else:
         subrun_id = event_source.metadata['subrun_number'][0]
-        output_file = f'{output_dir}/dl1_m{tel_id}_run{obs_id:08}.{subrun_id:03}.h5'
+        output_file = f'{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5'
 
-    # Start processing the input events:
+    # Process the events:
+    logger.info('\nProcessing the events:')
     n_events_skipped = 0
 
-    with HDF5TableWriter(filename=output_file, group_name='events', mode='w') as writer:
+    with HDF5TableWriter(output_file, 'events', mode='w') as writer:
 
         for event in event_source:
 
             if event.count % 100 == 0:
                 logger.info(f'{event.count} events')
 
-            # Get the bad pixel information:
+            # Apply the image cleaning:
             dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
             badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
             unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
-            # Apply the image cleaning:
             signal_pixels, image, peak_time = magic_clean.clean_image(
-                event_image=event.dl1.tel[tel_id].image,
-                event_pulse_time=event.dl1.tel[tel_id].peak_time,
-                unsuitable_mask=unsuitable_mask,
+                event.dl1.tel[tel_id].image, event.dl1.tel[tel_id].peak_time, unsuitable_mask,
             )
 
             image_cleaned = image.copy()
@@ -192,7 +183,7 @@ def magic_cal_to_dl1(
             # Try to compute the timing parameters:
             try:
                 timing_params = timing_parameters(
-                    camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels
+                    camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels,
                 )
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
@@ -215,8 +206,8 @@ def magic_cal_to_dl1(
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
             fractional, integral = np.modf(timestamp)
 
-            time_sec = np.round(integral).astype(int)
-            time_nanosec = np.round(fractional * sec2nsec, decimals=-2).astype(int)
+            time_sec = int(np.round(integral))
+            time_nanosec = int(np.round(fractional * sec2nsec))
 
             event_info = EventInfoContainer(
                 obs_id=event.index.obs_id,
@@ -241,8 +232,8 @@ def magic_cal_to_dl1(
 
         n_events_processed = event.count + 1
 
-        logger.info(f'{n_events_processed} events processed.')
-        logger.info(f'({n_events_skipped} events skipped)')
+        logger.info(f'\nIn total {n_events_processed} events are processed.')
+        logger.info(f'({n_events_skipped} events are skipped)')
 
     # Reset the telescope IDs of the telescope descriptions:
     tel_descriptions = {
@@ -273,7 +264,7 @@ def main():
 
     parser.add_argument(
         '--output-dir', '-o', dest='output_dir', type=str, default='./data',
-        help='Path to a directory where to save an ouptut DL1 data file.',
+        help='Path to a directory where to save an output DL1 data file.',
     )
 
     parser.add_argument(
@@ -292,14 +283,11 @@ def main():
         config = yaml.safe_load(f)
 
     magic_cal_to_dl1(
-        input_file=args.input_file,
-        output_dir=args.output_dir,
-        config=config,
-        process_run=args.process_run,
+        args.input_file, args.output_dir, config, args.process_run,
     )
 
-    end_time = time.time()
-    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
+    process_time = time.time() - start_time
+    logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':
