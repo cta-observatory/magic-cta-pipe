@@ -114,7 +114,7 @@ def check_importances(estimator):
     Parameters
     ----------
     estimator: EnergyRegressor, DirectionRegressor or EventClassifier
-        trained estimators
+        Trained estimator
     """
 
     telescope_ids = estimator.telescope_rfs.keys()

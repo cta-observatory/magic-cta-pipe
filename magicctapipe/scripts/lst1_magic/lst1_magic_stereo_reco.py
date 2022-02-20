@@ -290,7 +290,6 @@ def stereo_reco(input_file, output_dir, config):
     logger.info(f'{n_events_processed} events')
 
     # Prepare for saving the data to an output file:
-    # Here we parse run information from the input file name:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name

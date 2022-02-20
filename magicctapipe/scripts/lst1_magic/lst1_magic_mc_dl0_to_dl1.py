@@ -173,8 +173,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
-    # Prepare for saving data to an output file.
-    # Here we parse run information from the input file name:
+    # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name

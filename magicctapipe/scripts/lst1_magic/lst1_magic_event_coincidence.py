@@ -483,8 +483,7 @@ def event_coincidence(
 
         df_events.loc[df.index, 'event_type'] = event_type
 
-    # Prepare for saving the data to an output file.
-    # Here we parse run information from the input file name:
+    # Prepare for saving the data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file_lst).resolve().name
