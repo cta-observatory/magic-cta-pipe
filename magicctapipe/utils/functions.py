@@ -1,27 +1,63 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+import tables
+import logging
 import numpy as np
+import pandas as pd
 from astropy import units as u
 from astropy.coordinates import EarthLocation, AltAz, SkyCoord
 from astropy.coordinates.builtin_frames import SkyOffsetFrame
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
+tel_combinations = {
+    'm1_m2': [2, 3],   # event_type = 0
+    'lst1_m1': [1, 2],   # event_type = 1
+    'lst1_m2': [1, 3],   # event_type = 2
+    'lst1_m1_m2': [1, 2, 3],   # event_type = 3
+}
+
 __all__ = [
-    'crab_magic',
+    'set_event_types',
+    'save_data_to_hdf',
     'calc_impact',
     'calc_nsim',
     'transform_to_radec',
-    'calc_angular_separation'
+    'calc_angular_separation',
 ]
 
 
-def crab_magic(E):
+def set_event_types(data):
 
-    f0 = 3.23e-11 / u.TeV / u.cm ** 2 / u.s
-    alpha = -2.47
-    beta = -0.24
-    e0 = 1. * u.TeV
+    n_events_total = len(data.groupby(['obs_id', 'event_id']).size())
+    logger.info(f'\nIn total {n_events_total} stereo events are found:')
 
-    dFdE = f0 * np.power(E / e0, alpha + beta * np.log10(E / e0))
+    for event_type, (tel_combo, tel_ids) in enumerate(tel_combinations.items()):
 
-    return dFdE.to(1 / u.cm ** 2 / u.s / u.TeV)
+        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
+        df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
+        df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
+
+        n_events = len(df.groupby(['obs_id', 'event_id']).size())
+        logger.info(f'{tel_combo} (type {event_type}): {n_events:.0f} events ({n_events / n_events_total * 100:.1f}%)')
+
+        data.loc[df.index, 'event_type'] = event_type
+
+    return data
+
+
+def save_data_to_hdf(data, output_file, group_name, table_name):
+
+    with tables.open_file(output_file, mode='a') as f_out:
+
+        event_values = [tuple(array) for array in data.to_numpy()]
+        dtypes = np.dtype([(name, dtype) for name, dtype in zip(data.dtypes.index, data.dtypes)])
+
+        event_table = np.array(event_values, dtype=dtypes)
+        f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
 
 
 def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):

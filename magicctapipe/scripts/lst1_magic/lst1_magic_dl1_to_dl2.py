@@ -4,40 +4,38 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-Reconstruct the DL2 parameters (i.e., energy, direction and gammaness) with trained RFs.
-The RFs will be applied per telescope combination and per telescope type.
-If real data is input, the parameters in the Alt/Az coordinate will be transformed to the RA/Dec coordinate.
+This script processes DL1-stereo data and reconstructs the DL2 parameters (i.e., energy, direction and gammaness) with trained RFs.
+So far, the RFs will be applied per telescope combination and per telescope type.
 
 Usage:
 $ python lst1_magic_dl1_to_dl2.py
---input-file "./data/dl1_stereo/dl1_stereo_lst1_magic_run03265.0040.h5"
---output-file "./data/dl2/dl2_lst1_magic_run03265.0040.h5"
---energy-regressors "./data/rfs/energy_regressors_*.joblib"
---direction-regressors "./data/rfs/direction_regressors_*.joblib"
---event-classifiers "./data/rfs/event_classifiers_*.joblib"
+--input-file ./data/dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
+--input-dir-rfs ./data/rfs
+--output-dir ./data/dl2
 """
 
+import re
 import glob
 import time
-import tables
 import logging
 import argparse
 import warnings
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from astropy import units as u
 from astropy.time import Time
-
 from ctapipe.instrument import SubarrayDescription
-
+from magicctapipe.utils import (
+    set_event_types,
+    transform_to_radec,
+    save_data_to_hdf,
+)
 from magicctapipe.reco import (
     EnergyRegressor,
     DirectionRegressor,
     EventClassifier,
 )
-
-from magicctapipe.utils import transform_to_radec
-
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -45,110 +43,143 @@ logger.setLevel(logging.INFO)
 
 warnings.simplefilter('ignore')
 
-__all__ = ['dl1_to_dl2']
+__all__ = [
+    'dl1_to_dl2',
+]
 
 
-def apply_rfs(data, rfs_mask, estimator, tel_descriptions=None):
+def apply_rfs(data, estimator):
+    """
+    Applies trained RFs to an input DL1-stereo data.
 
-    file_paths = glob.glob(rfs_mask)
-    file_paths.sort()
+    Parameters
+    ----------
+    data: pandas.core.frame.DataFrame
+        Pandas data frame containing events
+    estimator: EnergyRegressor, DirectionRegressor or EventClassifier
+        Trained estimator
 
-    reco_params = pd.DataFrame()
+    Returns
+    -------
+    reco_params: pandas.core.frame.DataFrame
+        Pandas data frame containing the DL2 parameters
+    """
 
-    for path in file_paths:
+    tel_ids = list(estimator.telescope_rfs.keys())
 
-        logger.info(path)
-        estimator.load(path)
+    df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
+    df.dropna(subset=estimator.feature_names, inplace=True)
 
-        tel_ids = list(estimator.telescope_rfs.keys())
+    df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
+    df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
-        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-        df.dropna(subset=estimator.feature_names, inplace=True)
-        df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
-        df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
-
-        n_events = len(df.groupby(['obs_id', 'event_id']).size())
-
-        if n_events == 0:
-            logger.info('--> No corresponding events are found. Skipping.')
-            continue
-
-        logger.info(f'--> {n_events} events are found. Applying...')
-
-        if tel_descriptions is not None:
-            df_reco = estimator.predict(df, tel_descriptions)
-        else:
-            df_reco = estimator.predict(df)
-
-        reco_params = reco_params.append(df_reco)
-
-    reco_params.sort_index(inplace=True)
+    if len(df) > 0:
+        logger.info(f'--> {len(df)} events are found. Applying...')
+        reco_params = estimator.predict(df)
+    else:
+        logger.warning('--> No corresponding events are found. Skipping.')
+        reco_params = pd.DataFrame()
 
     return reco_params
 
 
-def dl1_to_dl2(
-        input_file, output_file,
-        energy_regressors=None, direction_regressors=None, event_classifiers=None
-    ):
+def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
+    """
+    Processes DL1-stereo data to DL2.
 
-    logger.info(f'\nLoading the input data file:\n{input_file}')
+    Parameters
+    ----------
+    input_file: str
+        Path to an input DL1-stereo data file
+    input_dir_rfs: str
+        Path to a directory where trained RFs are stored
+    output_dir: str
+        Path to a directory where to save an output DL2 data file
+    """
+
+    logger.info('\nLoading the input file:')
+    logger.info(input_file)
 
     data_joint = pd.read_hdf(input_file, key='events/params')
     data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     data_joint.sort_index(inplace=True)
 
-    data_type = 'mc' if ('mc_energy' in data_joint.columns) else 'real'
-    subarray = SubarrayDescription.from_hdf(input_file)
+    data_joint = set_event_types(data_joint)
 
-    # --- reconstruct energy ---
-    if energy_regressors is not None:
+    is_simulation = ('mc_energy' in data_joint.columns)
 
-        estimator = EnergyRegressor()
-        logger.info('\nReconstucting the energy...')
+    # Reconstruct energy:
+    input_rfs_energy = glob.glob(f'{input_dir_rfs}/*energy*.joblib')
+    input_rfs_energy.sort()
 
-        reco_params = apply_rfs(data_joint, energy_regressors, estimator)
-        data_joint = data_joint.join(reco_params)
+    if len(input_rfs_energy) > 0:
 
-    # --- reconstruct direction ---
-    if direction_regressors is not None:
+        logger.info('\nReconstructing energy...')
+        energy_regressor = EnergyRegressor()
 
-        estimator = DirectionRegressor()
-        logger.info('\nReconstructing the direction...')
+        df_reco_energy = pd.DataFrame()
 
-        tel_descriptions = subarray.tel
+        for input_rfs in input_rfs_energy:
 
-        reco_params = apply_rfs(data_joint, direction_regressors, estimator, tel_descriptions)
-        data_joint = data_joint.join(reco_params)
+            logger.info(input_rfs)
+            energy_regressor.load(input_rfs)
 
-        if data_type == 'real':
+            reco_params = apply_rfs(data_joint, energy_regressor)
+            df_reco_energy = df_reco_energy.append(reco_params)
 
-            logger.info('Transforming Alt/Az to RA/Dec coordinate...\n')
+        data_joint = data_joint.join(df_reco_energy)
 
-            timestamps = Time(data_joint['timestamp'].values, format='unix', scale='utc')
+        del energy_regressor
+
+    # Reconstruct arrival directions:
+    input_rfs_direction = glob.glob(f'{input_dir_rfs}/*direction*.joblib')
+    input_rfs_direction.sort()
+
+    if len(input_rfs_direction) > 0:
+
+        logger.info('\nReconstructing arrival directions...')
+        direction_regressor = DirectionRegressor()
+
+        df_reco_direction = pd.DataFrame()
+
+        for input_rfs in input_rfs_direction:
+
+            logger.info(input_rfs)
+            direction_regressor.load(input_rfs)
+
+            reco_params = apply_rfs(data_joint, direction_regressor)
+            df_reco_direction = df_reco_direction.append(reco_params)
+
+        data_joint = data_joint.join(df_reco_direction)
+
+        if not is_simulation:
+
+            logger.info('\nTransforming the Alt/Az coordinate to the RA/Dec one...\n')
+
+            timestamps = Time(data_joint['timestamp'].to_numpy(), format='unix', scale='utc')
 
             ra_tel, dec_tel = transform_to_radec(
                 alt=u.Quantity(data_joint['alt_tel'].values, u.rad),
                 az=u.Quantity(data_joint['az_tel'].values, u.rad),
-                timestamp=timestamps
+                timestamp=timestamps,
             )
 
             ra_tel_mean, dec_tel_mean = transform_to_radec(
                 alt=u.Quantity(data_joint['alt_tel_mean'].values, u.rad),
                 az=u.Quantity(data_joint['az_tel_mean'].values, u.rad),
-                timestamp=timestamps
+                timestamp=timestamps,
             )
 
             reco_ra, reco_dec = transform_to_radec(
                 alt=u.Quantity(data_joint['reco_alt'].values, u.deg),
                 az=u.Quantity(data_joint['reco_az'].values, u.deg),
-                timestamp=timestamps
+                timestamp=timestamps,
             )
 
             reco_ra_mean, reco_dec_mean = transform_to_radec(
                 alt=u.Quantity(data_joint['reco_alt_mean'].values, u.deg),
                 az=u.Quantity(data_joint['reco_az_mean'].values, u.deg),
-                timestamp=timestamps
+                timestamp=timestamps,
             )
 
             data_joint['ra_tel'] = ra_tel.to(u.deg).value
@@ -160,34 +191,52 @@ def dl1_to_dl2(
             data_joint['reco_ra_mean'] = reco_ra_mean.to(u.deg).value
             data_joint['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
 
-    # --- classify event type ---
-    if event_classifiers is not None:
+        del direction_regressor
 
-        estimator = EventClassifier()
-        logger.info('\nClassifying the event type...')
+    # Reconstruct the event types:
+    input_rfs_classifier = glob.glob(f'{input_dir_rfs}/*classifier*.joblib')
+    input_rfs_classifier.sort()
 
-        reco_params = apply_rfs(data_joint, event_classifiers, estimator)
-        data_joint = data_joint.join(reco_params)
+    if len(input_rfs_classifier) > 0:
 
-    # --- save the data frame ---
-    with tables.open_file(output_file, mode='w') as f_out:
+        logger.info('\nReconstructing the event types...')
+        event_classifier = EventClassifier()
 
-        data_joint.reset_index(inplace=True)
-        event_values = [tuple(array) for array in data_joint.to_numpy()]
-        dtypes = np.dtype([(name, dtype) for name, dtype in zip(data_joint.dtypes.index, data_joint.dtypes)])
+        df_reco_types = pd.DataFrame()
 
-        event_table = np.array(event_values, dtype=dtypes)
-        f_out.create_table('/events', 'params', createparents=True, obj=event_table)
+        for input_rfs in input_rfs_classifier:
 
-        if data_type == 'mc':
-            with tables.open_file(input_file) as f_in:
-                sim_table = f_in.root.simulation.config.read()
-                f_out.create_table('/simulation', 'config', createparents=True, obj=sim_table)
+            logger.info(input_rfs)
+            event_classifier.load(input_rfs)
 
+            reco_params = apply_rfs(data_joint, event_classifier)
+            df_reco_types = df_reco_types.append(reco_params)
+
+        data_joint = data_joint.join(df_reco_types)
+
+        del event_classifier
+
+    # Save in the output file:
+    Path(output_dir).mkdir(exist_ok=True, parents=True)
+
+    base_name = Path(input_file).resolve().name
+    regex = r'dl1_stereo_(\S+)\.h5'
+
+    parser = re.findall(regex, base_name)[0]
+    output_file = f'{output_dir}/dl2_{parser}.h5'
+
+    data_joint.reset_index(inplace=True)
+    save_data_to_hdf(data_joint, output_file, '/events', 'params')
+
+    subarray = SubarrayDescription.from_hdf(input_file)
     subarray.to_hdf(output_file)
 
-    logger.info(f'\nOutput data file: {output_file}')
-    logger.info('\nDone.')
+    if is_simulation:
+        sim_config = pd.read_hdf(input_file, 'simulation/config')
+        save_data_to_hdf(sim_config, output_file, '/simulation', 'config')
+
+    logger.info('\nOutput file:')
+    logger.info(output_file)
 
 
 def main():
@@ -198,38 +247,27 @@ def main():
 
     parser.add_argument(
         '--input-file', '-i', dest='input_file', type=str,
-        help='Path to an input DL1-stereo data file.'
+        help='Path to an input DL1-stereo data file.',
     )
 
     parser.add_argument(
-        '--output-file', '-o', dest='output_file', type=str, default='./dl2.h5',
-        help='Path to an output DL2 data file.'
+        '--input-dir-rfs', '-r', dest='input_dir_rfs', type=str,
+        help='Path to a directory where trained RFs are stored.',
     )
 
     parser.add_argument(
-        '--energy-regressors', '-e', dest='energy_regressors', type=str, default=None,
-        help='Path to trained energy regressors.'
-    )
-
-    parser.add_argument(
-        '--direction-regressors', '-d', dest='direction_regressors', type=str, default=None,
-        help='Path to trained direction regressors.'
-    )
-
-    parser.add_argument(
-        '--event-classifiers', '-c', dest='event_classifiers', type=str, default=None,
-        help='Path to trained event classifiers.'
+        '--output-dir', '-o', dest='output_dir', type=str, default='./data',
+        help='Path to a directory where to save an output DL2 data.',
     )
 
     args = parser.parse_args()
 
-    dl1_to_dl2(
-        args.input_file, args.output_file,
-        args.energy_regressors, args.direction_regressors, args.event_classifiers
-    )
+    dl1_to_dl2(args.input_file, args.input_dir_rfs, args.output_dir)
 
-    end_time = time.time()
-    logger.info(f'\nProcess time: {end_time - start_time:.0f} [sec]\n')
+    logger.info('\nDone.')
+
+    process_time = time.time() - start_time
+    logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
 
 
 if __name__ == '__main__':

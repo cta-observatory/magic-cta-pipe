@@ -28,11 +28,12 @@ class EnergyRegressor:
 
     def fit(self, input_data):
 
-        param_names = self.feature_names + ['event_weight', 'mc_energy']
+        self.telescope_rfs.clear()
 
-        # --- train the RFs per telescope ---
+        param_names = self.feature_names + ['event_weight', 'mc_energy']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
+        # --- train the RFs per telescope ---
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
@@ -52,24 +53,24 @@ class EnergyRegressor:
 
         reco_params = pd.DataFrame()
 
-        # --- apply the RFs per telescope ---
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
+        # --- apply the RFs per telescope ---
         for tel_id in telescope_ids:
-            
+
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
 
-            reco_energy = 10**self.telescope_rfs[tel_id].predict(df_tel.values)
+            reco_energy = 10 ** self.telescope_rfs[tel_id].predict(df_tel.values)
 
             responces_per_estimator = []
 
             for estimator in self.telescope_rfs[tel_id].estimators_:
-                responces_per_estimator.append(10**estimator.predict(df_tel.values))
+                responces_per_estimator.append(10 ** estimator.predict(df_tel.values))
 
             reco_energy_err = np.std(responces_per_estimator, axis=0)
 
             df_reco_energy = pd.DataFrame(
-                data={'reco_energy': reco_energy, 'reco_energy_err': reco_energy_err}, 
+                data={'reco_energy': reco_energy, 'reco_energy_err': reco_energy_err},
                 index=df_tel.index
             )
 
@@ -83,7 +84,7 @@ class EnergyRegressor:
 
         weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
         weighted_energy_sum = weighted_energy.groupby(['obs_id', 'event_id']).sum()
-        
+
         reco_energy_mean = weighted_energy_sum / weights_sum
 
         reco_params['reco_energy_mean'] = 10 ** reco_energy_mean
@@ -95,7 +96,7 @@ class EnergyRegressor:
         output_data = {}
 
         output_data['feature_names'] = self.feature_names
-        output_data['rf_settings'] = self.rf_settings 
+        output_data['rf_settings'] = self.rf_settings
         output_data['telescope_rfs'] = self.telescope_rfs
 
         joblib.dump(output_data, file_name)
@@ -111,19 +112,21 @@ class EnergyRegressor:
 
 class DirectionRegressor:
 
-    def __init__(self, feature_names=[], rf_settings={}):
+    def __init__(self, feature_names=[], rf_settings={}, tel_descriptions={}):
 
         self.feature_names = feature_names
         self.rf_settings = rf_settings
+        self.tel_descriptions = tel_descriptions
         self.telescope_rfs = {}
 
     def fit(self, input_data):
 
-        param_names = self.feature_names + ['event_weight', 'mc_disp']
+        self.telescope_rfs.clear()
 
-        # --- train the RFs per telescope ---
+        param_names = self.feature_names + ['event_weight', 'mc_disp']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
+        # --- train the RFs per telescope ---
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
@@ -139,7 +142,7 @@ class DirectionRegressor:
 
             self.telescope_rfs[tel_id] = regressor
 
-    def predict(self, input_data, tel_descriptions):
+    def predict(self, input_data):
 
         param_names = self.feature_names + ['alt_tel', 'az_tel', 'x', 'y', 'psi']
 
@@ -169,8 +172,8 @@ class DirectionRegressor:
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
             camera_frame = CameraFrame(
-                focal_length=tel_descriptions[tel_id].optics.equivalent_focal_length, 
-                rotation=tel_descriptions[tel_id].camera.geometry.cam_rotation
+                focal_length=self.tel_descriptions[tel_id].optics.equivalent_focal_length,
+                rotation=self.tel_descriptions[tel_id].camera.geometry.cam_rotation,
             )
 
             event_coord = SkyCoord(
@@ -207,30 +210,30 @@ class DirectionRegressor:
         distances = []
 
         for flip_combo in flip_combinations:
-            
+
             container = {}
-            
+
             for tel_id, flip in zip(telescope_ids, flip_combo):
                 container[tel_id] = reco_params.query(f'(tel_id == {tel_id}) & (flip == {flip})')
-                
+
             dists_per_combo = np.zeros(n_events)
-            
+
             for tel_combo in telescope_combinations:
-                
+
                 tel_id_1 = tel_combo[0]
                 tel_id_2 = tel_combo[1]
-                
+
                 theta = angular_separation(
-                    lon1=u.Quantity(container[tel_id_1]['reco_az'].values, u.deg), 
+                    lon1=u.Quantity(container[tel_id_1]['reco_az'].values, u.deg),
                     lat1=u.Quantity(container[tel_id_1]['reco_alt'].values, u.deg),
-                    lon2=u.Quantity(container[tel_id_2]['reco_az'].values, u.deg), 
+                    lon2=u.Quantity(container[tel_id_2]['reco_az'].values, u.deg),
                     lat2=u.Quantity(container[tel_id_2]['reco_alt'].values, u.deg)
                 )
-                
+
                 dists_per_combo += np.array(theta.to(u.deg).value)
-                
+
             distances.append(dists_per_combo.tolist())
-            
+
         distances = np.array(distances)
         distances_min = distances.min(axis=0)
 
@@ -281,8 +284,8 @@ class DirectionRegressor:
 
         coord_mean = SkyCoord(
             x=x_coords_mean.values, y=y_coords_mean.values, z=z_coords_mean.values, representation_type='cartesian'
-        ) 
-            
+        )
+
         df_mean = pd.DataFrame(
             data={'reco_alt_mean': coord_mean.spherical.lat.to(u.deg).value,
                   'reco_az_mean': coord_mean.spherical.lon.to(u.deg).value},
@@ -299,6 +302,7 @@ class DirectionRegressor:
 
         output_data['feature_names'] = self.feature_names
         output_data['rf_settings'] = self.rf_settings
+        output_data['tel_descriptions'] = self.tel_descriptions
         output_data['telescope_rfs'] = self.telescope_rfs
 
         joblib.dump(output_data, file_name)
@@ -309,8 +313,9 @@ class DirectionRegressor:
 
         self.feature_names = input_data['feature_names']
         self.rf_settings = input_data['rf_settings']
+        self.tel_descriptions = input_data['tel_descriptions']
         self.telescope_rfs = input_data['telescope_rfs']
-        
+
 
 class EventClassifier:
 
@@ -322,11 +327,12 @@ class EventClassifier:
 
     def fit(self, input_data):
 
-        param_names = self.feature_names + ['event_weight', 'event_class']
+        self.telescope_rfs.clear()
 
-        # --- train the RFs per telescope ---
+        param_names = self.feature_names + ['event_weight', 'event_class']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
+        # --- train the RFs per telescope ---
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
@@ -377,7 +383,7 @@ class EventClassifier:
         output_data = {}
 
         output_data['feature_names'] = self.feature_names
-        output_data['rf_settings'] = self.rf_settings 
+        output_data['rf_settings'] = self.rf_settings
         output_data['telescope_rfs'] = self.telescope_rfs
 
         joblib.dump(output_data, file_name)
