@@ -5,7 +5,7 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
-the DL1 parameters (i.e., Hillas, timing and leakage parameters). The script saves an event in an output file
+the DL1 parameters (i.e., Hillas, timing and leakage parameters). The script saves events in an output file
 only when it reconstructs all the DL1 parameters. The telescope IDs are reset to the following values when saving
 to the file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
@@ -250,8 +250,6 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info('\nOutput file:')
     logger.info(output_file)
 
-    logger.info('\nDone.')
-
 
 def main():
 
@@ -285,6 +283,8 @@ def main():
         config = yaml.safe_load(f)
 
     magic_cal_to_dl1(args.input_file, args.output_dir, config, args.process_run)
+
+    logger.info('\nDone.')
 
     process_time = time.time() - start_time
     logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')

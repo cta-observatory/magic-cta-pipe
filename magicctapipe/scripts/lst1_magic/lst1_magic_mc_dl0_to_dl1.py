@@ -6,7 +6,7 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes simtel MC DL0 data (*.simtel.gz) containing LST-1 and MAGIC events
 and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
-The script saves an event in an output file only when it reconstructs all the DL1 parameters.
+The script saves events in an output file only when it reconstructs all the DL1 parameters.
 The telescope IDs are reset to the following values when saving to the file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
@@ -71,7 +71,7 @@ class EventInfoContainer(Container):
     - observation/event/telescope IDs
     - telescope pointing direction
     - simulated event parameters
-    - parameters of cleaned image
+    - parameters of a cleaned image
     """
 
     obs_id = Field(-1, 'Observation ID')
@@ -117,12 +117,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {subarray.positions[tel_id]}')
 
     mc_tel_ids = config['mc_tel_ids']
+
     logger.info('\nThe telescope IDs of LST-1 and MAGIC:')
     logger.info(mc_tel_ids)
-
-    tel_id_lst = mc_tel_ids['LST-1']
-    tel_id_m1 = mc_tel_ids['MAGIC-I']
-    tel_id_m2 = mc_tel_ids['MAGIC-II']
 
     # Configure the LST data process:
     config_lst = config['LST']
@@ -177,15 +174,15 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
-    regex_mc = r'(\S+)_run(\d+)_.*\.simtel.gz'
-    regex_mc_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
+    regex = r'(\S+)_run(\d+)_.*\.simtel.gz'
+    regex_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
 
-    if re.fullmatch(regex_mc, base_name):
-        parser = re.findall(regex_mc, base_name)[0]
+    if re.fullmatch(regex, base_name):
+        parser = re.findall(regex, base_name)[0]
         output_file = f'{output_dir}/dl1_{parser[0]}_LST-1_MAGIC_run{parser[1]}.h5'
 
-    elif re.fullmatch(regex_mc_off, base_name):
-        parser = re.findall(regex_mc_off, base_name)[0]
+    elif re.fullmatch(regex_off, base_name):
+        parser = re.findall(regex_off, base_name)[0]
         output_file = f'{output_dir}/dl1_{parser[0]}_off{parser[2]}deg_LST-1_MAGIC_run{parser[1]}.h5'
 
     # Process the events:
@@ -388,9 +385,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     # Reset the telescope IDs of the telescope descriptions:
     tel_descriptions = {
-        1: subarray.tel[tel_id_lst],   # LST-1
-        2: subarray.tel[tel_id_m1],    # MAGIC-I
-        3: subarray.tel[tel_id_m2],    # MAGIC-II
+        1: subarray.tel[mc_tel_ids['LST-1']],
+        2: subarray.tel[mc_tel_ids['MAGIC-I']],
+        3: subarray.tel[mc_tel_ids['MAGIC-II']],
     }
 
     # Save the subarray description:
@@ -403,8 +400,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     logger.info('\nOutput file:')
     logger.info(output_file)
-
-    logger.info('\nDone.')
 
 
 def main():
@@ -434,6 +429,8 @@ def main():
         config = yaml.safe_load(f)
 
     mc_dl0_to_dl1(args.input_file, args.output_dir, config)
+
+    logger.info('\nDone.')
 
     process_time = time.time() - start_time
     logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')

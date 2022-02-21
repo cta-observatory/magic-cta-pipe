@@ -21,7 +21,6 @@ import re
 import sys
 import time
 import yaml
-import tables
 import logging
 import argparse
 import warnings
@@ -41,7 +40,11 @@ from ctapipe.containers import (
     CameraHillasParametersContainer,
 )
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.utils import calc_impact
+from magicctapipe.utils import (
+    set_event_types,
+    calc_impact,
+    save_data_to_hdf,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -52,13 +55,6 @@ warnings.simplefilter('ignore')
 tel_id_lst = 1
 
 theta_lim = u.Quantity(0.1, u.deg)
-
-tel_combinations = {
-    'm1_m2': [2, 3],   # event_type = 0
-    'lst1_m1': [1, 2],   # event_type = 1
-    'lst1_m2': [1, 3],   # event_type = 2
-    'lst1_m1_m2': [1, 2, 3],   # event_type = 3
-}
 
 __all__ = [
     'stereo_reco',
@@ -145,35 +141,23 @@ def stereo_reco(input_file, output_dir, config):
     # Apply the cuts before the reconstruction:
     event_cuts = config['stereo_reco']['event_cuts']
 
-    logger.info(f'\nApplying the following cuts:\n{event_cuts}')
-    data_joint.query(event_cuts, inplace=True)
+    logger.info('\nApplying the following cuts:')
+    logger.info(event_cuts)
 
+    data_joint.query(event_cuts, inplace=True)
     data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
     data_joint.query('multiplicity > 1', inplace=True)
 
-    n_events_total = len(data_joint.groupby(['obs_id', 'event_id']).size())
-    logger.info(f'\nIn total {n_events_total} stereo events are found:')
+    data_joint = set_event_types(data_joint)
 
-    for event_type, (tel_combo, tel_ids) in enumerate(tel_combinations.items()):
-
-        df = data_joint.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-        df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
-        df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
-
-        n_events = len(df.groupby(['obs_id', 'event_id']).size())
-        logger.info(f'{tel_combo}: {n_events:.0f} events ({n_events / n_events_total * 100:.1f}%)')
-
-        data_joint.loc[df.index, 'event_type'] = event_type
-
+    # Check the angular distance of the pointing directions:
     telescope_ids = np.unique(data_joint.index.get_level_values('tel_id'))
 
     if (not is_simulation) and (tel_id_lst in telescope_ids):
 
-        # Check the angular distance:
-        logger.info('\nChecking the angular distance of LST-1 and MAGIC pointing directions...')
+        logger.info('\nChecking the angular distance of the LST-1 and MAGIC pointing directions...')
 
         df_lst = data_joint.query('tel_id == 1')
-
         obs_ids_joint = list(df_lst.index.get_level_values('obs_id'))
         event_ids_joint = list(df_lst.index.get_level_values('event_id'))
 
@@ -185,7 +169,6 @@ def stereo_reco(input_file, output_dir, config):
         df_magic.reset_index(level='tel_id', inplace=True)
         df_magic = df_magic.loc[multi_indices]
 
-        # Calculate the mean of the MAGIC pointing directions:
         df_magic_pointing = calc_tel_mean_pointing(df_magic)
 
         theta = angular_separation(
@@ -198,7 +181,7 @@ def stereo_reco(input_file, output_dir, config):
         n_events_sep = np.sum(theta > theta_lim)
 
         if n_events_sep > 0:
-            logger.info(f'--> The pointing directions are separated more than {theta_lim.value} degree. ' \
+            logger.info(f'--> The pointing directions are separated by more than {theta_lim.value} degree. ' \
                         'The data would be taken by different wobble offsets. Please check the input data. Exiting.\n')
             sys.exit()
         else:
@@ -221,7 +204,8 @@ def stereo_reco(input_file, output_dir, config):
 
     # Loop over observation/event IDs.
     # Since the HillasReconstructor requires the ArrayEventContainer,
-    # here we set the necessary information to it event-by-event:
+    # here we set the necessary information to the container event-by-event:
+
     for i_ev, (obs_id, ev_id) in enumerate(zip(observation_ids, event_ids)):
 
         if i_ev % 100 == 0:
@@ -289,38 +273,26 @@ def stereo_reco(input_file, output_dir, config):
     n_events_processed = i_ev + 1
     logger.info(f'{n_events_processed} events')
 
-    # Prepare for saving the data to an output file:
+    # Save in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
     regex = r'dl1_(\S+)\.h5'
 
-    if re.fullmatch(regex, base_name):
-        parser = re.findall(regex, base_name)[0]
-        output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
+    parser = re.findall(regex, base_name)[0]
+    output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
 
-    # Save in the output file:
-    with tables.open_file(output_file, mode='w') as f_out:
+    data_joint.reset_index(inplace=True)
+    save_data_to_hdf(data_joint, output_file, '/events', 'params')
 
-        data_joint.reset_index(inplace=True)
-        event_values = [tuple(array) for array in data_joint.to_numpy()]
-        dtypes = np.dtype([(name, dtype) for name, dtype in zip(data_joint.dtypes.index, data_joint.dtypes)])
-
-        event_table = np.array(event_values, dtype=dtypes)
-        f_out.create_table('/events', 'params', createparents=True, obj=event_table)
-
-        if is_simulation:
-            with tables.open_file(input_file) as f_in:
-                sim_table = f_in.root.simulation.config.read()
-                f_out.create_table('/simulation', 'config', createparents=True, obj=sim_table)
-
-    # Save the subarray description:
     subarray.to_hdf(output_file)
+
+    if is_simulation:
+        sim_config = pd.read_hdf(input_file, 'simulation/config')
+        save_data_to_hdf(sim_config, output_file, '/simulation', 'config')
 
     logger.info('\nOutput file:')
     logger.info(output_file)
-
-    logger.info('\nDone.')
 
 
 def main():
@@ -350,6 +322,8 @@ def main():
         config = yaml.safe_load(f)
 
     stereo_reco(args.input_file, args.output_dir, config)
+
+    logger.info('\nDone.')
 
     process_time = time.time() - start_time
     logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')

@@ -17,7 +17,6 @@ $ python lst1_magic_dl1_to_dl2.py
 import re
 import glob
 import time
-import tables
 import logging
 import argparse
 import warnings
@@ -27,7 +26,11 @@ from pathlib import Path
 from astropy import units as u
 from astropy.time import Time
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.utils import transform_to_radec
+from magicctapipe.utils import (
+    set_event_types,
+    transform_to_radec,
+    save_data_to_hdf,
+)
 from magicctapipe.reco import (
     EnergyRegressor,
     DirectionRegressor,
@@ -47,12 +50,12 @@ __all__ = [
 
 def apply_rfs(data, estimator):
     """
-    Applies input RFs to an input DL1-stereo data.
+    Applies trained RFs to an input DL1-stereo data.
 
     Parameters
     ----------
     data: pandas.core.frame.DataFrame
-        Pandas data frame containing feature parameters
+        Pandas data frame containing events
     estimator: EnergyRegressor, DirectionRegressor or EventClassifier
         Trained estimator
 
@@ -63,10 +66,9 @@ def apply_rfs(data, estimator):
     """
 
     tel_ids = list(estimator.telescope_rfs.keys())
-    feature_names = estimator.feature_names
 
     df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-    df.dropna(subset=feature_names, inplace=True)
+    df.dropna(subset=estimator.feature_names, inplace=True)
 
     df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
     df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
@@ -102,6 +104,8 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     data_joint.sort_index(inplace=True)
 
+    data_joint = set_event_types(data_joint)
+
     is_simulation = ('mc_energy' in data_joint.columns)
 
     # Reconstruct energy:
@@ -133,7 +137,7 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
 
     if len(input_rfs_direction) > 0:
 
-        logger.info('\Reconstructing arrival directions...')
+        logger.info('\nReconstructing arrival directions...')
         direction_regressor = DirectionRegressor()
 
         df_reco_direction = pd.DataFrame()
@@ -150,7 +154,7 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
 
         if not is_simulation:
 
-            logger.info('Transforming the Alt/Az coordinate to the RA/Dec one...\n')
+            logger.info('\nTransforming the Alt/Az coordinate to the RA/Dec one...\n')
 
             timestamps = Time(data_joint['timestamp'].to_numpy(), format='unix', scale='utc')
 
@@ -212,39 +216,27 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
 
         del event_classifier
 
-    # Prepare for saving the data to an output file:
+    # Save in the output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
     regex = r'dl1_stereo_(\S+)\.h5'
 
-    if re.fullmatch(regex, base_name):
-        parser = re.findall(regex, base_name)[0]
-        output_file = f'{output_dir}/dl2_{parser}.h5'
+    parser = re.findall(regex, base_name)[0]
+    output_file = f'{output_dir}/dl2_{parser}.h5'
 
-    # Save in the output file:
-    with tables.open_file(output_file, mode='w') as f_out:
+    data_joint.reset_index(inplace=True)
+    save_data_to_hdf(data_joint, output_file, '/events', 'params')
 
-        data_joint.reset_index(inplace=True)
-        event_values = [tuple(array) for array in data_joint.to_numpy()]
-        dtypes = np.dtype([(name, dtype) for name, dtype in zip(data_joint.dtypes.index, data_joint.dtypes)])
-
-        event_table = np.array(event_values, dtype=dtypes)
-        f_out.create_table('/events', 'params', createparents=True, obj=event_table)
-
-        if is_simulation:
-            with tables.open_file(input_file) as f_in:
-                sim_table = f_in.root.simulation.config.read()
-                f_out.create_table('/simulation', 'config', createparents=True, obj=sim_table)
-
-    # Save the subarray description:
     subarray = SubarrayDescription.from_hdf(input_file)
     subarray.to_hdf(output_file)
 
+    if is_simulation:
+        sim_config = pd.read_hdf(input_file, 'simulation/config')
+        save_data_to_hdf(sim_config, output_file, '/simulation', 'config')
+
     logger.info('\nOutput file:')
     logger.info(output_file)
-
-    logger.info('\nDone.')
 
 
 def main():
@@ -271,6 +263,8 @@ def main():
     args = parser.parse_args()
 
     dl1_to_dl2(args.input_file, args.input_dir_rfs, args.output_dir)
+
+    logger.info('\nDone.')
 
     process_time = time.time() - start_time
     logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')

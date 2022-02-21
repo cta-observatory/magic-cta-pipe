@@ -32,7 +32,8 @@ from .gti import (
 )
 
 from .functions import (
-    crab_magic,
+    set_event_types,
+    save_data_to_hdf,
     calc_impact,
     calc_nsim,
     transform_to_radec,
@@ -87,7 +88,8 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
-    "crab_magic",
+    "set_event_types",
+    "save_data_to_hdf",
     "calc_impact",
     "calc_nsim",
     "transform_to_radec",
