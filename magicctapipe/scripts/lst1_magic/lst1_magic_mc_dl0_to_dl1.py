@@ -52,10 +52,6 @@ from lstchain.image.modifier import (
     random_psf_smearer,
 )
 from magicctapipe.image import MAGICClean
-<<<<<<< HEAD
-=======
-
->>>>>>> 1cad9272556b4db1dcbb74b9d4cdc9f9728e64e1
 from magicctapipe.utils import calc_impact
 
 logger = logging.getLogger(__name__)
