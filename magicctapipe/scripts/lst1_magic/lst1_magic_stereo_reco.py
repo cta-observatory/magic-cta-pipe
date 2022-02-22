@@ -118,17 +118,17 @@ def stereo_reco(input_file, output_dir, config):
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    data_joint = pd.read_hdf(input_file, key='events/params')
-    data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    data_joint.sort_index(inplace=True)
+    input_data = pd.read_hdf(input_file, key='events/params')
+    input_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    input_data.sort_index(inplace=True)
 
-    data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
-    data_joint.query('multiplicity > 1', inplace=True)
+    input_data['multiplicity'] = input_data.groupby(['obs_id', 'event_id']).size()
+    input_data.query('multiplicity > 1', inplace=True)
 
-    n_events = len(data_joint.groupby(['obs_id', 'event_id']).size())
+    n_events = len(input_data.groupby(['obs_id', 'event_id']).size())
     logger.info(f'--> {n_events} stereo events')
 
-    is_simulation = ('mc_energy' in data_joint.columns)
+    is_simulation = ('mc_energy' in input_data.columns)
 
     # Read the subarray description:
     subarray = SubarrayDescription.from_hdf(input_file)
@@ -144,20 +144,20 @@ def stereo_reco(input_file, output_dir, config):
     logger.info('\nApplying the following cuts:')
     logger.info(event_cuts)
 
-    data_joint.query(event_cuts, inplace=True)
-    data_joint['multiplicity'] = data_joint.groupby(['obs_id', 'event_id']).size()
-    data_joint.query('multiplicity > 1', inplace=True)
+    input_data.query(event_cuts, inplace=True)
+    input_data['multiplicity'] = input_data.groupby(['obs_id', 'event_id']).size()
+    input_data.query('multiplicity > 1', inplace=True)
 
-    data_joint = set_event_types(data_joint)
+    input_data = set_event_types(input_data)
 
     # Check the angular distance of the pointing directions:
-    telescope_ids = np.unique(data_joint.index.get_level_values('tel_id'))
+    telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
     if (not is_simulation) and (tel_id_lst in telescope_ids):
 
         logger.info('\nChecking the angular distance of the LST-1 and MAGIC pointing directions...')
 
-        df_lst = data_joint.query('tel_id == 1')
+        df_lst = input_data.query('tel_id == 1')
         obs_ids_joint = list(df_lst.index.get_level_values('obs_id'))
         event_ids_joint = list(df_lst.index.get_level_values('event_id'))
 
@@ -165,7 +165,7 @@ def stereo_reco(input_file, output_dir, config):
             [obs_ids_joint, event_ids_joint], names=['obs_id', 'event_id']
         )
 
-        df_magic = data_joint.query('tel_id == [2, 3]')
+        df_magic = input_data.query('tel_id == [2, 3]')
         df_magic.reset_index(level='tel_id', inplace=True)
         df_magic = df_magic.loc[multi_indices]
 
@@ -194,10 +194,10 @@ def stereo_reco(input_file, output_dir, config):
     event = ArrayEventContainer()
     hillas_reconstructor = HillasReconstructor(subarray)
 
-    df_mean_pointing = calc_tel_mean_pointing(data_joint)
-    data_joint = data_joint.join(df_mean_pointing)
+    df_mean_pointing = calc_tel_mean_pointing(input_data)
+    input_data = input_data.join(df_mean_pointing)
 
-    group = data_joint.groupby(['obs_id', 'event_id']).size()
+    group = input_data.groupby(['obs_id', 'event_id']).size()
 
     observation_ids = group.index.get_level_values('obs_id')
     event_ids = group.index.get_level_values('event_id')
@@ -211,7 +211,7 @@ def stereo_reco(input_file, output_dir, config):
         if i_ev % 100 == 0:
             logger.info(f'{i_ev} events')
 
-        df_ev = data_joint.query(f'(obs_id == {obs_id}) & (event_id == {ev_id})')
+        df_ev = input_data.query(f'(obs_id == {obs_id}) & (event_id == {ev_id})')
 
         event.pointing.array_altitude = u.Quantity(df_ev['alt_tel_mean'].iloc[0], u.rad)
         event.pointing.array_azimuth = u.Quantity(df_ev['az_tel_mean'].iloc[0], u.rad)
@@ -261,14 +261,14 @@ def stereo_reco(input_file, output_dir, config):
             )
 
             # Set the stereo parameters:
-            data_joint.loc[(obs_id, ev_id, tel_id), 'h_max'] = stereo_params.h_max.to(u.m).value
-            data_joint.loc[(obs_id, ev_id, tel_id), 'alt'] = stereo_params.alt.to(u.deg).value
-            data_joint.loc[(obs_id, ev_id, tel_id), 'alt_uncert'] = stereo_params.alt_uncert.to(u.deg).value
-            data_joint.loc[(obs_id, ev_id, tel_id), 'az'] = stereo_params.az.to(u.deg).value
-            data_joint.loc[(obs_id, ev_id, tel_id), 'az_uncert'] = stereo_params.az_uncert.to(u.deg).value
-            data_joint.loc[(obs_id, ev_id, tel_id), 'core_x'] = stereo_params.core_x.to(u.m).value
-            data_joint.loc[(obs_id, ev_id, tel_id), 'core_y'] = stereo_params.core_y.to(u.m).value
-            data_joint.loc[(obs_id, ev_id, tel_id), 'impact'] = impact.to(u.m).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'h_max'] = stereo_params.h_max.to(u.m).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'alt'] = stereo_params.alt.to(u.deg).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'alt_uncert'] = stereo_params.alt_uncert.to(u.deg).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'az'] = stereo_params.az.to(u.deg).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'az_uncert'] = stereo_params.az_uncert.to(u.deg).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'core_x'] = stereo_params.core_x.to(u.m).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'core_y'] = stereo_params.core_y.to(u.m).value
+            input_data.loc[(obs_id, ev_id, tel_id), 'impact'] = impact.to(u.m).value
 
     n_events_processed = i_ev + 1
     logger.info(f'{n_events_processed} events')
@@ -282,8 +282,8 @@ def stereo_reco(input_file, output_dir, config):
     parser = re.findall(regex, base_name)[0]
     output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
 
-    data_joint.reset_index(inplace=True)
-    save_data_to_hdf(data_joint, output_file, '/events', 'params')
+    input_data.reset_index(inplace=True)
+    save_data_to_hdf(input_data, output_file, '/events', 'params')
 
     subarray.to_hdf(output_file)
 

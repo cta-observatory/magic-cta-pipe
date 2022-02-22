@@ -104,13 +104,13 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    data_joint = pd.read_hdf(input_file, key='events/params')
-    data_joint.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    data_joint.sort_index(inplace=True)
+    input_data = pd.read_hdf(input_file, key='events/params')
+    input_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    input_data.sort_index(inplace=True)
 
-    data_joint = set_event_types(data_joint)
+    input_data = set_event_types(input_data)
 
-    is_simulation = ('mc_energy' in data_joint.columns)
+    is_simulation = ('mc_energy' in input_data.columns)
 
     # Reconstruct energy:
     input_rfs_energy = glob.glob(f'{input_dir_rfs}/*energy*.joblib')
@@ -128,10 +128,10 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
             logger.info(input_rfs)
             energy_regressor.load(input_rfs)
 
-            reco_params = apply_rfs(data_joint, energy_regressor)
+            reco_params = apply_rfs(input_data, energy_regressor)
             df_reco_energy = df_reco_energy.append(reco_params)
 
-        data_joint = data_joint.join(df_reco_energy)
+        input_data = input_data.join(df_reco_energy)
 
         del energy_regressor
 
@@ -151,54 +151,54 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
             logger.info(input_rfs)
             direction_regressor.load(input_rfs)
 
-            reco_params = apply_rfs(data_joint, direction_regressor)
+            reco_params = apply_rfs(input_data, direction_regressor)
             df_reco_direction = df_reco_direction.append(reco_params)
 
-        data_joint = data_joint.join(df_reco_direction)
+        input_data = input_data.join(df_reco_direction)
 
         if not is_simulation:
 
             logger.info('\nTransforming the Alt/Az coordinate to the RA/Dec one...')
 
-            if 'timestamp' in data_joint.columns:
-                timestamps = Time(data_joint['timestamp'].to_numpy(), format='unix', scale='utc')
+            if 'timestamp' in input_data.columns:
+                timestamps = Time(input_data['timestamp'].to_numpy(), format='unix', scale='utc')
             else:
-                time_sec = data_joint['time_sec'].to_numpy()
-                time_nanosec = data_joint['time_nanosec'].to_numpy() * nsec2sec
+                time_sec = input_data['time_sec'].to_numpy()
+                time_nanosec = input_data['time_nanosec'].to_numpy() * nsec2sec
                 timestamps = Time(time_sec + time_nanosec, format='unix', scale='utc')
 
             ra_tel, dec_tel = transform_to_radec(
-                alt=u.Quantity(data_joint['alt_tel'].values, u.rad),
-                az=u.Quantity(data_joint['az_tel'].values, u.rad),
+                alt=u.Quantity(input_data['alt_tel'].values, u.rad),
+                az=u.Quantity(input_data['az_tel'].values, u.rad),
                 timestamp=timestamps,
             )
 
             ra_tel_mean, dec_tel_mean = transform_to_radec(
-                alt=u.Quantity(data_joint['alt_tel_mean'].values, u.rad),
-                az=u.Quantity(data_joint['az_tel_mean'].values, u.rad),
+                alt=u.Quantity(input_data['alt_tel_mean'].values, u.rad),
+                az=u.Quantity(input_data['az_tel_mean'].values, u.rad),
                 timestamp=timestamps,
             )
 
             reco_ra, reco_dec = transform_to_radec(
-                alt=u.Quantity(data_joint['reco_alt'].values, u.deg),
-                az=u.Quantity(data_joint['reco_az'].values, u.deg),
+                alt=u.Quantity(input_data['reco_alt'].values, u.deg),
+                az=u.Quantity(input_data['reco_az'].values, u.deg),
                 timestamp=timestamps,
             )
 
             reco_ra_mean, reco_dec_mean = transform_to_radec(
-                alt=u.Quantity(data_joint['reco_alt_mean'].values, u.deg),
-                az=u.Quantity(data_joint['reco_az_mean'].values, u.deg),
+                alt=u.Quantity(input_data['reco_alt_mean'].values, u.deg),
+                az=u.Quantity(input_data['reco_az_mean'].values, u.deg),
                 timestamp=timestamps,
             )
 
-            data_joint['ra_tel'] = ra_tel.to(u.deg).value
-            data_joint['dec_tel'] = dec_tel.to(u.deg).value
-            data_joint['ra_tel_mean'] = ra_tel_mean.to(u.deg).value
-            data_joint['dec_tel_mean'] = dec_tel_mean.to(u.deg).value
-            data_joint['reco_ra'] = reco_ra.to(u.deg).value
-            data_joint['reco_dec'] = reco_dec.to(u.deg).value
-            data_joint['reco_ra_mean'] = reco_ra_mean.to(u.deg).value
-            data_joint['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
+            input_data['ra_tel'] = ra_tel.to(u.deg).value
+            input_data['dec_tel'] = dec_tel.to(u.deg).value
+            input_data['ra_tel_mean'] = ra_tel_mean.to(u.deg).value
+            input_data['dec_tel_mean'] = dec_tel_mean.to(u.deg).value
+            input_data['reco_ra'] = reco_ra.to(u.deg).value
+            input_data['reco_dec'] = reco_dec.to(u.deg).value
+            input_data['reco_ra_mean'] = reco_ra_mean.to(u.deg).value
+            input_data['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
 
         del direction_regressor
 
@@ -218,10 +218,10 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
             logger.info(input_rfs)
             event_classifier.load(input_rfs)
 
-            reco_params = apply_rfs(data_joint, event_classifier)
+            reco_params = apply_rfs(input_data, event_classifier)
             df_reco_types = df_reco_types.append(reco_params)
 
-        data_joint = data_joint.join(df_reco_types)
+        input_data = input_data.join(df_reco_types)
 
         del event_classifier
 
@@ -234,8 +234,8 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     parser = re.findall(regex, base_name)[0]
     output_file = f'{output_dir}/dl2_{parser}.h5'
 
-    data_joint.reset_index(inplace=True)
-    save_data_to_hdf(data_joint, output_file, '/events', 'params')
+    input_data.reset_index(inplace=True)
+    save_data_to_hdf(input_data, output_file, '/events', 'params')
 
     subarray = SubarrayDescription.from_hdf(input_file)
     subarray.to_hdf(output_file)
