@@ -75,7 +75,7 @@ def apply_rfs(data, estimator):
     df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
     df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
-    n_events = df.groupby(['obs_id', 'event_id']).size()
+    n_events = len(df.groupby(['obs_id', 'event_id']).size())
 
     if n_events > 0:
         logger.info(f'--> {n_events} events are found. Applying...')
