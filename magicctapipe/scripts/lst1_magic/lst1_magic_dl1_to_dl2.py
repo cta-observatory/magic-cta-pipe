@@ -43,6 +43,8 @@ logger.setLevel(logging.INFO)
 
 warnings.simplefilter('ignore')
 
+nsec2sec = 1e-9
+
 __all__ = [
     'dl1_to_dl2',
 ]
@@ -154,9 +156,14 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
 
         if not is_simulation:
 
-            logger.info('\nTransforming the Alt/Az coordinate to the RA/Dec one...\n')
+            logger.info('\nTransforming the Alt/Az coordinate to the RA/Dec one...')
 
-            timestamps = Time(data_joint['timestamp'].to_numpy(), format='unix', scale='utc')
+            if 'timestamp' in data_joint.columns:
+                timestamps = Time(data_joint['timestamp'].to_numpy(), format='unix', scale='utc')
+            else:
+                time_sec = data_joint['time_sec'].to_numpy()
+                time_nanosec = data_joint['time_nanosec'].to_numpy() * nsec2sec
+                timestamps = Time(time_sec + time_nanosec, format='unix', scale='utc')
 
             ra_tel, dec_tel = transform_to_radec(
                 alt=u.Quantity(data_joint['alt_tel'].values, u.rad),
