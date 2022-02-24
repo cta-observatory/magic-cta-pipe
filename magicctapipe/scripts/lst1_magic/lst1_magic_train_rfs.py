@@ -24,7 +24,6 @@ import yaml
 import random
 import logging
 import argparse
-import warnings
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -38,8 +37,6 @@ from magicctapipe.reco import (
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-warnings.simplefilter('ignore')
 
 tel_combinations = {
     'm1_m2': [2, 3],

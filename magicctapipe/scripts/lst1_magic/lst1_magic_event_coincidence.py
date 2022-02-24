@@ -30,7 +30,6 @@ import time
 import yaml
 import logging
 import argparse
-import warnings
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -46,8 +45,6 @@ from magicctapipe.utils import (
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-warnings.simplefilter('ignore')
 
 nsec2sec = 1e-9
 usec2sec = 1e-6

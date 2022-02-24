@@ -26,7 +26,6 @@ import time
 import yaml
 import logging
 import argparse
-import warnings
 import numpy as np
 from pathlib import Path
 from astropy import units as u
@@ -45,8 +44,6 @@ from magicctapipe.image import MAGICClean
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-warnings.simplefilter('ignore')
 
 sec2nsec = 1e9
 
