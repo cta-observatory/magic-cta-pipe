@@ -125,6 +125,8 @@ def load_lst_data(input_file, type_lst_time):
     params_rename = {
         'obs_id': 'obs_id_lst',
         'event_id': 'event_id_lst',
+        'alt_tel': 'pointing_alt',
+        'az_tel': 'pointing_az',
         'leakage_pixels_width_1': 'pixels_width_1',
         'leakage_pixels_width_2': 'pixels_width_2',
         'leakage_intensity_width_1': 'intensity_width_1',
@@ -412,10 +414,10 @@ def event_coincidence(
         features_per_combo = pd.DataFrame({
             'coincidence_id': [int(coincidence_id)],
             'mean_time_unix': [df_lst['timestamp'].mean()],
-            'mean_alt_lst': [df_lst['alt_tel'].mean()],
-            'mean_alt_magic': [df_magic['alt_tel'].mean()],
-            'mean_az_lst': [df_lst['az_tel'].mean()],
-            'mean_az_magic': [df_magic['az_tel'].mean()],
+            'mean_alt_lst': [df_lst['pointing_alt'].mean()],
+            'mean_alt_magic': [df_magic['pointing_alt'].mean()],
+            'mean_az_lst': [df_lst['pointing_az'].mean()],
+            'mean_az_magic': [df_magic['pointing_az'].mean()],
             'offset_avg_usec': [offset_avg * sec2usec],
             'n_coincidence': [n_events_at_avg],
             'n_magic': [n_events_magic],

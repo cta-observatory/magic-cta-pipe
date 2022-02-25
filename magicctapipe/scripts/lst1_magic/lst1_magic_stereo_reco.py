@@ -73,9 +73,9 @@ def calc_tel_mean_pointing(data):
         Pandas data frame containing the mean of the pointing directions
     """
 
-    x_coords = np.cos(data['alt_tel']) * np.cos(data['az_tel'])
-    y_coords = np.cos(data['alt_tel']) * np.sin(data['az_tel'])
-    z_coords = np.sin(data['alt_tel'])
+    x_coords = np.cos(data['pointing_alt']) * np.cos(data['pointing_az'])
+    y_coords = np.cos(data['pointing_alt']) * np.sin(data['pointing_az'])
+    z_coords = np.sin(data['pointing_alt'])
 
     x_coords_mean = x_coords.groupby(['obs_id', 'event_id']).mean()
     y_coords_mean = y_coords.groupby(['obs_id', 'event_id']).mean()
@@ -89,8 +89,8 @@ def calc_tel_mean_pointing(data):
     )
 
     pointing = pd.DataFrame(
-        data={'alt_tel_mean': coord_mean.spherical.lat.to(u.rad).value,
-              'az_tel_mean': coord_mean.spherical.lon.to(u.rad).value},
+        data={'pointing_alt_mean': coord_mean.spherical.lat.to(u.rad).value,
+              'pointing_az_mean': coord_mean.spherical.lon.to(u.rad).value},
         index=data.groupby(['obs_id', 'event_id']).mean().index,
     )
 
@@ -125,10 +125,10 @@ def check_angular_distance(input_data, theta_uplim):
     df_magic_pointing = calc_tel_mean_pointing(df_magic)
 
     theta = angular_separation(
-        lon1=u.Quantity(df_lst['az_tel'].to_numpy(), u.rad),
-        lat1=u.Quantity(df_lst['alt_tel'].to_numpy(), u.rad),
-        lon2=u.Quantity(df_magic_pointing['az_tel_mean'].to_numpy(), u.rad),
-        lat2=u.Quantity(df_magic_pointing['alt_tel_mean'].to_numpy(), u.rad),
+        lon1=u.Quantity(df_lst['pointing_az'].to_numpy(), u.rad),
+        lat1=u.Quantity(df_lst['pointing_alt'].to_numpy(), u.rad),
+        lon2=u.Quantity(df_magic_pointing['pointing_az_mean'].to_numpy(), u.rad),
+        lat2=u.Quantity(df_magic_pointing['pointing_alt_mean'].to_numpy(), u.rad),
     )
 
     n_events_sep = np.sum(theta > theta_uplim)
@@ -223,8 +223,8 @@ def stereo_reco(input_file, output_dir, config):
 
         df_ev = input_data.query(f'(obs_id == {obs_id}) & (event_id == {ev_id})')
 
-        event.pointing.array_altitude = u.Quantity(df_ev['alt_tel_mean'].iloc[0], u.rad)
-        event.pointing.array_azimuth = u.Quantity(df_ev['az_tel_mean'].iloc[0], u.rad)
+        event.pointing.array_altitude = u.Quantity(df_ev['pointing_alt_mean'].iloc[0], u.rad)
+        event.pointing.array_azimuth = u.Quantity(df_ev['pointing_az_mean'].iloc[0], u.rad)
 
         telescope_ids = df_ev.index.get_level_values('tel_id')
 
@@ -232,8 +232,8 @@ def stereo_reco(input_file, output_dir, config):
 
             df_tel = df_ev.query(f'tel_id == {tel_id}')
 
-            event.pointing.tel[tel_id].altitude = u.Quantity(df_tel['alt_tel'].iloc[0], u.rad)
-            event.pointing.tel[tel_id].azimuth = u.Quantity(df_tel['az_tel'].iloc[0], u.rad)
+            event.pointing.tel[tel_id].altitude = u.Quantity(df_tel['pointing_alt'].iloc[0], u.rad)
+            event.pointing.tel[tel_id].azimuth = u.Quantity(df_tel['pointing_az'].iloc[0], u.rad)
 
             hillas_params = CameraHillasParametersContainer(
                 intensity=float(df_tel['intensity'].iloc[0]),

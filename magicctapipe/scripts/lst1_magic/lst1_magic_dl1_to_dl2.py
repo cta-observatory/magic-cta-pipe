@@ -164,15 +164,15 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
                 time_nanosec = input_data['time_nanosec'].to_numpy() * nsec2sec
                 timestamps = Time(time_sec + time_nanosec, format='unix', scale='utc')
 
-            ra_tel, dec_tel = transform_to_radec(
-                alt=u.Quantity(input_data['alt_tel'].values, u.rad),
-                az=u.Quantity(input_data['az_tel'].values, u.rad),
+            pointing_ra, pointing_dec = transform_to_radec(
+                alt=u.Quantity(input_data['pointing_alt'].values, u.rad),
+                az=u.Quantity(input_data['pointing_az'].values, u.rad),
                 timestamp=timestamps,
             )
 
-            ra_tel_mean, dec_tel_mean = transform_to_radec(
-                alt=u.Quantity(input_data['alt_tel_mean'].values, u.rad),
-                az=u.Quantity(input_data['az_tel_mean'].values, u.rad),
+            pointing_ra_mean, pointing_dec_mean = transform_to_radec(
+                alt=u.Quantity(input_data['pointing_alt_mean'].values, u.rad),
+                az=u.Quantity(input_data['pointing_az_mean'].values, u.rad),
                 timestamp=timestamps,
             )
 
@@ -188,10 +188,10 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
                 timestamp=timestamps,
             )
 
-            input_data['ra_tel'] = ra_tel.to(u.deg).value
-            input_data['dec_tel'] = dec_tel.to(u.deg).value
-            input_data['ra_tel_mean'] = ra_tel_mean.to(u.deg).value
-            input_data['dec_tel_mean'] = dec_tel_mean.to(u.deg).value
+            input_data['pointing_ra'] = pointing_ra.to(u.deg).value
+            input_data['pointing_dec'] = pointing_dec.to(u.deg).value
+            input_data['pointing_ra_mean'] = pointing_ra_mean.to(u.deg).value
+            input_data['pointing_dec_mean'] = pointing_dec_mean.to(u.deg).value
             input_data['reco_ra'] = reco_ra.to(u.deg).value
             input_data['reco_dec'] = reco_dec.to(u.deg).value
             input_data['reco_ra_mean'] = reco_ra_mean.to(u.deg).value

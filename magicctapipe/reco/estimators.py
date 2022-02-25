@@ -15,7 +15,7 @@ logger.setLevel(logging.INFO)
 __all__ = [
     'EnergyRegressor',
     'DirectionRegressor',
-    'EventClassifier'
+    'EventClassifier',
 ]
 
 class EnergyRegressor:
@@ -30,7 +30,7 @@ class EnergyRegressor:
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'mc_energy']
+        param_names = self.feature_names + ['event_weight', 'true_energy']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
         # --- train the RFs per telescope ---
@@ -39,7 +39,7 @@ class EnergyRegressor:
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
             x_train = df_tel[self.feature_names].values
-            y_train = np.log10(df_tel['mc_energy'].values)
+            y_train = np.log10(df_tel['true_energy'].values)
             weights = df_tel['event_weight'].values
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
@@ -123,7 +123,7 @@ class DirectionRegressor:
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'mc_disp']
+        param_names = self.feature_names + ['event_weight', 'true_disp']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
         # --- train the RFs per telescope ---
@@ -132,7 +132,7 @@ class DirectionRegressor:
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
             x_train = df_tel[self.feature_names].values
-            y_train = df_tel['mc_disp'].values
+            y_train = df_tel['true_disp'].values
             weights = df_tel['event_weight'].values
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
@@ -144,7 +144,7 @@ class DirectionRegressor:
 
     def predict(self, input_data):
 
-        param_names = self.feature_names + ['alt_tel', 'az_tel', 'x', 'y', 'psi']
+        param_names = self.feature_names + ['pointing_alt', 'pointing_az', 'x', 'y', 'psi']
 
         reco_params = pd.DataFrame()
 
@@ -166,7 +166,7 @@ class DirectionRegressor:
 
             # --- reconstruct the Alt/Az directions per flip ---
             tel_pointing = AltAz(
-                alt=u.Quantity(df_tel['alt_tel'].values, u.rad), az=u.Quantity(df_tel['az_tel'].values, u.rad)
+                alt=u.Quantity(df_tel['pointing_alt'].values, u.rad), az=u.Quantity(df_tel['pointing_az'].values, u.rad)
             )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)

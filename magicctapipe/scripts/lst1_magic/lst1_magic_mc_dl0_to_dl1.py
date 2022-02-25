@@ -74,15 +74,15 @@ class EventInfoContainer(Container):
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
-    alt_tel = Field(-1, 'Telescope pointing altitude', u.rad)
-    az_tel = Field(-1, 'Telescope pointing azimuth', u.rad)
-    mc_energy = Field(-1, 'MC event energy', u.TeV)
-    mc_alt = Field(-1, 'MC event altitude', u.deg)
-    mc_az = Field(-1, 'MC event azimuth', u.deg)
-    mc_disp = Field(-1, 'MC event disp', u.deg)
-    mc_core_x = Field(-1, 'MC event core x', u.m)
-    mc_core_y = Field(-1, 'MC event core y', u.m)
-    mc_impact = Field(-1, 'MC event impact', u.m)
+    pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
+    pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
+    true_energy = Field(-1, 'MC event energy', u.TeV)
+    true_alt = Field(-1, 'MC event altitude', u.deg)
+    true_az = Field(-1, 'MC event azimuth', u.deg)
+    true_disp = Field(-1, 'MC event disp', u.deg)
+    true_core_x = Field(-1, 'MC event core x', u.m)
+    true_core_y = Field(-1, 'MC event core y', u.m)
+    true_impact = Field(-1, 'MC event impact', u.m)
     n_pixels = Field(-1, 'Number of pixels of a cleaned image')
     n_islands = Field(-1, 'Number of islands of a cleaned image')
 
@@ -316,7 +316,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_frame)
                 event_coord = event_coord.transform_to(telescope_frame)
 
-                mc_disp = angular_separation(
+                true_disp = angular_separation(
                     lon1=event_coord.altaz.az,
                     lat1=event_coord.altaz.alt,
                     lon2=event.simulation.shower.az,
@@ -324,7 +324,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 )
 
                 # Calculate the impact parameter:
-                mc_impact = calc_impact(
+                true_impact = calc_impact(
                     core_x=event.simulation.shower.core_x,
                     core_y=event.simulation.shower.core_y,
                     az=event.simulation.shower.az,
@@ -338,15 +338,15 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 event_info = EventInfoContainer(
                     obs_id=event.index.obs_id,
                     event_id=event.index.event_id,
-                    alt_tel=event.pointing.tel[tel_id].altitude,
-                    az_tel=event.pointing.tel[tel_id].azimuth,
-                    mc_energy=event.simulation.shower.energy,
-                    mc_alt=event.simulation.shower.alt,
-                    mc_az=event.simulation.shower.az,
-                    mc_disp=mc_disp,
-                    mc_core_x=event.simulation.shower.core_x,
-                    mc_core_y=event.simulation.shower.core_y,
-                    mc_impact=mc_impact,
+                    pointing_alt=event.pointing.tel[tel_id].altitude,
+                    pointing_az=event.pointing.tel[tel_id].azimuth,
+                    true_energy=event.simulation.shower.energy,
+                    true_alt=event.simulation.shower.alt,
+                    true_az=event.simulation.shower.az,
+                    true_disp=true_disp,
+                    true_core_x=event.simulation.shower.core_x,
+                    true_core_y=event.simulation.shower.core_y,
+                    true_impact=true_impact,
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                 )
