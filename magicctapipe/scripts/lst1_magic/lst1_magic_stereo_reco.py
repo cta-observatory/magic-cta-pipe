@@ -51,7 +51,7 @@ logger.setLevel(logging.INFO)
 
 tel_id_lst = 1
 
-theta_lim = u.Quantity(0.1, u.deg)
+theta_uplim = u.Quantity(0.1, u.deg)
 
 __all__ = [
     'stereo_reco',
@@ -95,6 +95,51 @@ def calc_tel_mean_pointing(data):
     )
 
     return pointing
+
+
+def check_angular_distance(input_data, theta_uplim):
+    """
+    Checks the angular distance of the LST-1 and MAGIC
+    pointing directions.
+
+    Parameters
+    ----------
+    data: pandas.core.frame.DataFrame
+        Pandas data frame containing LST-1 and MAGIC events
+    theta_uplim: astropy.units.quantity.Quantity
+        Upper limit of the angular distance
+    """
+
+    df_lst = input_data.query('tel_id == 1')
+    obs_ids_joint = df_lst.index.get_level_values('obs_id').tolist()
+    event_ids_joint = df_lst.index.get_level_values('event_id').tolist()
+
+    multi_indices = pd.MultiIndex.from_arrays(
+        [obs_ids_joint, event_ids_joint], names=['obs_id', 'event_id'],
+    )
+
+    df_magic = input_data.query('tel_id == [2, 3]')
+    df_magic.reset_index(level='tel_id', inplace=True)
+    df_magic = df_magic.loc[multi_indices]
+
+    df_magic_pointing = calc_tel_mean_pointing(df_magic)
+
+    theta = angular_separation(
+        lon1=u.Quantity(df_lst['az_tel'].to_numpy(), u.rad),
+        lat1=u.Quantity(df_lst['alt_tel'].to_numpy(), u.rad),
+        lon2=u.Quantity(df_magic_pointing['az_tel_mean'].to_numpy(), u.rad),
+        lat2=u.Quantity(df_magic_pointing['alt_tel_mean'].to_numpy(), u.rad),
+    )
+
+    n_events_sep = np.sum(theta > theta_uplim)
+
+    if n_events_sep > 0:
+        logger.info(f'--> The pointing directions are separated by more than {theta_uplim.value} degree. ' \
+                    'The data would be taken by different wobble offsets. Please check the input data. Exiting.\n')
+        sys.exit()
+    else:
+        angle_max = np.max(theta.to(u.arcmin).value)
+        logger.info(f'--> Maximum angular distance is {angle_max:.3f} arcmin. Continue.')
 
 
 def stereo_reco(input_file, output_dir, config):
@@ -151,39 +196,8 @@ def stereo_reco(input_file, output_dir, config):
     telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
     if (not is_simulation) and (tel_id_lst in telescope_ids):
-
         logger.info('\nChecking the angular distance of the LST-1 and MAGIC pointing directions...')
-
-        df_lst = input_data.query('tel_id == 1')
-        obs_ids_joint = list(df_lst.index.get_level_values('obs_id'))
-        event_ids_joint = list(df_lst.index.get_level_values('event_id'))
-
-        multi_indices = pd.MultiIndex.from_arrays(
-            [obs_ids_joint, event_ids_joint], names=['obs_id', 'event_id']
-        )
-
-        df_magic = input_data.query('tel_id == [2, 3]')
-        df_magic.reset_index(level='tel_id', inplace=True)
-        df_magic = df_magic.loc[multi_indices]
-
-        df_magic_pointing = calc_tel_mean_pointing(df_magic)
-
-        theta = angular_separation(
-            lon1=u.Quantity(df_lst['az_tel'].to_numpy(), u.rad),
-            lat1=u.Quantity(df_lst['alt_tel'].to_numpy(), u.rad),
-            lon2=u.Quantity(df_magic_pointing['az_tel_mean'].to_numpy(), u.rad),
-            lat2=u.Quantity(df_magic_pointing['alt_tel_mean'].to_numpy(), u.rad),
-        )
-
-        n_events_sep = np.sum(theta > theta_lim)
-
-        if n_events_sep > 0:
-            logger.info(f'--> The pointing directions are separated by more than {theta_lim.value} degree. ' \
-                        'The data would be taken by different wobble offsets. Please check the input data. Exiting.\n')
-            sys.exit()
-        else:
-            angle_max = np.max(theta.to(u.arcmin).value)
-            logger.info(f'--> Maximum angular distance is {angle_max:.3f} arcmin. Continue.')
+        check_angular_distance(input_data)
 
     # Process the events:
     logger.info('\nReconstructing the stereo parameters...')
@@ -202,7 +216,6 @@ def stereo_reco(input_file, output_dir, config):
     # Loop over observation/event IDs.
     # Since the HillasReconstructor requires the ArrayEventContainer,
     # here we set the necessary information to the container event-by-event:
-
     for i_ev, (obs_id, ev_id) in enumerate(zip(observation_ids, event_ids)):
 
         if i_ev % 100 == 0:
