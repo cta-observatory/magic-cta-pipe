@@ -32,6 +32,8 @@ from .gti import (
 )
 
 from .functions import (
+    get_dl2_mean,
+    calc_mean_direction,
     set_combo_types,
     save_data_to_hdf,
     calc_impact,
@@ -88,6 +90,8 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
+    "get_dl2_mean",
+    "calc_mean_direction",
     "set_combo_types",
     "save_data_to_hdf",
     "calc_impact",
