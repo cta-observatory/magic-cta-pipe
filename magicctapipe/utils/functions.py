@@ -157,7 +157,7 @@ def calc_mean_direction(lon, lat, weights=None):
 def set_combo_types(data):
 
     n_events_total = len(data.groupby(['obs_id', 'event_id']).size())
-    logger.info(f'\nIn total {n_events_total} stereo events are found:')
+    logger.info(f'In total {n_events_total} stereo events are found:')
 
     for combo_type, (tel_combo, tel_ids) in enumerate(tel_combinations.items()):
 
