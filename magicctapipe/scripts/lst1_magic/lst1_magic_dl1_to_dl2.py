@@ -26,7 +26,7 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    set_event_types,
+    set_combo_types,
     transform_to_radec,
     save_data_to_hdf,
 )
@@ -105,7 +105,7 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     input_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     input_data.sort_index(inplace=True)
 
-    input_data = set_event_types(input_data)
+    input_data = set_combo_types(input_data)
 
     is_simulation = ('mc_energy' in input_data.columns)
 

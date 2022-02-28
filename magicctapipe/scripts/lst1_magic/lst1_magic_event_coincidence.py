@@ -38,7 +38,7 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    set_event_types,
+    set_combo_types,
     save_data_to_hdf,
 )
 
@@ -444,7 +444,7 @@ def event_coincidence(
     df_events = df_events.query('multiplicity == [2, 3]')
 
     # Set the event types:
-    df_events = set_event_types(df_events)
+    df_events = set_combo_types(df_events)
 
     # Save in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)

@@ -40,7 +40,7 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    set_event_types,
+    set_combo_types,
     calc_impact,
     save_data_to_hdf,
 )
@@ -190,7 +190,7 @@ def stereo_reco(input_file, output_dir, config):
     input_data['multiplicity'] = input_data.groupby(['obs_id', 'event_id']).size()
     input_data.query('multiplicity > 1', inplace=True)
 
-    input_data = set_event_types(input_data)
+    input_data = set_combo_types(input_data)
 
     # Check the angular distance of the pointing directions:
     telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
