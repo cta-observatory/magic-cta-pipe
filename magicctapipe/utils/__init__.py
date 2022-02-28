@@ -32,7 +32,7 @@ from .gti import (
 )
 
 from .functions import (
-    set_event_types,
+    set_combo_types,
     save_data_to_hdf,
     calc_impact,
     calc_nsim,
@@ -88,7 +88,7 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
-    "set_event_types",
+    "set_combo_types",
     "save_data_to_hdf",
     "calc_impact",
     "calc_nsim",

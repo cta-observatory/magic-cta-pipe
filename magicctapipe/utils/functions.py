@@ -14,14 +14,14 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 tel_combinations = {
-    'm1_m2': [2, 3],   # event_type = 0
-    'lst1_m1': [1, 2],   # event_type = 1
-    'lst1_m2': [1, 3],   # event_type = 2
-    'lst1_m1_m2': [1, 2, 3],   # event_type = 3
+    'm1_m2': [2, 3],   # combo_type = 0
+    'lst1_m1': [1, 2],   # combo_type = 1
+    'lst1_m2': [1, 3],   # combo_type = 2
+    'lst1_m1_m2': [1, 2, 3],   # combo_type = 3
 }
 
 __all__ = [
-    'set_event_types',
+    'set_combo_types',
     'save_data_to_hdf',
     'calc_impact',
     'calc_nsim',
@@ -30,21 +30,21 @@ __all__ = [
 ]
 
 
-def set_event_types(data):
+def set_combo_types(data):
 
     n_events_total = len(data.groupby(['obs_id', 'event_id']).size())
     logger.info(f'\nIn total {n_events_total} stereo events are found:')
 
-    for event_type, (tel_combo, tel_ids) in enumerate(tel_combinations.items()):
+    for combo_type, (tel_combo, tel_ids) in enumerate(tel_combinations.items()):
 
         df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
         df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
         df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
         n_events = len(df.groupby(['obs_id', 'event_id']).size())
-        logger.info(f'{tel_combo} (type {event_type}): {n_events:.0f} events ({n_events / n_events_total * 100:.1f}%)')
+        logger.info(f'{tel_combo} (type {combo_type}): {n_events:.0f} events ({n_events / n_events_total * 100:.1f}%)')
 
-        data.loc[df.index, 'event_type'] = event_type
+        data.loc[df.index, 'combo_type'] = combo_type
 
     return data
 
