@@ -6,7 +6,11 @@ import logging
 import numpy as np
 import pandas as pd
 from astropy import units as u
-from astropy.coordinates import EarthLocation, AltAz, SkyCoord
+from astropy.coordinates import (
+    AltAz,
+    SkyCoord,
+    EarthLocation,
+)
 from astropy.coordinates.builtin_frames import SkyOffsetFrame
 
 logger = logging.getLogger(__name__)
@@ -21,6 +25,8 @@ tel_combinations = {
 }
 
 __all__ = [
+    'get_dl2_mean',
+    'calc_mean_direction',
     'set_combo_types',
     'save_data_to_hdf',
     'calc_impact',
@@ -28,6 +34,124 @@ __all__ = [
     'transform_to_radec',
     'calc_angular_separation',
 ]
+
+
+def get_dl2_mean(input_data):
+    """
+    Calculates the mean of the DL2 parameters
+    weighted by the uncertainties of RF estimations.
+
+    Parameters
+    ----------
+    data: pandas.core.frame.DataFrame
+        Pandas data frame containing the DL2 parameters
+
+    Returns
+    -------
+    dl2_mean: pandas.core.frame.DataFrame
+        Pandas data frame containing the mean of the DL2 parameters
+    """
+
+    # Compute the mean of the reconstructed energy:
+    weights = 1 / input_data['reco_energy_err']
+    weighted_energy = np.log10(input_data['reco_energy']) * weights
+
+    weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
+    weighted_energy_sum = weighted_energy.groupby(['obs_id', 'event_id']).sum()
+
+    reco_energy_mean = 10 ** (weighted_energy_sum / weights_sum)
+
+    # Compute the mean of the reconstructed arrival directions:
+    reco_az_mean, reco_alt_mean = calc_mean_direction(
+        lon=np.deg2rad(input_data['reco_az']),
+        lat=np.deg2rad(input_data['reco_alt']),
+        weights=input_data['reco_disp_err'],
+    )
+
+    reco_ra_mean, reco_dec_mean = calc_mean_direction(
+        lon=np.deg2rad(input_data['reco_ra']),
+        lat=np.deg2rad(input_data['reco_dec']),
+        weights=input_data['reco_disp_err'],
+    )
+
+    # Compute the mean of the gammaness/hadronness:
+    groupby = input_data.groupby(['obs_id', 'event_id']).mean()
+
+    gammaness_mean = groupby['gammaness']
+    hadronness_mean = groupby['hadronness']
+
+    # Create a data frame:
+    dl2_mean = pd.DataFrame(
+        data={'reco_energy': reco_energy_mean,
+             'reco_alt': reco_alt_mean,
+             'reco_az': reco_az_mean,
+             'reco_ra': reco_ra_mean,
+             'reco_dec': reco_dec_mean,
+             'gammaness': gammaness_mean,
+             'hadronness': hadronness_mean},
+        index=groupby.index,
+    )
+
+    return dl2_mean
+
+
+def calc_mean_direction(lon, lat, weights=None):
+    """
+    Calculates mean directions in a spherical coordinate.
+    The input Series should have the index of "obs_id" and "event_id".
+
+    Parameters
+    ----------
+    lon: pandas.core.series.Series
+        Longitude in a spherical coordinate
+    lat: pandas.core.series.Series
+        Latitude in a spherical coodinate
+    weights: pandas.core.series.Series
+        Weights applied when calculating the mean directions
+
+    Returns
+    -------
+    lon_mean: pandas.core.series.Series
+        Longitude of the mean directions
+    lat_mean: pandas.core.series.Series
+        Latitude of the mean directions
+    """
+
+    x_coords = np.cos(lat) * np.cos(lon)
+    y_coords = np.cos(lat) * np.sin(lon)
+    z_coords = np.sin(lat)
+
+    if weights is not None:
+        weighted_x_coords = x_coords * weights
+        weighted_y_coords = y_coords * weights
+        weighted_z_coords = z_coords * weights
+
+        weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
+
+        weighted_x_coords_sum = weighted_x_coords.groupby(['obs_id', 'event_id']).sum()
+        weighted_y_coords_sum = weighted_y_coords.groupby(['obs_id', 'event_id']).sum()
+        weighted_z_coords_sum = weighted_z_coords.groupby(['obs_id', 'event_id']).sum()
+
+        x_coords_mean = weighted_x_coords_sum / weights_sum
+        y_coords_mean = weighted_y_coords_sum / weights_sum
+        z_coords_mean = weighted_z_coords_sum / weights_sum
+
+    else:
+        x_coords_mean = x_coords.groupby(['obs_id', 'event_id']).sum()
+        y_coords_mean = y_coords.groupby(['obs_id', 'event_id']).sum()
+        z_coords_mean = z_coords.groupby(['obs_id', 'event_id']).sum()
+
+    coord_mean = SkyCoord(
+        x=x_coords_mean.values,
+        y=y_coords_mean.values,
+        z=z_coords_mean.values,
+        representation_type='cartesian',
+    )
+
+    lon_mean = coord_mean.spherical.lon.to(u.deg).value
+    lat_mean = coord_mean.spherical.lat.to(u.deg).value
+
+    return lon_mean, lat_mean
 
 
 def set_combo_types(data):
