@@ -170,32 +170,16 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
                 timestamp=timestamps,
             )
 
-            ra_tel_mean, dec_tel_mean = transform_to_radec(
-                alt=u.Quantity(input_data['alt_tel_mean'].values, u.rad),
-                az=u.Quantity(input_data['az_tel_mean'].values, u.rad),
-                timestamp=timestamps,
-            )
-
             reco_ra, reco_dec = transform_to_radec(
                 alt=u.Quantity(input_data['reco_alt'].values, u.deg),
                 az=u.Quantity(input_data['reco_az'].values, u.deg),
                 timestamp=timestamps,
             )
 
-            reco_ra_mean, reco_dec_mean = transform_to_radec(
-                alt=u.Quantity(input_data['reco_alt_mean'].values, u.deg),
-                az=u.Quantity(input_data['reco_az_mean'].values, u.deg),
-                timestamp=timestamps,
-            )
-
             input_data['ra_tel'] = ra_tel.to(u.deg).value
             input_data['dec_tel'] = dec_tel.to(u.deg).value
-            input_data['ra_tel_mean'] = ra_tel_mean.to(u.deg).value
-            input_data['dec_tel_mean'] = dec_tel_mean.to(u.deg).value
             input_data['reco_ra'] = reco_ra.to(u.deg).value
             input_data['reco_dec'] = reco_dec.to(u.deg).value
-            input_data['reco_ra_mean'] = reco_ra_mean.to(u.deg).value
-            input_data['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
 
         del direction_regressor
 
