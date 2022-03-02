@@ -27,7 +27,7 @@ tel_combinations = {
 __all__ = [
     'get_dl2_mean',
     'calc_mean_direction',
-    'set_combo_types',
+    'check_tel_combinations',
     'save_data_to_hdf',
     'calc_impact',
     'calc_nsim',
@@ -52,6 +52,15 @@ def get_dl2_mean(input_data):
         Pandas data frame containing the mean of the DL2 parameters
     """
 
+    logger.info('\nComputing the mean of the DL2 parameters...')
+
+    is_simulation = ('mc_energy' in input_data.columns)
+    groupby_mean = input_data.groupby(['obs_id', 'event_id']).mean()
+
+    # Compute the mean of the gammaness/hadronness:
+    gammaness_mean = groupby_mean['gammaness']
+    hadronness_mean = groupby_mean['hadronness']
+
     # Compute the mean of the reconstructed energy:
     weights = 1 / input_data['reco_energy_err']
     weighted_energy = np.log10(input_data['reco_energy']) * weights
@@ -61,36 +70,60 @@ def get_dl2_mean(input_data):
 
     reco_energy_mean = 10 ** (weighted_energy_sum / weights_sum)
 
-    # Compute the mean of the reconstructed arrival directions:
+    # Compute the mean of the reconstructed arrival direction:
     reco_az_mean, reco_alt_mean = calc_mean_direction(
         lon=np.deg2rad(input_data['reco_az']),
         lat=np.deg2rad(input_data['reco_alt']),
         weights=input_data['reco_disp_err'],
     )
 
-    reco_ra_mean, reco_dec_mean = calc_mean_direction(
-        lon=np.deg2rad(input_data['reco_ra']),
-        lat=np.deg2rad(input_data['reco_dec']),
-        weights=input_data['reco_disp_err'],
+    # Compute the mean of the telescope pointing direction:
+    az_tel_mean, alt_tel_mean = calc_mean_direction(
+        lon=input_data['az_tel'], lat=input_data['alt_tel'],
     )
 
-    # Compute the mean of the gammaness/hadronness:
-    groupby = input_data.groupby(['obs_id', 'event_id']).mean()
-
-    gammaness_mean = groupby['gammaness']
-    hadronness_mean = groupby['hadronness']
-
-    # Create a data frame:
+    # Create a base data frame:
     dl2_mean = pd.DataFrame(
-        data={'reco_energy': reco_energy_mean,
-             'reco_alt': reco_alt_mean,
-             'reco_az': reco_az_mean,
-             'reco_ra': reco_ra_mean,
-             'reco_dec': reco_dec_mean,
-             'gammaness': gammaness_mean,
-             'hadronness': hadronness_mean},
-        index=groupby.index,
+        data={'gammaness': gammaness_mean.to_numpy(),
+              'hadronness': hadronness_mean.to_numpy(),
+              'reco_energy': reco_energy_mean.to_numpy(),
+              'reco_alt': reco_alt_mean.to(u.deg).value,
+              'reco_az': reco_az_mean.to(u.deg).value,
+              'alt_tel': alt_tel_mean.to(u.rad).value,
+              'az_tel': az_tel_mean.to(u.rad).value},
+        index=groupby_mean.index,
     )
+
+    if is_simulation:
+        # Add the MC parameters:
+        mc_params = groupby_mean[['mc_energy', 'mc_alt', 'mc_az']]
+        dl2_mean = dl2_mean.join(mc_params)
+
+    else:
+        # Add the mean of the Ra/Dec direction:
+        reco_ra_mean, reco_dec_mean = calc_mean_direction(
+            lon=np.deg2rad(input_data['reco_ra']),
+            lat=np.deg2rad(input_data['reco_dec']),
+            weights=input_data['reco_disp_err'],
+        )
+
+        ra_tel_mean, dec_tel_mean = calc_mean_direction(
+            lon=input_data['ra_tel'], lat=input_data['dec_tel'],
+        )
+
+        radec_mean = pd.DataFrame(
+            data={'reco_ra': reco_ra_mean.to(u.deg).value,
+                  'reco_dec': reco_dec_mean.to(u.deg).value,
+                  'ra_tel': ra_tel_mean.to(u.rad).value,
+                  'dec_tel': dec_tel_mean.to(u.rad).value},
+            index=groupby_mean.index,
+        )
+
+        dl2_mean = dl2_mean.join(radec_mean)
+
+    # Add the telescope combination types:
+    combo_types = check_tel_combinations(input_data)
+    dl2_mean = dl2_mean.join(combo_types)
 
     return dl2_mean
 
@@ -111,9 +144,9 @@ def calc_mean_direction(lon, lat, weights=None):
 
     Returns
     -------
-    lon_mean: pandas.core.series.Series
+    lon_mean: 
         Longitude of the mean directions
-    lat_mean: pandas.core.series.Series
+    lat_mean: 
         Latitude of the mean directions
     """
 
@@ -148,29 +181,37 @@ def calc_mean_direction(lon, lat, weights=None):
         representation_type='cartesian',
     )
 
-    lon_mean = coord_mean.spherical.lon.to(u.deg).value
-    lat_mean = coord_mean.spherical.lat.to(u.deg).value
+    lon_mean = coord_mean.spherical.lon
+    lat_mean = coord_mean.spherical.lat
 
     return lon_mean, lat_mean
 
 
-def set_combo_types(data):
+def check_tel_combinations(input_data):
 
-    n_events_total = len(data.groupby(['obs_id', 'event_id']).size())
-    logger.info(f'In total {n_events_total} stereo events are found:')
+    combo_types = pd.DataFrame()
+
+    n_events_total = len(input_data.groupby(['obs_id', 'event_id']).size())
+    logger.info(f'\nIn total {n_events_total} stereo events are found:')
 
     for combo_type, (tel_combo, tel_ids) in enumerate(tel_combinations.items()):
 
-        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-        df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
-        df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
+        df = input_data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
 
-        n_events = len(df.groupby(['obs_id', 'event_id']).size())
-        logger.info(f'{tel_combo} (type {combo_type}): {n_events:.0f} events ({n_events / n_events_total * 100:.1f}%)')
+        groupby_size = df.groupby(['obs_id', 'event_id']).size()
+        groupby_size = groupby_size[groupby_size == len(tel_ids)]
 
-        data.loc[df.index, 'combo_type'] = combo_type
+        n_events = len(groupby_size)
+        ratio = n_events / n_events_total
 
-    return data
+        logger.info(f'{tel_combo} (type {combo_type}): {n_events:.0f} events ({ratio * 100:.1f}%)')
+
+        df_combo_type = pd.DataFrame({'combo_type': combo_type}, index=groupby_size.index)
+        combo_types = combo_types.append(df_combo_type)
+
+    combo_types.sort_index(inplace=True)
+
+    return combo_types
 
 
 def save_data_to_hdf(data, output_file, group_name, table_name):
