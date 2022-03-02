@@ -6,11 +6,7 @@ import logging
 import numpy as np
 import pandas as pd
 from astropy import units as u
-from astropy.coordinates import (
-    AltAz,
-    SkyCoord,
-    EarthLocation,
-)
+from astropy.coordinates import AltAz, SkyCoord, EarthLocation
 from astropy.coordinates.builtin_frames import SkyOffsetFrame
 
 logger = logging.getLogger(__name__)
@@ -30,7 +26,7 @@ __all__ = [
 
 def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
     """
-    Calculates the impact parameter of a given telescope.
+    Calculates the impact distance from a given telescope.
 
     Parameters
     ----------
@@ -39,9 +35,9 @@ def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
     core_y: astropy.units.quantity.Quantity
         Core position along the geographical west
     az: astropy.units.quantity.Quantity
-        Azimuth of the arrival directions of shower events
+        Azimuth of the event arrival direction
     alt: astropy.units.quantity.Quantity
-        Altitude of the arrival directions of shower events
+        Altitude of the event arrival direction
     tel_pos_x: astropy.units.quantity.Quantity
         Telescope position along the geographical north
     tel_pos_y: astropy.units.quantity.Quantity
@@ -52,7 +48,7 @@ def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
     Returns
     -------
     impact: astropy.units.quantity.Quantity
-        Impact parameter from the input telescope position
+        Impact distance from the input telescope position
     """
 
     t = (tel_pos_x - core_x) * np.cos(alt) * np.cos(az) \
@@ -68,8 +64,9 @@ def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
 
 def calc_mean_direction(lon, lat, weights=None):
     """
-    Calculates mean directions in a spherical coordinate.
-    The input Series should have the index of "obs_id" and "event_id".
+    Calculates the mean of input directions in a spherical coordinate.
+    The inputs should be the "Series" type with the indices of 'obs_id' and 'event_id'.
+    The unit of the input longitude/latitude should be radian.
 
     Parameters
     ----------
@@ -78,14 +75,14 @@ def calc_mean_direction(lon, lat, weights=None):
     lat: pandas.core.series.Series
         Latitude in a spherical coodinate
     weights: pandas.core.series.Series
-        Weights applied when calculating the mean directions
+        Weights applied when calculating the mean direction
 
     Returns
     -------
     lon_mean: astropy.units.quantity.Quantity
-        Longitude of the mean directions
+        Longitude of the mean direction
     lat_mean: astropy.units.quantity.Quantity
-        Latitude of the mean directions
+        Latitude of the mean direction
     """
 
     x_coords = np.cos(lat) * np.cos(lon)
@@ -103,19 +100,19 @@ def calc_mean_direction(lon, lat, weights=None):
         weighted_y_coords_sum = weighted_y_coords.groupby(['obs_id', 'event_id']).sum()
         weighted_z_coords_sum = weighted_z_coords.groupby(['obs_id', 'event_id']).sum()
 
-        x_coords_mean = weighted_x_coords_sum / weights_sum
-        y_coords_mean = weighted_y_coords_sum / weights_sum
-        z_coords_mean = weighted_z_coords_sum / weights_sum
+        x_coord_mean = weighted_x_coords_sum / weights_sum
+        y_coord_mean = weighted_y_coords_sum / weights_sum
+        z_coord_mean = weighted_z_coords_sum / weights_sum
 
     else:
-        x_coords_mean = x_coords.groupby(['obs_id', 'event_id']).sum()
-        y_coords_mean = y_coords.groupby(['obs_id', 'event_id']).sum()
-        z_coords_mean = z_coords.groupby(['obs_id', 'event_id']).sum()
+        x_coord_mean = x_coords.groupby(['obs_id', 'event_id']).sum()
+        y_coord_mean = y_coords.groupby(['obs_id', 'event_id']).sum()
+        z_coord_mean = z_coords.groupby(['obs_id', 'event_id']).sum()
 
     coord_mean = SkyCoord(
-        x=x_coords_mean.values,
-        y=y_coords_mean.values,
-        z=z_coords_mean.values,
+        x=x_coord_mean.values,
+        y=y_coord_mean.values,
+        z=z_coord_mean.values,
         representation_type='cartesian',
     )
 
@@ -127,13 +124,13 @@ def calc_mean_direction(lon, lat, weights=None):
 
 def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
     """
-    Calculates the angular distance of the shower arrival direction
-    from ON and OFF regions.
+    Calculates the angular distance between the shower arrival direction
+    and ON/OFF regions.
 
     Parameters
     ----------
     on_coord: astropy.coordinates.sky_coordinate.SkyCoord
-        Coordinate of an ON region
+        Coordinate of the ON region
     event_coord: astropy.coordinates.sky_coordinate.SkyCoord
         Coordinate of the shower arrival direction
     tel_coord: astropy.coordinates.sky_coordinate.SkyCoord
@@ -151,8 +148,10 @@ def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
         Coordinates of the OFF regions
     """
 
+    # Compute the distance from the ON region:
     theta_on = on_coord.separation(event_coord)
 
+    # Compute the wobble offset and rotation:
     offsets = np.arccos(np.cos(on_coord.dec) * np.cos(tel_coord.dec) * np.cos(tel_coord.ra - on_coord.ra) \
                         + np.sin(on_coord.dec) * np.sin(tel_coord.dec))
 
@@ -164,6 +163,7 @@ def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
     rotations = np.arctan2(numerator, denominator)
     rotations[rotations < 0] += u.Quantity(360, u.deg)
 
+    # Define the wobble and OFF coordinates:
     mean_offset = offsets.to(u.deg).mean()
     mean_rot = rotations.to(u.deg).mean()
 
@@ -186,6 +186,7 @@ def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
         off_coords[i_off+1] = SkyCoord(mean_offset, u.Quantity(0, u.deg), frame=skyoffset_frame)
         off_coords[i_off+1] = off_coords[i_off+1].transform_to('icrs')
 
+        # Compute the distance from the OFF region:
         theta_off[i_off+1] = off_coords[i_off+1].separation(event_coord)
 
     return theta_on, theta_off, off_coords
@@ -193,7 +194,7 @@ def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
 
 def transform_altaz_to_radec(alt, az, timestamp):
     """
-    Transforms a AltAz direction measured from ORM
+    Transforms an AltAz direction measured from ORM
     to the RaDec coordinate by using a telescope timestamp.
 
     Parameters
@@ -213,12 +214,12 @@ def transform_altaz_to_radec(alt, az, timestamp):
         Declination of the input direction
     """
 
+    # Hardcode the longitude/latitude of ORM:
     lat_orm = u.Quantity(28.76177, u.deg)
     lon_orm = u.Quantity(-17.89064, u.deg)
     height_orm = u.Quantity(2199.835, u.m)
 
     location = EarthLocation.from_geodetic(lon=lon_orm, lat=lat_orm, height=height_orm)
-
     horizon_frames = AltAz(location=location, obstime=timestamp)
 
     event_coord = SkyCoord(alt=alt, az=az, frame=horizon_frames)
@@ -232,7 +233,7 @@ def transform_altaz_to_radec(alt, az, timestamp):
 
 def check_tel_combination(input_data):
     """
-    Checks the type of telescope combinations of input events
+    Checks the telescope combination types of input events
     and returns a pandas data frame of the types.
 
     Parameters
@@ -243,7 +244,7 @@ def check_tel_combination(input_data):
     Returns
     -------
     combo_type: pandas.core.frame.DataFrame
-        Pandas data frame containing the types of telescope combinations
+        Pandas data frame containing the telescope combination types
     """
 
     tel_combinations = {
@@ -278,7 +279,7 @@ def check_tel_combination(input_data):
     return combo_types
 
 
-def save_pandas_to_table(data, output_file, group_name, table_name):
+def save_pandas_to_table(input_data, output_file, group_name, table_name):
     """
     Saves a pandas data frame to a table.
 
@@ -296,8 +297,8 @@ def save_pandas_to_table(data, output_file, group_name, table_name):
 
     with tables.open_file(output_file, mode='a') as f_out:
 
-        event_values = [tuple(array) for array in data.to_numpy()]
-        dtypes = np.dtype([(name, dtype) for name, dtype in zip(data.dtypes.index, data.dtypes)])
+        event_values = [tuple(array) for array in input_data.to_numpy()]
+        dtypes = np.dtype([(name, dtype) for name, dtype in zip(input_data.dtypes.index, input_data.dtypes)])
 
         event_table = np.array(event_values, dtype=dtypes)
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
@@ -328,7 +329,7 @@ def get_dl2_mean(input_data):
     gammaness_mean = groupby_mean['gammaness']
     hadronness_mean = groupby_mean['hadronness']
 
-    # Compute the mean of the reconstructed energy:
+    # Compute the mean of the reconstructed energies:
     weights = 1 / input_data['reco_energy_err']
     weighted_energy = np.log10(input_data['reco_energy']) * weights
 
@@ -337,14 +338,14 @@ def get_dl2_mean(input_data):
 
     reco_energy_mean = 10 ** (weighted_energy_sum / weights_sum)
 
-    # Compute the mean of the reconstructed arrival direction:
+    # Compute the mean of the reconstructed arrival directions:
     reco_az_mean, reco_alt_mean = calc_mean_direction(
         lon=np.deg2rad(input_data['reco_az']),
         lat=np.deg2rad(input_data['reco_alt']),
         weights=input_data['reco_disp_err'],
     )
 
-    # Compute the mean of the telescope pointing direction:
+    # Compute the mean of the telescope pointing directions:
     az_tel_mean, alt_tel_mean = calc_mean_direction(
         lon=input_data['az_tel'], lat=input_data['alt_tel'],
     )
@@ -367,7 +368,7 @@ def get_dl2_mean(input_data):
         dl2_mean = dl2_mean.join(mc_params)
 
     else:
-        # Add the mean of the Ra/Dec direction:
+        # Add the mean of the Ra/Dec directions:
         reco_ra_mean, reco_dec_mean = calc_mean_direction(
             lon=np.deg2rad(input_data['reco_ra']),
             lat=np.deg2rad(input_data['reco_dec']),
@@ -389,7 +390,7 @@ def get_dl2_mean(input_data):
         dl2_mean = dl2_mean.join(radec_mean)
 
     # Add the telescope combination types:
-    combo_types = check_tel_combinations(input_data)
+    combo_types = check_tel_combination(input_data)
     dl2_mean = dl2_mean.join(combo_types)
 
     return dl2_mean
