@@ -30,7 +30,6 @@ __all__ = [
     'check_tel_combinations',
     'save_data_to_hdf',
     'calc_impact',
-    'calc_nsim',
     'transform_to_radec',
     'calc_angular_separation',
 ]
@@ -289,26 +288,6 @@ def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
                      + (t * np.sin(alt) - tel_pos_z) ** 2)
 
     return impact
-
-
-def calc_nsim(n_events_sim, eslope_sim, emin_sim, emax_sim, cscat_sim, viewcone_sim,
-              emin=None, emax=None, distmin=None, distmax=None, angmin=None, angmax=None):
-
-    norm = 1
-
-    if (emin != None) & (emax != None):
-        norm *= (emax ** (eslope_sim + 1) - emin ** (eslope_sim + 1)) \
-                / (emax_sim ** (eslope_sim + 1) - emin_sim ** (eslope_sim + 1))
-
-    if (distmin != None) & (distmax != None):
-        norm *= (distmax ** 2 - distmin ** 2) / cscat_sim ** 2
-
-    if (angmin != None) & (angmax != None):
-        norm *= (np.cos(angmin) - np.cos(angmax)) / (1 - np.cos(viewcone_sim))
-
-    nsim = norm * n_events_sim
-
-    return nsim.value
 
 
 def transform_altaz_to_radec(alt, az, timestamp):
