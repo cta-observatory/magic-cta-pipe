@@ -144,9 +144,9 @@ def calc_mean_direction(lon, lat, weights=None):
 
     Returns
     -------
-    lon_mean: 
+    lon_mean: astropy.units.quantity.Quantity
         Longitude of the mean directions
-    lat_mean: 
+    lat_mean: astropy.units.quantity.Quantity
         Latitude of the mean directions
     """
 
@@ -188,6 +188,20 @@ def calc_mean_direction(lon, lat, weights=None):
 
 
 def check_tel_combinations(input_data):
+    """
+    Checks the type of telescope combinations of input events
+    and returns a pandas data frame of the types.
+
+    Parameters
+    ----------
+    input_data: pandas.core.frame.DataFrame
+        Pandas data frame containing shower events
+
+    Returns
+    -------
+    combo_type: pandas.core.frame.DataFrame
+        Pandas data frame containing the types of telescope combinations
+    """
 
     combo_types = pd.DataFrame()
 
@@ -214,7 +228,21 @@ def check_tel_combinations(input_data):
     return combo_types
 
 
-def save_data_to_hdf(data, output_file, group_name, table_name):
+def save_pandas_to_table(data, output_file, group_name, table_name):
+    """
+    Saves a pandas data frame to a table.
+
+    Parameters
+    ----------
+    data: pandas.core.frame.DataFrame
+        Pandas data frame containing shower events
+    output_file: str
+        Path to an output HDF file
+    group_name: str
+        Group name of the output table
+    table_name: str
+        Name of the output table
+    """
 
     with tables.open_file(output_file, mode='a') as f_out:
 
@@ -226,6 +254,31 @@ def save_data_to_hdf(data, output_file, group_name, table_name):
 
 
 def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
+    """
+    Calculates the impact parameter of a given telescope.
+
+    Parameters
+    ----------
+    core_x: astropy.units.quantity.Quantity
+        Core position along the geographical north
+    core_y: astropy.units.quantity.Quantity
+        Core position along the geographical west
+    az: astropy.units.quantity.Quantity
+        Azimuth of the arrival directions of shower events
+    alt: astropy.units.quantity.Quantity
+        Altitude of the arrival directions of shower events
+    tel_pos_x: astropy.units.quantity.Quantity
+        Telescope position along the geographical north
+    tel_pos_y: astropy.units.quantity.Quantity
+        Telescope position along the geographical west
+    tel_pos_z: astropy.units.quantity.Quantity
+        Altitude of a telescope position
+
+    Returns
+    -------
+    impact: astropy.units.quantity.Quantity
+        Impact parameter from the input telescope position
+    """
 
     t = (tel_pos_x - core_x) * np.cos(alt) * np.cos(az) \
         - (tel_pos_y - core_y) * np.cos(alt) * np.sin(az) \
@@ -258,33 +311,80 @@ def calc_nsim(n_events_sim, eslope_sim, emin_sim, emax_sim, cscat_sim, viewcone_
     return nsim.value
 
 
-def transform_to_radec(alt, az, timestamp):
+def transform_altaz_to_radec(alt, az, timestamp):
+    """
+    Transforms a AltAz direction measured from ORM
+    to the RaDec coordinate by using a telescope timestamp.
+
+    Parameters
+    ----------
+    alt: astropy.units.quantity.Quantity
+        Altitude measured from ORM
+    az: astropy.units.quantity.Quantity
+        Azimuth measured from ORM
+    timestamp: astropy.units.quantity.Quantity
+        Timestamp when the direction was measured
+
+    Returns
+    -------
+    ra: astropy.units.quantity.Quantity
+        Right ascension of the input direction
+    dec: astropy.units.quantity.Quantity
+        Declination of the input direction
+    """
 
     lat_orm = u.Quantity(28.76177, u.deg)
     lon_orm = u.Quantity(-17.89064, u.deg)
     height_orm = u.Quantity(2199.835, u.m)
 
-    location = EarthLocation.from_geodetic(lat=lat_orm, lon=lon_orm, height=height_orm)
+    location = EarthLocation.from_geodetic(lon=lon_orm, lat=lat_orm, height=height_orm)
 
     horizon_frames = AltAz(location=location, obstime=timestamp)
 
-    event_coords = SkyCoord(alt=alt, az=az, frame=horizon_frames)
-    event_coords = event_coords.transform_to('icrs')
+    event_coord = SkyCoord(alt=alt, az=az, frame=horizon_frames)
+    event_coord = event_coord.transform_to('icrs')
 
-    return event_coords.ra, event_coords.dec
+    ra = event_coord.ra
+    dec = event_coord.dec
+
+    return ra, dec
 
 
-def calc_angular_separation(on_coord, event_coords, tel_coords, n_off_region):
+def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
+    """
+    Calculates the angular distance of the shower arrival direction
+    from ON and OFF regions.
 
-    theta_on = on_coord.separation(event_coords)
+    Parameters
+    ----------
+    on_coord: astropy.coordinates.sky_coordinate.SkyCoord
+        Coordinate of an ON region
+    event_coord: astropy.coordinates.sky_coordinate.SkyCoord
+        Coordinate of the shower arrival direction
+    tel_coord: astropy.coordinates.sky_coordinate.SkyCoord
+        Coordinate of the telescope pointing direction
+    n_off_regions: int
+        Number of OFF regions to be extracted
 
-    offsets = np.arccos(np.cos(on_coord.dec) * np.cos(tel_coords.dec) * np.cos(tel_coords.ra - on_coord.ra) \
-                        + np.sin(on_coord.dec) * np.sin(tel_coords.dec))
+    Returns
+    -------
+    theta_on: astropy.units.quantity.Quantity
+        Angular distance from the ON region
+    theta_off: dict
+        Angular distances from the OFF regions
+    off_coords: dict
+        Coordinates of the OFF regions
+    """
 
-    numerator = np.sin(tel_coords.dec) * np.cos(on_coord.dec) \
-                - np.sin(on_coord.dec) * np.cos(tel_coords.dec) * np.cos(tel_coords.ra - on_coord.ra)
+    theta_on = on_coord.separation(event_coord)
 
-    denominator = np.cos(tel_coords.dec) * np.sin(tel_coords.ra - on_coord.ra)
+    offsets = np.arccos(np.cos(on_coord.dec) * np.cos(tel_coord.dec) * np.cos(tel_coord.ra - on_coord.ra) \
+                        + np.sin(on_coord.dec) * np.sin(tel_coord.dec))
+
+    numerator = np.sin(tel_coord.dec) * np.cos(on_coord.dec) \
+                - np.sin(on_coord.dec) * np.cos(tel_coord.dec) * np.cos(tel_coord.ra - on_coord.ra)
+
+    denominator = np.cos(tel_coord.dec) * np.sin(tel_coord.ra - on_coord.ra)
 
     rotations = np.arctan2(numerator, denominator)
     rotations[rotations < 0] += u.Quantity(360, u.deg)
@@ -311,6 +411,6 @@ def calc_angular_separation(on_coord, event_coords, tel_coords, n_off_region):
         off_coords[i_off+1] = SkyCoord(mean_offset, u.Quantity(0, u.deg), frame=skyoffset_frame)
         off_coords[i_off+1] = off_coords[i_off+1].transform_to('icrs')
 
-        theta_off[i_off+1] = off_coords[i_off+1].separation(event_coords)
+        theta_off[i_off+1] = off_coords[i_off+1].separation(event_coord)
 
     return theta_on, theta_off, off_coords
