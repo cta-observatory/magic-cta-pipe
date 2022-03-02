@@ -26,9 +26,9 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    set_combo_types,
-    transform_to_radec,
-    save_data_to_hdf,
+    check_tel_combination,
+    transform_altaz_to_radec,
+    save_pandas_to_table,
 )
 from magicctapipe.reco import (
     EnergyRegressor,
@@ -105,7 +105,7 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     input_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     input_data.sort_index(inplace=True)
 
-    input_data = set_combo_types(input_data)
+    check_tel_combination(input_data)
 
     is_simulation = ('mc_energy' in input_data.columns)
 
@@ -164,13 +164,13 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
                 time_nanosec = input_data['time_nanosec'].to_numpy() * nsec2sec
                 timestamps = Time(time_sec + time_nanosec, format='unix', scale='utc')
 
-            ra_tel, dec_tel = transform_to_radec(
+            ra_tel, dec_tel = transform_altaz_to_radec(
                 alt=u.Quantity(input_data['alt_tel'].values, u.rad),
                 az=u.Quantity(input_data['az_tel'].values, u.rad),
                 timestamp=timestamps,
             )
 
-            reco_ra, reco_dec = transform_to_radec(
+            reco_ra, reco_dec = transform_altaz_to_radec(
                 alt=u.Quantity(input_data['reco_alt'].values, u.deg),
                 az=u.Quantity(input_data['reco_az'].values, u.deg),
                 timestamp=timestamps,
@@ -216,14 +216,14 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     output_file = f'{output_dir}/dl2_{parser}.h5'
 
     input_data.reset_index(inplace=True)
-    save_data_to_hdf(input_data, output_file, '/events', 'params')
+    save_pandas_to_table(input_data, output_file, '/events', 'params')
 
     subarray = SubarrayDescription.from_hdf(input_file)
     subarray.to_hdf(output_file)
 
     if is_simulation:
         sim_config = pd.read_hdf(input_file, 'simulation/config')
-        save_data_to_hdf(sim_config, output_file, '/simulation', 'config')
+        save_pandas_to_table(sim_config, output_file, '/simulation', 'config')
 
     logger.info('\nOutput file:')
     logger.info(output_file)

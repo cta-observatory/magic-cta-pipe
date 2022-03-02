@@ -40,10 +40,10 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    set_combo_types,
     calc_impact,
-    save_data_to_hdf,
     calc_mean_direction,
+    check_tel_combination,
+    save_pandas_to_table,
 )
 
 logger = logging.getLogger(__name__)
@@ -152,7 +152,8 @@ def stereo_reco(input_file, output_dir, config):
     input_data['multiplicity'] = input_data.groupby(['obs_id', 'event_id']).size()
     input_data.query('multiplicity > 1', inplace=True)
 
-    input_data = set_combo_types(input_data)
+    combo_types = check_tel_combination(input_data)
+    input_data = input_data.join(combo_types)
 
     # Check the angular distance of the pointing directions:
     telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
@@ -169,10 +170,10 @@ def stereo_reco(input_file, output_dir, config):
 
     az_mean, alt_mean = calc_mean_direction(input_data)
 
-    group = input_data.groupby(['obs_id', 'event_id']).size()
+    multi_indices = input_data.groupby(['obs_id', 'event_id']).size().index
 
-    observation_ids = group.index.get_level_values('obs_id')
-    event_ids = group.index.get_level_values('event_id')
+    observation_ids = multi_indices.get_level_values('obs_id')
+    event_ids = multi_indices.get_level_values('event_id')
 
     # Loop over observation/event IDs.
     # Since the HillasReconstructor requires the ArrayEventContainer,
@@ -184,8 +185,8 @@ def stereo_reco(input_file, output_dir, config):
 
         df_ev = input_data.query(f'(obs_id == {obs_id}) & (event_id == {ev_id})')
 
-        event.pointing.array_altitude = u.Quantity(df_ev['alt_tel_mean'].iloc[0], u.rad)
-        event.pointing.array_azimuth = u.Quantity(df_ev['az_tel_mean'].iloc[0], u.rad)
+        event.pointing.array_altitude = alt_mean[i_ev]
+        event.pointing.array_azimuth = az_mean[i_ev]
 
         telescope_ids = df_ev.index.get_level_values('tel_id')
 
@@ -254,13 +255,13 @@ def stereo_reco(input_file, output_dir, config):
     output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
 
     input_data.reset_index(inplace=True)
-    save_data_to_hdf(input_data, output_file, '/events', 'params')
+    save_pandas_to_table(input_data, output_file, '/events', 'params')
 
     subarray.to_hdf(output_file)
 
     if is_simulation:
         sim_config = pd.read_hdf(input_file, 'simulation/config')
-        save_data_to_hdf(sim_config, output_file, '/simulation', 'config')
+        save_pandas_to_table(sim_config, output_file, '/simulation', 'config')
 
     logger.info('\nOutput file:')
     logger.info(output_file)

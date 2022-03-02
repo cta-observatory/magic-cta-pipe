@@ -38,8 +38,8 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    set_combo_types,
-    save_data_to_hdf,
+    check_tel_combination,
+    save_pandas_to_table,
 )
 
 logger = logging.getLogger(__name__)
@@ -444,7 +444,8 @@ def event_coincidence(
     df_events = df_events.query('multiplicity == [2, 3]')
 
     # Set the event types:
-    df_events = set_combo_types(df_events)
+    combo_types = check_tel_combination(df_events)
+    df_events = df_events.join(combo_types)
 
     # Save in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -457,9 +458,9 @@ def event_coincidence(
 
     df_events.reset_index(inplace=True)
 
-    save_data_to_hdf(df_events, output_file, '/events', 'params')
-    save_data_to_hdf(df_features, output_file, '/coincidence', 'features')
-    save_data_to_hdf(df_profile, output_file, '/coincidence', 'profile')
+    save_pandas_to_table(df_events, output_file, '/events', 'params')
+    save_pandas_to_table(df_features, output_file, '/coincidence', 'features')
+    save_pandas_to_table(df_profile, output_file, '/coincidence', 'profile')
 
     subarray_lst1_magic.to_hdf(output_file)
 
