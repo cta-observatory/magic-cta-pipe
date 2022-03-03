@@ -320,8 +320,6 @@ def get_dl2_mean(input_data):
         Pandas data frame containing the mean of the DL2 parameters
     """
 
-    logger.info('\nComputing the mean of the DL2 parameters...')
-
     is_simulation = ('mc_energy' in input_data.columns)
     groupby_mean = input_data.groupby(['obs_id', 'event_id']).mean()
 
@@ -352,7 +350,8 @@ def get_dl2_mean(input_data):
 
     # Create a base data frame:
     dl2_mean = pd.DataFrame(
-        data={'gammaness': gammaness_mean.to_numpy(),
+        data={'combo_type': groupby_mean['combo_type'].to_numpy(),
+              'gammaness': gammaness_mean.to_numpy(),
               'hadronness': hadronness_mean.to_numpy(),
               'reco_energy': reco_energy_mean.to_numpy(),
               'reco_alt': reco_alt_mean.to(u.deg).value,
@@ -388,9 +387,5 @@ def get_dl2_mean(input_data):
         )
 
         dl2_mean = dl2_mean.join(radec_mean)
-
-    # Add the telescope combination types:
-    combo_types = check_tel_combination(input_data)
-    dl2_mean = dl2_mean.join(combo_types)
 
     return dl2_mean
