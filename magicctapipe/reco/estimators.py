@@ -382,7 +382,7 @@ class DirectionRegressor:
 
 class EventClassifier:
     """
-    RF classifiers to reconstruct the gammaness/hadronness.
+    RF classifiers to reconstruct the gammaness.
     The RFs are trained per telescope.
     """
 
@@ -435,7 +435,7 @@ class EventClassifier:
 
     def predict(self, input_data):
         """
-        Reconstructs the gammaness/hadronness of the input events.
+        Reconstructs the gammaness of the input events.
 
         Parameters
         ----------
@@ -450,14 +450,9 @@ class EventClassifier:
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
-
             responses = self.telescope_rfs[tel_id].predict_proba(df_tel.values)
 
-            df_reco_class = pd.DataFrame(
-                data={'gammaness': responses[:, 0], 'hadronness': responses[:, 1]},
-                index=df_tel.index,
-            )
-
+            df_reco_class = pd.DataFrame({'gammaness': responses[:, 0]}, index=df_tel.index)
             reco_params = reco_params.append(df_reco_class)
 
         reco_params.sort_index(inplace=True)

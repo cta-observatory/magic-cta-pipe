@@ -323,9 +323,8 @@ def get_dl2_mean(input_data):
     is_simulation = ('mc_energy' in input_data.columns)
     groupby_mean = input_data.groupby(['obs_id', 'event_id']).mean()
 
-    # Compute the mean of the gammaness/hadronness:
+    # Compute the mean of the gammaness:
     gammaness_mean = groupby_mean['gammaness']
-    hadronness_mean = groupby_mean['hadronness']
 
     # Compute the mean of the reconstructed energies:
     weights = 1 / input_data['reco_energy_err']
@@ -352,7 +351,6 @@ def get_dl2_mean(input_data):
     dl2_mean = pd.DataFrame(
         data={'combo_type': groupby_mean['combo_type'].to_numpy(),
               'gammaness': gammaness_mean.to_numpy(),
-              'hadronness': hadronness_mean.to_numpy(),
               'reco_energy': reco_energy_mean.to_numpy(),
               'reco_alt': reco_alt_mean.to(u.deg).value,
               'reco_az': reco_az_mean.to(u.deg).value,
