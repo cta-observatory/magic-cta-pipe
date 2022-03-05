@@ -172,7 +172,7 @@ def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
     wobble_coord = SkyCoord(mean_offset, u.Quantity(0, u.deg), frame=skyoffset_frame)
     wobble_coord = wobble_coord.transform_to('icrs')
 
-    rotations_off = np.arange(0, 359, 360/(n_off_region + 1))
+    rotations_off = np.arange(0, 359, 360/(n_off_regions + 1))
     rotations_off = rotations_off[rotations_off != 180]
     rotations_off += mean_rot.value
 
@@ -365,7 +365,7 @@ def get_dl2_mean(input_data):
         dl2_mean = dl2_mean.join(mc_params)
 
     else:
-        # Add the mean of the Ra/Dec directions:
+        # Compute the mean of the Ra/Dec directions:
         reco_ra_mean, reco_dec_mean = calc_mean_direction(
             lon=np.deg2rad(input_data['reco_ra']),
             lat=np.deg2rad(input_data['reco_dec']),
@@ -373,17 +373,20 @@ def get_dl2_mean(input_data):
         )
 
         ra_tel_mean, dec_tel_mean = calc_mean_direction(
-            lon=input_data['ra_tel'], lat=input_data['dec_tel'],
+            lon=np.deg2rad(input_data['ra_tel']),
+            lat=np.deg2rad(input_data['dec_tel']),
         )
 
-        radec_mean = pd.DataFrame(
+        # Add the additional parameters:
+        df = pd.DataFrame(
             data={'reco_ra': reco_ra_mean.to(u.deg).value,
                   'reco_dec': reco_dec_mean.to(u.deg).value,
                   'ra_tel': ra_tel_mean.to(u.deg).value,
-                  'dec_tel': dec_tel_mean.to(u.deg).value},
+                  'dec_tel': dec_tel_mean.to(u.deg).value,
+                  'timestamp': groupby_mean['timestamp'].to_numpy()},
             index=groupby_mean.index,
         )
 
-        dl2_mean = dl2_mean.join(radec_mean)
+        dl2_mean = dl2_mean.join(df)
 
     return dl2_mean
