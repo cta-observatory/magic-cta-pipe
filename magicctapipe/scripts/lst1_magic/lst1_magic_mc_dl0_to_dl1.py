@@ -6,8 +6,8 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes simtel MC DL0 data (*.simtel.gz) containing LST-1 and MAGIC events
 and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
-The script saves events in an output file only when it reconstructs all the DL1 parameters.
-The telescope IDs are reset to the following values when saving to the file:
+It saves events in an output file only when all the DL1 parameters are reconstructed.
+The telescope IDs are reset to the following values when saving to the output file:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 Usage:
@@ -85,11 +85,13 @@ class EventInfoContainer(Container):
     mc_impact = Field(-1, 'MC event impact', u.m)
     n_pixels = Field(-1, 'Number of pixels of a cleaned image')
     n_islands = Field(-1, 'Number of islands of a cleaned image')
+    magic_stereo = Field(-1, 'Flag to the MAGIC-stereo trigger')
 
 
 def mc_dl0_to_dl1(input_file, output_dir, config):
     """
-    Processes simtel DL0 data to DL1.
+    Process simtel DL0 data containing
+    LST-1 and MAGIC events to DL1.
 
     Parameters
     ----------
@@ -117,6 +119,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     logger.info('\nThe telescope IDs of LST-1 and MAGIC:')
     logger.info(mc_tel_ids)
+
+    tel_id_lst1 = mc_tel_ids['LST-1']
+    tel_id_m1 = mc_tel_ids['MAGIC-I']
+    tel_id_m2 = mc_tel_ids['MAGIC-II']
 
     # Configure the LST data process:
     config_lst = config['LST']
@@ -171,18 +177,18 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
-    regex = r'(\S+)_run(\d+)_.*\.simtel.gz'
     regex_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
+    regex = r'(\S+)_run(\d+)_.*\.simtel.gz'
 
-    if re.fullmatch(regex, base_name):
-        parser = re.findall(regex, base_name)[0]
-        output_file = f'{output_dir}/dl1_{parser[0]}_LST-1_MAGIC_run{parser[1]}.h5'
-
-    elif re.fullmatch(regex_off, base_name):
+    if re.fullmatch(regex_off, base_name):
         parser = re.findall(regex_off, base_name)[0]
         output_file = f'{output_dir}/dl1_{parser[0]}_off{parser[2]}deg_LST-1_MAGIC_run{parser[1]}.h5'
 
-    # Process the events:
+    elif re.fullmatch(regex, base_name):
+        parser = re.findall(regex, base_name)[0]
+        output_file = f'{output_dir}/dl1_{parser[0]}_LST-1_MAGIC_run{parser[1]}.h5'
+
+    # Start processing events:
     with HDF5TableWriter(output_file, 'events', mode='w') as writer:
 
         for tel_name, tel_id in mc_tel_ids.items():
@@ -198,17 +204,33 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 focal_length=focal_length,
             )
 
-            # Configure the MAGIC cleaning:
             if tel_name in ['MAGIC-I', 'MAGIC-II']:
                 magic_clean = MAGICClean(camera_geom, config_magic['magic_clean'])
 
+            n_events_processed = 0
             n_events_skipped = 0
-            event_source_per_tel = EventSource(input_file, allowed_tels=[tel_id])
 
-            for event in event_source_per_tel:
+            event_source_allowed_tels = EventSource(
+                input_file, allowed_tels=list(mc_tel_ids.values())
+            )
 
-                if event.count % 100 == 0:
-                    logger.info(f'{event.count} events')
+            for event in event_source_allowed_tels:
+
+                tels_with_trigger = event.trigger.tels_with_trigger
+
+                if tel_id not in tels_with_trigger:
+                    continue
+
+                n_events_processed += 1
+
+                if n_events_processed % 100 == 0:
+                    logger.info(f'{n_events_processed} events')
+
+                # Check the MAGIC stereo trigger:
+                trigger_m1 = tel_id_m1 in tels_with_trigger
+                trigger_m2 = tel_id_m2 in tels_with_trigger
+
+                magic_stereo = (trigger_m1 and trigger_m2)
 
                 if tel_name == 'LST-1':
 
@@ -225,8 +247,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     if increase_psf:
                         # Smear the image:
                         image = random_psf_smearer(
-                            image,
-                            config_lst['increase_psf']['smeared_light_fraction'],
+                            image, config_lst['increase_psf']['smeared_light_fraction'],
                             camera_geom.neighbor_matrix_sparse.indices,
                             camera_geom.neighbor_matrix_sparse.indptr,
                         )
@@ -271,7 +292,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 n_islands, _ = number_of_islands(camera_geom, signal_pixels)
 
                 if n_pixels == 0:
-                    logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
                                    'Could not survive the image cleaning. Skipping.')
                     n_events_skipped += 1
                     continue
@@ -280,7 +301,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 try:
                     hillas_params = hillas_parameters(camera_geom, image_cleaned)
                 except:
-                    logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
                                    'Hillas parameters computation failed. Skipping.')
                     n_events_skipped += 1
                     continue
@@ -291,7 +312,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                         camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels,
                     )
                 except:
-                    logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
                                    'Timing parameters computation failed. Skipping.')
                     n_events_skipped += 1
                     continue
@@ -300,7 +321,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 try:
                     leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
                 except:
-                    logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
                                    'Leakage parameters computation failed. Skipping.')
                     n_events_skipped += 1
                     continue
@@ -349,6 +370,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     mc_impact=mc_impact,
                     n_pixels=n_pixels,
                     n_islands=n_islands,
+                    magic_stereo=magic_stereo,
                 )
 
                 # Reset the telescope IDs:
@@ -362,15 +384,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     event_info.tel_id = 3
 
                 # Save the parameters to the output file:
-                writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
-
-            n_events_processed = event.count + 1
+                writer.write('parameters', (event_info, hillas_params, timing_params, leakage_params))
 
             logger.info(f'\nIn total {n_events_processed} events are processed.')
             logger.info(f'({n_events_skipped} events are skipped)')
 
     # Reset the telescope IDs of the telescope positions.
-    # In addition, we convert the coordinate to the one relative to the center of the LST-1 + MAGIC array:
+    # In addition, convert the coordinate to the one relative to the center of the LST-1 + MAGIC array:
     positions = np.array([subarray.positions[tel_id].value for tel_id in mc_tel_ids.values()])
     positions_cog = positions - positions.mean(axis=0)
 
@@ -382,9 +402,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     # Reset the telescope IDs of the telescope descriptions:
     tel_descriptions = {
-        1: subarray.tel[mc_tel_ids['LST-1']],
-        2: subarray.tel[mc_tel_ids['MAGIC-I']],
-        3: subarray.tel[mc_tel_ids['MAGIC-II']],
+        1: subarray.tel[tel_id_lst1],   # LST-1
+        2: subarray.tel[tel_id_m1],     # MAGIC-I
+        3: subarray.tel[tel_id_m2],     # MAGIC-II
     }
 
     # Save the subarray description:
@@ -425,6 +445,7 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
+    # Process the input data:
     mc_dl0_to_dl1(args.input_file, args.output_dir, config)
 
     logger.info('\nDone.')
