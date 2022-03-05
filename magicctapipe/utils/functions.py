@@ -379,8 +379,8 @@ def get_dl2_mean(input_data):
         radec_mean = pd.DataFrame(
             data={'reco_ra': reco_ra_mean.to(u.deg).value,
                   'reco_dec': reco_dec_mean.to(u.deg).value,
-                  'ra_tel': ra_tel_mean.to(u.rad).value,
-                  'dec_tel': dec_tel_mean.to(u.rad).value},
+                  'ra_tel': ra_tel_mean.to(u.deg).value,
+                  'dec_tel': dec_tel_mean.to(u.deg).value},
             index=groupby_mean.index,
         )
 
