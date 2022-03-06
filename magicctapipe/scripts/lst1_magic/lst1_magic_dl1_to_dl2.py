@@ -26,9 +26,9 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    set_combo_types,
-    transform_to_radec,
-    save_data_to_hdf,
+    check_tel_combination,
+    transform_altaz_to_radec,
+    save_pandas_to_table,
 )
 from magicctapipe.reco import (
     EnergyRegressor,
@@ -49,7 +49,7 @@ __all__ = [
 
 def apply_rfs(data, estimator):
     """
-    Applies trained RFs to an input DL1-stereo data.
+    Apply trained RFs to input DL1-stereo data.
 
     Parameters
     ----------
@@ -66,8 +66,8 @@ def apply_rfs(data, estimator):
 
     tel_ids = list(estimator.telescope_rfs.keys())
 
-    df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
-    df.dropna(subset=estimator.feature_names, inplace=True)
+    df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})').copy()
+    df.dropna(subset=estimator.features, inplace=True)
 
     df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
     df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
@@ -86,7 +86,7 @@ def apply_rfs(data, estimator):
 
 def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     """
-    Processes DL1-stereo data to DL2.
+    Process DL1-stereo data to DL2.
 
     Parameters
     ----------
@@ -101,13 +101,13 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    input_data = pd.read_hdf(input_file, key='events/params')
+    input_data = pd.read_hdf(input_file, key='events/parameters')
     input_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     input_data.sort_index(inplace=True)
 
-    input_data = set_combo_types(input_data)
+    check_tel_combination(input_data)
 
-    is_simulation = ('mc_energy' in input_data.columns)
+    is_simulation = ('true_energy' in input_data.columns)
 
     # Reconstruct energy:
     input_rfs_energy = glob.glob(f'{input_dir_rfs}/*energy*.joblib')
@@ -159,56 +159,45 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
 
             if 'timestamp' in input_data.columns:
                 timestamps = Time(input_data['timestamp'].to_numpy(), format='unix', scale='utc')
+
             else:
                 time_sec = input_data['time_sec'].to_numpy()
                 time_nanosec = input_data['time_nanosec'].to_numpy() * nsec2sec
+
                 timestamps = Time(time_sec + time_nanosec, format='unix', scale='utc')
+                input_data['timestamp'] = timestamps.value
 
-            ra_tel, dec_tel = transform_to_radec(
-                alt=u.Quantity(input_data['alt_tel'].values, u.rad),
-                az=u.Quantity(input_data['az_tel'].values, u.rad),
+                input_data.drop(columns=['time_sec', 'time_nanosec'], inplace=True)
+
+            pointing_ra, pointing_dec = transform_altaz_to_radec(
+                alt=u.Quantity(input_data['pointing_alt'].values, u.rad),
+                az=u.Quantity(input_data['pointing_az'].values, u.rad),
                 timestamp=timestamps,
             )
 
-            ra_tel_mean, dec_tel_mean = transform_to_radec(
-                alt=u.Quantity(input_data['alt_tel_mean'].values, u.rad),
-                az=u.Quantity(input_data['az_tel_mean'].values, u.rad),
-                timestamp=timestamps,
-            )
-
-            reco_ra, reco_dec = transform_to_radec(
+            reco_ra, reco_dec = transform_altaz_to_radec(
                 alt=u.Quantity(input_data['reco_alt'].values, u.deg),
                 az=u.Quantity(input_data['reco_az'].values, u.deg),
                 timestamp=timestamps,
             )
 
-            reco_ra_mean, reco_dec_mean = transform_to_radec(
-                alt=u.Quantity(input_data['reco_alt_mean'].values, u.deg),
-                az=u.Quantity(input_data['reco_az_mean'].values, u.deg),
-                timestamp=timestamps,
-            )
-
-            input_data['ra_tel'] = ra_tel.to(u.deg).value
-            input_data['dec_tel'] = dec_tel.to(u.deg).value
-            input_data['ra_tel_mean'] = ra_tel_mean.to(u.deg).value
-            input_data['dec_tel_mean'] = dec_tel_mean.to(u.deg).value
+            input_data['pointing_ra'] = pointing_ra.to(u.deg).value
+            input_data['pointing_dec'] = pointing_dec.to(u.deg).value
             input_data['reco_ra'] = reco_ra.to(u.deg).value
             input_data['reco_dec'] = reco_dec.to(u.deg).value
-            input_data['reco_ra_mean'] = reco_ra_mean.to(u.deg).value
-            input_data['reco_dec_mean'] = reco_dec_mean.to(u.deg).value
 
         del direction_regressor
 
-    # Reconstruct the event types:
+    # Reconstruct the gammaness:
     input_rfs_classifier = glob.glob(f'{input_dir_rfs}/*classifier*.joblib')
     input_rfs_classifier.sort()
 
     if len(input_rfs_classifier) > 0:
 
-        logger.info('\nReconstructing the event types...')
+        logger.info('\nReconstructing the gammaness...')
         event_classifier = EventClassifier()
 
-        df_reco_types = pd.DataFrame()
+        df_reco_class = pd.DataFrame()
 
         for input_rfs in input_rfs_classifier:
 
@@ -216,13 +205,13 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
             event_classifier.load(input_rfs)
 
             reco_params = apply_rfs(input_data, event_classifier)
-            df_reco_types = df_reco_types.append(reco_params)
+            df_reco_class = df_reco_class.append(reco_params)
 
-        input_data = input_data.join(df_reco_types)
+        input_data = input_data.join(df_reco_class)
 
         del event_classifier
 
-    # Save in the output file:
+    # Save in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     base_name = Path(input_file).resolve().name
@@ -232,14 +221,14 @@ def dl1_to_dl2(input_file, input_dir_rfs, output_dir):
     output_file = f'{output_dir}/dl2_{parser}.h5'
 
     input_data.reset_index(inplace=True)
-    save_data_to_hdf(input_data, output_file, '/events', 'params')
+    save_pandas_to_table(input_data, output_file, '/events', 'parameters')
 
     subarray = SubarrayDescription.from_hdf(input_file)
     subarray.to_hdf(output_file)
 
     if is_simulation:
         sim_config = pd.read_hdf(input_file, 'simulation/config')
-        save_data_to_hdf(sim_config, output_file, '/simulation', 'config')
+        save_pandas_to_table(sim_config, output_file, '/simulation', 'config')
 
     logger.info('\nOutput file:')
     logger.info(output_file)
@@ -268,6 +257,7 @@ def main():
 
     args = parser.parse_args()
 
+    # Process the input data:
     dl1_to_dl2(args.input_file, args.input_dir_rfs, args.output_dir)
 
     logger.info('\nDone.')

@@ -4,7 +4,7 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script trains energy, direction regressors and event classifiers with DL1-stereo data samples.
+This script trains energy, direction regressors and event classifiers with DL1-stereo data.
 So far, they are trained per telescope combination and per telescope type.
 When training the classifiers, the number of gamma MC and background samples is automatically adjusted to the same number.
 
@@ -54,35 +54,33 @@ __all__ = [
 ]
 
 
-def load_data(input_file, feature_names, event_class=None):
+def load_data(input_file, features, true_event_class=None):
     """
-    Loads an input DL1-stereo data file and separates
+    Load an input DL1-stereo data file and separates
     the data telescope combination wise.
 
     Parameters
     ----------
     input_file: str
         Path to an input DL1-stereo data file
-    feature_names: list
+    features: list
         Parameters used for training RFs
-    event_class: int
+    true_event_class: int
         True event class of an input samples
 
     Returns
     -------
     data_return: dict
         Pandas data frames separated by
-        the telescope combinations
+        the telescope combination
     """
 
-    data = pd.read_hdf(input_file, key='events/params')
+    data = pd.read_hdf(input_file, key='events/parameters')
     data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-
-    data.dropna(subset=feature_names, inplace=True)
     data.sort_index(inplace=True)
 
-    if event_class is not None:
-        data['event_class'] = event_class
+    if true_event_class is not None:
+        data['true_event_class'] = true_event_class
 
     # So far, the event weight is set to 1, meaning no weights:
     data['event_weight'] = 1
@@ -91,7 +89,9 @@ def load_data(input_file, feature_names, event_class=None):
 
     for tel_combo, tel_ids in tel_combinations.items():
 
-        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
+        df = data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})').copy()
+        df.dropna(subset=features, inplace=True)
+
         df['multiplicity'] = df.groupby(['obs_id', 'event_id']).size()
         df.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
@@ -104,9 +104,9 @@ def load_data(input_file, feature_names, event_class=None):
     return data_return
 
 
-def check_importances(estimator):
+def check_importance(estimator):
     """
-    Checks the parameter importances of trained RFs:
+    Check the parameter importance of trained RFs:
 
     Parameters
     ----------
@@ -120,24 +120,24 @@ def check_importances(estimator):
 
         logger.info(f'\nTelescope {tel_id}')
 
-        # Sort the parameters by the importances:
+        # Sort the parameters by the importance:
         importances = estimator.telescope_rfs[tel_id].feature_importances_
         importances_sort = np.sort(importances)[::-1]
 
         indices = np.argsort(importances)[::-1]
-        params_sort = np.array(estimator.feature_names)[indices]
+        params_sort = np.array(estimator.features)[indices]
 
         for param, importance in zip(params_sort, importances_sort):
             logger.info(f'{param}: {importance}')
 
 
-def get_events_at_random(data, n_events):
+def get_events_at_random(input_data, n_events):
     """
     Extracts a given number of events at random.
 
     Parameters
     ----------
-    data: pandas.core.frame.DataFrame
+    input_data: pandas.core.frame.DataFrame
         Pandas data frame containing training samples
     n_events:
         The number of events to be extracted at random
@@ -148,14 +148,14 @@ def get_events_at_random(data, n_events):
         Pandas data frame of the events randomly extracted
     """
 
-    group = data.groupby(['obs_id', 'event_id']).size()
+    group = input_data.groupby(['obs_id', 'event_id']).size()
     indices = random.sample(range(len(group)), n_events)
 
     data_return = pd.DataFrame()
-    telescope_ids = np.unique(data.index.get_level_values('tel_id'))
+    telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
     for tel_id in telescope_ids:
-        df = data.query(f'tel_id == {tel_id}')
+        df = input_data.query(f'tel_id == {tel_id}')
         df = df.iloc[indices]
         data_return = data_return.append(df)
 
@@ -166,14 +166,14 @@ def get_events_at_random(data, n_events):
 
 def train_rf_regressor(input_file, output_dir, config, rf_type):
     """
-    Trains RF regressors with input gamma MC samples.
+    Train RF regressors with input gamma MC samples.
 
     Parameters
     ----------
     input_file: str
         Path to an input gamma MC DL1-stereo data file
     output_dir: str
-        Path to a directory where to save output trained regressors
+        Path to a directory where to save output regressors
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     rf_type: str
@@ -209,7 +209,7 @@ def train_rf_regressor(input_file, output_dir, config, rf_type):
         regressor.fit(data_train[tel_combo])
 
         logger.info('\nParameter importances:')
-        check_importances(regressor)
+        check_importance(regressor)
 
         output_file = f'{output_dir}/{rf_type}_regressors_{tel_combo}.joblib'
         regressor.save(output_file)
@@ -220,7 +220,7 @@ def train_rf_regressor(input_file, output_dir, config, rf_type):
 
 def train_rf_classifier(input_file_gamma, input_file_bkg, output_dir, config):
     """
-    Trains RF classifiers with input gamma MC and background samples.
+    Train RF classifiers with input gamma MC and background samples.
 
     Parameters
     ----------
@@ -229,7 +229,7 @@ def train_rf_classifier(input_file_gamma, input_file_bkg, output_dir, config):
     input_file_bkg: str
         Path to an input background DL1-stereo data file
     output_dir: str
-        Path to a directory where to save output trained classifiers
+        Path to a directory where to save output classifiers
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     """
@@ -240,12 +240,16 @@ def train_rf_classifier(input_file_gamma, input_file_bkg, output_dir, config):
     logger.info('\nLoading the input gamma MC data file:')
     logger.info(input_file_gamma)
 
-    data_gamma = load_data(input_file_gamma, config_rf['features'], event_class=event_class_gamma)
+    data_gamma = load_data(
+        input_file_gamma, config_rf['features'], true_event_class=event_class_gamma,
+    )
 
     logger.info('\nLoading the input background data file:')
     logger.info(input_file_bkg)
 
-    data_bkg = load_data(input_file_bkg, config_rf['features'], event_class=event_class_bkg)
+    data_bkg = load_data(
+        input_file_bkg, config_rf['features'], true_event_class=event_class_bkg,
+    )
 
     # Configure the event classifiers:
     logger.info('\nConfiguration for training the event classifiers:')
@@ -280,7 +284,7 @@ def train_rf_classifier(input_file_gamma, input_file_bkg, output_dir, config):
         classifier.fit(data_train)
 
         logger.info('\nParameter importances:')
-        check_importances(classifier)
+        check_importance(classifier)
 
         output_file = f'{output_dir}/event_classifiers_{tel_combo}.joblib'
         classifier.save(output_file)
@@ -335,6 +339,7 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
+    # Train the RFs:
     if args.train_energy:
         train_rf_regressor(args.input_file_gamma, args.output_dir, config, 'energy')
 
