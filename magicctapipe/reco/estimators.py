@@ -35,26 +35,26 @@ class EnergyRegressor:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, feature_names=[], rf_settings={}):
+    def __init__(self, features=[], rf_settings={}):
         """
         Constructor of the class.
-        Sets settings for training the RFs.
+        Set settings for training the RFs.
 
         Parameters
         ----------
-        feature_names: list
+        features: list
             Parameters used for training the RFs
         rf_settings: dict
             Settings for the RF regressors
         """
 
-        self.feature_names = feature_names
+        self.features = features
         self.rf_settings = rf_settings
         self.telescope_rfs = {}
 
     def fit(self, input_data):
         """
-        Trains the RFs per telescope.
+        Train the RFs per telescope.
 
         Parameters
         ----------
@@ -64,7 +64,7 @@ class EnergyRegressor:
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'mc_energy']
+        param_names = self.features + ['event_weight', 'true_energy']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
         # Train the RFs per telescope:
@@ -72,8 +72,8 @@ class EnergyRegressor:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            x_train = df_tel[self.feature_names].values
-            y_train = np.log10(df_tel['mc_energy'].values)
+            x_train = df_tel[self.features].values
+            y_train = np.log10(df_tel['true_energy'].values)
             weights = df_tel['event_weight'].values
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
@@ -85,7 +85,7 @@ class EnergyRegressor:
 
     def predict(self, input_data):
         """
-        Reconstructs the energy of the input events.
+        Reconstruct the energy of input events.
 
         Parameters
         ----------
@@ -99,7 +99,7 @@ class EnergyRegressor:
         # Apply the RFs per telescope:
         for tel_id in telescope_ids:
 
-            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
+            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.features]
 
             reco_energy = 10 ** self.telescope_rfs[tel_id].predict(df_tel.values)
 
@@ -122,7 +122,7 @@ class EnergyRegressor:
 
     def save(self, file_name):
         """
-        Saves the settings and the trained RFs to a joblib file.
+        Save the settings and the trained RFs to a joblib file.
 
         Parameters
         ----------
@@ -132,7 +132,7 @@ class EnergyRegressor:
 
         output_data = {}
 
-        output_data['feature_names'] = self.feature_names
+        output_data['features'] = self.features
         output_data['rf_settings'] = self.rf_settings
         output_data['telescope_rfs'] = self.telescope_rfs
 
@@ -140,7 +140,7 @@ class EnergyRegressor:
 
     def load(self, file_name):
         """
-        Loads settings and trained RFs from a joblib file.
+        Load settings and trained RFs from a joblib file.
 
         Parameters
         ----------
@@ -150,7 +150,7 @@ class EnergyRegressor:
 
         input_data = joblib.load(file_name)
 
-        self.feature_names = input_data['feature_names']
+        self.features = input_data['features']
         self.rf_settings = input_data['rf_settings']
         self.telescope_rfs = input_data['telescope_rfs']
 
@@ -161,14 +161,14 @@ class DirectionRegressor:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, feature_names=[], rf_settings={}, tel_descriptions={}):
+    def __init__(self, features=[], rf_settings={}, tel_descriptions={}):
         """
         Constructor of the class.
-        Sets settings for training the RFs.
+        Set settings for training the RFs.
 
         Parameters
         ----------
-        feature_names: list
+        features: list
             Parameters used for training the RFs
         rf_settings: dict
             Settings for the RF regressors
@@ -176,14 +176,14 @@ class DirectionRegressor:
             Telescope descriptions
         """
 
-        self.feature_names = feature_names
+        self.features = features
         self.rf_settings = rf_settings
         self.tel_descriptions = tel_descriptions
         self.telescope_rfs = {}
 
     def fit(self, input_data):
         """
-        Trains the RFs per telescope.
+        Train the RFs per telescope.
 
         Parameters
         ----------
@@ -193,7 +193,7 @@ class DirectionRegressor:
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'mc_disp']
+        param_names = self.features + ['event_weight', 'true_disp']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
         # Train the RFs per telescope:
@@ -201,8 +201,8 @@ class DirectionRegressor:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            x_train = df_tel[self.feature_names].values
-            y_train = df_tel['mc_disp'].values
+            x_train = df_tel[self.features].values
+            y_train = df_tel['true_disp'].values
             weights = df_tel['event_weight'].values
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
@@ -214,7 +214,7 @@ class DirectionRegressor:
 
     def predict(self, input_data):
         """
-        Reconstructs the arrival directions of the input events.
+        Reconstruct the arrival directions of input events.
 
         Parameters
         ----------
@@ -223,7 +223,7 @@ class DirectionRegressor:
         """
 
         reco_params = pd.DataFrame()
-        param_names = self.feature_names + ['alt_tel', 'az_tel', 'x', 'y', 'psi']
+        param_names = self.features + ['pointing_alt', 'pointing_az', 'x', 'y', 'psi']
 
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
@@ -232,18 +232,18 @@ class DirectionRegressor:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            reco_disp = self.telescope_rfs[tel_id].predict(df_tel[self.feature_names].values)
+            reco_disp = self.telescope_rfs[tel_id].predict(df_tel[self.features].values)
 
             responces_per_estimator = []
             for estimator in self.telescope_rfs[tel_id].estimators_:
-                responces_per_estimator.append(estimator.predict(df_tel[self.feature_names].values))
+                responces_per_estimator.append(estimator.predict(df_tel[self.features].values))
 
             reco_disp_err = np.std(responces_per_estimator, axis=0)
 
             # Reconstruct the Alt/Az directions per flip:
             tel_pointing = AltAz(
-                alt=u.Quantity(df_tel['alt_tel'].values, u.rad),
-                az=u.Quantity(df_tel['az_tel'].values, u.rad),
+                alt=u.Quantity(df_tel['pointing_alt'].values, u.rad),
+                az=u.Quantity(df_tel['pointing_az'].values, u.rad),
             )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
@@ -263,7 +263,7 @@ class DirectionRegressor:
 
             for flip in [0, 1]:
 
-                psi_per_flip = u.Quantity(df_tel['psi'].values, u.deg) + u.Quantity(180*flip, u.deg)
+                psi_per_flip = u.Quantity(df_tel['psi'].values, u.deg) + u.Quantity(180 * flip, u.deg)
                 event_coord_per_flip = event_coord.directional_offset_by(psi_per_flip, u.Quantity(reco_disp, u.deg))
 
                 df_per_flip = pd.DataFrame(
@@ -345,7 +345,7 @@ class DirectionRegressor:
 
     def save(self, file_name):
         """
-        Saves the settings and the trained RFs to a joblib file.
+        Save the settings and the trained RFs to a joblib file.
 
         Parameters
         ----------
@@ -355,7 +355,7 @@ class DirectionRegressor:
 
         output_data = {}
 
-        output_data['feature_names'] = self.feature_names
+        output_data['features'] = self.features
         output_data['rf_settings'] = self.rf_settings
         output_data['tel_descriptions'] = self.tel_descriptions
         output_data['telescope_rfs'] = self.telescope_rfs
@@ -364,7 +364,7 @@ class DirectionRegressor:
 
     def load(self, file_name):
         """
-        Loads settings and trained RFs from a joblib file.
+        Load settings and trained RFs from a joblib file.
 
         Parameters
         ----------
@@ -374,7 +374,7 @@ class DirectionRegressor:
 
         input_data = joblib.load(file_name)
 
-        self.feature_names = input_data['feature_names']
+        self.features = input_data['features']
         self.rf_settings = input_data['rf_settings']
         self.tel_descriptions = input_data['tel_descriptions']
         self.telescope_rfs = input_data['telescope_rfs']
@@ -386,25 +386,26 @@ class EventClassifier:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, feature_names=[], rf_settings={}):
+    def __init__(self, features=[], rf_settings={}):
         """
         Constructor of the class.
+        Set settings for training the RFs.
 
         Parameters
         ----------
-        feature_names: list
+        features: list
             Parameters used for training the RFs
         rf_settings: dict
             Settings for the RF regressors
         """
 
-        self.feature_names = feature_names
+        self.features = features
         self.rf_settings = rf_settings
         self.telescope_rfs = {}
 
     def fit(self, input_data):
         """
-        Trains the RFs per telescope.
+        Train the RFs per telescope.
 
         Parameters
         ----------
@@ -414,7 +415,7 @@ class EventClassifier:
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'event_class']
+        param_names = self.features + ['event_weight', 'true_event_class']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
         # Train the RFs per telescope:
@@ -422,8 +423,8 @@ class EventClassifier:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            x_train = df_tel[self.feature_names].values
-            y_train = df_tel['event_class'].values
+            x_train = df_tel[self.features].values
+            y_train = df_tel['true_event_class'].values
             weights = df_tel['event_weight'].values
 
             classifier = sklearn.ensemble.RandomForestClassifier(**self.rf_settings)
@@ -435,7 +436,7 @@ class EventClassifier:
 
     def predict(self, input_data):
         """
-        Reconstructs the gammaness of the input events.
+        Reconstruct the gammaness of input events.
 
         Parameters
         ----------
@@ -449,7 +450,7 @@ class EventClassifier:
 
         for tel_id in telescope_ids:
 
-            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
+            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.features]
             responses = self.telescope_rfs[tel_id].predict_proba(df_tel.values)
 
             df_reco_class = pd.DataFrame({'gammaness': responses[:, 0]}, index=df_tel.index)
@@ -461,7 +462,7 @@ class EventClassifier:
 
     def save(self, file_name):
         """
-        Saves the settings and the trained RFs to a joblib file.
+        Save the settings and the trained RFs to a joblib file.
 
         Parameters
         ----------
@@ -471,7 +472,7 @@ class EventClassifier:
 
         output_data = {}
 
-        output_data['feature_names'] = self.feature_names
+        output_data['features'] = self.features
         output_data['rf_settings'] = self.rf_settings
         output_data['telescope_rfs'] = self.telescope_rfs
 
@@ -479,7 +480,7 @@ class EventClassifier:
 
     def load(self, file_name):
         """
-        Loads settings and trained RFs from a joblib file.
+        Load settings and trained RFs from a joblib file.
 
         Parameters
         ----------
@@ -489,7 +490,7 @@ class EventClassifier:
 
         input_data = joblib.load(file_name)
 
-        self.feature_names = input_data['feature_names']
+        self.features = input_data['features']
         self.rf_settings = input_data['rf_settings']
         self.telescope_rfs = input_data['telescope_rfs']
 

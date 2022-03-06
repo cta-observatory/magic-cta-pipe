@@ -320,7 +320,7 @@ def get_dl2_mean(input_data):
         Pandas data frame containing the mean of the DL2 parameters
     """
 
-    is_simulation = ('mc_energy' in input_data.columns)
+    is_simulation = ('true_energy' in input_data.columns)
     groupby_mean = input_data.groupby(['obs_id', 'event_id']).mean()
 
     # Compute the mean of the gammaness:
@@ -343,8 +343,8 @@ def get_dl2_mean(input_data):
     )
 
     # Compute the mean of the telescope pointing directions:
-    az_tel_mean, alt_tel_mean = calc_mean_direction(
-        lon=input_data['az_tel'], lat=input_data['alt_tel'],
+    pointing_az_mean, pointing_alt_mean = calc_mean_direction(
+        lon=input_data['pointing_az'], lat=input_data['pointing_alt'],
     )
 
     # Create a base data frame:
@@ -354,14 +354,14 @@ def get_dl2_mean(input_data):
               'reco_energy': reco_energy_mean.to_numpy(),
               'reco_alt': reco_alt_mean.to(u.deg).value,
               'reco_az': reco_az_mean.to(u.deg).value,
-              'alt_tel': alt_tel_mean.to(u.rad).value,
-              'az_tel': az_tel_mean.to(u.rad).value},
+              'pointing_alt': pointing_alt_mean.to(u.rad).value,
+              'pointing_az': pointing_az_mean.to(u.rad).value},
         index=groupby_mean.index,
     )
 
     if is_simulation:
         # Add the MC parameters:
-        mc_params = groupby_mean[['mc_energy', 'mc_alt', 'mc_az']]
+        mc_params = groupby_mean[['true_energy', 'true_alt', 'true_az']]
         dl2_mean = dl2_mean.join(mc_params)
 
     else:
@@ -372,17 +372,17 @@ def get_dl2_mean(input_data):
             weights=input_data['reco_disp_err'],
         )
 
-        ra_tel_mean, dec_tel_mean = calc_mean_direction(
-            lon=np.deg2rad(input_data['ra_tel']),
-            lat=np.deg2rad(input_data['dec_tel']),
+        pointing_ra_mean, pointing_dec_mean = calc_mean_direction(
+            lon=np.deg2rad(input_data['pointing_ra']),
+            lat=np.deg2rad(input_data['pointing_dec']),
         )
 
         # Add the additional parameters:
         df = pd.DataFrame(
             data={'reco_ra': reco_ra_mean.to(u.deg).value,
                   'reco_dec': reco_dec_mean.to(u.deg).value,
-                  'ra_tel': ra_tel_mean.to(u.deg).value,
-                  'dec_tel': dec_tel_mean.to(u.deg).value,
+                  'pointing_ra': pointing_ra_mean.to(u.deg).value,
+                  'pointing_dec': pointing_dec_mean.to(u.deg).value,
                   'timestamp': groupby_mean['timestamp'].to_numpy()},
             index=groupby_mean.index,
         )
