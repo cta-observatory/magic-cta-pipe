@@ -6,8 +6,8 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
 the DL1 parameters (i.e., Hillas, timing and leakage parameters). The script saves events in an output file
-only when it reconstructs all the DL1 parameters. The telescope IDs are reset to the following values when saving
-to the file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
+only when all the DL1 parameters are reconstructed. The telescope IDs are reset to the following values when saving
+to the output file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 The MAGICEventSource module searches for all the sub-run files belonging to the same observation ID and stored in
@@ -85,7 +85,7 @@ class EventInfoContainer(Container):
 
 def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
     """
-    Processes MAGIC calibrated data to DL1.
+    Process MAGIC calibrated data to DL1.
 
     Parameters
     ----------
@@ -133,7 +133,7 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
         subrun_id = event_source.metadata['subrun_number'][0]
         output_file = f'{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5'
 
-    # Process the events:
+    # Start processing events:
     logger.info('\nProcessing the events:')
     n_events_skipped = 0
 
@@ -225,7 +225,7 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
                 event_info.tel_id = 3   # MAGIC-II
 
             # Save the parameters to the output file:
-            writer.write('params', (event_info, hillas_params, timing_params, leakage_params))
+            writer.write('parameters', (event_info, hillas_params, timing_params, leakage_params))
 
         n_events_processed = event.count + 1
 
@@ -279,6 +279,7 @@ def main():
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
+    # Process the input data:
     magic_cal_to_dl1(args.input_file, args.output_dir, config, args.process_run)
 
     logger.info('\nDone.')

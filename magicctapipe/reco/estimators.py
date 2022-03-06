@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 import joblib
 import logging
 import itertools
@@ -5,8 +8,15 @@ import numpy as np
 import pandas as pd
 import sklearn.ensemble
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord, angular_separation
-from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from astropy.coordinates import (
+    AltAz,
+    SkyCoord,
+    angular_separation,
+)
+from ctapipe.coordinates import (
+    CameraFrame,
+    TelescopeFrame,
+)
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -18,27 +28,51 @@ __all__ = [
     'EventClassifier',
 ]
 
+
 class EnergyRegressor:
+    """
+    RF regressors to reconstruct the energy of primary particles.
+    The RFs are trained per telescope.
+    """
 
-    def __init__(self, feature_names=[], rf_settings={}):
+    def __init__(self, features=[], rf_settings={}):
+        """
+        Constructor of the class.
+        Set settings for training the RFs.
 
-        self.feature_names = feature_names
+        Parameters
+        ----------
+        features: list
+            Parameters used for training the RFs
+        rf_settings: dict
+            Settings for the RF regressors
+        """
+
+        self.features = features
         self.rf_settings = rf_settings
         self.telescope_rfs = {}
 
     def fit(self, input_data):
+        """
+        Train the RFs per telescope.
+
+        Parameters
+        ----------
+        input_data: pandas.core.frame.DataFrame
+            Pandas data frame containing training samples
+        """
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'true_energy']
+        param_names = self.features + ['event_weight', 'true_energy']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
-        # --- train the RFs per telescope ---
+        # Train the RFs per telescope:
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            x_train = df_tel[self.feature_names].values
+            x_train = df_tel[self.features].values
             y_train = np.log10(df_tel['true_energy'].values)
             weights = df_tel['event_weight'].values
 
@@ -50,20 +84,26 @@ class EnergyRegressor:
             self.telescope_rfs[tel_id] = regressor
 
     def predict(self, input_data):
+        """
+        Reconstruct the energy of input events.
+
+        Parameters
+        ----------
+        input_data: pandas.core.frame.DataFrame
+            Pandas data frame containing shower events
+        """
 
         reco_params = pd.DataFrame()
-
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
-        # --- apply the RFs per telescope ---
+        # Apply the RFs per telescope:
         for tel_id in telescope_ids:
 
-            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
+            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.features]
 
             reco_energy = 10 ** self.telescope_rfs[tel_id].predict(df_tel.values)
 
             responces_per_estimator = []
-
             for estimator in self.telescope_rfs[tel_id].estimators_:
                 responces_per_estimator.append(10 ** estimator.predict(df_tel.values))
 
@@ -71,67 +111,97 @@ class EnergyRegressor:
 
             df_reco_energy = pd.DataFrame(
                 data={'reco_energy': reco_energy, 'reco_energy_err': reco_energy_err},
-                index=df_tel.index
+                index=df_tel.index,
             )
 
             reco_params = reco_params.append(df_reco_energy)
 
         reco_params.sort_index(inplace=True)
 
-        # --- compute the mean weighted by the error ---
-        weights = 1 / reco_params['reco_energy_err']
-        weighted_energy = np.log10(reco_params['reco_energy']) * weights
-
-        weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
-        weighted_energy_sum = weighted_energy.groupby(['obs_id', 'event_id']).sum()
-
-        reco_energy_mean = weighted_energy_sum / weights_sum
-
-        reco_params['reco_energy_mean'] = 10 ** reco_energy_mean
-
         return reco_params
 
     def save(self, file_name):
+        """
+        Save the settings and the trained RFs to a joblib file.
+
+        Parameters
+        ----------
+        file_name: str
+            Path to an output joblib file
+        """
 
         output_data = {}
 
-        output_data['feature_names'] = self.feature_names
+        output_data['features'] = self.features
         output_data['rf_settings'] = self.rf_settings
         output_data['telescope_rfs'] = self.telescope_rfs
 
         joblib.dump(output_data, file_name)
 
     def load(self, file_name):
+        """
+        Load settings and trained RFs from a joblib file.
+
+        Parameters
+        ----------
+        file_name: str
+            Path to an input joblib file
+        """
 
         input_data = joblib.load(file_name)
 
-        self.feature_names = input_data['feature_names']
+        self.features = input_data['features']
         self.rf_settings = input_data['rf_settings']
         self.telescope_rfs = input_data['telescope_rfs']
 
 
 class DirectionRegressor:
+    """
+    RF regressors to reconstruct the arrival directions of primary particles.
+    The RFs are trained per telescope.
+    """
 
-    def __init__(self, feature_names=[], rf_settings={}, tel_descriptions={}):
+    def __init__(self, features=[], rf_settings={}, tel_descriptions={}):
+        """
+        Constructor of the class.
+        Set settings for training the RFs.
 
-        self.feature_names = feature_names
+        Parameters
+        ----------
+        features: list
+            Parameters used for training the RFs
+        rf_settings: dict
+            Settings for the RF regressors
+        tel_descriptions: dict
+            Telescope descriptions
+        """
+
+        self.features = features
         self.rf_settings = rf_settings
         self.tel_descriptions = tel_descriptions
         self.telescope_rfs = {}
 
     def fit(self, input_data):
+        """
+        Train the RFs per telescope.
+
+        Parameters
+        ----------
+        input_data: pandas.core.frame.DataFrame
+            Pandas data frame containing training samples
+        """
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'true_disp']
+        param_names = self.features + ['event_weight', 'true_disp']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
-        # --- train the RFs per telescope ---
+        # Train the RFs per telescope:
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            x_train = df_tel[self.feature_names].values
+            x_train = df_tel[self.features].values
             y_train = df_tel['true_disp'].values
             weights = df_tel['event_weight'].values
 
@@ -143,30 +213,37 @@ class DirectionRegressor:
             self.telescope_rfs[tel_id] = regressor
 
     def predict(self, input_data):
+        """
+        Reconstruct the arrival directions of input events.
 
-        param_names = self.feature_names + ['pointing_alt', 'pointing_az', 'x', 'y', 'psi']
+        Parameters
+        ----------
+        input_data: pandas.core.frame.DataFrame
+            Pandas data frame containing shower events
+        """
 
         reco_params = pd.DataFrame()
+        param_names = self.features + ['pointing_alt', 'pointing_az', 'x', 'y', 'psi']
 
-        # --- apply the RFs per telescope ---
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
+        # Apply the RFs per telescope:
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            reco_disp = self.telescope_rfs[tel_id].predict(df_tel[self.feature_names].values)
+            reco_disp = self.telescope_rfs[tel_id].predict(df_tel[self.features].values)
 
             responces_per_estimator = []
-
             for estimator in self.telescope_rfs[tel_id].estimators_:
-                responces_per_estimator.append(estimator.predict(df_tel[self.feature_names].values))
+                responces_per_estimator.append(estimator.predict(df_tel[self.features].values))
 
             reco_disp_err = np.std(responces_per_estimator, axis=0)
 
-            # --- reconstruct the Alt/Az directions per flip ---
+            # Reconstruct the Alt/Az directions per flip:
             tel_pointing = AltAz(
-                alt=u.Quantity(df_tel['pointing_alt'].values, u.rad), az=u.Quantity(df_tel['pointing_az'].values, u.rad)
+                alt=u.Quantity(df_tel['pointing_alt'].values, u.rad),
+                az=u.Quantity(df_tel['pointing_az'].values, u.rad),
             )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
@@ -177,14 +254,16 @@ class DirectionRegressor:
             )
 
             event_coord = SkyCoord(
-                u.Quantity(df_tel['x'].values, u.m), u.Quantity(df_tel['y'].values, u.m), frame=camera_frame
+                u.Quantity(df_tel['x'].values, u.m),
+                u.Quantity(df_tel['y'].values, u.m),
+                frame=camera_frame,
             )
 
             event_coord = event_coord.transform_to(telescope_frame)
 
             for flip in [0, 1]:
 
-                psi_per_flip = u.Quantity(df_tel['psi'].values, u.deg) + u.Quantity(180*flip, u.deg)
+                psi_per_flip = u.Quantity(df_tel['psi'].values, u.deg) + u.Quantity(180 * flip, u.deg)
                 event_coord_per_flip = event_coord.directional_offset_by(psi_per_flip, u.Quantity(reco_disp, u.deg))
 
                 df_per_flip = pd.DataFrame(
@@ -201,7 +280,7 @@ class DirectionRegressor:
 
         reco_params.sort_index(inplace=True)
 
-        # --- get the flip combinations of minimum distance ---
+        # Get the flip combinations minimizing the sum of the angular distances:
         flip_combinations = np.array(list(itertools.product([0, 1], repeat=len(telescope_ids))))
         telescope_combinations = list(itertools.combinations(telescope_ids, 2))
 
@@ -227,7 +306,7 @@ class DirectionRegressor:
                     lon1=u.Quantity(container[tel_id_1]['reco_az'].values, u.deg),
                     lat1=u.Quantity(container[tel_id_1]['reco_alt'].values, u.deg),
                     lon2=u.Quantity(container[tel_id_2]['reco_az'].values, u.deg),
-                    lat2=u.Quantity(container[tel_id_2]['reco_alt'].values, u.deg)
+                    lat2=u.Quantity(container[tel_id_2]['reco_alt'].values, u.deg),
                 )
 
                 dists_per_combo += np.array(theta.to(u.deg).value)
@@ -247,7 +326,7 @@ class DirectionRegressor:
         tel_ids = input_data.index.get_level_values('tel_id')
 
         multi_indices = pd.MultiIndex.from_arrays(
-            [obs_ids, event_ids, tel_ids, flips], names=['obs_id', 'event_id', 'tel_id', 'flip']
+            [obs_ids, event_ids, tel_ids, flips], names=['obs_id', 'event_id', 'tel_id', 'flip'],
         )
 
         reco_params = reco_params.loc[multi_indices]
@@ -256,51 +335,27 @@ class DirectionRegressor:
         reco_params.sort_index(inplace=True)
 
         df_dist = pd.DataFrame(
-            data={'dist_sum': distances_min}, index=reco_params.groupby(['obs_id', 'event_id']).size().index
+            data={'dist_sum': distances_min},
+            index=reco_params.groupby(['obs_id', 'event_id']).size().index,
         )
 
         reco_params = reco_params.join(df_dist)
 
-        # --- compute the mean weighted by the error ---
-        x_coords = np.cos(np.deg2rad(reco_params['reco_alt'])) * np.cos(np.deg2rad(reco_params['reco_az']))
-        y_coords = np.cos(np.deg2rad(reco_params['reco_alt'])) * np.sin(np.deg2rad(reco_params['reco_az']))
-        z_coords = np.sin(np.deg2rad(reco_params['reco_alt']))
-
-        weights = 1 / reco_params['reco_disp_err']
-
-        weighted_x_coords = x_coords * weights
-        weighted_y_coords = y_coords * weights
-        weighted_z_coords = z_coords * weights
-
-        weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
-
-        weighted_x_coords_sum = weighted_x_coords.groupby(['obs_id', 'event_id']).sum()
-        weighted_y_coords_sum = weighted_y_coords.groupby(['obs_id', 'event_id']).sum()
-        weighted_z_coords_sum = weighted_z_coords.groupby(['obs_id', 'event_id']).sum()
-
-        x_coords_mean = weighted_x_coords_sum / weights_sum
-        y_coords_mean = weighted_y_coords_sum / weights_sum
-        z_coords_mean = weighted_z_coords_sum / weights_sum
-
-        coord_mean = SkyCoord(
-            x=x_coords_mean.values, y=y_coords_mean.values, z=z_coords_mean.values, representation_type='cartesian'
-        )
-
-        df_mean = pd.DataFrame(
-            data={'reco_alt_mean': coord_mean.spherical.lat.to(u.deg).value,
-                  'reco_az_mean': coord_mean.spherical.lon.to(u.deg).value},
-            index=reco_params.groupby(['obs_id', 'event_id']).sum().index
-        )
-
-        reco_params = reco_params.join(df_mean)
-
         return reco_params
 
     def save(self, file_name):
+        """
+        Save the settings and the trained RFs to a joblib file.
+
+        Parameters
+        ----------
+        file_name: str
+            Path to an output joblib file
+        """
 
         output_data = {}
 
-        output_data['feature_names'] = self.feature_names
+        output_data['features'] = self.features
         output_data['rf_settings'] = self.rf_settings
         output_data['tel_descriptions'] = self.tel_descriptions
         output_data['telescope_rfs'] = self.telescope_rfs
@@ -308,37 +363,68 @@ class DirectionRegressor:
         joblib.dump(output_data, file_name)
 
     def load(self, file_name):
+        """
+        Load settings and trained RFs from a joblib file.
+
+        Parameters
+        ----------
+        file_name: str
+            Path to an input joblib file
+        """
 
         input_data = joblib.load(file_name)
 
-        self.feature_names = input_data['feature_names']
+        self.features = input_data['features']
         self.rf_settings = input_data['rf_settings']
         self.tel_descriptions = input_data['tel_descriptions']
         self.telescope_rfs = input_data['telescope_rfs']
 
 
 class EventClassifier:
+    """
+    RF classifiers to reconstruct the gammaness.
+    The RFs are trained per telescope.
+    """
 
-    def __init__(self, feature_names=[], rf_settings={}):
+    def __init__(self, features=[], rf_settings={}):
+        """
+        Constructor of the class.
+        Set settings for training the RFs.
 
-        self.feature_names = feature_names
+        Parameters
+        ----------
+        features: list
+            Parameters used for training the RFs
+        rf_settings: dict
+            Settings for the RF regressors
+        """
+
+        self.features = features
         self.rf_settings = rf_settings
         self.telescope_rfs = {}
 
     def fit(self, input_data):
+        """
+        Train the RFs per telescope.
+
+        Parameters
+        ----------
+        input_data: pandas.core.frame.DataFrame
+            Pandas data frame containing training samples
+        """
 
         self.telescope_rfs.clear()
 
-        param_names = self.feature_names + ['event_weight', 'event_class']
+        param_names = self.features + ['event_weight', 'true_event_class']
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
-        # --- train the RFs per telescope ---
+        # Train the RFs per telescope:
         for tel_id in telescope_ids:
 
             df_tel = input_data.loc[(slice(None), slice(None), tel_id), param_names]
 
-            x_train = df_tel[self.feature_names].values
-            y_train = df_tel['event_class'].values
+            x_train = df_tel[self.features].values
+            y_train = df_tel['true_event_class'].values
             weights = df_tel['event_weight'].values
 
             classifier = sklearn.ensemble.RandomForestClassifier(**self.rf_settings)
@@ -349,50 +435,62 @@ class EventClassifier:
             self.telescope_rfs[tel_id] = classifier
 
     def predict(self, input_data):
+        """
+        Reconstruct the gammaness of input events.
 
+        Parameters
+        ----------
+        input_data: pandas.core.frame.DataFrame
+            Pandas data frame containing shower events
+        """
         reco_params = pd.DataFrame()
 
-        # --- apply the RFs per telescope ---
+        # Apply the RFs per telescope:
         telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
 
         for tel_id in telescope_ids:
 
-            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
-
+            df_tel = input_data.loc[(slice(None), slice(None), tel_id), self.features]
             responses = self.telescope_rfs[tel_id].predict_proba(df_tel.values)
 
-            df_reco_class = pd.DataFrame(
-                data={'gammaness': responses[:, 0], 'hadronness': responses[:, 1]},
-                index=df_tel.index
-            )
-
+            df_reco_class = pd.DataFrame({'gammaness': responses[:, 0]}, index=df_tel.index)
             reco_params = reco_params.append(df_reco_class)
 
         reco_params.sort_index(inplace=True)
 
-        # --- compute the mean ---
-        reco_params_mean = reco_params.groupby(['obs_id', 'event_id']).mean()
-
-        reco_params['gammaness_mean'] = reco_params_mean['gammaness']
-        reco_params['hadronness_mean'] = reco_params_mean['hadronness']
-
         return reco_params
 
     def save(self, file_name):
+        """
+        Save the settings and the trained RFs to a joblib file.
+
+        Parameters
+        ----------
+        file_name: str
+            Path to an output joblib file
+        """
 
         output_data = {}
 
-        output_data['feature_names'] = self.feature_names
+        output_data['features'] = self.features
         output_data['rf_settings'] = self.rf_settings
         output_data['telescope_rfs'] = self.telescope_rfs
 
         joblib.dump(output_data, file_name)
 
     def load(self, file_name):
+        """
+        Load settings and trained RFs from a joblib file.
+
+        Parameters
+        ----------
+        file_name: str
+            Path to an input joblib file
+        """
 
         input_data = joblib.load(file_name)
 
-        self.feature_names = input_data['feature_names']
+        self.features = input_data['features']
         self.rf_settings = input_data['rf_settings']
         self.telescope_rfs = input_data['telescope_rfs']
 

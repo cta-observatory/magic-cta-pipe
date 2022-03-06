@@ -6,7 +6,7 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script merges HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
 It parses information from file names, so they should follow the convention (*Run*.h5 or *run*.h5).
-If one gives "--run-wise" or "--subrun-wise" arguments, the script merges input files run-wise or subrun-wise respectively.
+If you give "--run-wise" or "--subrun-wise" arguments, it merges input files run-wise or subrun-wise respectively.
 
 Usage:
 $ python merge_hdf_files.py
@@ -36,7 +36,7 @@ __all__ = [
 
 def write_to_table(input_file_mask, output_file):
     """
-    Creates a new table and writes the information of input files.
+    Create a new table and write the input data.
 
     Parameters
     ----------
@@ -56,11 +56,11 @@ def write_to_table(input_file_mask, output_file):
         # Create a new table with the first input file:
         with tables.open_file(input_files[0]) as input_data:
 
-            event_params = input_data.root.events.params
-            merged_file.create_table('/events', 'params', createparents=True, obj=event_params.read())
+            event_params = input_data.root.events.parameters
+            merged_file.create_table('/events', 'parameters', createparents=True, obj=event_params.read())
 
             for attribute in event_params.attrs._f_list():
-                merged_file.root.events.params.attrs[attribute] = event_params.attrs[attribute]
+                merged_file.root.events.parameters.attrs[attribute] = event_params.attrs[attribute]
 
             if 'simulation' in input_data.root:
                 # Write the simulation configuration of the first input file,
@@ -77,8 +77,8 @@ def write_to_table(input_file_mask, output_file):
             logger.info(input_file)
 
             with tables.open_file(input_file) as input_data:
-                event_params = input_data.root.events.params
-                merged_file.root.events.params.append(event_params.read())
+                event_params = input_data.root.events.parameters
+                merged_file.root.events.parameters.append(event_params.read())
 
     # Save the subarray description of the first input file,
     # assuming that it is consistent with the other input files:
@@ -90,7 +90,7 @@ def write_to_table(input_file_mask, output_file):
 
 def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
     """
-    Merges input HDF files produced by
+    Merge input HDF files produced by
     the LST-1 + MAGIC combined analysis pipeline.
 
     Parameters
@@ -223,6 +223,7 @@ def main():
 
     args = parser.parse_args()
 
+    # Merge the input files:
     merge_hdf_files(args.input_dir, args.output_dir, args.run_wise, args.subrun_wise)
 
     logger.info('Done.')
