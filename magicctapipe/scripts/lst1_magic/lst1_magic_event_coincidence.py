@@ -94,8 +94,8 @@ def load_lst_data(input_file, type_lst_time):
     base_name = Path(input_file).resolve().name
     regex = r'(\S+)_LST-1\.\S+\.h5'
 
-    parser = re.findall(regex, base_name)[0]
-    data = pd.read_hdf(input_file, key=f'{parser}/event/telescope/parameters/LST_LSTCam')
+    data_level = re.findall(regex, base_name)[0]
+    data = pd.read_hdf(input_file, key=f'{data_level}/event/telescope/parameters/LST_LSTCam')
 
     # Exclude the non-reconstructed events:
     data.dropna(subset=['intensity', 'time_gradient', 'alt_tel'], inplace=True)
@@ -113,13 +113,6 @@ def load_lst_data(input_file, type_lst_time):
 
     logger.info(f'LST-1: {len(data)} events')
 
-    # Keep only the specified type of timestamp and rename it to "timestamp":
-    params_time = np.array(['dragon_time', 'tib_time', 'ucts_time', 'trigger_time'])
-    params_time_drop = params_time[params_time != type_lst_time]
-
-    data.drop(params_time_drop, axis=1, inplace=True)
-    data.rename(columns={type_lst_time: 'timestamp'}, inplace=True)
-
     # Rename the column names:
     params_rename = {
         'obs_id': 'obs_id_lst',
@@ -131,6 +124,7 @@ def load_lst_data(input_file, type_lst_time):
         'leakage_intensity_width_1': 'intensity_width_1',
         'leakage_intensity_width_2': 'intensity_width_2',
         'time_gradient': 'slope',
+        type_lst_time: 'timestamp',
     }
 
     data.rename(columns=params_rename, inplace=True)
