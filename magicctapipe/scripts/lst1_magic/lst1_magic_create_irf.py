@@ -25,14 +25,9 @@ from astropy.io import fits
 from astropy.table import QTable
 from pyirf.simulations import SimulatedEventsInfo
 from pyirf.irf import (
-    effective_area,
     effective_area_per_energy,
     energy_dispersion,
     psf_table,
-)
-from pyirf.cuts import (
-    calculate_percentile_cut,
-    evaluate_binned_cut,
 )
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
