@@ -114,15 +114,12 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     theta = source_coord.separation(event_coords)
     data_qtable['theta'] = theta.to(u.deg)
 
-    # Apply the gammaness/theta2 cuts:
+    # Apply the gammaness cut:
     gam_cut = config_dl3['gammaness_cut']
-    theta_cut = u.Quantity(config_dl3['theta_cut'], u.deg)
-
     mask_gam = (data_qtable['gammaness'] > gam_cut)
-    mask_theta = (data_qtable['theta'] < theta_cut)
 
-    data_qtable = data_qtable[mask_gam & mask_theta]
-    event_coords = event_coords[mask_gam & mask_theta]
+    data_qtable = data_qtable[mask_gam]
+    event_coords = event_coords[mask_gam]
 
     hdus = fits.HDUList([fits.PrimaryHDU(), ])
 
