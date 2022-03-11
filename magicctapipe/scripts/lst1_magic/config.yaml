@@ -167,3 +167,9 @@ event_classifier:
         'h_max',
         'impact',
     ]
+
+create_irf_dl3:
+    quality_cuts: null
+    gammaness_cut: 0.8
+    theta_cut: 0.2
+    source_name: 'Crab'

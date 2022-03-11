@@ -8,8 +8,8 @@ This script creates the IRFs.
 
 Usage:
 $ python lst1_magic_create_irf.py
---input-file-gamma ./data/dl2_gamma_40deg_90deg_off0.4deg_LST-1_MAGIC_run401_to_1000.h5
---output-dir ./data/irf.fits.gz
+--input-file ./data/dl2_gamma_40deg_90deg_off0.4deg_LST-1_MAGIC_run401_to_1000.h5
+--output-dir ./data
 --config-file ./config.yaml
 """
 
@@ -95,6 +95,7 @@ def load_data(input_file, config_irf):
     dl2_mean.query('combo_type == 3', inplace=True)
 
     # Convert the pandas data frame to astropy QTable:
+    dl2_mean.reset_index(inplace=True)
     data_qtable = QTable.from_pandas(dl2_mean)
 
     data_qtable['pointing_alt'] *= u.rad
@@ -156,7 +157,7 @@ def create_irf(input_file, output_dir, config):
         Configuration for the LST-1 + MAGIC analysis
     """
 
-    config_irf = config['create_irf']
+    config_irf = config['create_irf_dl3']
 
     # Load the input file:
     data_qtable, sim_evt_info = load_data(input_file, config_irf)
@@ -165,6 +166,15 @@ def create_irf(input_file, output_dir, config):
     fov_offset_bins = u.Quantity([0.3, 0.5], u.deg)
     migration_bins = np.geomspace(0.2, 5, 31)
     source_offset_bins = u.Quantity(np.linspace(0.0001, 1.0001, 1000), u.deg)
+
+    extra_headers = {
+        'TELESCOP': 'CTA-N',
+        'INSTRUME': 'LST-1_MAGIC',
+        'FOVALIGN': 'RADEC',
+    }
+
+    extra_headers['GH_CUT'] = config_irf['gammaness_cut']
+    extra_headers['RAD_MAX'] = (config_irf['theta_cut'], 'deg')
 
     hdus = [fits.PrimaryHDU(), ]
 
@@ -183,7 +193,10 @@ def create_irf(input_file, output_dir, config):
         fov_offset_bins=fov_offset_bins,
         point_like=True,
         extname='EFFECTIVE AREA',
+        **extra_headers,
     )
+
+    hdus.append(hdu_aeff)
 
     # Create the energy dispersion:
     logger.info('Creating the energy dispersion...')
@@ -202,29 +215,30 @@ def create_irf(input_file, output_dir, config):
         fov_offset_bins=fov_offset_bins,
         point_like=True,
         extname='ENERGY DISPERSION',
+        **extra_headers,
     )
 
     hdus.append(hdu_edisp)
 
-    # Creating PSF:
-    logger.info('Creating PSF...')
+    # # Creating PSF:
+    # logger.info('Creating PSF...')
 
-    psf = psf_table(
-        events=data_qtable,
-        true_energy_bins=true_energy_bins,
-        source_offset_bins=source_offset_bins,
-        fov_offset_bins=fov_offset_bins,
-    )
+    # psf = psf_table(
+    #     events=data_qtable,
+    #     true_energy_bins=true_energy_bins,
+    #     source_offset_bins=source_offset_bins,
+    #     fov_offset_bins=fov_offset_bins,
+    # )
 
-    hdu_psf = create_psf_table_hdu(
-        psf=psf,
-        true_energy_bins=true_energy_bins,
-        source_offset_bins=source_offset_bins,
-        fov_offset_bins=fov_offset_bins,
-        extname='PSF',
-    )
+    # hdu_psf = create_psf_table_hdu(
+    #     psf=psf,
+    #     true_energy_bins=true_energy_bins,
+    #     source_offset_bins=source_offset_bins,
+    #     fov_offset_bins=fov_offset_bins,
+    #     extname='PSF',
+    # )
 
-    hdus.append(hdu_psf)
+    # hdus.append(hdu_psf)
 
     # Save in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
