@@ -379,4 +379,4 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
 	return comparison
 
 
-print(image_comparison(config_file = "image_comp_2_config.yaml", mode = "use_ids_config", tel_id=2))
+print(image_comparison(config_file = "image_comparison_config.yaml", mode = "use_ids_config", tel_id=2))
