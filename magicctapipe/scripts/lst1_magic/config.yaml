@@ -1,17 +1,15 @@
-mc_allowed_tels:
+mc_tel_ids:
     LST-1: 1
     MAGIC-I: 2
     MAGIC-II : 3
 
 
 LST:
-
-    # The following settings are derived from lstchain v0.8.4: 
+    # The following settings are derived from lstchain v0.9.0:
     # - lstchain_standard_config.json
     # - lstchain/data/lstchain_dl1ab_tune_MC_to_Crab_config.json
-
     image_extractor:
-        name: 'LocalPeakWindowSum'
+        type: 'LocalPeakWindowSum'
         window_shift: 4
         window_width: 8
 
@@ -21,7 +19,7 @@ LST:
         extra_bias_in_dim_pixels: 0.5
         transition_charge: 8
         extra_noise_in_bright_pixels: 1.2
-    
+
     increase_psf:
         use: true
         smeared_light_fraction: 0.125
@@ -31,6 +29,7 @@ LST:
         boundary_thresh: 4
         keep_isolated_pixels: false
         min_number_picture_neighbors: 2
+        use_only_main_island: false
 
     time_delta_cleaning:
         use: true
@@ -42,52 +41,45 @@ LST:
         threshold: 267
         fraction: 0.03
 
-    use_only_main_island: false
-
 
 MAGIC:
     image_extractor:
-        name: 'LocalPeakWindowSum'
+        type: 'LocalPeakWindowSum'
         window_shift: 2
         window_width: 5
 
     magic_clean:
+        use_time: true
+        use_sum: true
         picture_thresh: 6
         boundary_thresh: 3.5
         max_time_off: 7.38
         max_time_diff: 2.46
-        usetime: true
-        usesum: true
-
-    bad_pixels:
-        pedestalLevel: 400
-        pedestalLevelVariance: 4.5
-        pedestalType: 'FromExtractorRndm'
+        find_hotpixels: 'auto'
+        pedestal_type: 'from_extractor_rndm'
 
 
-event_coincidence: 
-    type_lst_time: 'dragon_time' 
-    window_width: 6.0e-7      # unit: [sec]
-    offset_start: -5.0e-6     # unit: [sec] 
-    offset_stop: 0.0          # unit: [sec]
-    
-
-stereo_reco: 
-    quality_cuts: '(intensity > 50) & (width > 0)'
+event_coincidence:
+    type_lst_time: 'dragon_time'
+    window_width: 0.6      # unit: [usec]
+    offset_start: -10.0    # unit: [usec]
+    offset_stop: 0.0       # unit: [usec]
 
 
-energy_rf:
+stereo_reco:
+    event_cuts: '(intensity > 50) & (width > 0)'
+
+energy_regressor:
     settings:
         n_estimators: 150
-        criterion: "mse"
+        criterion: 'squared_error'
         max_depth: 50
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: "auto"
+        max_features: 'auto'
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
-        min_impurity_split: null
         bootstrap: true
         oob_score: false
         n_jobs: 5
@@ -97,40 +89,6 @@ energy_rf:
         ccp_alpha: 0.0
         max_samples: null
 
-    features: [
-        'intensity', 
-        'length',
-        'width',
-        'skewness',
-        'kurtosis',
-        'slope',
-        'intensity_width_2',
-        'h_max',
-        'impact'
-    ]
-
-
-direction_rf:
-    settings:
-        n_estimators: 150
-        criterion: "mse"
-        max_depth: 50
-        min_samples_split: 2
-        min_samples_leaf: 2
-        min_weight_fraction_leaf: 0.0
-        max_features: "auto"
-        max_leaf_nodes: null
-        min_impurity_decrease: 0.0
-        min_impurity_split: null
-        bootstrap: true
-        oob_score: false
-        n_jobs: 5
-        random_state: 42
-        verbose: 0
-        warm_start: false
-        ccp_alpha: 0.0
-        max_samples: null
-        
     features: [
         'intensity',
         'length',
@@ -140,22 +98,54 @@ direction_rf:
         'slope',
         'intensity_width_2',
         'h_max',
-        'impact'
+        'impact',
     ]
 
-        
-classifier_rf:
+
+direction_regressor:
+    settings:
+        n_estimators: 150
+        criterion: 'squared_error'
+        max_depth: 50
+        min_samples_split: 2
+        min_samples_leaf: 2
+        min_weight_fraction_leaf: 0.0
+        max_features: 'auto'
+        max_leaf_nodes: null
+        min_impurity_decrease: 0.0
+        bootstrap: true
+        oob_score: false
+        n_jobs: 5
+        random_state: 42
+        verbose: 0
+        warm_start: false
+        ccp_alpha: 0.0
+        max_samples: null
+
+    features: [
+        'intensity',
+        'length',
+        'width',
+        'skewness',
+        'kurtosis',
+        'slope',
+        'intensity_width_2',
+        'h_max',
+        'impact',
+    ]
+
+
+event_classifier:
     settings:
         n_estimators: 100
-        criterion: "gini"
+        criterion: 'gini'
         max_depth: 100
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: "auto"
+        max_features: 'auto'
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
-        min_impurity_split: null
         bootstrap: true
         oob_score: false
         n_jobs: 5
@@ -175,9 +165,5 @@ classifier_rf:
         'slope',
         'intensity_width_2',
         'h_max',
-        'impact'
+        'impact',
     ]
-    
-
-
-
