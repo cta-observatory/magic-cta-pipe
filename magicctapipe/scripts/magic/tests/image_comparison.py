@@ -18,7 +18,7 @@ from ctapipe.instrument import CameraGeometry, CameraDescription
 from ctapipe.image import hillas_parameters
 from ctapipe.image.timing import timing_parameters
 from ctapipe.containers import HillasParametersContainer
-from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning  
+from magicctapipe.utils import MAGIC_Cleaning  
 from astropy.coordinates import Angle
 from ctapipe.image.morphology import number_of_islands
 from magicctapipe.scripts import read_images, ImageContainerCleaned, ImageContainerCalibrated
@@ -157,19 +157,15 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
 			geometry_old = tel[tel_id].camera.geometry
 			geometry_mcp = new_camera_geometry(geometry_old)
 			magic_clean = MAGIC_Cleaning.magic_clean(geometry_mcp,cleaning_config)
-			badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(config=bad_pixels_config, is_simulation=source.is_mc)
 			event_image = event.dl1.tel[tel_id].image
 			event_pulse_time = event.dl1.tel[tel_id].peak_time
 
+			badrmspixel_mask = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
+			deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
 
-			badrmspixel_indices = [[None],[None]]
-
-			badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
-
-			deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
-			unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
-			bad_pixel_indices = [i for i, x in enumerate(badrmspixel_mask[tel_id-1]) if x]
-			dead_pixel_indices = [i for i, x in enumerate(deadpixel_mask[tel_id-1]) if x]
+			unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
+			bad_pixel_indices = [i for i, x in enumerate(badrmspixel_mask) if x]
+			dead_pixel_indices = [i for i, x in enumerate(deadpixel_mask) if x]
 			bad_not_dead_pixels_test = [i for i in bad_pixel_indices if i not in dead_pixel_indices]
 
 
