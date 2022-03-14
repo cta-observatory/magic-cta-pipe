@@ -23,6 +23,7 @@ magicctapipe/_version_cache.py
 *.png
 *.pdf
 *.eps
+*.ipynb
 
 # MAGIC/CTA files
 *.root
@@ -32,6 +33,7 @@ magicctapipe/_version_cache.py
 
 # Other
 TODO.txt
+magicctapipe/scripts/magic/tests/old_image_comparison
 test.ipynb
 .ipynb_checkpoints
 *.tmp
