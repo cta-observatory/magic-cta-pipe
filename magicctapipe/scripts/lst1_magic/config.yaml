@@ -174,8 +174,8 @@ create_irf:
     irf_type: 'software'  # select 'hardware', 'software' or 'software_with_any2'
 
     energy_bins:
-        start: 0.005   # unit: [TeV]
-        stop: 50   # unit: [TeV]
+        start: 0.01   # unit: [TeV]
+        stop: 100   # unit: [TeV]
         n_bins: 20
 
     gammaness:

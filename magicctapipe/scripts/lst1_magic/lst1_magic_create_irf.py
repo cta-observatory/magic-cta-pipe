@@ -73,7 +73,7 @@ __all__ = [
 def load_dl2_data_file(input_file, config_irf):
     """
     This function loads an input MC DL2 data file and
-    returns an event list and a simulation info container.
+    returns an event table and a simulation info container.
 
     Parameters
     ----------
@@ -96,7 +96,7 @@ def load_dl2_data_file(input_file, config_irf):
 
     check_tel_combination(df_events)
 
-    # Apply quality cuts:
+    # Apply the quality cuts:
     quality_cuts = config_irf['quality_cuts']
 
     if quality_cuts is not None:
@@ -213,7 +213,7 @@ def apply_dynamic_gammaness_cuts(
         values=event_table_gamma['gammaness'],
         bin_values=event_table_gamma['reco_energy'],
         bins=energy_bins,
-        fill_value=1,
+        fill_value=1.0,
         percentile=percentile,
     )
 
@@ -275,7 +275,7 @@ def apply_dynamic_theta_cuts(
         values=event_table['theta'],
         bin_values=event_table['reco_energy'],
         bins=energy_bins,
-        fill_value=u.Quantity(0, u.deg),
+        fill_value=u.Quantity(0.0, u.deg),
         percentile=percentile,
     )
 
