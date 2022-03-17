@@ -56,14 +56,14 @@ MAGIC:
         max_time_off: 7.38
         max_time_diff: 2.46
         find_hotpixels: 'auto'
-        pedestal_type: 'from_extractor_rndm'
+        pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
 
 event_coincidence:
     type_lst_time: 'dragon_time'
-    window_width: 0.6      # unit: [usec]
-    offset_start: -10.0    # unit: [usec]
-    offset_stop: 0.0       # unit: [usec]
+    window_width: 0.6   # unit: [usec]
+    offset_start: -10.0   # unit: [usec]
+    offset_stop: 0.0   # unit: [usec]
 
 
 stereo_reco:
@@ -168,8 +168,26 @@ event_classifier:
         'impact',
     ]
 
-create_irf_dl3:
+
+create_irf:
     quality_cuts: null
-    gammaness_cut: 0.8
-    theta_cut: 0.2
+    irf_type: 'software'  # select 'hardware', 'software' or 'software_with_any2'
+
+    energy_bins:
+        start: 0.005   # unit: [TeV]
+        stop: 50   # unit: [TeV]
+        n_bins: 20
+
+    gammaness:
+        cut_type: 'dynamic'   # select 'global' or 'dynamic'
+        global_cut_value: 0.8   # used for the global cut
+        gamma_efficiency: 0.95   # used for the dynamic cut
+
+    theta:
+        cut_type: 'dynamic'   # select 'global' or 'dynamic'
+        global_cut_value: 0.2   # used for the global cut
+        gamma_efficiency: 0.68   # used for the dynamic cut
+
+
+dl2_to_dl3:
     source_name: 'Crab'
