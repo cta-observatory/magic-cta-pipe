@@ -5,16 +5,18 @@
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script creates a DL3 data file with input DL2 and IRF files.
+The cut information are extracted from the input IRF file and are applied to the input DL2 events.
 
 Usage:
 $ python lst1_magic_dl2_to_dl3.py
 --input-file-dl2 ./data/dl2_LST-1_MAGIC.Run03265.h5
---input-file-irf ./data/irf_40deg_90deg_off0.4deg_LST-1_MAGIC_software_gam_global0.8_theta_global0.2.fits.gz
+--input-file-irf ./data/irf_40deg_90deg_off0.4deg_LST-1_MAGIC_software_gam_dynamic0.95_theta_dynamic0.9.fits.gz
 --output-dir ./data
 --config-file ./config.yaml
 """
 
 import re
+import sys
 import time
 import yaml
 import logging
@@ -64,7 +66,7 @@ def load_dl2_data_file(input_file, config_dl3):
     Returns
     -------
     event_table: astropy.table.table.QTable
-        Astropy table for DL2 events
+        Astropy table of DL2 events
     """
 
     df_events = pd.read_hdf(input_file, 'events/parameters')
@@ -88,7 +90,7 @@ def load_dl2_data_file(input_file, config_dl3):
         combo_types = check_tel_combination(df_events)
         df_events.update(combo_types)
 
-    # Select the events satisfying the specified IRF type:
+    # Select the events of the specified IRF type:
     irf_type = config_dl3['irf_type']
 
     if irf_type == 'software':
@@ -100,10 +102,7 @@ def load_dl2_data_file(input_file, config_dl3):
 
     elif irf_type == 'hardware':
         logger.info('\nThe hardware trigger has not yet been used for observations. Exiting.')
-
-    elif irf_type != 'software_with_any2':
-        raise KeyError(f'Unknown IRF type "{irf_type}". ' \
-                       'Select "hardware", "software" or "software_with_any2".')
+        sys.exit()
 
     # Compute the mean of the DL2 parameters:
     df_dl2_mean = get_dl2_mean(df_events)
@@ -143,7 +142,7 @@ def create_event_list(event_table, effective_time, elapsed_time, config_dl3):
     Returns
     -------
     event_list: astropy.table.table.QTable
-        Astropy table required for the DL3 format
+        Astropy table of the DL2 events required for the DL3 format
     event_header: astropy.io.fits.header.Header
         Astropy header for the event list
     """
@@ -225,7 +224,7 @@ def create_gti_table(event_table):
     gti_table: astropy.table.table.QTable
         Astropy table of the GTI information
     gti_header: astropy.io.fits.header.Header
-        Astropy header of the GTI table
+        Astropy header for the GTI table
     """
 
     gti_table = QTable({
@@ -253,14 +252,14 @@ def create_pointing_table(event_table):
     Parameters
     ----------
     event_table: astropy.table.table.QTable
-        Astropy table for DL2 events
+        Astropy table of the DL2 events surviving gammaness cuts
 
     Returns
     -------
     pnt_table: astropy.table.table.QTable
-        Astropy table for the pointing information
+        Astropy table of the pointing information
     pnt_header: astropy.io.fits.header.Header
-        Astropy header to the pointing table
+        Astropy header for the pointing table
     """
 
     pnt_table = QTable({
@@ -280,9 +279,9 @@ def create_pointing_table(event_table):
     pnt_header['TIMEUNIT'] = 's'
     pnt_header['TIMESYS'] = 'UTC'
     pnt_header['TIMEREF'] = 'TOPOCENTER'
-    pnt_header['OBSGEO-L'] = (ORM_LON, 'Geographic longitude of telescope (deg)')
-    pnt_header['OBSGEO-B'] = (ORM_LAT, 'Geographic latitude of telescope (deg)')
-    pnt_header['OBSGEO-H'] = (ORM_HEIGHT, 'Geographic latitude of telescope (m)')
+    pnt_header['OBSGEO-L'] = (ORM_LON, 'Geographic longitude of the telescopes (deg)')
+    pnt_header['OBSGEO-B'] = (ORM_LAT, 'Geographic latitude of the telescopes (deg)')
+    pnt_header['OBSGEO-H'] = (ORM_HEIGHT, 'Geographic height of the telescopes (m)')
 
     return pnt_table, pnt_header
 
@@ -305,9 +304,9 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
 
     config_dl3 = config['dl2_to_dl3']
 
-    # Load the IRF HDUs and add some headers to the configuration:
-    hdu_irf = fits.open(input_file_irf)
-    header = hdu_irf[1].header
+    # Load the input IRF file and add some headers to the configuration:
+    hdus_irf = fits.open(input_file_irf)
+    header = hdus_irf[1].header
 
     config_dl3['quality_cuts'] = header['QUAL_CUT']
     config_dl3['irf_type'] = header['IRF_TYPE']
@@ -323,10 +322,13 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
 
     # Apply the gammaness cuts:
     if 'GH_CUT' in header:
+        logger.info('\nApplying the global gammaness cut...')
         global_gam_cut = header['GH_CUT']
+
         event_table = event_table[event_table['gammaness'] > global_gam_cut]
 
     else:
+        logger.info('\nApplying the dynamic gammaness cuts...')
         cut_table_gh = QTable.read(input_file_irf, 'GH_CUTS')
 
         mask_gh_gamma = evaluate_binned_cut(
@@ -366,7 +368,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
 
     # Add the IRF HDUs:
     logger.info('Adding the IRF HDUs...')
-    hdus += hdu_irf[1:]
+    hdus += hdus_irf[1:]
 
     # Save in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)

@@ -56,7 +56,7 @@ MAGIC:
         max_time_off: 7.38
         max_time_diff: 2.46
         find_hotpixels: 'auto'
-        pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
+        pedestal_type: 'from_extractor_rndm'   # must be 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
 
 event_coincidence:
@@ -171,7 +171,7 @@ event_classifier:
 
 create_irf:
     quality_cuts: null
-    irf_type: 'software'  # select 'hardware', 'software' or 'software_with_any2'
+    irf_type: 'software'  # must be 'hardware', 'software' or 'software_with_any2'
 
     energy_bins:
         start: 0.01   # unit: [TeV]
@@ -179,14 +179,14 @@ create_irf:
         n_bins: 20
 
     gammaness:
-        cut_type: 'dynamic'   # select 'global' or 'dynamic'
-        global_cut_value: 0.8   # used for the global cut
+        cut_type: 'global'   # must be 'global' or 'dynamic'
+        global_cut_value: 0.6   # used for the global cut
         gamma_efficiency: 0.95   # used for the dynamic cut
 
     theta:
-        cut_type: 'dynamic'   # select 'global' or 'dynamic'
+        cut_type: 'global'   # must be 'global' or 'dynamic'
         global_cut_value: 0.2   # used for the global cut
-        gamma_efficiency: 0.68   # used for the dynamic cut
+        gamma_efficiency: 0.95   # used for the dynamic cut
 
 
 dl2_to_dl3:

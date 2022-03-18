@@ -4,7 +4,9 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script creates the IRFs. Now it can create point-like IRFs.
+This script creates the IRFs with input MC DL2 files. Now it can create only point-like IRFs.
+If input data is only gamma MC, it skips the creation of a background HDU and creates only effective area and energy dispersion HDUs.
+The created HDUs will be saved in an output fits file.
 
 Usage:
 $ python lst1_magic_create_irf.py
@@ -65,6 +67,9 @@ logger.setLevel(logging.INFO)
 
 obs_time_irf = u.Quantity(50, u.hour)
 
+migration_bins = np.geomspace(0.2, 5, 31)
+bkg_fov_offset_bins = u.Quantity(np.linspace(0, 10, 21), u.deg)
+
 __all__ = [
     'create_irf',
 ]
@@ -72,7 +77,7 @@ __all__ = [
 
 def load_dl2_data_file(input_file, config_irf):
     """
-    This function loads an input MC DL2 data file and
+    Loads an input MC DL2 data file and
     returns an event table and a simulation info container.
 
     Parameters
@@ -85,9 +90,9 @@ def load_dl2_data_file(input_file, config_irf):
     Returns
     -------
     event_table: astropy.table.table.QTable
-        Astropy table for MC DL2 events
+        Astropy table of MC DL2 events
     sim_info: pyirf.simulations.SimulatedEventsInfo
-        Container storing simulation information
+        Container of simulation information
     """
 
     df_events = pd.read_hdf(input_file, 'events/parameters')
@@ -111,7 +116,7 @@ def load_dl2_data_file(input_file, config_irf):
         combo_types = check_tel_combination(df_events)
         df_events.update(combo_types)
 
-    # Select the events satisfying the specified IRF type:
+    # Select the events of the specified IRF type:
     irf_type = config_irf['irf_type']
 
     if irf_type == 'software':
@@ -181,16 +186,16 @@ def apply_dynamic_gammaness_cuts(
     gamma_efficiency,
 ):
     """
-    This function applies dynamic (energy-dependent) gammaness cuts
-    to input events. The cuts are selected in each energy bin
+    Applies dynamic (energy-dependent) gammaness cuts
+    to input events. The cuts are computed in each energy bin
     so as to keep the specified gamma efficiency.
 
     Parameters
     ----------
     event_table_gamma: astropy.table.table.QTable
-        Astropy table for gamma MC DL2 events
+        Astropy table of gamma MC DL2 events
     event_table_bkg: astropy.table.table.QTable
-        Astropy table for background MC DL2 events
+        Astropy table of background MC DL2 events
     energy_bins: astropy.units.quantity.Quantity
         Energy bins where to apply the cuts
     gamma_efficiency: float
@@ -199,11 +204,11 @@ def apply_dynamic_gammaness_cuts(
     Returns
     -------
     event_table_gamma: astropy.table.table.QTable
-        Astropy table for gamma MC DL2 events surviving the cuts
+        Astropy table of the gamma MC DL2 events surviving the cuts
     event_table_bkg: astropy.table.table.QTable
-        Astropy table for background MC DL2 events surviving the cuts
+        Astropy table of the background MC DL2 events surviving the cuts
     cut_table: astropy.table.table.QTable
-        Astropy table summarizing the cut information
+        Astropy table of the gammaness cuts
     """
 
     # Compute the cuts satisfying the efficiency:
@@ -217,7 +222,7 @@ def apply_dynamic_gammaness_cuts(
         percentile=percentile,
     )
 
-    # Apply the cuts to the gamma and background tables:
+    # Apply the cuts to the gamma and background events:
     mask_gh_gamma = evaluate_binned_cut(
         values=event_table_gamma['gammaness'],
         bin_values=event_table_gamma['reco_energy'],
@@ -244,17 +249,17 @@ def apply_dynamic_gammaness_cuts(
 def apply_dynamic_theta_cuts(
     event_table,
     energy_bins,
-    gamma_efficiency
+    gamma_efficiency,
 ):
     """
-    This function applies dynamic (energy-dependent) theta cuts
-    to an input events. The cuts are selected in each energy bin
+    Applies dynamic (energy-dependent) theta cuts
+    to input events. The cuts are computed in each energy bin
     so as to keep the specified gamma efficiency.
 
     Parameters
     ----------
     event_table: astropy.table.table.QTable
-        Astropy table for DL2 events
+        Astropy table of DL2 events
     energy_bins: astropy.units.quantity.Quantity
         Energy bins where to apply the cuts
     gamma_efficiency: float
@@ -263,9 +268,9 @@ def apply_dynamic_theta_cuts(
     Returns
     -------
     event_table: astropy.table.table.QTable
-        Astropy table for DL2 events surviving the cuts
+        Astropy table of DL2 events surviving the cuts
     cut_table: astropy.table.table.QTable
-        Astropy table summarizing the cut information
+        Astropy table of the theta cuts
     """
 
     # Compute the cuts satisfying the efficiency:
@@ -300,7 +305,7 @@ def create_irf(
     config,
 ):
     """
-    This function creates the IRF HDUs and save them in an output fits file.
+    Creates the IRF HDUs and save them in an output fits file.
 
     Parameters
     ----------
@@ -325,12 +330,12 @@ def create_irf(
     energy_bins = np.logspace(
         np.log10(config_irf['energy_bins']['start']),
         np.log10(config_irf['energy_bins']['stop']),
-        config_irf['energy_bins']['n_bins'],
+        config_irf['energy_bins']['n_bins'] + 1,
     )
 
     energy_bins = u.Quantity(energy_bins, u.TeV)
 
-    hdus = [fits.PrimaryHDU(), ]
+    hdus = fits.HDUList([fits.PrimaryHDU(), ])
 
     extra_headers = {
         'TELESCOP': 'CTA-N',
@@ -352,17 +357,19 @@ def create_irf(
 
     only_gamma_mc = (input_file_proton is None) and (input_file_electron is None)
 
-    if not only_gamma_mc:
+    if only_gamma_mc:
+        event_table_bkg = None
 
+    else:
         # Load the input proton MC file:
         logger.info('\nLoading the proton MC DL2 data file:')
         logger.info(input_file_proton)
 
-        table_proton, sim_info_proton = load_dl2_data_file(input_file_proton, config_irf)
+        event_table_proton, sim_info_proton = load_dl2_data_file(input_file_proton, config_irf)
         simulated_spectrum_proton = PowerLaw.from_simulation(sim_info_proton, obs_time_irf)
 
-        table_proton['weight'] = calculate_event_weights(
-            true_energy=table_proton['true_energy'],
+        event_table_proton['weight'] = calculate_event_weights(
+            true_energy=event_table_proton['true_energy'],
             target_spectrum=IRFDOC_PROTON_SPECTRUM,
             simulated_spectrum=simulated_spectrum_proton,
         )
@@ -371,26 +378,26 @@ def create_irf(
         logger.info('\nLoading the electron MC DL2 data file:')
         logger.info(input_file_electron)
 
-        table_electron, sim_info_electron = load_dl2_data_file(input_file_electron, config_irf)
+        event_table_electron, sim_info_electron = load_dl2_data_file(input_file_electron, config_irf)
         simulated_spectrum_electron = PowerLaw.from_simulation(sim_info_electron, obs_time_irf)
 
-        table_electron['weight'] = calculate_event_weights(
-            true_energy=table_electron['true_energy'],
+        event_table_electron['weight'] = calculate_event_weights(
+            true_energy=event_table_electron['true_energy'],
             target_spectrum=IRFDOC_ELECTRON_SPECTRUM,
             simulated_spectrum=simulated_spectrum_electron,
         )
 
         # Combine the proton and electron tables:
-        event_table_bkg = table.vstack([table_proton, table_electron])
+        event_table_bkg = table.vstack([event_table_proton, event_table_electron])
 
-    else:
-        event_table_bkg = None
-
-    # Apply gammaness cuts:
+    # Apply the gammaness cuts:
     gam_cut_type = config_irf['gammaness']['cut_type']
 
     if gam_cut_type == 'global':
+
+        logger.info('\nApplying the global gammaness cut...')
         global_gam_cut = config_irf['gammaness']['global_cut_value']
+
         event_table_gamma = event_table_gamma[event_table_gamma['gammaness'] > global_gam_cut]
 
         if not only_gamma_mc:
@@ -400,7 +407,10 @@ def create_irf(
         gam_cut_config = f'gam_global{global_gam_cut}'
 
     elif gam_cut_type == 'dynamic':
+
+        logger.info('\nApplying the dynamic gammaness cuts...')
         gamma_efficiency = config_irf['gammaness']['gamma_efficiency']
+
         event_table_gamma, event_table_bkg, cut_table_gh = apply_dynamic_gammaness_cuts(event_table_gamma, event_table_bkg, energy_bins, gamma_efficiency)
 
         extra_headers['GH_EFF'] = (gamma_efficiency, 'gamma efficiency')
@@ -410,18 +420,24 @@ def create_irf(
         raise KeyError(f'Unknown type of the gammaness cut "{gam_cut_type}". ' \
                        'Select "global" or "dynamic".')
 
-    # Apply theta cuts:
+    # Apply the theta cuts:
     theta_cut_type = config_irf['theta']['cut_type']
 
     if theta_cut_type == 'global':
+
+        logger.info('Applying the global theta cut...')
         global_theta_cut = u.Quantity(config_irf['theta']['global_cut_value'], u.deg)
+
         event_table_gamma = event_table_gamma[event_table_gamma['theta'] < global_theta_cut]
 
         extra_headers['RAD_MAX'] = (global_theta_cut.value, 'deg')
         theta_cut_config = f'theta_global{global_theta_cut.value}'
 
     elif theta_cut_type == 'dynamic':
+
+        logger.info('Applying the dynamic theta cuts...')
         gamma_efficiency = config_irf['theta']['gamma_efficiency']
+
         event_table_gamma, cut_table_theta = apply_dynamic_theta_cuts(event_table_gamma, energy_bins, gamma_efficiency)
 
         extra_headers['TH_EFF'] = (gamma_efficiency, 'gamma efficiency')
@@ -459,8 +475,6 @@ def create_irf(
     # Create an energy dispersion HDU:
     logger.info('Creating an energy dispersion HDU...')
 
-    migration_bins = np.geomspace(0.2, 5, 31)   # used in the lstchain tools
-
     edisp = energy_dispersion(
         selected_events=event_table_gamma,
         true_energy_bins=energy_bins,
@@ -485,10 +499,6 @@ def create_irf(
 
         logger.info('Creating a background HDU...')
 
-        bkg_fov_offset_bins = u.Quantity(
-            np.linspace(0, 10, 21), u.deg,
-        )
-
         bkg2d = background_2d(
             events=event_table_bkg,
             reco_energy_bins=energy_bins,
@@ -498,7 +508,7 @@ def create_irf(
 
         hdu_bkg2d = create_background_2d_hdu(
             background_2d=bkg2d.T,
-            reco_energy_bins=reco_energy_bins,
+            reco_energy_bins=energy_bins,
             fov_offset_bins=bkg_fov_offset_bins,
             extname='BACKGROUND',
             **extra_headers,

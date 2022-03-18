@@ -11,12 +11,24 @@ $ python create_dl3_index_files.py
 --input-dir ./data/dl3
 """
 
+import time
 import glob
+import logging
+import argparse
 from pathlib import Path
 from lstchain.high_level import (
     create_hdu_index_hdu,
     create_obs_index_hdu,
 )
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
+__all__ = [
+    'create_dl3_index_files',
+]
+
 
 def create_dl3_index_files(input_dir):
     """
@@ -35,26 +47,31 @@ def create_dl3_index_files(input_dir):
 
     file_names = []
 
+    logger.info('\nInput DL3 data files:')
+
     for input_file in input_files:
+        logger.info(input_file)
         base_name = Path(input_file).name
         file_names.append(base_name)
 
-    hdu_index_file = 'hdu-index.fits.gz'
-    obs_index_file = 'obs-index.fits.gz'
+    hdu_index_file = f'{input_dir}/hdu-index.fits.gz'
+    obs_index_file = f'{input_dir}/obs-index.fits.gz'
+
+    logger.info('\nCreating the index files...')
 
     # Create a hdu index file:
     create_hdu_index_hdu(
         filename_list=file_names,
-        fits_dir=input_dir,
-        hdu_index_file=hdu_index_file,
+        fits_dir=Path(input_dir),
+        hdu_index_file=Path(hdu_index_file),
         overwrite=True,
     )
 
     # Create an observation index file:
     create_obs_index_hdu(
         filename_list=file_names,
-        fits_dir=input_dir,
-        obs_index_file=obs_index_file,
+        fits_dir=Path(input_dir),
+        obs_index_file=Path(obs_index_file),
         overwrite=True,
     )
 
@@ -71,9 +88,6 @@ def main():
     )
 
     args = parser.parse_args()
-
-    with open(args.config_file, 'rb') as f:
-        config = yaml.safe_load(f)
 
     # Create the index files:
     create_dl3_index_files(args.input_dir)
