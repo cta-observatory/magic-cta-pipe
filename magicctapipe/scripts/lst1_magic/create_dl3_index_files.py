@@ -4,11 +4,11 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script creates IRF index files.
+This script creates IRF index files. Output files will be saved in an input directory.
 
 Usage:
 $ python create_dl3_index_files.py
-
+--input-dir ./data/dl3
 """
 
 import glob
@@ -18,25 +18,25 @@ from lstchain.high_level import (
     create_obs_index_hdu,
 )
 
-def create_dl3_index_files(input_dir, overwrite):
+def create_dl3_index_files(input_dir):
     """
-    Create DL3 index files.
+    Creates DL3 index files.
 
     Parameters
     ----------
     input_dir: str
-
-    overwrite: bool
-
+        Path to a directory where input DL3 data files are stored
     """
 
-    file_paths = glob.glob(f'{input_dir}/dl3_*.fits.gz')
-    file_paths.sort()
+    file_mask = f'{input_dir}/dl3_*.fits.gz'
+
+    input_files = glob.glob(file_mask)
+    input_files.sort()
 
     file_names = []
 
-    for path in file_paths:
-        base_name = Path(path).name
+    for input_file in input_files:
+        base_name = Path(input_file).name
         file_names.append(base_name)
 
     hdu_index_file = 'hdu-index.fits.gz'
@@ -47,15 +47,15 @@ def create_dl3_index_files(input_dir, overwrite):
         filename_list=file_names,
         fits_dir=input_dir,
         hdu_index_file=hdu_index_file,
-        overwrite=overwrite,
+        overwrite=True,
     )
 
     # Create an observation index file:
     create_obs_index_hdu(
         filename_list=file_names,
         fits_dir=input_dir,
-        obs_index_file=hdu_index_file,
-        overwrite=overwrite,
+        obs_index_file=obs_index_file,
+        overwrite=True,
     )
 
 
@@ -70,18 +70,13 @@ def main():
         help='Path to a directory where input DL3 files are stored.',
     )
 
-    parser.add_argument(
-        '--overwrite', dest='overwrite', action='store_true',
-        help='Overwrite output files if they already exist in an input directory.',
-    )
-
     args = parser.parse_args()
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
     # Create the index files:
-    create_dl3_index_files(args.input_dir, args.overwrite)
+    create_dl3_index_files(args.input_dir)
 
     logger.info('\nDone.')
 
