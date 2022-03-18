@@ -4,12 +4,12 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script processes DL2 data to DL3.
+This script creates a DL3 data file with input DL2 and IRF files.
 
 Usage:
 $ python lst1_magic_dl2_to_dl3.py
 --input-file-dl2 ./data/dl2_LST-1_MAGIC.Run03265.h5
---input-file-irf ./data/irf_LST-1_MAGIC.fits.gz
+--input-file-irf ./data/irf_40deg_90deg_off0.4deg_LST-1_MAGIC_software_gam_global0.8_theta_global0.2.fits.gz
 --output-dir ./data
 --config-file ./config.yaml
 """
@@ -19,6 +19,7 @@ import time
 import yaml
 import logging
 import argparse
+import operator
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -27,6 +28,7 @@ from astropy.io import fits
 from astropy.time import Time
 from astropy.table import QTable
 from astropy.coordinates import SkyCoord
+from pyirf.cuts import evaluate_binned_cut
 from magicctapipe import __version__
 from magicctapipe.utils import (
     get_dl2_mean,
@@ -37,14 +39,257 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
+ORM_LAT = 28.76177   # unit: [deg]
+ORM_LON = -17.89064   # unit: [deg]
+ORM_HEIGHT = 2199.835   # unit: [m]
+
+MJDREF = Time(0, format='unix', scale='utc').mjd
 
 __all__ = [
     'dl2_to_dl3',
 ]
 
+
+def load_dl2_data_file(input_file, config_dl3):
+    """
+    Loads an input DL2 data file and returns an event table.
+
+    Parameters
+    ----------
+    input_file: str
+        Path to an input DL2 data file
+    config_dl3: dict
+        Configuration for the process to DL3
+
+    Returns
+    -------
+    event_table: astropy.table.table.QTable
+        Astropy table for DL2 events
+    """
+
+    df_events = pd.read_hdf(input_file, 'events/parameters')
+    df_events.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    df_events.sort_index(inplace=True)
+
+    check_tel_combination(df_events)
+
+    # Apply the quality cuts:
+    quality_cuts = config_dl3['quality_cuts']
+
+    if quality_cuts is not None:
+
+        logger.info('\nApplying the following quality cuts:')
+        logger.info(quality_cuts)
+
+        df_events.query(quality_cuts, inplace=True)
+        df_events['multiplicity'] = df_events.groupby(['obs_id', 'event_id']).size()
+        df_events.query('multiplicity > 1', inplace=True)
+
+        combo_types = check_tel_combination(df_events)
+        df_events.update(combo_types)
+
+    # Select the events satisfying the specified IRF type:
+    irf_type = config_dl3['irf_type']
+
+    if irf_type == 'software':
+        logger.info('\nExtracting only the events having 3-tels information...')
+        df_events.query('combo_type == 3', inplace=True)
+
+        n_events = len(df_events.groupby(['obs_id', 'event_id']).size())
+        logger.info(f'--> {n_events} stereo events')
+
+    elif irf_type == 'hardware':
+        logger.info('\nThe hardware trigger has not yet been used for observations. Exiting.')
+
+    elif irf_type != 'software_with_any2':
+        raise KeyError(f'Unknown IRF type "{irf_type}". ' \
+                       'Select "hardware", "software" or "software_with_any2".')
+
+    # Compute the mean of the DL2 parameters:
+    df_dl2_mean = get_dl2_mean(df_events)
+    df_dl2_mean.reset_index(inplace=True)
+
+    # Convert the pandas data frame to the astropy QTable:
+    event_table = QTable.from_pandas(df_dl2_mean)
+
+    event_table['pointing_alt'] *= u.rad
+    event_table['pointing_az'] *= u.rad
+    event_table['pointing_ra'] *= u.deg
+    event_table['pointing_dec'] *= u.deg
+    event_table['reco_alt'] *= u.deg
+    event_table['reco_az'] *= u.deg
+    event_table['reco_ra'] *= u.deg
+    event_table['reco_dec'] *= u.deg
+    event_table['reco_energy'] *= u.TeV
+
+    return event_table
+
+
+def create_event_list(event_table, effective_time, elapsed_time, config_dl3):
+    """
+    Creates an event list and its header.
+
+    Parameters
+    ----------
+    event_table: astropy.table.table.QTable
+        Astropy table of the DL2 events surviving gammaness cuts
+    effective_time: float
+        Effective time of the input data
+    elapsed_time: float
+        Elapsed time of the input data
+    config_dl3: dict
+        Configuration for the process to DL3
+
+    Returns
+    -------
+    event_list: astropy.table.table.QTable
+        Astropy table required for the DL3 format
+    event_header: astropy.io.fits.header.Header
+        Astropy header for the event list
+    """
+
+    source_coord = SkyCoord.from_name(config_dl3['source_name'])
+    event_coords = SkyCoord(ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs')
+
+    deadc = effective_time / elapsed_time
+
+    time_start = Time(event_table['timestamp'][0], format='unix', scale='utc')
+    time_end = Time(event_table['timestamp'][-1], format='unix', scale='utc')
+
+    delta_time = time_end.value - time_start.value
+
+    # Create an event list:
+    event_list = QTable({
+        'EVENT_ID': event_table['event_id'],
+        'TIME': event_table['timestamp'],
+        'RA': event_table['reco_ra'],
+        'DEC': event_table['reco_dec'],
+        'ENERGY': event_table['reco_energy'],
+        'GAMMANESS': event_table['gammaness'],
+        'MULTIP': event_table['multiplicity'],
+        'GLON': event_coords.galactic.l.to(u.deg),
+        'GLAT': event_coords.galactic.b.to(u.deg),
+        'ALT': event_table['reco_alt'],
+        'AZ': event_table['reco_az'],
+    })
+
+    # Create an event header:
+    event_header = fits.Header()
+    event_header['CREATED'] = Time.now().utc.iso
+    event_header['HDUCLAS1'] = 'EVENTS'
+    event_header['OBS_ID'] = np.unique(event_table['obs_id'])[0]
+    event_header['DATE-OBS'] = time_start.to_value('iso', 'date')
+    event_header['TIME-OBS'] = time_start.to_value('iso', 'date_hms')[11:]
+    event_header['DATE-END'] = time_end.to_value('iso', 'date')
+    event_header['TIME-END'] = time_end.to_value('iso', 'date_hms')[11:]
+    event_header['TSTART'] = time_start.value
+    event_header['TSTOP'] = time_end.value
+    event_header['MJDREFI'] = np.modf(MJDREF)[1]
+    event_header['MJDREFF'] = np.modf(MJDREF)[0]
+    event_header['TIMEUNIT'] = 's'
+    event_header['TIMESYS'] = 'UTC'
+    event_header['TIMEREF'] = 'TOPOCENTER'
+    event_header['ONTIME'] = elapsed_time
+    event_header['TELAPSE'] = delta_time
+    event_header['DEADC'] = deadc
+    event_header['LIVETIME'] = effective_time
+    event_header['OBJECT'] = config_dl3['source_name']
+    event_header['OBS_MODE'] = 'WOBBLE'
+    event_header['N_TELS'] = 3
+    event_header['TELLIST'] = 'LST-1_MAGIC'
+    event_header['INSTRUME'] = 'LST-1_MAGIC'
+    event_header['RA_PNT'] = event_table['pointing_ra'][0].value
+    event_header['DEC_PNT'] = event_table['pointing_dec'][0].value
+    event_header['ALT_PNT'] = event_table['pointing_alt'][0].to_value(u.deg)
+    event_header['AZ_PNT'] = event_table['pointing_az'][0].to_value(u.deg)
+    event_header['RA_OBJ'] = source_coord.ra.to_value(u.deg)
+    event_header['DEC_OBJ'] = source_coord.dec.to_value(u.deg)
+    event_header['FOVALIGN'] = 'RADEC'
+    event_header['IRF_TYPE'] = config_dl3['irf_type']
+    event_header['QUAL_CUT'] = config_dl3['quality_cuts']
+
+    return event_list, event_header
+
+
+def create_gti_table(event_table):
+    """
+    Creates a GTI table and its header.
+
+    Parameters
+    ----------
+    event_table: astropy.table.table.QTable
+        Astropy table of the DL2 events surviving gammaness cuts
+
+    Returns
+    -------
+    gti_table: astropy.table.table.QTable
+        Astropy table of the GTI information
+    gti_header: astropy.io.fits.header.Header
+        Astropy header of the GTI table
+    """
+
+    gti_table = QTable({
+        'START': u.Quantity(event_table['timestamp'][0], unit=u.s, ndmin=1),
+        'STOP': u.Quantity(event_table['timestamp'][-1], unit=u.s, ndmin=1),
+    })
+
+    gti_header = fits.Header()
+    gti_header['CREATED'] = Time.now().utc.iso
+    gti_header['HDUCLAS1'] = 'GTI'
+    gti_header['OBS_ID'] = np.unique(event_table['obs_id'])[0]
+    gti_header['MJDREFI'] = np.modf(MJDREF)[1]
+    gti_header['MJDREFF'] = np.modf(MJDREF)[0]
+    gti_header['TIMEUNIT'] = 's'
+    gti_header['TIMESYS'] = 'UTC'
+    gti_header['TIMEREF'] = 'TOPOCENTER'
+
+    return gti_table, gti_header
+
+
+def create_pointing_table(event_table):
+    """
+    Creates a pointing table and its header.
+
+    Parameters
+    ----------
+    event_table: astropy.table.table.QTable
+        Astropy table for DL2 events
+
+    Returns
+    -------
+    pnt_table: astropy.table.table.QTable
+        Astropy table for the pointing information
+    pnt_header: astropy.io.fits.header.Header
+        Astropy header to the pointing table
+    """
+
+    pnt_table = QTable({
+        'TIME': u.Quantity(event_table['timestamp'][0], unit=u.s, ndmin=1),
+        'RA_PNT': u.Quantity(event_table['pointing_ra'][0].value, ndmin=1),
+        'DEC_PNT': u.Quantity(event_table['pointing_dec'][0].value, ndmin=1),
+        'ALT_PNT': u.Quantity(event_table['pointing_alt'][0].to_value(u.deg), ndmin=1),
+        'AZ_PNT': u.Quantity(event_table['pointing_az'][0].to_value(u.deg), ndmin=1),
+    })
+
+    pnt_header = fits.Header()
+    pnt_header['CREATED'] = Time.now().utc.iso
+    pnt_header['HDUCLAS1'] = 'POINTING'
+    pnt_header['OBS_ID'] = np.unique(event_table['obs_id'])[0]
+    pnt_header['MJDREFI'] = np.modf(MJDREF)[1]
+    pnt_header['MJDREFF'] = np.modf(MJDREF)[0]
+    pnt_header['TIMEUNIT'] = 's'
+    pnt_header['TIMESYS'] = 'UTC'
+    pnt_header['TIMEREF'] = 'TOPOCENTER'
+    pnt_header['OBSGEO-L'] = (ORM_LON, 'Geographic longitude of telescope (deg)')
+    pnt_header['OBSGEO-B'] = (ORM_LAT, 'Geographic latitude of telescope (deg)')
+    pnt_header['OBSGEO-H'] = (ORM_HEIGHT, 'Geographic latitude of telescope (m)')
+
+    return pnt_table, pnt_header
+
+
 def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     """
-    Process DL2 to DL3.
+    Creates a DL3 data file with input DL2 and IRF files.
 
     Parameters
     ----------
@@ -58,180 +303,75 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
         Configuration for the LST-1 + MAGIC analysis
     """
 
-    config_dl3 = config['create_irf_dl3']
+    config_dl3 = config['dl2_to_dl3']
 
-    data = pd.read_hdf(input_file_dl2, 'events/parameters')
-    data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    data.sort_index(inplace=True)
+    # Load the IRF HDUs and add some headers to the configuration:
+    hdu_irf = fits.open(input_file_irf)
+    header = hdu_irf[1].header
 
-    check_tel_combination(data)
+    config_dl3['quality_cuts'] = header['QUAL_CUT']
+    config_dl3['irf_type'] = header['IRF_TYPE']
 
-    if config_dl3['quality_cuts'] is not None:
+    # Load the input DL2 data file:
+    event_table = load_dl2_data_file(input_file_dl2, config_dl3)
 
-        logger.info('\nApplying the following quality cuts:')
-        logger.info(config_dl3['quality_cuts'])
+    elapsed_time = event_table['timestamp'][-1] - event_table['timestamp'][0]
 
-        data.query(config_dl3['quality_cuts'],  inplace=True)
-        data['multiplicity'] = data.groupby(['obs_id', 'event_id']).size()
-        data.query('multiplicity > 1', inplace=True)
-
-        combo_types = check_tel_combination(data)
-        data.update(combo_types)
-
-    # Compute the mean of the DL2 parameters:
-    dl2_mean = get_dl2_mean(data)
-
-    # ToBeUpdated: at the moment extract only the 3-tels events:
-    dl2_mean.query('combo_type == 3', inplace=True)
-
-    # Convert the pandas data frame to astropy QTable:
-    dl2_mean.reset_index(inplace=True)
-    data_qtable = QTable.from_pandas(dl2_mean)
-
-    data_qtable['pointing_alt'] *= u.rad
-    data_qtable['pointing_az'] *= u.rad
-    data_qtable['pointing_ra'] *= u.deg
-    data_qtable['pointing_dec'] *= u.deg
-    data_qtable['reco_alt'] *= u.deg
-    data_qtable['reco_az'] *= u.deg
-    data_qtable['reco_ra'] *= u.deg
-    data_qtable['reco_dec'] *= u.deg
-    data_qtable['reco_energy'] *= u.TeV
-
-    # Compute the effective time and elapsed time.
-    # ToBeUpdated: how to compute the effective time for the software coincidence?
-    elapsed_time = data_qtable['timestamp'][-1] - data_qtable['timestamp'][0]
+    # ToBeUpdated: how to compute the effective time for the software coincidence.
+    # At the moment it does not consider any dead times, which slightly underestimates a source flux.
     effective_time = elapsed_time
 
-    # Compute angular distances:
-    source_coord = SkyCoord.from_name(config_dl3['source_name'])
-    source_coord = source_coord.transform_to('icrs')
+    # Apply the gammaness cuts:
+    if 'GH_CUT' in header:
+        global_gam_cut = header['GH_CUT']
+        event_table = event_table[event_table['gammaness'] > global_gam_cut]
 
-    event_coords = SkyCoord(
-        ra=data_qtable['reco_ra'], dec=data_qtable['reco_dec'], frame='icrs',
-    )
+    else:
+        cut_table_gh = QTable.read(input_file_irf, 'GH_CUTS')
 
-    theta = source_coord.separation(event_coords)
-    data_qtable['theta'] = theta.to(u.deg)
+        mask_gh_gamma = evaluate_binned_cut(
+            values=event_table['gammaness'],
+            bin_values=event_table['reco_energy'],
+            cut_table=cut_table_gh,
+            op=operator.ge,
+        )
 
-    # Apply the gammaness cut:
-    gam_cut = config_dl3['gammaness_cut']
-    mask_gam = (data_qtable['gammaness'] > gam_cut)
-
-    data_qtable = data_qtable[mask_gam]
-    event_coords = event_coords[mask_gam]
+        event_table = event_table[mask_gh_gamma]
 
     hdus = fits.HDUList([fits.PrimaryHDU(), ])
 
-    # Create a event HDU:
-    logger.info('\nCreating an event HDU...')
+    # Create a event list HDU:
+    logger.info('\nCreating an event list HDU...')
 
-    event_table = QTable({
-        'EVENT_ID': data_qtable['event_id'],
-        'TIME': data_qtable['timestamp'],
-        'RA': data_qtable['reco_ra'],
-        'DEC': data_qtable['reco_dec'],
-        'ENERGY': data_qtable['reco_energy'],
-        'GAMMANESS': data_qtable['gammaness'],
-        'MULTIP': u.Quantity(np.repeat(3, len(data_qtable)), dtype=int),
-        'GLON': event_coords.galactic.l.to(u.deg),
-        'GLAT': event_coords.galactic.b.to(u.deg),
-        'ALT': data_qtable['reco_alt'],
-        'AZ': data_qtable['reco_az'],
-    })
+    event_list, event_header = create_event_list(event_table, effective_time, elapsed_time, config_dl3)
+    hdu_event = fits.BinTableHDU(event_list, header=event_header, name='EVENTS')
 
-    ev_header = fits.Header()
-    ev_header["CREATED"] = Time.now().utc.iso
-    ev_header["HDUCLAS1"] = 'EVENTS'
-    ev_header["OBS_ID"] = np.unique(data_qtable['obs_id'])[0]
-    ev_header["DATE-OBS"] = Time(data_qtable['timestamp'][0], format='unix', scale='utc').to_value('iso', 'date_hms')[:10]
-    ev_header["TIME-OBS"] = Time(data_qtable['timestamp'][0], format='unix', scale='utc').to_value('iso', 'date_hms')[11:]
-    ev_header["DATE-END"] = Time(data_qtable['timestamp'][-1], format='unix', scale='utc').to_value('iso', 'date_hms')[:10]
-    ev_header["TIME-END"] = Time(data_qtable['timestamp'][-1], format='unix', scale='utc').to_value('iso', 'date_hms')[11:]
-    ev_header["TSTART"] = data_qtable['timestamp'][0]
-    ev_header["TSTOP"] = data_qtable['timestamp'][-1]
-    ev_header["MJDREFI"] = int(Time("1970-01-01T00:00", scale="utc").mjd)
-    ev_header["MJDREFF"] = Time("1970-01-01T00:00", scale="utc").mjd - ev_header["MJDREFI"]
-    ev_header["TIMEUNIT"] = "s"
-    ev_header["TIMESYS"] = "UTC"
-    ev_header["TIMEREF"] = "TOPOCENTER"
-    ev_header["ONTIME"] = elapsed_time
-    ev_header["TELAPSE"] = elapsed_time
-    ev_header["DEADC"] = effective_time / elapsed_time
-    ev_header["LIVETIME"] = effective_time
-    ev_header["OBJECT"] = config_dl3['source_name']
-    ev_header["OBS_MODE"] = 'WOBBLE'
-    ev_header["N_TELS"] = 3
-    ev_header["TELLIST"] = 'LST-1_MAGIC'
-    ev_header["INSTRUME"] = 'LST-1_MAGIC'
-    ev_header["RA_PNT"] = data_qtable['pointing_ra'][0].to_value(u.deg)
-    ev_header["DEC_PNT"] = data_qtable['pointing_dec'][0].to_value(u.deg)
-    ev_header["ALT_PNT"] = data_qtable['pointing_alt'][0].to_value(u.deg)
-    ev_header["AZ_PNT"] = data_qtable['pointing_az'][0].to_value(u.deg)
-    ev_header["RA_OBJ"] = source_coord.ra.to_value(u.deg)
-    ev_header["DEC_OBJ"] = source_coord.dec.to_value(u.deg)
-    ev_header["FOVALIGN"] = "RADEC"
-
-    hdu_event = fits.BinTableHDU(event_table, header=ev_header, name="EVENTS")
     hdus.append(hdu_event)
 
     # Create a GTI table:
     logger.info('Creating a GTI HDU...')
 
-    gti_table = QTable({
-        'START': u.Quantity(data_qtable['timestamp'][0], unit=u.s, ndmin=1),
-        'STOP': u.Quantity(data_qtable['timestamp'][-1], unit=u.s, ndmin=1),
-    })
-
-    gti_header = fits.Header()
-    gti_header['CREATED'] = Time.now().utc.iso
-    gti_header['HDUCLAS1'] = 'GTI'
-    gti_header['OBS_ID'] = np.unique(data_qtable['obs_id'])[0]
-    gti_header['MJDREFI'] = ev_header['MJDREFI']
-    gti_header['MJDREFF'] = ev_header['MJDREFF']
-    gti_header['TIMESYS'] = ev_header['TIMESYS']
-    gti_header['TIMEUNIT'] = ev_header['TIMEUNIT']
-    gti_header['TIMEREF'] = ev_header['TIMEREF']
-
+    gti_table, gti_header = create_gti_table(event_table)
     hdu_gti = fits.BinTableHDU(gti_table, header=gti_header, name='GTI')
+
     hdus.append(hdu_gti)
 
     # Create a pointing table:
     logger.info('Creating a pointing HDU...')
 
-    pnt_table = QTable({
-        'TIME': u.Quantity(data_qtable['timestamp'][0], unit=u.s, ndmin=1),
-        'RA_PNT': u.Quantity(data_qtable['pointing_ra'][0].to_value(u.deg), ndmin=1),
-        'DEC_PNT': u.Quantity(data_qtable['pointing_dec'][0].to_value(u.deg), ndmin=1),
-        'ALT_PNT': u.Quantity(data_qtable['pointing_alt'][0].to_value(u.deg), ndmin=1),
-        'AZ_PNT': u.Quantity(data_qtable['pointing_az'][0].to_value(u.deg), ndmin=1),
-    })
+    pnt_table, pnt_header = create_pointing_table(event_table)
+    hdu_pnt = fits.BinTableHDU(pnt_table, header=pnt_header, name='POINTING')
 
-    pnt_header = fits.Header()
-    pnt_header['CREATED'] = Time.now().utc.iso
-    pnt_header['HDUCLAS1'] = 'POINTING'
-    pnt_header['OBS_ID'] = np.unique(data_qtable['obs_id'])[0]
-    pnt_header['MJDREFI'] = ev_header['MJDREFI']
-    pnt_header['MJDREFF'] = ev_header['MJDREFF']
-    pnt_header['TIMEUNIT'] = ev_header['TIMEUNIT']
-    pnt_header['TIMESYS'] = ev_header['TIMESYS']
-    pnt_header['OBSGEO-L'] = (28.76177, 'Geographic longitude of telescope (deg)')
-    pnt_header["OBSGEO-B"] = (-17.89064, 'Geographic latitude of telescope (deg)')
-    pnt_header["OBSGEO-H"] = (2199.835, 'Geographic latitude of telescope (m)')
-    pnt_header["TIMEREF"] = ev_header["TIMEREF"]
-
-    hdu_pnt = fits.BinTableHDU(pnt_table, header=pnt_header, name="POINTING")
     hdus.append(hdu_pnt)
 
     # Add the IRF HDUs:
     logger.info('Adding the IRF HDUs...')
-    hdu_irf = fits.open(input_file_irf)
     hdus += hdu_irf[1:]
 
     # Save in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    base_name = Path(input_file_dl2).resolve().name
+    base_name = Path(input_file_dl2).name
     regex = r'dl2_(\S+)\.h5'
 
     parser = re.findall(regex, base_name)[0]
