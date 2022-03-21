@@ -19,8 +19,6 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 	config_file: path of config file
 	key: key in the h5 files (magic-cta-pipe output) where the hillas params are saved
 	subrun: subrun number 
-	data_or_mc: what ctapipe output is used
-	test_or_train: what ctapipe output is used
 	plot_image: set to True if you want the scatterplot images saved
 	"""
 	
