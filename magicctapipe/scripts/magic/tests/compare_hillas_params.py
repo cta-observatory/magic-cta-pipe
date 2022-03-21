@@ -33,7 +33,7 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 	df_mcp = pd.read_hdf(mcp_file, key=hillas_key)
 
 	#filter for subrun
-	df_mcp = (df_mcp.loc[df_mcp["obs_id"] == subrun])
+	df_mcp = df_mcp.loc[df_mcp["obs_id"] == subrun]
 
 	#apply cuts
 	# 50<Size<50000, leakage<0.15
