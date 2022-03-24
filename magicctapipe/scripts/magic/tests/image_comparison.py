@@ -247,12 +247,12 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         #the file only gets saved if there are differences between the images
         if config["save_only_when_differences"] == True:
             if any(charge_differences) == True: 
-                df_pixel.to_hdf(f"Image_comparison_{run_num}.h5", f"/{event.index.event_id}", "a")
+                df_pixel.to_hdf(f"{run_num}_image_comparison.h5", f"/{event.index.event_id}_M{tel_id}", "a")
                 #df_pix_diff.to_hdf(f"{out_path}{run_num}_{id_event}_M{telescope_id}_pixel_diff.h5", "/pixel_differences", "w")
                 
         #the file gets saved in any case
         elif config["save_only_when_differences"] == False:
-            df_pixel.to_hdf(f"Image_comparison_{run_num}.h5", f"/{event.index.event_id}", "a")
+            df_pixel.to_hdf(f"{run_num}_image_comparison.h5", f"/{event.index.event_id}_M{tel_id}", "a")
 
         
         # plotting ------------------------------------------------------------------------------------------------------
