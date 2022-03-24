@@ -121,15 +121,17 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
     geometry_old = source.subarray.tel[tel_id].camera.geometry
     geometry_mcp = new_camera_geometry(geometry_old)
 
-    for event_id in ids_to_compare:
 
+    for event_id in ids_to_compare:
         try:
             event = seeker.get_event_id(event_id)
         except IndexError:
             print(f"Event with ID {event_id} not found in calibrated file. Skipping...")
             continue
-
+        
         print("Event ID:", event.index.event_id, "- Telecope ID:", tel_id)
+
+        
 
         # mars data -----------------------------------------------------------------------------
         mars_event = mars_data.loc[(mars_data["event_id"]==event.index.event_id)&(mars_data["tel_id"]==tel_id)]
@@ -145,7 +147,8 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
 
         # get mcp data------------------------------------------------------------------------------
         magic_clean = MAGIC_Cleaning.magic_clean(geometry_mcp,cleaning_config)
-        calibrated_data_images = event.dl1.tel[tel_id].image
+        original_data_images = event.dl1.tel[tel_id].image
+        original_data_images_copy = original_data_images.copy()
         event_pulse_time = event.dl1.tel[tel_id].peak_time
 
         badrmspixel_mask = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
@@ -155,7 +158,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         dead_pixel_indices = [i for i, x in enumerate(deadpixel_mask) if x]
         bad_not_dead_pixels_test = [i for i in bad_pixel_indices if i not in dead_pixel_indices]
 
-        clean_mask, calibrated_data_images, event_pulse_time = magic_clean.clean_image(calibrated_data_images, event_pulse_time, unsuitable_mask=unsuitable_mask)
+        clean_mask, calibrated_data_images, event_pulse_time = magic_clean.clean_image(original_data_images_copy, event_pulse_time, unsuitable_mask=unsuitable_mask)
         event_image_mcp = calibrated_data_images.copy()
         event_image_mcp[~clean_mask] = 0
 
@@ -262,7 +265,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         #original data
         plt.subplot2grid(grid_shape, (0, 0))
         geom = CameraGeometry.from_name("MAGICCamMars")
-        disp = CameraDisplay(geom, calibrated_data_images)
+        disp = CameraDisplay(geom, original_data_images)
         # pixels whose original value is negative
         # negative_mask = calibrated_data_images < 0
         disp.add_colorbar(label="pixel charge")
@@ -285,7 +288,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         disp_mcp.set_limits_minmax(vmin, vmax)
         disp_mcp.highlight_pixels(clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1)
         plt.title("magic_cta_pipe data")
-    
+
         #differences between MARS and mcp
         plt.subplot2grid(grid_shape, (1, 0))        
         disp = CameraDisplay(geom, charge_differences[:1039])
@@ -313,7 +316,8 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         
         fig.suptitle(f"Comparison_MARS_magic-cta-pipe: Event ID {event.index.event_id}, {run_num}, M{tel_id}", fontsize=16)
         fig.savefig(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png")
+        # print(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png")
         # fig.savefig(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.pdf")
-
-    
+            
+        
     return comparison
