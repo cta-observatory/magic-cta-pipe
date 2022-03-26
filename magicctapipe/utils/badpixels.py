@@ -281,14 +281,21 @@ class MAGICBadPixelsCalc():
 
         event_time = event.trigger.time.unix
 
+        sample_time_range = Time(
+            [[event.mon.tel[1].pedestal.sample_time[0].unix, event.mon.tel[1].pedestal.sample_time[-1].unix]], format='unix', scale='utc',
+        )
+
         for tel_id in event.trigger.tels_with_trigger:
 
             if self.n_samples_dead[tel_id - 1] == -1:
-                self.n_samples_dead[tel_id - 1] = len(event.mon.tel[tel_id].pixel_status.sample_time_range)
+                # self.n_samples_dead[tel_id - 1] = len(event.mon.tel[tel_id].pixel_status.sample_time_range)
+                self.n_samples_dead[tel_id - 1] = len(sample_time_range)
                 self.sample_ranges_dead[tel_id - 1] = np.zeros(shape=(self.n_samples_dead[tel_id - 1],2))
                 for i in range(self.n_samples_dead[tel_id - 1]):
-                    self.sample_ranges_dead[tel_id - 1][i,0] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][0].unix
-                    self.sample_ranges_dead[tel_id - 1][i,1] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][1].unix
+                    # self.sample_ranges_dead[tel_id - 1][i,0] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][0].unix
+                    # self.sample_ranges_dead[tel_id - 1][i,1] = event.mon.tel[tel_id].pixel_status.sample_time_range[i][1].unix
+                    self.sample_ranges_dead[tel_id - 1][i,0] = sample_time_range[i][0].unix
+                    self.sample_ranges_dead[tel_id - 1][i,1] = sample_time_range[i][1].unix
 
             # now find sample:
             indices_time_dead = np.where(event_time >= self.sample_ranges_dead[tel_id - 1][:,0])[0]

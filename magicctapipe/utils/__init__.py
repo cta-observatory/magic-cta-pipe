@@ -32,11 +32,13 @@ from .gti import (
 )
 
 from .functions import (
-    crab_magic,
     calc_impact,
-    calc_nsim,
-    transform_to_radec,
-    calc_angular_separation,
+    calc_mean_direction,
+    calc_angular_distance,
+    transform_altaz_to_radec,
+    check_tel_combination,
+    save_pandas_to_table,
+    get_dl2_mean,
 )
 
 from .plot import (
@@ -87,11 +89,13 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
-    "crab_magic",
     "calc_impact",
-    "calc_nsim",
-    "transform_to_radec",
-    "calc_angular_separation",
+    "calc_mean_direction",
+    "calc_angular_distance",
+    "transform_altaz_to_radec",
+    "check_tel_combination",
+    "save_pandas_to_table",
+    "get_dl2_mean",
     "save_plt",
     "load_default_plot_settings",
     "load_default_plot_settings_02",

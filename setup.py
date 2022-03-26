@@ -24,7 +24,7 @@ docs_require = [
     "sphinx_argparse",
     "sphinx_rtd_theme",
     "numpydoc",
-    "nbsphinx"
+    "nbsphinx",
 ]
 
 setup(
@@ -32,11 +32,12 @@ setup(
     packages=find_packages(),
     install_requires=[
         'astropy>=4.0.5,<5',
+        'lstchain~=0.9.0',
         'ctapipe~=0.12.0',
         'ctapipe_io_magic~=0.4.1',
-        'ctaplot~=0.5.3',
+        'ctaplot~=0.5.5',
         'eventio>=1.5.1,<2.0.0a0',  # at least 1.1.1, but not 2
-        'gammapy>=0.18,<0.19',
+        'gammapy~=0.19.0',
         'uproot~=4.1',
         'h5py',
         'joblib',
@@ -44,7 +45,7 @@ setup(
         'numba',
         'numpy',
         'pandas',
-        'pyirf~=0.5.0',
+        'pyirf~=0.6.0',
         'scipy',
         'seaborn',
         'scikit-learn',
