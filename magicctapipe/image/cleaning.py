@@ -1,26 +1,43 @@
-import itertools
 import copy
+import itertools
 import numpy as np
+import astropy.units as u
+from astropy.coordinates import SkyCoord, AltAz
 from scipy.sparse.csgraph import connected_components
 
+from ctapipe.coordinates import GroundFrame
+from ctapipe.core.container import Container, Field
+from ctapipe.image import (
+    tailcuts_clean,
+    number_of_islands,
+    hillas_parameters,
+    timing_parameters,
+    leakage_parameters,
+    apply_time_delta_cleaning,
+)
+
 __all__ = [
-    "magic_clean",
-    "pixel_treatment",
+    'MAGICClean',
+    'PixelTreatment',
+    'apply_dynamic_cleaning',
+    'get_num_islands_MAGIC',
+    'clean_image_params',
+    'eval_impact',
+    'tailcuts_clean_lstchain',
 ]
 
-
-class magic_clean():
+class MAGICClean:
 
     def __init__(self, camera, configuration):
 
         self.configuration = configuration
         self.camera = camera
 
-        if configuration['usesum']:
+        if configuration['use_sum']:
 
-            self.NN2 = self.GetListOfNN(NN_size = 2)
-            self.NN3 = self.GetListOfNN(NN_size = 3)
-            self.NN4 = self.GetListOfNN(NN_size = 4)
+            self.NN2 = self.GetListOfNN(NN_size=2)
+            self.NN3 = self.GetListOfNN(NN_size=3)
+            self.NN4 = self.GetListOfNN(NN_size=4)
 
         # Set the XNN thresholds and windows if they have not already been defined.
         # The defaults are from the expert values values in the star_MX_OSA.rc file.
@@ -55,12 +72,12 @@ class magic_clean():
         else:
             self.Window4NN = 1.80
 
-        if 'findhotpixels' in configuration:
-            self.findhotpixels = configuration['findhotpixels']
+        if 'find_hotpixels' in configuration:
+            self.find_hotpixels = configuration['find_hotpixels']
         else:
-            self.findhotpixels = False
+            self.find_hotpixels = False
 
-        if self.findhotpixels:
+        if self.find_hotpixels:
 
             if 'use_interpolation' in configuration:
                 use_interpolation = configuration['use_interpolation']
@@ -88,16 +105,16 @@ class magic_clean():
                 fast = False
 
             treatment_config = dict(
-                use_interpolation = use_interpolation,
-                use_process_pedestal_evt = use_process_pedestal_evt,
-                use_process_times = use_process_times,
-                minimum_number_of_neighbors = minimum_number_of_neighbors,
-                fast = fast,
-                )
+                use_interpolation=use_interpolation,
+                use_process_pedestal_evt=use_process_pedestal_evt,
+                use_process_times=use_process_times,
+                minimum_number_of_neighbors=minimum_number_of_neighbors,
+                fast=fast,
+            )
 
-            self.pixel_treatment = pixel_treatment(self.camera,treatment_config)
+            self.pixel_treatment = PixelTreatment(self.camera,treatment_config)
 
-    def GetListOfNN(self,NN_size = 2, bad_pixels=None):
+    def GetListOfNN(self, NN_size=2, bad_pixels=None):
 
         NN = []
         pixels = list(range(self.camera.n_pixels))
@@ -161,18 +178,18 @@ class magic_clean():
 
         return np.unique(NN,axis=0)
 
-    def clean_image(self,event_image,event_pulse_time, unsuitable_mask = None):
+    def clean_image(self, event_image, event_pulse_time, unsuitable_mask=None):
 
-        if unsuitable_mask is None and self.findhotpixels:
-            raise ValueError("findhotpixels set to %s but not unsuitable_mask provided." % self.findhotpixels)
+        if unsuitable_mask is None and self.find_hotpixels:
+            raise ValueError("find_hotpixels set to %s but not unsuitable_mask provided." % self.find_hotpixels)
 
-        if self.findhotpixels:
+        if self.find_hotpixels:
 
             self.event_image, self.event_pulse_time, self.unsuitable_mask, self.unmapped_mask = self.pixel_treatment.treat(event_image, event_pulse_time,unsuitable_mask)
             self.event_image[self.unmapped_mask] = 0.0
 
         else:
- 
+
             self.event_image = copy.copy(event_image)
             self.event_pulse_time = copy.copy(event_pulse_time)
             self.unmapped_mask = []
@@ -181,7 +198,7 @@ class magic_clean():
         # try:
         clean_mask = np.asarray([False]*self.camera.n_pixels)
 
-        if self.configuration['usesum']:
+        if self.configuration['use_sum']:
             clean_mask = self.magic_clean_step1Sum()
         else:
             clean_mask = self.magic_clean_step1()
@@ -223,9 +240,9 @@ class magic_clean():
 
     def magic_clean_step1Sum(self):
 
-        sumthresh2NN = self.SumThresh2NNPerPixel * 2 * self.configuration['picture_thresh'];
-        sumthresh3NN = self.SumThresh3NNPerPixel * 3 * self.configuration['picture_thresh'];
-        sumthresh4NN = self.SumThresh4NNPerPixel * 4 * self.configuration['picture_thresh'];
+        sumthresh2NN = self.SumThresh2NNPerPixel * 2 * self.configuration['picture_thresh']
+        sumthresh3NN = self.SumThresh3NNPerPixel * 3 * self.configuration['picture_thresh']
+        sumthresh4NN = self.SumThresh4NNPerPixel * 4 * self.configuration['picture_thresh']
 
         clip2NN = 2.2  * sumthresh2NN/2.
         clip3NN = 1.05 * sumthresh3NN/3.
@@ -233,7 +250,7 @@ class magic_clean():
 
         mask = np.asarray([False]*len(self.event_image))
 
-        if self.findhotpixels:
+        if self.find_hotpixels:
 
             bad_pixels = np.where(self.unmapped_mask)[0]
 
@@ -267,7 +284,7 @@ class magic_clean():
         mask = self.event_image <= self.configuration['picture_thresh']
         return ~mask
 
-    def magic_clean_step2(self,mask):
+    def magic_clean_step2(self, mask):
 
         if np.sum(mask) == 0:
             return mask
@@ -276,7 +293,7 @@ class magic_clean():
             n = 0
             size = 0
 
-            if self.configuration['usetime']:
+            if self.configuration['use_time']:
 
                 neighbors = copy.copy(self.camera.neighbor_matrix)
                 neighbors[self.unmapped_mask][:,self.unmapped_mask] = False
@@ -329,7 +346,7 @@ class magic_clean():
             return mask
 
     def magic_clean_step2b(self, mask):
-        
+
         if np.sum(mask) == 0:
             return mask
 
@@ -350,11 +367,11 @@ class magic_clean():
             island_sizes = np.zeros(num_islands)
             for i in range(num_islands):
                 island_sizes[i] = self.event_image[mask][labels == i].sum()
-              
+
             # Disabling pixels for all islands save the brightest one
             brightest_id = island_sizes.argmax() + 1
 
-            if self.configuration['usetime']:
+            if self.configuration['use_time']:
                 brightest_pixel_times = self.event_pulse_time[mask & (island_ids == brightest_id)]
                 brightest_pixel_charges = self.event_image[mask & (island_ids == brightest_id)]
 
@@ -377,11 +394,10 @@ class magic_clean():
 
         selection = []
         core_mask = mask.copy()
-        
+
         pixels_with_picture_neighbors_matrix = copy.copy(self.camera.neighbor_matrix)
 
         for pixel in np.where(self.event_image)[0]:
-            
 
             if pixel in np.where(core_mask)[0]:
                 continue
@@ -390,8 +406,8 @@ class magic_clean():
                 continue
 
             hasNeighbor = False
-            if self.configuration['usetime']:
-                
+            if self.configuration['use_time']:
+
                 neighbors = np.where(pixels_with_picture_neighbors_matrix[pixel])[0]
 
                 for neighbor in neighbors:
@@ -409,12 +425,12 @@ class magic_clean():
 
                 if not hasNeighbor:
                     continue
-                
+
             if not pixels_with_picture_neighbors_matrix.dot(core_mask)[pixel]:
                 continue
-            
+
             selection.append(pixel)
-            
+
         mask[selection] = True
         return mask
 
@@ -430,7 +446,7 @@ class magic_clean():
 
         pixels = np.where(boundary_threshold_selection)[0]
 
-        if self.configuration['usetime']:
+        if self.configuration['use_time']:
             boundary_pixels = copy.copy(pixels)
             neighbors = pixels_with_picture_neighbors_matrix[boundary_pixels]
             neighbors[:,~core_mask]=False
@@ -445,7 +461,7 @@ class magic_clean():
             hasNeighbor = np.minimum(np.sum(time_selection*neighbors,axis=1),1).astype(bool)
             pixels = boundary_pixels[hasNeighbor]
 
-        selection = pixels[pixels_with_picture_neighbors_matrix.dot(core_mask)[pixels]]         
+        selection = pixels[pixels_with_picture_neighbors_matrix.dot(core_mask)[pixels]]
         mask[selection] = True
         return mask
 
@@ -457,7 +473,8 @@ class magic_clean():
         mask[pixels_to_remove] = False
         return mask
 
-class pixel_treatment():
+
+class PixelTreatment:
 
     def __init__(self, camera, configuration):
 
@@ -492,7 +509,7 @@ class pixel_treatment():
         self.neighbors_array = self.camera.neighbor_matrix
         self.npix = self.camera.n_pixels
 
-    def treat(self,event_image,event_pulse_time,unsuitable_mask):
+    def treat(self, event_image, event_pulse_time, unsuitable_mask):
 
         self.event_image = event_image
         self.event_pulse_time = event_pulse_time
@@ -518,7 +535,7 @@ class pixel_treatment():
         neighbors_unsuitable[:,self.unsuitable_mask] = False
 
         number_of_neighbors = np.sum(neighbors_unsuitable,axis=1)
-        number_of_neighbors_selection = number_of_neighbors > self.minimum_number_of_neighbors - 1 
+        number_of_neighbors_selection = number_of_neighbors > self.minimum_number_of_neighbors - 1
 
         unsuitable_mask = np.asarray([False]*self.npix)
         unsuitable_mask[self.unsuitable_pixels[number_of_neighbors_selection]] = True
@@ -536,7 +553,7 @@ class pixel_treatment():
         self.unsuitable_mask_new = unsuitable_mask
         self.unsuitable_pixels_new = np.where(self.unsuitable_mask_new)[0]
 
-    def find_two_closest_times(self,times_arr):
+    def find_two_closest_times(self, times_arr):
         n0 = len(times_arr)
         minval = 1e10
         p0 = -1
@@ -584,3 +601,201 @@ class pixel_treatment():
 
     def interpolate_pedestals(self):
         pass
+
+
+# This function is derived from cta-lstchain v0.8.4 (lstchain/image/cleaning.py)
+def apply_dynamic_cleaning(image, signal_pixels, threshold, fraction):
+    """
+    Application of the dynamic cleaning
+
+    Parameters
+    ----------
+    image: `np.ndarray`
+          Pixel charges
+    signal_pixels
+    threshold: `float`
+        Minimum average charge in the 3 brightest pixels to apply
+        the dynamic cleaning (else nothing is done)
+    fraction: `float`
+        Pixels below fraction * (average charge in the 3 brightest pixels)
+        will be removed from the cleaned image
+
+    Returns
+    -------
+    mask_dynamic_cleaning: `np.ndarray`
+        Mask with the selected pixels after the dynamic cleaning
+
+    """
+
+    max_3_value_index = np.argsort(image)[-3:]
+    mean_3_max_signal = np.mean(image[max_3_value_index])
+
+    if mean_3_max_signal < threshold:
+        return signal_pixels
+
+    dynamic_threshold = fraction * mean_3_max_signal
+    mask_dynamic_cleaning = (image >= dynamic_threshold) & signal_pixels
+
+    return mask_dynamic_cleaning
+
+
+def get_num_islands_MAGIC(camera, clean_mask, event_image):
+    """Eval num islands for MAGIC
+
+    Parameters
+    ----------
+    camera : ctapipe.instrument.camera.geometry.CameraGeometry
+        camera geometry
+    clean_mask : numpy.ndarray
+        clean mask
+    event_image : numpy.ndarray
+        event image
+
+    Returns
+    -------
+    int
+        num_islands
+    """
+    # Identifying connected islands
+    neighbors = camera.neighbor_matrix_sparse
+    clean_neighbors = neighbors[clean_mask][:, clean_mask]
+    num_islands, labels = connected_components(clean_neighbors, directed=False)
+    return num_islands
+
+
+def clean_image_params(geom, image, clean, peakpos):
+    """Evaluate cleaned image parameters
+
+    Parameters
+    ----------
+    geom : ctapipe.instrument.camera.geometry.CameraGeometry
+        camera geometry
+    image : numpy.ndarray
+        image
+    clean : numpy.ndarray
+        clean mask
+    peakpos : numpy.ndarray
+        peakpos
+
+    Returns
+    -------
+    tuple
+        ctapipe.containers.HillasParametersContainer
+            hillas_p
+        ctapipe.containers.LeakageContainer
+            leakage_p
+        ctapipe.containers.TimingParametersContainer
+            timing_p
+    """
+    # Hillas parameters, same for LST and MAGIC. From ctapipe
+    hillas_p = hillas_parameters(geom=geom[clean], image=image[clean])
+    # Leakage, same for LST and MAGIC. From ctapipe
+    leakage_p = leakage(geom=geom, image=image, cleaning_mask=clean)
+    # Timing parameters, same for LST and MAGIC. From ctapipe
+    timing_p = timing_parameters(
+        geom=geom[clean],
+        image=image[clean],
+        peak_time=peakpos[clean],
+        hillas_parameters=hillas_p,
+    )
+
+    # Make sure each telescope get's an arrow
+    # if abs(time_grad[tel_id]) < 0.2:
+    #     time_grad[tel_id] = 1
+
+    return hillas_p, leakage_p, timing_p
+
+
+def eval_impact(subarray, hillas_p, stereo_params):
+    """Copied from protopipe"""
+    # Impact parameter for energy estimation (/ tel)
+    ground_frame = GroundFrame()
+    impact_p = {}
+
+    class ImpactContainer(Container):
+        impact = Field(-1, "Impact")
+
+    for tel_id in hillas_p.keys():
+        pos = subarray.positions[tel_id]
+        tel_ground = SkyCoord(pos[0], pos[1], pos[2], frame=ground_frame)
+
+        core_ground = SkyCoord(
+            stereo_params.core_x, stereo_params.core_y, 0 * u.m, frame=ground_frame,
+        )
+        # Should be better handled (tilted frame)
+        impact_ = np.sqrt(
+            (core_ground.x - tel_ground.x) ** 2 + (core_ground.y - tel_ground.y) ** 2
+        )
+        impact_p[tel_id] = ImpactContainer(impact=impact_)
+    return impact_p
+
+
+def tailcuts_clean_lstchain(geom, image, peak_time, input_file, cleaning_parameters):
+    """Apply tailcuts cleaning lstchain mode
+
+    Parameters
+    ----------
+    geom: `ctapipe.instrument.CameraGeometry`
+        Camera geometry information
+    image: array
+        pixel values
+    peak_time : array
+        dl1.peak_time
+    cleaning_parameters : dict
+        dictionary composed by the cleaning parameters for tailcuts and the ones
+        for lstchain tailcuts ('delta_time' and 'use_only_main_island')
+
+    Returns
+    -------
+    tuple
+        signal_pixels, num_islands, island_labels
+    """
+
+    # pop delta_time and use_main_island, so we can cleaning_parameters to tailcuts
+    delta_time = cleaning_parameters.pop("delta_time", None)
+    use_main_island = cleaning_parameters.pop("use_only_main_island", True)
+
+    sigma = cleaning_parameters["sigma"]
+    pedestal_thresh = get_threshold_from_dl1_file(input_file, sigma)
+    picture_thresh_cfg = cleaning_parameters["cleaning_parameters"]
+    print(
+        f"Fraction of pixel cleaning thresholds above picture thr.:"
+        f"{np.sum(pedestal_thresh>picture_thresh_cfg) / len(pedestal_thresh):.3f}"
+    )
+    picture_thresh = np.clip(pedestal_thresh, picture_thresh_cfg, None)
+
+    signal_pixels = tailcuts_clean(
+        geom=geom,
+        image=image,
+        picture_thresh=picture_thresh,
+        boundary_thresh=cleaning_parameters["boundary_thresh"],
+        keep_isolated_pixels=cleaning_parameters["keep_isolated_pixels"],
+        min_number_picture_neighbors=cleaning_parameters["min_n_neighbors"],
+    )
+
+    n_pixels = np.count_nonzero(signal_pixels)
+    if n_pixels > 0:
+        num_islands, island_labels = number_of_islands(camera_geom, signal_pixels)
+        n_pixels_on_island = np.bincount(island_labels.astype(np.int64))
+        # first island is no-island and should not be considered
+        n_pixels_on_island[0] = 0
+        max_island_label = np.argmax(n_pixels_on_island)
+        if use_only_main_island:
+            signal_pixels[island_labels != max_island_label] = False
+
+        # if delta_time has been set, we require at least one
+        # neighbor within delta_time to accept a pixel in the image:
+        if delta_time is not None:
+            cleaned_pixel_times = peak_time
+            # makes sure only signal pixels are used in the time
+            # check:
+            cleaned_pixel_times[~signal_pixels] = np.nan
+            new_mask = apply_time_delta_cleaning(
+                camera_geom, signal_pixels, cleaned_pixel_times, 1, delta_time
+            )
+            signal_pixels = new_mask
+
+        # count the surviving pixels
+        n_pixels = np.count_nonzero(signal_pixels)
+
+    return signal_pixels, num_islands, island_labels
