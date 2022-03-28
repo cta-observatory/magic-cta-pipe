@@ -58,17 +58,11 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
             image = image * (~bad_pixels)
         r1_dl1_calibrator_for_muon_rings(event)
 
-        focal_length = subarray.tel[telescope_id].optics.equivalent_focal_length
-
         # Check again: with the extractor for muon rings (most likely GlobalPeakWindowSum)
         # perhaps the event is no longer promising (e.g. if it has a large time evolution)
         if not tag_pix_thr(image, thr_low=thr_low):
             good_ring = False
         else:
-            # read geometry from event.inst. But not needed for every event. FIXME?
-            geom = subarray.tel[telescope_id]. \
-                camera.geometry
-            mirror_area = subarray.tel[telescope_id].optics.mirror_area
             event_id = event.index.event_id
             muonintensityparam, dist_mask, \
             ring_size, size_outside_ring, muonringparam, \
@@ -77,8 +71,8 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
             muonpars = \
                 analyze_muon_event(subarray, telescope_id, event_id,
                                    image, good_ring_config,
-            #                       plot_rings=False, plots_path='')
-                                  plot_rings=True, plots_path='../../../../data/'+telescope_name+'/')
+                                   plot_rings=False, plots_path='')
+            #                      plot_rings=True, plots_path='../../../../data/'+telescope_name+'/')
             #           (test) plot muon rings as png files
 
             # Now we want to obtain the waveform sample (in HG & LG) at which the ring light peaks:
