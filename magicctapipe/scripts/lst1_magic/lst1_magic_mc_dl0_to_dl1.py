@@ -439,8 +439,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                                           image=image,
                                           subarray=subarray,
                                           r1_dl1_calibrator_for_muon_rings=
-                                          r1_dl1_calibrator_for_muon_rings[event_info.tel_id],
-                                          good_ring_config=muon_config[event_info.tel_id],
+                                          r1_dl1_calibrator_for_muon_rings[tel_id],
+                                          good_ring_config=muon_config[tel_id],
                                           data_type='mc')
 
             logger.info(f'\nIn total {n_events_processed} events are processed.')
