@@ -17,6 +17,7 @@ $ python lst1_magic_mc_dl0_to_dl1.py
 --config-file ./config.yaml
 """
 
+import os
 import re
 import time
 import yaml
@@ -25,6 +26,7 @@ import argparse
 import numpy as np
 from pathlib import Path
 from astropy import units as u
+from astropy.table import Table
 from astropy.coordinates import (
     AltAz,
     SkyCoord,
@@ -41,6 +43,7 @@ from ctapipe.image import (
     hillas_parameters,
     timing_parameters,
     leakage_parameters,
+    ImageExtractor,
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
@@ -50,7 +53,9 @@ from lstchain.image.modifier import (
     set_numba_seed,
     random_psf_smearer,
 )
+from lstchain.image.muon import create_muon_table
 from magicctapipe.image import MAGICClean
+from magicctapipe.image.muons import perform_muon_analysis
 from magicctapipe.utils import calc_impact
 
 logger = logging.getLogger(__name__)
@@ -88,7 +93,7 @@ class EventInfoContainer(Container):
     magic_stereo = Field(-1, 'Flag to the MAGIC-stereo trigger')
 
 
-def mc_dl0_to_dl1(input_file, output_dir, config):
+def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     """
     Process simtel DL0 data containing
     LST-1 and MAGIC events to DL1.
@@ -119,6 +124,12 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     logger.info('\nThe telescope IDs of LST-1 and MAGIC:')
     logger.info(mc_tel_ids)
+
+    # Dictionary to store muons ring parameters
+    logger.info('\nMuons analysis: ' + str(muons_analysis))
+    muon_parameters = create_muon_table()
+    muon_parameters['telescope_name'] = []
+    r1_dl1_calibrator_for_muon_rings = {}
 
     tel_id_lst1 = mc_tel_ids['LST-1']
     tel_id_m1 = mc_tel_ids['MAGIC-I']
@@ -172,6 +183,31 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         config=config_extractor_magic,
         subarray=subarray,
     )
+
+    # Configure the muon analysis
+    if muons_analysis:
+        extractor_muon_name_lst = 'GlobalPeakWindowSum'
+        extractor_lst_muons = ImageExtractor.from_name(
+            extractor_muon_name_lst, subarray=subarray, config=config_extractor_lst
+        )
+        r1_dl1_calibrator_for_muon_rings[tel_id_lst1] = CameraCalibrator(subarray,
+                                                                        image_extractor=extractor_lst_muons)
+        extractor_muon_name_magic = 'GlobalPeakWindowSum'
+        extractor_magic_muons = ImageExtractor.from_name(
+            extractor_muon_name_magic, subarray=subarray, config=config_extractor_magic
+        )
+        r1_dl1_calibrator_for_muon_rings_magic = CameraCalibrator(subarray,
+                                                                  image_extractor=extractor_magic_muons)
+        r1_dl1_calibrator_for_muon_rings[tel_id_m1] = r1_dl1_calibrator_for_muon_rings_magic
+        r1_dl1_calibrator_for_muon_rings[tel_id_m2] = r1_dl1_calibrator_for_muon_rings_magic
+        muon_config = {tel_id_lst1: {},
+                       tel_id_m1: {},
+                       tel_id_m2: {}}
+        if 'muon_ring' in config_lst:
+            muon_config[tel_id_lst1] = config_lst['muon_ring']
+        if 'muon_ring' in config_magic:
+            muon_config[tel_id_m1] = config_magic['muon_ring']
+            muon_config[tel_id_m2] = config_magic['muon_ring']
 
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -329,6 +365,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     continue
 
                 # Compute the DISP parameter:
+                if (event.pointing.tel[tel_id].altitude > 90*u.deg) & (event.pointing.tel[tel_id].altitude < 90.01*u.deg):
+                    # simu at altitude == 90 can have saved value rounded up at float precision limit
+                    event.pointing.tel[tel_id].altitude = 90*u.deg
                 tel_pointing = AltAz(
                     alt=event.pointing.tel[tel_id].altitude,
                     az=event.pointing.tel[tel_id].azimuth,
@@ -388,6 +427,18 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 # Save the parameters to the output file:
                 writer.write('parameters', (event_info, hillas_params, timing_params, leakage_params))
 
+                if muons_analysis:
+                    perform_muon_analysis(muon_parameters,
+                                          event=event,
+                                          telescope_id=tel_id,
+                                          telescope_name=tel_name,
+                                          image=image,
+                                          subarray=subarray,
+                                          r1_dl1_calibrator_for_muon_rings=
+                                          r1_dl1_calibrator_for_muon_rings[event_info.tel_id],
+                                          good_ring_config=muon_config[event_info.tel_id],
+                                          data_type='mc')
+
             logger.info(f'\nIn total {n_events_processed} events are processed.')
             logger.info(f'({n_events_skipped} events are skipped)')
 
@@ -420,6 +471,15 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     logger.info('\nOutput file:')
     logger.info(output_file)
 
+    if muons_analysis:
+        dir, name = os.path.split(output_file)
+        name = name.replace('dl1', 'muons').replace('LST-1.1', 'LST-1')
+        # Consider the possibilities of DL1 files with .fits.h5 & .h5 ending:
+        name = name.replace('.fits.h5', '.fits').replace('.h5', '.fits')
+        muon_output_filename = dir + '/' +name
+        table = Table(muon_parameters)
+        table.write(muon_output_filename, format='fits', overwrite=True)
+        logger.info(f'\nOutput muons file: {muon_output_filename}')
 
 def main():
 
@@ -442,13 +502,19 @@ def main():
         help='Path to a yaml configuration file.',
     )
 
+    parser.add_argument(
+        '--muons', '-m',
+        action='store_true',
+        help='Boolean to do or not the muon analysis'
+    )
+
     args = parser.parse_args()
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
     # Process the input data:
-    mc_dl0_to_dl1(args.input_file, args.output_dir, config)
+    mc_dl0_to_dl1(args.input_file, args.output_dir, config, args.muons)
 
     logger.info('\nDone.')
 
