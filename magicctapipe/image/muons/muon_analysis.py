@@ -5,9 +5,34 @@ __all__ = [
     'perform_muon_analysis',
 ]
 
+
 def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, image, subarray,
                           r1_dl1_calibrator_for_muon_rings, good_ring_config, event_time=np.nan,
                           min_pe_for_muon_t_calc=10., data_type='mc'):
+    """
+
+    Parameters
+    ----------
+    muon_parameters: dict
+        Container for the parameters of all muon rings
+    event: ctapipe event container
+    telescope_id: int
+        Id of the telescope
+    telescope_name: string
+        Name of teh telescope
+    image:  `np.ndarray`
+        Number of photoelectrons in each pixel
+    subarray: `ctapipe.instrument.subarray.SubarrayDescription`
+    r1_dl1_calibrator_for_muon_rings: `ctapipe.calib.camera.CameraCalibrator`
+    good_ring_config: dict
+        Set of parameters used to perform the muon ring analysis and select good rings
+    event_time: float
+    min_pe_for_muon_t_calc: float
+        Minimum pixel brightness used to search for the waveform maximum time
+    data_type: string
+        'obs' or 'mc'
+
+    """
     if data_type == 'obs':
         bad_pixels = event.mon.tel[telescope_id].calibration.unusable_pixels[0]
         # Set to 0 unreliable pixels:

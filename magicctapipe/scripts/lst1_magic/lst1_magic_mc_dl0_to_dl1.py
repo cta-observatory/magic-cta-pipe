@@ -3,6 +3,7 @@
 
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+        Muon analysis by Gabriel Emery (gabriel.emery@unige.ch)
 
 This script processes simtel MC DL0 data (*.simtel.gz) containing LST-1 and MAGIC events
 and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
@@ -15,6 +16,7 @@ $ python lst1_magic_mc_dl0_to_dl1.py
 --input-file ./data/dl0/gamma_40deg_90deg_run1___cta-prod5-lapalma_LST-1_MAGIC_desert-2158m_mono_off0.4.simtel.gz
 --output-dir ./data/dl1
 --config-file ./config.yaml
+(--muons)
 """
 
 import os
@@ -106,6 +108,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         Path to a directory where to save an output DL1 data file
     config: dict
         Configuration for the LST-1 + MAGIC analysis
+    muons_analysis: bool
+        Perform the muon ring analysis if True
     """
 
     logger.info('\nLoading the input file:')
