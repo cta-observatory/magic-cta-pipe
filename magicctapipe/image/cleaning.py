@@ -190,7 +190,7 @@ class MAGICClean:
         if self.find_hotpixels:
 
             self.event_image = copy.copy(event_image)
-            self.event_image, self.event_pulse_time, self.unsuitable_mask, self.unmapped_mask = self.pixel_treatment.treat(event_image, event_pulse_time,unsuitable_mask)
+            self.event_image, self.event_pulse_time, self.unsuitable_mask, self.unmapped_mask = self.pixel_treatment.treat(self.event_image, event_pulse_time,unsuitable_mask)
             self.event_image[self.unmapped_mask] = 0.0
 
         else:
