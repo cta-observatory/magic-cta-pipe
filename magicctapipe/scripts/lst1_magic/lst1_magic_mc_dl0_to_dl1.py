@@ -477,13 +477,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
 
     if muons_analysis:
         dir, name = os.path.split(output_file)
-        name = name.replace('dl1', 'muons').replace('LST-1.1', 'LST-1')
+        name = name.replace('dl1', 'muons')
         # Consider the possibilities of DL1 files with .fits.h5 & .h5 ending:
-        name = name.replace('.fits.h5', '.fits').replace('.h5', '.fits')
-        muon_output_filename = dir + '/' +name
+        name = name.replace('.h5', '.fits')
+        muon_output_filename = dir + '/' + name
         table = Table(muon_parameters)
         table.write(muon_output_filename, format='fits', overwrite=True)
         logger.info(f'\nOutput muons file: {muon_output_filename}')
+
 
 def main():
 
