@@ -71,6 +71,11 @@ class MAGICClean:
         else:
             self.Window4NN = 1.80
 
+        if 'clipping' in configuration:
+            self.clipping = configuration['clipping']
+        else:
+            self.clipping = 750.0
+
         if 'find_hotpixels' in configuration:
             self.find_hotpixels = configuration['find_hotpixels']
         else:
@@ -184,6 +189,7 @@ class MAGICClean:
 
         if self.find_hotpixels:
 
+            self.event_image = copy.copy(event_image)
             self.event_image, self.event_pulse_time, self.unsuitable_mask, self.unmapped_mask = self.pixel_treatment.treat(event_image, event_pulse_time,unsuitable_mask)
             self.event_image[self.unmapped_mask] = 0.0
 
@@ -214,6 +220,9 @@ class MAGICClean:
         self.mask_step3 = copy.copy(clean_mask)
 
         self.used_pix = np.sum(clean_mask)
+
+        # clipping
+        self.event_image[np.where(self.event_image > self.clipping)] = self.clipping
 
         return clean_mask, self.event_image, self.event_pulse_time
 
