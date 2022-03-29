@@ -133,9 +133,9 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
         boundary_thresh=3.5,
         max_time_off=4.5 * 1.64,
         max_time_diff=1.5 * 1.64,
-        usetime=True,
-        usesum=True,
-        findhotpixels=find_hot_pixels,
+        use_time=True,
+        use_sum=True,
+        find_hotpixels=find_hot_pixels,
     )
 
     bad_pixels_config = dict(
