@@ -16,7 +16,8 @@ from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry
 from ctapipe.image import hillas_parameters
 from ctapipe.image.timing import timing_parameters
-from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
+from magicctapipe.image import MAGICClean
+from magicctapipe.utils import MAGICBadPixelsCalc
 
 from ctapipe.image.morphology import number_of_islands
 from magicctapipe.scripts import read_images
