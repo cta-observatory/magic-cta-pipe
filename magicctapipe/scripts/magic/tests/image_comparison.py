@@ -147,11 +147,11 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config"):
     tel_id = source.telescope
     geometry_old = source.subarray.tel[tel_id].camera.geometry
     geometry_mars = new_camera_geometry(geometry_old)
-    magic_clean = MAGIC_Cleaning.magic_clean(
-        geometry_mars, cleaning_config
+    magic_clean = MAGICClean(
+        geometry_old, cleaning_config
     )
-    badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-        config=bad_pixels_config, is_simulation=source.is_simulation
+    badpixel_calculator = MAGICBadPixelsCalc(
+        is_simulation=source.is_simulation, camera=geometry_old, config=bad_pixels_config,
     )
 
     seeker = EventSeeker(event_source=source)
