@@ -173,6 +173,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
+    use_charge_correction = config_magic['charge_correction'].pop('use')
+
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
@@ -278,6 +280,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     # Calibrate the event:
                     calibrator_magic._calibrate_dl0(event, tel_id)
                     calibrator_magic._calibrate_dl1(event, tel_id)
+
+                    if use_charge_correction:
+                        event.dl1.tel[tel_id].image *= config_magic['charge_correction']['correction_factor']
 
                     # Apply the image cleaning:
                     signal_pixels, image, peak_time = magic_clean.clean_image(
