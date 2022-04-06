@@ -350,6 +350,7 @@ def get_dl2_mean(input_data):
     # Create a base data frame:
     dl2_mean = pd.DataFrame(
         data={'combo_type': groupby_mean['combo_type'].to_numpy(),
+              'multiplicity': groupby_mean['multiplicity'].to_numpy(),
               'gammaness': gammaness_mean.to_numpy(),
               'reco_energy': reco_energy_mean.to_numpy(),
               'reco_alt': reco_alt_mean.to(u.deg).value,
