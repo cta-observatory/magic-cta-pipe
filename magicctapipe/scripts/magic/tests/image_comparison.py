@@ -76,12 +76,13 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
     if mode == "useall":
         with uproot.open(config["input_files"]["magic_cta_pipe"][f"M{tel_id}"]) as mcp_file:
             ids_to_compare = mcp_file["Events"]["MRawEvtHeader.fStereoEvtNumber"].array(library="np")
-            ids_to_compare = ids_to_compare["event_id"].tolist()
+            # print(ids_to_compare.shape)
+            ids_to_compare = ids_to_compare.tolist()
     elif mode == "use_ids_config":
         ids_to_compare = config["event_list"]
  
     print(len(ids_to_compare), "events will be compared", ids_to_compare)   
-
+    
     # we will now load the data files, and afterwards select the corresponding data for our events
     # get mars data ------------------------------------------------------------------------------------------------------
     mars_input = config["input_files"]["mars"]
@@ -90,7 +91,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
     telescope=[]    #telescope id
     obs_id=[]       #run number
     
-    for image_container in read_images(mars_input):
+    for image_container in read_images(mars_input, read_calibrated=True):
         events.append(image_container.event_id)
         telescope.append(image_container.tel_id)
         obs_id.append(image_container.obs_id)
@@ -107,7 +108,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
     # get other data----------------------------------------------------------------------------------------------------
     # we loop through the events, and only compare those that are in ids_to_compare
     
-    source = MAGICEventSource(input_url=config["input_files"]["magic_cta_pipe"][f"M{tel_id}"])
+    source = MAGICEventSource(input_url=config["input_files"]["magic_cta_pipe"][f"M{tel_id}"], process_run=False)
 
     run_num = source.obs_ids[0]
 
@@ -142,26 +143,60 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         idx = mars_event["image"].index[0]
         event_image_mars = np.array(mars_event["image"][idx][:1039])
         clean_mask_mars = event_image_mars != 0
-
+        #print("shape of mars image: ", event_image_mars.shape)
         #compare number of islands
         # num_islands_mars, island_labels_mars = number_of_islands(geometry_mars, (np.array(event_image[:1039]) > 0))
 
         # get mcp data------------------------------------------------------------------------------
-        magic_clean = MAGIC_Cleaning.magic_clean(geometry_mcp,cleaning_config)
+        magic_clean = MAGICClean(geometry_mcp,cleaning_config)
         original_data_images = event.dl1.tel[tel_id].image
         original_data_images_copy = original_data_images.copy()
         event_pulse_time = event.dl1.tel[tel_id].peak_time
 
-        badrmspixel_mask = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
-        deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
-        unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
-        bad_pixel_indices = [i for i, x in enumerate(badrmspixel_mask) if x]
-        dead_pixel_indices = [i for i, x in enumerate(deadpixel_mask) if x]
-        bad_not_dead_pixels_test = [i for i in bad_pixel_indices if i not in dead_pixel_indices]
+        #print("shape of original image: ", original_data_images_copy.shape)
+
+        print(f"138 pixel charge before cleaning: {original_data_images_copy[138]}")
+        print(f"140 pixel charge before cleaning: {original_data_images_copy[140]}")
+
+        neighbors_array = geometry_mcp.neighbor_matrix
+
+        for pix in np.where(neighbors_array[138] == True)[0]:
+            print(f"{pix} pixel charge before cleaning: {original_data_images_copy[pix]}")
+
+        badpixel_calculator = MAGICBadPixelsCalc(is_simulation=False,camera=geometry_mcp,config=bad_pixels_config)
+        badrmspixel_indices = [[None],[None]]
+        badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
+        print(f"Hot pixels: {np.where(badrmspixel_mask[tel_id-1] == True)[0]}")
+        deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
+        #deadpixel_mask = [[],[]]
+        unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
+
+
+        # unsuitable_pixel_events=[]
+        # for unsuit_pix in np.where(unsuitable_mask == True)[0].tolist():
+        #     if unsuit_pix in np.where(event_image_mars > 0)[0].tolist():
+        #         if event_image_mars[unsuit_pix] == original_data_images_copy[unsuit_pix]:
+        #             print(f"Unsuitable pixel {unsuit_pix} has original charge in Event {event.index.event_id}")
+        #             unsuitable_pixel_events.append(event.index.event_id)
+        #         else:
+        #             print(f"Interpolated value innnns used for unsuitable pixel {unsuit_pix} in Event {event.index.event_id}!")
+        #             continue
+
+        #badrmspixel_mask = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
+        #deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
+        #unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
+        #bad_pixel_indices = [i for i, x in enumerate(badrmspixel_mask) if x]
+        #dead_pixel_indices = [i for i, x in enumerate(deadpixel_mask) if x]
+        #bad_not_dead_pixels_test = [i for i in bad_pixel_indices if i not in dead_pixel_indices]
+
+        # print(f"Not suitable pixels: {np.where(unsuitable_mask == True)}")
 
         clean_mask, calibrated_data_images, event_pulse_time = magic_clean.clean_image(original_data_images_copy, event_pulse_time, unsuitable_mask=unsuitable_mask)
         event_image_mcp = calibrated_data_images.copy()
         event_image_mcp[~clean_mask] = 0
+
+        # clipping for charges > 750
+        event_image_mcp[event_im   age_mcp >= 750.0] = 750.0
 
         if not np.any(event_image_mcp):
             print(f"Event ID {event.index.event_id} for telescope {tel_id} does not have any surviving pixel. Skipping...")
@@ -195,46 +230,6 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         pix_diff_mcp = abs(event_image_mcp - calibrated_data_images)
 
         #create output file that contains the pixel values and differences------------------------------------------------
-        
-        """
-
-        df_pixel = pd.DataFrame()
-        data = np.transpose(np.array([event_image_mars, event_image_mcp, calibrated_data_images]))
-        #data_real = np.transpose(data)
-        
-        df_pixel = pd.DataFrame(data, columns=["MARS_charge", "mcp_charge", "calibrated_data"])
-        #df_pixel["calibrated data"] = np.transpose(data_value)#(calibrated_data_images[:1039])
-        df_pixel["difference_MARS-mcp"] = np.transpose(charge_differences)
-        df_pixel["relative_error_MARS-mcp"] = np.transpose(charge_differences/event_image_mcp)
-        # alternatively one could also calculate the relative error with the MARS charge value
-        # df_pixel["relative_error_MARS-mcp"] = np.transpose(charge_differences/event_image_mars)
-        df_pix_diff = df_pixel.loc[df_pixel["difference_MARS-mcp"] > 0]
-        #pix_diff_ids = df_pix_diff.index.tolist()
-        print(df_pix_diff)
-        
-        #saving the output
-        if config["save_only_when_differences"] == True:
-            #the file only gets saved if there are differences between the images
-            if any(charge_differences) == True: 
-                print("Differences found. Saving files!")
-                df_pixel.to_hdf(f"{out_path}/{run_num}_{event.index.event_id}_M{tel_id}_pixel.h5", "/pixel_differences", "w")
-                #df_pix_diff.to_hdf(f"{out_path}{run_num}_{id_event}_M{telescope_id}_pixel_diff.h5", "/pixel_differences", "w")
-                #print(pix_diff_ids)
-        
-            else:
-                print("No differences found. No files will be saved!")
-                continue
-        
-        elif config["save_only_when_differences"] == False:
-            #the file gets saved in any case
-            df_pixel.to_hdf(f"{out_path}/{run_num}_{event.index.event_id}_M{tel_id}_pixel_info.h5", "/pixel_information", "w")
-            df_pix_diff.to_hdf(f"{out_path}/{run_num}_{event.index.event_id}_M{tel_id}_pixel_diff.h5", "/pixel_differences", "w")
-            #print(pix_diff_ids)
-        else:
-            print("No criteria for saving data specified. Exiting.")
-            #exit()
-            """
-        # alternatively --------------------------------------------------------------------------------
 
         df_pixel = pd.DataFrame()
         data = np.transpose(np.array([event_image_mars, event_image_mcp, calibrated_data_images]))
@@ -280,6 +275,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         disp_mars.set_limits_minmax(vmin, vmax)
         disp_mars.add_colorbar(label="pixel charge")
         disp_mars.highlight_pixels(clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1)     
+        # disp_mars.highlight_pixels(unsuitable_mask[:1039], color="magenta", alpha=1, linewidth=1)     
         plt.title("MARS data")
 
         #mcp_data
@@ -320,5 +316,4 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         # print(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png")
         # fig.savefig(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.pdf")
             
-        
     return comparison
