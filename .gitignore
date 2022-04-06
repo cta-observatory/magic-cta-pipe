@@ -34,6 +34,8 @@ magicctapipe/_version_cache.py
 # Other
 TODO.txt
 magicctapipe/scripts/magic/tests/old_image_comparison
+magicctapipe/scripts/magic/tests/image_comp_output
+magicctapipe/scripts/magic/tests/hillas_comp_output
 test.ipynb
 .ipynb_checkpoints
 *.tmp
