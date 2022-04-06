@@ -17,9 +17,10 @@ from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry, CameraDescription
 from ctapipe.containers import HillasParametersContainer
 from ctapipe.io.eventseeker import EventSeeker
-from magicctapipe.utils import MAGIC_Cleaning  
+from magicctapipe.image import MAGICClean
+from magicctapipe.utils import MAGICBadPixelsCalc  
 from astropy.coordinates import Angle
-from magicctapipe.scripts import read_images, ImageContainerCleaned, ImageContainerCalibrated
+from magicctapipe.scripts.mars import read_images, ImageContainerCleaned, ImageContainerCalibrated
 
 #define camera geometry
 def new_camera_geometry(camera_geom):
@@ -40,9 +41,9 @@ cleaning_config = dict(
     boundary_thresh = 3.5,
     max_time_off = 4.5 * 1.64,
     max_time_diff = 1.5 * 1.64,
-    usetime = True,
-    usesum = True,
-    findhotpixels = True,
+    use_time = True,
+    use_sum = True,
+    find_hotpixels = True,
 )
 
 bad_pixels_config = dict(
