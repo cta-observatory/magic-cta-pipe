@@ -30,7 +30,7 @@ mcp_params = {
 	# "az" : "az", 
 	# "zd" : "alt",
 	# "n_islands" : "n_islands",
-	"leakage_M1" : "intensity_width_1", "leakage_M2" : "intensity_width_2"
+	"leakage_M1" : "intensity_width_1", "leakage_M2" : "intensity_width_1"
 }
 
 scale_factors = { 
