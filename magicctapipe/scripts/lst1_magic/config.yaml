@@ -60,6 +60,11 @@ MAGIC:
         find_hotpixels: 'auto'
         pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
+    muon_ring:
+        thr_low: 25
+        tailcut: [8, 4]
+        ring_completeness_threshold: 15
+
 
 event_coincidence:
     type_lst_time: 'dragon_time'   # select 'dragon_time', 'tib_time' or 'ucts_time'
