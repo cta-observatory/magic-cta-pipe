@@ -1,0 +1,19 @@
+#remember to change before running the script: input files, select right telescope
+
+input_files:
+    #calibrated input data
+    mars_calibrated: "/path/to/calibrated_file.root"
+
+    #input data that has already been processed by mars
+    mars_images: "/path/to/mars_image:file.h5"
+
+output_files:
+    file_path: "/path/to/output_directory"
+
+event_list: [1981, 1962]
+
+information:
+    tel_id: 1
+    run_number: 5086952
+
+save_only_when_differences: True

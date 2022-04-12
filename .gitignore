@@ -7,11 +7,14 @@ test_data
 *.o
 *.so
 __pycache__
+.vscode
+RFs
 
 # Files cretaed when running pip
 magicctapipe/_version.py
 magicctapipe/_version_cache.py
 
+.coverage
 # Eclipse editor project files
 .project
 .pydevproject
