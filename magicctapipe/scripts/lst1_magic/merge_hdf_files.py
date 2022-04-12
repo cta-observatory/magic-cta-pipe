@@ -6,16 +6,20 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
 This script merges HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
 It parses information from file names, so they should follow the convention (*Run*.h5 or *run*.h5).
-If you give "--run-wise" or "--subrun-wise" arguments, it merges input files run-wise or subrun-wise respectively.
+It saves merged file(s) in the "merged" directory which will be created under an input directory.
+
+If the "--run-wise" or "--subrun-wise" arguments are given, it merges input files run-wise or subrun-wise.
+They are applicable only to real data since MC data are already produced run-wise.
+The "subrun-wise" option is used to merge telescope-wise MAGIC subrun files (e.g., dl1_M1_Run05093711.001.h5 + dl1_M2_Run05093711.001.h5).
 
 Usage:
 $ python merge_hdf_files.py
 --input-dir ./data/dl1
---output-dir ./data/dl1/merged
+(--run-wise)
+(--subrun-wise)
 """
 
 import re
-import sys
 import glob
 import time
 import tables
@@ -30,13 +34,14 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 __all__ = [
+    'write_to_table',
     'merge_hdf_files',
 ]
 
 
 def write_to_table(input_file_mask, output_file):
     """
-    Create a new table and write the input data.
+    Creates a new table and write input data into it.
 
     Parameters
     ----------
@@ -49,36 +54,36 @@ def write_to_table(input_file_mask, output_file):
     input_files = glob.glob(input_file_mask)
     input_files.sort()
 
-    with tables.open_file(output_file, mode='w') as merged_file:
+    with tables.open_file(output_file, mode='w') as f_out:
 
         logger.info(input_files[0])
 
         # Create a new table with the first input file:
-        with tables.open_file(input_files[0]) as input_data:
+        with tables.open_file(input_files[0]) as f_input:
 
-            event_params = input_data.root.events.parameters
-            merged_file.create_table('/events', 'parameters', createparents=True, obj=event_params.read())
+            event_data = f_input.root.events.parameters
+            f_out.create_table('/events', 'parameters', createparents=True, obj=event_data.read())
 
-            for attribute in event_params.attrs._f_list():
-                merged_file.root.events.parameters.attrs[attribute] = event_params.attrs[attribute]
+            for attribute in event_data.attrs._f_list():
+                f_out.root.events.parameters.attrs[attribute] = event_data.attrs[attribute]
 
-            if 'simulation' in input_data.root:
+            if 'simulation' in f_input.root:
                 # Write the simulation configuration of the first input file,
                 # assuming that it is consistent with the other input files:
-                sim_config = input_data.root.simulation.config
-                merged_file.create_table('/simulation', 'config', createparents=True, obj=sim_config.read())
+                sim_config = f_input.root.simulation.config
+                f_out.create_table('/simulation', 'config', createparents=True, obj=sim_config.read())
 
                 for attribute in sim_config.attrs._f_list():
-                    merged_file.root.simulation.config.attrs[attribute] = sim_config.attrs[attribute]
+                    f_out.root.simulation.config.attrs[attribute] = sim_config.attrs[attribute]
 
         # Write the rest of the input files:
         for input_file in input_files[1:]:
 
             logger.info(input_file)
 
-            with tables.open_file(input_file) as input_data:
-                event_params = input_data.root.events.parameters
-                merged_file.root.events.parameters.append(event_params.read())
+            with tables.open_file(input_file) as f_input:
+                event_data = f_input.root.events.parameters
+                f_out.root.events.parameters.append(event_data.read())
 
     # Save the subarray description of the first input file,
     # assuming that it is consistent with the other input files:
@@ -88,25 +93,20 @@ def write_to_table(input_file_mask, output_file):
     logger.info(f'--> {output_file}\n')
 
 
-def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
+def merge_hdf_files(input_dir, run_wise=False, subrun_wise=False):
     """
-    Merge input HDF files produced by
+    Merges input HDF files produced by
     the LST-1 + MAGIC combined analysis pipeline.
 
     Parameters
     ----------
     input_dir: str
         Path to a directory where input HDF files are stored
-    output_dir: str
-        Path to a directory where to save merged HDF files
     run_wise: bool
-        If true, it merges input files run-wise (only for real data)
+        If True, it merges input files run-wise (applicable to real data)
     subrun_wise: bool
-        If true, it merges input files subrun-wise (only for real data)
+        If True, it merges input files subrun-wise (applicable to MAGIC real data)
     """
-
-    logger.info('\nInput directory:')
-    logger.info(input_dir)
 
     input_file_mask = f'{input_dir}/*.h5'
 
@@ -117,27 +117,29 @@ def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
     regex_run = re.compile(r'(\S+run)(\d+)\.h5', re.IGNORECASE)
     regex_subrun = re.compile(r'(\S+run)(\d+)\.(\d+)\.h5', re.IGNORECASE)
 
-    file_names = np.array([])
-    run_ids = np.array([])
-    subrun_ids = np.array([])
+    file_names = []
+    run_ids = []
+    subrun_ids = []
 
-    for file_path in input_files:
+    for input_file in input_files:
 
-        base_name = Path(file_path).name
+        file_name = Path(input_file).name
 
-        if re.fullmatch(regex_run, base_name):
-            parser = re.findall(regex_run, base_name)[0]
-            file_names = np.append(file_names, parser[0])
-            run_ids = np.append(run_ids, parser[1])
+        if re.fullmatch(regex_run, file_name):
+            parser = re.findall(regex_run, file_name)[0]
+            file_names.append(parser[0])
+            run_ids.append(parser[1])
 
-        elif re.fullmatch(regex_subrun, base_name):
-            parser = re.findall(regex_subrun, base_name)[0]
-            file_names = np.append(file_names, parser[0])
-            run_ids = np.append(run_ids, parser[1])
-            subrun_ids = np.append(subrun_ids, parser[2])
+        elif re.fullmatch(regex_subrun, file_name):
+            parser = re.findall(regex_subrun, file_name)[0]
+            file_names.append(parser[0])
+            run_ids.append(parser[1])
+            subrun_ids.append(parser[2])
 
     file_names_unique = np.unique(file_names)
     run_ids_unique = np.unique(run_ids)
+
+    subrun_ids = np.array(subrun_ids)
 
     if len(file_names_unique) == 1:
         file_name = file_names_unique[0]
@@ -146,10 +148,10 @@ def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
         file_name = 'dl1_MAGIC.Run'
 
     else:
-        logger.error('\nMultiple types of files exist in the input directory. Exiting.')
-        sys.exit()
+        raise RuntimeError('Multiple types of files are found in the input directory.')
 
     # Merge the input files:
+    output_dir = f'{input_dir}/merged'
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     if subrun_wise:
@@ -159,7 +161,7 @@ def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
             subrun_ids_unique = np.unique(subrun_ids[run_ids == run_id])
 
             for subrun_id in subrun_ids_unique:
-                file_mask = f'{input_dir}/*{run_id}.{subrun_id}.h5'
+                file_mask = f'{input_dir}/*Run{run_id}.{subrun_id}.h5'
                 output_file = f'{output_dir}/{file_name}{run_id}.{subrun_id}.h5'
 
                 write_to_table(file_mask, output_file)
@@ -168,27 +170,29 @@ def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
         logger.info('\nMerging the input files run-wise:')
 
         for run_id in run_ids_unique:
-            file_mask = f'{input_dir}/*{run_id}.*h5'
+            file_mask = f'{input_dir}/*Run{run_id}.*h5'
             output_file = f'{output_dir}/{file_name}{run_id}.h5'
 
             write_to_table(file_mask, output_file)
 
     else:
         logger.info('\nMerging the input files:')
+
         file_mask = f'{input_dir}/*.h5'
 
         if len(run_ids_unique) == 1:
             output_file = f'{output_dir}/{file_name}{run_ids_unique[0]}.h5'
 
         else:
-            str_lengths_unique = np.unique([len(x) for x in run_ids_unique])
+            run_id_min = np.min(run_ids_unique.astype(int))
+            run_id_max = np.max(run_ids_unique.astype(int))
 
-            if len(str_lengths_unique) == 1:
-                run_id_min = run_ids_unique[0]
-                run_id_max = run_ids_unique[-1]
-            else:
-                run_id_min = np.min(run_ids_unique.astype(int))
-                run_id_max = np.max(run_ids_unique.astype(int))
+            string_lengths_unique = np.unique([len(x) for x in run_ids_unique])
+
+            if len(string_lengths_unique) == 1:
+                # Handle the case that the run_ids are originally zero-padded:
+                run_id_min = str(run_id_min).zfill(string_lengths_unique[0])
+                run_id_max = str(run_id_max).zfill(string_lengths_unique[0])
 
             output_file = f'{output_dir}/{file_name}{run_id_min}_to_{run_id_max}.h5'
 
@@ -207,24 +211,19 @@ def main():
     )
 
     parser.add_argument(
-        '--output-dir', '-o', dest='output_dir', type=str, default='./data',
-        help='Path to a directory where to save merged HDF files.',
-    )
-
-    parser.add_argument(
         '--run-wise', dest='run_wise', action='store_true',
-        help='Merges input files run-wise (only for real data).',
+        help='Merge input files run-wise (applicable to real data).',
     )
 
     parser.add_argument(
         '--subrun-wise', dest='subrun_wise', action='store_true',
-        help='Merges input files subrun-wise (only for real data).',
+        help='Merge input files subrun-wise (applicable to MAGIC real data).',
     )
 
     args = parser.parse_args()
 
     # Merge the input files:
-    merge_hdf_files(args.input_dir, args.output_dir, args.run_wise, args.subrun_wise)
+    merge_hdf_files(args.input_dir, args.run_wise, args.subrun_wise)
 
     logger.info('Done.')
 

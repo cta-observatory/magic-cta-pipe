@@ -4,12 +4,13 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script reconstructs the stereo parameters of the events containing more than one telescope information.
-The event cuts specified in a configuration file are applied to events before the reconstruction.
-When an input file is "real" data containing LST-1 and MAGIC events, the script checks the angular distance
-of the LST-1 and MAGIC pointing directions. Then, if the distance is more than 0.1 degree, it stops the process
-to avoid the reconstruction of mis-pointing data. For example, the event coincidence can happen even though
-wobble offsets are different between the two systems.
+This script processes DL1 events and reconstructs the stereo parameters with more than one telescope information.
+Event cuts specified in a configuration file are applied to events before the reconstruction.
+
+When an input is real data containing LST-1 and MAGIC events, it checks the angular distance of the LST-1 and MAGIC pointing directions.
+Then, it stops the process when the distance is larger than the limit specified in a configuration file.
+This is in principle to avoid the reconstruction of too mis-pointing data, for example,
+DL1 data may contain coincident events which are taken with different wobble offsets between the systems.
 
 Usage:
 $ python lst1_magic_stereo_reco.py
@@ -28,11 +29,8 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from astropy import units as u
-from astropy.coordinates import (
-    Angle,
-    SkyCoord,
-    angular_separation,
-)
+from astropy.coordinates import Angle
+from astropy.coordinates.angle_utilities import angular_separation
 from ctapipe.reco import HillasReconstructor
 from ctapipe.containers import (
     ArrayEventContainer,
@@ -41,8 +39,8 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
-    calc_impact,
-    calc_mean_direction,
+    calculate_impact,
+    calculate_mean_direction,
     check_tel_combination,
     save_pandas_to_table,
 )
@@ -53,66 +51,60 @@ logger.setLevel(logging.INFO)
 
 tel_id_lst = 1
 
-theta_uplim = u.Quantity(0.1, u.deg)
-
 __all__ = [
-    'stereo_reco',
+    'calculate_pointing_separation',
+    'stereo_reconstruction',
 ]
 
 
-def check_angular_distance(input_data, theta_uplim):
+def calculate_pointing_separation(event_data):
     """
-    Check the angular distance of the LST-1 and MAGIC
-    pointing directions and stop the process if it is
-    larger than the upper limit.
+    Calculates the angular distance of the
+    LST-1 and MAGIC pointing directions.
 
     Parameters
     ----------
-    data: pandas.core.frame.DataFrame
-        Pandas data frame containing LST-1 and MAGIC events
-    theta_uplim: astropy.units.quantity.Quantity
-        Upper limit of the angular distance
+    event_data: pandas.core.frame.DataFrame
+        Pandas data frame of LST-1 and MAGIC events
+
+    Returns
+    -------
+    theta: astropy.units.quantity.Quantity
+        Angular distance of the LST-1 and MAGIC pointing directions
     """
 
-    df_lst = input_data.query('tel_id == 1')
-    obs_ids_joint = df_lst.index.get_level_values('obs_id').tolist()
-    event_ids_joint = df_lst.index.get_level_values('event_id').tolist()
+    df_lst = event_data.query('tel_id == 1')
 
-    multi_indices = pd.MultiIndex.from_arrays(
-        [obs_ids_joint, event_ids_joint], names=['obs_id', 'event_id'],
-    )
+    pointing_az_lst = u.Quantity(df_lst['pointing_az'].to_numpy(), u.rad)
+    pointing_alt_lst = u.Quantity(df_lst['pointing_alt'].to_numpy(), u.rad)
 
-    df_magic = input_data.query('tel_id == [2, 3]')
+    obs_ids = df_lst.index.get_level_values('obs_id').tolist()
+    event_ids = df_lst.index.get_level_values('event_id').tolist()
+
+    multi_indices = pd.MultiIndex.from_arrays([obs_ids, event_ids], names=['obs_id', 'event_id'])
+
+    df_magic = event_data.query('tel_id == [2, 3]')
     df_magic.reset_index(level='tel_id', inplace=True)
     df_magic = df_magic.loc[multi_indices]
 
-    az_magic_mean, alt_magic_mean = calc_mean_direction(
-        lon=df_magic['pointing_az'], lat=df_magic['pointing_alt'],
-    )
+    # Calculate the mean direction of the M1 and M2 pointing directions:
+    pointing_az_magic, pointing_alt_magic = calculate_mean_direction(lon=df_magic['pointing_az'],
+                                                                     lat=df_magic['pointing_alt'])
 
     theta = angular_separation(
-        lon1=u.Quantity(df_lst['pointing_az'].to_numpy(), u.rad),
-        lat1=u.Quantity(df_lst['pointing_alt'].to_numpy(), u.rad),
-        lon2=az_magic_mean.to(u.rad),
-        lat2=alt_magic_mean.to(u.rad),
+        lon1=pointing_az_lst,
+        lat1=pointing_alt_lst,
+        lon2=pointing_az_magic,
+        lat2=pointing_alt_magic,
     )
 
-    n_events_sep = np.sum(theta > theta_uplim)
-
-    if n_events_sep > 0:
-        logger.info(f'--> The pointing directions are separated by more than {theta_uplim.value} degree. ' \
-                    'The input data would be taken by different wobble offsets. Please check the data carefully. Exiting.\n')
-        sys.exit()
-
-    else:
-        angle_max = np.max(theta.to(u.arcmin).value)
-        logger.info(f'--> Maximum angular distance is {angle_max:.3f} arcmin. Continue.')
+    return theta
 
 
-def stereo_reco(input_file, output_dir, config):
+def stereo_reconstruction(input_file, output_dir, config):
     """
-    Reconstruct the stereo parameters of the events
-    containing more than one telescope information.
+    Processes DL1 events and reconstructs the stereo parameters
+    with more than one telescope information.
 
     Parameters
     ----------
@@ -124,22 +116,21 @@ def stereo_reco(input_file, output_dir, config):
         Configuration for the LST-1 + MAGIC analysis
     """
 
+    config_sterec = config['stereo_reco']
+
+    logger.info('\nConfiguration for the stereo reconstruction:')
+    logger.info(config_sterec)
+
+    # Load the input file:
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    input_data = pd.read_hdf(input_file, key='events/parameters')
-    input_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
-    input_data.sort_index(inplace=True)
+    event_data = pd.read_hdf(input_file, key='events/parameters')
+    event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    event_data.sort_index(inplace=True)
 
-    input_data['multiplicity'] = input_data.groupby(['obs_id', 'event_id']).size()
-    input_data.query('multiplicity > 1', inplace=True)
+    is_simulation = ('true_energy' in event_data.columns)
 
-    n_events = len(input_data.groupby(['obs_id', 'event_id']).size())
-    logger.info(f'--> {n_events} stereo events')
-
-    is_simulation = ('true_energy' in input_data.columns)
-
-    # Read the subarray description:
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_positions = subarray.positions
 
@@ -147,64 +138,69 @@ def stereo_reco(input_file, output_dir, config):
     for tel_id in subarray.tel.keys():
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
 
-    # Apply the cuts before the reconstruction:
-    event_cuts = config['stereo_reco']['event_cuts']
+    # Apply the event cuts:
+    logger.info('\nApplying the event cuts...')
 
-    logger.info('\nApplying the following event cuts:')
-    logger.info(event_cuts)
+    event_data.query(config_sterec['event_cuts'], inplace=True)
 
-    input_data.query(event_cuts, inplace=True)
-    input_data['multiplicity'] = input_data.groupby(['obs_id', 'event_id']).size()
-    input_data.query('multiplicity > 1', inplace=True)
+    event_data['multiplicity'] = event_data.groupby(['obs_id', 'event_id']).size()
+    event_data.query('multiplicity > 1', inplace=True)
 
-    combo_types = check_tel_combination(input_data)
+    combo_types = check_tel_combination(event_data)
+    event_data[combo_types.columns[0]] = combo_types
 
-    if is_simulation:
-        input_data = input_data.join(combo_types)
-    else:
-        input_data.update(combo_types)
+    # Check the angular distance of the LST1 and MAGIC pointing directions:
+    tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
 
-    # Check the angular distance of the pointing directions:
-    telescope_ids = np.unique(input_data.index.get_level_values('tel_id'))
+    if (not is_simulation) and (tel_id_lst in tel_ids):
 
-    if not is_simulation and (tel_id_lst in telescope_ids):
         logger.info('\nChecking the angular distance of the LST-1 and MAGIC pointing directions...')
-        check_angular_distance(input_data, theta_uplim)
 
-    # Configure the reconstructor:
+        theta = calculate_pointing_separation(event_data)
+        theta_uplim = u.Quantity(config_sterec['theta_uplim'], u.arcmin)
+
+        n_events_sep = np.count_nonzero(theta > theta_uplim)
+
+        if n_events_sep > 0:
+            logger.info(f'--> The pointing directions are separated by more than {theta_uplim}. Exiting.')
+            sys.exit()
+        else:
+            theta_max = np.max(theta.to(u.arcmin))
+            logger.info(f'--> Maximum angular distance is {theta_max:.3f}.')
+
+    # Configure the HillasReconstructor:
     hillas_reconstructor = HillasReconstructor(subarray)
 
-    # Since the HillasReconstructor requires the ArrayEventContainer,
-    # here we initialize it and set the necessary information event-by-event:
+    # Start processing the events.
+    # Since the reconstructor requires the ArrayEventContainer,
+    # here we initialize it and reset necessary information event-by-event:
     event = ArrayEventContainer()
 
-    az_mean, alt_mean = calc_mean_direction(
-        lon=input_data['pointing_az'], lat=input_data['pointing_alt'],
-    )
+    group_size = event_data.groupby(['obs_id', 'event_id']).size()
 
-    multi_indices = input_data.groupby(['obs_id', 'event_id']).size().index
+    obs_ids = group_size.index.get_level_values('obs_id')
+    event_ids = group_size.index.get_level_values('event_id')
 
-    observation_ids = multi_indices.get_level_values('obs_id')
-    event_ids = multi_indices.get_level_values('event_id')
+    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(lon=event_data['pointing_az'],
+                                                                   lat=event_data['pointing_alt'])
 
-    # Start processing events:
     logger.info('\nReconstructing the stereo parameters...')
 
-    for i_ev, (obs_id, ev_id) in enumerate(zip(observation_ids, event_ids)):
+    for i_evt, (obs_id, event_id) in enumerate(zip(obs_ids, event_ids)):
 
-        if i_ev % 100 == 0:
-            logger.info(f'{i_ev} events')
+        if i_evt % 100 == 0:
+            logger.info(f'{i_evt} events')
 
-        df_ev = input_data.query(f'(obs_id == {obs_id}) & (event_id == {ev_id})')
+        df_evt = event_data.query(f'(obs_id == {obs_id}) & (event_id == {event_id})')
 
-        event.pointing.array_altitude = alt_mean[i_ev]
-        event.pointing.array_azimuth = az_mean[i_ev]
+        event.pointing.array_altitude = pointing_alt_mean[i_evt]
+        event.pointing.array_azimuth = pointing_az_mean[i_evt]
 
-        telescope_ids = df_ev.index.get_level_values('tel_id')
+        tel_ids = df_evt.index.get_level_values('tel_id')
 
-        for tel_id in telescope_ids:
+        for tel_id in tel_ids:
 
-            df_tel = df_ev.query(f'tel_id == {tel_id}')
+            df_tel = df_evt.query(f'tel_id == {tel_id}')
 
             event.pointing.tel[tel_id].altitude = u.Quantity(df_tel['pointing_alt'].iloc[0], u.rad)
             event.pointing.tel[tel_id].azimuth = u.Quantity(df_tel['pointing_az'].iloc[0], u.rad)
@@ -231,10 +227,10 @@ def stereo_reco(input_file, output_dir, config):
         if stereo_params.az < 0:
             stereo_params.az += u.Quantity(360, u.deg)
 
-        for tel_id in telescope_ids:
+        for tel_id in tel_ids:
 
             # Calculate the impact parameter:
-            impact = calc_impact(
+            impact = calculate_impact(
                 core_x=stereo_params.core_x,
                 core_y=stereo_params.core_y,
                 az=stereo_params.az,
@@ -245,35 +241,38 @@ def stereo_reco(input_file, output_dir, config):
             )
 
             # Set the stereo parameters:
-            input_data.loc[(obs_id, ev_id, tel_id), 'h_max'] = stereo_params.h_max.to(u.m).value
-            input_data.loc[(obs_id, ev_id, tel_id), 'alt'] = stereo_params.alt.to(u.deg).value
-            input_data.loc[(obs_id, ev_id, tel_id), 'alt_uncert'] = stereo_params.alt_uncert.to(u.deg).value
-            input_data.loc[(obs_id, ev_id, tel_id), 'az'] = stereo_params.az.to(u.deg).value
-            input_data.loc[(obs_id, ev_id, tel_id), 'az_uncert'] = stereo_params.az_uncert.to(u.deg).value
-            input_data.loc[(obs_id, ev_id, tel_id), 'core_x'] = stereo_params.core_x.to(u.m).value
-            input_data.loc[(obs_id, ev_id, tel_id), 'core_y'] = stereo_params.core_y.to(u.m).value
-            input_data.loc[(obs_id, ev_id, tel_id), 'impact'] = impact.to(u.m).value
+            event_data.loc[(obs_id, event_id, tel_id), 'h_max'] = stereo_params.h_max.to(u.m).value
+            event_data.loc[(obs_id, event_id, tel_id), 'alt'] = stereo_params.alt.to(u.deg).value
+            event_data.loc[(obs_id, event_id, tel_id), 'alt_uncert'] = stereo_params.alt_uncert.to(u.deg).value
+            event_data.loc[(obs_id, event_id, tel_id), 'az'] = stereo_params.az.to(u.deg).value
+            event_data.loc[(obs_id, event_id, tel_id), 'az_uncert'] = stereo_params.az_uncert.to(u.deg).value
+            event_data.loc[(obs_id, event_id, tel_id), 'core_x'] = stereo_params.core_x.to(u.m).value
+            event_data.loc[(obs_id, event_id, tel_id), 'core_y'] = stereo_params.core_y.to(u.m).value
+            event_data.loc[(obs_id, event_id, tel_id), 'impact'] = impact.to(u.m).value
 
-    n_events_processed = i_ev + 1
+    n_events_processed = i_evt + 1
     logger.info(f'{n_events_processed} events')
 
-    # Save in an output file:
+    # Save the data in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    base_name = Path(input_file).resolve().name
     regex = r'dl1_(\S+)\.h5'
+    file_name = Path(input_file).resolve().name
 
-    parser = re.findall(regex, base_name)[0]
-    output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
+    if re.fullmatch(regex, file_name):
+        parser = re.findall(regex, file_name)[0]
+        output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
+    else:
+        raise RuntimeError('Could not parse information from the input file name.')
 
-    input_data.reset_index(inplace=True)
-    save_pandas_to_table(input_data, output_file, '/events', 'parameters')
+    event_data.reset_index(inplace=True)
+    save_pandas_to_table(event_data, output_file, group_name='/events', table_name='parameters', mode='w')
 
     subarray.to_hdf(output_file)
 
     if is_simulation:
-        sim_config = pd.read_hdf(input_file, 'simulation/config')
-        save_pandas_to_table(sim_config, output_file, '/simulation', 'config')
+        sim_config = pd.read_hdf(input_file, key='simulation/config')
+        save_pandas_to_table(sim_config, output_file, group_name='/simulation', table_name='config', mode='a')
 
     logger.info('\nOutput file:')
     logger.info(output_file)
@@ -306,7 +305,7 @@ def main():
         config = yaml.safe_load(f)
 
     # Process the input data:
-    stereo_reco(args.input_file, args.output_dir, config)
+    stereo_reconstruction(args.input_file, args.output_dir, config)
 
     logger.info('\nDone.')
 

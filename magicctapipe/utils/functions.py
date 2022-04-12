@@ -14,9 +14,9 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 __all__ = [
-    'calc_impact',
-    'calc_mean_direction',
-    'calc_angular_distance',
+    'calculate_impact',
+    'calculate_mean_direction',
+    'calculate_angular_distance',
     'transform_altaz_to_radec',
     'check_tel_combination',
     'save_pandas_to_table',
@@ -24,7 +24,7 @@ __all__ = [
 ]
 
 
-def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
+def calculate_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
     """
     Calculates the impact distance from a given telescope.
 
@@ -62,11 +62,11 @@ def calc_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):
     return impact
 
 
-def calc_mean_direction(lon, lat, weights=None):
+def calculate_mean_direction(lon, lat, weights=None):
     """
     Calculates the mean of input directions in a spherical coordinate.
     The inputs should be the "Series" type with the indices of 'obs_id' and 'event_id'.
-    The unit of the input longitude/latitude should be radian.
+    The unit of input longitude and latitude should be radian.
 
     Parameters
     ----------
@@ -122,10 +122,10 @@ def calc_mean_direction(lon, lat, weights=None):
     return lon_mean, lat_mean
 
 
-def calc_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
+def calculate_angular_distance(on_coord, event_coord, tel_coord, n_off_regions):
     """
-    Calculates the angular distance between the shower arrival direction
-    and ON/OFF regions.
+    Calculates the angular distance between
+    the shower arrival direction and ON/OFF regions.
 
     Parameters
     ----------
@@ -215,11 +215,11 @@ def transform_altaz_to_radec(alt, az, timestamp):
     """
 
     # Hardcode the longitude/latitude of ORM:
-    lat_orm = u.Quantity(28.76177, u.deg)
-    lon_orm = u.Quantity(-17.89064, u.deg)
-    height_orm = u.Quantity(2199.835, u.m)
+    LAT_ORM = u.Quantity(28.76177, u.deg)
+    LON_ORM = u.Quantity(-17.89064, u.deg)
+    HEIGHT_ORM = u.Quantity(2199.835, u.m)
 
-    location = EarthLocation.from_geodetic(lon=lon_orm, lat=lat_orm, height=height_orm)
+    location = EarthLocation.from_geodetic(lon=LAT_ORM, lat=LON_ORM, height=HEIGHT_ORM)
     horizon_frames = AltAz(location=location, obstime=timestamp)
 
     event_coord = SkyCoord(alt=alt, az=az, frame=horizon_frames)
@@ -231,20 +231,20 @@ def transform_altaz_to_radec(alt, az, timestamp):
     return ra, dec
 
 
-def check_tel_combination(input_data):
+def check_tel_combination(event_data):
     """
     Checks the telescope combination types of input events
     and returns a pandas data frame of the types.
 
     Parameters
     ----------
-    input_data: pandas.core.frame.DataFrame
-        Pandas data frame containing shower events
+    event_data: pandas.core.frame.DataFrame
+        Pandas data frame of shower events
 
     Returns
     -------
     combo_type: pandas.core.frame.DataFrame
-        Pandas data frame containing the telescope combination types
+        Pandas data frame of the telescope combination types
     """
 
     tel_combinations = {
@@ -256,14 +256,14 @@ def check_tel_combination(input_data):
 
     combo_types = pd.DataFrame()
 
-    n_events_total = len(input_data.groupby(['obs_id', 'event_id']).size())
+    n_events_total = len(event_data.groupby(['obs_id', 'event_id']).size())
     logger.info(f'\nIn total {n_events_total} stereo events are found:')
 
     for combo_type, (tel_combo, tel_ids) in enumerate(tel_combinations.items()):
 
-        df = input_data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
+        df_events = event_data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})')
 
-        groupby_size = df.groupby(['obs_id', 'event_id']).size()
+        groupby_size = df_events.groupby(['obs_id', 'event_id']).size()
         groupby_size = groupby_size[groupby_size == len(tel_ids)]
 
         n_events = len(groupby_size)
@@ -279,13 +279,13 @@ def check_tel_combination(input_data):
     return combo_types
 
 
-def save_pandas_to_table(input_data, output_file, group_name, table_name):
+def save_pandas_to_table(event_data, output_file, group_name, table_name, mode='w'):
     """
-    Saves a pandas data frame to a table.
+    Saves a pandas data frame in a table.
 
     Parameters
     ----------
-    data: pandas.core.frame.DataFrame
+    event_data: pandas.core.frame.DataFrame
         Pandas data frame containing shower events
     output_file: str
         Path to an output HDF file
@@ -293,42 +293,45 @@ def save_pandas_to_table(input_data, output_file, group_name, table_name):
         Group name of the output table
     table_name: str
         Name of the output table
+    mode: str
+        Mode of opening a table,
+        'w' for overwriting and 'a' for appending
     """
 
-    with tables.open_file(output_file, mode='a') as f_out:
+    with tables.open_file(output_file, mode=mode) as f_out:
 
-        event_values = [tuple(array) for array in input_data.to_numpy()]
-        dtypes = np.dtype([(name, dtype) for name, dtype in zip(input_data.dtypes.index, input_data.dtypes)])
+        event_values = [tuple(array) for array in event_data.to_numpy()]
+        dtypes = np.dtype([(name, dtype) for name, dtype in zip(event_data.dtypes.index, event_data.dtypes)])
 
         event_table = np.array(event_values, dtype=dtypes)
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
 
 
-def get_dl2_mean(input_data):
+def get_dl2_mean(event_data):
     """
     Calculates the mean of the DL2 parameters
     weighted by the uncertainties of RF estimations.
 
     Parameters
     ----------
-    data: pandas.core.frame.DataFrame
-        Pandas data frame containing the DL2 parameters
+    event_data: pandas.core.frame.DataFrame
+        Pandas data frame of the DL2 parameters
 
     Returns
     -------
     dl2_mean: pandas.core.frame.DataFrame
-        Pandas data frame containing the mean of the DL2 parameters
+        Pandas data frame of the mean of the DL2 parameters
     """
 
-    is_simulation = ('true_energy' in input_data.columns)
-    groupby_mean = input_data.groupby(['obs_id', 'event_id']).mean()
+    is_simulation = ('true_energy' in event_data.columns)
+    group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
 
     # Compute the mean of the gammaness:
-    gammaness_mean = groupby_mean['gammaness']
+    gammaness_mean = group_mean['gammaness']
 
     # Compute the mean of the reconstructed energies:
-    weights = 1 / input_data['reco_energy_err']
-    weighted_energy = np.log10(input_data['reco_energy']) * weights
+    weights = 1 / event_data['reco_energy_err']
+    weighted_energy = np.log10(event_data['reco_energy']) * weights
 
     weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
     weighted_energy_sum = weighted_energy.groupby(['obs_id', 'event_id']).sum()
@@ -336,58 +339,58 @@ def get_dl2_mean(input_data):
     reco_energy_mean = 10 ** (weighted_energy_sum / weights_sum)
 
     # Compute the mean of the reconstructed arrival directions:
-    reco_az_mean, reco_alt_mean = calc_mean_direction(
-        lon=np.deg2rad(input_data['reco_az']),
-        lat=np.deg2rad(input_data['reco_alt']),
-        weights=input_data['reco_disp_err'],
+    reco_az_mean, reco_alt_mean = calculate_mean_direction(
+        lon=np.deg2rad(event_data['reco_az']),
+        lat=np.deg2rad(event_data['reco_alt']),
+        weights=event_data['reco_disp_err'],
     )
 
     # Compute the mean of the telescope pointing directions:
-    pointing_az_mean, pointing_alt_mean = calc_mean_direction(
-        lon=input_data['pointing_az'], lat=input_data['pointing_alt'],
+    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
+        lon=event_data['pointing_az'], lat=event_data['pointing_alt'],
     )
 
     # Create a base data frame:
     dl2_mean = pd.DataFrame(
-        data={'combo_type': groupby_mean['combo_type'].to_numpy(),
-              'multiplicity': groupby_mean['multiplicity'].to_numpy(),
+        data={'combo_type': group_mean['combo_type'].to_numpy(),
+              'multiplicity': group_mean['multiplicity'].to_numpy(),
               'gammaness': gammaness_mean.to_numpy(),
               'reco_energy': reco_energy_mean.to_numpy(),
               'reco_alt': reco_alt_mean.to(u.deg).value,
               'reco_az': reco_az_mean.to(u.deg).value,
               'pointing_alt': pointing_alt_mean.to(u.rad).value,
               'pointing_az': pointing_az_mean.to(u.rad).value},
-        index=groupby_mean.index,
+        index=group_mean.index,
     )
 
     if is_simulation:
         # Add the MC parameters:
-        mc_params = groupby_mean[['true_energy', 'true_alt', 'true_az']]
+        mc_params = group_mean[['true_energy', 'true_alt', 'true_az']]
         dl2_mean = dl2_mean.join(mc_params)
 
     else:
         # Compute the mean of the Ra/Dec directions:
-        reco_ra_mean, reco_dec_mean = calc_mean_direction(
-            lon=np.deg2rad(input_data['reco_ra']),
-            lat=np.deg2rad(input_data['reco_dec']),
-            weights=input_data['reco_disp_err'],
+        reco_ra_mean, reco_dec_mean = calculate_mean_direction(
+            lon=np.deg2rad(event_data['reco_ra']),
+            lat=np.deg2rad(event_data['reco_dec']),
+            weights=event_data['reco_disp_err'],
         )
 
-        pointing_ra_mean, pointing_dec_mean = calc_mean_direction(
-            lon=np.deg2rad(input_data['pointing_ra']),
-            lat=np.deg2rad(input_data['pointing_dec']),
+        pointing_ra_mean, pointing_dec_mean = calculate_mean_direction(
+            lon=np.deg2rad(event_data['pointing_ra']),
+            lat=np.deg2rad(event_data['pointing_dec']),
         )
 
         # Add the additional parameters:
-        df = pd.DataFrame(
+        radec_time = pd.DataFrame(
             data={'reco_ra': reco_ra_mean.to(u.deg).value,
                   'reco_dec': reco_dec_mean.to(u.deg).value,
                   'pointing_ra': pointing_ra_mean.to(u.deg).value,
                   'pointing_dec': pointing_dec_mean.to(u.deg).value,
-                  'timestamp': groupby_mean['timestamp'].to_numpy()},
-            index=groupby_mean.index,
+                  'timestamp': group_mean['timestamp'].to_numpy()},
+            index=group_mean.index,
         )
 
-        dl2_mean = dl2_mean.join(df)
+        dl2_mean = dl2_mean.join(radec_time)
 
     return dl2_mean

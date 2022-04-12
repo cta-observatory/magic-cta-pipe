@@ -4,28 +4,29 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script processes MAGIC calibrated data (*_Y_*.root) with the MARS-like cleaning method and computes
-the DL1 parameters (i.e., Hillas, timing and leakage parameters). The script saves events in an output file
-only when all the DL1 parameters are reconstructed. The telescope IDs are reset to the following values when saving
-to the output file for the convenience of the combined analysis with LST-1, whose telescope ID is 1:
+This script processes events of MAGIC calibrated data (*_Y_*.root) with the MARS-like image cleaning method
+and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
+It saves only the events that all the DL1 parameters are successfully reconstructed.
+The telescope IDs are reset to the following ones for the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-The MAGICEventSource module searches for all the sub-run files belonging to the same observation ID and stored in
-the same directory of an input sub-run file. The module reads drive reports from the files and uses the information
-to reconstruct the telescope pointing direction. Thus, it is best to store the files in the same directory.
-If one gives the "--process-run" argument, the module also processes all the files together with the input file.
+It searches for all the subrun files belonging to the same observation ID and stored in the same directory as an input subrun file.
+Then it reads drive reports from the files and uses the information to reconstruct the telescope pointing direction.
+If the "--process-run" argument is given, it not only reads drive reports but also processes all the events of the subrun files.
 
 Usage:
-$ python magic_data_cal_to_dl1.py
+$ python magic_calib_to_dl1.py
 --input-file ./data/calibrated/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 --output-dir ./data/dl1
 --config-file ./config.yaml
+(--process-run)
 """
 
 import time
 import yaml
 import logging
 import argparse
+import warnings
 import numpy as np
 from pathlib import Path
 from astropy import units as u
@@ -45,6 +46,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
+# Ignore RuntimeWarnings appeared in the image cleaning:
+warnings.simplefilter('ignore', category=RuntimeWarning)
+
 sec2nsec = 1e9
 
 tel_positions = {
@@ -59,33 +63,28 @@ pedestal_types = [
 ]
 
 __all__ = [
-    'magic_cal_to_dl1',
+    'EventInfoContainer',
+    'magic_calib_to_dl1',
 ]
 
 
 class EventInfoContainer(Container):
-    """
-    Container to store the following event information:
-    - observation/event/telescope IDs
-    - telescope pointing direction
-    - event timing information
-    - parameters of a cleaned image
-    """
+    """ Container to store event information """
 
     obs_id = Field(-1, 'Observation ID')
     event_id = Field(-1, 'Event ID')
     tel_id = Field(-1, 'Telescope ID')
     pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
     pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
-    time_sec = Field(-1, 'Event time second')
-    time_nanosec = Field(-1, 'Event time nanosecond')
+    time_sec = Field(-1, 'Event trigger time second')
+    time_nanosec = Field(-1, 'Event trigger time nanosecond')
     n_pixels = Field(-1, 'Number of pixels of a cleaned image')
     n_islands = Field(-1, 'Number of islands of a cleaned image')
 
 
-def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
+def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     """
-    Process MAGIC calibrated data to DL1.
+    Processes MAGIC calibrated events and computes the DL1 parameters.
 
     Parameters
     ----------
@@ -96,10 +95,25 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     process_run: bool
-        If true, it processes all the sub-run files belonging to the
-        same observation ID of an input sub-run file (default: false)
+        If True, it processes events of all the subrun files
+        belonging to the same observation ID as an input subrun file
     """
 
+    config_cleaning = config['MAGIC']['magic_clean']
+
+    if config_cleaning['find_hotpixels'] == 'auto':
+        logger.info('\nSetting the "find_hotpixels" option to True...')
+        config_cleaning.update({'find_hotpixels': True})
+
+    pedestal_type = config_cleaning.pop('pedestal_type')
+
+    if pedestal_type not in pedestal_types:
+        raise KeyError(f'Unknown pedestal type "{pedestal_type}".')
+
+    logger.info('\nConfiguration for the image cleaning:')
+    logger.info(config_cleaning)
+
+    # Load the input file:
     event_source = MAGICEventSource(input_file, process_run=process_run)
 
     obs_id = event_source.obs_ids[0]
@@ -109,17 +123,8 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
     for root_file in event_source.file_list:
         logger.info(root_file)
 
-    # Configure the MAGIC cleaning:
-    config_cleaning = config['MAGIC']['magic_clean']
-
-    if config_cleaning['find_hotpixels'] == 'auto':
-        config_cleaning.update({'find_hotpixels': True})
-
-    logger.info('\nConfiguration for the image cleaning:')
-    logger.info(config_cleaning)
-
-    ped_type = config_cleaning.pop('pedestal_type')
-    i_ped_type = np.where(np.array(pedestal_types) == ped_type)[0][0]
+    # Configure the MAGIC image cleaning:
+    i_ped_type = np.where(np.array(pedestal_types) == pedestal_type)[0][0]
 
     camera_geom = event_source.subarray.tel[tel_id].camera.geometry
     magic_clean = MAGICClean(camera_geom, config_cleaning)
@@ -133,25 +138,27 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
         subrun_id = event_source.metadata['subrun_number'][0]
         output_file = f'{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5'
 
-    # Start processing events:
-    logger.info('\nProcessing the events:')
+    # Start processing the events:
     n_events_skipped = 0
 
-    with HDF5TableWriter(output_file, 'events', mode='w') as writer:
+    logger.info('\nProcessing the events...')
+
+    with HDF5TableWriter(output_file, group_name='events', mode='w') as writer:
 
         for event in event_source:
 
             if event.count % 100 == 0:
                 logger.info(f'{event.count} events')
 
-            # Apply the image cleaning:
+            # Get bad pixels:
             dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
             badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
             unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
-            signal_pixels, image, peak_time = magic_clean.clean_image(
-                event.dl1.tel[tel_id].image, event.dl1.tel[tel_id].peak_time, unsuitable_mask,
-            )
+            # Apply the image cleaning:
+            signal_pixels, image, peak_time = magic_clean.clean_image(event.dl1.tel[tel_id].image,
+                                                                      event.dl1.tel[tel_id].peak_time,
+                                                                      unsuitable_mask)
 
             image_cleaned = image.copy()
             image_cleaned[~signal_pixels] = 0
@@ -179,9 +186,8 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
 
             # Try to compute the timing parameters:
             try:
-                timing_params = timing_parameters(
-                    camera_geom, image_cleaned, peak_time_cleaned, hillas_params, signal_pixels,
-                )
+                timing_params = timing_parameters(camera_geom, image_cleaned,
+                                                  peak_time_cleaned, hillas_params, signal_pixels)
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                'Timing parameters computation failed. Skipping.')
@@ -198,8 +204,8 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
                 continue
 
             # Set the event information to the container.
-            # To keep the precision of a timestamp, here we set the integral and
-            # fractional parts separately as "time_sec" and "time_nanosec":
+            # To keep the precision of a timestamp for the event coincidence with LST-1,
+            # here we set the integral and fractional parts separately as "time_sec" and "time_nanosec":
             timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
             fractional, integral = np.modf(timestamp)
 
@@ -239,9 +245,9 @@ def magic_cal_to_dl1(input_file, output_dir, config, process_run=False):
     }
 
     # Save the subarray description.
-    # Here we save the MAGIC telescope positions relative to the center of the
-    # LST-1 + MAGIC array, which are also used for sim_telarray simulations:
-    subarray = SubarrayDescription('MAGIC', tel_positions, tel_descriptions)
+    # Here we save the MAGIC telescope positions relative to the center of the LST-1 + MAGIC array,
+    # which are also used for sim_telarray simulations:
+    subarray = SubarrayDescription('MAGIC-Array', tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
 
     logger.info('\nOutput file:')
@@ -256,7 +262,7 @@ def main():
 
     parser.add_argument(
         '--input-file', '-i', dest='input_file', type=str, required=True,
-        help='Path to an input MAGIC calibrated data file (*_Y_*.root).',
+        help='Path to an input MAGIC calibrated data file.',
     )
 
     parser.add_argument(
@@ -271,7 +277,7 @@ def main():
 
     parser.add_argument(
         '--process-run', dest='process_run', action='store_true',
-        help='Processes all the sub-run files of the same observation ID at once.',
+        help='Process all the subrun files of the same observation ID at once.',
     )
 
     args = parser.parse_args()
@@ -280,7 +286,7 @@ def main():
         config = yaml.safe_load(f)
 
     # Process the input data:
-    magic_cal_to_dl1(args.input_file, args.output_dir, config, args.process_run)
+    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
 
     logger.info('\nDone.')
 
