@@ -39,6 +39,7 @@ from pathlib import Path
 from decimal import Decimal
 from astropy import units as u
 from astropy.time import Time
+from ctapipe.containers import EventType
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
     check_tel_combination,
@@ -107,14 +108,18 @@ def load_lst_data_file(input_file):
     # Exclude non-reconstructed events:
     event_data.dropna(subset=['intensity', 'time_gradient', 'alt_tel', 'az_tel'], inplace=True)
 
-    # Check duplications of event IDs and exclude them if they exist.
+    # Exclude interleaved events:
+    event_type_subarray = EventType.SUBARRAY.value
+    event_data.query(f'event_type == {event_type_subarray}', inplace=True)
+
+    # Check the duplications of event IDs and exclude them if they exist.
     # ToBeChecked: if the duplication still happens in recent data or not:
     event_ids, counts = np.unique(event_data.index.get_level_values('event_id'), return_counts=True)
 
     if np.any(counts > 1):
         event_ids_dup = event_ids[counts > 1].tolist()
 
-        logger.warning('\nExclude the following events due to duplications of event IDs:')
+        logger.warning('\nExclude the following events due to the duplications of event IDs:')
         logger.warning(event_ids_dup)
 
         event_data.query(f'event_id != {event_ids_dup}', inplace=True)
