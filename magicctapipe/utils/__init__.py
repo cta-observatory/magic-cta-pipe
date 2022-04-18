@@ -32,9 +32,9 @@ from .gti import (
 )
 
 from .functions import (
-    calc_impact,
-    calc_mean_direction,
-    calc_angular_distance,
+    calculate_impact,
+    calculate_mean_direction,
+    calculate_angular_distance,
     transform_altaz_to_radec,
     check_tel_combination,
     save_pandas_to_table,
@@ -89,9 +89,9 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
-    "calc_impact",
-    "calc_mean_direction",
-    "calc_angular_distance",
+    "calculate_impact",
+    "calculate_mean_direction",
+    "calculate_angular_distance",
     "transform_altaz_to_radec",
     "check_tel_combination",
     "save_pandas_to_table",
