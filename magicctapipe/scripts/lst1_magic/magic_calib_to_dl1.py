@@ -4,7 +4,7 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script processes events of MAGIC calibrated data (*_Y_*.root) with the MARS-like image cleaning method
+This script processes events of MAGIC calibrated data (*_Y_*.root) with the MARS-like image cleaning
 and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
 It saves only the events that all the DL1 parameters are successfully reconstructed.
 The telescope IDs are reset to the following ones for the combined analysis with LST-1, whose telescope ID is 1:

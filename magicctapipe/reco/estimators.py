@@ -249,7 +249,7 @@ class DirectionRegressor:
                 az=u.Quantity(df_events['pointing_az'].to_numpy(), u.rad),
             )
 
-            telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
+            tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
             camera_frame = CameraFrame(
                 focal_length=self.tel_descriptions[tel_id].optics.equivalent_focal_length,
@@ -262,7 +262,7 @@ class DirectionRegressor:
                 frame=camera_frame,
             )
 
-            event_coord = event_coord.transform_to(telescope_frame)
+            event_coord = event_coord.transform_to(tel_frame)
 
             for flip in [0, 1]:
 
@@ -283,7 +283,7 @@ class DirectionRegressor:
 
         reco_params.sort_index(inplace=True)
 
-        # Get the flip combinations minimizing the sum of angular distances:
+        # Get the flip combinations minimizing the sum of the angular distances:
         flip_combinations = np.array(list(itertools.product([0, 1], repeat=len(tel_ids))))
         tel_combinations = list(itertools.combinations(tel_ids, 2))
 
@@ -505,4 +505,5 @@ class EventClassifier:
         self.features = input_data['features']
         self.settings = input_data['settings']
         self.telescope_rfs = input_data['telescope_rfs']
+
 

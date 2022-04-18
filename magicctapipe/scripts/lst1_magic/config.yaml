@@ -180,7 +180,7 @@ event_classifier:
 
 create_irf:
     quality_cuts: null
-    irf_type: 'software'  # select 'hardware', 'software' or 'software_with_any2'
+    irf_type: 'software'  # select 'hardware', 'software', 'software_with_any2' or 'magic_stereo'
 
     energy_bins:
         start: 0.01   # unit: [TeV]

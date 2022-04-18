@@ -87,8 +87,8 @@ def apply_rfs(event_data, estimator):
 
 def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
     """
-    Processes DL1-stereo events and reconstructs
-    the DL2 parameters with trained RFs.
+    Processes DL1-stereo events and
+    reconstructs the DL2 parameters with trained RFs.
 
     Parameters
     ----------
@@ -118,11 +118,10 @@ def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
     input_rfs_energy.sort()
 
     if len(input_rfs_energy) > 0:
-
         logger.info('\nReconstructing energy...')
 
-        energy_regressor = EnergyRegressor()
         reco_params = pd.DataFrame()
+        energy_regressor = EnergyRegressor()
 
         for input_rfs in input_rfs_energy:
 
@@ -144,25 +143,24 @@ def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
     input_rfs_direction.sort()
 
     if len(input_rfs_direction) > 0:
-
         logger.info('\nReconstructing arrival directions...')
 
-        direction_regressor = DirectionRegressor()
         reco_params = pd.DataFrame()
+        direction_regressor = DirectionRegressor()
 
         for input_rfs in input_rfs_direction:
 
             logger.info(input_rfs)
-            direction_regressor.load(input_rfs)
 
+            direction_regressor.load(input_rfs)
             df_reco_direction = apply_rfs(event_data, direction_regressor)
+
             reco_params = reco_params.append(df_reco_direction)
 
         event_data = event_data.join(reco_params)
 
         if not is_simulation:
-
-            logger.info('\nTransforming the Alt/Az coordinate to the RA/Dec one...')
+            logger.info('\nTransforming the Alt/Az coordinate to the RA/Dec coordinate...')
 
             if 'timestamp' in event_data.columns:
                 timestamps = Time(event_data['timestamp'].to_numpy(), format='unix', scale='utc')
@@ -202,18 +200,18 @@ def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
     input_rfs_classifier.sort()
 
     if len(input_rfs_classifier) > 0:
-
         logger.info('\nReconstructing the gammaness...')
 
-        event_classifier = EventClassifier()
         reco_params = pd.DataFrame()
+        event_classifier = EventClassifier()
 
         for input_rfs in input_rfs_classifier:
 
             logger.info(input_rfs)
-            event_classifier.load(input_rfs)
 
+            event_classifier.load(input_rfs)
             df_reco_class = apply_rfs(event_data, event_classifier)
+
             reco_params = reco_params.append(df_reco_class)
 
         event_data = event_data.join(reco_params)

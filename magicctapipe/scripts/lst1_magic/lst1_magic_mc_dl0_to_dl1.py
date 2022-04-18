@@ -36,13 +36,13 @@ from ctapipe.io import EventSource, HDF5TableWriter
 from ctapipe.core import Container, Field
 from ctapipe.calib import CameraCalibrator
 from ctapipe.image import (
+    ImageExtractor,
     tailcuts_clean,
     apply_time_delta_cleaning,
     number_of_islands,
     hillas_parameters,
     timing_parameters,
     leakage_parameters,
-    ImageExtractor,
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
@@ -180,6 +180,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         config=config_extractor_magic,
         subarray=subarray,
     )
+
     use_charge_correction = config_magic['charge_correction'].pop('use')
 
     # Configure the muon analysis:
@@ -372,10 +373,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                     az=event.pointing.tel[tel_id].azimuth,
                 )
 
-                telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
+                tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
                 event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_frame)
-                event_coord = event_coord.transform_to(telescope_frame)
+                event_coord = event_coord.transform_to(tel_frame)
 
                 true_disp = angular_separation(
                     lon1=event_coord.altaz.az,

@@ -72,19 +72,14 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     -------
     event_table: astropy.table.table.QTable
         Astropy table of DL2 events
-    obs_id_lst:
-        LST observation ID of the input data
     """
 
     df_events = pd.read_hdf(input_file, key='events/parameters')
     df_events.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     df_events.sort_index(inplace=True)
 
-    obs_id_lst = np.unique(df_events['obs_id_lst'])[0]
-
     # Apply the quality cuts:
     if quality_cuts is not None:
-
         logger.info('\nApplying the quality cuts...')
 
         df_events.query(quality_cuts, inplace=True)
@@ -95,13 +90,23 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     df_events.update(combo_types)
 
     # Select the events of the specified IRF type:
+    logger.info(f'Extracting the events of the "{irf_type}" type...')
+
     if irf_type == 'software':
-        logger.info('\nExtracting the 3-tels events...')
         df_events.query('combo_type == 3', inplace=True)
+
+    elif irf_type == 'software_with_any2':
+        df_events.query('combo_type > 0', inplace=True)
+
+    elif irf_type == 'magic_stereo':
+        df_events.query('combo_type == 0', inplace=True)
 
     elif irf_type == 'hardware':
         logger.info('\nThe hardware trigger has not yet been used for observations. Exiting.')
         sys.exit()
+
+    n_events = len(df_events.groupby(['obs_id', 'event_id']).size())
+    logger.info(f'--> {n_events} stereo events')
 
     # Compute the mean of the DL2 parameters:
     df_dl2_mean = get_dl2_mean(df_events)
@@ -120,10 +125,10 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     event_table['reco_dec'] *= u.deg
     event_table['reco_energy'] *= u.TeV
 
-    return event_table, obs_id_lst
+    return event_table
 
 
-def create_event_list(event_table, obs_id_lst, effective_time, elapsed_time,
+def create_event_list(event_table, effective_time, elapsed_time,
                       source_name=None, source_ra=None, source_dec=None):
     """
     Creates an event list and its header.
@@ -132,8 +137,6 @@ def create_event_list(event_table, obs_id_lst, effective_time, elapsed_time,
     ----------
     event_table: astropy.table.table.QTable
         Astropy table of the DL2 events surviving gammaness cuts
-    obs_id_lst: int
-        LST observation ID of the input data
     effective_time: float
         Effective time of the input data
     elapsed_time: float
@@ -153,19 +156,20 @@ def create_event_list(event_table, obs_id_lst, effective_time, elapsed_time,
         Astropy header for the event list
     """
 
-    event_coords = SkyCoord(ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs')
-
-    if source_name is not None:
-        source_coord = SkyCoord.from_name(source_name)
-    else:
-        source_coord = SkyCoord(ra=source_ra, dec=source_dec, frame='icrs')
-
     time_start = Time(event_table['timestamp'][0], format='unix', scale='utc')
     time_end = Time(event_table['timestamp'][-1], format='unix', scale='utc')
 
     delta_time = time_end.value - time_start.value
 
     deadc = effective_time / elapsed_time
+
+    event_coords = SkyCoord(ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs')
+
+    if source_name is not None:
+        source_coord = SkyCoord.from_name(source_name)
+        source_coord = source_coord.transform_to('icrs')
+    else:
+        source_coord = SkyCoord(ra=source_ra, dec=source_dec, frame='icrs')
 
     # Create an event list:
     event_list = QTable({
@@ -186,7 +190,7 @@ def create_event_list(event_table, obs_id_lst, effective_time, elapsed_time,
     event_header = fits.Header()
     event_header['CREATED'] = Time.now().utc.iso
     event_header['HDUCLAS1'] = 'EVENTS'
-    event_header['OBS_ID'] = obs_id_lst
+    event_header['OBS_ID'] = np.unique(event_table['obs_id'])[0]
     event_header['DATE-OBS'] = time_start.to_value('iso', 'date')
     event_header['TIME-OBS'] = time_start.to_value('iso', 'date_hms')[11:]
     event_header['DATE-END'] = time_end.to_value('iso', 'date')

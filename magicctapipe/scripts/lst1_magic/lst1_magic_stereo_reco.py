@@ -87,7 +87,7 @@ def calculate_pointing_separation(event_data):
     df_magic.reset_index(level='tel_id', inplace=True)
     df_magic = df_magic.loc[multi_indices]
 
-    # Calculate the mean direction of the M1 and M2 pointing directions:
+    # Calculate the mean of the M1 and M2 pointing directions:
     pointing_az_magic, pointing_alt_magic = calculate_mean_direction(lon=df_magic['pointing_az'],
                                                                      lat=df_magic['pointing_alt'])
 
@@ -142,7 +142,6 @@ def stereo_reconstruction(input_file, output_dir, config):
     logger.info('\nApplying the event cuts...')
 
     event_data.query(config_sterec['event_cuts'], inplace=True)
-
     event_data['multiplicity'] = event_data.groupby(['obs_id', 'event_id']).size()
     event_data.query('multiplicity > 1', inplace=True)
 
@@ -159,14 +158,18 @@ def stereo_reconstruction(input_file, output_dir, config):
         theta = calculate_pointing_separation(event_data)
         theta_uplim = u.Quantity(config_sterec['theta_uplim'], u.arcmin)
 
-        n_events_sep = np.count_nonzero(theta > theta_uplim)
+        n_events = np.count_nonzero(theta > theta_uplim)
 
-        if n_events_sep > 0:
+        if n_events > 0:
             logger.info(f'--> The pointing directions are separated by more than {theta_uplim}. Exiting.')
             sys.exit()
         else:
             theta_max = np.max(theta.to(u.arcmin))
             logger.info(f'--> Maximum angular distance is {theta_max:.3f}.')
+
+    # Calculate the mean pointing direction:
+    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(lon=event_data['pointing_az'],
+                                                                   lat=event_data['pointing_alt'])
 
     # Configure the HillasReconstructor:
     hillas_reconstructor = HillasReconstructor(subarray)
@@ -180,9 +183,6 @@ def stereo_reconstruction(input_file, output_dir, config):
 
     obs_ids = group_size.index.get_level_values('obs_id')
     event_ids = group_size.index.get_level_values('event_id')
-
-    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(lon=event_data['pointing_az'],
-                                                                   lat=event_data['pointing_alt'])
 
     logger.info('\nReconstructing the stereo parameters...')
 
@@ -222,6 +222,7 @@ def stereo_reconstruction(input_file, output_dir, config):
 
         # Reconstruct the stereo parameters:
         hillas_reconstructor(event)
+
         stereo_params = event.dl2.stereo.geometry['HillasReconstructor']
 
         if stereo_params.az < 0:

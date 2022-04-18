@@ -117,29 +117,27 @@ def merge_hdf_files(input_dir, run_wise=False, subrun_wise=False):
     regex_run = re.compile(r'(\S+run)(\d+)\.h5', re.IGNORECASE)
     regex_subrun = re.compile(r'(\S+run)(\d+)\.(\d+)\.h5', re.IGNORECASE)
 
-    file_names = []
-    run_ids = []
-    subrun_ids = []
+    file_names = np.array([])
+    run_ids = np.array([])
+    subrun_ids = np.array([])
 
     for input_file in input_files:
 
-        file_name = Path(input_file).name
+        file_name = Path(input_file).resolve().name
 
         if re.fullmatch(regex_run, file_name):
             parser = re.findall(regex_run, file_name)[0]
-            file_names.append(parser[0])
-            run_ids.append(parser[1])
+            file_names = np.append(file_names, parser[0])
+            run_ids = np.append(run_ids, parser[1])
 
         elif re.fullmatch(regex_subrun, file_name):
             parser = re.findall(regex_subrun, file_name)[0]
-            file_names.append(parser[0])
-            run_ids.append(parser[1])
-            subrun_ids.append(parser[2])
+            file_names = np.append(file_names, parser[0])
+            run_ids = np.append(run_ids, parser[1])
+            subrun_ids = np.append(subrun_ids, parser[2])
 
     file_names_unique = np.unique(file_names)
     run_ids_unique = np.unique(run_ids)
-
-    subrun_ids = np.array(subrun_ids)
 
     if len(file_names_unique) == 1:
         file_name = file_names_unique[0]

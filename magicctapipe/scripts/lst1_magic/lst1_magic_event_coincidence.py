@@ -11,9 +11,9 @@ Since the optimal time offset changes depending on the telescope distance along 
 it requires to input a subrun file for LST data, whose observation duration is usually around 10 seconds.
 
 The MAGIC standard stereo analysis discards shower events when one of telescope images cannot survive the image cleaning
-or fail to compute the DL1 parameters. However, it's possible to perform the stereo analysis if LST-1 sees the events.
-Thus, it checks the event coincidence for each telescope combination (i.e., LST-1 + M1 and LST-1 + M2) using each MAGIC timestamp,
-and keeps the events that have more than one telescope information.
+or fail to reconstruct the DL1 parameters. However, it's possible to perform the stereo analysis if LST-1 sees the events.
+Thus, it checks the event coincidence for each telescope combination (i.e., LST-1 + M1 and LST-1 + M2) and keeps the events
+coincident with LST-1 events (non-coincident MAGIC events are discarded at the moment).
 
 If the "--keep-all-params" option is given, it keeps parameters non-common to LST-1 and MAGIC events.
 
@@ -101,38 +101,37 @@ def load_lst_data_file(input_file):
         # Load DL1 data:
         event_data = pd.read_hdf(input_file, key=f'dl1/event/telescope/parameters/LST_LSTCam')
 
+    event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    event_data.sort_index(inplace=True)
+
     # Exclude non-reconstructed events:
     event_data.dropna(subset=['intensity', 'time_gradient', 'alt_tel', 'az_tel'], inplace=True)
 
     # Check duplications of event IDs and exclude them if they exist.
     # ToBeChecked: if the duplication still happens in recent data or not:
-    event_ids, counts = np.unique(event_data['event_id'], return_counts=True)
+    event_ids, counts = np.unique(event_data.index.get_level_values('event_id'), return_counts=True)
 
     if np.any(counts > 1):
-
         event_ids_dup = event_ids[counts > 1].tolist()
-        event_data.query(f'event_id != {event_ids_dup}', inplace=True)
 
         logger.warning('\nExclude the following events due to duplications of event IDs:')
         logger.warning(event_ids_dup)
 
+        event_data.query(f'event_id != {event_ids_dup}', inplace=True)
+
     logger.info(f'LST-1: {len(event_data)} events')
 
     # Rename the column names:
-    params_rename = {
-        'obs_id': 'obs_id_lst',
-        'event_id': 'event_id_lst',
-        'alt_tel': 'pointing_alt',
-        'az_tel': 'pointing_az',
-        'leakage_pixels_width_1': 'pixels_width_1',
-        'leakage_pixels_width_2': 'pixels_width_2',
-        'leakage_intensity_width_1': 'intensity_width_1',
-        'leakage_intensity_width_2': 'intensity_width_2',
-        'time_gradient': 'slope',
-    }
-
-    event_data.rename(columns=params_rename, inplace=True)
-    event_data.set_index(['obs_id_lst', 'event_id_lst', 'tel_id'], inplace=True)
+    event_data.rename(
+        columns={'alt_tel': 'pointing_alt',
+                 'az_tel': 'pointing_az',
+                 'leakage_pixels_width_1': 'pixels_width_1',
+                 'leakage_pixels_width_2': 'pixels_width_2',
+                 'leakage_intensity_width_1': 'intensity_width_1',
+                 'leakage_intensity_width_2': 'intensity_width_2',
+                 'time_gradient': 'slope'},
+        inplace=True,
+    )
 
     # Change the units of some parameters:
     optics = pd.read_hdf(input_file, key='configuration/instrument/telescope/optics')
@@ -173,7 +172,7 @@ def load_magic_data_file(input_dir):
     input_files.sort()
 
     if len(input_files) == 0:
-        raise RuntimeError('Could not find MAGIC data files in the input directory.')
+        raise FileNotFoundError('Could not find MAGIC data files in the input directory.')
 
     # Load the input files:
     logger.info('\nLoading the following MAGIC data files:')
@@ -181,20 +180,25 @@ def load_magic_data_file(input_dir):
     data_list = []
 
     for input_file in input_files:
-
         logger.info(input_file)
-        df_events = pd.read_hdf(input_file, key='events/parameters')
 
+        df_events = pd.read_hdf(input_file, key='events/parameters')
         data_list.append(df_events)
 
     event_data = pd.concat(data_list)
-    event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+
+    event_data.rename(
+        columns={'obs_id': 'obs_id_magic',
+                 'event_id': 'event_id_magic'},
+        inplace=True,
+    )
+
+    event_data.set_index(['obs_id_magic', 'event_id_magic', 'tel_id'], inplace=True)
     event_data.sort_index(inplace=True)
 
     tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
 
     for tel_id in tel_ids:
-
         tel_name = tel_names[tel_id]
         n_events = len(event_data.query(f'tel_id == {tel_id}'))
 
@@ -249,7 +253,6 @@ def event_coincidence(input_file_lst, input_dir_magic,
     data_magic, subarray_magic = load_magic_data_file(input_dir_magic)
 
     if not keep_all_params:
-
         # Exclude parameters non-common to LST-1 and MAGIC events (except timing information):
         params_lst = set(data_lst.columns) ^ set([type_lst_time])
         params_magic = set(data_magic.columns) ^ set(['time_sec', 'time_nanosec'])
@@ -316,7 +319,7 @@ def event_coincidence(input_file_lst, input_dir_magic,
 
         # Start checking the event coincidence. The time offsets and the coincidence window are applied to the LST-1 events,
         # and the MAGIC events existing in the window (including the edges) are recognized as coincident events.
-        # At first, we scan the number of coincident events in each time offset and find the time offset maximizing the number of events.
+        # At first, we scan the number of coincident events in each time offset and find the offset maximizing the number of events.
         # Then, we compute the average offset weighted by the number of events around the maximizing offset.
         # Finally, we again check the coincidence at the average offset and save the coincident events.
 
@@ -395,11 +398,15 @@ def event_coincidence(input_file_lst, input_dir_magic,
                 indices_magic.append(np.where(condition)[0][0])
 
         # Arrange the data frames:
+        multi_indices_magic = df_magic.iloc[indices_magic].index
+
         df_lst = data_lst.iloc[indices_lst].copy()
-        df_lst['obs_id'] = df_magic.iloc[indices_magic].index.get_level_values('obs_id')
-        df_lst['event_id'] = df_magic.iloc[indices_magic].index.get_level_values('event_id')
+        df_lst['obs_id_magic'] = multi_indices_magic.get_level_values('obs_id_magic')
+        df_lst['event_id_magic'] = multi_indices_magic.get_level_values('event_id_magic')
+
         df_lst.reset_index(inplace=True)
-        df_lst.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+        df_lst.set_index(['obs_id_magic', 'event_id_magic', 'tel_id'], inplace=True)
+
         df_lst.rename(columns={type_lst_time: 'timestamp'}, inplace=True)
 
         df_magic['timestamp'] = df_magic['time_sec'] + df_magic['time_nanosec'] * nsec2sec
@@ -435,6 +442,20 @@ def event_coincidence(input_file_lst, input_dir_magic,
 
     event_data.sort_index(inplace=True)
     event_data.drop_duplicates(inplace=True)
+
+    group_mean = event_data.groupby(['obs_id_magic', 'event_id_magic']).mean()
+
+    event_data['obs_id'] = group_mean['obs_id']
+    event_data['event_id'] = group_mean['event_id']
+
+    # Exclude the MAGIC events non-coincident with any of the LST-1 events:
+    event_data.dropna(subset=['obs_id', 'event_id'], inplace=True)
+
+    event_data['obs_id'] = event_data['obs_id'].astype(int)
+    event_data['event_id'] = event_data['event_id'].astype(int)
+
+    event_data.reset_index(inplace=True)
+    event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
 
     # Sometimes it happens that one MAGIC stereo event is coincident with two different LST-1 events,
     # and at the moment we exclude that kind of events:

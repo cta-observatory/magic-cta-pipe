@@ -7,9 +7,8 @@ Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 This script trains energy, direction regressors and event classifiers with input DL1-stereo data.
 The RFs are currently trained per telescope combination and per telescope type.
 When training event classifiers, the number of gamma MC or background samples is automatically adjusted
-so that the same number of gamma MC and background samples is used for training.
+so that the RFs are trained with the same number of gamma MC and background samples.
 
-Since it requires one HDF file for each input, please merge all HDF files of training samples with "merge_hdf_files.py" in advance.
 When running the script, please specify the type of RFs that you want to train by giving
 "--train-energy", "--train-direction" or "--train-classifier" arguments.
 
@@ -55,7 +54,7 @@ event_class_bkg = 1
 
 __all__ = [
     'load_train_data_file',
-    'check_importance',
+    'check_feature_importance',
     'get_events_at_random',
     'train_energy_regressor',
     'train_direction_regressor',
@@ -114,9 +113,9 @@ def load_train_data_file(input_file, features, true_event_class=None):
     return data_train
 
 
-def check_importance(estimator):
+def check_feature_importance(estimator):
     """
-    Checks the parameter importance of trained RFs:
+    Checks the feature importance of trained RFs:
 
     Parameters
     ----------
@@ -130,15 +129,15 @@ def check_importance(estimator):
 
         logger.info(f'Telescope {tel_id}')
 
-        # Sort the parameters by the importance:
+        # Sort the features by the importance:
         importances = estimator.telescope_rfs[tel_id].feature_importances_
         importances_sort = np.sort(importances)[::-1]
 
         indices = np.argsort(importances)[::-1]
-        params_sort = np.array(estimator.features)[indices]
+        features_sort = np.array(estimator.features)[indices]
 
-        for param, importance in zip(params_sort, importances_sort):
-            logger.info(f'\t{param}: {importance}')
+        for feature, importance in zip(features_sort, importances_sort):
+            logger.info(f'\t{feature}: {importance}')
 
 
 def get_events_at_random(event_data, n_events):
@@ -162,10 +161,10 @@ def get_events_at_random(event_data, n_events):
     indices = random.sample(range(len(group_size)), n_events)
 
     data_selected = pd.DataFrame()
+
     tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
 
     for tel_id in tel_ids:
-
         df_events = event_data.query(f'tel_id == {tel_id}').copy()
         df_events = df_events.iloc[indices]
 
@@ -185,7 +184,7 @@ def train_energy_regressor(input_file, output_dir, config):
     input_file: str
         Path to an input gamma MC DL1-stereo data file
     output_dir: str
-        Path to a directory where to save trained regressors
+        Path to a directory where to save trained RFs
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     """
@@ -213,8 +212,8 @@ def train_energy_regressor(input_file, output_dir, config):
         logger.info(f'\nTraining energy regressors for "{tel_combo}" events...')
         energy_regressor.fit(data_train[tel_combo])
 
-        logger.info('\nParameter importance:')
-        check_importance(energy_regressor)
+        logger.info('\nFeature importance:')
+        check_feature_importance(energy_regressor)
 
         output_file = f'{output_dir}/energy_regressors_{tel_combo}.joblib'
         energy_regressor.save(output_file)
@@ -232,7 +231,7 @@ def train_direction_regressor(input_file, output_dir, config):
     input_file: str
         Path to an input gamma MC DL1-stereo data file
     output_dir: str
-        Path to a directory where to save trained regressors
+        Path to a directory where to save trained RFs
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     """
@@ -263,8 +262,8 @@ def train_direction_regressor(input_file, output_dir, config):
         logger.info(f'\nTraining direction regressors for "{tel_combo}" events...')
         direction_regressor.fit(data_train[tel_combo], tel_descriptions)
 
-        logger.info('\nParameter importance:')
-        check_importance(direction_regressor)
+        logger.info('\nFeature importance:')
+        check_feature_importance(direction_regressor)
 
         output_file = f'{output_dir}/direction_regressors_{tel_combo}.joblib'
         direction_regressor.save(output_file)
@@ -284,7 +283,7 @@ def train_event_classifier(input_file_gamma, input_file_bkg, output_dir, config)
     input_file_bkg: str
         Path to an input background DL1-stereo data file
     output_dir: str
-        Path to a directory where to save trained classifiers
+        Path to a directory where to save trained RFs
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     """
@@ -312,7 +311,9 @@ def train_event_classifier(input_file_gamma, input_file_bkg, output_dir, config)
     # Train the classifiers per telescope combination:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    for tel_combo in sorted(set(data_gamma.keys()) & set(data_bkg.keys())):
+    common_combinations = set(data_gamma.keys()) & set(data_bkg.keys())
+
+    for tel_combo in sorted(common_combinations):
 
         logger.info(f'\nTraining event classifiers for "{tel_combo}" events...')
 
@@ -333,8 +334,8 @@ def train_event_classifier(input_file_gamma, input_file_bkg, output_dir, config)
         data_train = data_gamma[tel_combo].append(data_bkg[tel_combo])
         event_classifier.fit(data_train)
 
-        logger.info('\nParameter importance:')
-        check_importance(event_classifier)
+        logger.info('\nFeature importance:')
+        check_feature_importance(event_classifier)
 
         output_file = f'{output_dir}/event_classifiers_{tel_combo}.joblib'
         event_classifier.save(output_file)
