@@ -90,7 +90,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     df_events.update(combo_types)
 
     # Select the events of the specified IRF type:
-    logger.info(f'Extracting the events of the "{irf_type}" type...')
+    logger.info(f'\nExtracting the events of the "{irf_type}" type...')
 
     if irf_type == 'software':
         df_events.query('combo_type == 3', inplace=True)
@@ -340,7 +340,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     logger.info('\nLoading the input DL2 data file:')
     logger.info(input_file_dl2)
 
-    event_table, obs_id_lst = load_dl2_data_file(input_file_dl2, quality_cuts, irf_type)
+    event_table = load_dl2_data_file(input_file_dl2, quality_cuts, irf_type)
 
     # ToBeUpdated: how to compute the effective time for the software coincidence?
     # At the moment it does not consider any dead times, which slightly underestimates a source flux.
@@ -371,8 +371,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     # Create a event list HDU:
     logger.info('\nCreating an event list HDU...')
 
-    event_list, event_header = create_event_list(event_table, obs_id_lst,
-                                                 effective_time, elapsed_time, **config_dl3)
+    event_list, event_header = create_event_list(event_table, effective_time, elapsed_time, **config_dl3)
 
     hdu_event = fits.BinTableHDU(event_list, header=event_header, name='EVENTS')
     hdus.append(hdu_event)

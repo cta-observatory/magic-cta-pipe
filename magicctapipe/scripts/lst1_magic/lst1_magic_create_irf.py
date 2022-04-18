@@ -114,7 +114,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     df_events.update(combo_types)
 
     # Select the events of the specified IRF type:
-    logger.info(f'Extracting the events of the "{irf_type}" type...')
+    logger.info(f'\nExtracting the events of the "{irf_type}" type...')
 
     if irf_type == 'software':
         df_events.query('combo_type == 3', inplace=True)
