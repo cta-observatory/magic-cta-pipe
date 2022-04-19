@@ -219,7 +219,7 @@ def transform_altaz_to_radec(alt, az, timestamp):
     LON_ORM = u.Quantity(-17.89064, u.deg)
     HEIGHT_ORM = u.Quantity(2199.835, u.m)
 
-    location = EarthLocation.from_geodetic(lon=LAT_ORM, lat=LON_ORM, height=HEIGHT_ORM)
+    location = EarthLocation.from_geodetic(lon=LON_ORM, lat=LAT_ORM, height=HEIGHT_ORM)
     horizon_frames = AltAz(location=location, obstime=timestamp)
 
     event_coord = SkyCoord(alt=alt, az=az, frame=horizon_frames)
