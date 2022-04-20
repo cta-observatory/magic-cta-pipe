@@ -35,14 +35,19 @@ from ctapipe.image import (
     timing_parameters,
 )
 
+from magicctapipe.image import (
+    MAGICClean,
+    get_leakage,
+)
+
 from magicctapipe.utils import (
     scale_camera_geometry,
     reflected_camera_geometry,
-    MAGIC_Badpixels,
-    MAGIC_Cleaning,
     info_message,
-    get_leakage,
 )
+
+import magicctapipe.utils.badpixels as MAGIC_Badpixels
+
 
 DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer()
 DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer()
@@ -116,12 +121,12 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
                 config=bad_pixels_config
             )
 
-        magic_clean = MAGIC_Cleaning.magic_clean(geometry,clean_config)
+        magic_clean = MAGICClean(geometry,clean_config)
 
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
             print(f"{item[0]}: {item[1]}")
-        if magic_clean.findhotpixels:
+        if magic_clean.find_hotpixels:
             for item in vars(magic_clean.pixel_treatment).items():
                 print(f"{item[0]}: {item[1]}")
 
