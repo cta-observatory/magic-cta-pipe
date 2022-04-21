@@ -3,6 +3,7 @@
 
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
+MC support by Julian Sitarek (jsitarek (at) uni.lodz.pl)
 
 This script processes events of MAGIC calibrated data (*_Y_*.root) with the MARS-like image cleaning
 and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
@@ -31,6 +32,9 @@ import numpy as np
 from pathlib import Path
 from astropy import units as u
 from ctapipe.io import HDF5TableWriter
+from astropy.coordinates import AltAz, SkyCoord
+from astropy.coordinates.angle_utilities import angular_separation
+from ctapipe.coordinates import CameraFrame, TelescopeFrame
 from ctapipe.core import Container, Field
 from ctapipe.image import (
     number_of_islands,
@@ -41,6 +45,7 @@ from ctapipe.image import (
 from ctapipe.instrument import SubarrayDescription
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
+from magicctapipe.utils import calculate_impact
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -81,8 +86,26 @@ class EventInfoContainer(Container):
     n_pixels = Field(-1, 'Number of pixels of a cleaned image')
     n_islands = Field(-1, 'Number of islands of a cleaned image')
 
+class EventInfoContainerMC(Container):
+    """ Container to store event information """
 
-def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
+    obs_id = Field(-1, 'Observation ID')
+    event_id = Field(-1, 'Event ID')
+    tel_id = Field(-1, 'Telescope ID')
+    pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
+    pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
+    true_energy = Field(-1, 'MC event true energy', u.TeV)
+    true_alt = Field(-1, 'MC event true altitude', u.deg)
+    true_az = Field(-1, 'MC event true azimuth', u.deg)
+    true_disp = Field(-1, 'MC event true disp', u.deg)
+    true_core_x = Field(-1, 'MC event true core x', u.m)
+    true_core_y = Field(-1, 'MC event true core y', u.m)
+    true_impact = Field(-1, 'MC event true impact', u.m)
+    n_pixels = Field(-1, 'Number of pixels of a cleaned image')
+    n_islands = Field(-1, 'Number of islands of a cleaned image')
+    magic_stereo = Field(-1, 'True if both M1 and M2 are triggered')
+
+def magic_calib_to_dl1(input_file, output_dir, config, process_run=False, use_mc=False):
     """
     Processes MAGIC calibrated events and computes the DL1 parameters.
 
@@ -103,7 +126,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     if config_cleaning['find_hotpixels'] == 'auto':
         logger.info('\nSetting the "find_hotpixels" option to True...')
-        config_cleaning.update({'find_hotpixels': True})
+        if use_mc:
+            config_cleaning.update({'find_hotpixels': False})
+        else:
+            config_cleaning.update({'find_hotpixels': True})
 
     pedestal_type = config_cleaning.pop('pedestal_type')
 
@@ -114,14 +140,18 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info(config_cleaning)
 
     # Load the input file:
-    event_source = MAGICEventSource(input_file, process_run=process_run)
+    if use_mc:
+        event_source = MAGICEventSource(input_file)
+    else:
+        event_source = MAGICEventSource(input_file, process_run=process_run)
 
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
-    logger.info(f'\nProcess the following data (process_run = {process_run}):')
-    for root_file in event_source.file_list:
-        logger.info(root_file)
+    logger.info(f'\nObs_id={obs_id}, tel_id={tel_id}, process the following data (process_run = {process_run}):')
+    if not use_mc:
+        for root_file in event_source.file_list:
+            logger.info(root_file)
 
     # Configure the MAGIC image cleaning:
     i_ped_type = np.where(np.array(pedestal_types) == pedestal_type)[0][0]
@@ -144,6 +174,15 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info('\nProcessing the events...')
 
     with HDF5TableWriter(output_file, group_name='events', mode='w') as writer:
+        if use_mc:
+            tel_position = event_source.subarray.positions[tel_id]
+            camera_geom = event_source.subarray.tel[tel_id].camera.geometry
+            focal_length = event_source.subarray.tel[tel_id].optics.equivalent_focal_length
+
+            camera_frame = CameraFrame(
+                rotation=camera_geom.cam_rotation,
+                focal_length=focal_length,
+            )
 
         for event in event_source:
 
@@ -151,9 +190,12 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 logger.info(f'{event.count} events')
 
             # Get bad pixels:
-            dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
-            badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
-            unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
+            if use_mc:
+                unsuitable_mask=None
+            else:
+                dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
+                badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
+                unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
             # Apply the image cleaning:
             signal_pixels, image, peak_time = magic_clean.clean_image(event.dl1.tel[tel_id].image,
@@ -204,23 +246,68 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 continue
 
             # Set the event information to the container.
-            # To keep the precision of a timestamp for the event coincidence with LST-1,
-            # here we set the integral and fractional parts separately as "time_sec" and "time_nanosec":
-            timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
-            fractional, integral = np.modf(timestamp)
+            if use_mc:
+                tel_pointing = AltAz(
+                    alt=event.pointing.tel[tel_id].altitude,
+                    az=event.pointing.tel[tel_id].azimuth,
+                )
 
-            time_sec = int(np.round(integral))
-            time_nanosec = int(np.round(fractional * sec2nsec))
+                tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-            event_info = EventInfoContainer(
-                obs_id=event.index.obs_id,
-                event_id=event.index.event_id,
-                pointing_alt=event.pointing.tel[tel_id].altitude,
-                pointing_az=event.pointing.tel[tel_id].azimuth,
-                time_sec=time_sec,
-                time_nanosec=time_nanosec,
-                n_pixels=n_pixels,
-                n_islands=n_islands,
+                event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_frame)
+                event_coord = event_coord.transform_to(tel_frame)
+
+                true_disp = angular_separation(
+                    lon1=event_coord.altaz.az,
+                    lat1=event_coord.altaz.alt,
+                    lon2=event.simulation.shower.az,
+                    lat2=event.simulation.shower.alt,
+                )
+                true_impact = calculate_impact(
+                    core_x=event.simulation.shower.core_x,
+                    core_y=event.simulation.shower.core_y,
+                    az=event.simulation.shower.az,
+                    alt=event.simulation.shower.alt,
+                    tel_pos_x=tel_position[0],
+                    tel_pos_y=tel_position[1],
+                    tel_pos_z=tel_position[2],
+                )
+
+                magic_stereo=None # to be filled later
+                event_info = EventInfoContainerMC(
+                    obs_id=event.index.obs_id,
+                    event_id=event.index.event_id,
+                    pointing_alt=event.pointing.tel[tel_id].altitude,
+                    pointing_az=event.pointing.tel[tel_id].azimuth,
+                    true_energy=event.simulation.shower.energy,
+                    true_alt=event.simulation.shower.alt,
+                    true_az=event.simulation.shower.az,
+                    true_disp=true_disp,
+                    true_core_x=event.simulation.shower.core_x,
+                    true_core_y=event.simulation.shower.core_y,
+                    true_impact=true_impact,
+                    n_pixels=n_pixels,
+                    n_islands=n_islands,
+                    magic_stereo=magic_stereo,
+                )
+            else:
+                # To keep the precision of a timestamp for the event coincidence with LST-1,
+                # here we set the integral and fractional parts separately as "time_sec" and "time_nanosec":
+                timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
+                fractional, integral = np.modf(timestamp)
+
+                time_sec = int(np.round(integral))
+                time_nanosec = int(np.round(fractional * sec2nsec))
+
+                event_info = EventInfoContainer(
+                    obs_id=event.index.obs_id,
+                    event_id=event.index.event_id,
+                    pointing_alt=event.pointing.tel[tel_id].altitude,
+                    pointing_az=event.pointing.tel[tel_id].azimuth,
+                    time_sec=time_sec,
+                    time_nanosec=time_nanosec,
+                    n_pixels=n_pixels,
+                    n_islands=n_islands,
             )
 
             # Reset the telescope IDs:
@@ -249,6 +336,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     # which are also used for sim_telarray simulations:
     subarray = SubarrayDescription('MAGIC-Array', tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
+
+    # Save the simulation configuration:
+    if use_mc:
+        with HDF5TableWriter(output_file, group_name='simulation', mode='a') as writer:
+            writer.write('config', event_source.simulation_config)
 
     logger.info('\nOutput file:')
     logger.info(output_file)
@@ -280,13 +372,20 @@ def main():
         help='Process all the subrun files of the same observation ID at once.',
     )
 
+    parser.add_argument(
+        '--use-mc', dest='use_mc', action='store_true',
+        help='Run over an MC file.',
+    )
+
     args = parser.parse_args()
+    if args.use_mc:
+        args.process_run=True
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
     # Process the input data:
-    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
+    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run, args.use_mc)
 
     logger.info('\nDone.')
 
