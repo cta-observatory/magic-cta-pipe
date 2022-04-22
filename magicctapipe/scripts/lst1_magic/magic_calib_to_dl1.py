@@ -191,7 +191,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False, use_mc
 
             # Get bad pixels:
             if use_mc:
-                unsuitable_mask=None
+                unsuitable_mask = None
             else:
                 dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
                 badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
@@ -273,7 +273,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False, use_mc
                     tel_pos_z=tel_position[2],
                 )
 
-                magic_stereo=None # to be filled later
+                magic_stereo = True  # ctapipe_io_magic reads only stereo MC events
                 event_info = EventInfoContainerMC(
                     obs_id=event.index.obs_id,
                     event_id=event.index.event_id,
@@ -333,8 +333,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False, use_mc
 
     # Save the subarray description.
     # Here we save the MAGIC telescope positions relative to the center of the LST-1 + MAGIC array,
-    # which are also used for sim_telarray simulations:
-    subarray = SubarrayDescription('MAGIC-Array', tel_positions, tel_descriptions)
+    # which are also used for sim_telarray simulations. For MC subarray is set in ctapipe_io_magic
+    if use_mc:
+        subarray = event_source.subarray
+    else:
+        subarray = SubarrayDescription('MAGIC-Array', tel_positions, tel_descriptions)
     subarray.to_hdf(output_file)
 
     # Save the simulation configuration:
