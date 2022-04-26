@@ -13,7 +13,7 @@ from .lst1_magic_train_rfs import (
     train_direction_regressor,
     train_event_classifier,
 )
-from lst1_magic_create_irf import (
+from .lst1_magic_create_irf import (
     load_dl2_data_file,
     apply_dynamic_gammaness_cut,
     apply_dynamic_theta_cut,
