@@ -139,14 +139,20 @@ def merge_hdf_files(input_dir, run_wise=False, subrun_wise=False):
     file_names_unique = np.unique(file_names)
     run_ids_unique = np.unique(run_ids)
 
-    if len(file_names_unique) == 1:
+    n_file_names = len(file_names_unique)
+
+    if n_file_names == 1:
         file_name = file_names_unique[0]
 
-    elif file_names_unique.tolist() == ['dl1_M1.Run', 'dl1_M2.Run']:
-        file_name = 'dl1_MAGIC.Run'
-
     else:
-        raise RuntimeError('Multiple types of files are found in the input directory.')
+        replaced_name = file_names_unique[0].replace('M1', 'M2')
+        is_same_type = (file_names_unique[1] == replaced_name)
+
+        if (n_file_names == 2) and is_same_type:
+            file_name = file_names_unique[0].replace('M1', 'MAGIC')
+
+        else:
+            RuntimeError('Multiple types of files are found in the input directory.')
 
     # Merge the input files:
     output_dir = f'{input_dir}/merged'
