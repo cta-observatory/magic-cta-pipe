@@ -41,8 +41,8 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 
 
 	# filter for M1 or M2
-	df_mcp_m1 = df_mcp_cut[df_mcp_cut["tel_id"]==1]
-	df_mcp_m2 = df_mcp_cut[df_mcp_cut["tel_id"]==2]
+	df_mcp_m1 = df_mcp_cut[df_mcp_cut["tel_id"]==2]
+	df_mcp_m2 = df_mcp_cut[df_mcp_cut["tel_id"]==3]
 
 	#---------------
 	# read MARS data
@@ -58,7 +58,7 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 		for par in config["Hillas-params"]["Params"]:
 			mars_name = mars_params[par]
 			df_mars["mars_"+par] = file_mars["Events"][mars_name].array(library ="np")
-
+	print(df_mars.columns)
 	# apply cuts 
 	# 50<Size<50000, leakage<0.15
 	df_mars_cut = df_mars.loc[(df_mars["mars_size_M1"] < 50000) & (df_mars["mars_size_M2"] < 50000) & (df_mars["mars_size_M1"] > 50) & 
@@ -73,17 +73,55 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 	
 	for par in config["Hillas-params"]["Params"]:
 		df_hillas = pd.DataFrame()
-		if par[-1] == "1":
+		if par == "zd":
+			df_hillas["event_id"] = df_merge_m2["event_id"]
+			df_hillas[par+"_mcp"] = 90 - df_merge_m2[mcp_params[par]]*scale_factors[par]
+			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
+		if par == "az":
+			df_hillas["event_id"] = df_merge_m2["event_id"]
+			df_hillas[par+"_mcp"] = df_merge_m2[mcp_params[par]]*scale_factors[par]
+			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
+			for az in df_hillas[par+"_mars"]:
+				if az < 0:
+					df_hillas[par+"_mars"] = df_hillas[par+"_mars"].replace(az, az+360)
+		elif par == "delta_M1":
+			df_hillas["event_id"] = df_merge_m1["event_id"]
+			df_hillas[par+"_mcp"] = np.pi/2 - df_merge_m1[mcp_params[par]]*scale_factors[par]
+			df_hillas[par+"_mars"] = df_merge_m1["mars_"+par]
+			for delta in df_hillas[par+"_mars"]:
+				if delta < 0:
+					df_hillas[par+"_mars"] = df_hillas[par+"_mars"].replace(delta, delta+np.pi)
+		elif par == "delta_M2":
+			df_hillas["event_id"] = df_merge_m2["event_id"]
+			df_hillas[par+"_mcp"] = np.pi/2 - df_merge_m2[mcp_params[par]]*scale_factors[par]
+			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
+			for delta in df_hillas[par+"_mars"]:
+				if delta < 0:
+					df_hillas[par+"_mars"] = df_hillas[par+"_mars"].replace(delta, delta+np.pi)
+		elif par == "hmax":
+			df_hillas["event_id"] = df_merge_m2["event_id"]
+			df_hillas[par+"_mcp"] = df_merge_m2[mcp_params[par]]*scale_factors[par]
+			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
+			print(df_hillas.columns)
+			# for hmax in df_hillas[par+"_mars"]:
+			# 	if hmax < 0:
+			# 		# df_hillas[par+"_mars"] = df_hillas[par+"_mars"].replace(hmax, np.NaN)
+			df_hillas = df_hillas.drop(df_hillas[df_hillas[par+"_mars"] < 0].index)
+		elif par[-1] == "1":
 			df_hillas["event_id"] = df_merge_m1["event_id"]
 			df_hillas[par+"_mcp"] = df_merge_m1[mcp_params[par]]*scale_factors[par]
 			df_hillas[par+"_mars"] = df_merge_m1["mars_"+par]
-			
 		elif par[-1] == "2":
 			df_hillas["event_id"] = df_merge_m2["event_id"]
 			df_hillas[par+"_mcp"] = df_merge_m2[mcp_params[par]]*scale_factors[par]
 			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
-			
-		df_hillas["relative_error"]=(df_hillas[par+"_mars"]-df_hillas[par+"_mcp"])/df_hillas[par+"_mcp"]
+		else: 
+			df_hillas["event_id"] = df_merge_m2["event_id"]
+			df_hillas[par+"_mcp"] = df_merge_m2[mcp_params[par]]*scale_factors[par]
+			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
+			# since the stereo params are the same for M1 and M2 it does not matter which telescope we choose!
+
+		df_hillas["relative_error"]=(df_hillas[par+"_mars"] - df_hillas[par+"_mcp"])/df_hillas[par+"_mcp"]
 		error = df_hillas.loc[(df_hillas["relative_error"]>threshold[par])].to_numpy()
 
 		if error.size <= len(df_hillas)*0.01: #percentage of the events, that is allowed to have errors bigger than the specified threshold
@@ -108,6 +146,8 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 			plt.colorbar()
 			plt.xlabel("magic-cta-pipe")
 			plt.ylabel("MARS")
+			# plt.xlim([0, 1.5e7])
+			# plt.ylim([0, 1.5e7])
 			plt.title(f"{date}_{subrun}_S - {labels_and_units[par]}")
 			xpoints = ypoints = plt.xlim()
 			plt.plot(xpoints, ypoints, linestyle="--", color="y", lw=1, scalex=False, scaley=False)
