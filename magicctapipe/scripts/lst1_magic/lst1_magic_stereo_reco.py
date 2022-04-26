@@ -250,6 +250,7 @@ def stereo_reconstruction(input_file, output_dir, config):
             event_data.loc[(obs_id, event_id, tel_id), 'core_x'] = stereo_params.core_x.to(u.m).value
             event_data.loc[(obs_id, event_id, tel_id), 'core_y'] = stereo_params.core_y.to(u.m).value
             event_data.loc[(obs_id, event_id, tel_id), 'impact'] = impact.to(u.m).value
+            event_data.loc[(obs_id, event_id, tel_id), 'is_valid'] = stereo_params.is_valid
 
     n_events_processed = i_evt + 1
     logger.info(f'{n_events_processed} events')
@@ -297,7 +298,7 @@ def main():
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-       help='Path to a yaml configuration file.',
+        help='Path to a yaml configuration file.',
     )
 
     args = parser.parse_args()
