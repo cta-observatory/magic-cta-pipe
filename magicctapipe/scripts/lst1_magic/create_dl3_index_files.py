@@ -4,7 +4,8 @@
 """
 Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
 
-This script creates IRF index files. Output files will be saved in an input directory.
+This script creates IRF index files using the modules developed in lstchain.
+Output files will be saved in the same directory of input DL3 files.
 
 Usage:
 $ python create_dl3_index_files.py
@@ -50,14 +51,16 @@ def create_dl3_index_files(input_dir):
     logger.info('\nInput DL3 data files:')
 
     for input_file in input_files:
+
         logger.info(input_file)
-        base_name = Path(input_file).name
-        file_names.append(base_name)
+
+        file_name = Path(input_file).name
+        file_names.append(file_name)
 
     hdu_index_file = f'{input_dir}/hdu-index.fits.gz'
     obs_index_file = f'{input_dir}/obs-index.fits.gz'
 
-    logger.info('\nCreating the index files...')
+    logger.info('\nCreating DL3 index files...')
 
     # Create a hdu index file:
     create_hdu_index_hdu(
