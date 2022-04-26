@@ -196,7 +196,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
         event_image_mcp[~clean_mask] = 0
 
         # clipping for charges > 750
-        event_image_mcp[event_im   age_mcp >= 750.0] = 750.0
+        event_image_mcp[event_image_mcp >= 750.0] = 750.0
 
         if not np.any(event_image_mcp):
             print(f"Event ID {event.index.event_id} for telescope {tel_id} does not have any surviving pixel. Skipping...")
