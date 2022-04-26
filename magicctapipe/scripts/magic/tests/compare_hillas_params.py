@@ -77,10 +77,12 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 			df_hillas["event_id"] = df_merge_m2["event_id"]
 			df_hillas[par+"_mcp"] = 90 - df_merge_m2[mcp_params[par]]*scale_factors[par]
 			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
-		if par == "az":
+			df_hillas = df_hillas.drop(df_hillas[np.isnan(df_hillas[par+"_mars"])].index)
+		elif par == "az":
 			df_hillas["event_id"] = df_merge_m2["event_id"]
 			df_hillas[par+"_mcp"] = df_merge_m2[mcp_params[par]]*scale_factors[par]
 			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
+			df_hillas = df_hillas.drop(df_hillas[np.isnan(df_hillas[par+"_mars"])].index)
 			for az in df_hillas[par+"_mars"]:
 				if az < 0:
 					df_hillas[par+"_mars"] = df_hillas[par+"_mars"].replace(az, az+360)
@@ -102,11 +104,8 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 			df_hillas["event_id"] = df_merge_m2["event_id"]
 			df_hillas[par+"_mcp"] = df_merge_m2[mcp_params[par]]*scale_factors[par]
 			df_hillas[par+"_mars"] = df_merge_m2["mars_"+par]
-			print(df_hillas.columns)
-			# for hmax in df_hillas[par+"_mars"]:
-			# 	if hmax < 0:
-			# 		# df_hillas[par+"_mars"] = df_hillas[par+"_mars"].replace(hmax, np.NaN)
 			df_hillas = df_hillas.drop(df_hillas[df_hillas[par+"_mars"] < 0].index)
+			df_hillas = df_hillas.drop(df_hillas[np.isnan(df_hillas[par+"_mars"])].index)
 		elif par[-1] == "1":
 			df_hillas["event_id"] = df_merge_m1["event_id"]
 			df_hillas[par+"_mcp"] = df_merge_m1[mcp_params[par]]*scale_factors[par]
@@ -148,7 +147,13 @@ def compare_hillas_parameters(config_file ="config.yaml", hillas_key="dl1/hillas
 			plt.ylabel("MARS")
 			# plt.xlim([0, 1.5e7])
 			# plt.ylim([0, 1.5e7])
-			plt.title(f"{date}_{subrun}_S - {labels_and_units[par]}")
+			if "_S_" in config["MARS-input"]["MARS-path"]:
+				title_substr = "_S"
+			elif "_Q_" in config["MARS-input"]["MARS-path"]:
+				title_substr = "_Q"
+			else:
+				title_substr = ""
+			plt.title(f"{date}_{subrun}{title_substr} - {labels_and_units[par]}")
 			xpoints = ypoints = plt.xlim()
 			plt.plot(xpoints, ypoints, linestyle="--", color="y", lw=1, scalex=False, scaley=False)
 			plt.savefig("{}/{}_hillas_comparison_{}.png".format(config["Output_paths"]["image_output_directory"], subrun, par), facecolor="w", transparent=False)

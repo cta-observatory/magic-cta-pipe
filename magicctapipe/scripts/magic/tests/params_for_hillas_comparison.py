@@ -14,6 +14,12 @@ mars_params = {
 	"az" : "MStereoPar.fDirectionAz", 
 	"zd" : "MStereoPar.fDirectionZd",
 	"impact_M1" : "MStereoPar.fM1Impact", "impact_M2" : "MStereoPar.fM2Impact",
+	"hmax_disp" : "MStereoParDisp.fMaxHeight", 
+	"corex_disp" : "MStereoParDisp.fCoreX", 
+	"corey_disp" : "MStereoParDisp.fCoreY", 
+	"az_disp" : "MStereoParDisp.fDirectionAz", 
+	"zd_disp" : "MStereoParDisp.fDirectionZd",
+	"impact_disp_M1" : "MStereoParDisp.fM1Impact", "impact_disp_M2" : "MStereoParDisp.fM2Impact",
 	# "n_islands" : "MImagePar_1./MImagePar_1.fNumIslands",
 	"leakage_M1" : "MNewImagePar_1./MNewImagePar_1.fLeakage1", "leakage_M2" : "MNewImagePar_2./MNewImagePar_2.fLeakage1"
 
@@ -32,6 +38,12 @@ mcp_params = {
 	"az" : "az", 
 	"zd" : "alt",
 	"impact_M1" : "impact", "impact_M2" : "impact",
+	"hmax_disp" : "h_max", 
+	"corex_disp" : "core_x", 
+	"corey_disp" : "core_y", 
+	"az_disp" : "az", 
+	"zd_disp" : "alt",
+	"impact_disp_M1" : "impact", "impact_disp_M2" : "impact",
 	# "n_islands" : "n_islands",
 	"leakage_M1" : "intensity_width_1", "leakage_M2" : "intensity_width_1"
 }
@@ -52,6 +64,12 @@ scale_factors = {
 	"az" : 1.,
 	"zd" : 1.,
 	"impact_M1" : 100., "impact_M2" : 100.,
+	"hmax_disp" : 100.,
+	"corex_disp" : 100., 
+	"corey_disp" : 100.,
+	"az_disp" : 1.,
+	"zd_disp" : 1.,
+	"impact_disp_M1" : 100., "impact_disp_M2" : 100.,
 	# "n_islands" : 1.
 	}
 #important for the plotting, these are mars units
@@ -69,6 +87,12 @@ labels_and_units = {
 	"az" : "Azimuth [deg]", 
 	"zd" : "Zenith [deg]",
 	"impact_M1" : "Impact_M1 [cm]", "impact_M2" : "Impact_M2 [cm]",
+	"hmax_disp" : "Max height [cm]", 
+	"corex_disp" : "CoreX [cm]", 
+	"corey_disp" : "CoreY [cm]", 
+	"az_disp" : "Azimuth [deg]", 
+	"zd_disp" : "Zenith [deg]",
+	"impact_disp_M1" : "Impact_M1 [cm]", "impact_disp_M2" : "Impact_M2 [cm]",
 	"leakage_M1" : "Leakage", "leakage_M2" : "Leakage"
 }
 #threshold for relative error
@@ -86,6 +110,12 @@ threshold = {
 	"az" : 1, 
 	"zd" : 1,
 	"impact_M1" : 1, "impact_M2" : 1,
+	"hmax_disp" : 1, 
+	"corex_disp" : 1, 
+	"corey_disp" : 1, 
+	"az_disp" : 1, 
+	"zd_disp" : 1,
+	"impact_disp_M1" : 1, "impact_disp_M2" : 1,
 	"leakage_M1" : 0.01, "leakage_M2" : 0.01
 }
 
@@ -104,4 +134,10 @@ scaling = {
 	"az" : "lin", 
 	"zd" : "lin",
 	"impact_M1" : "lin", "impact_M2" : "lin",
+	"hmax_disp" : "lin", 
+	"corex_disp" : "lin", 
+	"corey_disp" : "lin", 
+	"az_disp" : "lin", 
+	"zd_disp" : "lin",
+	"impact_disp_M1" : "lin", "impact_disp_M2" : "lin",
 }
