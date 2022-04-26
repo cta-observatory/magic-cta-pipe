@@ -8,13 +8,15 @@ mars_params = {
 	"delta_M1" : "MHillas_1.fDelta", "delta_M2" : "MHillas_2.fDelta", 
 	"cogx_M1" : "MHillas_1.fMeanX", "cogx_M2" : "MHillas_2.fMeanX", 
 	"cogy_M1" : "MHillas_1.fMeanY", "cogy_M2" : "MHillas_2.fMeanY", 
-	# "hmax" : "MStereoPar.fMaxHeight", 
-	# "corex" : "MStereoPar.fCoreX", 
-	# "corey" : "MStereoPar.fCoreY", 
-	# "az" : "MStereoPar.fDirectionAz", 
-	# "zd" : "MStereoPar.fDirectionZd",
+	"hmax" : "MStereoPar.fMaxHeight", 
+	"corex" : "MStereoPar.fCoreX", 
+	"corey" : "MStereoPar.fCoreY", 
+	"az" : "MStereoPar.fDirectionAz", 
+	"zd" : "MStereoPar.fDirectionZd",
+	"impact_M1" : "MStereoPar.fM1Impact", "impact_M2" : "MStereoPar.fM2Impact",
 	# "n_islands" : "MImagePar_1./MImagePar_1.fNumIslands",
 	"leakage_M1" : "MNewImagePar_1./MNewImagePar_1.fLeakage1", "leakage_M2" : "MNewImagePar_2./MNewImagePar_2.fLeakage1"
+
 }
 mcp_params = {
 	"length_M1" : "length", "length_M2" : "length", 
@@ -24,11 +26,12 @@ mcp_params = {
 	"delta_M1" : "psi", "delta_M2" : "psi", 
 	"cogx_M1" : "x", "cogx_M2" : "x", 
 	"cogy_M1" : "y", "cogy_M2" : "y", 
-	# "hmax" : "h_max", 
-	# "corex" : "core_x", 
-	# "corey" : "core_y", 
-	# "az" : "az", 
-	# "zd" : "alt",
+	"hmax" : "h_max", 
+	"corex" : "core_x", 
+	"corey" : "core_y", 
+	"az" : "az", 
+	"zd" : "alt",
+	"impact_M1" : "impact", "impact_M2" : "impact",
 	# "n_islands" : "n_islands",
 	"leakage_M1" : "intensity_width_1", "leakage_M2" : "intensity_width_1"
 }
@@ -38,16 +41,17 @@ scale_factors = {
 	"width_M1" : 1000., "width_M2" : 1000.,
 	"size_M1" : 1., "size_M2" : 1., 
 	"slope_M1" : 1., "slope_M2" : 1., 
-	"delta_M1" : (math.pi*2.0)/360., "delta_M2" : (math.pi*2.0)/360., 
+    "delta_M1" : (math.pi*2.0)/360., "delta_M2" : (math.pi*2.0)/360.,
 	"cogx_M1" : 1000., "cogx_M2" : 1000., 
 	"cogy_M1" : 1000., "cogy_M2" : 1000., 
 	"slope_M1" : 0.001, "slope_M2" : 0.001, 
 	"leakage_M1" : 1., "leakage_M2" : 1.,
-	# "hmax" : 100.,
-	# "corex" : 100., 
-	# "corey" : 100.,
-	# "az" : 1.,
-	# "zd" : 1.,
+	"hmax" : 100.,
+	"corex" : 100., 
+	"corey" : 100.,
+	"az" : 1.,
+	"zd" : 1.,
+	"impact_M1" : 100., "impact_M2" : 100.,
 	# "n_islands" : 1.
 	}
 #important for the plotting, these are mars units
@@ -59,11 +63,12 @@ labels_and_units = {
 	"slope_M1" : "Time Gradient M1", "slope_M2" : "Time Gradient M2", 
 	"cogx_M1" : "Cog_x M1 [mm]", "cogx_M2" : "Cog_x M2 [mm]", 
 	"cogy_M1" : "Cog_y M1 [mm]", "cogy_M2" : "Cog_y M2 [mm]", 
-	# "hmax" : "Max height [cm]", 
-	# "corex" : "CoreX [cm]", 
-	# "corey" : "CoreY [cm]", 
-	# "az" : "Azimuth [deg]", 
-	# "zd" : "Zenith [deg]",
+	"hmax" : "Max height [cm]", 
+	"corex" : "CoreX [cm]", 
+	"corey" : "CoreY [cm]", 
+	"az" : "Azimuth [deg]", 
+	"zd" : "Zenith [deg]",
+	"impact_M1" : "Impact_M1 [cm]", "impact_M2" : "Impact_M2 [cm]",
 	"leakage_M1" : "Leakage", "leakage_M2" : "Leakage"
 }
 #threshold for relative error
@@ -75,11 +80,12 @@ threshold = {
 	"slope_M1" : 1, "slope_M2" : 1, 
 	"cogx_M1" : 0.01, "cogx_M2" : 0.01, 
 	"cogy_M1" : 0.01, "cogy_M2" : 0.01, 
-	# "hmax" : 1, 
-	# "corex" : 1, 
-	# "corey" : 1, 
-	# "az" : 1, 
-	# "zd" : 1,
+	"hmax" : 1, 
+	"corex" : 1, 
+	"corey" : 1, 
+	"az" : 1, 
+	"zd" : 1,
+	"impact_M1" : 1, "impact_M2" : 1,
 	"leakage_M1" : 0.01, "leakage_M2" : 0.01
 }
 
@@ -91,10 +97,11 @@ scaling = {
 	"slope_M1" : "lin", "slope_M2" : "lin", 
 	"cogx_M1" : "lin", "cogx_M2" : "lin", 
 	"cogy_M1" : "lin", "cogy_M2" : "lin", 
-	"leakage_M1" : "lin", "leakage_M2" : "lin"
-	# "hmax" : "lin", 
-	# "corex" : "lin", 
-	# "corey" : "lin", 
-	# "az" : "lin", 
-	# "zd" : "lin"
+	"leakage_M1" : "lin", "leakage_M2" : "lin",
+	"hmax" : "lin", 
+	"corex" : "lin", 
+	"corey" : "lin", 
+	"az" : "lin", 
+	"zd" : "lin",
+	"impact_M1" : "lin", "impact_M2" : "lin",
 }
