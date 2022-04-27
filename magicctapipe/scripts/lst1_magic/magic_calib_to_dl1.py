@@ -146,8 +146,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             logger.warning('\nHot pixels do not exist in a simulation. Setting the "find_hotpixels" option to False...')
             config_cleaning.update({'find_hotpixels': False})
 
-        unsuitable_mask = None
-
         tel_position = subarray.positions[tel_id]
         focal_length = subarray.tel[tel_id].optics.equivalent_focal_length
 
@@ -157,13 +155,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         )
 
     else:
-        pedestal_type = config_cleaning.pop('pedestal_type')
-
-        if pedestal_type not in pedestal_types:
-            raise KeyError(f'Unknown pedestal type "{pedestal_type}".')
-
-        i_ped_type = np.where(np.array(pedestal_types) == pedestal_type)[0][0]
-
         if config_cleaning['find_hotpixels'] == 'auto':
             logger.info('\nSetting the "find_hotpixels" option to True...')
             config_cleaning.update({'find_hotpixels': True})
@@ -173,8 +164,24 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             for root_file in event_source.file_list:
                 logger.info(root_file)
 
+        time_diffs = event_source.event_time_diffs
+
     # Configure the MAGIC image cleaning:
     magic_clean = MAGICClean(camera_geom, config_cleaning)
+
+    find_hotpixels = config_cleaning['find_hotpixels']
+
+    if find_hotpixels:
+
+        pedestal_type = config_cleaning.pop('pedestal_type')
+
+        if pedestal_type not in pedestal_types:
+            raise KeyError(f'Unknown pedestal type "{pedestal_type}".')
+
+        i_ped_type = np.where(np.array(pedestal_types) == pedestal_type)[0][0]
+
+    else:
+        unsuitable_mask = None
 
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -205,7 +212,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             if event.count % 100 == 0:
                 logger.info(f'{event.count} events')
 
-            if not is_simulation:
+            if find_hotpixels:
                 dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
                 badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
                 unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
@@ -312,8 +319,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 # here we set the integral and fractional parts separately as "time_sec" and "time_nanosec":
                 fractional, integral = np.modf(timestamp)
 
-                time_sec = u.Quantity(np.round(integral), u.s)
-                time_nanosec = u.Quantity(np.round(fractional * sec2nsec), u.ns)
+                time_sec = u.Quantity(int(np.round(integral)), u.s)
+                time_nanosec = u.Quantity(int(np.round(fractional * sec2nsec)), u.ns)
+
+                time_diff = time_diffs[event.count]
 
                 # Set the event information to the container:
                 event_info = EventInfoContainer(
@@ -323,6 +332,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     pointing_az=event.pointing.tel[tel_id].azimuth,
                     time_sec=time_sec,
                     time_nanosec=time_nanosec,
+                    time_diff=time_diff,
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                 )
