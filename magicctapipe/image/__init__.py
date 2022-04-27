@@ -3,8 +3,6 @@ from .cleaning import (
     PixelTreatment,
     get_num_islands_MAGIC,
     clean_image_params,
-    eval_impact,
-    tailcuts_clean_lstchain,
 )
 
 from .leakage import (
@@ -16,8 +14,5 @@ __all__ = [
     'PixelTreatment',
     'get_num_islands_MAGIC',
     'clean_image_params',
-    'eval_impact',
-    'tailcuts_clean_lstchain',
     'get_leakage',
 ]
-
