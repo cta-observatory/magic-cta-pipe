@@ -215,8 +215,8 @@ def transform_altaz_to_radec(alt, az, timestamp):
     """
 
     # Hardcode the longitude/latitude of ORM:
-    LAT_ORM = u.Quantity(28.76177, u.deg)
     LON_ORM = u.Quantity(-17.89064, u.deg)
+    LAT_ORM = u.Quantity(28.76177, u.deg)
     HEIGHT_ORM = u.Quantity(2199.835, u.m)
 
     location = EarthLocation.from_geodetic(lon=LON_ORM, lat=LAT_ORM, height=HEIGHT_ORM)
