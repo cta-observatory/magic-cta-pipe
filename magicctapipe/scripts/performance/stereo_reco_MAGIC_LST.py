@@ -1,15 +1,12 @@
 # coding: utf-8
 
 import os
-from re import S
 import time
 import copy
-import yaml
 import glob
 import scipy
 import select
 import argparse
-import numpy as np
 import matplotlib.pyplot as plt
 
 import astropy.units as u
@@ -24,8 +21,7 @@ from ctapipe.image.morphology import number_of_islands
 from ctapipe.reco import HillasReconstructor
 from ctapipe.visualization import ArrayDisplay
 
-from magicctapipe.utils import MAGIC_Badpixels
-from magicctapipe.utils import MAGIC_Cleaning
+from magicctapipe.image import MAGICClean
 from magicctapipe.utils.filedir import *
 from magicctapipe.utils.utils import *
 from magicctapipe.utils.tels import *
@@ -174,12 +170,9 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 
         # Init MAGIC MARS cleaning, if selected
         if consider_MAGIC and use_MARS_cleaning:
-            magic_clean = MAGIC_Cleaning.magic_clean(
+            magic_clean = MAGICClean(
                 camera=source.subarray.tel[tel_ids_MAGIC[0]].camera.geometry,
-                configuration=cfg["MAGIC"]["cleaning_config"],
-            )
-            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-                config=cfg["MAGIC"]["bad_pixel_config"]
+                configuration=cfg["MAGIC"]["cleaning_config"]
             )
 
         # --- Write MC HEADER ---
@@ -231,7 +224,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # Loop on triggered telescopes
             for tel_id, dl1 in event.dl1.tel.items():
                 # Exclude telescopes not selected
-                if not tel_id in sel_tels:
+                if tel_id not in sel_tels:
                     continue
                 try:
                     geom = source.subarray.tels[tel_id].camera.geometry
