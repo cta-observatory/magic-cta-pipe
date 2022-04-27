@@ -1,5 +1,8 @@
 from .lst1_magic import (
+    create_dl3_index_files,
+    create_irf,
     dl1_stereo_to_dl2,
+    dl2_to_dl3,
     event_coincidence,
     mc_dl0_to_dl1,
     stereo_reconstruction,
@@ -11,7 +14,10 @@ from .lst1_magic import (
 )
 
 __all__ = [
+    'create_dl3_index_files',
+    'create_irf',
     'dl1_stereo_to_dl2',
+    'dl2_to_dl3',
     'event_coincidence',
     'mc_dl0_to_dl1',
     'stereo_reconstruction',

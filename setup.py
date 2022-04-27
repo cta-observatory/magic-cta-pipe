@@ -1,18 +1,20 @@
 #!/usr/bin/env python
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-# import ah_bootstrap
-from setuptools import setup, find_packages
 import os
+from setuptools import setup, find_packages
 
 entry_points = {}
 entry_points["console_scripts"] = [
-    "lst1_magic_dl1_to_dl2 = magicctapipe.scripts.lst1_magic.lst1_magic_dl1_to_dl2:main",
+    "create_dl3_index_files = magicctapipe.scripts.lst1_magic.create_dl3_index_files:main",
+    "lst1_magic_create_irf = magicctapipe.scripts.lst1_magic.lst1_magic_create_irf:main",
+    "lst1_magic_dl1_stereo_to_dl2 = magicctapipe.scripts.lst1_magic.lst1_magic_dl1_stereo_to_dl2:main",
+    "lst1_magic_dl2_to_dl3 = magicctapipe.scripts.lst1_magic.lst1_magic_dl2_to_dl3:main",
     "lst1_magic_event_coincidence = magicctapipe.scripts.lst1_magic.lst1_magic_event_coincidence:main",
     "lst1_magic_mc_dl0_to_dl1 = magicctapipe.scripts.lst1_magic.lst1_magic_mc_dl0_to_dl1:main",
     "lst1_magic_stereo_reco = magicctapipe.scripts.lst1_magic.lst1_magic_stereo_reco:main",
     "lst1_magic_train_rfs = magicctapipe.scripts.lst1_magic.lst1_magic_train_rfs:main",
-    "magic_data_cal_to_dl1 = magicctapipe.scripts.lst1_magic.magic_data_cal_to_dl1:main",
+    "magic_calib_to_dl1 = magicctapipe.scripts.lst1_magic.magic_calib_to_dl1:main",
     "merge_hdf_files = magicctapipe.scripts.lst1_magic.merge_hdf_files:main",
 ]
 
