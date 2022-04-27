@@ -76,8 +76,9 @@ class EventInfoContainer(Container):
     tel_id = Field(-1, 'Telescope ID')
     pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
     pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
-    time_sec = Field(-1, 'Event trigger time second')
-    time_nanosec = Field(-1, 'Event trigger time nanosecond')
+    time_sec = Field(-1, 'Event trigger time second', u.s)
+    time_nanosec = Field(-1, 'Event trigger time nanosecond', u.ns)
+    time_diff = Field(-1, 'Event trigger time difference from the previous event', u.s)
     n_pixels = Field(-1, 'Number of pixels of a cleaned image')
     n_islands = Field(-1, 'Number of islands of a cleaned image')
 
@@ -311,8 +312,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 # here we set the integral and fractional parts separately as "time_sec" and "time_nanosec":
                 fractional, integral = np.modf(timestamp)
 
-                time_sec = int(np.round(integral))
-                time_nanosec = int(np.round(fractional * sec2nsec))
+                time_sec = u.Quantity(np.round(integral), u.s)
+                time_nanosec = u.Quantity(np.round(fractional * sec2nsec), u.ns)
 
                 # Set the event information to the container:
                 event_info = EventInfoContainer(
