@@ -49,7 +49,7 @@ dependencies:
   - conda-forge::corsikaio
   - pip:
       - lstchain~=0.9.0
-      - ctapipe_io_magic~=0.4.1
+      - ctapipe_io_magic~=0.4.3
       - uproot~=4.1
       - ctaplot~=0.5.5
       - pyirf~=0.6.0
