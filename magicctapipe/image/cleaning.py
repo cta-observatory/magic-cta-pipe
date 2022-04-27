@@ -25,6 +25,7 @@ __all__ = [
     'tailcuts_clean_lstchain',
 ]
 
+
 class MAGICClean:
 
     def __init__(self, camera, configuration):
@@ -662,7 +663,7 @@ def clean_image_params(geom, image, clean, peakpos):
     # Hillas parameters, same for LST and MAGIC. From ctapipe
     hillas_p = hillas_parameters(geom=geom[clean], image=image[clean])
     # Leakage, same for LST and MAGIC. From ctapipe
-    leakage_p = leakage(geom=geom, image=image, cleaning_mask=clean)
+    leakage_p = leakage_parameters(geom=geom, image=image, cleaning_mask=clean)
     # Timing parameters, same for LST and MAGIC. From ctapipe
     timing_p = timing_parameters(
         geom=geom[clean],
