@@ -2,11 +2,10 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script merges HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
 It parses information from file names, so they should follow the convention (*Run*.h5 or *run*.h5).
-It saves merged file(s) in the "merged" directory which will be created under an input directory.
+If no output directory is specified, it saves merged file(s) in the "merged" directory which will
+be created under an input directory.
 
 If the "--run-wise" or "--subrun-wise" arguments are given, it merges input files run-wise or subrun-wise.
 They are applicable only to real data since MC data are already produced run-wise.
@@ -15,6 +14,7 @@ The "subrun-wise" option is used to merge telescope-wise MAGIC subrun files (e.g
 Usage:
 $ python merge_hdf_files.py
 --input-dir ./data/dl1
+(--output-dir ./data/dl1_merged)
 (--run-wise)
 (--subrun-wise)
 """
@@ -93,7 +93,7 @@ def write_to_table(input_file_mask, output_file):
     logger.info(f'--> {output_file}\n')
 
 
-def merge_hdf_files(input_dir, run_wise=False, subrun_wise=False):
+def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=False):
     """
     Merges input HDF files produced by
     the LST-1 + MAGIC combined analysis pipeline.
@@ -102,6 +102,8 @@ def merge_hdf_files(input_dir, run_wise=False, subrun_wise=False):
     ----------
     input_dir: str
         Path to a directory where input HDF files are stored
+    output_dir: str
+        Path to a directory where to save output HDF files
     run_wise: bool
         If True, it merges input files run-wise (applicable to real data)
     subrun_wise: bool
@@ -155,7 +157,9 @@ def merge_hdf_files(input_dir, run_wise=False, subrun_wise=False):
             RuntimeError('Multiple types of files are found in the input directory.')
 
     # Merge the input files:
-    output_dir = f'{input_dir}/merged'
+    if output_dir is None:
+        output_dir = f'{input_dir}/merged'
+
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     if subrun_wise:
@@ -215,6 +219,11 @@ def main():
     )
 
     parser.add_argument(
+        '--output-dir', '-o', dest='output_dir', type=str, default=None,
+        help='Path to a directory where to save output HDF files.',
+    )
+
+    parser.add_argument(
         '--run-wise', dest='run_wise', action='store_true',
         help='Merge input files run-wise (applicable to real data).',
     )
@@ -227,7 +236,7 @@ def main():
     args = parser.parse_args()
 
     # Merge the input files:
-    merge_hdf_files(args.input_dir, args.run_wise, args.subrun_wise)
+    merge_hdf_files(args.input_dir, args.output_dir, args.run_wise, args.subrun_wise)
 
     logger.info('Done.')
 
