@@ -82,7 +82,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run):
         output_file = f'{output_dir}/muons_M{tel_id}.Run{obs_id:08}.fits'
     else:
         subrun_id = event_source.metadata['subrun_number']
-        output_file = f'{output_dir}/muons_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.fits'
+        output_file = f'{output_dir}/muons_M{tel_id}.Run{obs_id:08}.{subrun_id[0]:03}.fits'
 
     # Start processing events:
     logger.info('\nProcessing the events:')
