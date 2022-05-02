@@ -2,8 +2,6 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script merges HDF files produced by the LST-1 + MAGIC combined analysis pipeline.
 It parses information from file names, so they should follow the convention (*Run*.h5 or *run*.h5).
 If no output directory is specified, it saves merged file(s) in the "merged" directory which will
