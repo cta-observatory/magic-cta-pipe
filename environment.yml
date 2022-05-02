@@ -16,7 +16,7 @@ dependencies:
   - graphviz
   - h5py
   - iminuit>=2
-  - ipython
+  - ipython~=7.31
   - ipywidgets
   - joblib
   - jupyter
