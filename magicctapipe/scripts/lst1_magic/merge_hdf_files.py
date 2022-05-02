@@ -16,7 +16,7 @@ The "subrun-wise" option is used to merge telescope-wise MAGIC subrun files (e.g
 Usage:
 $ python merge_hdf_files.py
 --input-dir ./data/dl1
-(--output-dir outdir)
+(--output-dir ./data/dl1_merged)
 (--run-wise)
 (--subrun-wise)
 """
@@ -95,7 +95,7 @@ def write_to_table(input_file_mask, output_file):
     logger.info(f'--> {output_file}\n')
 
 
-def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
+def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=False):
     """
     Merges input HDF files produced by
     the LST-1 + MAGIC combined analysis pipeline.
@@ -105,7 +105,7 @@ def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
     input_dir: str
         Path to a directory where input HDF files are stored
     output_dir: str
-        Path to a directory where output HDF files are stored
+        Path to a directory where to save output HDF files
     run_wise: bool
         If True, it merges input files run-wise (applicable to real data)
     subrun_wise: bool
@@ -159,8 +159,9 @@ def merge_hdf_files(input_dir, output_dir, run_wise=False, subrun_wise=False):
             RuntimeError('Multiple types of files are found in the input directory.')
 
     # Merge the input files:
-    if output_dir == "":
+    if output_dir is None:
         output_dir = f'{input_dir}/merged'
+
     Path(output_dir).mkdir(parents=True, exist_ok=True)
 
     if subrun_wise:
@@ -220,9 +221,8 @@ def main():
     )
 
     parser.add_argument(
-        '--output-dir', '-o', dest='output_dir', type=str, required=False,
-        help='Path to a directory where output HDF files are stored.',
-        default="",
+        '--output-dir', '-o', dest='output_dir', type=str, default=None,
+        help='Path to a directory where to save output HDF files.',
     )
 
     parser.add_argument(
