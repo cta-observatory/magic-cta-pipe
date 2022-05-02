@@ -212,7 +212,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
-    regex = r'(\S+)_run(\d+)_.*\.simtel.gz'
+    regex = r'(\S+)_run(\d+)[_\.].*simtel.gz'
 
     file_name = Path(input_file).resolve().name
 
