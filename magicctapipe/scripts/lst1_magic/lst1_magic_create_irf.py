@@ -273,7 +273,7 @@ def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency):
         values=table_gamma['theta'],
         bin_values=table_gamma['reco_energy'],
         cut_table=cut_table,
-        op=operator.ge,
+        op=operator.le,
     )
 
     table_gamma = table_gamma[mask]

@@ -62,8 +62,8 @@ MAGIC:
 
     muon_ring:
         thr_low: 25
-        tailcut: [8, 4]
-        ring_completeness_threshold: 15
+        tailcut: [12, 8]
+        ring_completeness_threshold: 25
 
 
 event_coincidence:

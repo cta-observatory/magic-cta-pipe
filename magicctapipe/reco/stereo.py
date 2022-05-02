@@ -9,6 +9,7 @@ from magicctapipe.utils.tels import *
 __all__ = ["write_hillas", "check_write_stereo",
            "check_stereo", "write_stereo"]
 
+
 def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p, impact_p):
     """Write
 
@@ -151,7 +152,6 @@ def write_stereo(
     """
 
     event_info.tel_id = stereo_id
-    stereo_params.tel_ids = tel_ids_2_num(stereo_params.tel_ids)
     # How to go back
     # n = stereo_params.tel_ids
     # np.where(np.array(list(bin(n)[2:][::-1]))=='1')[0]
