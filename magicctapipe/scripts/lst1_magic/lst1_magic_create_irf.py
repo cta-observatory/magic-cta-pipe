@@ -412,6 +412,8 @@ def create_irf(input_file_gamma, input_file_proton,
         gamma_efficiency = config_irf['gammaness']['gamma_efficiency']
         min_cut = config_irf['gammaness']['min_cut']
         max_cut = config_irf['gammaness']['max_cut']
+        logger.info(f'Minimum gammaness cut allowed: {min_cut}')
+        logger.info(f'Maximum gammaness cut allowed: {max_cut}')
         table_gamma, table_bkg, cut_table_gh = apply_dynamic_gammaness_cut(table_gamma, table_bkg,
                                                                             energy_bins, gamma_efficiency,
                                                                             min_cut, max_cut)
@@ -442,6 +444,8 @@ def create_irf(input_file_gamma, input_file_proton,
         gamma_efficiency = config_irf['theta']['gamma_efficiency']
         min_cut = config_irf['theta']['min_cut'] * u.deg
         max_cut = config_irf['theta']['max_cut'] * u.deg
+        logger.info(f'Minimum theta cut allowed: {min_cut}')
+        logger.info(f'Maximum theta cut allowed: {max_cut}')
         table_gamma, cut_table_theta = apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency, min_cut, max_cut)
 
         print(f"Theta cuts (efficiency: {gamma_efficiency}):\n{cut_table_theta}")
