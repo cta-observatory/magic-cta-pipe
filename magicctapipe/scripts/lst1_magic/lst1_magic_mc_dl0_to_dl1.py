@@ -190,7 +190,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
             extractor_muon_name_lst, subarray=subarray, config=config_extractor_lst
         )
         r1_dl1_calibrator_for_muon_rings[tel_id_lst1] = CameraCalibrator(subarray,
-                                                                        image_extractor=extractor_lst_muons)
+                                                                         image_extractor=extractor_lst_muons)
         extractor_muon_name_magic = 'GlobalPeakWindowSum'
         extractor_magic_muons = ImageExtractor.from_name(
             extractor_muon_name_magic, subarray=subarray, config=config_extractor_magic
@@ -212,7 +212,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
-    regex = r'(\S+)_run(\d+)_.*\.simtel.gz'
+    regex = r'(\S+)_run(\d+)[_\.].*simtel.gz'
 
     file_name = Path(input_file).resolve().name
 

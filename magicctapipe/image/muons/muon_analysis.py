@@ -34,29 +34,30 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
 
     """
     if data_type == 'obs':
-        bad_pixels = event.mon.tel[telescope_id].calibration.unusable_pixels[0]
-        # Set to 0 unreliable pixels:
-        image = image * (~bad_pixels)
+        try:
+            bad_pixels = event.mon.tel[telescope_id].calibration.unusable_pixels[0]
+            # Set to 0 unreliable pixels:
+            image = image * (~bad_pixels)
+        except TypeError:
+            pass
     # process only promising events, in terms of # of pixels with large signals:
     thr_low = good_ring_config['thr_low'] if 'thr_low' in good_ring_config else 50
     if tag_pix_thr(image, thr_low=thr_low):
-        # re-calibrate r1 to obtain new dl1, using a more adequate pulse integrator for muon rings
-        numsamples = event.r1.tel[telescope_id].waveform.shape[1]  # not necessarily the same as in r0!
         if data_type == 'obs':
-            bad_pixels_hg = event.mon.tel[telescope_id].calibration.unusable_pixels[0]
-            bad_pixels_lg = event.mon.tel[telescope_id].calibration.unusable_pixels[1]
-            # Now set to 0 all samples in unreliable pixels. Important for global peak
-            # integrator in case of crazy pixels!  TBD: can this be done in a simpler
-            # way?
-            bad_pixels = bad_pixels_hg | bad_pixels_lg
-            bad_waveform = np.transpose(np.array(numsamples * [bad_pixels]))
-
-            # print('hg bad pixels:',np.where(bad_pixels_hg))
-            # print('lg bad pixels:',np.where(bad_pixels_lg))
-
-            event.r1.tel[telescope_id].waveform *= ~bad_waveform
-            image = image * (~bad_pixels)
-        r1_dl1_calibrator_for_muon_rings(event)
+            try:
+                bad_pixels_hg = event.mon.tel[telescope_id].calibration.unusable_pixels[0]
+                bad_pixels_lg = event.mon.tel[telescope_id].calibration.unusable_pixels[1]
+                bad_pixels = bad_pixels_hg | bad_pixels_lg
+                image = image * (~bad_pixels)
+            except TypeError:
+                pass
+        if r1_dl1_calibrator_for_muon_rings is not None:
+            # re-calibrate r1 to obtain new dl1, using a more adequate pulse integrator for muon rings
+            numsamples = event.r1.tel[telescope_id].waveform.shape[1]  # not necessarily the same as in r0!
+            if data_type == 'obs':
+                bad_waveform = np.transpose(np.array(numsamples * [bad_pixels]))
+                event.r1.tel[telescope_id].waveform *= ~bad_waveform
+            r1_dl1_calibrator_for_muon_rings(event)
 
         # Check again: with the extractor for muon rings (most likely GlobalPeakWindowSum)
         # perhaps the event is no longer promising (e.g. if it has a large time evolution)
@@ -72,26 +73,31 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
                 analyze_muon_event(subarray, telescope_id, event_id,
                                    image, good_ring_config,
                                    plot_rings=False, plots_path='')
-            #                      plot_rings=True, plots_path='../../../../data/'+telescope_name+'/')
+                                  #plot_rings=True, plots_path='../data/real'+telescope_name+'/')
             #           (test) plot muon rings as png files
 
-            # Now we want to obtain the waveform sample (in HG & LG) at which the ring light peaks:
-            bright_pixels = image > min_pe_for_muon_t_calc
-            selected_gain = event.r1.tel[telescope_id].selected_gain_channel
-            mask_hg = bright_pixels & (selected_gain == 0)
-            mask_lg = bright_pixels & (selected_gain == 1)
+            if r1_dl1_calibrator_for_muon_rings is not None:
+                # Now we want to obtain the waveform sample (in HG & LG) at which the ring light peaks:
+                bright_pixels = image > min_pe_for_muon_t_calc
+                selected_gain = event.r1.tel[telescope_id].selected_gain_channel
+                mask_hg = bright_pixels & (selected_gain == 0)
+                mask_lg = bright_pixels & (selected_gain == 1)
 
-            bright_pixels_waveforms_hg = event.r1.tel[telescope_id].waveform[mask_hg, :]
-            bright_pixels_waveforms_lg = event.r1.tel[telescope_id].waveform[mask_lg, :]
-            stacked_waveforms_hg = np.sum(bright_pixels_waveforms_hg, axis=0)
-            stacked_waveforms_lg = np.sum(bright_pixels_waveforms_lg, axis=0)
+                bright_pixels_waveforms_hg = event.r1.tel[telescope_id].waveform[mask_hg, :]
+                bright_pixels_waveforms_lg = event.r1.tel[telescope_id].waveform[mask_lg, :]
+                stacked_waveforms_hg = np.sum(bright_pixels_waveforms_hg, axis=0)
+                stacked_waveforms_lg = np.sum(bright_pixels_waveforms_lg, axis=0)
 
-            # stacked waveforms from all bright pixels; shape (ngains, nsamples)
-            hg_peak_sample = np.argmax(stacked_waveforms_hg, axis=-1)
-            lg_peak_sample = np.argmax(stacked_waveforms_lg, axis=-1)
+                # stacked waveforms from all bright pixels; shape (ngains, nsamples)
+                hg_peak_sample = np.argmax(stacked_waveforms_hg, axis=-1)
+                lg_peak_sample = np.argmax(stacked_waveforms_lg, axis=-1)
+            else:
+                hg_peak_sample, lg_peak_sample = -1, -1
+
+        mc_energy = event.simulation.shower.energy if data_type == 'mc' else -1
 
         if good_ring:
-            fill_muon_event(-1,
+            fill_muon_event(mc_energy,
                             muon_parameters,
                             good_ring,
                             event.index.event_id,
@@ -106,7 +112,6 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
                             muonpars,
                             hg_peak_sample, lg_peak_sample)
             muon_parameters['telescope_name'].append(telescope_name)
-
 
 # TODO replace this copy of dev version of lstchain (last release tag v0.9.4) by an import once v0.9.5+ is out
 import matplotlib.pyplot as plt

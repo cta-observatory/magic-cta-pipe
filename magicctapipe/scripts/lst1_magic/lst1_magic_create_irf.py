@@ -174,7 +174,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     return event_table, sim_info
 
 
-def apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins, gamma_efficiency):
+def apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins, gamma_efficiency, min_cut, max_cut):
     """
     Applies dynamic (energy-dependent) gammaness cuts to input events.
     The cuts are computed in each energy bin so as to keep the specified gamma efficiency.
@@ -189,6 +189,10 @@ def apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins, gamma_effic
         Energy bins where to compute and apply the cuts
     gamma_efficiency: float
         Efficiency of the gamma MC events surviving the cuts
+    min_cut: float
+        Minimum value of cut, cuts smaller than this value are replaced with this value
+    max_cut: float
+        Maximum value of cut, cuts larger than this value are replaced with this value
 
     Returns
     -------
@@ -207,8 +211,10 @@ def apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins, gamma_effic
         values=table_gamma['gammaness'],
         bin_values=table_gamma['reco_energy'],
         bins=energy_bins,
-        fill_value=1.0,
+        fill_value=min_cut,
         percentile=percentile,
+        min_value=min_cut,
+        max_value=max_cut,
     )
 
     # Apply the cuts to the input events:
@@ -235,7 +241,7 @@ def apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins, gamma_effic
     return table_gamma, table_bkg, cut_table
 
 
-def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency):
+def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency, min_cut, max_cut):
     """
     Applies dynamic (energy-dependent) theta cuts to input events.
     The cuts are computed in each energy bin so as to keep the specified gamma efficiency.
@@ -248,6 +254,10 @@ def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency):
         Energy bins where to compute and apply the cuts
     gamma_efficiency: float
         Efficiency of the gamma MC events surviving the cuts
+    min_cut: float
+        Minimum value of cut, cuts smaller than this value are replaced with this value
+    max_cut: float
+        Maximum value of cut, cuts larger than this value are replaced with this value
 
     Returns
     -------
@@ -264,8 +274,10 @@ def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency):
         values=table_gamma['theta'],
         bin_values=table_gamma['reco_energy'],
         bins=energy_bins,
-        fill_value=u.Quantity(0.0, u.deg),
+        fill_value=max_cut,
         percentile=percentile,
+        min_value=min_cut,
+        max_value=max_cut,
     )
 
     # Apply the cuts to the input events:
@@ -273,7 +285,7 @@ def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency):
         values=table_gamma['theta'],
         bin_values=table_gamma['reco_energy'],
         cut_table=cut_table,
-        op=operator.ge,
+        op=operator.le,
     )
 
     table_gamma = table_gamma[mask]
@@ -398,8 +410,15 @@ def create_irf(input_file_gamma, input_file_proton,
         logger.info('\nApplying the dynamic gammaness cuts...')
 
         gamma_efficiency = config_irf['gammaness']['gamma_efficiency']
+        min_cut = config_irf['gammaness']['min_cut']
+        max_cut = config_irf['gammaness']['max_cut']
+        logger.info(f'Minimum gammaness cut allowed: {min_cut}')
+        logger.info(f'Maximum gammaness cut allowed: {max_cut}')
         table_gamma, table_bkg, cut_table_gh = apply_dynamic_gammaness_cut(table_gamma, table_bkg,
-                                                                            energy_bins, gamma_efficiency)
+                                                                            energy_bins, gamma_efficiency,
+                                                                            min_cut, max_cut)
+
+        print(f"Gammaness cuts (efficiency: {gamma_efficiency}):\n{cut_table_gh}")
 
         extra_headers['GH_EFF'] = (gamma_efficiency, 'gamma efficiency')
         gam_cut_config = f'gam_dynamic{gamma_efficiency}'
@@ -423,7 +442,13 @@ def create_irf(input_file_gamma, input_file_proton,
         logger.info('Applying the dynamic theta cuts...')
 
         gamma_efficiency = config_irf['theta']['gamma_efficiency']
-        table_gamma, cut_table_theta = apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency)
+        min_cut = config_irf['theta']['min_cut'] * u.deg
+        max_cut = config_irf['theta']['max_cut'] * u.deg
+        logger.info(f'Minimum theta cut allowed: {min_cut}')
+        logger.info(f'Maximum theta cut allowed: {max_cut}')
+        table_gamma, cut_table_theta = apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency, min_cut, max_cut)
+
+        print(f"Theta cuts (efficiency: {gamma_efficiency}):\n{cut_table_theta}")
 
         extra_headers['TH_EFF'] = (gamma_efficiency, 'gamma efficiency')
         theta_cut_config = f'theta_dynamic{gamma_efficiency}'
@@ -580,7 +605,7 @@ def main():
 
     parser.add_argument(
         '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-       help='Path to a yaml configuration file.',
+        help='Path to a yaml configuration file.',
     )
 
     args = parser.parse_args()

@@ -62,8 +62,8 @@ MAGIC:
 
     muon_ring:
         thr_low: 25
-        tailcut: [8, 4]
-        ring_completeness_threshold: 15
+        tailcut: [12, 8]
+        ring_completeness_threshold: 25
 
 
 event_coincidence:
@@ -201,11 +201,15 @@ create_irf:
         cut_type: 'global'   # select 'global' or 'dynamic'
         global_cut_value: 0.6   # used for the global cut
         gamma_efficiency: null   # used for the dynamic cut
+        min_cut: 0.05 # minimum value of cut
+        max_cut: 0.85  # maximum value of cut
 
     theta:
         cut_type: 'global'   # select 'global' or 'dynamic'
         global_cut_value: 0.2   # used for the global cut
         gamma_efficiency: null   # used for the dynamic cut
+        min_cut: 0.1 # minimum value of cut
+        max_cut: 0.45  # maximum value of cut
 
 
 dl2_to_dl3:
