@@ -1,31 +1,30 @@
 # coding: utf-8
 
 import os
-from re import S
 import time
 import copy
-import yaml
 import glob
 import scipy
 import select
 import argparse
-import numpy as np
 import matplotlib.pyplot as plt
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord, AltAz
+from astropy.coordinates import SkyCoord
 
 from ctapipe.io import SimTelEventSource
 from ctapipe.io import HDF5TableWriter
 from ctapipe.calib import CameraCalibrator
+from ctapipe.coordinates import TelescopeFrame
 from ctapipe.image.cleaning import tailcuts_clean
 from ctapipe.image.morphology import number_of_islands
 
 from ctapipe.reco import HillasReconstructor
+from ctapipe.containers import ImageParametersContainer
 from ctapipe.visualization import ArrayDisplay
 
-from magicctapipe.utils import MAGIC_Badpixels
-from magicctapipe.utils import MAGIC_Cleaning
+from magicctapipe.image import MAGICClean
+from magicctapipe.utils import calculate_impact
 from magicctapipe.utils.filedir import *
 from magicctapipe.utils.utils import *
 from magicctapipe.utils.tels import *
@@ -172,14 +171,14 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         # Init calibrator, both for MAGIC and LST
         calibrator = CameraCalibrator(subarray=source.subarray)
 
+        hillas_reconstructor = HillasReconstructor(source.subarray)
+        tel_positions = source.subarray.positions
+
         # Init MAGIC MARS cleaning, if selected
         if consider_MAGIC and use_MARS_cleaning:
-            magic_clean = MAGIC_Cleaning.magic_clean(
+            magic_clean = MAGICClean(
                 camera=source.subarray.tel[tel_ids_MAGIC[0]].camera.geometry,
-                configuration=cfg["MAGIC"]["cleaning_config"],
-            )
-            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-                config=cfg["MAGIC"]["bad_pixel_config"]
+                configuration=cfg["MAGIC"]["cleaning_config"]
             )
 
         # --- Write MC HEADER ---
@@ -214,15 +213,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             hillas_p, leakage_p, timing_p = {}, {}, {}
             telescope_pointings, time_grad, event_info = {}, {}, {}
             failed = False
-            horizon_frame = AltAz()
-            hillas_reco = HillasReconstructor()
-
-            # Eval pointing
-            array_pointing = SkyCoord(
-                az=event.pointing.array_azimuth,
-                alt=event.pointing.array_altitude,
-                frame=horizon_frame,
-            )
 
             # --- Calibrate ---
             # Call the calibrator, both for MAGIC and LST
@@ -231,28 +221,16 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # Loop on triggered telescopes
             for tel_id, dl1 in event.dl1.tel.items():
                 # Exclude telescopes not selected
-                if not tel_id in sel_tels:
+                if tel_id not in sel_tels:
                     continue
                 try:
-                    geom = source.subarray.tels[tel_id].camera.geometry
+                    geom_camera_frame = source.subarray.tels[tel_id].camera.geometry
+                    geom = geom_camera_frame.transform_to(TelescopeFrame())
                     image = dl1.image  # == event_image
                     peakpos = dl1.peak_time  # == event_pulse_time
 
                     # --- Cleaning ---
                     if geom.camera_name == cfg["LST"]["camera_name"]:
-                        ##### LSTCHAIN TAILCUT #####
-                        # # Apply tailcuts clean on LST. From ctapipe
-                        # clean, num_islands, island_ids = tailcuts_clean_lstchain(
-                        #     camera_geometry=geom,
-                        #     image=image,
-                        #     peak_time=peakpos,
-                        #     cleaning_parameters=cfg["LST"]["cleaning_config"],
-                        #     input_file=file,
-                        # )
-                        # # Ignore if less than n pixels after cleaning
-                        # if clean.sum() < cfg["LST"]["min_pixel"]:
-                        #     continue
-                        ##### OLD #####
                         # Apply tailcuts clean on LST. From ctapipe
                         clean = tailcuts_clean(
                             geom=geom, image=image, **cfg["LST"]["cleaning_config"]
@@ -285,16 +263,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                         geom.camera_name == cfg["MAGIC"]["camera_name"]
                         and use_MARS_cleaning
                     ):
-                        # Commented since it gives the error:
-                        # Image not reconstructed: 'is_simulation'
-                        # badrmspixel_mask = \
-                        #     badpixel_calculator.get_badrmspixel_mask(event)
-                        # deadpixel_mask = \
-                        #     badpixel_calculator.get_deadpixel_mask(event)
-                        # unsuitable_mask = np.logical_or(
-                        #     badrmspixel_mask[tel_id-1],
-                        #     deadpixel_mask[tel_id-1]
-                        # )
                         # Apply MAGIC MARS cleaning. From magic-cta-pipe
                         clean, image, peakpos = magic_clean.clean_image(
                             event_image=image, event_pulse_time=peakpos
@@ -372,24 +340,32 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                 print("STEREO CHECK NOT PASSED")
                 continue
 
-            # Eval stereo parameters and write them
-            # Reconstruct stereo event. From ctapipe
-            stereo_params = hillas_reco.predict(
-                hillas_dict=hillas_p,
-                subarray=source.subarray,
-                array_pointing=array_pointing,
-                telescopes_pointings=None,
-                # telescopes_pointings=telescope_pointings,
-            )
+            tel_ids_written = list(event_info.keys())
 
-            # Eval impact
-            impact_p = eval_impact(
-                subarray=source.subarray, hillas_p=hillas_p, stereo_params=stereo_params
-            )
+            for tel_id in tel_ids_written:
+
+                event.dl1.tel[tel_id].parameters = ImageParametersContainer(hillas=hillas_p[tel_id])
+
+                hillas_reconstructor(event)
+
+                stereo_params = event.dl2.stereo.geometry['HillasReconstructor']
+
+                if stereo_params.az < 0:
+                    stereo_params.az += u.Quantity(360, u.deg)
+
+                impact_p = calculate_impact(
+                    core_x=stereo_params.core_x,
+                    core_y=stereo_params.core_y,
+                    az=stereo_params.az,
+                    alt=stereo_params.alt,
+                    tel_pos_x=tel_positions[tel_id][0],
+                    tel_pos_y=tel_positions[tel_id][1],
+                    tel_pos_z=tel_positions[tel_id][2],
+                )
 
             # --- Store DL1 data ---
             # Store hillas params
-            tel_ids_written = list(event_info.keys())
+
             # Loop on triggered telescopes
             for tel_id in tel_ids_written:
                 # Write them

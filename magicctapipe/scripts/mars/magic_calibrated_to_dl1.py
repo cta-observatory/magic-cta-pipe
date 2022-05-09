@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import datetime
 import argparse
 import glob
 import re
@@ -10,7 +9,6 @@ import copy
 from pathlib import Path
 
 import numpy as np
-from astropy import units as u
 
 from ctapipe_io_magic import MAGICEventSource
 
@@ -35,14 +33,17 @@ from ctapipe.image import (
     timing_parameters,
 )
 
+from magicctapipe.image import (
+    MAGICClean,
+    get_leakage,
+)
+
 from magicctapipe.utils import (
     scale_camera_geometry,
     reflected_camera_geometry,
-    MAGIC_Badpixels,
-    MAGIC_Cleaning,
     info_message,
-    get_leakage,
 )
+
 
 DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer()
 DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer()
@@ -57,7 +58,8 @@ DEFAULT_TRUE_IMAGE_PARAMETERS.intensity_statistics = IntensityStatisticsContaine
 DEFAULT_TIMING_PARAMETERS = TimingParametersContainer()
 DEFAULT_PEAKTIME_STATISTICS = PeakTimeStatisticsContainer()
 
-def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
+
+def magic_calibrated_to_dl1(input_mask, cleaning_config):
     """Process MAGIC calibrated files, both real and simulation, to get
     DL1 files in the standard CTA format.
     Custom parts:
@@ -90,7 +92,7 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
     #  - image cleaning;
     #  - hillas parameter calculation;
     #  - time gradient calculation.
-    #  
+    #
     # We'll write the result to the HDF5 file that can be used for further processing.
 
     for input_file in input_files:
@@ -110,18 +112,13 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
         #geometry = scale_camera_geometry(camera_refl, aberration_factor)
         if is_simulation:
             clean_config["findhotpixels"] = False
-        else:
-            badpixel_calculator = MAGIC_Badpixels.MAGICBadPixelsCalc(
-                is_simulation=is_simulation,
-                config=bad_pixels_config
-            )
 
-        magic_clean = MAGIC_Cleaning.magic_clean(geometry,clean_config)
+        magic_clean = MAGICClean(geometry, clean_config)
 
         info_message("Cleaning configuration", prefix='Hillas')
         for item in vars(magic_clean).items():
             print(f"{item[0]}: {item[1]}")
-        if magic_clean.findhotpixels:
+        if magic_clean.find_hotpixels:
             for item in vars(magic_clean.pixel_treatment).items():
                 print(f"{item[0]}: {item[1]}")
 
@@ -145,9 +142,9 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
                     if is_simulation:
                         clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time)
                     else:
-                        badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
-                        deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
-                        unsuitable_mask = np.logical_or(badrmspixel_mask[tel_id-1], deadpixel_mask[tel_id-1])
+                        dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
+                        badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
+                        unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
                         clean_mask, event_image, peak_time = magic_clean.clean_image(event_image, peak_time, unsuitable_mask=unsuitable_mask)
 
                     event.dl1.tel[tel_id].image_mask = clean_mask
@@ -213,6 +210,8 @@ def magic_calibrated_to_dl1(input_mask, cleaning_config, bad_pixels_config):
 
 # --------------------------
 # Adding the argument parser
+
+
 arg_parser = argparse.ArgumentParser(description="""
 This tools computes the Hillas parameters for the specified data sets.
 """)
@@ -259,7 +258,7 @@ except IOError:
 if 'data_files' not in config:
     print('Error: the configuration file is missing the "data_files" section. Exiting.')
     exit()
-    
+
 if 'image_cleaning' not in config:
     print('Error: the configuration file is missing the "image_cleaning" section. Exiting.')
     exit()
@@ -308,10 +307,8 @@ for data_type in data_type_to_process:
                 raise ValueError(f'Guessed telescope type "{telescope_type}" does not have image cleaning settings')
 
             cleaning_config = config['image_cleaning'][telescope_type]
-            bad_pixels_config = config['bad_pixels'][telescope_type]
 
             magic_calibrated_to_dl1(
                 input_mask=config['data_files'][data_type][sample][telescope]['input_mask'],
                 cleaning_config=cleaning_config,
-                bad_pixels_config=bad_pixels_config,
             )

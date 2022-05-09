@@ -29,21 +29,14 @@ image_cleaning:
     magic:
         picture_thresh: 6
         boundary_thresh: 3.5
-        min_number_picture_neighbors: 1
         # 1.5 slices x 1.64 GHz
         max_time_diff: 2.46
         # 4.5 slices x 1.64 GHz
         max_time_off: 7.38
-        min_number_neighbors: 3
-        usetime : True
-        usesum : True
-        findhotpixels : True
-
-bad_pixels:
-    magic:
-        pedestalLevel: 400
-        pedestalLevelVariance: 4.5
-        pedestalType: "FromExtractorRndm"
+        minimum_number_of_neighbors: 3
+        use_time : True
+        use_sum : True
+        find_hotpixels : True
 
 energy_rf:
     save_name: "RFs/energy_rf.joblib"
@@ -52,7 +45,7 @@ energy_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
-    
+
     features:
         ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'intensity_width_1', 'intensity_width_2', 'h_max', 'alt', 'az']
 
@@ -63,7 +56,7 @@ direction_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
-    
+
     features:
         'disp': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'alt', 'az']
         'pos_angle_shift': ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'h_max', 'alt', 'az']
@@ -75,7 +68,7 @@ classifier_rf:
         n_estimators: 100
         min_samples_leaf: 10
         n_jobs: 3
-    
+
     features:
         ['slope', 'length', 'width', 'intensity', 'skewness', 'kurtosis', 'x', 'y', 'psi', 'n_islands', 'h_max', 'alt', 'az']
 

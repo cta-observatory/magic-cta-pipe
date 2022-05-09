@@ -1,13 +1,10 @@
 mc_tel_ids:
     LST-1: 1
     MAGIC-I: 2
-    MAGIC-II : 3
+    MAGIC-II: 3
 
 
 LST:
-    # The following settings are derived from lstchain v0.9.0:
-    # - lstchain_standard_config.json
-    # - lstchain/data/lstchain_dl1ab_tune_MC_to_Crab_config.json
     image_extractor:
         type: 'LocalPeakWindowSum'
         window_shift: 4
@@ -29,7 +26,6 @@ LST:
         boundary_thresh: 4
         keep_isolated_pixels: false
         min_number_picture_neighbors: 2
-        use_only_main_island: false
 
     time_delta_cleaning:
         use: true
@@ -41,6 +37,8 @@ LST:
         threshold: 267
         fraction: 0.03
 
+    use_only_main_island: false
+
 
 MAGIC:
     image_extractor:
@@ -50,17 +48,17 @@ MAGIC:
 
     charge_correction:
         use: true
-        correction_factor: 1.165
+        correction_factor: 1.143
 
     magic_clean:
         use_time: true
         use_sum: true
         picture_thresh: 6
         boundary_thresh: 3.5
-        max_time_off: 7.38
-        max_time_diff: 2.46
+        max_time_off: 4.5
+        max_time_diff: 1.5
         find_hotpixels: 'auto'
-        pedestal_type: 'from_extractor_rndm'   # must be 'fundamental', 'from_extractor' or 'from_extractor_rndm'
+        pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
     muon_ring:
         thr_low: 25
@@ -69,7 +67,7 @@ MAGIC:
 
 
 event_coincidence:
-    type_lst_time: 'dragon_time'
+    type_lst_time: 'dragon_time'   # select 'dragon_time', 'tib_time' or 'ucts_time'
     window_width: 0.6   # unit: [usec]
     offset_start: -10.0   # unit: [usec]
     offset_stop: 0.0   # unit: [usec]
@@ -77,6 +75,8 @@ event_coincidence:
 
 stereo_reco:
     event_cuts: '(intensity > 50) & (width > 0)'
+    theta_uplim: 6   # unit: [arcmin]
+
 
 energy_regressor:
     settings:
@@ -180,23 +180,39 @@ event_classifier:
 
 create_irf:
     quality_cuts: null
-    irf_type: 'software'  # must be 'hardware', 'software' or 'software_with_any2'
+    irf_type: 'software'   # select 'hardware', 'software', 'software_with_any2' or 'magic_stereo'
 
     energy_bins:
         start: 0.01   # unit: [TeV]
         stop: 100   # unit: [TeV]
-        n_bins: 20
+        n_bins: 20   # number of bins in log space
+
+    migration_bins:
+        start: 0.2
+        stop: 5
+        n_bins: 30   # number of bins in geom space
+
+    bkg_fov_offset_bins:
+        start: 0   # unit: [deg]
+        stop: 10   # unit: [deg]
+        n_bins: 20   # number of bins in linear space
 
     gammaness:
-        cut_type: 'global'   # must be 'global' or 'dynamic'
+        cut_type: 'global'   # select 'global' or 'dynamic'
         global_cut_value: 0.6   # used for the global cut
-        gamma_efficiency: 0.95   # used for the dynamic cut
+        gamma_efficiency: null   # used for the dynamic cut
+        min_cut: 0.05 # minimum value of cut
+        max_cut: 0.85  # maximum value of cut
 
     theta:
-        cut_type: 'global'   # must be 'global' or 'dynamic'
+        cut_type: 'global'   # select 'global' or 'dynamic'
         global_cut_value: 0.2   # used for the global cut
-        gamma_efficiency: 0.95   # used for the dynamic cut
+        gamma_efficiency: null   # used for the dynamic cut
+        min_cut: 0.1 # minimum value of cut
+        max_cut: 0.45  # maximum value of cut
 
 
 dl2_to_dl3:
     source_name: 'Crab'
+    source_ra: null   # used when the source name is null
+    source_dec: null   # used when the source name is null

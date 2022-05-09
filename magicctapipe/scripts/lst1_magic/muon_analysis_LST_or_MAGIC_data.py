@@ -20,7 +20,7 @@ import numpy as np
 from pathlib import Path
 
 from astropy.table import Table
-from ctapipe_io_magic import MAGICEventSource
+from ctapipe.io import EventSource
 from lstchain.image.muon import create_muon_table
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.muons import perform_muon_analysis
@@ -49,7 +49,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run):
 
     """
 
-    event_source = MAGICEventSource(input_url=input_file)
+    event_source = EventSource(input_url=input_file)
     subarray = event_source.subarray
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
@@ -87,9 +87,6 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run):
     # Start processing events:
     logger.info('\nProcessing the events:')
 
-    # We give None as calibrator for the muons analysis as we work with extracted charges
-    r1_dl1_calibrator_for_muon_rings_magic = None
-
     # load muon analysis config
     muon_config = {}
     if 'muon_ring' in config['MAGIC']:
@@ -121,8 +118,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run):
                               telescope_name=tel_name,
                               image=image,
                               subarray=subarray,
-                              r1_dl1_calibrator_for_muon_rings=
-                              r1_dl1_calibrator_for_muon_rings_magic,
+                              r1_dl1_calibrator_for_muon_rings=None,
                               good_ring_config=muon_config,
                               data_type='obs')
 
