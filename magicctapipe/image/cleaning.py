@@ -51,20 +51,21 @@ class MAGICClean:
         else:
             self.SumThresh4NNPerPixel = 1.0
 
+        # default WindowXNN values are converted from time slices to ns
         if 'Window2NN' in configuration:
             self.Window2NN = configuration['Window2NN']
         else:
-            self.Window2NN = 0.82
+            self.Window2NN = 0.82/1.639
 
         if 'Window3NN' in configuration:
             self.Window3NN = configuration['Window3NN']
         else:
-            self.Window3NN = 1.15
+            self.Window3NN = 1.15/1.639
 
         if 'Window4NN' in configuration:
             self.Window4NN = configuration['Window4NN']
         else:
-            self.Window4NN = 1.80
+            self.Window4NN = 1.80/1.639
 
         if 'clipping' in configuration:
             self.clipping = configuration['clipping']
