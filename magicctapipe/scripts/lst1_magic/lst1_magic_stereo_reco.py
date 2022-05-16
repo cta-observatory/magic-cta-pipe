@@ -2,15 +2,15 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script processes DL1 events and reconstructs the stereo parameters with more than one telescope information.
-Event cuts specified in a configuration file are applied to events before the reconstruction.
+The quality cuts specified in a configuration file are applied to events before the reconstruction.
 
-When an input is real data containing LST-1 and MAGIC events, it checks the angular distance of the LST-1 and MAGIC pointing directions.
+When an input is real data containing LST-1 and MAGIC events, it checks the angular distance of their pointing directions.
 Then, it stops the process when the distance is larger than the limit specified in a configuration file.
-This is in principle to avoid the reconstruction of too mis-pointing data, for example,
-DL1 data may contain coincident events which are taken with different wobble offsets between the systems.
+This is in principle to avoid the reconstruction of the data taken in a too-mispointing condition, for example,
+DL1 data may contain the coincident events which are taken with different wobble offsets between the systems.
+
+If the "--magic-only" option is given, it reconstructs the stereo parameters using only MAGIC images.
 
 Usage:
 $ python lst1_magic_stereo_reco.py
