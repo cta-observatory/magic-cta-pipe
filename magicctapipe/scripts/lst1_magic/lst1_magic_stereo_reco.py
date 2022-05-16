@@ -2,21 +2,22 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script processes DL1 events and reconstructs the stereo parameters with more than one telescope information.
-Event cuts specified in a configuration file are applied to events before the reconstruction.
+The quality cuts specified in a configuration file are applied to events before the reconstruction.
 
-When an input is real data containing LST-1 and MAGIC events, it checks the angular distance of the LST-1 and MAGIC pointing directions.
+When an input is real data containing LST-1 and MAGIC events, it checks the angular distance of their pointing directions.
 Then, it stops the process when the distance is larger than the limit specified in a configuration file.
-This is in principle to avoid the reconstruction of too mis-pointing data, for example,
-DL1 data may contain coincident events which are taken with different wobble offsets between the systems.
+This is in principle to avoid the reconstruction of the data taken in a too-mispointing condition, for example,
+DL1 data may contain the coincident events which are taken with different wobble offsets between the systems.
+
+If the "--magic-only" option is given, it reconstructs the stereo parameters using only MAGIC images.
 
 Usage:
 $ python lst1_magic_stereo_reco.py
 --input-file ./data/dl1_coincidence/dl1_LST-1_MAGIC.Run03265.0040.h5
 --output-dir ./data/dl1_stereo
 --config-file ./config.yaml
+(--magic-only)
 """
 
 import re
@@ -101,7 +102,7 @@ def calculate_pointing_separation(event_data):
     return theta
 
 
-def stereo_reconstruction(input_file, output_dir, config):
+def stereo_reconstruction(input_file, output_dir, config, magic_only=False):
     """
     Processes DL1 events and reconstructs the stereo parameters
     with more than one telescope information.
@@ -114,12 +115,16 @@ def stereo_reconstruction(input_file, output_dir, config):
         Path to a directory where to save an output DL1-stereo data file
     config: dict
         Configuration for the LST-1 + MAGIC analysis
+    magic_only: bool
+        If True, it reconstructs the parameters using only MAGIC images
     """
 
     config_sterec = config['stereo_reco']
 
     logger.info('\nConfiguration for the stereo reconstruction:')
     logger.info(config_sterec)
+
+    logger.info(f'\nMAGIC-only: {magic_only}')
 
     # Load the input file:
     logger.info('\nLoading the input file:')
@@ -138,10 +143,13 @@ def stereo_reconstruction(input_file, output_dir, config):
     for tel_id in subarray.tel.keys():
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
 
-    # Apply the event cuts:
-    logger.info('\nApplying the event cuts...')
+    if magic_only:
+        event_data.query('tel_id > 1', inplace=True)
 
-    event_data.query(config_sterec['event_cuts'], inplace=True)
+    # Apply the event cuts:
+    logger.info('\nApplying the quality cuts...')
+
+    event_data.query(config_sterec['quality_cuts'], inplace=True)
     event_data['multiplicity'] = event_data.groupby(['obs_id', 'event_id']).size()
     event_data.query('multiplicity > 1', inplace=True)
 
@@ -301,13 +309,18 @@ def main():
         help='Path to a yaml configuration file.',
     )
 
+    parser.add_argument(
+        '--magic-only', dest='magic_only', action='store_true',
+        help='Reconstruct the stereo parameters using only MAGIC images.',
+    )
+
     args = parser.parse_args()
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
     # Process the input data:
-    stereo_reconstruction(args.input_file, args.output_dir, config)
+    stereo_reconstruction(args.input_file, args.output_dir, config, args.magic_only)
 
     logger.info('\nDone.')
 
