@@ -44,15 +44,41 @@ ORM_LAT = 28.76177   # unit: [deg]
 ORM_LON = -17.89064   # unit: [deg]
 ORM_HEIGHT = 2199.835   # unit: [m]
 
+dead_time_lst = 7.6e-6   # unit: [sec]
+dead_time_magic = 26e-6   # unit: [sec]
+
 MJDREF = Time(0, format='unix', scale='utc').mjd
 
 __all__ = [
+    'calculate_deadc',
     'load_dl2_data_file',
     'create_event_list',
     'create_gti_table',
     'create_pointing_table',
     'dl2_to_dl3',
 ]
+
+def calculate_deadc(time_diffs, dead_time):
+    """
+    Calculates the dead time correction factor.
+
+    Parameters
+    ----------
+    time_diffs: np.ndarray
+        Time differences of event arrival times
+    dead_time: float
+        Dead time due to the read out
+
+    Returns
+    -------
+    deadc: float
+        Dead time correction factor
+    """
+
+    rate = 1 / (time_diffs.mean() - dead_time)
+    deadc = 1 / (1 + rate * dead_time)
+
+    return deadc
 
 
 def load_dl2_data_file(input_file, quality_cuts, irf_type):
@@ -72,6 +98,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     -------
     event_table: astropy.table.table.QTable
         Astropy table of DL2 events
+    deadc: float
+        Dead time correction factor for the input data
     """
 
     df_events = pd.read_hdf(input_file, key='events/parameters')
@@ -108,6 +136,27 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     n_events = len(df_events.groupby(['obs_id', 'event_id']).size())
     logger.info(f'--> {n_events} stereo events')
 
+    # Calculate the dead time correction factor:
+    logger.info('\nCalculating the dead time correction factor...')
+
+    condition = '(time_diff > 0) & (time_diff < 0.1)'
+
+    time_diffs_lst = df_events.query(f'(tel_id == 1) & {condition}')['time_diff'].to_numpy()
+    time_diffs_magic = df_events.query(f'(tel_id == 2) & {condition}')['time_diff'].to_numpy()
+
+    deadc = 1
+
+    if len(time_diffs_lst) > 0:
+        deadc_lst = calculate_deadc(time_diffs_lst, dead_time_lst)
+        deadc *= deadc_lst
+
+    if len(time_diffs_magic) > 0:
+        deadc_magic = calculate_deadc(time_diffs_magic, dead_time_magic)
+        deadc *= deadc_magic
+
+    dead_time_fraction = 100 * (1 - deadc)
+    logger.info(f'--> Dead time fraction: {dead_time_fraction:.2f}%')
+
     # Compute the mean of the DL2 parameters:
     df_dl2_mean = get_dl2_mean(df_events)
     df_dl2_mean.reset_index(inplace=True)
@@ -125,10 +174,10 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     event_table['reco_dec'] *= u.deg
     event_table['reco_energy'] *= u.TeV
 
-    return event_table
+    return event_table, deadc
 
 
-def create_event_list(event_table, effective_time, elapsed_time,
+def create_event_list(event_table, deadc,
                       source_name=None, source_ra=None, source_dec=None):
     """
     Creates an event list and its header.
@@ -137,10 +186,8 @@ def create_event_list(event_table, effective_time, elapsed_time,
     ----------
     event_table: astropy.table.table.QTable
         Astropy table of the DL2 events surviving gammaness cuts
-    effective_time: float
-        Effective time of the input data
-    elapsed_time: float
-        Elapsed time of the input data
+    deadc: float:
+        Dead time correction factor
     source_name: str
         Name of the observed source
     source_ra:
@@ -159,9 +206,8 @@ def create_event_list(event_table, effective_time, elapsed_time,
     time_start = Time(event_table['timestamp'][0], format='unix', scale='utc')
     time_end = Time(event_table['timestamp'][-1], format='unix', scale='utc')
 
-    delta_time = time_end.value - time_start.value
-
-    deadc = effective_time / elapsed_time
+    elapsed_time = time_end.value - time_start.value
+    effective_time = elapsed_time * deadc
 
     event_coords = SkyCoord(ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs')
 
@@ -203,7 +249,7 @@ def create_event_list(event_table, effective_time, elapsed_time,
     event_header['TIMESYS'] = 'UTC'
     event_header['TIMEREF'] = 'TOPOCENTER'
     event_header['ONTIME'] = elapsed_time
-    event_header['TELAPSE'] = delta_time
+    event_header['TELAPSE'] = elapsed_time
     event_header['DEADC'] = deadc
     event_header['LIVETIME'] = effective_time
     event_header['OBJECT'] = source_name
@@ -340,12 +386,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     logger.info('\nLoading the input DL2 data file:')
     logger.info(input_file_dl2)
 
-    event_table = load_dl2_data_file(input_file_dl2, quality_cuts, irf_type)
-
-    # ToBeUpdated: how to compute the effective time for the software coincidence?
-    # At the moment it does not consider any dead times, which slightly underestimates a source flux.
-    elapsed_time = event_table['timestamp'][-1] - event_table['timestamp'][0]
-    effective_time = elapsed_time
+    event_table, deadc = load_dl2_data_file(input_file_dl2, quality_cuts, irf_type)
 
     # Apply gammaness cuts:
     if 'GH_CUT' in header:
@@ -371,7 +412,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     # Create a event list HDU:
     logger.info('\nCreating an event list HDU...')
 
-    event_list, event_header = create_event_list(event_table, effective_time, elapsed_time, **config_dl3)
+    event_list, event_header = create_event_list(event_table, deadc, **config_dl3)
 
     hdu_event = fits.BinTableHDU(event_list, header=event_header, name='EVENTS')
     hdus.append(hdu_event)
