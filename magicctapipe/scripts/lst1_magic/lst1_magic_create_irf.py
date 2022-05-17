@@ -2,8 +2,6 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script creates the IRFs with input MC DL2 data.
 Now it can create only point-like IRFs (effective area, energy migration and background HDUs).
 If input data is only gamma MC, it skips the creation of a background HDU.
@@ -11,10 +9,10 @@ If input data is only gamma MC, it skips the creation of a background HDU.
 Usage:
 $ python lst1_magic_create_irf.py
 --input-file-gamma ./data/dl2_gamma_40deg_90deg_off0.4deg_LST-1_MAGIC_run401_to_1000.h5
-(--input-file-proton)
-(--input-file-electron)
 --output-dir ./data
 --config-file ./config.yaml
+(--input-file-proton)
+(--input-file-electron)
 """
 
 import re
@@ -174,7 +172,14 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     return event_table, sim_info
 
 
-def apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins, gamma_efficiency, min_cut, max_cut):
+def apply_dynamic_gammaness_cut(
+    table_gamma,
+    table_bkg,
+    energy_bins,
+    gamma_efficiency,
+    min_cut,
+    max_cut,
+):
     """
     Applies dynamic (energy-dependent) gammaness cuts to input events.
     The cuts are computed in each energy bin so as to keep the specified gamma efficiency.
@@ -241,7 +246,13 @@ def apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins, gamma_effic
     return table_gamma, table_bkg, cut_table
 
 
-def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency, min_cut, max_cut):
+def apply_dynamic_theta_cut(
+    table_gamma,
+    energy_bins,
+    gamma_efficiency,
+    min_cut,
+    max_cut,
+):
     """
     Applies dynamic (energy-dependent) theta cuts to input events.
     The cuts are computed in each energy bin so as to keep the specified gamma efficiency.
@@ -254,10 +265,10 @@ def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency, min_cut,
         Energy bins where to compute and apply the cuts
     gamma_efficiency: float
         Efficiency of the gamma MC events surviving the cuts
-    min_cut: float
-        Minimum value of cut, cuts smaller than this value are replaced with this value
-    max_cut: float
-        Maximum value of cut, cuts larger than this value are replaced with this value
+    min_cut: astropy.units.quantity.Quantity
+        Minimum cut value, the cuts smaller than this value are replaced with it
+    max_cut: astropy.units.quantity.Quantity
+        Maximum cut value, the cuts larger than this value are replaced with it
 
     Returns
     -------
@@ -293,8 +304,13 @@ def apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency, min_cut,
     return table_gamma, cut_table
 
 
-def create_irf(input_file_gamma, input_file_proton,
-               input_file_electron, output_dir, config):
+def create_irf(
+    input_file_gamma,
+    input_file_proton,
+    input_file_electron,
+    output_dir,
+    config,
+):
     """
     Creates IRF HDUs with input gamma and background MC DL2 data.
 
@@ -398,13 +414,15 @@ def create_irf(input_file_gamma, input_file_proton,
         logger.info('\nApplying the global gammaness cut...')
 
         global_gam_cut = config_irf['gammaness']['global_cut_value']
+        logger.info(f'Global cut value: {global_gam_cut}')
+
         table_gamma = table_gamma[table_gamma['gammaness'] > global_gam_cut]
 
         if not only_gamma_mc:
             table_bkg = table_bkg[table_bkg['gammaness'] > global_gam_cut]
 
+        gam_cut_config = f'gam_glob{global_gam_cut}'
         extra_headers['GH_CUT'] = global_gam_cut
-        gam_cut_config = f'gam_global{global_gam_cut}'
 
     elif gam_cut_type == 'dynamic':
         logger.info('\nApplying the dynamic gammaness cuts...')
@@ -412,16 +430,17 @@ def create_irf(input_file_gamma, input_file_proton,
         gamma_efficiency = config_irf['gammaness']['gamma_efficiency']
         min_cut = config_irf['gammaness']['min_cut']
         max_cut = config_irf['gammaness']['max_cut']
+
+        table_gamma, table_bkg, cut_table_gh = apply_dynamic_gammaness_cut(table_gamma, table_bkg, energy_bins,
+                                                                           gamma_efficiency, min_cut, max_cut)
+
+        logger.info(f'Gamma efficiency: {gamma_efficiency}')
         logger.info(f'Minimum gammaness cut allowed: {min_cut}')
         logger.info(f'Maximum gammaness cut allowed: {max_cut}')
-        table_gamma, table_bkg, cut_table_gh = apply_dynamic_gammaness_cut(table_gamma, table_bkg,
-                                                                            energy_bins, gamma_efficiency,
-                                                                            min_cut, max_cut)
+        logger.info(f'\n{cut_table_gh}')
 
-        print(f"Gammaness cuts (efficiency: {gamma_efficiency}):\n{cut_table_gh}")
-
+        gam_cut_config = f'gam_dyn{gamma_efficiency}'
         extra_headers['GH_EFF'] = (gamma_efficiency, 'gamma efficiency')
-        gam_cut_config = f'gam_dynamic{gamma_efficiency}'
 
     else:
         raise KeyError(f'Unknown type of the gammaness cut "{gam_cut_type}".')
@@ -430,28 +449,33 @@ def create_irf(input_file_gamma, input_file_proton,
     theta_cut_type = config_irf['theta']['cut_type']
 
     if theta_cut_type == 'global':
-        logger.info('Applying the global theta cut...')
+        logger.info('\nApplying the global theta cut...')
 
         global_theta_cut = u.Quantity(config_irf['theta']['global_cut_value'], u.deg)
+        logger.info(f'Global cut value: {global_theta_cut}')
+
         table_gamma = table_gamma[table_gamma['theta'] < global_theta_cut]
 
+        theta_cut_config = f'theta_glob{global_theta_cut.value}'
         extra_headers['RAD_MAX'] = (global_theta_cut.value, 'deg')
-        theta_cut_config = f'theta_global{global_theta_cut.value}'
 
     elif theta_cut_type == 'dynamic':
-        logger.info('Applying the dynamic theta cuts...')
+        logger.info('\nApplying the dynamic theta cuts...')
 
         gamma_efficiency = config_irf['theta']['gamma_efficiency']
-        min_cut = config_irf['theta']['min_cut'] * u.deg
-        max_cut = config_irf['theta']['max_cut'] * u.deg
+        min_cut = u.Quantity(config_irf['theta']['min_cut'], u.deg)
+        max_cut = u.Quantity(config_irf['theta']['max_cut'], u.deg)
+
+        table_gamma, cut_table_theta = apply_dynamic_theta_cut(table_gamma, energy_bins,
+                                                               gamma_efficiency, min_cut, max_cut)
+
+        logger.info(f'Gamma efficiency: {gamma_efficiency}')
         logger.info(f'Minimum theta cut allowed: {min_cut}')
         logger.info(f'Maximum theta cut allowed: {max_cut}')
-        table_gamma, cut_table_theta = apply_dynamic_theta_cut(table_gamma, energy_bins, gamma_efficiency, min_cut, max_cut)
-
-        print(f"Theta cuts (efficiency: {gamma_efficiency}):\n{cut_table_theta}")
+        logger.info(f'\n{cut_table_theta}')
 
         extra_headers['TH_EFF'] = (gamma_efficiency, 'gamma efficiency')
-        theta_cut_config = f'theta_dynamic{gamma_efficiency}'
+        theta_cut_config = f'theta_dyn{gamma_efficiency}'
 
     else:
         raise KeyError(f'Unknown type of the theta cut "{theta_cut_type}".')
@@ -614,8 +638,13 @@ def main():
         config = yaml.safe_load(f)
 
     # Create the IRFs:
-    create_irf(args.input_file_gamma, args.input_file_proton,
-               args.input_file_electron, args.output_dir, config)
+    create_irf(
+        args.input_file_gamma,
+        args.input_file_proton,
+        args.input_file_electron,
+        args.output_dir,
+        config,
+    )
 
     logger.info('\nDone.')
 
