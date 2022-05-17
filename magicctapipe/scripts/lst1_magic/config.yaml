@@ -199,17 +199,17 @@ create_irf:
 
     gammaness:
         cut_type: 'dynamic'   # select 'global' or 'dynamic'
-        global_cut_value: null   # used for the global cut
+        global_cut_value: 0.8   # used for the global cut
         gamma_efficiency: 0.9   # used for the dynamic cut
-        min_cut: 0.05   # minimum value of cut
-        max_cut: 0.85   # maximum value of cut
+        min_cut: 0.05   # used for the dynamic cut
+        max_cut: 0.85   # used for the dynamic cut
 
     theta:
         cut_type: 'global'   # select 'global' or 'dynamic'
         global_cut_value: 0.2   # used for the global cut
-        gamma_efficiency: null   # used for the dynamic cut
-        min_cut: null   # minimum value of cut
-        max_cut: null   # maximum value of cut
+        gamma_efficiency: 0.75   # used for the dynamic cut
+        min_cut: 0.1   # used for the dynamic cut
+        max_cut: 0.45   # used for the dynamic cut
 
 
 dl2_to_dl3:
