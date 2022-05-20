@@ -55,8 +55,8 @@ MAGIC:
         use_sum: true
         picture_thresh: 6
         boundary_thresh: 3.5
-        max_time_off: 7.38
-        max_time_diff: 2.46
+        max_time_off: 4.5
+        max_time_diff: 1.5
         find_hotpixels: 'auto'
         pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
@@ -74,7 +74,7 @@ event_coincidence:
 
 
 stereo_reco:
-    event_cuts: '(intensity > 50) & (width > 0)'
+    quality_cuts: '(intensity > 50) & (width > 0)'
     theta_uplim: 6   # unit: [arcmin]
 
 
@@ -198,14 +198,18 @@ create_irf:
         n_bins: 20   # number of bins in linear space
 
     gammaness:
-        cut_type: 'global'   # select 'global' or 'dynamic'
-        global_cut_value: 0.6   # used for the global cut
-        gamma_efficiency: null   # used for the dynamic cut
+        cut_type: 'dynamic'   # select 'global' or 'dynamic'
+        global_cut_value: 0.8   # used for the global cut
+        gamma_efficiency: 0.9   # used for the dynamic cut
+        min_cut: 0.05   # used for the dynamic cut
+        max_cut: 0.85   # used for the dynamic cut
 
     theta:
         cut_type: 'global'   # select 'global' or 'dynamic'
         global_cut_value: 0.2   # used for the global cut
-        gamma_efficiency: null   # used for the dynamic cut
+        gamma_efficiency: 0.75   # used for the dynamic cut
+        min_cut: 0.1   # used for the dynamic cut
+        max_cut: 0.45   # used for the dynamic cut
 
 
 dl2_to_dl3:

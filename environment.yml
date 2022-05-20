@@ -48,8 +48,8 @@ dependencies:
   - conda-forge::eventio>=1.5.0
   - conda-forge::corsikaio
   - pip:
-      - lstchain~=0.9.0
-      - ctapipe_io_magic~=0.4.1
+      - lstchain~=0.9.6
+      - ctapipe_io_magic~=0.4.4
       - uproot~=4.1
       - ctaplot~=0.5.5
       - pyirf~=0.6.0
