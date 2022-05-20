@@ -42,7 +42,7 @@ setup(
         'gammapy~=0.19.0',
         'uproot~=4.1',
         'h5py',
-        'ipykernel~=6.4',
+        'ipykernel~=6.4.0',
         'joblib',
         'matplotlib>=3.5',
         'numba',
