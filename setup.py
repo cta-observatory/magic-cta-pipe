@@ -34,7 +34,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         'astropy>=4.0.5,<5',
-        'lstchain~=0.9.0',
+        'lstchain~=0.9.6',
         'ctapipe~=0.12.0',
         'ctapipe_io_magic~=0.4.4',
         'ctaplot~=0.5.5',
