@@ -52,6 +52,10 @@ tel_combinations = {
 event_class_gamma = 0
 event_class_bkg = 1
 
+#grouped_by = ['obs_id', 'event_id'] # original
+# if files with same obs_id for different points are merged use this:
+grouped_by = ['obs_id', 'event_id', 'true_alt', 'true_az']
+
 __all__ = [
     'load_train_data_file',
     'check_feature_importance',
@@ -84,7 +88,7 @@ def load_train_data_file(input_file, features, true_event_class=None):
     """
 
     event_data = pd.read_hdf(input_file, key='events/parameters')
-    event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
+    event_data.set_index(grouped_by+['tel_id'], inplace=True)
     event_data.sort_index(inplace=True)
 
     if true_event_class is not None:
@@ -101,10 +105,10 @@ def load_train_data_file(input_file, features, true_event_class=None):
         df_events = event_data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})').copy()
         df_events.dropna(subset=features, inplace=True)
 
-        df_events['multiplicity'] = df_events.groupby(['obs_id', 'event_id']).size()
+        df_events['multiplicity'] = df_events.groupby(grouped_by).size()
         df_events.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
-        n_events = len(df_events.groupby(['obs_id', 'event_id']).size())
+        n_events = len(df_events.groupby(grouped_by).size())
         logger.info(f'{tel_combo}: {n_events} events')
 
         if n_events > 0:
@@ -157,7 +161,7 @@ def get_events_at_random(event_data, n_events):
         Pandas data frame of the events randomly extracted
     """
 
-    group_size = event_data.groupby(['obs_id', 'event_id']).size()
+    group_size = event_data.groupby(grouped_by).size()
     indices = random.sample(range(len(group_size)), n_events)
 
     data_selected = pd.DataFrame()
@@ -317,17 +321,17 @@ def train_event_classifier(input_file_gamma, input_file_bkg, output_dir, config)
 
         logger.info(f'\nTraining event classifiers for "{tel_combo}" events...')
 
-        n_events_gamma = len(data_gamma[tel_combo].groupby(['obs_id', 'event_id']).size())
-        n_events_bkg = len(data_bkg[tel_combo].groupby(['obs_id', 'event_id']).size())
+        n_events_gamma = len(data_gamma[tel_combo].groupby(grouped_by).size())
+        n_events_bkg = len(data_bkg[tel_combo].groupby(grouped_by).size())
 
         # Adjust the number of training samples:
         if n_events_gamma > n_events_bkg:
             data_gamma[tel_combo] = get_events_at_random(data_gamma[tel_combo], n_events_bkg)
-            n_events_gamma = len(data_gamma[tel_combo].groupby(['obs_id', 'event_id']).size())
+            n_events_gamma = len(data_gamma[tel_combo].groupby(grouped_by).size())
 
         elif n_events_bkg > n_events_gamma:
             data_bkg[tel_combo] = get_events_at_random(data_bkg[tel_combo], n_events_gamma)
-            n_events_bkg = len(data_bkg[tel_combo].groupby(['obs_id', 'event_id']).size())
+            n_events_bkg = len(data_bkg[tel_combo].groupby(grouped_by).size())
 
         logger.info(f'--> n_events_gamma = {n_events_gamma}, n_events_bkg = {n_events_bkg}')
 
