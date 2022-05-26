@@ -147,6 +147,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
 
     if len(time_diffs_lst) > 0:
         deadc_lst = calculate_deadc(time_diffs_lst, dead_time_lst)
+        logger.info(f'LST-1: {deadc_lst}')
         deadc *= deadc_lst
 
     time_diffs_m1 = df_events.query(f'(tel_id == 2) & {condition}')['time_diff'].to_numpy()
@@ -154,13 +155,15 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
 
     if len(time_diffs_m1) >= len(time_diffs_m2):
         deadc_magic = calculate_deadc(time_diffs_m1, dead_time_magic)
+        logger.info(f'MAGIC-I: {deadc_magic}')
     else:
         deadc_magic = calculate_deadc(time_diffs_m2, dead_time_magic)
+        logger.info(f'MAGIC-II: {deadc_magic}')
 
     deadc *= deadc_magic
 
     dead_time_fraction = 100 * (1 - deadc)
-    logger.info(f'--> Dead time fraction: {dead_time_fraction:.2f}%')
+    logger.info(f'--> Total dead time fraction: {dead_time_fraction:.2f}%')
 
     # Compute the mean of the DL2 parameters:
     df_dl2_mean = get_dl2_mean(df_events)
