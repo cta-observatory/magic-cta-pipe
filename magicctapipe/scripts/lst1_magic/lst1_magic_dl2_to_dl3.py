@@ -136,23 +136,28 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     n_events = len(df_events.groupby(['obs_id', 'event_id']).size())
     logger.info(f'--> {n_events} stereo events')
 
-    # Calculate the dead time correction factor:
+    # Calculate the dead time correction factor.
+    # For MAGIC we select one telescope which has more number of events than the other:
     logger.info('\nCalculating the dead time correction factor...')
 
+    deadc = 1
     condition = '(time_diff > 0) & (time_diff < 0.1)'
 
     time_diffs_lst = df_events.query(f'(tel_id == 1) & {condition}')['time_diff'].to_numpy()
-    time_diffs_magic = df_events.query(f'(tel_id == 2) & {condition}')['time_diff'].to_numpy()
-
-    deadc = 1
 
     if len(time_diffs_lst) > 0:
         deadc_lst = calculate_deadc(time_diffs_lst, dead_time_lst)
         deadc *= deadc_lst
 
-    if len(time_diffs_magic) > 0:
-        deadc_magic = calculate_deadc(time_diffs_magic, dead_time_magic)
-        deadc *= deadc_magic
+    time_diffs_m1 = df_events.query(f'(tel_id == 2) & {condition}')['time_diff'].to_numpy()
+    time_diffs_m2 = df_events.query(f'(tel_id == 3) & {condition}')['time_diff'].to_numpy()
+
+    if len(time_diffs_m1) >= len(time_diffs_m2):
+        deadc_magic = calculate_deadc(time_diffs_m1, dead_time_magic)
+    else:
+        deadc_magic = calculate_deadc(time_diffs_m2, dead_time_magic)
+
+    deadc *= deadc_magic
 
     dead_time_fraction = 100 * (1 - deadc)
     logger.info(f'--> Dead time fraction: {dead_time_fraction:.2f}%')
