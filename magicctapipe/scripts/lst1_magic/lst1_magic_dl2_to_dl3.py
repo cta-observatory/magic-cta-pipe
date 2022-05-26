@@ -213,8 +213,9 @@ def create_event_list(event_table, deadc,
 
     time_start = Time(event_table['timestamp'][0], format='unix', scale='utc')
     time_end = Time(event_table['timestamp'][-1], format='unix', scale='utc')
+    time_diffs = np.diff(event_table['timestamp'])
 
-    elapsed_time = time_end.value - time_start.value
+    elapsed_time = np.sum(time_diffs)
     effective_time = elapsed_time * deadc
 
     event_coords = SkyCoord(ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs')
