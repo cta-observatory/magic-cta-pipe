@@ -373,7 +373,7 @@ def get_dl2_mean(event_data):
         reco_ra_mean, reco_dec_mean = calculate_mean_direction(
             lon=np.deg2rad(event_data['reco_ra']),
             lat=np.deg2rad(event_data['reco_dec']),
-            weights=event_data['reco_disp_err'],
+            weights=1/event_data['reco_disp_err'],
         )
 
         pointing_ra_mean, pointing_dec_mean = calculate_mean_direction(
