@@ -136,26 +136,34 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     n_events = len(df_events.groupby(['obs_id', 'event_id']).size())
     logger.info(f'--> {n_events} stereo events')
 
-    # Calculate the dead time correction factor:
+    # Calculate the dead time correction factor.
+    # For MAGIC we select one telescope which has more number of events than the other:
     logger.info('\nCalculating the dead time correction factor...')
 
+    deadc = 1
     condition = '(time_diff > 0) & (time_diff < 0.1)'
 
     time_diffs_lst = df_events.query(f'(tel_id == 1) & {condition}')['time_diff'].to_numpy()
-    time_diffs_magic = df_events.query(f'(tel_id == 2) & {condition}')['time_diff'].to_numpy()
-
-    deadc = 1
 
     if len(time_diffs_lst) > 0:
         deadc_lst = calculate_deadc(time_diffs_lst, dead_time_lst)
+        logger.info(f'LST-1: {deadc_lst}')
         deadc *= deadc_lst
 
-    if len(time_diffs_magic) > 0:
-        deadc_magic = calculate_deadc(time_diffs_magic, dead_time_magic)
-        deadc *= deadc_magic
+    time_diffs_m1 = df_events.query(f'(tel_id == 2) & {condition}')['time_diff'].to_numpy()
+    time_diffs_m2 = df_events.query(f'(tel_id == 3) & {condition}')['time_diff'].to_numpy()
+
+    if len(time_diffs_m1) >= len(time_diffs_m2):
+        deadc_magic = calculate_deadc(time_diffs_m1, dead_time_magic)
+        logger.info(f'MAGIC-I: {deadc_magic}')
+    else:
+        deadc_magic = calculate_deadc(time_diffs_m2, dead_time_magic)
+        logger.info(f'MAGIC-II: {deadc_magic}')
+
+    deadc *= deadc_magic
 
     dead_time_fraction = 100 * (1 - deadc)
-    logger.info(f'--> Dead time fraction: {dead_time_fraction:.2f}%')
+    logger.info(f'--> Total dead time fraction: {dead_time_fraction:.2f}%')
 
     # Compute the mean of the DL2 parameters:
     df_dl2_mean = get_dl2_mean(df_events)
@@ -205,8 +213,9 @@ def create_event_list(event_table, deadc,
 
     time_start = Time(event_table['timestamp'][0], format='unix', scale='utc')
     time_end = Time(event_table['timestamp'][-1], format='unix', scale='utc')
+    time_diffs = np.diff(event_table['timestamp'])
 
-    elapsed_time = time_end.value - time_start.value
+    elapsed_time = np.sum(time_diffs)
     effective_time = elapsed_time * deadc
 
     event_coords = SkyCoord(ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs')
