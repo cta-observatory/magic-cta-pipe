@@ -73,7 +73,7 @@ def calculate_mean_direction(lon, lat, weights=None):
     lon: pandas.core.series.Series
         Longitude in a spherical coordinate
     lat: pandas.core.series.Series
-        Latitude in a spherical coodinate
+        Latitude in a spherical coordinate
     weights: pandas.core.series.Series
         Weights applied when calculating the mean direction
 
@@ -342,7 +342,7 @@ def get_dl2_mean(event_data):
     reco_az_mean, reco_alt_mean = calculate_mean_direction(
         lon=np.deg2rad(event_data['reco_az']),
         lat=np.deg2rad(event_data['reco_alt']),
-        weights=event_data['reco_disp_err'],
+        weights=1/event_data['reco_disp_err'],
     )
 
     # Compute the mean of the telescope pointing directions:
