@@ -330,7 +330,7 @@ def get_dl2_mean(event_data):
     gammaness_mean = group_mean['gammaness']
 
     # Compute the mean of the reconstructed energies:
-    weights = 1 / event_data['reco_energy_err']
+    weights = 1 / event_data['reco_energy_uncert']
     weighted_energy = np.log10(event_data['reco_energy']) * weights
 
     weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
@@ -342,7 +342,7 @@ def get_dl2_mean(event_data):
     reco_az_mean, reco_alt_mean = calculate_mean_direction(
         lon=np.deg2rad(event_data['reco_az']),
         lat=np.deg2rad(event_data['reco_alt']),
-        weights=1/event_data['reco_disp_err'],
+        weights=1/event_data['reco_disp_uncert'],
     )
 
     # Compute the mean of the telescope pointing directions:
@@ -373,7 +373,7 @@ def get_dl2_mean(event_data):
         reco_ra_mean, reco_dec_mean = calculate_mean_direction(
             lon=np.deg2rad(event_data['reco_ra']),
             lat=np.deg2rad(event_data['reco_dec']),
-            weights=1/event_data['reco_disp_err'],
+            weights=1/event_data['reco_disp_uncert'],
         )
 
         pointing_ra_mean, pointing_dec_mean = calculate_mean_direction(
