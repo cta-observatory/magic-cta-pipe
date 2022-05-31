@@ -104,7 +104,7 @@ class EnergyRegressor:
 
             responces_per_estimator = []
             for estimator in self.telescope_rfs[tel_id].estimators_:
-                responces_per_estimator.append(10 ** estimator.predict(x_predict))
+                responces_per_estimator.append(estimator.predict(x_predict))
 
             reco_energy_err = np.std(responces_per_estimator, axis=0)
 
