@@ -104,13 +104,13 @@ class EnergyRegressor:
 
             responces_per_estimator = []
             for estimator in self.telescope_rfs[tel_id].estimators_:
-                responces_per_estimator.append(10 ** estimator.predict(x_predict))
+                responces_per_estimator.append(estimator.predict(x_predict))
 
-            reco_energy_err = np.std(responces_per_estimator, axis=0)
+            reco_energy_uncert = np.var(responces_per_estimator, axis=0)
 
             df_reco_energy = pd.DataFrame(
                 data={'reco_energy': reco_energy,
-                      'reco_energy_err': reco_energy_err},
+                      'reco_energy_uncert': reco_energy_uncert},
                 index=df_events.index,
             )
 
@@ -241,7 +241,7 @@ class DirectionRegressor:
             for estimator in self.telescope_rfs[tel_id].estimators_:
                 responces_per_estimator.append(estimator.predict(x_predict))
 
-            reco_disp_err = np.std(responces_per_estimator, axis=0)
+            reco_disp_uncert = np.var(responces_per_estimator, axis=0)
 
             # Reconstruct Alt/Az directions per flip:
             tel_pointing = AltAz(
@@ -271,7 +271,7 @@ class DirectionRegressor:
 
                 df_per_flip = pd.DataFrame(
                     data={'reco_disp': reco_disp,
-                          'reco_disp_err': reco_disp_err,
+                          'reco_disp_uncert': reco_disp_uncert,
                           'reco_alt': event_coord_per_flip.altaz.alt.to(u.deg).value,
                           'reco_az': event_coord_per_flip.altaz.az.to(u.deg).value,
                           'flip': np.repeat(flip, len(df_events))},
