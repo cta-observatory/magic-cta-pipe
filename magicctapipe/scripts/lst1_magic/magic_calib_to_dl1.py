@@ -137,7 +137,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info(f'Is simulation: {is_simulation}')
 
     subarray = event_source.subarray
-    camera_geom = subarray.tel[tel_id].camera.geometry
+    camera_geom = subarray.tel[tel_id].camera.geometry.transform_to(TelescopeFrame)
 
     if is_simulation:
 
@@ -266,8 +266,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
                 tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-                event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_frame)
-                event_coord = event_coord.transform_to(tel_frame)
+                event_coord = SkyCoord(hillas_params.fov_lon, hillas_params.fov_lat, frame=tel_frame)
 
                 true_disp = angular_separation(
                     lon1=event_coord.altaz.az,
