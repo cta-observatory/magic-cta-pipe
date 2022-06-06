@@ -337,13 +337,13 @@ def get_dl2_mean(event_data):
     gammaness_mean = weighted_gammaness_sum / gammaness_weights_sum
 
     # Compute the mean of the reconstructed energies:
-    weights = 1 / event_data['reco_energy_uncert']
-    weighted_energy = np.log10(event_data['reco_energy']) * weights
+    energy_weights = 1 / event_data['reco_energy_uncert']
+    weighted_energy = np.log10(event_data['reco_energy']) * energy_weights
 
-    weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
+    energy_weights_sum = energy_weights.groupby(['obs_id', 'event_id']).sum()
     weighted_energy_sum = weighted_energy.groupby(['obs_id', 'event_id']).sum()
 
-    reco_energy_mean = 10 ** (weighted_energy_sum / weights_sum)
+    reco_energy_mean = 10 ** (weighted_energy_sum / energy_weights_sum)
 
     # Compute the mean of the reconstructed arrival directions:
     reco_az_mean, reco_alt_mean = calculate_mean_direction(
