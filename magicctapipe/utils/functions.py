@@ -324,10 +324,17 @@ def get_dl2_mean(event_data):
     """
 
     is_simulation = ('true_energy' in event_data.columns)
+
     group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
 
     # Compute the mean of the gammaness:
-    gammaness_mean = group_mean['gammaness']
+    gammaness_weights = 1 / event_data['gammaness_uncert']
+    weighted_gammaness = event_data['gammaness'] * gammaness_weights
+
+    gammaness_weights_sum = gammaness_weights.groupby(['obs_id', 'event_id']).sum()
+    weighted_gammaness_sum = weighted_gammaness.groupby(['obs_id', 'event_id']).sum()
+
+    gammaness_mean = weighted_gammaness_sum / gammaness_weights_sum
 
     # Compute the mean of the reconstructed energies:
     weights = 1 / event_data['reco_energy_uncert']
