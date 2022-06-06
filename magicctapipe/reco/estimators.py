@@ -461,11 +461,9 @@ class EventClassifier:
             x_predict = df_events[self.features].to_numpy()
             gammaness = self.telescope_rfs[tel_id].predict_proba(x_predict)[:, 0]
 
-            responces_per_estimator = []
-            for estimator in self.telescope_rfs[tel_id].estimators_:
-                responces_per_estimator.append(estimator.predict_proba(x_predict)[:, 0])
-
-            gammaness_uncert = np.var(responces_per_estimator, axis=0)
+            gammaness_uncert = gammaness * (1 - gammaness)
+            gammaness_uncert[gammaness == 1] = 0.99 * (1 - 0.99)
+            gammaness_uncert[gammaness == 0] = 0.01 * (1 - 0.01)
 
             df_reco_class = pd.DataFrame(
                 data={'gammaness': gammaness,
