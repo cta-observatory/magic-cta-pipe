@@ -307,15 +307,16 @@ def save_pandas_to_table(event_data, output_file, group_name, table_name, mode='
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
 
 
-def get_dl2_mean(event_data):
+def get_dl2_mean(event_data, weight_type='uncert'):
     """
-    Calculates the mean of the DL2 parameters
-    weighted by the uncertainties of RF estimations.
+    Calculates the mean of the tel-wise DL2 parameters.
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of the DL2 parameters
+    weight_type: str
+        Type of the weights for the tel-wise parameters
 
     Returns
     -------
@@ -327,8 +328,25 @@ def get_dl2_mean(event_data):
 
     group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
 
+    if weight_type == 'none':
+        gammaness_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
+        energy_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
+        direction_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
+
+    elif weight_type == 'uncert':
+        gammaness_weights = 1 / event_data['gammaness_uncert']
+        energy_weights = 1 / event_data['reco_energy_uncert']
+        direction_weights = 1 / event_data['reco_disp_uncert']
+
+    elif weight_type == 'intensity':
+        gammaness_weights = event_data['intensity']
+        energy_weights = event_data['intensity']
+        direction_weights = event_data['intensity']
+
+    else:
+        RuntimeError(f'Unknown weight type "{weight_type}".')
+
     # Compute the mean of the gammaness:
-    gammaness_weights = 1 / event_data['gammaness_uncert']
     weighted_gammaness = event_data['gammaness'] * gammaness_weights
 
     gammaness_weights_sum = gammaness_weights.groupby(['obs_id', 'event_id']).sum()
@@ -337,7 +355,6 @@ def get_dl2_mean(event_data):
     gammaness_mean = weighted_gammaness_sum / gammaness_weights_sum
 
     # Compute the mean of the reconstructed energies:
-    energy_weights = 1 / event_data['reco_energy_uncert']
     weighted_energy = np.log10(event_data['reco_energy']) * energy_weights
 
     energy_weights_sum = energy_weights.groupby(['obs_id', 'event_id']).sum()
@@ -349,7 +366,7 @@ def get_dl2_mean(event_data):
     reco_az_mean, reco_alt_mean = calculate_mean_direction(
         lon=np.deg2rad(event_data['reco_az']),
         lat=np.deg2rad(event_data['reco_alt']),
-        weights=1/event_data['reco_disp_uncert'],
+        weights=direction_weights,
     )
 
     # Compute the mean of the telescope pointing directions:
@@ -380,7 +397,7 @@ def get_dl2_mean(event_data):
         reco_ra_mean, reco_dec_mean = calculate_mean_direction(
             lon=np.deg2rad(event_data['reco_ra']),
             lat=np.deg2rad(event_data['reco_dec']),
-            weights=1/event_data['reco_disp_uncert'],
+            weights=direction_weights,
         )
 
         pointing_ra_mean, pointing_dec_mean = calculate_mean_direction(
