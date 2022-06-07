@@ -55,7 +55,7 @@ __all__ = [
 ]
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type):
+def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     """
     Loads an input DL2 data file.
 
@@ -67,6 +67,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
         Quality cuts applied to the input events
     irf_type: str
         Type of the LST-1 + MAGIC IRFs
+    dl2_weight: str
+        Type of the weight for averaging tel-wise DL2 parameters
 
     Returns
     -------
@@ -109,7 +111,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     logger.info(f'--> {n_events} stereo events')
 
     # Compute the mean of the DL2 parameters:
-    df_dl2_mean = get_dl2_mean(df_events)
+    df_dl2_mean = get_dl2_mean(df_events, dl2_weight)
     df_dl2_mean.reset_index(inplace=True)
 
     # Convert the pandas data frame to the astropy QTable:
@@ -330,9 +332,11 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
 
     quality_cuts = header['QUAL_CUT']
     irf_type = header['IRF_TYPE']
+    dl2_weight = header['DL2_WEIG']
 
     logger.info(f'\nQuality cuts: {quality_cuts}')
     logger.info(f'IRF type: {irf_type}')
+    logger.info(f'DL2 weight: {dl2_weight}')
 
     hdus += hdus_irf[1:]
 
@@ -340,7 +344,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     logger.info('\nLoading the input DL2 data file:')
     logger.info(input_file_dl2)
 
-    event_table = load_dl2_data_file(input_file_dl2, quality_cuts, irf_type)
+    event_table = load_dl2_data_file(input_file_dl2, quality_cuts, irf_type, dl2_weight)
 
     # ToBeUpdated: how to compute the effective time for the software coincidence?
     # At the moment it does not consider any dead times, which slightly underestimates a source flux.
