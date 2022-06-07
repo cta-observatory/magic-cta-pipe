@@ -307,7 +307,7 @@ def save_pandas_to_table(event_data, output_file, group_name, table_name, mode='
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
 
 
-def get_dl2_mean(event_data, weight_type='uncert'):
+def get_dl2_mean(event_data, weight=None):
     """
     Calculates the mean of the tel-wise DL2 parameters.
 
@@ -315,8 +315,8 @@ def get_dl2_mean(event_data, weight_type='uncert'):
     ----------
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of the DL2 parameters
-    weight_type: str
-        Type of the weights for the tel-wise parameters
+    weight: str
+        Type of the weight for the tel-wise parameters
 
     Returns
     -------
@@ -328,23 +328,23 @@ def get_dl2_mean(event_data, weight_type='uncert'):
 
     group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
 
-    if weight_type == 'none':
+    if weight == None:
         gammaness_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
         energy_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
         direction_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
 
-    elif weight_type == 'uncert':
+    elif weight == 'uncert':
         gammaness_weights = 1 / event_data['gammaness_uncert']
         energy_weights = 1 / event_data['reco_energy_uncert']
         direction_weights = 1 / event_data['reco_disp_uncert']
 
-    elif weight_type == 'intensity':
+    elif weight == 'intensity':
         gammaness_weights = event_data['intensity']
         energy_weights = event_data['intensity']
         direction_weights = event_data['intensity']
 
     else:
-        RuntimeError(f'Unknown weight type "{weight_type}".')
+        RuntimeError(f'Unknown weight type "{weight}".')
 
     # Compute the mean of the gammaness:
     weighted_gammaness = event_data['gammaness'] * gammaness_weights

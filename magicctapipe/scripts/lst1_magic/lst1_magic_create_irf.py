@@ -75,7 +75,7 @@ __all__ = [
 ]
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type):
+def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     """
     Loads an input MC DL2 data file.
 
@@ -87,6 +87,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
         Quality cuts applied to the input events
     irf_type: str
         Type of the LST-1 + MAGIC IRFs
+    dl2_weight: str
+        Type of the weight for averaging tel-wise DL2 parameters
 
     Returns
     -------
@@ -130,7 +132,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type):
     logger.info(f'--> {n_events} stereo events')
 
     # Compute the mean of the DL2 parameters:
-    df_dl2_mean = get_dl2_mean(df_events)
+    df_dl2_mean = get_dl2_mean(df_events, dl2_weight)
     df_dl2_mean.reset_index(inplace=True)
 
     # Convert the pandas data frame to the astropy QTable:
@@ -336,6 +338,7 @@ def create_irf(
 
     quality_cuts = config_irf['quality_cuts']
     irf_type = config_irf['irf_type']
+    dl2_weight = config_irf['dl2_weight']
 
     energy_bins = np.logspace(
         np.log10(config_irf['energy_bins']['start']),
@@ -359,13 +362,14 @@ def create_irf(
         'FOVALIGN': 'RADEC',
         'QUAL_CUT': quality_cuts,
         'IRF_TYPE': irf_type,
+        'DL2_WEIG': dl2_weight,
     }
 
     # Load the input gamma MC file:
     logger.info('\nLoading the input gamma MC DL2 data file:')
     logger.info(input_file_gamma)
 
-    table_gamma, sim_info_gamma = load_dl2_data_file(input_file_gamma, quality_cuts, irf_type)
+    table_gamma, sim_info_gamma = load_dl2_data_file(input_file_gamma, quality_cuts, irf_type, dl2_weight)
 
     if sim_info_gamma.viewcone.value != 0.0:
         logger.info('\nHave not yet implemented functions to create diffuse IRFs. Exiting.')
@@ -379,7 +383,7 @@ def create_irf(
         logger.info('\nLoading the input proton MC DL2 data file:')
         logger.info(input_file_proton)
 
-        table_proton, sim_info_proton = load_dl2_data_file(input_file_proton, quality_cuts, irf_type)
+        table_proton, sim_info_proton = load_dl2_data_file(input_file_proton, quality_cuts, irf_type, dl2_weight)
         simulated_spectrum_proton = PowerLaw.from_simulation(sim_info_proton, obs_time_irf)
 
         table_proton['weight'] = calculate_event_weights(
@@ -392,7 +396,7 @@ def create_irf(
         logger.info('\nLoading the input electron MC DL2 data file:')
         logger.info(input_file_electron)
 
-        table_electron, sim_info_electron = load_dl2_data_file(input_file_electron, quality_cuts, irf_type)
+        table_electron, sim_info_electron = load_dl2_data_file(input_file_electron, quality_cuts, irf_type, dl2_weight)
         simulated_spectrum_electron = PowerLaw.from_simulation(sim_info_electron, obs_time_irf)
 
         table_electron['weight'] = calculate_event_weights(
