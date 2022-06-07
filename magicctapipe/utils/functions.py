@@ -316,7 +316,7 @@ def get_dl2_mean(event_data, weight=None):
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of the DL2 parameters
     weight: str
-        Type of the weights for the tel-wise parameters
+        Type of the weight for the tel-wise parameters
 
     Returns
     -------
@@ -344,7 +344,7 @@ def get_dl2_mean(event_data, weight=None):
         direction_weights = event_data['intensity']
 
     else:
-        RuntimeError(f'Unknown weight type "{weight_type}".')
+        RuntimeError(f'Unknown weight type "{weight}".')
 
     # Compute the mean of the gammaness:
     weighted_gammaness = event_data['gammaness'] * gammaness_weights
