@@ -37,6 +37,7 @@ from ctapipe.containers import (
     ArrayEventContainer,
     ImageParametersContainer,
     HillasParametersContainer,
+    CameraHillasParametersContainer,
 )
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.utils import (
@@ -213,18 +214,35 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only=False):
             event.pointing.tel[tel_id].altitude = u.Quantity(df_tel['pointing_alt'].iloc[0], u.rad)
             event.pointing.tel[tel_id].azimuth = u.Quantity(df_tel['pointing_az'].iloc[0], u.rad)
 
-            hillas_params = HillasParametersContainer(
-                intensity=float(df_tel['intensity'].iloc[0]),
-                fov_lon=u.Quantity(df_tel['fov_lon'].iloc[0], u.deg),
-                fov_lat=u.Quantity(df_tel['fov_lat'].iloc[0], u.deg),
-                r=u.Quantity(df_tel['r'].iloc[0], u.deg),
-                phi=Angle(df_tel['phi'].iloc[0], u.deg),
-                length=u.Quantity(df_tel['length'].iloc[0], u.deg),
-                width=u.Quantity(df_tel['width'].iloc[0], u.deg),
-                psi=Angle(df_tel['psi'].iloc[0], u.deg),
-                skewness=float(df_tel['skewness'].iloc[0]),
-                kurtosis=float(df_tel['kurtosis'].iloc[0]),
-            )
+            if "fov_lon" in df_tel.columns:
+
+                hillas_params = HillasParametersContainer(
+                    intensity=float(df_tel['intensity'].iloc[0]),
+                    fov_lon=u.Quantity(df_tel['fov_lon'].iloc[0], u.deg),
+                    fov_lat=u.Quantity(df_tel['fov_lat'].iloc[0], u.deg),
+                    r=u.Quantity(df_tel['r'].iloc[0], u.deg),
+                    phi=Angle(df_tel['phi'].iloc[0], u.deg),
+                    length=u.Quantity(df_tel['length'].iloc[0], u.deg),
+                    width=u.Quantity(df_tel['width'].iloc[0], u.deg),
+                    psi=Angle(df_tel['psi'].iloc[0], u.deg),
+                    skewness=float(df_tel['skewness'].iloc[0]),
+                    kurtosis=float(df_tel['kurtosis'].iloc[0]),
+                )
+
+            else:
+
+                hillas_params = CameraHillasParametersContainer(
+                    intensity=float(df_tel['intensity'].iloc[0]),
+                    x=u.Quantity(df_tel['x'].iloc[0], u.m),
+                    y=u.Quantity(df_tel['y'].iloc[0], u.m),
+                    r=u.Quantity(df_tel['r'].iloc[0], u.m),
+                    phi=Angle(df_tel['phi'].iloc[0], u.deg),
+                    length=u.Quantity(df_tel['length'].iloc[0], u.m),
+                    width=u.Quantity(df_tel['width'].iloc[0], u.m),
+                    psi=Angle(df_tel['psi'].iloc[0], u.deg),
+                    skewness=float(df_tel['skewness'].iloc[0]),
+                    kurtosis=float(df_tel['kurtosis'].iloc[0]),
+                )
 
             event.dl1.tel[tel_id].parameters = ImageParametersContainer(hillas=hillas_params)
 
