@@ -250,7 +250,11 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
             n_events_skipped = 0
             n_events_processed = 0
 
-            event_source_allowed_tels = EventSource(input_file, allowed_tels=list(mc_tel_ids.values()))
+            event_source_allowed_tels = EventSource(
+                input_file,
+                allowed_tels=list(mc_tel_ids.values()),
+                focal_length_choice="effective"
+            )
 
             for event in event_source_allowed_tels:
 
