@@ -69,7 +69,7 @@ MAGIC:
 event_coincidence:
     type_lst_time: 'dragon_time'   # select 'dragon_time', 'tib_time' or 'ucts_time'
     window_width: 0.6   # unit: [usec]
-    offset_start: -10.0   # unit: [usec]
+    offset_start: -5.0   # unit: [usec]
     offset_stop: 0.0   # unit: [usec]
 
 
@@ -181,7 +181,7 @@ event_classifier:
 create_irf:
     quality_cuts: null
     irf_type: 'software'   # select 'hardware', 'software', 'software_with_any2' or 'magic_stereo'
-    dl2_weight: null   # type of the weight for averaging tel-wise DL2 parameters, null, 'uncert' or 'intensity'
+    dl2_weight: null   # type of the weight for averaging tel-wise DL2 parameters, null, 'var' or 'intensity'
 
     energy_bins:
         start: 0.01   # unit: [TeV]

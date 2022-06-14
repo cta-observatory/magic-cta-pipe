@@ -333,10 +333,10 @@ def get_dl2_mean(event_data, weight=None):
         energy_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
         direction_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
 
-    elif weight == 'uncert':
-        gammaness_weights = 1 / event_data['gammaness_uncert']
-        energy_weights = 1 / event_data['reco_energy_uncert']
-        direction_weights = 1 / event_data['reco_disp_uncert']
+    elif weight == 'var':
+        gammaness_weights = 1 / event_data['gammaness_var']
+        energy_weights = 1 / event_data['reco_energy_var']
+        direction_weights = 1 / event_data['reco_disp_var']
 
     elif weight == 'intensity':
         gammaness_weights = event_data['intensity']
