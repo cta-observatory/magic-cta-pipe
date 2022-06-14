@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import pandas as pd
 from astropy import units as u
+from astropy.time import Time
 from astropy.coordinates import AltAz, SkyCoord, EarthLocation
 from astropy.coordinates.builtin_frames import SkyOffsetFrame
 
@@ -326,17 +327,15 @@ def get_dl2_mean(event_data, weight=None):
 
     is_simulation = ('true_energy' in event_data.columns)
 
-    group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
-
     if weight == None:
         gammaness_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
         energy_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
         direction_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
 
-    elif weight == 'uncert':
-        gammaness_weights = 1 / event_data['gammaness_uncert']
-        energy_weights = 1 / event_data['reco_energy_uncert']
-        direction_weights = 1 / event_data['reco_disp_uncert']
+    elif weight == 'var':
+        gammaness_weights = 1 / event_data['gammaness_var']
+        energy_weights = 1 / event_data['reco_energy_var']
+        direction_weights = 1 / event_data['reco_disp_var']
 
     elif weight == 'intensity':
         gammaness_weights = event_data['intensity']
@@ -374,7 +373,9 @@ def get_dl2_mean(event_data, weight=None):
         lon=event_data['pointing_az'], lat=event_data['pointing_alt'],
     )
 
-    # Create a base data frame:
+    # Create a mean data frame:
+    group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
+
     dl2_mean = pd.DataFrame(
         data={'combo_type': group_mean['combo_type'].to_numpy(),
               'multiplicity': group_mean['multiplicity'].to_numpy(),
@@ -393,16 +394,15 @@ def get_dl2_mean(event_data, weight=None):
         dl2_mean = dl2_mean.join(mc_params)
 
     else:
-        # Compute the mean of the Ra/Dec directions:
-        reco_ra_mean, reco_dec_mean = calculate_mean_direction(
-            lon=np.deg2rad(event_data['reco_ra']),
-            lat=np.deg2rad(event_data['reco_dec']),
-            weights=direction_weights,
+        # Convert the mean Alt/Az to the RA/Dec coordinate:
+        timestamps = Time(group_mean['timestamp'].to_numpy(), format='unix', scale='utc')
+
+        reco_ra_mean, reco_dec_mean = transform_altaz_to_radec(
+            alt=reco_alt_mean, az=reco_az_mean, timestamp=timestamps,
         )
 
-        pointing_ra_mean, pointing_dec_mean = calculate_mean_direction(
-            lon=np.deg2rad(event_data['pointing_ra']),
-            lat=np.deg2rad(event_data['pointing_dec']),
+        pointing_ra_mean, pointing_dec_mean = transform_altaz_to_radec(
+            alt=pointing_alt_mean, az=pointing_az_mean, timestamp=timestamps,
         )
 
         # Add the additional parameters:
