@@ -41,6 +41,7 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.containers import EventType
 from ctapipe.instrument import SubarrayDescription
+from ctapipe.coordinates import CameraFrame
 from lstchain.reco.utils import add_delta_t_key
 from magicctapipe.utils import (
     check_tel_combination,
@@ -146,6 +147,9 @@ def load_lst_data_file(input_file):
         inplace=True,
     )
 
+    # Read the subarray description:
+    subarray = SubarrayDescription.from_hdf(input_file)
+
     # Change the units of some parameters:
     optics = pd.read_hdf(input_file, key='configuration/instrument/telescope/optics')
     focal_length = optics['equivalent_focal_length'][0]
@@ -159,11 +163,11 @@ def load_lst_data_file(input_file):
         event_data['length'] = np.rad2deg(np.arctan2(length_meter, effective_foclen_lst))
         event_data['width'] = np.rad2deg(np.arctan2(width_meter, effective_foclen_lst))
 
+        subarray.tel[1].optics.equivalent_focal_length = u.Quantity(effective_foclen_lst, u.m)
+        subarray.tel[1].camera.geometry.frame = CameraFrame(focal_length=u.Quantity(effective_foclen_lst, u.m))
+
     event_data['phi'] = np.rad2deg(event_data['phi'])   # [rad] -> [deg]
     event_data['psi'] = np.rad2deg(event_data['psi'])   # [rad] -> [deg]
-
-    # Read the subarray description:
-    subarray = SubarrayDescription.from_hdf(input_file)
 
     return event_data, subarray
 
