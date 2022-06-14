@@ -57,6 +57,9 @@ sec2usec = 1e6
 
 accuracy_time = 1e-7   # final digit of a timestamp, unit: [sec]
 
+nominal_foclen_lst = 28   # unit: [m]
+effective_foclen_lst = 29.30565   # unit: [m]
+
 tel_names = {
     1: 'LST-1',
     2: 'MAGIC-I',
@@ -98,10 +101,10 @@ def load_lst_data_file(input_file):
 
     try:
         # Try to load DL2 data at first:
-        event_data = pd.read_hdf(input_file, key=f'dl2/event/telescope/parameters/LST_LSTCam')
+        event_data = pd.read_hdf(input_file, key='dl2/event/telescope/parameters/LST_LSTCam')
     except:
         # Load DL1 data:
-        event_data = pd.read_hdf(input_file, key=f'dl1/event/telescope/parameters/LST_LSTCam')
+        event_data = pd.read_hdf(input_file, key='dl1/event/telescope/parameters/LST_LSTCam')
 
     event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     event_data.sort_index(inplace=True)
@@ -147,8 +150,14 @@ def load_lst_data_file(input_file):
     optics = pd.read_hdf(input_file, key='configuration/instrument/telescope/optics')
     focal_length = optics['equivalent_focal_length'][0]
 
-    event_data['length'] = focal_length * np.tan(np.deg2rad(event_data['length']))   # [deg] -> [m]
-    event_data['width'] = focal_length * np.tan(np.deg2rad(event_data['width']))   # [deg] -> [m]
+    if focal_length == nominal_foclen_lst:
+
+        length_meter = focal_length * np.tan(np.deg2rad(event_data['length']))
+        width_meter = focal_length * np.tan(np.deg2rad(event_data['width']))
+
+        # Convert to degrees with the effective focal length:
+        event_data['length'] = np.rad2deg(np.arctan2(length_meter, effective_foclen_lst))
+        event_data['width'] = np.rad2deg(np.arctan2(width_meter, effective_foclen_lst))
 
     event_data['phi'] = np.rad2deg(event_data['phi'])   # [rad] -> [deg]
     event_data['psi'] = np.rad2deg(event_data['psi'])   # [rad] -> [deg]
