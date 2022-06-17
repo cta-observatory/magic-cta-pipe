@@ -154,15 +154,11 @@ def load_lst_data_file(input_file):
     optics = pd.read_hdf(input_file, key='configuration/instrument/telescope/optics')
     focal_length = optics['equivalent_focal_length'][0]
 
+    event_data['length'] = focal_length * np.tan(np.deg2rad(event_data['length']))   # [deg] -> [m]
+    event_data['width'] = focal_length * np.tan(np.deg2rad(event_data['width']))   # [deg] -> [m]
+
     if focal_length == nominal_foclen_lst:
-
-        length_meter = focal_length * np.tan(np.deg2rad(event_data['length']))
-        width_meter = focal_length * np.tan(np.deg2rad(event_data['width']))
-
-        # Convert to degrees with the effective focal length:
-        event_data['length'] = np.rad2deg(np.arctan2(length_meter, effective_foclen_lst))
-        event_data['width'] = np.rad2deg(np.arctan2(width_meter, effective_foclen_lst))
-
+        # Set the effective focal length to the subarray:
         subarray.tel[1].optics.equivalent_focal_length = u.Quantity(effective_foclen_lst, u.m)
         subarray.tel[1].camera.geometry.frame = CameraFrame(focal_length=u.Quantity(effective_foclen_lst, u.m))
 

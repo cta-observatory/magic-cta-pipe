@@ -138,7 +138,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info(f'Is simulation: {is_simulation}')
 
     subarray = event_source.subarray
-    camera_geom = subarray.tel[tel_id].camera.geometry.transform_to(TelescopeFrame)
+    camera_geom = subarray.tel[tel_id].camera.geometry
 
     if is_simulation:
 
