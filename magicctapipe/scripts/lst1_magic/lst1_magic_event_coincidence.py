@@ -147,9 +147,6 @@ def load_lst_data_file(input_file):
         inplace=True,
     )
 
-    # Read the subarray description:
-    subarray = SubarrayDescription.from_hdf(input_file)
-
     # Change the units of some parameters:
     optics = pd.read_hdf(input_file, key='configuration/instrument/telescope/optics')
     focal_length = optics['equivalent_focal_length'][0]
@@ -157,13 +154,16 @@ def load_lst_data_file(input_file):
     event_data['length'] = focal_length * np.tan(np.deg2rad(event_data['length']))   # [deg] -> [m]
     event_data['width'] = focal_length * np.tan(np.deg2rad(event_data['width']))   # [deg] -> [m]
 
+    event_data['phi'] = np.rad2deg(event_data['phi'])   # [rad] -> [deg]
+    event_data['psi'] = np.rad2deg(event_data['psi'])   # [rad] -> [deg]
+
+    # Read the subarray description:
+    subarray = SubarrayDescription.from_hdf(input_file)
+
     if focal_length == nominal_foclen_lst:
         # Set the effective focal length to the subarray:
         subarray.tel[1].optics.equivalent_focal_length = u.Quantity(effective_foclen_lst, u.m)
         subarray.tel[1].camera.geometry.frame = CameraFrame(focal_length=u.Quantity(effective_foclen_lst, u.m))
-
-    event_data['phi'] = np.rad2deg(event_data['phi'])   # [rad] -> [deg]
-    event_data['psi'] = np.rad2deg(event_data['psi'])   # [rad] -> [deg]
 
     return event_data, subarray
 
