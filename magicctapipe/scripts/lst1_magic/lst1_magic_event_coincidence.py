@@ -41,6 +41,7 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.containers import EventType
 from ctapipe.instrument import SubarrayDescription
+from ctapipe.coordinates import CameraFrame
 from lstchain.reco.utils import add_delta_t_key
 from magicctapipe.utils import (
     check_tel_combination,
@@ -56,6 +57,9 @@ usec2sec = 1e-6
 sec2usec = 1e6
 
 accuracy_time = 1e-7   # final digit of a timestamp, unit: [sec]
+
+nominal_foclen_lst = 28   # unit: [m]
+effective_foclen_lst = 29.30565   # unit: [m]
 
 tel_names = {
     1: 'LST-1',
@@ -98,10 +102,10 @@ def load_lst_data_file(input_file):
 
     try:
         # Try to load DL2 data at first:
-        event_data = pd.read_hdf(input_file, key=f'dl2/event/telescope/parameters/LST_LSTCam')
+        event_data = pd.read_hdf(input_file, key='dl2/event/telescope/parameters/LST_LSTCam')
     except:
         # Load DL1 data:
-        event_data = pd.read_hdf(input_file, key=f'dl1/event/telescope/parameters/LST_LSTCam')
+        event_data = pd.read_hdf(input_file, key='dl1/event/telescope/parameters/LST_LSTCam')
 
     event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     event_data.sort_index(inplace=True)
@@ -155,6 +159,11 @@ def load_lst_data_file(input_file):
 
     # Read the subarray description:
     subarray = SubarrayDescription.from_hdf(input_file)
+
+    if focal_length == nominal_foclen_lst:
+        # Set the effective focal length to the subarray:
+        subarray.tel[1].optics.equivalent_focal_length = u.Quantity(effective_foclen_lst, u.m)
+        subarray.tel[1].camera.geometry.frame = CameraFrame(focal_length=u.Quantity(effective_foclen_lst, u.m))
 
     return event_data, subarray
 
