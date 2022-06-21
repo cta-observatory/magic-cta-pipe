@@ -2,9 +2,6 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-        Muon analysis by Gabriel Emery (gabriel.emery@unige.ch)
-
 This script processes LST-1 and MAGIC events of simtel MC DL0 data (*.simtel.gz)
 and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
 It saves only the events that all the DL1 parameters are successfully reconstructed.
