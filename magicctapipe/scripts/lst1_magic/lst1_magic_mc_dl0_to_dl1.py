@@ -117,32 +117,39 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     for key, value in config_magic.items():
         logger.info(f'{key}: {value}')
 
+    allowed_tel_ids = config['mc_tel_ids']
+
+    logger.info('\nAllowed telescope IDs:')
+    logger.info(allowed_tel_ids)
+
+    tel_id_lst1 = allowed_tel_ids['LST-1']
+    tel_id_m1 = allowed_tel_ids['MAGIC-I']
+    tel_id_m2 = allowed_tel_ids['MAGIC-II']
+
     # Load the input file:
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    event_source = EventSource(input_file, focal_length_choice='effective')
+    event_source = EventSource(
+        input_file,
+        allowed_tels=list(allowed_tel_ids.values()),
+        focal_length_choice='effective',
+    )
 
     obs_id = event_source.obs_ids[0]
     subarray = event_source.subarray
 
+    camera_geoms = {}
+    tel_positions = subarray.positions
+
     logger.info('\nSubarray configuration:')
-    for tel_id in subarray.tel.keys():
-        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {subarray.positions[tel_id]}')
-
-    mc_tel_ids = config['mc_tel_ids']
-
-    logger.info('\nThe LST-1 and MAGIC telescope IDs:')
-    logger.info(mc_tel_ids)
-
-    tel_id_lst1 = mc_tel_ids['LST-1']
-    tel_id_m1 = mc_tel_ids['MAGIC-I']
-    tel_id_m2 = mc_tel_ids['MAGIC-II']
+    for tel_name, tel_id in allowed_tel_ids.items():
+        logger.info(f'{tel_name}: position = {tel_positions[tel_id]}')
+        camera_geoms[tel_id] = subarray.tel[tel_id].camera.geometry
 
     # Dictionary to store muons ring parameters:
     logger.info('\nMuons analysis: ' + str(muons_analysis))
     muon_parameters = create_muon_table()
-    muon_parameters['telescope_name'] = []
     r1_dl1_calibrator_for_muon_rings = {}
 
     # Configure the LST event processors:
@@ -179,6 +186,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     )
 
     use_charge_correction = config_magic['charge_correction'].pop('use')
+
+    magic_clean = MAGICClean(camera_geoms[tel_id_m1], config_magic['magic_clean'])
 
     # Configure the muon analysis:
     if muons_analysis:
@@ -225,49 +234,26 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         raise RuntimeError('Could not parse information from the input file name.')
 
     # Start processing the events:
+    logger.info('\nProcessing the events...')
+
     with HDF5TableWriter(output_file, group_name='events', mode='w') as writer:
 
-        for tel_name, tel_id in mc_tel_ids.items():
+        for event in event_source:
 
-            logger.info(f'\nProcessing the {tel_name} events...')
+            if event.count % 100 == 0:
+                logger.info(f'{event.count} events')
 
-            tel_position = subarray.positions[tel_id]
-            camera_geom = subarray.tel[tel_id].camera.geometry
-            focal_length = subarray.tel[tel_id].optics.equivalent_focal_length
+            tels_with_trigger = event.trigger.tels_with_trigger
 
-            camera_frame = CameraFrame(
-                rotation=camera_geom.cam_rotation,
-                focal_length=focal_length,
-            )
+            # Check if the event triggers both M1 and M2:
+            trigger_m1 = (tel_id_m1 in tels_with_trigger)
+            trigger_m2 = (tel_id_m2 in tels_with_trigger)
 
-            if tel_name in ['MAGIC-I', 'MAGIC-II']:
-                # Configure the MAGIC image cleaning:
-                magic_clean = MAGICClean(camera_geom, config_magic['magic_clean'])
+            magic_stereo = (trigger_m1 and trigger_m2)
 
-            n_events_skipped = 0
-            n_events_processed = 0
+            for tel_id in tels_with_trigger:
 
-            event_source_allowed_tels = EventSource(input_file, allowed_tels=list(mc_tel_ids.values()))
-
-            for event in event_source_allowed_tels:
-
-                tels_with_trigger = event.trigger.tels_with_trigger
-
-                if tel_id not in tels_with_trigger:
-                    continue
-
-                n_events_processed += 1
-
-                if n_events_processed % 100 == 0:
-                    logger.info(f'{n_events_processed} events')
-
-                # Check if the event triggers both M1 and M2:
-                trigger_m1 = (tel_id_m1 in tels_with_trigger)
-                trigger_m2 = (tel_id_m2 in tels_with_trigger)
-
-                magic_stereo = (trigger_m1 and trigger_m2)
-
-                if tel_name == 'LST-1':
+                if tel_id == tel_id_lst1:
 
                     # Calibrate the event:
                     calibrator_lst._calibrate_dl0(event, tel_id)
@@ -283,28 +269,27 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                     if increase_psf:
                         # Smear the image:
                         image = random_psf_smearer(image, config_lst['increase_psf']['smeared_light_fraction'],
-                                                   camera_geom.neighbor_matrix_sparse.indices,
-                                                   camera_geom.neighbor_matrix_sparse.indptr)
+                                                   camera_geoms[tel_id].neighbor_matrix_sparse.indices,
+                                                   camera_geoms[tel_id].neighbor_matrix_sparse.indptr)
 
                     # Apply the image cleaning:
-                    signal_pixels = tailcuts_clean(camera_geom, image, **config_lst['tailcuts_clean'])
+                    signal_pixels = tailcuts_clean(camera_geoms[tel_id], image, **config_lst['tailcuts_clean'])
 
                     if use_time_delta_cleaning:
-                        signal_pixels = apply_time_delta_cleaning(camera_geom, signal_pixels,
+                        signal_pixels = apply_time_delta_cleaning(camera_geoms[tel_id], signal_pixels,
                                                                   peak_time, **config_lst['time_delta_cleaning'])
 
                     if use_dynamic_cleaning:
                         signal_pixels = apply_dynamic_cleaning(image, signal_pixels, **config_lst['dynamic_cleaning'])
 
                     if use_only_main_island:
-                        _, island_labels = number_of_islands(camera_geom, signal_pixels)
+                        _, island_labels = number_of_islands(camera_geoms[tel_id], signal_pixels)
                         n_pixels_on_island = np.bincount(island_labels.astype(np.int64))
                         n_pixels_on_island[0] = 0  # first island is no-island and should not be considered
                         max_island_label = np.argmax(n_pixels_on_island)
                         signal_pixels[island_labels != max_island_label] = False
 
-                elif tel_name in ['MAGIC-I', 'MAGIC-II']:
-
+                else:
                     # Calibrate the event:
                     calibrator_magic._calibrate_dl0(event, tel_id)
                     calibrator_magic._calibrate_dl1(event, tel_id)
@@ -324,40 +309,36 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                 peak_time_cleaned[~signal_pixels] = 0
 
                 n_pixels = np.count_nonzero(signal_pixels)
-                n_islands, _ = number_of_islands(camera_geom, signal_pixels)
+                n_islands, _ = number_of_islands(camera_geoms[tel_id], signal_pixels)
 
                 if n_pixels == 0:
-                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
                                    'Could not survive the image cleaning. Skipping.')
-                    n_events_skipped += 1
                     continue
 
                 # Try to compute the Hillas parameters:
                 try:
-                    hillas_params = hillas_parameters(camera_geom, image_cleaned)
+                    hillas_params = hillas_parameters(camera_geoms[tel_id], image_cleaned)
                 except:
-                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
                                    'Hillas parameters computation failed. Skipping.')
-                    n_events_skipped += 1
                     continue
 
                 # Try to compute the timing parameters:
                 try:
-                    timing_params = timing_parameters(camera_geom, image_cleaned,
+                    timing_params = timing_parameters(camera_geoms[tel_id], image_cleaned,
                                                       peak_time_cleaned, hillas_params, signal_pixels)
                 except:
-                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
                                    'Timing parameters computation failed. Skipping.')
-                    n_events_skipped += 1
                     continue
 
                 # Try to compute the leakage parameters:
                 try:
-                    leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
+                    leakage_params = leakage_parameters(camera_geoms[tel_id], image_cleaned, signal_pixels)
                 except:
-                    logger.warning(f'--> {n_events_processed} event (event ID: {event.index.event_id}): ' \
+                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
                                    'Leakage parameters computation failed. Skipping.')
-                    n_events_skipped += 1
                     continue
 
                 # Compute the DISP parameter:
@@ -372,7 +353,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
 
                 tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-                event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_frame)
+                event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_geoms[tel_id].frame)
                 event_coord = event_coord.transform_to(tel_frame)
 
                 true_disp = angular_separation(
@@ -388,9 +369,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                     core_y=event.simulation.shower.core_y,
                     az=event.simulation.shower.az,
                     alt=event.simulation.shower.alt,
-                    tel_pos_x=tel_position[0],
-                    tel_pos_y=tel_position[1],
-                    tel_pos_z=tel_position[2],
+                    tel_pos_x=tel_positions[tel_id][0],
+                    tel_pos_y=tel_positions[tel_id][1],
+                    tel_pos_z=tel_positions[tel_id][2],
                 )
 
                 # Set the event information:
@@ -412,13 +393,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                 )
 
                 # Reset the telescope IDs:
-                if tel_name == 'LST-1':
+                if tel_id == tel_id_lst1:
                     event_info.tel_id = 1
 
-                elif tel_name == 'MAGIC-I':
+                elif tel_id == tel_id_m1:
                     event_info.tel_id = 2
 
-                elif tel_name == 'MAGIC-II':
+                elif tel_id == tel_id_m2:
                     event_info.tel_id = 3
 
                 # Save the parameters to the output file:
@@ -428,7 +409,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                     perform_muon_analysis(muon_parameters,
                                           event=event,
                                           telescope_id=tel_id,
-                                          telescope_name=tel_name,
                                           image=image,
                                           subarray=subarray,
                                           r1_dl1_calibrator_for_muon_rings=
@@ -436,15 +416,15 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                                           good_ring_config=muon_config[tel_id],
                                           data_type='mc')
 
-            logger.info(f'\nIn total {n_events_processed} events are processed.')
-            logger.info(f'({n_events_skipped} events are skipped)')
+        n_events_processed = event.count + 1
+        logger.info(f'\nIn total {n_events_processed} events are processed.')
 
     # Reset the telescope IDs of the telescope positions.
     # In addition, convert the coordinate to the one relative to the center of the LST-1 + MAGIC array:
-    positions = np.array([subarray.positions[tel_id].value for tel_id in mc_tel_ids.values()])
+    positions = np.array([tel_positions[tel_id].value for tel_id in allowed_tel_ids.values()])
     positions_cog = positions - positions.mean(axis=0)
 
-    tel_positions = {
+    tel_positions_cog = {
         1: u.Quantity(positions_cog[0, :], u.m),    # LST-1
         2: u.Quantity(positions_cog[1, :], u.m),    # MAGIC-I
         3: u.Quantity(positions_cog[2, :], u.m),    # MAGIC-II
@@ -458,7 +438,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     }
 
     # Save the subarray description:
-    subarray_lst1_magic = SubarrayDescription('LST1-MAGIC-Array', tel_positions, tel_descriptions)
+    subarray_lst1_magic = SubarrayDescription('LST1-MAGIC-Array', tel_positions_cog, tel_descriptions)
     subarray_lst1_magic.to_hdf(output_file)
 
     # Save the simulation configuration:

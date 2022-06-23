@@ -6,7 +6,7 @@ __all__ = [
 ]
 
 
-def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, image, subarray,
+def perform_muon_analysis(muon_parameters, event, telescope_id, image, subarray,
                           r1_dl1_calibrator_for_muon_rings, good_ring_config, event_time=np.nan,
                           min_pe_for_muon_t_calc=10., data_type='mc'):
     """
@@ -18,8 +18,6 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
     event: ctapipe event container
     telescope_id: int
         Id of the telescope
-    telescope_name: string
-        Name of teh telescope
     image:  `np.ndarray`
         Number of photoelectrons in each pixel
     subarray: `ctapipe.instrument.subarray.SubarrayDescription`
@@ -111,4 +109,3 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
                             mean_pixel_charge_around_ring,
                             muonpars,
                             hg_peak_sample, lg_peak_sample)
-            muon_parameters['telescope_name'].append(telescope_name)
