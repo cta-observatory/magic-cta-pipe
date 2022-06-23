@@ -26,8 +26,11 @@ import numpy as np
 from pathlib import Path
 from astropy import units as u
 from astropy.table import Table
-from astropy.coordinates import AltAz, SkyCoord
-from astropy.coordinates.angle_utilities import angular_separation
+from astropy.coordinates import (
+    AltAz,
+    SkyCoord,
+    angular_separation,
+)
 from traitlets.config import Config
 from ctapipe.io import EventSource, HDF5TableWriter
 from ctapipe.core import Container, Field
@@ -42,7 +45,7 @@ from ctapipe.image import (
     leakage_parameters,
 )
 from ctapipe.instrument import SubarrayDescription
-from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from ctapipe.coordinates import TelescopeFrame
 from lstchain.image.cleaning import apply_dynamic_cleaning
 from lstchain.image.modifier import (
     set_numba_seed,
