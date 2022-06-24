@@ -104,21 +104,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         Perform the muon ring analysis if True
     """
 
-    config_lst = config['LST']
-
-    logger.info('\nConfiguration for the LST event process:')
-    for key, value in config_lst.items():
-        logger.info(f'{key}: {value}')
-
-    config_magic = config['MAGIC']
-
-    if config_magic['magic_clean']['find_hotpixels'] is not False:
-        logger.warning('\nHot pixels do not exist in a simulation. Setting the "find_hotpixels" option to False...')
-        config_magic['magic_clean'].update({'find_hotpixels': False})
-
-    logger.info('\nConfiguration for the MAGIC event process:')
-    for key, value in config_magic.items():
-        logger.info(f'{key}: {value}')
+    logger.info(f'\nMuons analysis: {muons_analysis}')
 
     allowed_tel_ids = config['mc_tel_ids']
 
@@ -146,16 +132,16 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     tel_positions = subarray.positions
 
     logger.info('\nSubarray configuration:')
-    for tel_name, tel_id in allowed_tel_ids.items():
-        logger.info(f'{tel_name}: position = {tel_positions[tel_id]}')
+    for tel_id in allowed_tel_ids.values():
+        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
         camera_geoms[tel_id] = subarray.tel[tel_id].camera.geometry
 
-    # Dictionary to store muons ring parameters:
-    logger.info('\nMuons analysis: ' + str(muons_analysis))
-    muon_parameters = create_muon_table()
-    r1_dl1_calibrator_for_muon_rings = {}
-
     # Configure the LST event processors:
+    config_lst = config['LST']
+
+    logger.info('\nLST image extractor:')
+    logger.info(config_lst['image_extractor'])
+
     extractor_type_lst = config_lst['image_extractor'].pop('type')
     config_extractor_lst = Config({extractor_type_lst: config_lst['image_extractor']})
 
@@ -164,6 +150,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         config=config_extractor_lst,
         subarray=subarray,
     )
+
+    logger.info('\nLST image modifier:')
+    for modifier in ['increase_nsb', 'increase_psf']:
+        logger.info(f'{modifier}: {config_lst[modifier]}')
 
     increase_nsb = config_lst['increase_nsb'].pop('use')
     increase_psf = config_lst['increase_psf'].pop('use')
@@ -174,11 +164,22 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     if increase_psf:
         set_numba_seed(obs_id)
 
+    logger.info('\nLST image cleaning:')
+    for cleaning in ['tailcuts_clean', 'time_delta_cleaning', 'dynamic_cleaning']:
+        logger.info(f'{cleaning}: {config_lst[cleaning]}')
+
     use_time_delta_cleaning = config_lst['time_delta_cleaning'].pop('use')
     use_dynamic_cleaning = config_lst['dynamic_cleaning'].pop('use')
+
     use_only_main_island = config_lst['use_only_main_island']
+    logger.info(f'use_only_main_island: {use_only_main_island}')
 
     # Configure the MAGIC event processors:
+    config_magic = config['MAGIC']
+
+    logger.info('\nMAGIC image extractor:')
+    logger.info(config_magic['image_extractor'])
+
     extractor_type_magic = config_magic['image_extractor'].pop('type')
     config_extractor_magic = Config({extractor_type_magic: config_magic['image_extractor']})
 
@@ -188,11 +189,23 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         subarray=subarray,
     )
 
+    logger.info('\nMAGIC charge correction:')
+    logger.info(config_magic['charge_correction'])
+
     use_charge_correction = config_magic['charge_correction'].pop('use')
 
-    magic_clean = MAGICClean(camera_geoms[tel_id_m1], config_magic['magic_clean'])
+    logger.info('\nMAGIC image cleaning:')
+    if config_magic['magic_clean']['find_hotpixels'] is not False:
+        logger.warning('Hot pixels do not exist in a simulation. Setting the "find_hotpixels" option to False...')
+        config_magic['magic_clean'].update({'find_hotpixels': False})
+
+    logger.info(config_magic['magic_clean'])
+    magic_clean = MAGICClean(camera_geoms[tel_id_m1], config_magic['magic_clean'])   # assume M1 and M2 cameras are identical
 
     # Configure the muon analysis:
+    muon_parameters = create_muon_table()
+    r1_dl1_calibrator_for_muon_rings = {}
+
     if muons_analysis:
         extractor_muon_name_lst = 'GlobalPeakWindowSum'
         extractor_lst_muons = ImageExtractor.from_name(
@@ -422,8 +435,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         n_events_processed = event.count + 1
         logger.info(f'\nIn total {n_events_processed} events are processed.')
 
-    # Reset the telescope IDs of the telescope positions.
-    # In addition, convert the coordinate to the one relative to the center of the LST-1 + MAGIC array:
+    # Reset the telescope IDs of the subarray description.
+    # In addition, convert the telescope coordinate to the one relative to the center of the LST-1 + MAGIC array:
     positions = np.array([tel_positions[tel_id].value for tel_id in allowed_tel_ids.values()])
     positions_cog = positions - positions.mean(axis=0)
 
@@ -433,15 +446,15 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
         3: u.Quantity(positions_cog[2, :], u.m),    # MAGIC-II
     }
 
-    # Reset the telescope IDs of the telescope descriptions:
     tel_descriptions = {
         1: subarray.tel[tel_id_lst1],   # LST-1
         2: subarray.tel[tel_id_m1],     # MAGIC-I
         3: subarray.tel[tel_id_m2],     # MAGIC-II
     }
 
-    # Save the subarray description:
     subarray_lst1_magic = SubarrayDescription('LST1-MAGIC-Array', tel_positions_cog, tel_descriptions)
+
+    # Save the subarray description:
     subarray_lst1_magic.to_hdf(output_file)
 
     # Save the simulation configuration:
