@@ -204,6 +204,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
 
     # Configure the muon analysis:
     muon_parameters = create_muon_table()
+    muon_parameters['telescope_type'] = []
     r1_dl1_calibrator_for_muon_rings = {}
 
     if muons_analysis:
@@ -430,6 +431,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
                                           r1_dl1_calibrator_for_muon_rings=
                                           r1_dl1_calibrator_for_muon_rings[tel_id],
                                           good_ring_config=muon_config[tel_id],
+                                          telescope_type=subarray.tel[tel_id].name,
                                           data_type='mc')
 
         n_events_processed = event.count + 1
