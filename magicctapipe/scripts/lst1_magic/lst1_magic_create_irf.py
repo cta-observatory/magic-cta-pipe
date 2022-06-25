@@ -593,7 +593,7 @@ def create_irf(
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex = r'dl2_gamma_(\S+)_run.*'
-    file_name = Path(input_file_gamma).resolve().name
+    file_name = Path(input_file_gamma).name
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]

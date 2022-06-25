@@ -489,7 +489,7 @@ def event_coincidence(input_file_lst, input_dir_magic,
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex = r'(\S+)_LST-1\.(\S+)\.h5'
-    file_name = Path(input_file_lst).resolve().name
+    file_name = Path(input_file_lst).name
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]
