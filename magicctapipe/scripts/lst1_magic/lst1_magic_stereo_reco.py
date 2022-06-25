@@ -7,7 +7,7 @@ The quality cuts specified in a configuration file are applied to events before 
 
 When an input is real data containing LST-1 and MAGIC events, it checks the angular distance of their pointing directions.
 Then, it stops the process when the distance is larger than the limit specified in a configuration file.
-This is in principle to avoid the reconstruction of the data taken in a too-mispointing condition, for example,
+This is in principle to avoid the reconstruction of the data taken in too-mispointing conditions, for example,
 DL1 data may contain the coincident events which are taken with different wobble offsets between the systems.
 
 If the "--magic-only" option is given, it reconstructs the stereo parameters using only MAGIC images.
@@ -30,8 +30,7 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from astropy import units as u
-from astropy.coordinates import Angle
-from astropy.coordinates.angle_utilities import angular_separation
+from astropy.coordinates import Angle, angular_separation
 from ctapipe.reco import HillasReconstructor
 from ctapipe.containers import (
     ArrayEventContainer,
@@ -102,7 +101,12 @@ def calculate_pointing_separation(event_data):
     return theta
 
 
-def stereo_reconstruction(input_file, output_dir, config, magic_only=False):
+def stereo_reconstruction(
+    input_file,
+    output_dir,
+    config,
+    magic_only_analysis=False,
+):
     """
     Processes DL1 events and reconstructs the stereo parameters
     with more than one telescope information.
@@ -115,16 +119,13 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only=False):
         Path to a directory where to save an output DL1-stereo data file
     config: dict
         Configuration for the LST-1 + MAGIC analysis
-    magic_only: bool
+    magic_only_analysis: bool
         If True, it reconstructs the parameters using only MAGIC images
     """
 
-    config_sterec = config['stereo_reco']
+    logger.info(f'\nMAGIC-only analysis: {magic_only_analysis}')
 
-    logger.info('\nConfiguration for the stereo reconstruction:')
-    logger.info(config_sterec)
-
-    logger.info(f'\nMAGIC-only: {magic_only}')
+    config_stereo = config['stereo_reco']
 
     # Load the input file:
     logger.info('\nLoading the input file:')
@@ -143,13 +144,14 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only=False):
     for tel_id in subarray.tel.keys():
         logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
 
-    if magic_only:
+    # Apply the event cuts:
+    if magic_only_analysis:
         event_data.query('tel_id > 1', inplace=True)
 
-    # Apply the event cuts:
-    logger.info('\nApplying the quality cuts...')
+    logger.info('\nApplying the quality cuts:')
+    logger.info(config_stereo['quality_cuts'])
 
-    event_data.query(config_sterec['quality_cuts'], inplace=True)
+    event_data.query(config_stereo['quality_cuts'], inplace=True)
     event_data['multiplicity'] = event_data.groupby(['obs_id', 'event_id']).size()
     event_data.query('multiplicity > 1', inplace=True)
 
@@ -164,33 +166,31 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only=False):
         logger.info('\nChecking the angular distance of the LST-1 and MAGIC pointing directions...')
 
         theta = calculate_pointing_separation(event_data)
-        theta_uplim = u.Quantity(config_sterec['theta_uplim'], u.arcmin)
+        theta_max = np.max(theta.to(u.arcmin))
 
-        n_events = np.count_nonzero(theta > theta_uplim)
+        theta_uplim = u.Quantity(config_stereo['theta_uplim'], u.arcmin)
 
-        if n_events > 0:
-            logger.info(f'--> The pointing directions are separated by more than {theta_uplim}. Exiting.')
+        if theta_max > theta_uplim:
+            logger.info(f'--> The maximum angular distance {theta_max:.3f} is larger than the limit {theta_uplim}. Exiting.')
             sys.exit()
         else:
-            theta_max = np.max(theta.to(u.arcmin))
-            logger.info(f'--> Maximum angular distance is {theta_max:.3f}.')
-
-    # Calculate the mean pointing direction:
-    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(lon=event_data['pointing_az'],
-                                                                   lat=event_data['pointing_alt'])
+            logger.info(f'--> The maximum angular distance {theta_max:.3f} is smaller than the limit {theta_uplim}.')
 
     # Configure the HillasReconstructor:
     hillas_reconstructor = HillasReconstructor(subarray)
 
-    # Start processing the events.
-    # Since the reconstructor requires the ArrayEventContainer,
+    # Since the reconstructor requires the ArrayEventContainer as an input,
     # here we initialize it and reset necessary information event-by-event:
     event = ArrayEventContainer()
 
-    group_size = event_data.groupby(['obs_id', 'event_id']).size()
+    # Start processing the events:
+    group = event_data.groupby(['obs_id', 'event_id']).size()
 
-    obs_ids = group_size.index.get_level_values('obs_id')
-    event_ids = group_size.index.get_level_values('event_id')
+    obs_ids = group.index.get_level_values('obs_id')
+    event_ids = group.index.get_level_values('event_id')
+
+    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(lon=event_data['pointing_az'],
+                                                                   lat=event_data['pointing_alt'])
 
     logger.info('\nReconstructing the stereo parameters...')
 
