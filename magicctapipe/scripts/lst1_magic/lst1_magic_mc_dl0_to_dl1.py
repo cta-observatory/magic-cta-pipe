@@ -87,7 +87,12 @@ class EventInfoContainer(Container):
     magic_stereo = Field(-1, 'True if both M1 and M2 are triggered')
 
 
-def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
+def mc_dl0_to_dl1(
+    input_file,
+    output_dir,
+    config,
+    muons_analysis=False,
+):
     """
     Processes LST-1 and MAGIC events of simtel MC DL0 data
     and computes the DL1 parameters.
