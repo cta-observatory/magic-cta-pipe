@@ -183,7 +183,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     if is_simulation:
         regex = r'GA_M\d_(\S+)_\d_\d+_Y_*'
-        file_name = Path(input_file).resolve().name
+        file_name = Path(input_file).name
 
         parser = re.findall(regex, file_name)[0]
         output_file = f'{output_dir}/dl1_M{tel_id}_GA_{parser}.Run{obs_id}.h5'

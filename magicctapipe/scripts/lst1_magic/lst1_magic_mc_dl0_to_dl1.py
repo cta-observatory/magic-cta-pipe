@@ -214,7 +214,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, muons_analysis):
     regex_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
     regex = r'(\S+)_run(\d+)[_\.].*simtel.gz'
 
-    file_name = Path(input_file).resolve().name
+    file_name = Path(input_file).name
 
     if re.fullmatch(regex_off, file_name):
         parser = re.findall(regex_off, file_name)[0]
