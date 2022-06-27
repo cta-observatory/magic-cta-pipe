@@ -242,7 +242,7 @@ def mc_dl0_to_dl1(
     regex_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
     regex = r'(\S+)_run(\d+)[_\.].*simtel.gz'
 
-    file_name = Path(input_file).resolve().name
+    file_name = Path(input_file).name
 
     if re.fullmatch(regex_off, file_name):
         parser = re.findall(regex_off, file_name)[0]
@@ -281,8 +281,8 @@ def mc_dl0_to_dl1(
                     calibrator_lst._calibrate_dl0(event, tel_id)
                     calibrator_lst._calibrate_dl1(event, tel_id)
 
-                    image = event.dl1.tel[tel_id].image
-                    peak_time = event.dl1.tel[tel_id].peak_time
+                    image = event.dl1.tel[tel_id].image.astype(np.float64)
+                    peak_time = event.dl1.tel[tel_id].peak_time.astype(np.float64)
 
                     if increase_nsb:
                         # Add noises in pixels:
@@ -316,13 +316,15 @@ def mc_dl0_to_dl1(
                     calibrator_magic._calibrate_dl0(event, tel_id)
                     calibrator_magic._calibrate_dl1(event, tel_id)
 
+                    image = event.dl1.tel[tel_id].image.astype(np.float64)
+                    peak_time = event.dl1.tel[tel_id].peak_time.astype(np.float64)
+
                     if use_charge_correction:
                         # Scale the charges of the DL1 image by the correction factor:
-                        event.dl1.tel[tel_id].image *= config_magic['charge_correction']['correction_factor']
+                        image *= config_magic['charge_correction']['correction_factor']
 
                     # Apply the image cleaning:
-                    signal_pixels, image, peak_time = magic_clean.clean_image(event.dl1.tel[tel_id].image,
-                                                                              event.dl1.tel[tel_id].peak_time)
+                    signal_pixels, image, peak_time = magic_clean.clean_image(image, peak_time)
 
                 image_cleaned = image.copy()
                 image_cleaned[~signal_pixels] = 0
