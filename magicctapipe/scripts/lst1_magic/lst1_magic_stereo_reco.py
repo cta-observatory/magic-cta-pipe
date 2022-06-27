@@ -271,7 +271,12 @@ def stereo_reconstruction(
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]
-        output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
+
+        if magic_only_analysis:
+            output_file = f'{output_dir}/dl1_stereo_magic_only_{parser}.h5'
+        else:
+            output_file = f'{output_dir}/dl1_stereo_{parser}.h5'
+
     else:
         raise RuntimeError('Could not parse information from the input file name.')
 
