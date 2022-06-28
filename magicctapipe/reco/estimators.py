@@ -8,9 +8,12 @@ import numpy as np
 import pandas as pd
 import sklearn.ensemble
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord
-from astropy.coordinates.angle_utilities import angular_separation
-from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from astropy.coordinates import (
+    AltAz,
+    SkyCoord,
+    angular_separation,
+)
+from ctapipe.coordinates import TelescopeFrame
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -284,11 +287,7 @@ class DirectionRegressor:
             )
 
             tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
-
-            camera_frame = CameraFrame(
-                focal_length=self.tel_descriptions[tel_id].optics.equivalent_focal_length,
-                rotation=self.tel_descriptions[tel_id].camera.geometry.cam_rotation,
-            )
+            camera_frame = self.tel_descriptions[tel_id].camera.geometry.frame
 
             event_coord = SkyCoord(
                 u.Quantity(df_events['x'].to_numpy(), u.m),
