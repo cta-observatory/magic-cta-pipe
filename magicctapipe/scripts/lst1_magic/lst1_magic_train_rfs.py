@@ -67,7 +67,7 @@ __all__ = [
 ]
 
 
-def load_train_data_file(input_file, features, true_event_class=None):
+def load_train_data_file(input_file, true_event_class=None):
     """
     Loads an input DL1-stereo data file for training samples
     and separates the events per telescope combination.
@@ -76,8 +76,6 @@ def load_train_data_file(input_file, features, true_event_class=None):
     ----------
     input_file: str
         Path to an input DL1-stereo data file
-    features: list
-        Parameters used for training RFs
     true_event_class: int
         True event class of input events
 
@@ -104,8 +102,6 @@ def load_train_data_file(input_file, features, true_event_class=None):
     for tel_combo, tel_ids in tel_combinations.items():
 
         df_events = event_data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})').copy()
-        df_events.dropna(subset=features, inplace=True)
-
         df_events['multiplicity'] = df_events.groupby(grouped_by).size()
         df_events.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
@@ -213,7 +209,7 @@ def train_energy_regressor(
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    data_train = load_train_data_file(input_file, config_rf['features'])
+    data_train = load_train_data_file(input_file)
 
     # Configure the energy regressor:
     energy_regressor = EnergyRegressor(config_rf['features'], config_rf['settings'], use_unsigned_features)
@@ -273,7 +269,7 @@ def train_direction_regressor(
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    data_train = load_train_data_file(input_file, config_rf['features'])
+    data_train = load_train_data_file(input_file)
 
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_descriptions = subarray.tel
@@ -339,12 +335,12 @@ def train_event_classifier(
     logger.info('\nLoading the input gamma MC data file:')
     logger.info(input_file_gamma)
 
-    data_gamma = load_train_data_file(input_file_gamma, config_rf['features'], event_class_gamma)
+    data_gamma = load_train_data_file(input_file_gamma, event_class_gamma)
 
     logger.info('\nLoading the input background data file:')
     logger.info(input_file_bkg)
 
-    data_bkg = load_train_data_file(input_file_bkg, config_rf['features'], event_class_bkg)
+    data_bkg = load_train_data_file(input_file_bkg, event_class_bkg)
 
     # Configure the event classifier:
     event_classifier = EventClassifier(config_rf['features'], config_rf['settings'], use_unsigned_features)

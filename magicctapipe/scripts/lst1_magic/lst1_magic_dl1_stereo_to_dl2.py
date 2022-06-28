@@ -68,8 +68,6 @@ def apply_rfs(event_data, estimator):
     tel_ids = list(estimator.telescope_rfs.keys())
 
     df_events = event_data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})').copy()
-    df_events.dropna(subset=estimator.features, inplace=True)
-
     df_events['multiplicity'] = df_events.groupby(['obs_id', 'event_id']).size()
     df_events.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 

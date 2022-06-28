@@ -60,6 +60,8 @@ class EnergyRegressor:
 
         self.telescope_rfs.clear()
 
+        event_data.dropna(subset=self.features, inplace=True)
+
         if self.use_unsigned_features:
             event_data[self.features] = np.abs(event_data[self.features])
 
@@ -68,7 +70,7 @@ class EnergyRegressor:
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f'tel_id == {tel_id}').copy()
+            df_events = event_data.query(f'tel_id == {tel_id}')
 
             x_train = df_events[self.features].to_numpy()
             y_train = np.log10(df_events['true_energy'].to_numpy())
@@ -97,6 +99,8 @@ class EnergyRegressor:
         """
 
         reco_params = pd.DataFrame()
+
+        event_data.dropna(subset=self.features, inplace=True)
 
         if self.use_unsigned_features:
             event_data[self.features] = np.abs(event_data[self.features])
@@ -196,7 +200,6 @@ class DirectionRegressor:
         self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
 
-
     def fit(self, event_data, tel_descriptions):
         """
         Trains RFs per telescope.
@@ -211,6 +214,8 @@ class DirectionRegressor:
 
         self.telescope_rfs.clear()
         self.tel_descriptions = tel_descriptions
+
+        event_data.dropna(subset=self.features, inplace=True)
 
         if self.use_unsigned_features:
             event_data[self.features] = np.abs(event_data[self.features])
@@ -249,6 +254,8 @@ class DirectionRegressor:
         """
 
         reco_params = pd.DataFrame()
+
+        event_data.dropna(subset=self.features, inplace=True)
 
         if self.use_unsigned_features:
             event_data[self.features] = np.abs(event_data[self.features])
@@ -447,6 +454,8 @@ class EventClassifier:
 
         self.telescope_rfs.clear()
 
+        event_data.dropna(subset=self.features, inplace=True)
+
         if self.use_unsigned_features:
             event_data[self.features] = np.abs(event_data[self.features])
 
@@ -484,6 +493,8 @@ class EventClassifier:
         """
 
         reco_params = pd.DataFrame()
+
+        event_data.dropna(subset=self.features, inplace=True)
 
         if self.use_unsigned_features:
             event_data[self.features] = np.abs(event_data[self.features])
