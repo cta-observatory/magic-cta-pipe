@@ -2,15 +2,15 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script trains energy, direction regressors and event classifiers with input DL1-stereo data.
 The RFs are currently trained per telescope combination and per telescope type.
 When training event classifiers, the number of gamma MC or background samples is automatically adjusted
 so that the RFs are trained with the same number of gamma MC and background samples.
 
-When running the script, please specify the type of RFs that you want to train by giving
+When running the script, please specify the type of RFs that will be trained by giving
 "--train-energy", "--train-direction" or "--train-classifier" arguments.
+
+If the "--use-unsigned" argument is given, the RFs will be trained with unsigned features.
 
 Usage:
 $ python lst1_magic_train_rfs.py
@@ -21,6 +21,7 @@ $ python lst1_magic_train_rfs.py
 (--train-energy)
 (--train-direction)
 (--train-classifier)
+(--use-unsigned)
 """
 
 import time
