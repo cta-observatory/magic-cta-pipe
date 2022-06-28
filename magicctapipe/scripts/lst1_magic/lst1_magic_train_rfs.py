@@ -275,7 +275,12 @@ def train_direction_regressor(
     tel_descriptions = subarray.tel
 
     # Configure the direction regressor:
-    direction_regressor = DirectionRegressor(config_rf['features'], config_rf['settings'], use_unsigned_features)
+    direction_regressor = DirectionRegressor(
+        config_rf['features'],
+        config_rf['settings'],
+        tel_descriptions,
+        use_unsigned_features,
+    )
 
     # Train the regressors per telescope combination:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -283,7 +288,7 @@ def train_direction_regressor(
     for tel_combo in data_train.keys():
 
         logger.info(f'\nTraining direction regressors for "{tel_combo}" events...')
-        direction_regressor.fit(data_train[tel_combo], tel_descriptions)
+        direction_regressor.fit(data_train[tel_combo])
 
         logger.info('\nFeature importance:')
         check_feature_importance(direction_regressor)

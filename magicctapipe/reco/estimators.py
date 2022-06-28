@@ -180,6 +180,7 @@ class DirectionRegressor:
         self,
         features=[],
         settings={},
+        tel_descriptions={},
         use_unsigned_features=None,
     ):
         """
@@ -191,16 +192,19 @@ class DirectionRegressor:
             Parameters used for training RFs
         settings: dict
             Settings of RF regressors
+        tel_descriptions: dict
+            Telescope descriptions
         use_unsigned_features
             If true, it trains RFs with unsigned features
         """
 
         self.features = features
         self.settings = settings
+        self.tel_descriptions = tel_descriptions
         self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
 
-    def fit(self, event_data, tel_descriptions):
+    def fit(self, event_data):
         """
         Trains RFs per telescope.
 
@@ -208,12 +212,9 @@ class DirectionRegressor:
         ----------
         event_data: pandas.core.frame.DataFrame
             Pandas data frame of shower events
-        tel_descriptions: dict
-            Telescope descriptions
         """
 
         self.telescope_rfs.clear()
-        self.tel_descriptions = tel_descriptions
 
         event_data.dropna(subset=self.features, inplace=True)
 
