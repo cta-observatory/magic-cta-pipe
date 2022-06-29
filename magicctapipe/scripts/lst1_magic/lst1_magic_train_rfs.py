@@ -199,12 +199,6 @@ def train_energy_regressor(
 
     logger.info(f'\nUse unsigned features: {use_unsigned_features}')
 
-    config_rf = config['energy_regressor']
-
-    logger.info('\nConfiguration for training energy regressors:')
-    for key, value in config_rf.items():
-        logger.info(f'{key}: {value}')
-
     # Load the input file:
     logger.info('\nLoading the input file:')
     logger.info(input_file)
@@ -212,6 +206,14 @@ def train_energy_regressor(
     data_train = load_train_data_file(input_file)
 
     # Configure the energy regressor:
+    config_rf = config['energy_regressor']
+
+    logger.info('\nRF settings:')
+    logger.info(config_rf['settings'])
+
+    logger.info('\nFeatures:')
+    logger.info(config_rf['features'])
+
     energy_regressor = EnergyRegressor(config_rf['features'], config_rf['settings'], use_unsigned_features)
 
     # Train the regressors per telescope combination:
@@ -259,12 +261,6 @@ def train_direction_regressor(
 
     logger.info(f'\nUse unsigned features: {use_unsigned_features}')
 
-    config_rf = config['direction_regressor']
-
-    logger.info('\nConfiguration for training direction regressors:')
-    for key, value in config_rf.items():
-        logger.info(f'{key}: {value}')
-
     # Load the input file:
     logger.info('\nLoading the input file:')
     logger.info(input_file)
@@ -275,6 +271,14 @@ def train_direction_regressor(
     tel_descriptions = subarray.tel
 
     # Configure the direction regressor:
+    config_rf = config['direction_regressor']
+
+    logger.info('\nRF settings:')
+    logger.info(config_rf['settings'])
+
+    logger.info('\nFeatures:')
+    logger.info(config_rf['features'])
+
     direction_regressor = DirectionRegressor(
         config_rf['features'],
         config_rf['settings'],
@@ -330,12 +334,6 @@ def train_event_classifier(
 
     logger.info(f'\nUse unsigned features: {use_unsigned_features}')
 
-    config_rf = config['event_classifier']
-
-    logger.info('\nConfiguration for training event classifiers:')
-    for key, value in config_rf.items():
-        logger.info(f'{key}: {value}')
-
     # Load the input files:
     logger.info('\nLoading the input gamma MC data file:')
     logger.info(input_file_gamma)
@@ -348,6 +346,14 @@ def train_event_classifier(
     data_bkg = load_train_data_file(input_file_bkg, event_class_bkg)
 
     # Configure the event classifier:
+    config_rf = config['event_classifier']
+
+    logger.info('\nRF settings:')
+    logger.info(config_rf['settings'])
+
+    logger.info('\nFeatures:')
+    logger.info(config_rf['features'])
+
     event_classifier = EventClassifier(config_rf['features'], config_rf['settings'], use_unsigned_features)
 
     # Train the classifiers per telescope combination:
