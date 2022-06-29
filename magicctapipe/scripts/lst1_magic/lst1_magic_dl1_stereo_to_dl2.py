@@ -8,7 +8,7 @@ The RFs are currently applied per telescope combination and per telescope type.
 
 Usage:
 $ python lst1_magic_dl1_stereo_to_dl2.py
---input-file ./data/dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
+--input-file-dl1 ./data/dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
 --input-dir-rfs ./data/rfs
 --output-dir ./data/dl2
 """
@@ -82,14 +82,14 @@ def apply_rfs(event_data, estimator):
     return reco_params
 
 
-def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
+def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     """
     Processes DL1-stereo events and
     reconstructs the DL2 parameters with trained RFs.
 
     Parameters
     ----------
-    input_file: str
+    input_file_dl1: str
         Path to an input DL1-stereo data file
     input_dir_rfs: str
         Path to a directory where trained RFs are stored
@@ -97,10 +97,10 @@ def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
         Path to a directory where to save an output DL2 data file
     """
 
-    logger.info('\nLoading the input file:')
-    logger.info(input_file)
+    logger.info('\nLoading the input DL1-stereo data file:')
+    logger.info(input_file_dl1)
 
-    event_data = pd.read_hdf(input_file, key='events/parameters')
+    event_data = pd.read_hdf(input_file_dl1, key='events/parameters')
     event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     event_data.sort_index(inplace=True)
 
@@ -219,7 +219,7 @@ def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex = r'dl1_stereo_(\S+)\.h5'
-    file_name = Path(input_file).name
+    file_name = Path(input_file_dl1).name
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]
@@ -230,11 +230,11 @@ def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
     event_data.reset_index(inplace=True)
     save_pandas_to_table(event_data, output_file, group_name='/events', table_name='parameters', mode='w')
 
-    subarray = SubarrayDescription.from_hdf(input_file)
+    subarray = SubarrayDescription.from_hdf(input_file_dl1)
     subarray.to_hdf(output_file)
 
     if is_simulation:
-        sim_config = pd.read_hdf(input_file, key='simulation/config')
+        sim_config = pd.read_hdf(input_file_dl1, key='simulation/config')
         save_pandas_to_table(sim_config, output_file, group_name='/simulation', table_name='config', mode='a')
 
     logger.info('\nOutput file:')
@@ -248,7 +248,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file', '-i', dest='input_file', type=str, required=True,
+        '--input-file-dl1', '-d', dest='input_file_dl1', type=str, required=True,
         help='Path to an input DL1-stereo data file.',
     )
 
@@ -265,7 +265,7 @@ def main():
     args = parser.parse_args()
 
     # Process the input data:
-    dl1_stereo_to_dl2(args.input_file, args.input_dir_rfs, args.output_dir)
+    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir)
 
     logger.info('\nDone.')
 
