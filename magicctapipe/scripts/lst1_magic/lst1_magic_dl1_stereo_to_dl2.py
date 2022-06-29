@@ -2,9 +2,8 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
-This script processes DL1-stereo events and reconstructs the DL2 parameters (i.e., energy, direction and gammaness) with trained RFs.
+This script processes DL1-stereo events and reconstructs the DL2 parameters
+(i.e., energy, direction and gammaness) with trained RFs.
 The RFs are currently applied per telescope combination and per telescope type.
 
 Usage:
