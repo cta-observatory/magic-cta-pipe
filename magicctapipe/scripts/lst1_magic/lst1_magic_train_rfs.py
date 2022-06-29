@@ -116,7 +116,7 @@ def load_train_data_file(input_file, true_event_class=None):
 
 def check_feature_importance(estimator):
     """
-    Checks the feature importance of trained RFs:
+    Checks the feature importance of trained RFs.
 
     Parameters
     ----------
@@ -158,8 +158,8 @@ def get_events_at_random(event_data, n_events):
         Pandas data frame of the events randomly extracted
     """
 
-    group_size = event_data.groupby(grouped_by).size()
-    indices = random.sample(range(len(group_size)), n_events)
+    group = event_data.groupby(grouped_by).size()
+    indices = random.sample(range(len(group)), n_events)
 
     data_selected = pd.DataFrame()
 

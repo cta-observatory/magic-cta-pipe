@@ -43,7 +43,7 @@ class EnergyRegressor:
         settings: dict
             Settings of RF regressors
         use_unsigned_features
-            If true, it trains RFs with unsigned features
+            If True, it trains RFs with unsigned features
         """
 
         self.features = features
@@ -198,7 +198,7 @@ class DirectionRegressor:
         tel_descriptions: dict
             Telescope descriptions
         use_unsigned_features
-            If true, it trains RFs with unsigned features
+            If True, it trains RFs with unsigned features
         """
 
         self.features = features
@@ -434,7 +434,7 @@ class EventClassifier:
         settings: dict
             Settings of RF classifiers
         use_unsigned_features
-            If true, it trains RFs with unsigned features
+            If True, it trains RFs with unsigned features
         """
 
         self.features = features
