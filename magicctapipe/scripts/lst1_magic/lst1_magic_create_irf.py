@@ -86,7 +86,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     quality_cuts: str
         Quality cuts applied to the input events
     irf_type: str
-        Type of the LST-1 + MAGIC IRFs
+        Type of the IRFs which will be created
     dl2_weight: str
         Type of the weight for averaging tel-wise DL2 parameters
 
@@ -104,7 +104,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
 
     # Apply the quality cuts:
     if quality_cuts is not None:
-        logger.info('\nApplying the quality cuts...')
+        logger.info('\nApplying the quality cuts:')
+        logger.info(quality_cuts)
 
         df_events.query(quality_cuts, inplace=True)
         df_events['multiplicity'] = df_events.groupby(['obs_id', 'event_id']).size()
@@ -132,6 +133,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     logger.info(f'--> {n_events} stereo events')
 
     # Compute the mean of the DL2 parameters:
+    logger.info(f'\nDL2 weight type: {dl2_weight}')
+
     df_dl2_mean = get_dl2_mean(df_events, dl2_weight)
     df_dl2_mean.reset_index(inplace=True)
 
@@ -197,9 +200,9 @@ def apply_dynamic_gammaness_cut(
     gamma_efficiency: float
         Efficiency of the gamma MC events surviving the cuts
     min_cut: float
-        Minimum value of cut, cuts smaller than this value are replaced with this value
+        Minimum value of cut - the cuts smaller than this value are replaced with this value
     max_cut: float
-        Maximum value of cut, cuts larger than this value are replaced with this value
+        Maximum value of cut - the cuts larger than this value are replaced with this value
 
     Returns
     -------
@@ -268,9 +271,9 @@ def apply_dynamic_theta_cut(
     gamma_efficiency: float
         Efficiency of the gamma MC events surviving the cuts
     min_cut: astropy.units.quantity.Quantity
-        Minimum cut value, the cuts smaller than this value are replaced with it
+        Minimum cut value - the cuts smaller than this value are replaced with it
     max_cut: astropy.units.quantity.Quantity
-        Maximum cut value, the cuts larger than this value are replaced with it
+        Maximum cut value - the cuts larger than this value are replaced with it
 
     Returns
     -------
@@ -330,31 +333,13 @@ def create_irf(
         Configuration for the LST-1 + MAGIC analysis
     """
 
-    config_irf = config['create_irf']
+    only_gamma_mc = (input_file_proton is None) and (input_file_electron is None)
 
-    logger.info('\nConfiguration for the IRF creation:')
-    for key, value in config_irf.items():
-        logger.info(f'{key}: {value}')
+    config_irf = config['create_irf']
 
     quality_cuts = config_irf['quality_cuts']
     irf_type = config_irf['irf_type']
     dl2_weight = config_irf['dl2_weight']
-
-    energy_bins = np.logspace(
-        np.log10(config_irf['energy_bins']['start']),
-        np.log10(config_irf['energy_bins']['stop']),
-        config_irf['energy_bins']['n_bins'] + 1,
-    )
-
-    energy_bins = u.Quantity(energy_bins, u.TeV)
-
-    migration_bins = np.geomspace(
-        config_irf['migration_bins']['start'],
-        config_irf['migration_bins']['stop'],
-        config_irf['migration_bins']['n_bins'] + 1,
-    )
-
-    hdus = fits.HDUList([fits.PrimaryHDU(), ])
 
     extra_headers = {
         'TELESCOP': 'CTA-N',
@@ -364,6 +349,34 @@ def create_irf(
         'IRF_TYPE': irf_type,
         'DL2_WEIG': dl2_weight,
     }
+
+    logger.info('\nEnergy bins (log space, TeV):')
+    logger.info(config_irf['energy_bins'])
+
+    energy_bins = np.logspace(
+        np.log10(config_irf['energy_bins']['start']),
+        np.log10(config_irf['energy_bins']['stop']),
+        config_irf['energy_bins']['n_bins'] + 1,
+    ) * u.TeV
+
+    logger.info('\nMigration bins (geom space):')
+    logger.info(config_irf['migration_bins'])
+
+    migration_bins = np.geomspace(
+        config_irf['migration_bins']['start'],
+        config_irf['migration_bins']['stop'],
+        config_irf['migration_bins']['n_bins'] + 1,
+    )
+
+    if not only_gamma_mc:
+        logger.info('\nBackground FoV offset bins (linear space, deg):')
+        logger.info(config_irf['bkg_fov_offset_bins'])
+
+        bkg_fov_offset_bins = np.linspace(
+            config_irf['bkg_fov_offset_bins']['start'],
+            config_irf['bkg_fov_offset_bins']['stop'],
+            config_irf['bkg_fov_offset_bins']['n_bins'] + 1,
+        ) * u.deg
 
     # Load the input gamma MC file:
     logger.info('\nLoading the input gamma MC DL2 data file:')
@@ -375,10 +388,13 @@ def create_irf(
         logger.info('\nHave not yet implemented functions to create diffuse IRFs. Exiting.')
         sys.exit()
 
-    only_gamma_mc = (input_file_proton is None) and (input_file_electron is None)
+    mean_fov_offset = np.round(table_gamma['true_source_fov_offset'].mean().to_value(), decimals=1)
+    fov_offset_bins = u.Quantity([mean_fov_offset - 0.1, mean_fov_offset + 0.1], u.deg)
+
+    logger.info(f'\nMean FoV offset: {mean_fov_offset * u.deg}')
+    logger.info(f'--> FoV offset bins: {fov_offset_bins}')
 
     if not only_gamma_mc:
-
         # Load the input proton MC file:
         logger.info('\nLoading the input proton MC DL2 data file:')
         logger.info(input_file_proton)
@@ -415,7 +431,7 @@ def create_irf(
     gam_cut_type = config_irf['gammaness']['cut_type']
 
     if gam_cut_type == 'global':
-        logger.info('\nApplying the global gammaness cut...')
+        logger.info('\nApplying the global gammaness cut:')
 
         global_gam_cut = config_irf['gammaness']['global_cut_value']
         logger.info(f'Global cut value: {global_gam_cut}')
@@ -429,7 +445,7 @@ def create_irf(
         extra_headers['GH_CUT'] = global_gam_cut
 
     elif gam_cut_type == 'dynamic':
-        logger.info('\nApplying the dynamic gammaness cuts...')
+        logger.info('\nApplying the dynamic gammaness cuts:')
 
         gamma_efficiency = config_irf['gammaness']['gamma_efficiency']
         min_cut = config_irf['gammaness']['min_cut']
@@ -453,7 +469,7 @@ def create_irf(
     theta_cut_type = config_irf['theta']['cut_type']
 
     if theta_cut_type == 'global':
-        logger.info('\nApplying the global theta cut...')
+        logger.info('\nApplying the global theta cut:')
 
         global_theta_cut = u.Quantity(config_irf['theta']['global_cut_value'], u.deg)
         logger.info(f'Global cut value: {global_theta_cut}')
@@ -464,7 +480,7 @@ def create_irf(
         extra_headers['RAD_MAX'] = (global_theta_cut.value, 'deg')
 
     elif theta_cut_type == 'dynamic':
-        logger.info('\nApplying the dynamic theta cuts...')
+        logger.info('\nApplying the dynamic theta cuts:')
 
         gamma_efficiency = config_irf['theta']['gamma_efficiency']
         min_cut = u.Quantity(config_irf['theta']['min_cut'], u.deg)
@@ -487,8 +503,7 @@ def create_irf(
     # Create an effective area HDU:
     logger.info('\nCreating an effective area HDU...')
 
-    mean_fov_offset = np.round(table_gamma['true_source_fov_offset'].mean().to_value(), decimals=1)
-    fov_offset_bins = u.Quantity([mean_fov_offset - 0.1, mean_fov_offset + 0.1], u.deg)
+    hdus = fits.HDUList([fits.PrimaryHDU(), ])
 
     with np.errstate(invalid='ignore', divide='ignore'):
 
@@ -534,14 +549,6 @@ def create_irf(
     # Create a background HDU:
     if not only_gamma_mc:
         logger.info('Creating a background HDU...')
-
-        bkg_fov_offset_bins = np.linspace(
-            config_irf['bkg_fov_offset_bins']['start'],
-            config_irf['bkg_fov_offset_bins']['stop'],
-            config_irf['bkg_fov_offset_bins']['n_bins'] + 1,
-        )
-
-        bkg_fov_offset_bins = u.Quantity(bkg_fov_offset_bins, u.m)
 
         bkg2d = background_2d(
             events=table_bkg,
