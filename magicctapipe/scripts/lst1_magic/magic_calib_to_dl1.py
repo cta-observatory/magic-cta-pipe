@@ -152,12 +152,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         unsuitable_mask = None
 
         tel_position = subarray.positions[tel_id]
-        focal_length = subarray.tel[tel_id].optics.equivalent_focal_length
-
-        camera_frame = CameraFrame(
-            rotation=camera_geom.cam_rotation,
-            focal_length=focal_length,
-        )
+        camera_frame = subarray.tel[tel_id].camera.geometry.frame
 
     else:
         pedestal_type = config_cleaning.pop('pedestal_type')
