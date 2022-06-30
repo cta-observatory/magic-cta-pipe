@@ -33,11 +33,14 @@ import warnings
 import numpy as np
 from pathlib import Path
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord
-from astropy.coordinates.angle_utilities import angular_separation
+from astropy.coordinates import (
+    AltAz,
+    SkyCoord,
+    angular_separation,
+)
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core import Container, Field
-from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from ctapipe.coordinates import TelescopeFrame
 from ctapipe.image import (
     number_of_islands,
     hillas_parameters,
