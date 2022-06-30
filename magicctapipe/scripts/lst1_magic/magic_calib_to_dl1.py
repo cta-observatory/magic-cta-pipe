@@ -8,10 +8,13 @@ It saves only the events that all the DL1 parameters are successfully reconstruc
 The telescope IDs are reset to the following ones for the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-When an input is real data, the script searches for all the subrun files belonging to the same observation ID
-and stored in the same directory as an input subrun file. Then it reads drive reports from the files and uses the information
-to reconstruct the telescope pointing direction. Thus, it is best to store all the files in the same directory.
-If the "--process-run" argument is given, it not only reads drive reports but also processes all the events of the subrun files at once.
+When an input is real data, the script searches for all the subrun files belonging to
+the same observation ID and stored in the same directory as an input subrun file.
+Then it reads drive reports from the files and uses the information to reconstruct the telescope pointing direction.
+Thus, it is best to store all the files in the same directory.
+
+If the "--process-run" argument is given, it not only reads drive reports
+but also processes all the events of the subrun files at once.
 
 Usage:
 $ python magic_calib_to_dl1.py
