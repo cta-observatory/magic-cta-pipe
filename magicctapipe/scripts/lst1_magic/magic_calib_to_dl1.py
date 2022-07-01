@@ -124,10 +124,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         If True, it processes the events of all the subrun files at once
     """
 
-    config_cleaning = config['MAGIC']['magic_clean']
-
-    logger.info('\nConfiguration for the image cleaning:')
-    logger.info(config_cleaning)
+    logger.info(f'\nProcess run: {process_run}')
 
     # Load the input file:
     logger.info('\nLoading the input file:')
@@ -143,41 +140,39 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info(f'Telescope ID: {tel_id}')
     logger.info(f'Is simulation: {is_simulation}')
 
+    if process_run:
+        logger.info(f'\nProcess the following data:')
+        for root_file in event_source.file_list:
+            logger.info(root_file)
+
+    if not is_simulation:
+        time_diffs = event_source.event_time_diffs
+
     subarray = event_source.subarray
     camera_geom = subarray.tel[tel_id].camera.geometry
 
     if is_simulation:
-
-        if config_cleaning['find_hotpixels'] is not False:
-            logger.warning('\nHot pixels do not exist in a simulation. Setting the "find_hotpixels" option to False...')
-            config_cleaning.update({'find_hotpixels': False})
-
-        unsuitable_mask = None
-
         tel_position = subarray.positions[tel_id]
-        camera_frame = subarray.tel[tel_id].camera.geometry.frame
-
-    else:
-        pedestal_type = config_cleaning.pop('pedestal_type')
-
-        if pedestal_type not in pedestal_types:
-            raise KeyError(f'Unknown pedestal type "{pedestal_type}".')
-
-        i_ped_type = np.where(np.array(pedestal_types) == pedestal_type)[0][0]
-
-        if config_cleaning['find_hotpixels'] == 'auto':
-            logger.info('\nSetting the "find_hotpixels" option to True...')
-            config_cleaning.update({'find_hotpixels': True})
-
-        if process_run:
-            logger.info(f'\nProcess the following data (process_run = True):')
-            for root_file in event_source.file_list:
-                logger.info(root_file)
-
-        time_diffs = event_source.event_time_diffs
+        camera_frame = camera_geom.frame
 
     # Configure the MAGIC image cleaning:
-    magic_clean = MAGICClean(camera_geom, config_cleaning)
+    logger.info('\nMAGIC image cleaning:')
+
+    config_clean = config['MAGIC']['magic_clean']
+
+    if is_simulation and (config_clean['find_hotpixels'] is not False):
+        logger.warning('Hot pixels do not exist in a simulation. Setting the "find_hotpixels" option to False...')
+        config_clean.update({'find_hotpixels': False})
+
+    logger.info(config_clean)
+
+    if config_clean['find_hotpixels']:
+        pedestal_type = config_clean.pop('pedestal_type')
+        i_ped_type = np.where(np.array(pedestal_types) == pedestal_type)[0][0]
+    else:
+        unsuitable_mask = None
+
+    magic_clean = MAGICClean(camera_geom, config_clean)
 
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -199,8 +194,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     # Start processing the events:
     logger.info('\nProcessing the events...')
 
-    n_events_skipped = 0
-
     with HDF5TableWriter(output_file, group_name='events', mode='w') as writer:
 
         for event in event_source:
@@ -208,14 +201,16 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             if event.count % 100 == 0:
                 logger.info(f'{event.count} events')
 
-            if not is_simulation:
+            # Apply the image cleaning:
+            image = event.dl1.tel[tel_id].image
+            peak_time = event.dl1.tel[tel_id].peak_time
+
+            if config_clean['find_hotpixels']:
                 dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
                 badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
                 unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
-            # Apply the image cleaning:
-            signal_pixels, image, peak_time = magic_clean.clean_image(event.dl1.tel[tel_id].image,
-                                                                      event.dl1.tel[tel_id].peak_time, unsuitable_mask)
+            signal_pixels, image, peak_time = magic_clean.clean_image(image, peak_time, unsuitable_mask)
 
             image_cleaned = image.copy()
             image_cleaned[~signal_pixels] = 0
@@ -229,7 +224,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             if n_pixels == 0:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                'Could not survive the image cleaning. Skipping.')
-                n_events_skipped += 1
                 continue
 
             # Try to compute the Hillas parameters:
@@ -238,7 +232,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                'Hillas parameters computation failed. Skipping.')
-                n_events_skipped += 1
                 continue
 
             # Try to compute the timing parameters:
@@ -248,7 +241,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                'Timing parameters computation failed. Skipping.')
-                n_events_skipped += 1
                 continue
 
             # Try to compute the leakage parameters:
@@ -257,7 +249,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             except:
                 logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
                                'Leakage parameters computation failed. Skipping.')
-                n_events_skipped += 1
                 continue
 
             if is_simulation:
@@ -344,9 +335,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             writer.write('parameters', (event_info, hillas_params, timing_params, leakage_params))
 
         n_events_processed = event.count + 1
-
         logger.info(f'\nIn total {n_events_processed} events are processed.')
-        logger.info(f'({n_events_skipped} events are skipped)')
 
     # Reset the telescope IDs of the subarray descriptions:
     tel_positions = {
