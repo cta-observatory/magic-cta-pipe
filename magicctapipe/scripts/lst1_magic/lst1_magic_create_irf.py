@@ -371,7 +371,7 @@ def create_irf(
 
     table_gamma, sim_info_gamma = load_dl2_data_file(input_file_gamma, quality_cuts, irf_type, dl2_weight)
 
-    if sim_info_gamma.viewcone.value != 0.0:
+    if sim_info_gamma.viewcone.value > 1.0:
         logger.info('\nHave not yet implemented functions to create diffuse IRFs. Exiting.')
         sys.exit()
 
@@ -592,7 +592,7 @@ def create_irf(
     # Save the data in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    regex = r'dl2_gamma_(\S+)_run.*'
+    regex = r'dl2_(\S+)_run.*'
     file_name = Path(input_file_gamma).name
 
     if re.fullmatch(regex, file_name):

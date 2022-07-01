@@ -185,8 +185,8 @@ create_irf:
 
     energy_bins:
         start: 0.01   # unit: [TeV]
-        stop: 100   # unit: [TeV]
-        n_bins: 20   # number of bins in log space
+        stop: 1000   # unit: [TeV]
+        n_bins: 25   # number of bins in log space
 
     migration_bins:
         start: 0.2
