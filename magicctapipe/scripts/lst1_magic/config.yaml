@@ -217,3 +217,4 @@ dl2_to_dl3:
     source_name: 'Crab'
     source_ra: null   # used when the source name is null
     source_dec: null   # used when the source name is null
+    interpolation_method: 'nearest' # 'nearest' - no interpolation (closest point taken), 'linear', 'cubic' - interpolation
