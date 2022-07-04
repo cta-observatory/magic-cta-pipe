@@ -1,0 +1,11 @@
+magic-cta-pipe-input:
+  MCP-path: "/remote/ceph/group/magic/MAGIC-LST/Data/MAGIC/CrabNebula/MCP/2020_12_16/dl1_stereo/dl1_stereo_MAGIC.Run05093711.h5"
+MARS-input:
+  MARS-path: "./20201216_05093711_S_CrabNebula-W0.40+035.root"
+Params: ["width_M1", "width_M2", "length_M1", "length_M2", "size_M1", "size_M2", "delta_M1", "delta_M2", "cogx_M1", "cogx_M2", 
+  "cogy_M1", "cogy_M2", "corex", "corey", "az", "zd", "hmax", "impact_M1", "impact_M2", "slope_M1", "slope_M2"]
+  #"width_M1", "width_M2", "length_M1", "length_M2", "size_M1", "size_M2", "delta_M1", "delta_M2", "cogx_M1", "cogx_M2", 
+  #"cogy_M1", "cogy_M2", "corex", "corey", "az", "zd", "hmax", "impact_M1", "impact_M2"
+Output_paths:
+  file_output_directory: "." #"magicctapipe/scripts/mars/tests/"
+  image_output_directory: "." #"magicctapipe/scripts/mars/tests/"

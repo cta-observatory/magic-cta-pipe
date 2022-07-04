@@ -49,13 +49,13 @@ mcp_params = {
 }
 
 scale_factors = { 
-	"length_M1" : 1000., "length_M2" : 1000., 
-	"width_M1" : 1000., "width_M2" : 1000.,
-	"size_M1" : 1., "size_M2" : 1., 
-	"slope_M1" : 1., "slope_M2" : 1., 
+	"length_M1" : 1000./1.0713, "length_M2" : 1000./1.0713, 
+	"width_M1" : 1000./1.0713, "width_M2" : 1000./1.0713,
+	"size_M1" : 1./1.0713, "size_M2" : 1.*1.0713, 
+	"slope_M1" : 1./1.0713, "slope_M2" : 1.*1.0713, 
     "delta_M1" : (math.pi*2.0)/360., "delta_M2" : (math.pi*2.0)/360.,
-	"cogx_M1" : -1000., "cogx_M2" : -1000., 
-	"cogy_M1" : -1000., "cogy_M2" : -1000., 
+	"cogx_M1" : -1000./1.0713, "cogx_M2" : -1000./1.0713, 
+	"cogy_M1" : -1000./1.0713, "cogy_M2" : -1000./1.0713, 
 	"slope_M1" : 0.001, "slope_M2" : 0.001, 
 	"leakage_M1" : 1., "leakage_M2" : 1.,
 	"hmax" : 100.,
