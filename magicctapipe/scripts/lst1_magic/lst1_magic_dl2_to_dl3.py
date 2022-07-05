@@ -450,7 +450,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex = r'dl2_(\S+)\.h5'
-    file_name = Path(input_file_dl2).resolve().name
+    file_name = Path(input_file_dl2).name
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]

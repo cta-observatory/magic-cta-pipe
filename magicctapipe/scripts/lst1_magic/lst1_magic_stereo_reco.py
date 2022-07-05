@@ -267,7 +267,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only=False):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex = r'dl1_(\S+)\.h5'
-    file_name = Path(input_file).resolve().name
+    file_name = Path(input_file).name
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]

@@ -125,7 +125,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
     for input_file in input_files:
 
-        file_name = Path(input_file).resolve().name
+        file_name = Path(input_file).name
 
         if re.fullmatch(regex_run, file_name):
             parser = re.findall(regex_run, file_name)[0]

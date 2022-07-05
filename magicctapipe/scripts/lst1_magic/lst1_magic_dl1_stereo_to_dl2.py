@@ -222,7 +222,7 @@ def dl1_stereo_to_dl2(input_file, input_dir_rfs, output_dir):
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex = r'dl1_stereo_(\S+)\.h5'
-    file_name = Path(input_file).resolve().name
+    file_name = Path(input_file).name
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]
