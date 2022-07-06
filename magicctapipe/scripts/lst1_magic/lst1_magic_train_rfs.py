@@ -2,15 +2,15 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script trains energy, direction regressors and event classifiers with input DL1-stereo data.
 The RFs are currently trained per telescope combination and per telescope type.
 When training event classifiers, the number of gamma MC or background samples is automatically adjusted
 so that the RFs are trained with the same number of gamma MC and background samples.
 
-When running the script, please specify the type of RFs that you want to train by giving
+When running the script, please specify the type of RFs that will be trained by giving
 "--train-energy", "--train-direction" or "--train-classifier" arguments.
+
+If the "--use-unsigned" argument is given, the RFs will be trained with unsigned features.
 
 Usage:
 $ python lst1_magic_train_rfs.py
@@ -21,6 +21,7 @@ $ python lst1_magic_train_rfs.py
 (--train-energy)
 (--train-direction)
 (--train-classifier)
+(--use-unsigned)
 """
 
 import time
@@ -66,7 +67,7 @@ __all__ = [
 ]
 
 
-def load_train_data_file(input_file, features, true_event_class=None):
+def load_train_data_file(input_file, true_event_class=None):
     """
     Loads an input DL1-stereo data file for training samples
     and separates the events per telescope combination.
@@ -75,8 +76,6 @@ def load_train_data_file(input_file, features, true_event_class=None):
     ----------
     input_file: str
         Path to an input DL1-stereo data file
-    features: list
-        Parameters used for training RFs
     true_event_class: int
         True event class of input events
 
@@ -103,8 +102,6 @@ def load_train_data_file(input_file, features, true_event_class=None):
     for tel_combo, tel_ids in tel_combinations.items():
 
         df_events = event_data.query(f'(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})').copy()
-        df_events.dropna(subset=features, inplace=True)
-
         df_events['multiplicity'] = df_events.groupby(grouped_by).size()
         df_events.query(f'multiplicity == {len(tel_ids)}', inplace=True)
 
@@ -119,7 +116,7 @@ def load_train_data_file(input_file, features, true_event_class=None):
 
 def check_feature_importance(estimator):
     """
-    Checks the feature importance of trained RFs:
+    Checks the feature importance of trained RFs.
 
     Parameters
     ----------
@@ -161,8 +158,8 @@ def get_events_at_random(event_data, n_events):
         Pandas data frame of the events randomly extracted
     """
 
-    group_size = event_data.groupby(grouped_by).size()
-    indices = random.sample(range(len(group_size)), n_events)
+    group = event_data.groupby(grouped_by).size()
+    indices = random.sample(range(len(group)), n_events)
 
     data_selected = pd.DataFrame()
 
@@ -179,7 +176,12 @@ def get_events_at_random(event_data, n_events):
     return data_selected
 
 
-def train_energy_regressor(input_file, output_dir, config):
+def train_energy_regressor(
+    input_file,
+    output_dir,
+    config,
+    use_unsigned_features=False,
+):
     """
     Trains energy regressors with input gamma MC DL1-stereo data.
 
@@ -191,22 +193,28 @@ def train_energy_regressor(input_file, output_dir, config):
         Path to a directory where to save trained RFs
     config: dict
         Configuration for the LST-1 + MAGIC analysis
+    use_unsigned_features: bool
+        If True, it uses unsigned features for training RFs
     """
 
-    config_rf = config['energy_regressor']
-
-    logger.info('\nConfiguration for training energy regressors:')
-    for key, value in config_rf.items():
-        logger.info(f'{key}: {value}')
+    logger.info(f'\nUse unsigned features: {use_unsigned_features}')
 
     # Load the input file:
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    data_train = load_train_data_file(input_file, config_rf['features'])
+    data_train = load_train_data_file(input_file)
 
     # Configure the energy regressor:
-    energy_regressor = EnergyRegressor(config_rf['features'], config_rf['settings'])
+    config_rf = config['energy_regressor']
+
+    logger.info('\nRF settings:')
+    logger.info(config_rf['settings'])
+
+    logger.info('\nFeatures:')
+    logger.info(config_rf['features'])
+
+    energy_regressor = EnergyRegressor(config_rf['features'], config_rf['settings'], use_unsigned_features)
 
     # Train the regressors per telescope combination:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -219,14 +227,23 @@ def train_energy_regressor(input_file, output_dir, config):
         logger.info('\nFeature importance:')
         check_feature_importance(energy_regressor)
 
-        output_file = f'{output_dir}/energy_regressors_{tel_combo}.joblib'
+        if use_unsigned_features:
+            output_file = f'{output_dir}/energy_regressors_{tel_combo}_unsigned.joblib'
+        else:
+            output_file = f'{output_dir}/energy_regressors_{tel_combo}.joblib'
+
         energy_regressor.save(output_file)
 
         logger.info('\nOutput file:')
         logger.info(output_file)
 
 
-def train_direction_regressor(input_file, output_dir, config):
+def train_direction_regressor(
+    input_file,
+    output_dir,
+    config,
+    use_unsigned_features=False,
+):
     """
     Trains direction regressors with input gamma MC DL1-stereo data.
 
@@ -238,25 +255,36 @@ def train_direction_regressor(input_file, output_dir, config):
         Path to a directory where to save trained RFs
     config: dict
         Configuration for the LST-1 + MAGIC analysis
+    use_unsigned_features: bool
+        If True, it uses unsigned features for training RFs
     """
 
-    config_rf = config['direction_regressor']
-
-    logger.info('\nConfiguration for training direction regressors:')
-    for key, value in config_rf.items():
-        logger.info(f'{key}: {value}')
+    logger.info(f'\nUse unsigned features: {use_unsigned_features}')
 
     # Load the input file:
     logger.info('\nLoading the input file:')
     logger.info(input_file)
 
-    data_train = load_train_data_file(input_file, config_rf['features'])
+    data_train = load_train_data_file(input_file)
 
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_descriptions = subarray.tel
 
     # Configure the direction regressor:
-    direction_regressor = DirectionRegressor(config_rf['features'], config_rf['settings'])
+    config_rf = config['direction_regressor']
+
+    logger.info('\nRF settings:')
+    logger.info(config_rf['settings'])
+
+    logger.info('\nFeatures:')
+    logger.info(config_rf['features'])
+
+    direction_regressor = DirectionRegressor(
+        config_rf['features'],
+        config_rf['settings'],
+        tel_descriptions,
+        use_unsigned_features,
+    )
 
     # Train the regressors per telescope combination:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -264,19 +292,29 @@ def train_direction_regressor(input_file, output_dir, config):
     for tel_combo in data_train.keys():
 
         logger.info(f'\nTraining direction regressors for "{tel_combo}" events...')
-        direction_regressor.fit(data_train[tel_combo], tel_descriptions)
+        direction_regressor.fit(data_train[tel_combo])
 
         logger.info('\nFeature importance:')
         check_feature_importance(direction_regressor)
 
-        output_file = f'{output_dir}/direction_regressors_{tel_combo}.joblib'
+        if use_unsigned_features:
+            output_file = f'{output_dir}/direction_regressors_{tel_combo}_unsigned.joblib'
+        else:
+            output_file = f'{output_dir}/direction_regressors_{tel_combo}.joblib'
+
         direction_regressor.save(output_file)
 
         logger.info('\nOutput file:')
         logger.info(output_file)
 
 
-def train_event_classifier(input_file_gamma, input_file_bkg, output_dir, config):
+def train_event_classifier(
+    input_file_gamma,
+    input_file_bkg,
+    output_dir,
+    config,
+    use_unsigned_features=False,
+):
     """
     Trains event classifiers with input gamma MC and background DL1-stereo data.
 
@@ -290,27 +328,33 @@ def train_event_classifier(input_file_gamma, input_file_bkg, output_dir, config)
         Path to a directory where to save trained RFs
     config: dict
         Configuration for the LST-1 + MAGIC analysis
+    use_unsigned_features: bool
+        If True, it uses unsigned features for training RFs
     """
 
-    config_rf = config['event_classifier']
-
-    logger.info('\nConfiguration for training event classifiers:')
-    for key, value in config_rf.items():
-        logger.info(f'{key}: {value}')
+    logger.info(f'\nUse unsigned features: {use_unsigned_features}')
 
     # Load the input files:
     logger.info('\nLoading the input gamma MC data file:')
     logger.info(input_file_gamma)
 
-    data_gamma = load_train_data_file(input_file_gamma, config_rf['features'], event_class_gamma)
+    data_gamma = load_train_data_file(input_file_gamma, event_class_gamma)
 
     logger.info('\nLoading the input background data file:')
     logger.info(input_file_bkg)
 
-    data_bkg = load_train_data_file(input_file_bkg, config_rf['features'], event_class_bkg)
+    data_bkg = load_train_data_file(input_file_bkg, event_class_bkg)
 
     # Configure the event classifier:
-    event_classifier = EventClassifier(config_rf['features'], config_rf['settings'])
+    config_rf = config['event_classifier']
+
+    logger.info('\nRF settings:')
+    logger.info(config_rf['settings'])
+
+    logger.info('\nFeatures:')
+    logger.info(config_rf['features'])
+
+    event_classifier = EventClassifier(config_rf['features'], config_rf['settings'], use_unsigned_features)
 
     # Train the classifiers per telescope combination:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -341,7 +385,11 @@ def train_event_classifier(input_file_gamma, input_file_bkg, output_dir, config)
         logger.info('\nFeature importance:')
         check_feature_importance(event_classifier)
 
-        output_file = f'{output_dir}/event_classifiers_{tel_combo}.joblib'
+        if use_unsigned_features:
+            output_file = f'{output_dir}/event_classifiers_{tel_combo}_unsigned.joblib'
+        else:
+            output_file = f'{output_dir}/event_classifiers_{tel_combo}.joblib'
+
         event_classifier.save(output_file)
 
         logger.info('\nOutput file:')
@@ -389,6 +437,11 @@ def main():
         help='Train event classifiers.',
     )
 
+    parser.add_argument(
+        '--use-unsigned', dest='use_unsigned', action='store_true',
+        help='Use unsigned features for training RFs.',
+    )
+
     args = parser.parse_args()
 
     with open(args.config_file, 'rb') as f:
@@ -396,13 +449,13 @@ def main():
 
     # Train RFs:
     if args.train_energy:
-        train_energy_regressor(args.input_file_gamma, args.output_dir, config)
+        train_energy_regressor(args.input_file_gamma, args.output_dir, config, args.use_unsigned)
 
     if args.train_direction:
-        train_direction_regressor(args.input_file_gamma, args.output_dir, config)
+        train_direction_regressor(args.input_file_gamma, args.output_dir, config, args.use_unsigned)
 
     if args.train_classifier:
-        train_event_classifier(args.input_file_gamma, args.input_file_bkg, args.output_dir, config)
+        train_event_classifier(args.input_file_gamma, args.input_file_bkg, args.output_dir, config, args.use_unsigned)
 
     logger.info('\nDone.')
 

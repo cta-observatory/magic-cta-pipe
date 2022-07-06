@@ -8,9 +8,12 @@ import numpy as np
 import pandas as pd
 import sklearn.ensemble
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord
-from astropy.coordinates.angle_utilities import angular_separation
-from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from astropy.coordinates import (
+    AltAz,
+    SkyCoord,
+    angular_separation,
+)
+from ctapipe.coordinates import TelescopeFrame
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -29,7 +32,7 @@ class EnergyRegressor:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, features=[], settings={}):
+    def __init__(self, features=[], settings={}, use_unsigned_features=None):
         """
         Constructor of the class.
 
@@ -39,10 +42,13 @@ class EnergyRegressor:
             Parameters used for training RFs
         settings: dict
             Settings of RF regressors
+        use_unsigned_features
+            If True, it trains RFs with unsigned features
         """
 
         self.features = features
         self.settings = settings
+        self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
 
     def fit(self, event_data):
@@ -56,6 +62,11 @@ class EnergyRegressor:
         """
 
         self.telescope_rfs.clear()
+
+        event_data.dropna(subset=self.features, inplace=True)
+
+        if self.use_unsigned_features:
+            event_data[self.features] = np.abs(event_data[self.features])
 
         # Train RFs per telescope:
         tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
@@ -91,6 +102,11 @@ class EnergyRegressor:
         """
 
         reco_params = pd.DataFrame()
+
+        event_data.dropna(subset=self.features, inplace=True)
+
+        if self.use_unsigned_features:
+            event_data[self.features] = np.abs(event_data[self.features])
 
         # Apply trained RFs per telescope:
         tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
@@ -133,6 +149,7 @@ class EnergyRegressor:
         output_data = {
             'features': self.features,
             'settings': self.settings,
+            'use_unsigned_features': self.use_unsigned_features,
             'telescope_rfs': self.telescope_rfs,
         }
 
@@ -152,6 +169,7 @@ class EnergyRegressor:
 
         self.features = input_data['features']
         self.settings = input_data['settings']
+        self.use_unsigned_features = input_data['use_unsigned_features']
         self.telescope_rfs = input_data['telescope_rfs']
 
 
@@ -161,7 +179,13 @@ class DirectionRegressor:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, features=[], settings={}):
+    def __init__(
+        self,
+        features=[],
+        settings={},
+        tel_descriptions={},
+        use_unsigned_features=None,
+    ):
         """
         Constructor of the class.
 
@@ -171,13 +195,19 @@ class DirectionRegressor:
             Parameters used for training RFs
         settings: dict
             Settings of RF regressors
+        tel_descriptions: dict
+            Telescope descriptions
+        use_unsigned_features
+            If True, it trains RFs with unsigned features
         """
 
         self.features = features
         self.settings = settings
+        self.tel_descriptions = tel_descriptions
+        self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
 
-    def fit(self, event_data, tel_descriptions):
+    def fit(self, event_data):
         """
         Trains RFs per telescope.
 
@@ -185,12 +215,14 @@ class DirectionRegressor:
         ----------
         event_data: pandas.core.frame.DataFrame
             Pandas data frame of shower events
-        tel_descriptions: dict
-            Telescope descriptions
         """
 
         self.telescope_rfs.clear()
-        self.tel_descriptions = tel_descriptions
+
+        event_data.dropna(subset=self.features, inplace=True)
+
+        if self.use_unsigned_features:
+            event_data[self.features] = np.abs(event_data[self.features])
 
         # Train RFs per telescope:
         tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
@@ -227,6 +259,11 @@ class DirectionRegressor:
 
         reco_params = pd.DataFrame()
 
+        event_data.dropna(subset=self.features, inplace=True)
+
+        if self.use_unsigned_features:
+            event_data[self.features] = np.abs(event_data[self.features])
+
         # Apply trained RFs per telescope:
         tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
 
@@ -250,11 +287,7 @@ class DirectionRegressor:
             )
 
             tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
-
-            camera_frame = CameraFrame(
-                focal_length=self.tel_descriptions[tel_id].optics.equivalent_focal_length,
-                rotation=self.tel_descriptions[tel_id].camera.geometry.cam_rotation,
-            )
+            camera_frame = self.tel_descriptions[tel_id].camera.geometry.frame
 
             event_coord = SkyCoord(
                 u.Quantity(df_events['x'].to_numpy(), u.m),
@@ -359,6 +392,7 @@ class DirectionRegressor:
             'features': self.features,
             'settings': self.settings,
             'tel_descriptions': self.tel_descriptions,
+            'use_unsigned_features': self.use_unsigned_features,
             'telescope_rfs': self.telescope_rfs,
         }
 
@@ -379,6 +413,7 @@ class DirectionRegressor:
         self.features = input_data['features']
         self.settings = input_data['settings']
         self.tel_descriptions = input_data['tel_descriptions']
+        self.use_unsigned_features = input_data['use_unsigned_features']
         self.telescope_rfs = input_data['telescope_rfs']
 
 
@@ -388,7 +423,7 @@ class EventClassifier:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, features=[], settings={}):
+    def __init__(self, features=[], settings={}, use_unsigned_features=None):
         """
         Constructor of the class.
 
@@ -398,10 +433,13 @@ class EventClassifier:
             Parameters used for training RFs
         settings: dict
             Settings of RF classifiers
+        use_unsigned_features
+            If True, it trains RFs with unsigned features
         """
 
         self.features = features
         self.settings = settings
+        self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
 
     def fit(self, event_data):
@@ -415,6 +453,11 @@ class EventClassifier:
         """
 
         self.telescope_rfs.clear()
+
+        event_data.dropna(subset=self.features, inplace=True)
+
+        if self.use_unsigned_features:
+            event_data[self.features] = np.abs(event_data[self.features])
 
         # Train RFs per telescope:
         tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
@@ -450,6 +493,11 @@ class EventClassifier:
         """
 
         reco_params = pd.DataFrame()
+
+        event_data.dropna(subset=self.features, inplace=True)
+
+        if self.use_unsigned_features:
+            event_data[self.features] = np.abs(event_data[self.features])
 
         # Apply trained RFs per telescope:
         tel_ids = np.unique(event_data.index.get_level_values('tel_id'))
@@ -490,6 +538,7 @@ class EventClassifier:
         output_data = {
             'features': self.features,
             'settings': self.settings,
+            'use_unsigned_features': self.use_unsigned_features,
             'telescope_rfs': self.telescope_rfs,
         }
 
@@ -509,6 +558,7 @@ class EventClassifier:
 
         self.features = input_data['features']
         self.settings = input_data['settings']
+        self.use_unsigned_features = input_data['use_unsigned_features']
         self.telescope_rfs = input_data['telescope_rfs']
 
 
