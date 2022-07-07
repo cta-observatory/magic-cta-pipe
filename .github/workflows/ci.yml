@@ -46,6 +46,8 @@ jobs:
         # need to use a login shell for the conda setup to work
         shell: bash -leo pipefail {0}
         run: |
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate ci
           pyflakes magicctapipe
 
       #- name: Download test data
