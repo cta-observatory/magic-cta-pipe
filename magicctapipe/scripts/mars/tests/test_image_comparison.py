@@ -1,6 +1,7 @@
 from image_comparison import image_comparison
 from pathlib import Path
 from pkg_resources import resource_filename
+import yaml
 
 test_data = Path(os.getenv('MAGIC_TEST_DATA', 'test_data')).absolute()
 test_calibrated_real_dir = test_data / 'real/calibrated'
