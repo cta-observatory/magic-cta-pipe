@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import pandas as pd
 from astropy import units as u
+from astropy.time import Time
 from astropy.coordinates import AltAz, SkyCoord, EarthLocation
 from astropy.coordinates.builtin_frames import SkyOffsetFrame
 
@@ -73,7 +74,7 @@ def calculate_mean_direction(lon, lat, weights=None):
     lon: pandas.core.series.Series
         Longitude in a spherical coordinate
     lat: pandas.core.series.Series
-        Latitude in a spherical coodinate
+        Latitude in a spherical coordinate
     weights: pandas.core.series.Series
         Weights applied when calculating the mean direction
 
@@ -307,15 +308,16 @@ def save_pandas_to_table(event_data, output_file, group_name, table_name, mode='
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
 
 
-def get_dl2_mean(event_data):
+def get_dl2_mean(event_data, weight=None):
     """
-    Calculates the mean of the DL2 parameters
-    weighted by the uncertainties of RF estimations.
+    Calculates the mean of the tel-wise DL2 parameters.
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of the DL2 parameters
+    weight: str
+        Type of the weight for the tel-wise parameters
 
     Returns
     -------
@@ -324,25 +326,46 @@ def get_dl2_mean(event_data):
     """
 
     is_simulation = ('true_energy' in event_data.columns)
-    group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
+
+    if weight == None:
+        gammaness_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
+        energy_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
+        direction_weights = pd.Series(np.repeat(1, len(event_data)), index=event_data.index)
+
+    elif weight == 'var':
+        gammaness_weights = 1 / event_data['gammaness_var']
+        energy_weights = 1 / event_data['reco_energy_var']
+        direction_weights = 1 / event_data['reco_disp_var']
+
+    elif weight == 'intensity':
+        gammaness_weights = event_data['intensity']
+        energy_weights = event_data['intensity']
+        direction_weights = event_data['intensity']
+
+    else:
+        RuntimeError(f'Unknown weight type "{weight}".')
 
     # Compute the mean of the gammaness:
-    gammaness_mean = group_mean['gammaness']
+    weighted_gammaness = event_data['gammaness'] * gammaness_weights
+
+    gammaness_weights_sum = gammaness_weights.groupby(['obs_id', 'event_id']).sum()
+    weighted_gammaness_sum = weighted_gammaness.groupby(['obs_id', 'event_id']).sum()
+
+    gammaness_mean = weighted_gammaness_sum / gammaness_weights_sum
 
     # Compute the mean of the reconstructed energies:
-    weights = 1 / event_data['reco_energy_err']
-    weighted_energy = np.log10(event_data['reco_energy']) * weights
+    weighted_energy = np.log10(event_data['reco_energy']) * energy_weights
 
-    weights_sum = weights.groupby(['obs_id', 'event_id']).sum()
+    energy_weights_sum = energy_weights.groupby(['obs_id', 'event_id']).sum()
     weighted_energy_sum = weighted_energy.groupby(['obs_id', 'event_id']).sum()
 
-    reco_energy_mean = 10 ** (weighted_energy_sum / weights_sum)
+    reco_energy_mean = 10 ** (weighted_energy_sum / energy_weights_sum)
 
     # Compute the mean of the reconstructed arrival directions:
     reco_az_mean, reco_alt_mean = calculate_mean_direction(
         lon=np.deg2rad(event_data['reco_az']),
         lat=np.deg2rad(event_data['reco_alt']),
-        weights=event_data['reco_disp_err'],
+        weights=direction_weights,
     )
 
     # Compute the mean of the telescope pointing directions:
@@ -350,7 +373,9 @@ def get_dl2_mean(event_data):
         lon=event_data['pointing_az'], lat=event_data['pointing_alt'],
     )
 
-    # Create a base data frame:
+    # Create a mean data frame:
+    group_mean = event_data.groupby(['obs_id', 'event_id']).mean()
+
     dl2_mean = pd.DataFrame(
         data={'combo_type': group_mean['combo_type'].to_numpy(),
               'multiplicity': group_mean['multiplicity'].to_numpy(),
@@ -369,16 +394,15 @@ def get_dl2_mean(event_data):
         dl2_mean = dl2_mean.join(mc_params)
 
     else:
-        # Compute the mean of the Ra/Dec directions:
-        reco_ra_mean, reco_dec_mean = calculate_mean_direction(
-            lon=np.deg2rad(event_data['reco_ra']),
-            lat=np.deg2rad(event_data['reco_dec']),
-            weights=event_data['reco_disp_err'],
+        # Convert the mean Alt/Az to the RA/Dec coordinate:
+        timestamps = Time(group_mean['timestamp'].to_numpy(), format='unix', scale='utc')
+
+        reco_ra_mean, reco_dec_mean = transform_altaz_to_radec(
+            alt=reco_alt_mean, az=reco_az_mean, timestamp=timestamps,
         )
 
-        pointing_ra_mean, pointing_dec_mean = calculate_mean_direction(
-            lon=np.deg2rad(event_data['pointing_ra']),
-            lat=np.deg2rad(event_data['pointing_dec']),
+        pointing_ra_mean, pointing_dec_mean = transform_altaz_to_radec(
+            alt=pointing_alt_mean, az=pointing_az_mean, timestamp=timestamps,
         )
 
         # Add the additional parameters:

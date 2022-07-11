@@ -76,8 +76,9 @@ class EventInfoContainer(Container):
     tel_id = Field(-1, 'Telescope ID')
     pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
     pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
-    time_sec = Field(-1, 'Event trigger time second')
-    time_nanosec = Field(-1, 'Event trigger time nanosecond')
+    time_sec = Field(-1, 'Event trigger time second', u.s)
+    time_nanosec = Field(-1, 'Event trigger time nanosecond', u.ns)
+    time_diff = Field(-1, 'Event trigger time difference from the previous event', u.s)
     n_pixels = Field(-1, 'Number of pixels of a cleaned image')
     n_islands = Field(-1, 'Number of islands of a cleaned image')
 
@@ -172,6 +173,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             for root_file in event_source.file_list:
                 logger.info(root_file)
 
+        time_diffs = event_source.event_time_diffs
+
     # Configure the MAGIC image cleaning:
     magic_clean = MAGICClean(camera_geom, config_cleaning)
 
@@ -180,7 +183,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     if is_simulation:
         regex = r'GA_M\d_(\S+)_\d_\d+_Y_*'
-        file_name = Path(input_file).resolve().name
+        file_name = Path(input_file).name
 
         parser = re.findall(regex, file_name)[0]
         output_file = f'{output_dir}/dl1_M{tel_id}_GA_{parser}.Run{obs_id}.h5'
@@ -311,8 +314,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 # here we set the integral and fractional parts separately as "time_sec" and "time_nanosec":
                 fractional, integral = np.modf(timestamp)
 
-                time_sec = int(np.round(integral))
-                time_nanosec = int(np.round(fractional * sec2nsec))
+                time_sec = u.Quantity(int(np.round(integral)), u.s)
+                time_nanosec = u.Quantity(int(np.round(fractional * sec2nsec)), u.ns)
+
+                time_diff = time_diffs[event.count]
 
                 # Set the event information to the container:
                 event_info = EventInfoContainer(
@@ -322,6 +327,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     pointing_az=event.pointing.tel[tel_id].azimuth,
                     time_sec=time_sec,
                     time_nanosec=time_nanosec,
+                    time_diff=time_diff,
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                 )
@@ -406,3 +412,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

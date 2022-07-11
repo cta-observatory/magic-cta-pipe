@@ -41,6 +41,8 @@ from astropy import units as u
 from astropy.time import Time
 from ctapipe.containers import EventType
 from ctapipe.instrument import SubarrayDescription
+from ctapipe.coordinates import CameraFrame
+from lstchain.reco.utils import add_delta_t_key
 from magicctapipe.utils import (
     check_tel_combination,
     save_pandas_to_table,
@@ -55,6 +57,9 @@ usec2sec = 1e-6
 sec2usec = 1e6
 
 accuracy_time = 1e-7   # final digit of a timestamp, unit: [sec]
+
+nominal_foclen_lst = 28   # unit: [m]
+effective_foclen_lst = 29.30565   # unit: [m]
 
 tel_names = {
     1: 'LST-1',
@@ -97,13 +102,16 @@ def load_lst_data_file(input_file):
 
     try:
         # Try to load DL2 data at first:
-        event_data = pd.read_hdf(input_file, key=f'dl2/event/telescope/parameters/LST_LSTCam')
+        event_data = pd.read_hdf(input_file, key='dl2/event/telescope/parameters/LST_LSTCam')
     except:
         # Load DL1 data:
-        event_data = pd.read_hdf(input_file, key=f'dl1/event/telescope/parameters/LST_LSTCam')
+        event_data = pd.read_hdf(input_file, key='dl1/event/telescope/parameters/LST_LSTCam')
 
     event_data.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     event_data.sort_index(inplace=True)
+
+    # Add the arrival time differences of consecutive events:
+    event_data = add_delta_t_key(event_data)
 
     # Exclude non-reconstructed events:
     event_data.dropna(subset=['intensity', 'time_gradient', 'alt_tel', 'az_tel'], inplace=True)
@@ -128,7 +136,8 @@ def load_lst_data_file(input_file):
 
     # Rename the column names:
     event_data.rename(
-        columns={'alt_tel': 'pointing_alt',
+        columns={'delta_t': 'time_diff',
+                 'alt_tel': 'pointing_alt',
                  'az_tel': 'pointing_az',
                  'leakage_pixels_width_1': 'pixels_width_1',
                  'leakage_pixels_width_2': 'pixels_width_2',
@@ -150,6 +159,11 @@ def load_lst_data_file(input_file):
 
     # Read the subarray description:
     subarray = SubarrayDescription.from_hdf(input_file)
+
+    if focal_length == nominal_foclen_lst:
+        # Set the effective focal length to the subarray:
+        subarray.tel[1].optics.equivalent_focal_length = u.Quantity(effective_foclen_lst, u.m)
+        subarray.tel[1].camera.geometry.frame = CameraFrame(focal_length=u.Quantity(effective_foclen_lst, u.m))
 
     return event_data, subarray
 
@@ -475,7 +489,7 @@ def event_coincidence(input_file_lst, input_dir_magic,
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     regex = r'(\S+)_LST-1\.(\S+)\.h5'
-    file_name = Path(input_file_lst).resolve().name
+    file_name = Path(input_file_lst).name
 
     if re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]
