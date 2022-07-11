@@ -50,21 +50,21 @@ jobs:
           conda activate ci
           pyflakes magicctapipe
 
-      #- name: Download test data
-      #  env:
-      #    TEST_DATA_USER: ${{ secrets.test_data_user }}
-      #    TEST_DATA_PASSWORD: ${{ secrets.test_data_password }}
-      #  run: |
-      #    chmod +x ./download_test_data.sh
-      #    ./download_test_data.sh
+      - name: Download test data
+        env:
+          TEST_DATA_USER: ${{ secrets.test_data_user }}
+          TEST_DATA_PASSWORD: ${{ secrets.test_data_password }}
+        run: |
+          chmod +x ./download_test_data.sh
+          ./download_test_data.sh
 
-      #- name: Tests
-      #  run: |
-      #    # github actions starts a new shell for each "step", so we need to
-      #    # activate our env again
-      #    source $CONDA/etc/profile.d/conda.sh
-      #    conda activate ci
-      #    coverage run -m pytest -v
-      #    coverage xml
+      - name: Tests
+        run: |
+          # github actions starts a new shell for each "step", so we need to
+          # activate our env again
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate ci
+          coverage run -m pytest -v
+          coverage xml
 
       #- uses: codecov/codecov-action@v1
