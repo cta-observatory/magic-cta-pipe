@@ -51,11 +51,11 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
 
     if "_M1_" in dataset_calibrated:
         list_image = image_comparison(
-            config_file=config_image_file, mode="use_ids_config", tel_id=1
+            config_file=config_image_file, mode="use_all", tel_id=1
         )
     else:
         list_image = image_comparison(
-            config_file=config_image_file, mode="use_ids_config", tel_id=2
+            config_file=config_image_file, mode="use_all", tel_id=2
         )
 
     assert list_image == []
