@@ -11,6 +11,7 @@ import matplotlib
 import numpy as np
 import astropy.units as u
 import matplotlib.cm as cm
+from pathlib import Path
 from matplotlib.colors import Normalize
 from ctapipe_io_magic import MAGICEventSource
 from ctapipe.visualization import CameraDisplay
@@ -70,6 +71,7 @@ def image_comparison(config_file = "config.yaml", mode = "use_ids_config", tel_i
     # load config file--------------------------------------------------------------------------------------------
     config = yaml.safe_load(open(config_file, "r"))
     out_path = config["output_files"]["file_path"]
+    Path(out_path).mkdir(exist_ok=True, parents=True)
     comparison = []
 
     # get id to compare from config file---------------------------------------------------------------------------
