@@ -39,7 +39,7 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
             "magic_cta_pipe": {"M1": dataset_calibrated, "M2": dataset_calibrated},
             "mars": dataset_images,
         },
-        "output_files": {"file_path": tmp_path},
+        "output_files": {"file_path": str(test_data / "real/test_images")},
         "event_list": [1961, 1962, 1964, 1965, 2001],
         "save_only_when_differences": True,
     }
