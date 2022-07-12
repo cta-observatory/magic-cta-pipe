@@ -8,6 +8,8 @@ import pytest
 
 test_data = Path(os.getenv('MAGIC_TEST_DATA', 'test_data')).absolute()
 test_calibrated_real_dir = test_data / 'real/calibrated'
+test_superstar_real_dir = test_data / 'real/superstar'
+
 test_calibrated_mars_M1_real = [
     test_calibrated_real_dir / '20210314_M1_05095172.001_Y_CrabNebula-W0.40+035.root',
 ]
@@ -18,7 +20,7 @@ test_calibrated_mars_M2_real = [
 
 # TODO: produce these files
 test_superstar_mars_real = [
-    test_calibrated_real_dir / '20210314_05095172_S_CrabNebula-W0.40+035.root',
+    test_superstar_real_dir / '20210314_05095172_S_CrabNebula-W0.40+035.root',
 ]
 
 config = resource_filename(
