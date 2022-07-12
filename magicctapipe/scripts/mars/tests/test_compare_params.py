@@ -31,9 +31,7 @@ config_mcp_file = resource_filename(
 
 
 # TODO: check if this will consider all combinations or just one to one
-@pytest.mark.parametrize('dataset_calibrated_M1', test_calibrated_mars_M1_real)
-@pytest.mark.parametrize('dataset_calibrated_M2', test_calibrated_mars_M2_real)
-@pytest.mark.parametrize('dataset_superstar', test_superstar_mars_real)
+@pytest.mark.parametrize('dataset_calibrated_M1, dataset_calibrated_M2, dataset_superstar', [(test_calibrated_mars_M1_real[0], test_calibrated_mars_M2_real[0], test_calibrated_mars_M2_real)])
 def test_compare_hillas_stereo_params(dataset_calibrated_M1, dataset_calibrated_M2, dataset_superstar):
     from magicctapipe.scripts.lst1_magic import magic_calib_to_dl1, merge_hdf_files, stereo_reconstruction
 
