@@ -6,6 +6,11 @@ echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/cal
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/calibrated/20210314_M1_05095172.002_Y_CrabNebula-W0.40+035.root" >> test_data_real.txt
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/calibrated/20210314_M2_05095172.001_Y_CrabNebula-W0.40+035.root" >> test_data_real.txt
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/calibrated/20210314_M2_05095172.002_Y_CrabNebula-W0.40+035.root" >> test_data_real.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/images/20210314_M1_05095172.001_I_CrabNebula-W0.40+035.h5" >  test_data_real.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/images/20210314_M1_05095172.002_I_CrabNebula-W0.40+035.h5" >> test_data_real.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/images/20210314_M2_05095172.001_I_CrabNebula-W0.40+035.h5" >> test_data_real.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/images/20210314_M2_05095172.002_I_CrabNebula-W0.40+035.h5" >> test_data_real.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/real/superstar/20210314_05095172_S_CrabNebula-W0.40+035.root" >> test_data_real.txt
 
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/calibrated/GA_M1_za35to50_8_824318_Y_w0.root" >  test_data_simulated.txt
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/calibrated/GA_M1_za35to50_8_824319_Y_w0.root" >> test_data_simulated.txt
