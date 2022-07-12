@@ -157,7 +157,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         )
 
     else:
-        pedestal_type = config_cleaning.pop('pedestal_type')
+        pedestal_type = config_cleaning['pedestal_type']
 
         if pedestal_type not in pedestal_types:
             raise KeyError(f'Unknown pedestal type "{pedestal_type}".')
