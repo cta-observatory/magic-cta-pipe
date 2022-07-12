@@ -23,21 +23,22 @@ test_images_mars_real = [
     test_images_real_dir / "20210314_M2_05095172.002_I_CrabNebula-W0.40+035.h5",
 ]
 
+file_list = []
+
+for i in range(len(test_calibrated_real)):
+    file_list.append((test_calibrated_real[i], test_images_mars_real[i]))
+
 
 @pytest.mark.parametrize(
     "dataset_calibrated, dataset_images",
-    [
-        (calibrated_file, image_file)
-        for calibrated_file in test_calibrated_real
-        for image_file in test_images_mars_real
-    ],
+    file_list,
 )
 def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
 
     config_image = {
         "input_files": {
-            "magic_cta_pipe": {"M1": dataset_calibrated, "M2": dataset_calibrated},
-            "mars": dataset_images,
+            "magic_cta_pipe": {"M1": str(dataset_calibrated), "M2": str(dataset_calibrated)},
+            "mars": str(dataset_images),
         },
         "output_files": {"file_path": str(test_data / "real/test_images")},
         "event_list": [1961, 1962, 1964, 1965, 2001],
@@ -49,7 +50,7 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
     with open(config_image_file, "w") as outfile:
         yaml.dump(config_image, outfile, default_flow_style=False)
 
-    if "_M1_" in dataset_calibrated:
+    if "_M1_" in str(dataset_calibrated):
         list_image = image_comparison(
             config_file=config_image_file, mode="use_all", tel_id=1
         )
