@@ -42,14 +42,6 @@ jobs:
           pip install -e .
           git describe --tags
 
-      - name: Static codechecks
-        # need to use a login shell for the conda setup to work
-        shell: bash -leo pipefail {0}
-        run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate ci
-          pyflakes magicctapipe
-
       - name: Download test data
         env:
           TEST_DATA_USER: ${{ secrets.test_data_user }}
@@ -66,5 +58,13 @@ jobs:
           conda activate ci
           coverage run -m pytest -v
           coverage xml
+
+      - name: Static codechecks
+        # need to use a login shell for the conda setup to work
+        shell: bash -leo pipefail {0}
+        run: |
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate ci
+          pyflakes magicctapipe
 
       #- uses: codecov/codecov-action@v1
