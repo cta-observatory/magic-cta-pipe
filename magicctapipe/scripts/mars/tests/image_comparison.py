@@ -180,36 +180,9 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
                 f"{pix} pixel charge before cleaning: {original_data_images_copy[pix]}"
             )
 
-        badpixel_calculator = MAGICBadPixelsCalc(
-            is_simulation=False, camera=geometry_mcp, config=bad_pixels_config
-        )
-
-        badrmspixel_mask = badpixel_calculator.get_badrmspixel_mask(event)
-        print(f"Hot pixels: {np.where(badrmspixel_mask[tel_id-1] == True)[0]}")
-        deadpixel_mask = badpixel_calculator.get_deadpixel_mask(event)
-        # deadpixel_mask = [[],[]]
-        unsuitable_mask = np.logical_or(
-            badrmspixel_mask[tel_id - 1], deadpixel_mask[tel_id - 1]
-        )
-
-        # unsuitable_pixel_events=[]
-        # for unsuit_pix in np.where(unsuitable_mask == True)[0].tolist():
-        #     if unsuit_pix in np.where(event_image_mars > 0)[0].tolist():
-        #         if event_image_mars[unsuit_pix] == original_data_images_copy[unsuit_pix]:
-        #             print(f"Unsuitable pixel {unsuit_pix} has original charge in Event {event.index.event_id}")
-        #             unsuitable_pixel_events.append(event.index.event_id)
-        #         else:
-        #             print(f"Interpolated value innnns used for unsuitable pixel {unsuit_pix} in Event {event.index.event_id}!")
-        #             continue
-
-        # badrmspixel_mask = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
-        # deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
-        # unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
-        # bad_pixel_indices = [i for i, x in enumerate(badrmspixel_mask) if x]
-        # dead_pixel_indices = [i for i, x in enumerate(deadpixel_mask) if x]
-        # bad_not_dead_pixels_test = [i for i in bad_pixel_indices if i not in dead_pixel_indices]
-
-        # print(f"Not suitable pixels: {np.where(unsuitable_mask == True)}")
+        badrmspixel_mask = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
+        deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
+        unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
 
         clean_mask, calibrated_data_images, event_pulse_time = magic_clean.clean_image(
             original_data_images_copy, event_pulse_time, unsuitable_mask=unsuitable_mask
