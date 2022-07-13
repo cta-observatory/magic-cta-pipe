@@ -51,6 +51,7 @@ jobs:
           ./download_test_data.sh
 
       - name: Tests
+        shell: bash -leo pipefail {0}
         run: |
           # github actions starts a new shell for each "step", so we need to
           # activate our env again
