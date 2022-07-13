@@ -37,7 +37,10 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
 
     config_image = {
         "input_files": {
-            "magic_cta_pipe": {"M1": str(dataset_calibrated), "M2": str(dataset_calibrated)},
+            "magic_cta_pipe": {
+                "M1": str(dataset_calibrated),
+                "M2": str(dataset_calibrated),
+            },
             "mars": str(dataset_images),
         },
         "output_files": {"file_path": str(test_data / "real/test_images")},
@@ -52,11 +55,11 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
 
     if "_M1_" in str(dataset_calibrated):
         list_image = image_comparison(
-            config_file=config_image_file, mode="use_all", tel_id=1
+            config_file=config_image_file, mode="use_all", tel_id=1, max_events=20
         )
     else:
         list_image = image_comparison(
-            config_file=config_image_file, mode="use_all", tel_id=2
+            config_file=config_image_file, mode="use_all", tel_id=2, max_events=20
         )
 
     assert list_image == []

@@ -51,7 +51,7 @@ bad_pixels_config = dict(
 
 
 # define the image comparison function
-def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1):
+def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1, max_events=None):
     """
     This tool compares the camera images of events processed by MARS and the magic-cta-pipeline.
     The output is a png file with the camera images and a hdf5 file that contains the pixel information.
@@ -82,6 +82,9 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1)
             ids_to_compare = ids_to_compare.tolist()
     elif mode == "use_ids_config":
         ids_to_compare = config["event_list"]
+
+    if max_events is not None:
+        ids_to_compare = ids_to_compare[:max_events]
 
     print(len(ids_to_compare), "events will be compared", ids_to_compare)
 
