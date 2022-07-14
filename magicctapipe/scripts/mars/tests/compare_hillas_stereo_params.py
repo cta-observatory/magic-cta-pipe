@@ -92,8 +92,8 @@ def compare_hillas_stereo_parameters(config_file="config.yaml", params_key="even
     # apply cuts
     # 50<Size<50000, leakage<0.15, impact<120
     df_mars_cut = df_mars.loc[(df_mars["mars_size_M1"] < 50000) & (df_mars["mars_size_M2"] < 50000) & (df_mars["mars_size_M1"] > 50) & \
-                            (df_mars["mars_size_M2"] > 50) & (df_mars["mars_leakage_M1"] < 0.15) & (df_mars["mars_leakage_M2"] < 0.15) & \
-                            (df_mars["mars_impact_M1"] < 12000) & (df_mars["mars_impact_M2"] < 12000)]
+                            (df_mars["mars_size_M2"] > 50) & (df_mars["mars_leakage_M1"] < 0.15) & (df_mars["mars_leakage_M2"] < 0.15)]
+                            #(df_mars["mars_impact_M1"] < 12000) & (df_mars["mars_impact_M2"] < 12000)]
     # --------------------------
     # compare hillas and stereo parameters
     # --------------------------
