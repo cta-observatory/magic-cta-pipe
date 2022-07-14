@@ -8,6 +8,8 @@ import pytest
 test_data = Path(os.getenv("MAGIC_TEST_DATA", "test_data")).absolute()
 test_calibrated_real_dir = test_data / "real/calibrated"
 test_superstar_real_dir = test_data / "real/superstar"
+test_calibrated_simulated_dir = test_data / "simulated/calibrated"
+test_superstar_simulated_dir = test_data / "simulated/superstar"
 
 test_calibrated_mars_M1_real = [
     test_calibrated_real_dir / "20210314_M1_05095172.001_Y_CrabNebula-W0.40+035.root",
@@ -21,16 +23,45 @@ test_superstar_mars_real = [
     test_superstar_real_dir / "20210314_05095172_S_CrabNebula-W0.40+035.root",
 ]
 
+test_calibrated_mars_M1_simulated = [
+    test_calibrated_simulated_dir / "GA_M1_za35to50_8_824318_Y_w0.root",
+    test_calibrated_simulated_dir / "GA_M1_za35to50_8_824319_Y_w0.root",
+]
+
+test_calibrated_mars_M2_simulated = [
+    test_calibrated_simulated_dir / "GA_M2_za35to50_8_824318_Y_w0.root",
+    test_calibrated_simulated_dir / "GA_M2_za35to50_8_824319_Y_w0.root",
+]
+
+test_superstar_mars_simulated = [
+    test_superstar_simulated_dir / "GA_za35to50_8_824318_S_w0.root",
+    test_superstar_simulated_dir / "GA_za35to50_8_824319_S_w0.root",
+]
+
+file_list = []
+
+for i in range(len(test_calibrated_mars_M1_simulated)):
+    file_list.append(
+        (
+            test_calibrated_mars_M1_simulated[i],
+            test_calibrated_mars_M2_simulated[i],
+            test_superstar_mars_simulated[i],
+        )
+    )
+
+for i in range(len(test_calibrated_mars_M1_real)):
+    file_list.append(
+        (
+            test_calibrated_mars_M1_real[i],
+            test_calibrated_mars_M2_real[i],
+            test_superstar_mars_real[i],
+        )
+    )
+
 
 @pytest.mark.parametrize(
     "dataset_calibrated_M1, dataset_calibrated_M2, dataset_superstar",
-    [
-        (
-            test_calibrated_mars_M1_real[0],
-            test_calibrated_mars_M2_real[0],
-            test_superstar_mars_real[0],
-        )
-    ],
+    file_list,
 )
 def test_compare_hillas_stereo_params(
     dataset_calibrated_M1, dataset_calibrated_M2, dataset_superstar, tmp_path

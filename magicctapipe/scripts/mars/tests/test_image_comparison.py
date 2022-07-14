@@ -8,6 +8,8 @@ import pytest
 test_data = Path(os.getenv("MAGIC_TEST_DATA", "test_data")).absolute()
 test_calibrated_real_dir = test_data / "real/calibrated"
 test_images_real_dir = test_data / "real/images"
+test_calibrated_simulated_dir = test_data / "simulated/calibrated"
+test_images_simulated_dir = test_data / "simulated/images"
 
 test_calibrated_real = [
     test_calibrated_real_dir / "20210314_M1_05095172.001_Y_CrabNebula-W0.40+035.root",
@@ -23,7 +25,24 @@ test_images_mars_real = [
     test_images_real_dir / "20210314_M2_05095172.002_I_CrabNebula-W0.40+035.h5",
 ]
 
+test_calibrated_simulated = [
+    test_calibrated_simulated_dir / "GA_M1_za35to50_8_824318_Y_w0.root",
+    test_calibrated_simulated_dir / "GA_M1_za35to50_8_824319_Y_w0.root",
+    test_calibrated_simulated_dir / "GA_M2_za35to50_8_824318_Y_w0.root",
+    test_calibrated_simulated_dir / "GA_M2_za35to50_8_824319_Y_w0.root",
+]
+
+test_images_mars_simulated = [
+    test_images_simulated_dir / "GA_M1_za35to50_8_824318_I_w0.h5",
+    test_images_simulated_dir / "GA_M1_za35to50_8_824319_I_w0.h5",
+    test_images_simulated_dir / "GA_M2_za35to50_8_824318_I_w0.h5",
+    test_images_simulated_dir / "GA_M2_za35to50_8_824319_I_w0.h5",
+]
+
 file_list = []
+
+for i in range(len(test_calibrated_simulated)):
+    file_list.append((test_calibrated_simulated[i], test_images_mars_simulated[i]))
 
 for i in range(len(test_calibrated_real)):
     file_list.append((test_calibrated_real[i], test_images_mars_real[i]))
