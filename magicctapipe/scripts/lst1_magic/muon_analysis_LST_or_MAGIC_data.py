@@ -36,7 +36,7 @@ pedestal_types = [
 ]
 
 
-def magic_muons_from_cal(input_file, output_dir, config, process_run):
+def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path):
     """
     Process all event a single telescope MAGIC calibrated data run or subrun to perform the muon ring analysis.
 
@@ -46,6 +46,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run):
     output_dir:
     config:
     process_run:
+    plots_path:
 
     """
 
@@ -120,7 +121,9 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run):
                               subarray=subarray,
                               r1_dl1_calibrator_for_muon_rings=None,
                               good_ring_config=muon_config,
-                              data_type='obs')
+                              data_type='obs',
+                              plot_rings=(plots_path is not None),
+                              plots_path=plots_path)
 
     table = Table(muon_parameters)
     table.write(output_file, format='fits', overwrite=True)
@@ -151,13 +154,18 @@ def main():
         help='Processes all the sub-run files of the same observation ID at once.',
     )
 
+    parser.add_argument(
+        '--plots_path', '-pp', dest='plots_path', type=str, default=None,
+        help='If provided, muon rings will be plotted at this destination'
+    )
+
     args = parser.parse_args()
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
     # Process the input data:
-    magic_muons_from_cal(args.input_file, args.output_dir, config, args.process_run)
+    magic_muons_from_cal(args.input_file, args.output_dir, config, args.process_run, args.plots_path)
 
     logger.info('\nDone.')
 
