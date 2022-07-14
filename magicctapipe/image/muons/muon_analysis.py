@@ -31,6 +31,10 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
         Minimum pixel brightness used to search for the waveform maximum time
     data_type: string
         'obs' or 'mc'
+    plot_rings: `bool`
+        If True, muon ring plots are produced
+    plots_path: string
+        Destination of plotted muon rings
 
     """
     if data_type == 'obs':
