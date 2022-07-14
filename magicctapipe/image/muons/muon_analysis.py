@@ -8,7 +8,7 @@ __all__ = [
 
 def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, image, subarray,
                           r1_dl1_calibrator_for_muon_rings, good_ring_config, event_time=np.nan,
-                          min_pe_for_muon_t_calc=10., data_type='mc'):
+                          min_pe_for_muon_t_calc=10., data_type='mc', plot_rings=False, plots_path='./'):
     """
 
     Parameters
@@ -72,9 +72,7 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
             muonpars = \
                 analyze_muon_event(subarray, telescope_id, event_id,
                                    image, good_ring_config,
-                                   plot_rings=False, plots_path='')
-                                  #plot_rings=True, plots_path='../data/real'+telescope_name+'/')
-            #           (test) plot muon rings as png files
+                                   plot_rings=plot_rings, plots_path=plots_path)
 
             if r1_dl1_calibrator_for_muon_rings is not None:
                 # Now we want to obtain the waveform sample (in HG & LG) at which the ring light peaks:
