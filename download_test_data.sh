@@ -19,6 +19,14 @@ echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulate
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/calibrated/GA_M2_za35to50_8_824318_Y_w0.root" >> test_data_simulated.txt
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/calibrated/GA_M2_za35to50_8_824319_Y_w0.root" >> test_data_simulated.txt
 
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/images/GA_M1_za35to50_8_824318_I_w0.h5" >  test_data_images_simulated.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/images/GA_M1_za35to50_8_824319_I_w0.h5" >> test_data_images_simulated.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/images/GA_M2_za35to50_8_824318_I_w0.h5" >> test_data_images_simulated.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/images/GA_M2_za35to50_8_824319_I_w0.h5" >> test_data_images_simulated.txt
+
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/superstar/GA_za35to50_8_824318_S_w0.root" > test_data_superstar_simulated.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/superstar/GA_za35to50_8_824319_S_w0.root" > test_data_superstar_simulated.txt
+
 if [ -z "$TEST_DATA_USER" ]; then
     echo -n "Username: "
     read TEST_DATA_USER
@@ -75,4 +83,26 @@ if ! wget \
     echo "Problem in downloading the test data set for simulated data."
 fi
 
-rm -f test_data_real.txt test_data_simulated.txt test_data_images_real.txt test_data_superstar_real.txt
+if ! wget \
+    -i test_data_images_simulated.txt \
+    --user="$TEST_DATA_USER" \
+    --password="$TEST_DATA_PASSWORD" \
+    --no-check-certificate \
+    --no-verbose \
+    --timestamping \
+    --directory-prefix=test_data/simulated/images; then
+    echo "Problem in downloading the test data set for simulated data."
+fi
+
+if ! wget \
+    -i test_data_superstar_simulated.txt \
+    --user="$TEST_DATA_USER" \
+    --password="$TEST_DATA_PASSWORD" \
+    --no-check-certificate \
+    --no-verbose \
+    --timestamping \
+    --directory-prefix=test_data/simulated/superstar; then
+    echo "Problem in downloading the test data set for simulated data."
+fi
+
+rm -f test_data_real.txt test_data_simulated.txt test_data_images_real.txt test_data_superstar_real.txt test_data_images_simulated.txt test_data_superstar_simulated.txt
