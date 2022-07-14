@@ -3,7 +3,6 @@
 
 import yaml
 import pandas as pd
-import h5py
 import uproot
 import matplotlib.pyplot as plt
 import matplotlib
@@ -14,7 +13,6 @@ from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry, CameraDescription
 from ctapipe.io.eventseeker import EventSeeker
 from magicctapipe.image import MAGICClean
-from magicctapipe.utils import MAGICBadPixelsCalc
 from magicctapipe.scripts.mars import read_images
 
 
@@ -51,7 +49,9 @@ bad_pixels_config = dict(
 
 
 # define the image comparison function
-def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1, max_events=None):
+def image_comparison(
+    config_file="config.yaml", mode="use_ids_config", tel_id=1, max_events=None
+):
     """
     This tool compares the camera images of events processed by MARS and the magic-cta-pipeline.
     The output is a png file with the camera images and a hdf5 file that contains the pixel information.
@@ -78,7 +78,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
             ids_to_compare = mcp_file["Events"]["MRawEvtHeader.fStereoEvtNumber"].array(
                 library="np"
             )
-            # print(ids_to_compare.shape)
+            ids_to_compare = np.delete(ids_to_compare, np.where(ids_to_compare == 0)[0])
             ids_to_compare = ids_to_compare.tolist()
     elif mode == "use_ids_config":
         ids_to_compare = config["event_list"]
@@ -107,16 +107,6 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
         columns=["event_id", "tel_id", "obs_id", "image"],
     )
 
-    # get original data-----------------------------------------------------------------------------------------------
-    data_path_original = config["input_files"]["magic_cta_pipe"][f"M{tel_id}"]
-    with uproot.open(data_path_original) as input_data:
-        event_ids_original = input_data["Events"][
-            "MRawEvtHeader.fStereoEvtNumber"
-        ].array(library="np")
-        images_original = input_data["Events"]["MCerPhotEvt.fPixels.fPhot"].array(
-            library="np"
-        )
-
     # get other data----------------------------------------------------------------------------------------------------
     # we loop through the events, and only compare those that are in ids_to_compare
 
@@ -128,8 +118,6 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
     run_num = source.obs_ids[0]
 
     seeker = EventSeeker(event_source=source)
-
-    f = h5py.File(f"Image_comparison_{run_num}.h5", "a")
 
     MAGICCAM = CameraDescription.from_name("MAGICCam")
     GEOM = MAGICCAM.geometry
@@ -158,20 +146,15 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
         idx = mars_event["image"].index[0]
         event_image_mars = np.array(mars_event["image"][idx][:1039])
         clean_mask_mars = event_image_mars != 0
-        # print("shape of mars image: ", event_image_mars.shape)
-        # compare number of islands
-        # num_islands_mars, island_labels_mars = number_of_islands(geometry_mars, (np.array(event_image[:1039]) > 0))
 
         # get mcp data------------------------------------------------------------------------------
+        if source.is_simulation:
+            cleaning_config.update({"find_hotpixels": False})
+
         magic_clean = MAGICClean(geometry_mcp, cleaning_config)
         original_data_images = event.dl1.tel[tel_id].image
         original_data_images_copy = original_data_images.copy()
         event_pulse_time = event.dl1.tel[tel_id].peak_time
-
-        # print("shape of original image: ", original_data_images_copy.shape)
-
-        print(f"138 pixel charge before cleaning: {original_data_images_copy[138]}")
-        print(f"140 pixel charge before cleaning: {original_data_images_copy[140]}")
 
         neighbors_array = geometry_mcp.neighbor_matrix
 
@@ -180,13 +163,31 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
                 f"{pix} pixel charge before cleaning: {original_data_images_copy[pix]}"
             )
 
-        badrmspixel_mask = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[2]
-        deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
-        unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
+        if not source.is_simulation:
+            badrmspixel_mask = event.mon.tel[
+                tel_id
+            ].pixel_status.pedestal_failing_pixels[2]
+            deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[
+                0
+            ]
+            unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
 
-        clean_mask, calibrated_data_images, event_pulse_time = magic_clean.clean_image(
-            original_data_images_copy, event_pulse_time, unsuitable_mask=unsuitable_mask
-        )
+            (
+                clean_mask,
+                calibrated_data_images,
+                event_pulse_time,
+            ) = magic_clean.clean_image(
+                original_data_images_copy,
+                event_pulse_time,
+                unsuitable_mask=unsuitable_mask,
+            )
+        else:
+            (
+                clean_mask,
+                calibrated_data_images,
+                event_pulse_time,
+            ) = magic_clean.clean_image(original_data_images_copy, event_pulse_time)
+
         event_image_mcp = calibrated_data_images.copy()
         event_image_mcp[~clean_mask] = 0
 
@@ -214,11 +215,15 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
         charge_differences = abs(event_image_mars - event_image_mcp)
         clean_mask_pixels = charge_differences != 0
 
-        errors = False
-        if np.any(
-            charge_differences >= 0.00000001 * vmax
-        ):  # threshold for differences allowed. The difference cannot be higher than x% of the highest pixel charge
-            errors = True
+        print(np.where(clean_mask_pixels is True)[0])
+
+        if len(np.where(clean_mask_pixels is True)[0]) == 0:
+            errors = False
+        else:
+            if np.any(
+                charge_differences >= 0.00000001 * vmax
+            ):  # threshold for differences allowed. The difference cannot be higher than x% of the highest pixel charge
+                errors = True
 
         if errors:
             comparison.append(event.index.event_id)
@@ -244,7 +249,7 @@ def image_comparison(config_file="config.yaml", mode="use_ids_config", tel_id=1,
         )
         # alternatively one could also calculate the relative error with the MARS charge value
         # df_pixel["relative_error_MARS-mcp"] = np.transpose(charge_differences/event_image_mars)
-        df_pix_diff = df_pixel.loc[df_pixel["difference_MARS-mcp"] > 0]
+        # df_pix_diff = df_pixel.loc[df_pixel["difference_MARS-mcp"] > 0]
         # print(df_pix_diff)
 
         # saving the output
