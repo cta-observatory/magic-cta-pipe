@@ -72,6 +72,8 @@ def test_compare_hillas_stereo_params(
         stereo_reconstruction,
     )
 
+    from ctapipe_io_magic import MAGICEventSource
+
     params_list = [
         "width_M1",
         "width_M2",
@@ -96,19 +98,42 @@ def test_compare_hillas_stereo_params(
         "slope_M2",
     ]
 
-    config_params = {
-        "magic-cta-pipe-input": {
-            "MCP-path": str(
-                test_data / "real/dl1_stereo" / "dl1_stereo_MAGIC.Run05095172.h5"
-            )
-        },
-        "MARS-input": {"MARS-path": str(dataset_superstar)},
-        "Params": params_list,
-        "Output_paths": {
-            "file_output_directory": str(test_data / "real/test_params"),
-            "image_output_directory": str(test_data / "real/test_params"),
-        },
-    }
+    source = MAGICEventSource(
+        input_url=dataset_calibrated_M1,
+        process_run=False,
+    )
+
+    is_mc = source.is_simulation
+    run_number = source.run_numbers[0]
+
+    if is_mc:
+        config_params = {
+            "magic-cta-pipe-input": {
+                "MCP-path": str(
+                    test_data / "simulated/dl1_stereo" / f"dl1_stereo_MAGIC_GA_za35to50.Run{run_number}.h5"
+                )
+            },
+            "MARS-input": {"MARS-path": str(dataset_superstar)},
+            "Params": params_list,
+            "Output_paths": {
+                "file_output_directory": str(test_data / "simulated/test_params"),
+                "image_output_directory": str(test_data / "simulated/test_params"),
+            },
+        }
+    else:
+        config_params = {
+            "magic-cta-pipe-input": {
+                "MCP-path": str(
+                    test_data / "real/dl1_stereo" / f"dl1_stereo_MAGIC.Run0{run_number}.h5"
+                )
+            },
+            "MARS-input": {"MARS-path": str(dataset_superstar)},
+            "Params": params_list,
+            "Output_paths": {
+                "file_output_directory": str(test_data / "real/test_params"),
+                "image_output_directory": str(test_data / "real/test_params"),
+            },
+        }
 
     config_params_file = str(tmp_path / "compare_params_config.yaml")
 
@@ -157,22 +182,36 @@ def test_compare_hillas_stereo_params(
     with open(config_mcp_file, "rb") as f:
         config_mcp = yaml.safe_load(f)
 
-    magic_calib_to_dl1(dataset_calibrated_M1, test_data / "real/dl1", config_mcp, True)
-    magic_calib_to_dl1(dataset_calibrated_M2, test_data / "real/dl1", config_mcp, True)
-
-    merge_hdf_files(
-        test_data / "real/dl1",
-        output_dir=test_data / "real/dl1_merged",
-        run_wise=True,
-        subrun_wise=False,
-    )
-
-    stereo_reconstruction(
-        test_data / "real/dl1_merged" / "dl1_MAGIC.Run05095172.h5",
-        test_data / "real/dl1_stereo",
-        config_mcp,
-        magic_only=True,
-    )
+    if is_mc:
+        magic_calib_to_dl1(dataset_calibrated_M1, test_data / "simulated/dl1", config_mcp, False)
+        magic_calib_to_dl1(dataset_calibrated_M2, test_data / "simulated/dl1", config_mcp, False)
+        merge_hdf_files(
+            test_data / "simulated/dl1",
+            output_dir=test_data / "simulated/dl1_merged",
+            run_wise=True,
+            subrun_wise=False,
+        )
+        stereo_reconstruction(
+            test_data / "simulated/dl1_merged" / f"dl1_MAGIC_GA_za35to50.Run{run_number}.h5",
+            test_data / "simulated/dl1_stereo",
+            config_mcp,
+            magic_only=True,
+        )
+    else:
+        magic_calib_to_dl1(dataset_calibrated_M1, test_data / "real/dl1", config_mcp, True)
+        magic_calib_to_dl1(dataset_calibrated_M2, test_data / "real/dl1", config_mcp, True)
+        merge_hdf_files(
+            test_data / "real/dl1",
+            output_dir=test_data / "real/dl1_merged",
+            run_wise=True,
+            subrun_wise=False,
+        )
+        stereo_reconstruction(
+            test_data / "real/dl1_merged" / f"dl1_MAGIC.Run0{run_number}.h5",
+            test_data / "real/dl1_stereo",
+            config_mcp,
+            magic_only=True,
+        )
 
     list_compare_parameters = compare_hillas_stereo_parameters(
         config_file=config_params_file, params_key="events/parameters", plot_image=True

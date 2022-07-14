@@ -24,11 +24,7 @@ def compare_hillas_stereo_parameters(config_file="config.yaml", params_key="even
     """
 
     config = yaml.safe_load(open(config_file, "r"))
-    date = Path(config["MARS-input"]["MARS-path"]).name[:8]
-    subrun = int(Path(config["MARS-input"]["MARS-path"]).name[10:17])
-
-    print(date)
-    print(subrun)
+    filename_no_ext = Path(config["MARS-input"]["MARS-path"]).stem
 
     # --------------
     # read mcp data
@@ -38,7 +34,7 @@ def compare_hillas_stereo_parameters(config_file="config.yaml", params_key="even
     df_mcp = pd.read_hdf(mcp_file, key=params_key)
 
     # filter for subrun
-    df_mcp = df_mcp.loc[df_mcp["obs_id"] == subrun]
+    #df_mcp = df_mcp.loc[df_mcp["obs_id"] == subrun]
 
     print(f"Number of events before cuts {df_mcp.shape[0]}")
 
@@ -46,25 +42,25 @@ def compare_hillas_stereo_parameters(config_file="config.yaml", params_key="even
     LAT_ORM = u.Quantity(28.76177, u.deg)
     HEIGHT_ORM = u.Quantity(2199.835, u.m)
 
-    location = EarthLocation.from_geodetic(lon=LON_ORM, lat=LAT_ORM, height=HEIGHT_ORM)
-    times1 = [str(float(sec))[:-2] for sec in df_mcp['time_sec']]
-    times2 = [str(float(nano))[:-2] for nano in df_mcp['time_nanosec']]
-    times = [f"{sec}.{nanosec}" for sec, nanosec in zip(times1, times2)]
-
-    event_times = Time(times, format="unix", scale="utc")
-    source_coords = SkyCoord(ra=83.6333 * u.degree, dec=22.0133 * u.degree, frame='icrs')
-    la_palma = AltAz(location=location, obstime=event_times)
-    source_coords_altaz = source_coords.transform_to(la_palma)
-
-    theta = angular_separation(
-        lon1=u.Quantity(df_mcp['az'].to_numpy(), u.deg),
-        lat1=u.Quantity(df_mcp['alt'].to_numpy(), u.deg),
-        lon2=source_coords_altaz.az,
-        lat2=source_coords_altaz.alt,
-    )
-
-    df_mcp['theta2'] = theta.to(u.deg).value ** 2
-    df_mcp['theta'] = theta.to(u.deg).value
+    # location = EarthLocation.from_geodetic(lon=LON_ORM, lat=LAT_ORM, height=HEIGHT_ORM)
+    # times1 = [str(float(sec))[:-2] for sec in df_mcp['time_sec']]
+    # times2 = [str(float(nano))[:-2] for nano in df_mcp['time_nanosec']]
+    # times = [f"{sec}.{nanosec}" for sec, nanosec in zip(times1, times2)]
+#
+    # event_times = Time(times, format="unix", scale="utc")
+    # source_coords = SkyCoord(ra=83.6333 * u.degree, dec=22.0133 * u.degree, frame='icrs')
+    # la_palma = AltAz(location=location, obstime=event_times)
+    # source_coords_altaz = source_coords.transform_to(la_palma)
+#
+    # theta = angular_separation(
+        # lon1=u.Quantity(df_mcp['az'].to_numpy(), u.deg),
+        # lat1=u.Quantity(df_mcp['alt'].to_numpy(), u.deg),
+        # lon2=source_coords_altaz.az,
+        # lat2=source_coords_altaz.alt,
+    # )
+#
+    # df_mcp['theta2'] = theta.to(u.deg).value ** 2
+    # df_mcp['theta'] = theta.to(u.deg).value
 
     # apply cuts
     # 50<Size<50000, leakage<0.15, impact<120, theta<0.14
@@ -173,7 +169,7 @@ def compare_hillas_stereo_parameters(config_file="config.yaml", params_key="even
         if error.size <= len(df_params) * 0.001:  # percentage of the events, that is allowed to have errors bigger than the specified threshold
             errors_found = False
         else:
-            df_params.to_hdf("{}/{}_hillas_comparison.h5".format(config["Output_paths"]["file_output_directory"], subrun), f"/{par}", "a")
+            df_params.to_hdf(f'{config["Output_paths"]["file_output_directory"]}/{filename_no_ext}_hillas_comparison.h5', "a")
             errors_found = True
         comparison.append(errors_found)
 
@@ -197,9 +193,9 @@ def compare_hillas_stereo_parameters(config_file="config.yaml", params_key="even
                 title_substr = "_Q"
             else:
                 title_substr = ""
-            plt.title(f"{date}_{subrun}{title_substr} - {labels_and_units[par]}")
+            plt.title(f"{filename_no_ext}{title_substr} - {labels_and_units[par]}")
             xpoints = ypoints = plt.xlim()
             plt.plot(xpoints, ypoints, linestyle="--", color="y", lw=1, scalex=False, scaley=False)
-            plt.savefig("{}/{}_hillas_comparison_{}.png".format(config["Output_paths"]["image_output_directory"], subrun, par), facecolor="w", transparent=False)
+            plt.savefig(f'{config["Output_paths"]["image_output_directory"]}/{filename_no_ext}_hillas_comparison_{par}.png', facecolor="w", transparent=False)
             plt.close()
     return comparison
