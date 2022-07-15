@@ -1,5 +1,6 @@
 import os
 from image_comparison import image_comparison
+from ctapipe_io_magic import MAGICEventSource
 from pathlib import Path
 import yaml
 
@@ -54,18 +55,40 @@ for i in range(len(test_calibrated_real)):
 )
 def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
 
-    config_image = {
-        "input_files": {
-            "magic_cta_pipe": {
-                "M1": str(dataset_calibrated),
-                "M2": str(dataset_calibrated),
+    source = MAGICEventSource(
+            input_url=dataset_calibrated,
+            process_run=False,
+        )
+
+    is_mc = source.is_simulation
+    run_number = source.run_numbers[0]
+
+    if is_mc:
+        config_image = {
+            "input_files": {
+                "magic_cta_pipe": {
+                    "M1": str(dataset_calibrated),
+                    "M2": str(dataset_calibrated),
+                },
+                "mars": str(dataset_images),
             },
-            "mars": str(dataset_images),
-        },
-        "output_files": {"file_path": str(test_data / "real/test_images")},
-        "event_list": [1961, 1962, 1964, 1965, 2001],
-        "save_only_when_differences": True,
-    }
+            "output_files": {"file_path": str(test_data / "simulated/test_images")},
+            "event_list": [1961, 1962, 1964, 1965, 2001],
+            "save_only_when_differences": True,
+        }
+    else:
+        config_image = {
+            "input_files": {
+                "magic_cta_pipe": {
+                    "M1": str(dataset_calibrated),
+                    "M2": str(dataset_calibrated),
+                },
+                "mars": str(dataset_images),
+            },
+            "output_files": {"file_path": str(test_data / "real/test_images")},
+            "event_list": [1961, 1962, 1964, 1965, 2001],
+            "save_only_when_differences": True,
+        }
 
     config_image_file = str(tmp_path / "image_comparison_config.yaml")
 
