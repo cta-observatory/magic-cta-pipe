@@ -125,6 +125,14 @@ def image_comparison(
 
     geometry_old = source.subarray.tel[tel_id].camera.geometry
     geometry_mcp = new_camera_geometry(geometry_old)
+    geom = CameraGeometry.from_name("MAGICCamMars")
+
+    disp = CameraDisplay(geom)
+    disp_mars = CameraDisplay(geometry_mars)
+    disp_mcp = CameraDisplay(geometry_mcp)
+    disp.add_colorbar(label="pixel charge")
+    disp_mars.add_colorbar(label="pixel charge")
+    disp_mcp.add_colorbar(label="pixel charge")
 
     for event_id in ids_to_compare:
         try:
@@ -277,20 +285,17 @@ def image_comparison(
 
         # original data
         plt.subplot2grid(grid_shape, (0, 0))
-        geom = CameraGeometry.from_name("MAGICCamMars")
-        disp = CameraDisplay(geom, original_data_images)
+        disp.image = original_data_images
         # pixels whose original value is negative
         # negative_mask = calibrated_data_images < 0
-        disp.add_colorbar(label="pixel charge")
         disp.set_limits_minmax(vmin, vmax)
         plt.title("original data")
 
         # mars_data
         plt.subplot2grid(grid_shape, (0, 1))
         norm = matplotlib.colors.Normalize(vmin=0, vmax=vmax)
-        disp_mars = CameraDisplay(geometry_mars, image=event_image_mars)
+        disp_mars.image = event_image_mars
         disp_mars.set_limits_minmax(vmin, vmax)
-        disp_mars.add_colorbar(label="pixel charge")
         disp_mars.highlight_pixels(
             clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
         )
@@ -299,8 +304,7 @@ def image_comparison(
 
         # mcp_data
         plt.subplot2grid(grid_shape, (0, 2))
-        disp_mcp = CameraDisplay(geometry_mcp, image=event_image_mcp)
-        disp_mcp.add_colorbar(label="pixel charge")
+        disp_mcp.image = event_image_mcp
         disp_mcp.set_limits_minmax(vmin, vmax)
         disp_mcp.highlight_pixels(
             clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
@@ -309,8 +313,7 @@ def image_comparison(
 
         # differences between MARS and mcp
         plt.subplot2grid(grid_shape, (1, 0))
-        disp = CameraDisplay(geom, charge_differences[:1039])
-        disp.add_colorbar(label="pixel charge")
+        disp.image = charge_differences[:1039]
         disp.highlight_pixels(
             clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
         )
@@ -321,7 +324,7 @@ def image_comparison(
         plt.subplot2grid(grid_shape, (1, 1))
         pix_diff_mars_copy = np.array(pix_diff_mars).copy()
         pix_diff_mars_copy[np.array(event_image_mars) == 0] = 0
-        disp = CameraDisplay(geom, pix_diff_mars_copy > 0)
+        disp.image = pix_diff_mars_copy > 0
         disp.highlight_pixels(
             np.array(event_image_mars) != 0, color="white", alpha=1, linewidth=3
         )
@@ -331,7 +334,7 @@ def image_comparison(
         plt.subplot2grid(grid_shape, (1, 2))
         pix_diff_mcp_copy = np.array(pix_diff_mcp).copy()
         pix_diff_mcp_copy[np.array(event_image_mcp) == 0] = 0
-        disp = CameraDisplay(geom, pix_diff_mcp_copy > 0)
+        disp.image = pix_diff_mcp_copy > 0
         disp.highlight_pixels(
             np.array(event_image_mcp) != 0, color="white", alpha=1, linewidth=3
         )
