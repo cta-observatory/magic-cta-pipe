@@ -127,10 +127,20 @@ def image_comparison(
     geometry_mcp = new_camera_geometry(geometry_old)
     geom = CameraGeometry.from_name("MAGICCamMars")
 
-    disp = CameraDisplay(geom)
-    disp_mars = CameraDisplay(geometry_mars)
-    disp_mcp = CameraDisplay(geometry_mcp)
-    disp.add_colorbar(label="pixel charge")
+    fig, ((ax1, ax2, ax3), (ax4, ax5, ax6)) = plt.subplots(2, 3)
+    fig.set_figheight(20)
+    fig.set_figwidth(40)
+
+    disp1 = CameraDisplay(geom, ax=ax1)
+    disp_mars = CameraDisplay(geometry_mars, ax=ax2)
+    disp_mcp = CameraDisplay(geometry_mcp, ax=ax3)
+    disp2 = CameraDisplay(geom, ax=ax4)
+    disp3 = CameraDisplay(geom, ax=ax5)
+    disp4 = CameraDisplay(geom, ax=ax6)
+    disp1.add_colorbar(label="pixel charge")
+    disp2.add_colorbar(label="pixel charge")
+    disp3.add_colorbar(label="pixel charge")
+    disp4.add_colorbar(label="pixel charge")
     disp_mars.add_colorbar(label="pixel charge")
     disp_mcp.add_colorbar(label="pixel charge")
 
@@ -223,9 +233,9 @@ def image_comparison(
         charge_differences = abs(event_image_mars - event_image_mcp)
         clean_mask_pixels = charge_differences != 0
 
-        print(np.where(clean_mask_pixels is True)[0])
+        print(np.where(clean_mask_pixels == True)[0])
 
-        if len(np.where(clean_mask_pixels is True)[0]) == 0:
+        if len(np.where(clean_mask_pixels == True)[0]) == 0:
             errors = False
         else:
             if np.any(
@@ -280,19 +290,16 @@ def image_comparison(
             )
 
         # plotting ------------------------------------------------------------------------------------------------------
-        fig = plt.figure(figsize=(20, 10))
         grid_shape = (2, 3)
 
         # original data
-        plt.subplot2grid(grid_shape, (0, 0))
-        disp.image = original_data_images
+        disp1.image = original_data_images
         # pixels whose original value is negative
         # negative_mask = calibrated_data_images < 0
-        disp.set_limits_minmax(vmin, vmax)
-        plt.title("original data")
+        disp1.set_limits_minmax(vmin, vmax)
+        ax1.set_title("original data")
 
         # mars_data
-        plt.subplot2grid(grid_shape, (0, 1))
         norm = matplotlib.colors.Normalize(vmin=0, vmax=vmax)
         disp_mars.image = event_image_mars
         disp_mars.set_limits_minmax(vmin, vmax)
@@ -300,51 +307,47 @@ def image_comparison(
             clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
         )
         # disp_mars.highlight_pixels(unsuitable_mask[:1039], color="magenta", alpha=1, linewidth=1)
-        plt.title("MARS data")
+        ax2.set_title("MARS data")
 
         # mcp_data
-        plt.subplot2grid(grid_shape, (0, 2))
         disp_mcp.image = event_image_mcp
         disp_mcp.set_limits_minmax(vmin, vmax)
         disp_mcp.highlight_pixels(
             clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
         )
-        plt.title("magic_cta_pipe data")
+        ax3.set_title("magic_cta_pipe data")
 
         # differences between MARS and mcp
-        plt.subplot2grid(grid_shape, (1, 0))
-        disp.image = charge_differences[:1039]
-        disp.highlight_pixels(
+        disp2.image = charge_differences[:1039]
+        disp2.highlight_pixels(
             clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
         )
-        plt.title("differences MARS-mcp")
+        ax4.set_title("differences MARS-mcp")
 
         # the white outline shows the pixels used for the image after cleaning, the ones that are filled yellow show where differences are
         # differences between MARS and the calibrated data
-        plt.subplot2grid(grid_shape, (1, 1))
         pix_diff_mars_copy = np.array(pix_diff_mars).copy()
         pix_diff_mars_copy[np.array(event_image_mars) == 0] = 0
-        disp.image = pix_diff_mars_copy > 0
-        disp.highlight_pixels(
+        disp3.image = pix_diff_mars_copy > 0
+        disp3.highlight_pixels(
             np.array(event_image_mars) != 0, color="white", alpha=1, linewidth=3
         )
-        plt.title("differences MARS-original data")
+        ax5.set_title("differences MARS-original data")
 
         # mcp-orig-data-diff
-        plt.subplot2grid(grid_shape, (1, 2))
         pix_diff_mcp_copy = np.array(pix_diff_mcp).copy()
         pix_diff_mcp_copy[np.array(event_image_mcp) == 0] = 0
-        disp.image = pix_diff_mcp_copy > 0
-        disp.highlight_pixels(
+        disp4.image = pix_diff_mcp_copy > 0
+        disp4.highlight_pixels(
             np.array(event_image_mcp) != 0, color="white", alpha=1, linewidth=3
         )
-        plt.title("differences mcp-original data")
+        ax6.set_title("differences mcp-original data")
 
         fig.suptitle(
             f"Comparison_MARS_magic-cta-pipe: Event ID {event.index.event_id}, {run_num}, M{tel_id}",
             fontsize=16,
         )
-        fig.savefig(
+        plt.savefig(
             f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png"
         )
         # print(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png")
