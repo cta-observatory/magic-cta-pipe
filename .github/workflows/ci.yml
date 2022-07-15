@@ -39,8 +39,27 @@ jobs:
           # we install ctapipe using pip to be able to select any commit, e.g. the current master
           pip install pytest-cov "git+https://github.com/cta-observatory/ctapipe@$CTAPIPE_VERSION"
           pip install pyflakes
+          pip install --upgrade "protobuf<=3.20.1"
           pip install -e .
           git describe --tags
+
+      - name: Download test data
+        env:
+          TEST_DATA_USER: ${{ secrets.test_data_user }}
+          TEST_DATA_PASSWORD: ${{ secrets.test_data_password }}
+        run: |
+          chmod +x ./download_test_data.sh
+          ./download_test_data.sh
+
+      - name: Tests
+        shell: bash -leo pipefail {0}
+        run: |
+          # github actions starts a new shell for each "step", so we need to
+          # activate our env again
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate ci
+          coverage run -m pytest -v
+          coverage xml
 
       - name: Static codechecks
         # need to use a login shell for the conda setup to work
@@ -49,22 +68,5 @@ jobs:
           source $CONDA/etc/profile.d/conda.sh
           conda activate ci
           pyflakes magicctapipe
-
-      #- name: Download test data
-      #  env:
-      #    TEST_DATA_USER: ${{ secrets.test_data_user }}
-      #    TEST_DATA_PASSWORD: ${{ secrets.test_data_password }}
-      #  run: |
-      #    chmod +x ./download_test_data.sh
-      #    ./download_test_data.sh
-
-      #- name: Tests
-      #  run: |
-      #    # github actions starts a new shell for each "step", so we need to
-      #    # activate our env again
-      #    source $CONDA/etc/profile.d/conda.sh
-      #    conda activate ci
-      #    coverage run -m pytest -v
-      #    coverage xml
 
       #- uses: codecov/codecov-action@v1

@@ -1,0 +1,13 @@
+input_files:
+    magic_cta_pipe: #same as original_data and mcp_source
+        M1: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127_M1_05086952.001_Y_CrabNebula-W0.40+035.root"
+        M2: "/remote/magicdata5/heckmann/Crab_CTA/ctapipe/Crab/2019_11_27/1.Calibrated/data/20191127_M2_05086952.001_Y_CrabNebula-W0.40+035.root"
+    
+    mars: "20191127_05086952_S_CrabNebula-W0.40+035.h5"
+
+output_files:
+    file_path: "/home/iwsatlas1/ejobst/Software/Internship/cta-github/magic-cta-pipe/magicctapipe/scripts/magic/tests" #"/path/to/output_directory"
+   
+event_list: [1961, 1962, 1964, 1965, 2001]
+
+save_only_when_differences: True

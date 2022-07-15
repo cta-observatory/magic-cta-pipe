@@ -1,5 +1,6 @@
 import numpy as np
 from ctapipe.instrument import CameraGeometry
+from astropy.time import Time
 
 __all__ = [
     "MAGICBadPixelsCalc",
