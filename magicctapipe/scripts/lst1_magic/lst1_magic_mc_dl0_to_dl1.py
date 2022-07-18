@@ -10,7 +10,7 @@ LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 Usage:
 $ python lst1_magic_mc_dl0_to_dl1.py
---input-file ./data/gamma_off0.4deg/dl0/gamma_40deg_90deg_run1___cta-prod5-lapalma_LST-1_MAGIC_desert-2158m_mono_off0.4.simtel.gz
+--input-file ./data/gamma_off0.4deg/dl0/gamma_40deg_90deg_run1.simtel.gz
 --output-dir ./data/gamma_off0.4deg/dl1
 --config-file ./config.yaml
 (--muons)
@@ -109,7 +109,7 @@ def mc_dl0_to_dl1(
         Perform the muon ring analysis if True
     """
 
-    logger.info(f'\nMuons analysis: {muons_analysis}')
+    logger.info(f'Muons analysis: {muons_analysis}')
 
     allowed_tel_ids = config['mc_tel_ids']
 
@@ -138,7 +138,8 @@ def mc_dl0_to_dl1(
 
     logger.info('\nSubarray configuration:')
     for tel_id in allowed_tel_ids.values():
-        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
+        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, '
+                    f'position = {tel_positions[tel_id]}')
         camera_geoms[tel_id] = subarray.tel[tel_id].camera.geometry
 
     # Configure the LST event processors:
@@ -186,11 +187,11 @@ def mc_dl0_to_dl1(
     logger.info(config_magic['image_extractor'])
 
     extractor_type_magic = config_magic['image_extractor'].pop('type')
-    config_extractor_magic = Config({extractor_type_magic: config_magic['image_extractor']})
+    config_extractor_magic = {extractor_type_magic: config_magic['image_extractor']}
 
     calibrator_magic = CameraCalibrator(
         image_extractor_type=extractor_type_magic,
-        config=config_extractor_magic,
+        config=Config(config_extractor_magic),
         subarray=subarray,
     )
 
@@ -201,11 +202,13 @@ def mc_dl0_to_dl1(
 
     logger.info('\nMAGIC image cleaning:')
     if config_magic['magic_clean']['find_hotpixels'] is not False:
-        logger.warning('Hot pixels do not exist in a simulation. Setting the "find_hotpixels" option to False...')
+        logger.warning('Hot pixels do not exist in a simulation. '
+                       'Setting the "find_hotpixels" option to False...')
         config_magic['magic_clean'].update({'find_hotpixels': False})
 
     logger.info(config_magic['magic_clean'])
-    magic_clean = MAGICClean(camera_geoms[tel_id_m1], config_magic['magic_clean'])   # assume M1 and M2 cameras are identical
+    # Here it assumes that M1 and M2 camera geometries are identical:
+    magic_clean = MAGICClean(camera_geoms[tel_id_m1], config_magic['magic_clean'])
 
     # Configure the muon analysis:
     muon_parameters = create_muon_table()
@@ -217,14 +220,16 @@ def mc_dl0_to_dl1(
         extractor_lst_muons = ImageExtractor.from_name(
             extractor_muon_name_lst, subarray=subarray, config=config_extractor_lst
         )
-        r1_dl1_calibrator_for_muon_rings[tel_id_lst1] = CameraCalibrator(subarray,
-                                                                         image_extractor=extractor_lst_muons)
+        r1_dl1_calibrator_for_muon_rings[tel_id_lst1] = CameraCalibrator(
+            subarray, image_extractor=extractor_lst_muons
+        )
         extractor_muon_name_magic = 'GlobalPeakWindowSum'
         extractor_magic_muons = ImageExtractor.from_name(
             extractor_muon_name_magic, subarray=subarray, config=config_extractor_magic
         )
-        r1_dl1_calibrator_for_muon_rings_magic = CameraCalibrator(subarray,
-                                                                  image_extractor=extractor_magic_muons)
+        r1_dl1_calibrator_for_muon_rings_magic = CameraCalibrator(
+            subarray, image_extractor=extractor_magic_muons
+        )
         r1_dl1_calibrator_for_muon_rings[tel_id_m1] = r1_dl1_calibrator_for_muon_rings_magic
         r1_dl1_calibrator_for_muon_rings[tel_id_m2] = r1_dl1_calibrator_for_muon_rings_magic
         muon_config = {tel_id_lst1: {},
@@ -246,7 +251,8 @@ def mc_dl0_to_dl1(
 
     if re.fullmatch(regex_off, file_name):
         parser = re.findall(regex_off, file_name)[0]
-        output_file = f'{output_dir}/dl1_{parser[0]}_off{parser[2]}deg_LST-1_MAGIC_run{parser[1]}.h5'
+        output_file = f'{output_dir}/' \
+                      f'dl1_{parser[0]}_off{parser[2]}deg_LST-1_MAGIC_run{parser[1]}.h5'
 
     elif re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]
@@ -286,28 +292,46 @@ def mc_dl0_to_dl1(
 
                     if increase_nsb:
                         # Add noises in pixels:
-                        image = add_noise_in_pixels(rng, image, **config_lst['increase_nsb'])
+                        image = add_noise_in_pixels(
+                            rng, image, **config_lst['increase_nsb'],
+                        )
 
                     if increase_psf:
                         # Smear the image:
-                        image = random_psf_smearer(image, config_lst['increase_psf']['smeared_light_fraction'],
-                                                   camera_geoms[tel_id].neighbor_matrix_sparse.indices,
-                                                   camera_geoms[tel_id].neighbor_matrix_sparse.indptr)
+                        image = random_psf_smearer(
+                            image,
+                            config_lst['increase_psf']['smeared_light_fraction'],
+                            camera_geoms[tel_id].neighbor_matrix_sparse.indices,
+                            camera_geoms[tel_id].neighbor_matrix_sparse.indptr,
+                        )
 
                     # Apply the image cleaning:
-                    signal_pixels = tailcuts_clean(camera_geoms[tel_id], image, **config_lst['tailcuts_clean'])
+                    signal_pixels = tailcuts_clean(
+                        camera_geoms[tel_id], image, **config_lst['tailcuts_clean'],
+                    )
 
                     if use_time_delta_cleaning:
-                        signal_pixels = apply_time_delta_cleaning(camera_geoms[tel_id], signal_pixels,
-                                                                  peak_time, **config_lst['time_delta_cleaning'])
+                        signal_pixels = apply_time_delta_cleaning(
+                            camera_geoms[tel_id],
+                            signal_pixels,
+                            peak_time,
+                            **config_lst['time_delta_cleaning'],
+                        )
 
                     if use_dynamic_cleaning:
-                        signal_pixels = apply_dynamic_cleaning(image, signal_pixels, **config_lst['dynamic_cleaning'])
+                        signal_pixels = apply_dynamic_cleaning(
+                            image,
+                            signal_pixels,
+                            **config_lst['dynamic_cleaning'],
+                        )
 
                     if use_only_main_island:
-                        _, island_labels = number_of_islands(camera_geoms[tel_id], signal_pixels)
+                        _, island_labels = number_of_islands(
+                            camera_geoms[tel_id], signal_pixels,
+                        )
                         n_pixels_on_island = np.bincount(island_labels.astype(np.int64))
-                        n_pixels_on_island[0] = 0  # first island is no-island and should not be considered
+                        # first island is no-island and should not be considered
+                        n_pixels_on_island[0] = 0
                         max_island_label = np.argmax(n_pixels_on_island)
                         signal_pixels[island_labels != max_island_label] = False
 
@@ -324,7 +348,9 @@ def mc_dl0_to_dl1(
                         image *= config_magic['charge_correction']['correction_factor']
 
                     # Apply the image cleaning:
-                    signal_pixels, image, peak_time = magic_clean.clean_image(image, peak_time)
+                    signal_pixels, image, peak_time = magic_clean.clean_image(
+                        image, peak_time,
+                    )
 
                 image_cleaned = image.copy()
                 image_cleaned[~signal_pixels] = 0
@@ -336,38 +362,54 @@ def mc_dl0_to_dl1(
                 n_islands, _ = number_of_islands(camera_geoms[tel_id], signal_pixels)
 
                 if n_pixels == 0:
-                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
-                                   'Could not survive the image cleaning. Skipping.')
+                    logger.warning(
+                        f'--> {event.count} event (event ID {event.index.event_id}, '
+                        f'telescope {tel_id}): Could not survive the image cleaning.'
+                    )
                     continue
 
                 # Try to compute the Hillas parameters:
                 try:
                     hillas_params = hillas_parameters(camera_geoms[tel_id], image_cleaned)
-                except:
-                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
-                                   'Hillas parameters computation failed. Skipping.')
+                except Exception:
+                    logger.warning(
+                        f'--> {event.count} event (event ID {event.index.event_id}, '
+                        f'telescope {tel_id}): Hillas parameters computation failed.'
+                    )
                     continue
 
                 # Try to compute the timing parameters:
                 try:
-                    timing_params = timing_parameters(camera_geoms[tel_id], image_cleaned,
-                                                      peak_time_cleaned, hillas_params, signal_pixels)
-                except:
-                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
-                                   'Timing parameters computation failed. Skipping.')
+                    timing_params = timing_parameters(
+                        camera_geoms[tel_id],
+                        image_cleaned,
+                        peak_time_cleaned,
+                        hillas_params,
+                        signal_pixels,
+                    )
+                except Exception:
+                    logger.warning(
+                        f'--> {event.count} event (event ID {event.index.event_id}, '
+                        f'telescope {tel_id}): Timing parameters computation failed.'
+                    )
                     continue
 
                 # Try to compute the leakage parameters:
                 try:
-                    leakage_params = leakage_parameters(camera_geoms[tel_id], image_cleaned, signal_pixels)
-                except:
-                    logger.warning(f'--> {event.count} event (event ID {event.index.event_id}, telescope {tel_id}): ' \
-                                   'Leakage parameters computation failed. Skipping.')
+                    leakage_params = leakage_parameters(
+                        camera_geoms[tel_id], image_cleaned, signal_pixels,
+                    )
+                except Exception:
+                    logger.warning(
+                        f'--> {event.count} event (event ID {event.index.event_id}, '
+                        f'telescope {tel_id}): Leakage parameters computation failed.'
+                    )
                     continue
 
                 # Compute the DISP parameter:
                 if (event.pointing.tel[tel_id].altitude > 90*u.deg) & (event.pointing.tel[tel_id].altitude < 90.01*u.deg):
-                    # simu at altitude == 90 can have saved value rounded up at float precision limit
+                    # simu at altitude == 90 can have saved value rounded up
+                    # at float precision limit
                     event.pointing.tel[tel_id].altitude = 90*u.deg
 
                 tel_pointing = AltAz(
@@ -377,7 +419,10 @@ def mc_dl0_to_dl1(
 
                 tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-                event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_geoms[tel_id].frame)
+                event_coord = SkyCoord(
+                    hillas_params.x, hillas_params.y, frame=camera_geoms[tel_id].frame,
+                )
+
                 event_coord = event_coord.transform_to(tel_frame)
 
                 true_disp = angular_separation(
@@ -427,7 +472,10 @@ def mc_dl0_to_dl1(
                     event_info.tel_id = 3
 
                 # Save the parameters to the output file:
-                writer.write('parameters', (event_info, hillas_params, timing_params, leakage_params))
+                writer.write(
+                    'parameters',
+                    (event_info, hillas_params, timing_params, leakage_params),
+                )
 
                 if muons_analysis:
                     perform_muon_analysis(muon_parameters,
@@ -445,8 +493,9 @@ def mc_dl0_to_dl1(
         logger.info(f'\nIn total {n_events_processed} events are processed.')
 
     # Reset the telescope IDs of the subarray description.
-    # In addition, convert the telescope coordinate to the one relative to the center of the LST-1 + MAGIC array:
-    positions = np.array([tel_positions[tel_id].value for tel_id in allowed_tel_ids.values()])
+    # In addition, convert the telescope coordinate to the one relative to
+    # the center of the LST-1 + MAGIC array:
+    positions = np.array([tel_positions[tel_id].value for tel_id in tel_positions.keys()])
     positions_cog = positions - positions.mean(axis=0)
 
     tel_positions_cog = {
@@ -461,7 +510,9 @@ def mc_dl0_to_dl1(
         3: subarray.tel[tel_id_m2],     # MAGIC-II
     }
 
-    subarray_lst1_magic = SubarrayDescription('LST1-MAGIC-Array', tel_positions_cog, tel_descriptions)
+    subarray_lst1_magic = SubarrayDescription(
+        'LST1-MAGIC-Array', tel_positions_cog, tel_descriptions,
+    )
 
     # Save the subarray description:
     subarray_lst1_magic.to_hdf(output_file)
