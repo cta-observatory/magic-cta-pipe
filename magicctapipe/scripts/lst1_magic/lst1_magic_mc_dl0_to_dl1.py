@@ -15,70 +15,67 @@ $ python lst1_magic_mc_dl0_to_dl1.py
 --config-file ./config.yaml
 """
 
+import argparse
+import logging
 import re
 import time
-import yaml
-import logging
-import argparse
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import yaml
 from astropy import units as u
-from astropy.coordinates import (
-    AltAz,
-    SkyCoord,
-    angular_separation,
-)
-from traitlets.config import Config
-from ctapipe.io import EventSource, HDF5TableWriter
-from ctapipe.core import Container, Field
+from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.calib import CameraCalibrator
+from ctapipe.coordinates import TelescopeFrame
+from ctapipe.core import Container, Field
 from ctapipe.image import (
-    tailcuts_clean,
     apply_time_delta_cleaning,
-    number_of_islands,
     hillas_parameters,
-    timing_parameters,
     leakage_parameters,
+    number_of_islands,
+    tailcuts_clean,
+    timing_parameters,
 )
 from ctapipe.instrument import SubarrayDescription
-from ctapipe.coordinates import TelescopeFrame
+from ctapipe.io import EventSource, HDF5TableWriter
 from lstchain.image.cleaning import apply_dynamic_cleaning
 from lstchain.image.modifier import (
-    set_numba_seed,
     add_noise_in_pixels,
     random_psf_smearer,
+    set_numba_seed,
 )
 from magicctapipe.image import MAGICClean
 from magicctapipe.utils import calculate_impact
+from traitlets.config import Config
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 __all__ = [
-    'EventInfoContainer',
-    'mc_dl0_to_dl1',
+    "EventInfoContainer",
+    "mc_dl0_to_dl1",
 ]
 
 
 class EventInfoContainer(Container):
-    """ Container to store event information """
+    """Container to store event information"""
 
-    obs_id = Field(-1, 'Observation ID')
-    event_id = Field(-1, 'Event ID')
-    tel_id = Field(-1, 'Telescope ID')
-    pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
-    pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
-    true_energy = Field(-1, 'MC event true energy', u.TeV)
-    true_alt = Field(-1, 'MC event true altitude', u.deg)
-    true_az = Field(-1, 'MC event true azimuth', u.deg)
-    true_disp = Field(-1, 'MC event true disp', u.deg)
-    true_core_x = Field(-1, 'MC event true core x', u.m)
-    true_core_y = Field(-1, 'MC event true core y', u.m)
-    true_impact = Field(-1, 'MC event true impact', u.m)
-    n_pixels = Field(-1, 'Number of pixels of a cleaned image')
-    n_islands = Field(-1, 'Number of islands of a cleaned image')
-    magic_stereo = Field(-1, 'True if both M1 and M2 are triggered')
+    obs_id = Field(-1, "Observation ID")
+    event_id = Field(-1, "Event ID")
+    tel_id = Field(-1, "Telescope ID")
+    pointing_alt = Field(-1, "Telescope pointing altitude", u.rad)
+    pointing_az = Field(-1, "Telescope pointing azimuth", u.rad)
+    true_energy = Field(-1, "MC event true energy", u.TeV)
+    true_alt = Field(-1, "MC event true altitude", u.deg)
+    true_az = Field(-1, "MC event true azimuth", u.deg)
+    true_disp = Field(-1, "MC event true disp", u.deg)
+    true_core_x = Field(-1, "MC event true core x", u.m)
+    true_core_y = Field(-1, "MC event true core y", u.m)
+    true_impact = Field(-1, "MC event true impact", u.m)
+    n_pixels = Field(-1, "Number of pixels of a cleaned image")
+    n_islands = Field(-1, "Number of islands of a cleaned image")
+    magic_stereo = Field(-1, "True if both M1 and M2 are triggered")
 
 
 def mc_dl0_to_dl1(input_file, output_dir, config):
@@ -96,23 +93,23 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         Configuration for the LST-1 + MAGIC analysis
     """
 
-    logger.info(f'\nInput file:\n{input_file}')
+    logger.info(f"\nInput file:\n{input_file}")
 
-    allowed_tel_ids = config['mc_tel_ids']
+    allowed_tel_ids = config["mc_tel_ids"]
 
-    logger.info('\nAllowed telescope IDs:')
+    logger.info("\nAllowed telescope IDs:")
     for key, value in allowed_tel_ids.items():
-        logger.info(f'\t{key}: {value}')
+        logger.info(f"\t{key}: {value}")
 
-    tel_id_lst1 = allowed_tel_ids['LST-1']
-    tel_id_m1 = allowed_tel_ids['MAGIC-I']
-    tel_id_m2 = allowed_tel_ids['MAGIC-II']
+    tel_id_lst1 = allowed_tel_ids["LST-1"]
+    tel_id_m1 = allowed_tel_ids["MAGIC-I"]
+    tel_id_m2 = allowed_tel_ids["MAGIC-II"]
 
     # Load the input file:
     event_source = EventSource(
         input_file,
         allowed_tels=list(allowed_tel_ids.values()),
-        focal_length_choice='effective',
+        focal_length_choice="effective",
     )
 
     obs_id = event_source.obs_ids[0]
@@ -121,23 +118,23 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     tel_positions = subarray.positions
     camera_geoms = {}
 
-    logger.info('\nSubarray configuration:')
+    logger.info("\nSubarray configuration:")
     for tel_id in allowed_tel_ids.values():
         logger.info(
-            f'\tTelescope {tel_id}: {subarray.tel[tel_id].name}, '
-            f'position = {tel_positions[tel_id]}'
+            f"\tTelescope {tel_id}: {subarray.tel[tel_id].name}, "
+            f"position = {tel_positions[tel_id]}"
         )
         camera_geoms[tel_id] = subarray.tel[tel_id].camera.geometry
 
     # Configure the LST processors:
-    config_lst = config['LST']
+    config_lst = config["LST"]
 
-    logger.info('\nLST image extractor:')
-    for key, value in config_lst['image_extractor'].items():
-        logger.info(f'\t{key}: {value}')
+    logger.info("\nLST image extractor:")
+    for key, value in config_lst["image_extractor"].items():
+        logger.info(f"\t{key}: {value}")
 
-    extractor_type_lst = config_lst['image_extractor'].pop('type')
-    config_extractor_lst = Config({extractor_type_lst: config_lst['image_extractor']})
+    extractor_type_lst = config_lst["image_extractor"].pop("type")
+    config_extractor_lst = Config({extractor_type_lst: config_lst["image_extractor"]})
 
     calibrator_lst = CameraCalibrator(
         image_extractor_type=extractor_type_lst,
@@ -145,53 +142,53 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
-    increase_nsb = config_lst['increase_nsb'].pop('use')
-    increase_psf = config_lst['increase_psf'].pop('use')
+    increase_nsb = config_lst["increase_nsb"].pop("use")
+    increase_psf = config_lst["increase_psf"].pop("use")
 
     if increase_nsb:
-        logger.info('\nLST NSB modifier:')
-        for key, value in config_lst['increase_nsb'].items():
-            logger.info(f'\t{key}: {value}')
+        logger.info("\nLST NSB modifier:")
+        for key, value in config_lst["increase_nsb"].items():
+            logger.info(f"\t{key}: {value}")
 
         rng = np.random.default_rng(obs_id)
 
     if increase_psf:
-        logger.info('\nLST PSF modifier:')
-        for key, value in config_lst['increase_psf'].items():
-            logger.info(f'\t{key}: {value}')
+        logger.info("\nLST PSF modifier:")
+        for key, value in config_lst["increase_psf"].items():
+            logger.info(f"\t{key}: {value}")
 
         set_numba_seed(obs_id)
-        smeared_light_fraction = config_lst['increase_psf']['smeared_light_fraction']
+        smeared_light_fraction = config_lst["increase_psf"]["smeared_light_fraction"]
 
-    logger.info('\nLST tailcuts cleaning:')
-    for key, value in config_lst['tailcuts_clean'].items():
-        logger.info(f'\t{key}: {value}')
+    logger.info("\nLST tailcuts cleaning:")
+    for key, value in config_lst["tailcuts_clean"].items():
+        logger.info(f"\t{key}: {value}")
 
-    use_time_delta_cleaning = config_lst['time_delta_cleaning'].pop('use')
-    use_dynamic_cleaning = config_lst['dynamic_cleaning'].pop('use')
-    use_only_main_island = config_lst['use_only_main_island']
+    use_time_delta_cleaning = config_lst["time_delta_cleaning"].pop("use")
+    use_dynamic_cleaning = config_lst["dynamic_cleaning"].pop("use")
+    use_only_main_island = config_lst["use_only_main_island"]
 
     if use_time_delta_cleaning:
-        logger.info('\nLST time delta cleaning:')
-        for key, value in config_lst['time_delta_cleaning'].items():
-            logger.info(f'\t{key}: {value}')
+        logger.info("\nLST time delta cleaning:")
+        for key, value in config_lst["time_delta_cleaning"].items():
+            logger.info(f"\t{key}: {value}")
 
     if use_dynamic_cleaning:
-        logger.info('\nLST dynamic cleaning:')
-        for key, value in config_lst['dynamic_cleaning'].items():
-            logger.info(f'\t{key}: {value}')
+        logger.info("\nLST dynamic cleaning:")
+        for key, value in config_lst["dynamic_cleaning"].items():
+            logger.info(f"\t{key}: {value}")
 
-    logger.info(f'\nLST using only main island: {use_only_main_island}')
+    logger.info(f"\nLST using only main island: {use_only_main_island}")
 
     # Configure the MAGIC processors:
-    config_magic = config['MAGIC']
+    config_magic = config["MAGIC"]
 
-    logger.info('\nMAGIC image extractor:')
-    for key, value in config_magic['image_extractor'].items():
-        logger.info(f'\t{key}: {value}')
+    logger.info("\nMAGIC image extractor:")
+    for key, value in config_magic["image_extractor"].items():
+        logger.info(f"\t{key}: {value}")
 
-    extractor_type_magic = config_magic['image_extractor'].pop('type')
-    config_extractor_magic = {extractor_type_magic: config_magic['image_extractor']}
+    extractor_type_magic = config_magic["image_extractor"].pop("type")
+    config_extractor_magic = {extractor_type_magic: config_magic["image_extractor"]}
 
     calibrator_magic = CameraCalibrator(
         image_extractor_type=extractor_type_magic,
@@ -199,64 +196,66 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
-    use_charge_correction = config_magic['charge_correction'].pop('use')
+    use_charge_correction = config_magic["charge_correction"].pop("use")
 
     if use_charge_correction:
-        correction_factor = config_magic['charge_correction']['correction_factor']
-        logger.info(f'\nMAGIC charge correction factor: {correction_factor}')
+        correction_factor = config_magic["charge_correction"]["correction_factor"]
+        logger.info(f"\nMAGIC charge correction factor: {correction_factor}")
 
-    logger.info('\nMAGIC image cleaning:')
+    logger.info("\nMAGIC image cleaning:")
 
-    if config_magic['magic_clean']['find_hotpixels'] is not False:
+    if config_magic["magic_clean"]["find_hotpixels"] is not False:
         logger.warning(
             "Hot pixels do not exist in a simulation. "
             "Setting the 'find_hotpixels' option to False."
         )
-        config_magic['magic_clean'].update({'find_hotpixels': False})
+        config_magic["magic_clean"].update({"find_hotpixels": False})
 
-    for key, value in config_magic['magic_clean'].items():
-        logger.info(f'\t{key}: {value}')
+    for key, value in config_magic["magic_clean"].items():
+        logger.info(f"\t{key}: {value}")
 
     # Here it assumes that M1 and M2 camera geometries are identical:
-    magic_clean = MAGICClean(camera_geoms[tel_id_m1], config_magic['magic_clean'])
+    magic_clean = MAGICClean(camera_geoms[tel_id_m1], config_magic["magic_clean"])
 
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    regex_off = r'(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz'
-    regex = r'(\S+)_run(\d+)[_\.].*simtel.gz'
+    regex_off = r"(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz"
+    regex = r"(\S+)_run(\d+)[_\.].*simtel.gz"
 
     file_name = Path(input_file).name
 
     if re.fullmatch(regex_off, file_name):
         parser = re.findall(regex_off, file_name)[0]
-        output_file = f'{output_dir}/' \
-                      f'dl1_{parser[0]}_off{parser[2]}deg_LST-1_MAGIC_run{parser[1]}.h5'
+        output_file = (
+            f"{output_dir}/"
+            f"dl1_{parser[0]}_off{parser[2]}deg_LST-1_MAGIC_run{parser[1]}.h5"
+        )
 
     elif re.fullmatch(regex, file_name):
         parser = re.findall(regex, file_name)[0]
-        output_file = f'{output_dir}/dl1_{parser[0]}_LST-1_MAGIC_run{parser[1]}.h5'
+        output_file = f"{output_dir}/dl1_{parser[0]}_LST-1_MAGIC_run{parser[1]}.h5"
 
     else:
-        raise RuntimeError('Could not parse information from the input file name.')
+        raise RuntimeError("Could not parse information from the input file name.")
 
     # Start processing the events:
-    logger.info('\nProcessing the events...')
+    logger.info("\nProcessing the events...")
 
-    with HDF5TableWriter(output_file, group_name='events', mode='w') as writer:
+    with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
 
         for event in event_source:
 
             if event.count % 100 == 0:
-                logger.info(f'{event.count} events')
+                logger.info(f"{event.count} events")
 
             tels_with_trigger = event.trigger.tels_with_trigger
 
             # Check if the event triggers both M1 and M2:
-            trigger_m1 = (tel_id_m1 in tels_with_trigger)
-            trigger_m2 = (tel_id_m2 in tels_with_trigger)
+            trigger_m1 = tel_id_m1 in tels_with_trigger
+            trigger_m2 = tel_id_m2 in tels_with_trigger
 
-            magic_stereo = (trigger_m1 and trigger_m2)
+            magic_stereo = trigger_m1 and trigger_m2
 
             for tel_id in tels_with_trigger:
 
@@ -272,7 +271,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     if increase_nsb:
                         # Add noises in pixels:
                         image = add_noise_in_pixels(
-                            rng, image, **config_lst['increase_nsb'],
+                            rng,
+                            image,
+                            **config_lst["increase_nsb"],
                         )
 
                     if increase_psf:
@@ -286,7 +287,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
                     # Apply the image cleaning:
                     signal_pixels = tailcuts_clean(
-                        camera_geoms[tel_id], image, **config_lst['tailcuts_clean'],
+                        camera_geoms[tel_id],
+                        image,
+                        **config_lst["tailcuts_clean"],
                     )
 
                     if use_time_delta_cleaning:
@@ -294,19 +297,20 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                             camera_geoms[tel_id],
                             signal_pixels,
                             peak_time,
-                            **config_lst['time_delta_cleaning'],
+                            **config_lst["time_delta_cleaning"],
                         )
 
                     if use_dynamic_cleaning:
                         signal_pixels = apply_dynamic_cleaning(
                             image,
                             signal_pixels,
-                            **config_lst['dynamic_cleaning'],
+                            **config_lst["dynamic_cleaning"],
                         )
 
                     if use_only_main_island:
                         _, island_labels = number_of_islands(
-                            camera_geoms[tel_id], signal_pixels,
+                            camera_geoms[tel_id],
+                            signal_pixels,
                         )
                         n_pixels_on_island = np.bincount(island_labels.astype(np.int64))
                         # first island is no-island and should not be considered
@@ -328,7 +332,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
                     # Apply the image cleaning:
                     signal_pixels, image, peak_time = magic_clean.clean_image(
-                        image, peak_time,
+                        image,
+                        peak_time,
                     )
 
                 image_cleaned = image.copy()
@@ -342,8 +347,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
                 if n_pixels == 0:
                     logger.warning(
-                        f'--> {event.count} event (event ID {event.index.event_id}, '
-                        f'telescope {tel_id}): Could not survive the image cleaning.'
+                        f"--> {event.count} event (event ID {event.index.event_id}, "
+                        f"telescope {tel_id}): Could not survive the image cleaning."
                     )
                     continue
 
@@ -370,8 +375,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
                 except Exception:
                     logger.warning(
-                        f'--> {event.count} event (event ID {event.index.event_id}, '
-                        f'telescope {tel_id}): Image parametrization failed.'
+                        f"--> {event.count} event (event ID {event.index.event_id}, "
+                        f"telescope {tel_id}): Image parametrization failed."
                     )
                     continue
 
@@ -384,7 +389,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
                 event_coord = SkyCoord(
-                    hillas_params.x, hillas_params.y, frame=camera_geoms[tel_id].frame,
+                    hillas_params.x,
+                    hillas_params.y,
+                    frame=camera_geoms[tel_id].frame,
                 )
 
                 event_coord = event_coord.transform_to(tel_frame)
@@ -437,12 +444,12 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
                 # Save the parameters to the output file:
                 writer.write(
-                    'parameters',
+                    "parameters",
                     (event_info, hillas_params, timing_params, leakage_params),
                 )
 
         n_events_processed = event.count + 1
-        logger.info(f'\nIn total {n_events_processed} events are processed.')
+        logger.info(f"\nIn total {n_events_processed} events are processed.")
 
     # Reset the telescope IDs of the subarray description.
     # In addition, convert the telescope coordinate to the one relative to
@@ -454,29 +461,31 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     positions_cog = positions - positions.mean(axis=0)
 
     tel_positions_cog = {
-        1: u.Quantity(positions_cog[0, :], u.m),    # LST-1
-        2: u.Quantity(positions_cog[1, :], u.m),    # MAGIC-I
-        3: u.Quantity(positions_cog[2, :], u.m),    # MAGIC-II
+        1: u.Quantity(positions_cog[0, :], u.m),  # LST-1
+        2: u.Quantity(positions_cog[1, :], u.m),  # MAGIC-I
+        3: u.Quantity(positions_cog[2, :], u.m),  # MAGIC-II
     }
 
     tel_descriptions = {
-        1: subarray.tel[tel_id_lst1],   # LST-1
-        2: subarray.tel[tel_id_m1],     # MAGIC-I
-        3: subarray.tel[tel_id_m2],     # MAGIC-II
+        1: subarray.tel[tel_id_lst1],  # LST-1
+        2: subarray.tel[tel_id_m1],  # MAGIC-I
+        3: subarray.tel[tel_id_m2],  # MAGIC-II
     }
 
     subarray_lst1_magic = SubarrayDescription(
-        'LST1-MAGIC-Array', tel_positions_cog, tel_descriptions,
+        "LST1-MAGIC-Array",
+        tel_positions_cog,
+        tel_descriptions,
     )
 
     # Save the subarray description:
     subarray_lst1_magic.to_hdf(output_file)
 
     # Save the simulation configuration:
-    with HDF5TableWriter(output_file, group_name='simulation', mode='a') as writer:
-        writer.write('config', event_source.simulation_config)
+    with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
+        writer.write("config", event_source.simulation_config)
 
-    logger.info('\nOutput file:')
+    logger.info("\nOutput file:")
     logger.info(output_file)
 
 
@@ -487,33 +496,45 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file', '-i', dest='input_file', type=str, required=True,
-        help='Path to an input simtel MC DL0 data file.',
+        "--input-file",
+        "-i",
+        dest="input_file",
+        type=str,
+        required=True,
+        help="Path to an input simtel MC DL0 data file.",
     )
 
     parser.add_argument(
-        '--output-dir', '-o', dest='output_dir', type=str, default='./data',
-        help='Path to a directory where to save an output DL1 data file.',
+        "--output-dir",
+        "-o",
+        dest="output_dir",
+        type=str,
+        default="./data",
+        help="Path to a directory where to save an output DL1 data file.",
     )
 
     parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a yaml configuration file.',
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config.yaml",
+        help="Path to a yaml configuration file.",
     )
 
     args = parser.parse_args()
 
-    with open(args.config_file, 'rb') as f:
+    with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
     # Process the input data:
     mc_dl0_to_dl1(args.input_file, args.output_dir, config)
 
-    logger.info('\nDone.')
+    logger.info("\nDone.")
 
     process_time = time.time() - start_time
-    logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
+    logger.info(f"\nProcess time: {process_time:.0f} [sec]\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
