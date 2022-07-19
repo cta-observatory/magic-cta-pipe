@@ -24,9 +24,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 from astropy import units as u
-from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.calib import CameraCalibrator
-from ctapipe.coordinates import TelescopeFrame
 from ctapipe.core import Container, Field
 from ctapipe.image import (
     apply_time_delta_cleaning,
@@ -45,7 +43,7 @@ from lstchain.image.modifier import (
     set_numba_seed,
 )
 from magicctapipe.image import MAGICClean
-from magicctapipe.utils import calculate_impact
+from magicctapipe.utils import calculate_disp, calculate_impact
 from traitlets.config import Config
 
 logger = logging.getLogger(__name__)
@@ -381,26 +379,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     continue
 
                 # Compute the DISP parameter:
-                tel_pointing = AltAz(
-                    alt=event.pointing.tel[tel_id].altitude,
-                    az=event.pointing.tel[tel_id].azimuth,
-                )
-
-                tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
-
-                event_coord = SkyCoord(
-                    hillas_params.x,
-                    hillas_params.y,
-                    frame=camera_geoms[tel_id].frame,
-                )
-
-                event_coord = event_coord.transform_to(tel_frame)
-
-                true_disp = angular_separation(
-                    lon1=event_coord.altaz.az,
-                    lat1=event_coord.altaz.alt,
-                    lon2=event.simulation.shower.az,
-                    lat2=event.simulation.shower.alt,
+                true_disp = calculate_disp(
+                    pointing_alt=event.pointing.tel[tel_id].altitude,
+                    pointing_az=event.pointing.tel[tel_id].azimuth,
+                    shower_alt=event.simulation.shower.alt,
+                    shower_az=event.simulation.shower.az,
+                    cog_x=hillas_params.x,
+                    cog_y=hillas_params.y,
+                    camera_frame=camera_geoms[tel_id].frame,
                 )
 
                 # Calculate the impact parameter:
