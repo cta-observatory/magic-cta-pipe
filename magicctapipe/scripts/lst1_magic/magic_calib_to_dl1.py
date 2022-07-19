@@ -26,25 +26,26 @@ $ python magic_calib_to_dl1.py
 (--process-run)
 """
 
+import argparse
+import logging
 import re
 import time
-import yaml
-import logging
-import argparse
 import warnings
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import yaml
 from astropy import units as u
 from astropy.coordinates import angular_separation
-from ctapipe.io import HDF5TableWriter
 from ctapipe.core import Container, Field
 from ctapipe.image import (
-    number_of_islands,
     hillas_parameters,
-    timing_parameters,
     leakage_parameters,
+    number_of_islands,
+    timing_parameters,
 )
 from ctapipe.instrument import SubarrayDescription
+from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
 from magicctapipe.utils import calculate_disp, calculate_impact
@@ -54,56 +55,58 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 # Ignore RuntimeWarnings appeared in the image cleaning:
-warnings.simplefilter('ignore', category=RuntimeWarning)
+warnings.simplefilter("ignore", category=RuntimeWarning)
 
 SEC2NSEC = 1e9
 
-pedestal_types = np.array([
-    'fundamental',
-    'from_extractor',
-    'from_extractor_rndm',
-])
+pedestal_types = np.array(
+    [
+        "fundamental",
+        "from_extractor",
+        "from_extractor_rndm",
+    ]
+)
 
 __all__ = [
-    'EventInfoContainer',
-    'SimEventInfoContainer',
-    'magic_calib_to_dl1',
+    "EventInfoContainer",
+    "SimEventInfoContainer",
+    "magic_calib_to_dl1",
 ]
 
 
 class EventInfoContainer(Container):
-    """ Container to store event information """
+    """Container to store event information"""
 
-    obs_id = Field(-1, 'Observation ID')
-    event_id = Field(-1, 'Event ID')
-    tel_id = Field(-1, 'Telescope ID')
-    pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
-    pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
-    time_sec = Field(-1, 'Event trigger time second', u.s)
-    time_nanosec = Field(-1, 'Event trigger time nanosecond', u.ns)
-    time_diff = Field(-1, 'Event trigger time difference from the previous event', u.s)
-    n_pixels = Field(-1, 'Number of pixels of a cleaned image')
-    n_islands = Field(-1, 'Number of islands of a cleaned image')
+    obs_id = Field(-1, "Observation ID")
+    event_id = Field(-1, "Event ID")
+    tel_id = Field(-1, "Telescope ID")
+    pointing_alt = Field(-1, "Telescope pointing altitude", u.rad)
+    pointing_az = Field(-1, "Telescope pointing azimuth", u.rad)
+    time_sec = Field(-1, "Event trigger time second", u.s)
+    time_nanosec = Field(-1, "Event trigger time nanosecond", u.ns)
+    time_diff = Field(-1, "Event trigger time difference from the previous event", u.s)
+    n_pixels = Field(-1, "Number of pixels of a cleaned image")
+    n_islands = Field(-1, "Number of islands of a cleaned image")
 
 
 class SimEventInfoContainer(Container):
-    """ Container to store simulated event information """
+    """Container to store simulated event information"""
 
-    obs_id = Field(-1, 'Observation ID')
-    event_id = Field(-1, 'Event ID')
-    tel_id = Field(-1, 'Telescope ID')
-    pointing_alt = Field(-1, 'Telescope pointing altitude', u.rad)
-    pointing_az = Field(-1, 'Telescope pointing azimuth', u.rad)
-    true_energy = Field(-1, 'Simulated event true energy', u.TeV)
-    true_alt = Field(-1, 'Simulated event true altitude', u.deg)
-    true_az = Field(-1, 'Simulated event true azimuth', u.deg)
-    true_disp = Field(-1, 'Simulated event true disp', u.deg)
-    true_core_x = Field(-1, 'Simulated event true core x', u.m)
-    true_core_y = Field(-1, 'Simulated event true core y', u.m)
-    true_impact = Field(-1, 'Simulated event true impact', u.m)
+    obs_id = Field(-1, "Observation ID")
+    event_id = Field(-1, "Event ID")
+    tel_id = Field(-1, "Telescope ID")
+    pointing_alt = Field(-1, "Telescope pointing altitude", u.rad)
+    pointing_az = Field(-1, "Telescope pointing azimuth", u.rad)
+    true_energy = Field(-1, "Simulated event true energy", u.TeV)
+    true_alt = Field(-1, "Simulated event true altitude", u.deg)
+    true_az = Field(-1, "Simulated event true azimuth", u.deg)
+    true_disp = Field(-1, "Simulated event true disp", u.deg)
+    true_core_x = Field(-1, "Simulated event true core x", u.m)
+    true_core_y = Field(-1, "Simulated event true core y", u.m)
+    true_impact = Field(-1, "Simulated event true impact", u.m)
     off_axis = Field(-1, "Simulated event off-axis angle", u.deg)
-    n_pixels = Field(-1, 'Number of pixels of a cleaned image')
-    n_islands = Field(-1, 'Number of islands of a cleaned image')
+    n_pixels = Field(-1, "Number of pixels of a cleaned image")
+    n_islands = Field(-1, "Number of islands of a cleaned image")
 
 
 def magic_calib_to_dl1(
@@ -127,8 +130,8 @@ def magic_calib_to_dl1(
         If True, it processes the events of all the subrun files at once
     """
 
-    logger.info(f'\nInput file:\n{input_file}')
-    logger.info(f'\nProcess run: {process_run}')
+    logger.info(f"\nInput file:\n{input_file}")
+    logger.info(f"\nProcess run: {process_run}")
 
     # Load the input file:
     event_source = MAGICEventSource(input_file, process_run=process_run)
@@ -137,12 +140,12 @@ def magic_calib_to_dl1(
     tel_id = event_source.telescope
     is_simulation = event_source.is_simulation
 
-    logger.info(f'\nObservation ID: {obs_id}')
-    logger.info(f'Telescope ID: {tel_id}')
-    logger.info(f'Is simulation: {is_simulation}')
+    logger.info(f"\nObservation ID: {obs_id}")
+    logger.info(f"Telescope ID: {tel_id}")
+    logger.info(f"Is simulation: {is_simulation}")
 
     if process_run:
-        logger.info('\nProcess the following data:')
+        logger.info("\nProcess the following data:")
         for root_file in event_source.file_list:
             logger.info(root_file)
 
@@ -154,24 +157,24 @@ def magic_calib_to_dl1(
     tel_position = subarray.positions[tel_id]
 
     # Configure the MAGIC image cleaning:
-    config_clean = config['MAGIC']['magic_clean']
+    config_clean = config["MAGIC"]["magic_clean"]
 
-    logger.info('\nMAGIC image cleaning:')
+    logger.info("\nMAGIC image cleaning:")
 
-    if is_simulation and (config_clean['find_hotpixels'] is not False):
+    if is_simulation and (config_clean["find_hotpixels"] is not False):
         logger.warning(
             "Hot pixels do not exist in a simulation. "
             "Setting the 'find_hotpixels' option to False..."
         )
-        config_clean.update({'find_hotpixels': False})
+        config_clean.update({"find_hotpixels": False})
 
     for key, value in config_clean.items():
-        logger.info(f'\t{key}: {value}')
+        logger.info(f"\t{key}: {value}")
 
-    find_hotpixels = config_clean['find_hotpixels']
+    find_hotpixels = config_clean["find_hotpixels"]
 
     if find_hotpixels:
-        pedestal_type = config_clean.pop('pedestal_type')
+        pedestal_type = config_clean.pop("pedestal_type")
         i_ped_type = np.where(pedestal_types == pedestal_type)[0][0]
 
     magic_clean = MAGICClean(camera_geom, config_clean)
@@ -180,28 +183,28 @@ def magic_calib_to_dl1(
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     if is_simulation:
-        regex = r'GA_M\d_(\S+)_\d_\d+_Y_*'
+        regex = r"GA_M\d_(\S+)_\d_\d+_Y_*"
         file_name = Path(input_file).name
 
         parser = re.findall(regex, file_name)[0]
-        output_file = f'{output_dir}/dl1_M{tel_id}_GA_{parser}.Run{obs_id}.h5'
+        output_file = f"{output_dir}/dl1_M{tel_id}_GA_{parser}.Run{obs_id}.h5"
 
     else:
         if process_run:
-            output_file = f'{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.h5'
+            output_file = f"{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.h5"
         else:
-            subrun_id = event_source.metadata['subrun_number'][0]
-            output_file = f'{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5'
+            subrun_id = event_source.metadata["subrun_number"][0]
+            output_file = f"{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5"
 
     # Start processing the events:
-    logger.info('\nProcessing the events...')
+    logger.info("\nProcessing the events...")
 
-    with HDF5TableWriter(output_file, group_name='events', mode='w') as writer:
+    with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
 
         for event in event_source:
 
             if event.count % 100 == 0:
-                logger.info(f'{event.count} events')
+                logger.info(f"{event.count} events")
 
             # Apply the image cleaning:
             image = event.dl1.tel[tel_id].image
@@ -216,7 +219,9 @@ def magic_calib_to_dl1(
                 unsuitable_mask = None
 
             signal_pixels, image, peak_time = magic_clean.clean_image(
-                image, peak_time, unsuitable_mask,
+                image,
+                peak_time,
+                unsuitable_mask,
             )
 
             image_cleaned = image.copy()
@@ -230,8 +235,8 @@ def magic_calib_to_dl1(
 
             if n_pixels == 0:
                 logger.warning(
-                    f'--> {event.count} event (event ID: {event.index.event_id}): '
-                    'Could not survive the image cleaning.'
+                    f"--> {event.count} event (event ID: {event.index.event_id}): "
+                    "Could not survive the image cleaning."
                 )
                 continue
 
@@ -258,8 +263,8 @@ def magic_calib_to_dl1(
 
             except Exception:
                 logger.warning(
-                    f'--> {event.count} event (event ID: {event.index.event_id}): '
-                    'Image parametrization failed.'
+                    f"--> {event.count} event (event ID: {event.index.event_id}): "
+                    "Image parametrization failed."
                 )
                 continue
 
@@ -315,7 +320,8 @@ def magic_calib_to_dl1(
 
             else:
                 timestamp = event.trigger.tel[tel_id].time.to_value(
-                    format='unix', subfmt='long',
+                    format="unix",
+                    subfmt="long",
                 )
 
                 # To keep the precision of a timestamp for the event coincidence
@@ -343,40 +349,40 @@ def magic_calib_to_dl1(
 
             # Reset the telescope IDs:
             if tel_id == 1:
-                event_info.tel_id = 2   # MAGIC-I
+                event_info.tel_id = 2  # MAGIC-I
 
             elif tel_id == 2:
-                event_info.tel_id = 3   # MAGIC-II
+                event_info.tel_id = 3  # MAGIC-II
 
             # Save the parameters to the output file:
             writer.write(
-                'parameters',
+                "parameters",
                 (event_info, hillas_params, timing_params, leakage_params),
             )
 
         n_events_processed = event.count + 1
-        logger.info(f'\nIn total {n_events_processed} events are processed.')
+        logger.info(f"\nIn total {n_events_processed} events are processed.")
 
     # Reset the telescope IDs of the subarray descriptions:
     tel_positions = {
-        2: subarray.positions[1],   # MAGIC-I
-        3: subarray.positions[2],   # MAGIC-II
+        2: subarray.positions[1],  # MAGIC-I
+        3: subarray.positions[2],  # MAGIC-II
     }
 
     tel_descriptions = {
-        2: event_source.subarray.tel[1],   # MAGIC-I
-        3: event_source.subarray.tel[2],   # MAGIC-II
+        2: event_source.subarray.tel[1],  # MAGIC-I
+        3: event_source.subarray.tel[2],  # MAGIC-II
     }
 
-    subarray_magic = SubarrayDescription('MAGIC-Array', tel_positions, tel_descriptions)
+    subarray_magic = SubarrayDescription("MAGIC-Array", tel_positions, tel_descriptions)
     subarray_magic.to_hdf(output_file)
 
     if is_simulation:
         # Save the simulation configuration:
-        with HDF5TableWriter(output_file, group_name='simulation', mode='a') as writer:
-            writer.write('config', event_source.simulation_config[obs_id])
+        with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
+            writer.write("config", event_source.simulation_config[obs_id])
 
-    logger.info('\nOutput file:')
+    logger.info("\nOutput file:")
     logger.info(output_file)
 
 
@@ -387,38 +393,52 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file', '-i', dest='input_file', type=str, required=True,
-        help='Path to an input MAGIC calibrated data file.',
+        "--input-file",
+        "-i",
+        dest="input_file",
+        type=str,
+        required=True,
+        help="Path to an input MAGIC calibrated data file.",
     )
 
     parser.add_argument(
-        '--output-dir', '-o', dest='output_dir', type=str, default='./data',
-        help='Path to a directory where to save an output DL1 data file.',
+        "--output-dir",
+        "-o",
+        dest="output_dir",
+        type=str,
+        default="./data",
+        help="Path to a directory where to save an output DL1 data file.",
     )
 
     parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-        help='Path to a yaml configuration file.',
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config.yaml",
+        help="Path to a yaml configuration file.",
     )
 
     parser.add_argument(
-        '--process-run', dest='process_run', action='store_true',
-        help='Process the events of all the subrun files at once.',
+        "--process-run",
+        dest="process_run",
+        action="store_true",
+        help="Process the events of all the subrun files at once.",
     )
 
     args = parser.parse_args()
 
-    with open(args.config_file, 'rb') as f:
+    with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
     # Process the input data:
     magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
 
-    logger.info('\nDone.')
+    logger.info("\nDone.")
 
     process_time = time.time() - start_time
-    logger.info(f'\nProcess time: {process_time:.0f} [sec]\n')
+    logger.info(f"\nProcess time: {process_time:.0f} [sec]\n")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
