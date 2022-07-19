@@ -2,19 +2,21 @@
 # coding: utf-8
 
 """
-This script processes the events of MAGIC calibrated data (*_Y_*.root) with the MARS-like image cleaning
-and computes the DL1 parameters (i.e., Hillas, timing and leakage parameters).
-It saves only the events that all the DL1 parameters are successfully reconstructed.
-The telescope IDs are reset to the following ones for the combined analysis with LST-1, whose telescope ID is 1:
+This script processes the events of MAGIC calibrated data (*_Y_*.root) with the
+MARS-like image cleaning and computes the DL1 parameters (i.e., Hillas, timing
+and leakage parameters). It saves only the events that all the DL1 parameters
+are successfully reconstructed. The telescope IDs are reset to the following
+ones for the combined analysis with LST-1, whose telescope ID is 1:
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-When an input is real data, the script searches for all the subrun files belonging to
-the same observation ID and stored in the same directory as an input subrun file.
-Then it reads drive reports from the files and uses the information to reconstruct the telescope pointing direction.
-Thus, it is best to store all the files in the same directory.
+When an input is real data, the script searches for all the subrun files belonging
+to the same observation ID and stored in the same directory as an input subrun file.
+Then it reads drive reports from the files and uses the information to reconstruct
+the telescope pointing direction. Thus, it is best to store all the files in the
+same directory.
 
-If the "--process-run" argument is given, it not only reads drive reports
-but also processes all the events of the subrun files at once.
+If the "--process-run" argument is given, it not only reads drive reports but also
+processes all the events of the subrun files at once.
 
 Usage:
 $ python magic_calib_to_dl1.py
@@ -33,14 +35,9 @@ import warnings
 import numpy as np
 from pathlib import Path
 from astropy import units as u
-from astropy.coordinates import (
-    AltAz,
-    SkyCoord,
-    angular_separation,
-)
+from astropy.coordinates import angular_separation
 from ctapipe.io import HDF5TableWriter
 from ctapipe.core import Container, Field
-from ctapipe.coordinates import TelescopeFrame
 from ctapipe.image import (
     number_of_islands,
     hillas_parameters,
@@ -50,7 +47,7 @@ from ctapipe.image import (
 from ctapipe.instrument import SubarrayDescription
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
-from magicctapipe.utils import calculate_impact
+from magicctapipe.utils import calculate_disp, calculate_impact
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -59,13 +56,13 @@ logger.setLevel(logging.INFO)
 # Ignore RuntimeWarnings appeared in the image cleaning:
 warnings.simplefilter('ignore', category=RuntimeWarning)
 
-sec2nsec = 1e9
+SEC2NSEC = 1e9
 
-pedestal_types = [
+pedestal_types = np.array([
     'fundamental',
     'from_extractor',
     'from_extractor_rndm',
-]
+])
 
 __all__ = [
     'EventInfoContainer',
@@ -104,11 +101,17 @@ class SimEventInfoContainer(Container):
     true_core_x = Field(-1, 'Simulated event true core x', u.m)
     true_core_y = Field(-1, 'Simulated event true core y', u.m)
     true_impact = Field(-1, 'Simulated event true impact', u.m)
+    off_axis = Field(-1, "Simulated event off-axis angle", u.deg)
     n_pixels = Field(-1, 'Number of pixels of a cleaned image')
     n_islands = Field(-1, 'Number of islands of a cleaned image')
 
 
-def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
+def magic_calib_to_dl1(
+    input_file,
+    output_dir,
+    config,
+    process_run=False,
+):
     """
     Processes MAGIC calibrated events and computes the DL1 parameters.
 
@@ -124,12 +127,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         If True, it processes the events of all the subrun files at once
     """
 
+    logger.info(f'\nInput file:\n{input_file}')
     logger.info(f'\nProcess run: {process_run}')
 
     # Load the input file:
-    logger.info('\nLoading the input file:')
-    logger.info(input_file)
-
     event_source = MAGICEventSource(input_file, process_run=process_run)
 
     obs_id = event_source.obs_ids[0]
@@ -141,7 +142,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info(f'Is simulation: {is_simulation}')
 
     if process_run:
-        logger.info(f'\nProcess the following data:')
+        logger.info('\nProcess the following data:')
         for root_file in event_source.file_list:
             logger.info(root_file)
 
@@ -150,27 +151,28 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     subarray = event_source.subarray
     camera_geom = subarray.tel[tel_id].camera.geometry
-
-    if is_simulation:
-        tel_position = subarray.positions[tel_id]
-        camera_frame = camera_geom.frame
+    tel_position = subarray.positions[tel_id]
 
     # Configure the MAGIC image cleaning:
-    logger.info('\nMAGIC image cleaning:')
-
     config_clean = config['MAGIC']['magic_clean']
 
+    logger.info('\nMAGIC image cleaning:')
+
     if is_simulation and (config_clean['find_hotpixels'] is not False):
-        logger.warning('Hot pixels do not exist in a simulation. Setting the "find_hotpixels" option to False...')
+        logger.warning(
+            "Hot pixels do not exist in a simulation. "
+            "Setting the 'find_hotpixels' option to False..."
+        )
         config_clean.update({'find_hotpixels': False})
 
-    logger.info(config_clean)
+    for key, value in config_clean.items():
+        logger.info(f'\t{key}: {value}')
 
-    if config_clean['find_hotpixels']:
+    find_hotpixels = config_clean['find_hotpixels']
+
+    if find_hotpixels:
         pedestal_type = config_clean.pop('pedestal_type')
-        i_ped_type = np.where(np.array(pedestal_types) == pedestal_type)[0][0]
-    else:
-        unsuitable_mask = None
+        i_ped_type = np.where(pedestal_types == pedestal_type)[0][0]
 
     magic_clean = MAGICClean(camera_geom, config_clean)
 
@@ -205,12 +207,17 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             image = event.dl1.tel[tel_id].image
             peak_time = event.dl1.tel[tel_id].peak_time
 
-            if config_clean['find_hotpixels']:
-                dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
-                badrms_pixels = event.mon.tel[tel_id].pixel_status.pedestal_failing_pixels[i_ped_type]
+            if find_hotpixels:
+                pixel_status = event.mon.tel[tel_id].pixel_status
+                dead_pixels = pixel_status.hardware_failing_pixels[0]
+                badrms_pixels = pixel_status.pedestal_failing_pixels[i_ped_type]
                 unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
+            else:
+                unsuitable_mask = None
 
-            signal_pixels, image, peak_time = magic_clean.clean_image(image, peak_time, unsuitable_mask)
+            signal_pixels, image, peak_time = magic_clean.clean_image(
+                image, peak_time, unsuitable_mask,
+            )
 
             image_cleaned = image.copy()
             image_cleaned[~signal_pixels] = 0
@@ -222,53 +229,59 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             n_islands, _ = number_of_islands(camera_geom, signal_pixels)
 
             if n_pixels == 0:
-                logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
-                               'Could not survive the image cleaning. Skipping.')
+                logger.warning(
+                    f'--> {event.count} event (event ID: {event.index.event_id}): '
+                    'Could not survive the image cleaning.'
+                )
                 continue
 
-            # Try to compute the Hillas parameters:
+            # Try to parametrize the image:
             try:
-                hillas_params = hillas_parameters(camera_geom, image_cleaned)
-            except:
-                logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
-                               'Hillas parameters computation failed. Skipping.')
-                continue
+                hillas_params = hillas_parameters(
+                    camera_geom,
+                    image_cleaned,
+                )
 
-            # Try to compute the timing parameters:
-            try:
-                timing_params = timing_parameters(camera_geom, image_cleaned,
-                                                  peak_time_cleaned, hillas_params, signal_pixels)
-            except:
-                logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
-                               'Timing parameters computation failed. Skipping.')
-                continue
+                timing_params = timing_parameters(
+                    camera_geom,
+                    image_cleaned,
+                    peak_time_cleaned,
+                    hillas_params,
+                    signal_pixels,
+                )
 
-            # Try to compute the leakage parameters:
-            try:
-                leakage_params = leakage_parameters(camera_geom, image_cleaned, signal_pixels)
-            except:
-                logger.warning(f'--> {event.count} event (event ID: {event.index.event_id}): ' \
-                               'Leakage parameters computation failed. Skipping.')
+                leakage_params = leakage_parameters(
+                    camera_geom,
+                    image_cleaned,
+                    signal_pixels,
+                )
+
+            except Exception:
+                logger.warning(
+                    f'--> {event.count} event (event ID: {event.index.event_id}): '
+                    'Image parametrization failed.'
+                )
                 continue
 
             if is_simulation:
 
-                # Compute the DISP parameter:
-                tel_pointing = AltAz(
-                    alt=event.pointing.tel[tel_id].altitude,
-                    az=event.pointing.tel[tel_id].azimuth,
-                )
-
-                tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
-
-                event_coord = SkyCoord(hillas_params.x, hillas_params.y, frame=camera_frame)
-                event_coord = event_coord.transform_to(tel_frame)
-
-                true_disp = angular_separation(
-                    lon1=event_coord.altaz.az,
-                    lat1=event_coord.altaz.alt,
+                # Calculate the off-axis angle:
+                off_axis = angular_separation(
+                    lon1=event.pointing.tel[tel_id].azimuth,
+                    lat1=event.pointing.tel[tel_id].altitude,
                     lon2=event.simulation.shower.az,
                     lat2=event.simulation.shower.alt,
+                )
+
+                # Calculate the DISP parameter:
+                true_disp = calculate_disp(
+                    pointing_alt=event.pointing.tel[tel_id].altitude,
+                    pointing_az=event.pointing.tel[tel_id].azimuth,
+                    shower_alt=event.simulation.shower.alt,
+                    shower_az=event.simulation.shower.az,
+                    cog_x=hillas_params.x,
+                    cog_y=hillas_params.y,
+                    camera_frame=camera_geom.frame,
                 )
 
                 # Calculate the impact parameter:
@@ -295,19 +308,23 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     true_core_x=event.simulation.shower.core_x,
                     true_core_y=event.simulation.shower.core_y,
                     true_impact=true_impact,
+                    off_axis=off_axis,
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                 )
 
             else:
-                timestamp = event.trigger.tel[tel_id].time.to_value(format='unix', subfmt='long')
+                timestamp = event.trigger.tel[tel_id].time.to_value(
+                    format='unix', subfmt='long',
+                )
 
-                # To keep the precision of a timestamp for the event coincidence with LST-1,
-                # here we set the integral and fractional parts separately as "time_sec" and "time_nanosec":
+                # To keep the precision of a timestamp for the event coincidence
+                # with LST-1, here we set the integral and fractional parts
+                # separately as "time_sec" and "time_nanosec":
                 fractional, integral = np.modf(timestamp)
 
                 time_sec = u.Quantity(int(np.round(integral)), u.s)
-                time_nanosec = u.Quantity(int(np.round(fractional * sec2nsec)), u.ns)
+                time_nanosec = u.Quantity(int(np.round(fractional * SEC2NSEC)), u.ns)
 
                 time_diff = time_diffs[event.count]
 
@@ -332,7 +349,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 event_info.tel_id = 3   # MAGIC-II
 
             # Save the parameters to the output file:
-            writer.write('parameters', (event_info, hillas_params, timing_params, leakage_params))
+            writer.write(
+                'parameters',
+                (event_info, hillas_params, timing_params, leakage_params),
+            )
 
         n_events_processed = event.count + 1
         logger.info(f'\nIn total {n_events_processed} events are processed.')
@@ -402,4 +422,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
