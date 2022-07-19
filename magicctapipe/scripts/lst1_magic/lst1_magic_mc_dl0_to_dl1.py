@@ -65,14 +65,14 @@ class EventInfoContainer(Container):
     tel_id = Field(-1, "Telescope ID")
     pointing_alt = Field(-1, "Telescope pointing altitude", u.rad)
     pointing_az = Field(-1, "Telescope pointing azimuth", u.rad)
-    true_energy = Field(-1, "MC event true energy", u.TeV)
-    true_alt = Field(-1, "MC event true altitude", u.deg)
-    true_az = Field(-1, "MC event true azimuth", u.deg)
-    true_disp = Field(-1, "MC event true disp", u.deg)
-    true_core_x = Field(-1, "MC event true core x", u.m)
-    true_core_y = Field(-1, "MC event true core y", u.m)
-    true_impact = Field(-1, "MC event true impact", u.m)
-    off_axis = Field(-1, "MC event off-axis angle", u.deg)
+    true_energy = Field(-1, "Simulated event true energy", u.TeV)
+    true_alt = Field(-1, "Simulated event true altitude", u.deg)
+    true_az = Field(-1, "Simulated event true azimuth", u.deg)
+    true_disp = Field(-1, "Simulated event true disp", u.deg)
+    true_core_x = Field(-1, "Simulated event true core x", u.m)
+    true_core_y = Field(-1, "Simulated event true core y", u.m)
+    true_impact = Field(-1, "Simulated event true impact", u.m)
+    off_axis = Field(-1, "Simulated event off-axis angle", u.deg)
     n_pixels = Field(-1, "Number of pixels of a cleaned image")
     n_islands = Field(-1, "Number of islands of a cleaned image")
     magic_stereo = Field(-1, "True if both M1 and M2 are triggered")
@@ -380,7 +380,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     )
                     continue
 
-                # Compute the off-axis angle:
+                # Calculate the off-axis angle:
                 off_axis = angular_separation(
                     lon1=event.pointing.tel[tel_id].azimuth,
                     lat1=event.pointing.tel[tel_id].altitude,
@@ -388,7 +388,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     lat2=event.simulation.shower.alt,
                 )
 
-                # Compute the DISP parameter:
+                # Calculate the DISP parameter:
                 true_disp = calculate_disp(
                     pointing_alt=event.pointing.tel[tel_id].altitude,
                     pointing_az=event.pointing.tel[tel_id].azimuth,
