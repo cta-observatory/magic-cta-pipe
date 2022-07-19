@@ -24,6 +24,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 from astropy import units as u
+from astropy.coordinates import angular_separation
 from ctapipe.calib import CameraCalibrator
 from ctapipe.core import Container, Field
 from ctapipe.image import (
@@ -71,6 +72,7 @@ class EventInfoContainer(Container):
     true_core_x = Field(-1, "MC event true core x", u.m)
     true_core_y = Field(-1, "MC event true core y", u.m)
     true_impact = Field(-1, "MC event true impact", u.m)
+    off_axis = Field(-1, "MC event off-axis angle", u.deg)
     n_pixels = Field(-1, "Number of pixels of a cleaned image")
     n_islands = Field(-1, "Number of islands of a cleaned image")
     magic_stereo = Field(-1, "True if both M1 and M2 are triggered")
@@ -378,6 +380,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     )
                     continue
 
+                # Compute the off-axis angle:
+                off_axis = angular_separation(
+                    lon1=event.pointing.tel[tel_id].azimuth,
+                    lat1=event.pointing.tel[tel_id].altitude,
+                    lon2=event.simulation.shower.az,
+                    lat2=event.simulation.shower.alt,
+                )
+
                 # Compute the DISP parameter:
                 true_disp = calculate_disp(
                     pointing_alt=event.pointing.tel[tel_id].altitude,
@@ -413,6 +423,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     true_core_x=event.simulation.shower.core_x,
                     true_core_y=event.simulation.shower.core_y,
                     true_impact=true_impact,
+                    off_axis=off_axis,
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                     magic_stereo=magic_stereo,
