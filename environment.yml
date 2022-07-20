@@ -41,6 +41,7 @@ dependencies:
   - sphinx_rtd_theme
   - tqdm
   - traitlets
+  - uproot~=4.1
   - vitables
   - wheel
   - xz
@@ -51,6 +52,5 @@ dependencies:
   - pip:
       - lstchain~=0.9.6
       - ctapipe_io_magic~=0.4.5
-      - uproot~=4.1
       - ctaplot~=0.5.5
       - pyirf~=0.6.0
