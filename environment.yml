@@ -26,6 +26,7 @@ dependencies:
   - numpydoc
   - pandas
   - pre-commit
+  - protozfits=2.0
   - psutil
   - pytables
   - pytest
