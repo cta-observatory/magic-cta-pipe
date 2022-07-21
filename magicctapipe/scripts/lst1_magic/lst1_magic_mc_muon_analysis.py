@@ -73,7 +73,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
     logger.info('\nSubarray configuration:')
     for tel_id in subarray.tel:
-        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id].name}, position = {tel_positions[tel_id]}')
+        logger.info(f'Telescope {tel_id}: {subarray.tel[tel_id]}, position = {tel_positions[tel_id]}')
         camera_geoms[tel_id] = subarray.tel[tel_id].camera.geometry
 
     # Configure the LST event processors:
@@ -123,7 +123,9 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
     logger.info(config_magic['magic_clean'])
     i = None
     for j in subarray.tel:
-        if i is None or 'MAGIC' == subarray.tel[j].name:
+        if i is None or ('MAGIC' in subarray.tel[j].name
+                         or 'UNKNOWN-232M2' == subarray.tel[j].name
+                         or 'UNKNOWN-235M2' == subarray.tel[j].name):
             i = j
     magic_clean = MAGICClean(camera_geoms[i], config_magic['magic_clean'])
 
@@ -151,7 +153,6 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
         muon_config['LST'] = config_lst['muon_ring']
     if 'muon_ring' in config_magic:
         muon_config['MAGIC'] = config_magic['muon_ring']
-
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
@@ -184,7 +185,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
         for tel_id in tels_with_trigger:
 
             if 'LST' == subarray.tel[tel_id].name:
-
+                name = 'LST'
                 # Calibrate the event:
                 calibrator_lst._calibrate_dl0(event, tel_id)
                 calibrator_lst._calibrate_dl1(event, tel_id)
@@ -209,7 +210,10 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                     max_island_label = np.argmax(n_pixels_on_island)
                     signal_pixels[island_labels != max_island_label] = False
 
-            else:
+            elif ('MAGIC' in subarray.tel[tel_id].name
+                  or 'UNKNOWN-232M2' == subarray.tel[tel_id].name
+                  or 'UNKNOWN-235M2' == subarray.tel[tel_id].name):
+                name = 'MAGIC'
                 # Calibrate the event:
                 r1_dl1_calibrator_for_muon_rings_magic._calibrate_dl0(event, tel_id)
                 r1_dl1_calibrator_for_muon_rings_magic._calibrate_dl1(event, tel_id)
@@ -221,6 +225,9 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                 # Apply the image cleaning:
                 signal_pixels, image, peak_time = magic_clean.clean_image(event.dl1.tel[tel_id].image,
                                                                           event.dl1.tel[tel_id].peak_time)
+            else:
+                logger.exception('Telescope name not recognised '+subarray.tel[tel_id].name +
+                                 '\nConsider modifying the script to handle it if this is expected')
 
             image_cleaned = image.copy()
             image_cleaned[~signal_pixels] = 0
@@ -240,8 +247,8 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                                   image=image,
                                   subarray=subarray,
                                   r1_dl1_calibrator_for_muon_rings=
-                                  r1_dl1_calibrator_for_muon_rings[subarray.tel[tel_id].name],
-                                  good_ring_config=muon_config[subarray.tel[tel_id].name],
+                                  r1_dl1_calibrator_for_muon_rings[name],
+                                  good_ring_config=muon_config[name],
                                   data_type='mc',
                                   plot_rings=(plots_path is not None),
                                   plots_path=plots_path)
@@ -282,7 +289,6 @@ def main():
         config = yaml.safe_load(f)
 
     # Process the input data:
-    print(args.plots_path)
     mc_dl0_to_muons(args.input_file, args.output_dir, config, args.plots_path)
 
     logger.info('\nDone.')
