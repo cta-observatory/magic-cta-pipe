@@ -32,22 +32,22 @@ class EnergyRegressor:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, features=[], settings={}, use_unsigned_features=None):
+    def __init__(self, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        features: list
-            Parameters used for training RFs
         settings: dict
             Settings of RF regressors
+        features: list
+            Parameters used for training RFs
         use_unsigned_features
             If True, it trains RFs with unsigned features
         """
 
-        self.features = features
         self.settings = settings
+        self.features = features
         self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
 
@@ -147,8 +147,8 @@ class EnergyRegressor:
         """
 
         output_data = {
-            'features': self.features,
             'settings': self.settings,
+            'features': self.features,
             'use_unsigned_features': self.use_unsigned_features,
             'telescope_rfs': self.telescope_rfs,
         }
@@ -167,8 +167,8 @@ class EnergyRegressor:
 
         input_data = joblib.load(input_file)
 
-        self.features = input_data['features']
         self.settings = input_data['settings']
+        self.features = input_data['features']
         self.use_unsigned_features = input_data['use_unsigned_features']
         self.telescope_rfs = input_data['telescope_rfs']
 
@@ -181,8 +181,8 @@ class DirectionRegressor:
 
     def __init__(
         self,
-        features=[],
         settings={},
+        features=[],
         tel_descriptions={},
         use_unsigned_features=None,
     ):
@@ -191,18 +191,18 @@ class DirectionRegressor:
 
         Parameters
         ----------
-        features: list
-            Parameters used for training RFs
         settings: dict
             Settings of RF regressors
+        features: list
+            Parameters used for training RFs
         tel_descriptions: dict
             Telescope descriptions
         use_unsigned_features
             If True, it trains RFs with unsigned features
         """
 
-        self.features = features
         self.settings = settings
+        self.features = features
         self.tel_descriptions = tel_descriptions
         self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
@@ -389,8 +389,8 @@ class DirectionRegressor:
         """
 
         output_data = {
-            'features': self.features,
             'settings': self.settings,
+            'features': self.features,
             'tel_descriptions': self.tel_descriptions,
             'use_unsigned_features': self.use_unsigned_features,
             'telescope_rfs': self.telescope_rfs,
@@ -410,8 +410,8 @@ class DirectionRegressor:
 
         input_data = joblib.load(input_file)
 
-        self.features = input_data['features']
         self.settings = input_data['settings']
+        self.features = input_data['features']
         self.tel_descriptions = input_data['tel_descriptions']
         self.use_unsigned_features = input_data['use_unsigned_features']
         self.telescope_rfs = input_data['telescope_rfs']
@@ -423,22 +423,22 @@ class EventClassifier:
     The RFs are trained per telescope.
     """
 
-    def __init__(self, features=[], settings={}, use_unsigned_features=None):
+    def __init__(self, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        features: list
-            Parameters used for training RFs
         settings: dict
             Settings of RF classifiers
+        features: list
+            Parameters used for training RFs
         use_unsigned_features
             If True, it trains RFs with unsigned features
         """
 
-        self.features = features
         self.settings = settings
+        self.features = features
         self.use_unsigned_features = use_unsigned_features
         self.telescope_rfs = {}
 
@@ -536,8 +536,8 @@ class EventClassifier:
         """
 
         output_data = {
-            'features': self.features,
             'settings': self.settings,
+            'features': self.features,
             'use_unsigned_features': self.use_unsigned_features,
             'telescope_rfs': self.telescope_rfs,
         }
@@ -556,8 +556,8 @@ class EventClassifier:
 
         input_data = joblib.load(input_file)
 
-        self.features = input_data['features']
         self.settings = input_data['settings']
+        self.features = input_data['features']
         self.use_unsigned_features = input_data['use_unsigned_features']
         self.telescope_rfs = input_data['telescope_rfs']
 
