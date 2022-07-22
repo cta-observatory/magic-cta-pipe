@@ -70,7 +70,12 @@ __all__ = [
 ]
 
 
-def load_train_data_file(input_file, true_event_class=None):
+def load_train_data_file(
+    input_file,
+    offaxis_min=None,
+    offaxis_max=None,
+    true_event_class=None,
+):
     """
     Loads an input DL1-stereo data file as training samples
     and separates the events per telescope combination.
@@ -79,6 +84,10 @@ def load_train_data_file(input_file, true_event_class=None):
     ----------
     input_file: str
         Path to an input DL1-stereo data file
+    offaxis_min: float
+        Minumum shower off-axis angle
+    offaxis_max: float
+        Maximum shower off-axis angle
     true_event_class: int
         True event class of input events
 
@@ -95,6 +104,14 @@ def load_train_data_file(input_file, true_event_class=None):
 
     event_data["event_weight"] = EVENT_WEIGHT
 
+    if offaxis_min is not None:
+        logger.info(f"Minimun off-axis angle: {offaxis_min} [deg]")
+        event_data.query(f"off_axis > {offaxis_min}", inplace=True)
+
+    if offaxis_max is not None:
+        logger.info(f"Maximum off-axis angle: {offaxis_max} [deg]")
+        event_data.query(f"off_axis < {offaxis_max}", inplace=True)
+
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
 
@@ -110,7 +127,7 @@ def load_train_data_file(input_file, true_event_class=None):
         df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
 
         n_events = len(df_events.groupby(group_index).size())
-        logger.info(f"{tel_combo}: {n_events} events")
+        logger.info(f"\t{tel_combo}: {n_events} events")
 
         if n_events > 0:
             data_train[tel_combo] = df_events
@@ -200,21 +217,26 @@ def train_energy_regressor(
         If True, it uses unsigned features for training RFs
     """
 
-    logger.info(f"Input file:\n{input_file}")
-    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
-
-    # Load the input file:
-    data_train = load_train_data_file(input_file)
-
-    # Configure the energy regressor:
     config_rf = config["energy_regressor"]
 
+    # Load the input file:
+    logger.info(f"Input file:\n{input_file}")
+
+    data_train = load_train_data_file(
+        input_file,
+        config_rf["gamma_offaxis"]["min"],
+        config_rf["gamma_offaxis"]["max"],
+    )
+
+    # Configure the energy regressor:
     logger.info("\nRF settings:")
     for key, value in config_rf["settings"]:
         logger.info(f"\t{key}: {value}")
 
     logger.info("\nFeatures:")
     logger.info(config_rf["features"])
+
+    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     energy_regressor = EnergyRegressor(
         config_rf["settings"],
@@ -263,24 +285,29 @@ def train_direction_regressor(
         If True, it uses unsigned features for training RFs
     """
 
-    logger.info(f"Input file:\n{input_file}")
-    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
+    config_rf = config["direction_regressor"]
 
     # Load the input file:
-    data_train = load_train_data_file(input_file)
+    logger.info(f"Input file:\n{input_file}")
+
+    data_train = load_train_data_file(
+        input_file,
+        config_rf["gamma_offaxis"]["min"],
+        config_rf["gamma_offaxis"]["max"],
+    )
 
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_descriptions = subarray.tel
 
     # Configure the direction regressor:
-    config_rf = config["direction_regressor"]
-
     logger.info("\nRF settings:")
     for key, value in config_rf["settings"]:
         logger.info(f"\t{key}: {value}")
 
     logger.info("\nFeatures:")
     logger.info(config_rf["features"])
+
+    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     direction_regressor = DirectionRegressor(
         config_rf["settings"],
@@ -335,23 +362,34 @@ def train_event_classifier(
         If True, it uses unsigned features for training RFs
     """
 
-    logger.info(f"Input gamma MC data file:\n{input_file_gamma}")
-    logger.info(f"Input background data file:\n{input_file_bkg}")
-    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
-
-    # Load the input files:
-    data_gamma = load_train_data_file(input_file_gamma, EVENT_CLASS_GAMMA)
-    data_bkg = load_train_data_file(input_file_bkg, EVENT_CLASS_BKG)
-
-    # Configure the event classifier:
     config_rf = config["event_classifier"]
 
+    # Load the input files:
+    logger.info(f"Input gamma MC data file:\n{input_file_gamma}")
+
+    data_gamma = load_train_data_file(
+        input_file_gamma,
+        config_rf["gamma_offaxis"]["min"],
+        config_rf["gamma_offaxis"]["max"],
+        EVENT_CLASS_GAMMA,
+    )
+
+    logger.info(f"Input background data file:\n{input_file_bkg}")
+
+    data_bkg = load_train_data_file(
+        input_file_bkg,
+        true_event_class=EVENT_CLASS_BKG,
+    )
+
+    # Configure the event classifier:
     logger.info("\nRF settings:")
     for key, value in config_rf["settings"]:
         logger.info(f"\t{key}: {value}")
 
     logger.info("\nFeatures:")
     logger.info(config_rf["features"])
+
+    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     event_classifier = EventClassifier(
         config_rf["settings"],
@@ -373,14 +411,16 @@ def train_event_classifier(
 
         # Adjust the number of training samples:
         if n_events_gamma > n_events_bkg:
-            logger.info(f"Number of gamma MC events is adjusted to {n_events_bkg}")
+            logger.info(f"--> Number of gamma MC events is adjusted to {n_events_bkg}")
             data_gamma[tel_combo] = get_events_at_random(
                 data_gamma[tel_combo],
                 n_events_bkg,
             )
 
         elif n_events_bkg > n_events_gamma:
-            logger.info(f"Number of background events is adjusted to {n_events_gamma}")
+            logger.info(
+                f"--> Number of background events is adjusted to {n_events_gamma}"
+            )
             data_bkg[tel_combo] = get_events_at_random(
                 data_bkg[tel_combo],
                 n_events_gamma,
