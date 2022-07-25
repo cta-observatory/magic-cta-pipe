@@ -110,6 +110,10 @@ energy_regressor:
         'impact',
     ]
 
+    gamma_offaxis:
+        min: 0.2   # unit: [deg]
+        max: 0.6   # unit: [deg]
+
 
 direction_regressor:
     settings:
@@ -142,6 +146,10 @@ direction_regressor:
         'h_max',
         'impact',
     ]
+
+    gamma_offaxis:
+        min: 0.2   # unit: [deg]
+        max: 0.6   # unit: [deg]
 
 
 event_classifier:
@@ -176,6 +184,10 @@ event_classifier:
         'h_max',
         'impact',
     ]
+
+    gamma_offaxis:
+        min: 0.2   # unit: [deg]
+        max: 0.6   # unit: [deg]
 
 
 create_irf:
