@@ -182,21 +182,27 @@ create_irf:
     quality_cuts: null
     irf_type: 'software'   # select 'hardware', 'software', 'software_with_any2' or 'magic_stereo'
     dl2_weight: null   # type of the weight for averaging tel-wise DL2 parameters, null, 'var' or 'intensity'
+    obs_time: 50   # used for weighting background events, unit: [hour]
 
-    energy_bins:
+    energy_bins:   # log space
         start: 0.01   # unit: [TeV]
         stop: 100   # unit: [TeV]
-        n_bins: 20   # number of bins in log space
+        num: 21   # number of edges (nbins = num - 1)
 
-    migration_bins:
+    migration_bins:   # log space
         start: 0.2
         stop: 5
-        n_bins: 30   # number of bins in geom space
+        num: 31   # number of edges (nbins = num - 1)
 
-    bkg_fov_offset_bins:
-        start: 0   # unit: [deg]
-        stop: 10   # unit: [deg]
-        n_bins: 20   # number of bins in linear space
+    fov_offset_bins:  # linear space
+        start: 0.3   # unit: [deg]
+        stop: 0.5   # unit: [deg]
+        num: 2   # number of edges (nbins = num - 1)
+
+    bkg_fov_offset_bins:   # linear space
+        start: 0  # unit: [deg]
+        stop: 10  # unit: [deg]
+        num: 21  # number of bins in linear space
 
     gammaness:
         cut_type: 'dynamic'   # select 'global' or 'dynamic'
