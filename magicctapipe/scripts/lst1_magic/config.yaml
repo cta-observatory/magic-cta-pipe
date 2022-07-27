@@ -69,8 +69,9 @@ MAGIC:
 event_coincidence:
     type_lst_time: 'dragon_time'   # select 'dragon_time', 'tib_time' or 'ucts_time'
     window_width: 0.6   # unit: [usec]
-    offset_start: -10.0   # unit: [usec]
-    offset_stop: 0.0   # unit: [usec]
+    time_offset:
+        start: -10.0   # unit: [usec]
+        stop: 0.0   # unit: [usec]
 
 
 stereo_reco:
