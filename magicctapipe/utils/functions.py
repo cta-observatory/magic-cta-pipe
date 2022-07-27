@@ -7,14 +7,16 @@ import numpy as np
 import pandas as pd
 from astropy import units as u
 from astropy.time import Time
-from astropy.coordinates import AltAz, SkyCoord, EarthLocation
+from astropy.coordinates import AltAz, SkyCoord, EarthLocation, angular_separation
 from astropy.coordinates.builtin_frames import SkyOffsetFrame
+from ctapipe.coordinates import TelescopeFrame
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 __all__ = [
+    'calculate_disp',
     'calculate_impact',
     'calculate_mean_direction',
     'calculate_angular_distance',
@@ -23,6 +25,58 @@ __all__ = [
     'save_pandas_to_table',
     'get_dl2_mean',
 ]
+
+
+def calculate_disp(
+    pointing_alt,
+    pointing_az,
+    shower_alt,
+    shower_az,
+    cog_x,
+    cog_y,
+    camera_frame,
+):
+    """
+    Calculates the DISP parameter.
+
+    Parameters
+    ----------
+    pointing_alt: astropy.units.quantity.Quantity
+        Telescope pointing direction altitude
+    pointing_az: astropy.units.quantity.Quantity
+        Telescope pointing direction azimuth
+    shower_alt: astropy.units.quantity.Quantity
+        Shower arrival direction altitude
+    shower_az: astropy.units.quantity.Quantity
+        Shower arrival direction azimuth
+    cog_x: astropy.units.quantity.Quantity
+        Image CoG along with a camera geometry X coordinate
+    cog_y: astropy.units.quantity.Quantity
+        Image CoG along with a camera geometry Y coordinate
+    camera_frame: ctapipe.coordinates.camera_frame.CameraFrame
+        Telescope camera frame
+
+    Returns
+    -------
+    disp: astropy.units.quantity.Quantity
+        Angular distance between an image CoG
+        and an event arrival direction
+    """
+
+    tel_pointing = AltAz(alt=pointing_alt, az=pointing_az)
+    tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
+
+    event_coord = SkyCoord(cog_x, cog_y, frame=camera_frame)
+    event_coord = event_coord.transform_to(tel_frame)
+
+    disp = angular_separation(
+        lon1=event_coord.altaz.az,
+        lat1=event_coord.altaz.alt,
+        lon2=shower_az,
+        lat2=shower_alt,
+    )
+
+    return disp
 
 
 def calculate_impact(core_x, core_y, az, alt, tel_pos_x, tel_pos_y, tel_pos_z):

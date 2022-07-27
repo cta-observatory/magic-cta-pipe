@@ -57,7 +57,7 @@ MAGIC:
         boundary_thresh: 3.5
         max_time_off: 4.5
         max_time_diff: 1.5
-        find_hotpixels: 'auto'
+        find_hotpixels: true
         pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
     muon_ring:

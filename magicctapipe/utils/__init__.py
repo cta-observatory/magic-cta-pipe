@@ -32,6 +32,7 @@ from .gti import (
 )
 
 from .functions import (
+    calculate_disp,
     calculate_impact,
     calculate_mean_direction,
     calculate_angular_distance,
@@ -89,6 +90,7 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
+    "calculate_disp",
     "calculate_impact",
     "calculate_mean_direction",
     "calculate_angular_distance",
