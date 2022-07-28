@@ -94,6 +94,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     -------
     event_table: astropy.table.table.QTable
         Astropy table of MC DL2 events
+    pointing: numpy.ndarray
+        Telescope mean pointing direction (Zd, Az) in degree
     sim_info: pyirf.simulations.SimulatedEventsInfo
         Container of simulation information
     """
@@ -156,6 +158,10 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     event_table['true_source_fov_offset'] = calculate_source_fov_offset(event_table)
     event_table['reco_source_fov_offset'] = calculate_source_fov_offset(event_table, prefix='reco')
 
+    pointing_zd = np.mean(90 - event_table['pointing_alt'].to_value(u.deg))
+    pointing_az = np.mean(event_table['pointing_az'].to_value(u.deg))
+    pointing = np.array([np.round(pointing_zd, 3), np.round(pointing_az, 3)])
+
     # Load the simulation configuration:
     sim_config = pd.read_hdf(input_file, key='simulation/config')
 
@@ -171,7 +177,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
         viewcone=u.Quantity(sim_config['max_viewcone_radius'][0], u.deg),
     )
 
-    return event_table, sim_info
+    return event_table, pointing, sim_info
 
 
 def apply_dynamic_gammaness_cut(
@@ -369,7 +375,12 @@ def create_irf(
     logger.info('\nLoading the input gamma MC DL2 data file:')
     logger.info(input_file_gamma)
 
-    table_gamma, sim_info_gamma = load_dl2_data_file(input_file_gamma, quality_cuts, irf_type, dl2_weight)
+    table_gamma, pnt_gamma, sim_info_gamma = load_dl2_data_file(
+        input_file_gamma, quality_cuts, irf_type, dl2_weight
+    )
+
+    extra_headers['PNT_ZD'] = (pnt_gamma[0], 'deg')
+    extra_headers['PNT_AZ'] = (pnt_gamma[1], 'deg')
 
     if sim_info_gamma.viewcone.value > 1.0:
         logger.info('\nHave not yet implemented functions to create diffuse IRFs. Exiting.')
@@ -383,8 +394,19 @@ def create_irf(
         logger.info('\nLoading the input proton MC DL2 data file:')
         logger.info(input_file_proton)
 
-        table_proton, sim_info_proton = load_dl2_data_file(input_file_proton, quality_cuts, irf_type, dl2_weight)
-        simulated_spectrum_proton = PowerLaw.from_simulation(sim_info_proton, obs_time_irf)
+        table_proton, pnt_proton, sim_info_proton = load_dl2_data_file(
+            input_file_proton, quality_cuts, irf_type, dl2_weight
+        )
+
+        if np.any(pnt_proton != pnt_gamma):
+            raise ValueError(
+                f'Proton MC pointing direction {pnt_proton} deg '
+                f'do not match with that of gamma MC {pnt_gamma} deg.'
+            )
+
+        simulated_spectrum_proton = PowerLaw.from_simulation(
+            sim_info_proton, obs_time_irf
+        )
 
         table_proton['weight'] = calculate_event_weights(
             true_energy=table_proton['true_energy'],
@@ -396,8 +418,19 @@ def create_irf(
         logger.info('\nLoading the input electron MC DL2 data file:')
         logger.info(input_file_electron)
 
-        table_electron, sim_info_electron = load_dl2_data_file(input_file_electron, quality_cuts, irf_type, dl2_weight)
-        simulated_spectrum_electron = PowerLaw.from_simulation(sim_info_electron, obs_time_irf)
+        table_electron, pnt_electron, sim_info_electron = load_dl2_data_file(
+            input_file_electron, quality_cuts, irf_type, dl2_weight
+        )
+
+        if np.any(pnt_electron != pnt_gamma):
+            raise ValueError(
+                f'Electron MC pointing direction {pnt_electron} deg '
+                f'do not match with that of gamma MC {pnt_gamma} deg.'
+            )
+
+        simulated_spectrum_electron = PowerLaw.from_simulation(
+            sim_info_electron, obs_time_irf
+        )
 
         table_electron['weight'] = calculate_event_weights(
             true_energy=table_electron['true_energy'],
@@ -592,12 +625,10 @@ def create_irf(
     # Save the data in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    regex = r'dl2_(\S+)_run.*'
-    file_name = Path(input_file_gamma).name
-
-    if re.fullmatch(regex, file_name):
-        parser = re.findall(regex, file_name)[0]
-        output_file = f'{output_dir}/irf_{parser}_{irf_type}_{gam_cut_config}_{theta_cut_config}.fits.gz'
+    output_file = (
+        f'{output_dir}/irf_zd_{pnt_gamma[0]}deg_az_{pnt_gamma[1]}deg'
+        f'_{irf_type}_{gam_cut_config}_{theta_cut_config}.fits.gz'
+    )
 
     hdus.writeto(output_file, overwrite=True)
 
