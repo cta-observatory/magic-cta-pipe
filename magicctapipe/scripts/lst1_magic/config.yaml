@@ -57,7 +57,7 @@ MAGIC:
         boundary_thresh: 3.5
         max_time_off: 4.5
         max_time_diff: 1.5
-        find_hotpixels: 'auto'
+        find_hotpixels: true
         pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
     muon_ring:
@@ -69,8 +69,9 @@ MAGIC:
 event_coincidence:
     type_lst_time: 'dragon_time'   # select 'dragon_time', 'tib_time' or 'ucts_time'
     window_width: 0.6   # unit: [usec]
-    offset_start: -10.0   # unit: [usec]
-    offset_stop: 0.0   # unit: [usec]
+    time_offset:
+        start: -10.0   # unit: [usec]
+        stop: 0.0   # unit: [usec]
 
 
 stereo_reco:
@@ -110,6 +111,10 @@ energy_regressor:
         'impact',
     ]
 
+    gamma_offaxis:
+        min: 0.2   # unit: [deg]
+        max: 0.6   # unit: [deg]
+
 
 direction_regressor:
     settings:
@@ -142,6 +147,10 @@ direction_regressor:
         'h_max',
         'impact',
     ]
+
+    gamma_offaxis:
+        min: 0.2   # unit: [deg]
+        max: 0.6   # unit: [deg]
 
 
 event_classifier:
@@ -177,26 +186,36 @@ event_classifier:
         'impact',
     ]
 
+    gamma_offaxis:
+        min: 0.2   # unit: [deg]
+        max: 0.6   # unit: [deg]
+
 
 create_irf:
     quality_cuts: null
     irf_type: 'software'   # select 'hardware', 'software', 'software_with_any2' or 'magic_stereo'
     dl2_weight: null   # type of the weight for averaging tel-wise DL2 parameters, null, 'var' or 'intensity'
+    obs_time: 50   # used for weighting background events, unit: [hour]
 
-    energy_bins:
+    energy_bins:   # log space
         start: 0.01   # unit: [TeV]
-        stop: 1000   # unit: [TeV]
-        n_bins: 25   # number of bins in log space
+        stop: 100   # unit: [TeV]
+        num: 21   # number of edges (nbins = num - 1)
 
-    migration_bins:
+    migration_bins:   # log space
         start: 0.2
         stop: 5
-        n_bins: 30   # number of bins in geom space
+        num: 31   # number of edges (nbins = num - 1)
 
-    bkg_fov_offset_bins:
-        start: 0   # unit: [deg]
-        stop: 10   # unit: [deg]
-        n_bins: 20   # number of bins in linear space
+    fov_offset_bins:  # linear space
+        start: 0.3   # unit: [deg]
+        stop: 0.5   # unit: [deg]
+        num: 2   # number of edges (nbins = num - 1)
+
+    bkg_fov_offset_bins:   # linear space
+        start: 0  # unit: [deg]
+        stop: 10  # unit: [deg]
+        num: 21  # number of bins in linear space
 
     gammaness:
         cut_type: 'dynamic'   # select 'global' or 'dynamic'
@@ -214,7 +233,7 @@ create_irf:
 
 
 dl2_to_dl3:
+    interpolation_method: 'nearest' # 'nearest' - no interpolation (closest point taken), 'linear', 'cubic' - interpolation
     source_name: 'Crab'
     source_ra: null   # used when the source name is null
     source_dec: null   # used when the source name is null
-    interpolation_method: 'nearest' # 'nearest' - no interpolation (closest point taken), 'linear', 'cubic' - interpolation

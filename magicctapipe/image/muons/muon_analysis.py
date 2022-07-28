@@ -8,7 +8,7 @@ __all__ = [
 
 def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, image, subarray,
                           r1_dl1_calibrator_for_muon_rings, good_ring_config, event_time=np.nan,
-                          min_pe_for_muon_t_calc=10., data_type='mc'):
+                          min_pe_for_muon_t_calc=10., data_type='mc', plot_rings=False, plots_path='./'):
     """
 
     Parameters
@@ -18,8 +18,8 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
     event: ctapipe event container
     telescope_id: int
         Id of the telescope
-    telescope_name: string
-        Name of teh telescope
+    telescope_name:
+        Name of the telescope
     image:  `np.ndarray`
         Number of photoelectrons in each pixel
     subarray: `ctapipe.instrument.subarray.SubarrayDescription`
@@ -31,6 +31,10 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
         Minimum pixel brightness used to search for the waveform maximum time
     data_type: string
         'obs' or 'mc'
+    plot_rings: `bool`
+        If True, muon ring plots are produced
+    plots_path: string
+        Destination of plotted muon rings
 
     """
     if data_type == 'obs':
@@ -72,9 +76,7 @@ def perform_muon_analysis(muon_parameters, event, telescope_id, telescope_name, 
             muonpars = \
                 analyze_muon_event(subarray, telescope_id, event_id,
                                    image, good_ring_config,
-                                   plot_rings=False, plots_path='')
-                                  #plot_rings=True, plots_path='../data/real'+telescope_name+'/')
-            #           (test) plot muon rings as png files
+                                   plot_rings=plot_rings, plots_path=plots_path)
 
             if r1_dl1_calibrator_for_muon_rings is not None:
                 # Now we want to obtain the waveform sample (in HG & LG) at which the ring light peaks:
