@@ -515,8 +515,8 @@ def create_irf(
 
         theta_cut_config = f"theta_dyn{theta_efficiency}"
         extra_header["TH_EFF"] = (theta_efficiency, "gamma efficiency")
-        extra_header["TH_MIN"] = theta_cut_min
-        extra_header["TH_MAX"] = theta_cut_max
+        extra_header["TH_MIN"] = (theta_cut_min.value, "deg")
+        extra_header["TH_MAX"] = (theta_cut_max.value, "deg")
 
         logger.info("\nCreating a rad-max HDU...")
 
