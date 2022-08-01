@@ -58,7 +58,9 @@ __all__ = [
 ]
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
+def load_dl2_data_file(
+    input_file, quality_cuts=None, irf_type="hardware", dl2_weight=None
+):
     """
     Loads an input MC DL2 data file, applies event selections and
     returns as an astropy table.
@@ -423,10 +425,14 @@ def create_irf(
         "FOVALIGN": "RADEC",
         "PNT_ZD": (pnt_gamma[0], "deg"),
         "PNT_AZ": (pnt_gamma[0], "deg"),
-        "QUAL_CUT": quality_cuts,
         "IRF_TYPE": irf_type,
-        "DL2_WEIG": dl2_weight,
     }
+
+    if quality_cuts is not None:
+        extra_header["QUAL_CUT"] = quality_cuts
+
+    if dl2_weight is not None:
+        extra_header["DL2_WEIG"] = dl2_weight
 
     hdus_irf = fits.HDUList([fits.PrimaryHDU()])
 
