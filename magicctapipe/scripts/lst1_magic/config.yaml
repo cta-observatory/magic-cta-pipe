@@ -233,7 +233,7 @@ create_irf:
 
 
 dl2_to_dl3:
-    interpolation_method: 'nearest' # 'nearest' - no interpolation (closest point taken), 'linear', 'cubic' - interpolation
+    irf_interpolation_method: 'nearest' # 'nearest' - no interpolation (closest point taken), 'linear', 'cubic' - interpolation
     source_name: 'Crab'
     source_ra: null   # used when the source name is null
     source_dec: null   # used when the source name is null

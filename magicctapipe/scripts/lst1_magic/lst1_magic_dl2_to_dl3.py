@@ -10,16 +10,13 @@ Event cuts are extracted from the input IRF file and are applied to the input DL
 Usage:
 $ python lst1_magic_dl2_to_dl3.py
 --input-file-dl2 ./data/dl2_LST-1_MAGIC.Run03265.h5
---input-file-irf ./data/irf_40deg_90deg_off0.4deg_LST-1_MAGIC_software_gam_global0.6_theta_global0.2.fits.gz
+--input-file-irf ./data/irf_zd_40deg_az_90deg_software_gam_dyn0.6_theta_glob0.2.fits.gz
 --output-dir ./data
 --config-file ./config.yaml
-
-if --input-dir-irf is used instead of --input-file-irf the IRFs are obtained from interpolation of the files in this directory
 """
 
 import re
 import sys
-import os
 import time
 import yaml
 import logging
@@ -28,7 +25,6 @@ import operator
 import glob
 import numpy as np
 import pandas as pd
-import pyirf.interpolation as interp
 from pathlib import Path
 from astropy import units as u
 from astropy.io import fits
@@ -36,13 +32,22 @@ from astropy.time import Time
 from astropy.table import QTable
 from astropy.coordinates import SkyCoord
 from pyirf.cuts import evaluate_binned_cut
-from pyirf.io import create_aeff2d_hdu, create_energy_dispersion_hdu
+from pyirf.io import (
+    create_aeff2d_hdu,
+    create_energy_dispersion_hdu,
+    create_background_2d_hdu,
+    create_rad_max_hdu,
+)
 from pyirf.binning import join_bin_lo_hi
+from pyirf.interpolation import (
+    interpolate_effective_area_per_energy_and_fov,
+    interpolate_energy_dispersion,
+)
 from scipy.interpolate import griddata
-
 from magicctapipe.utils import (
     get_dl2_mean,
     check_tel_combination,
+    create_gh_cuts_hdu,
 )
 
 logger = logging.getLogger(__name__)
@@ -60,14 +65,14 @@ MJDREF = Time(0, format='unix', scale='utc').mjd
 
 __all__ = [
     'calculate_deadc',
+    'load_irf_files',
     'load_dl2_data_file',
     'create_event_list',
     'create_gti_table',
     'create_pointing_table',
-    'read_fits_bins_lo_hi',
-    'interpolate_irf',
     'dl2_to_dl3',
 ]
+
 
 def calculate_deadc(time_diffs, dead_time):
     """
@@ -92,7 +97,168 @@ def calculate_deadc(time_diffs, dead_time):
     return deadc
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
+def load_irf_files(input_dir_irf):
+    """
+    Loads input IRF files.
+
+    Parameters
+    ----------
+    input_dir_irf: str
+        Path to a directory where input IRF files are stored
+
+    Returns
+    -------
+    irf_data: dict
+        Combined IRF data
+    extra_header: dict
+        Extra header of input IRF files
+    """
+
+    irf_file_mask = f"{input_dir_irf}/irf_*.fits.gz"
+
+    input_files_irf = glob.glob(irf_file_mask)
+    input_files_irf.sort()
+
+    n_input_files = len(input_files_irf)
+
+    if n_input_files == 0:
+        raise RuntimeError(f"No IRF files are found under {input_dir_irf}.")
+
+    extra_header = {
+        'TELESCOP': [],
+        'INSTRUME': [],
+        'FOVALIGN': [],
+        'QUAL_CUT': [],
+        'IRF_TYPE': [],
+        'DL2_WEIG': [],
+        'GH_CUT': [],
+        'GH_EFF': [],
+        'GH_MIN': [],
+        'GH_MAX': [],
+        'RAD_MAX': [],
+        'TH_EFF': [],
+        'TH_MIN': [],
+        'TH_MAX': [],
+    }
+
+    irf_data = {
+        'grid_point': [],
+        'effective_area': [],
+        'energy_dispersion': [],
+        'background': [],
+        'gh_cuts': [],
+        'rad_max': [],
+        'energy_bins': [],
+        'fov_offset_bins': [],
+        'migration_bins': [],
+        'bkg_fov_offset_bins': [],
+    }
+
+    logger.info('\nInput IRF files:')
+
+    for input_file in input_files_irf:
+
+        logger.info(input_file)
+        hdus_irf = fits.open(input_file)
+
+        header = hdus_irf['EFFECTIVE AREA'].header
+
+        for key in extra_header.keys():
+            if key in header:
+                extra_header[key].append(header[key])
+
+        # Read the grid point:
+        coszd = np.cos(np.deg2rad(header['PNT_ZD']))
+        azimuth = np.deg2rad(header['PNT_AZ'])
+        grid_point = [coszd, azimuth]
+
+        # Read the IRF data:
+        aeff_data = hdus_irf['EFFECTIVE AREA'].data[0]
+        edisp_data = hdus_irf['ENERGY DISPERSION'].data[0]
+
+        energy_bins = join_bin_lo_hi(aeff_data['ENERG_LO'], aeff_data['ENERG_HI'])
+        fov_offset_bins = join_bin_lo_hi(aeff_data['THETA_LO'], aeff_data['THETA_HI'])
+        migration_bins = join_bin_lo_hi(edisp_data['MIGRA_LO'], edisp_data['MIGRA_HI'])
+
+        irf_data['grid_point'].append(grid_point)
+        irf_data['effective_area'].append(aeff_data['EFFAREA'])
+        irf_data['energy_dispersion'].append(np.swapaxes(edisp_data['MATRIX'], 0, 2))
+        irf_data['energy_bins'].append(energy_bins)
+        irf_data['fov_offset_bins'].append(fov_offset_bins)
+        irf_data['migration_bins'].append(migration_bins)
+
+        if 'BACKGROUND' in hdus_irf:
+            bkg_data = hdus_irf['BACKGROUND'].data[0]
+            bkg_fov_offset_bins = join_bin_lo_hi(
+                bkg_data['THETA_LO'], bkg_data['THETA_HI']
+            )
+
+            irf_data['background'].append(bkg_data['BKG'])
+            irf_data['bkg_fov_offset_bins'].append(bkg_fov_offset_bins)
+
+        if 'GH_CUTS' in hdus_irf:
+            ghcuts_data = hdus_irf['GH_CUTS'].data[0]
+            irf_data['gh_cuts'].append(ghcuts_data['GH_CUTS'])
+
+        if 'RAD_MAX' in hdus_irf:
+            radmax_data = hdus_irf['RAD_MAX'].data[0]
+            irf_data['rad_max'].append(radmax_data['RAD_MAX'])
+
+    # Check the IRF data consistency:
+    for key in irf_data.keys():
+
+        irf_data[key] = np.array(irf_data[key])
+        n_data = len(irf_data[key])
+
+        if (n_data != 0) and (n_data != n_input_files):
+            raise RuntimeError(
+                f"The number of '{key}' data (= {n_data}) does not match "
+                f"with that of the input IRF files (= {n_input_files})."
+            )
+
+        if "bins" in key:
+            unique_bins = np.unique(irf_data[key], axis=0)
+            n_unique_bins = len(unique_bins)
+
+            if n_unique_bins == 1:
+                irf_data[key] = unique_bins[0]
+
+            elif n_unique_bins > 1:
+                raise RuntimeError(
+                    f"The '{key}' of the input IRF files does not match."
+                )
+
+    # Check the header consistency:
+    for key in list(extra_header.keys()):
+
+        n_data = len(extra_header[key])
+        unique_values = np.unique(extra_header[key])
+
+        if n_data == 0:
+            extra_header.pop(key)
+
+        elif (n_data != n_input_files) or len(unique_values) > 1:
+            raise RuntimeError(
+                "The configrations of the input IRF files do not match, "
+                "at least the setting '{key}'."
+            )
+        else:
+            extra_header[key] = unique_values[0]
+
+    # Set the units to the IRF data:
+    irf_data['effective_area'] *= u.m ** 2
+    irf_data['background'] *= u.Unit("MeV-1 s-1 sr-1")
+    irf_data['rad_max'] *= u.deg
+    irf_data['energy_bins'] *= u.TeV
+    irf_data['fov_offset_bins'] *= u.deg
+    irf_data['bkg_fov_offset_bins'] *= u.deg
+
+    return irf_data, extra_header
+
+
+def load_dl2_data_file(
+    input_file, quality_cuts=None, irf_type="software", dl2_weight=None
+):
     """
     Loads an input DL2 data file.
 
@@ -114,6 +280,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     deadc: float
         Dead time correction factor for the input data
     """
+
+    logger.info(f"Input DL2 data file:\n{input_file}")
 
     df_events = pd.read_hdf(input_file, key='events/parameters')
     df_events.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
@@ -143,7 +311,9 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
         df_events.query('combo_type == 0', inplace=True)
 
     elif irf_type == 'hardware':
-        logger.info('\nThe hardware trigger has not yet been used for observations. Exiting.')
+        logger.info(
+            '\nThe hardware trigger has not yet been used for observations. Exiting.'
+        )
         sys.exit()
 
     n_events = len(df_events.groupby(['obs_id', 'event_id']).size())
@@ -156,15 +326,19 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     deadc = 1
     condition = '(time_diff > 0) & (time_diff < 0.1)'
 
-    time_diffs_lst = df_events.query(f'(tel_id == 1) & {condition}')['time_diff'].to_numpy()
+    df_lst = df_events.query(f'(tel_id == 1) & {condition}')
+    time_diffs_lst = df_lst['time_diff'].to_numpy()
 
     if len(time_diffs_lst) > 0:
         deadc_lst = calculate_deadc(time_diffs_lst, dead_time_lst)
         logger.info(f'LST-1: {deadc_lst}')
         deadc *= deadc_lst
 
-    time_diffs_m1 = df_events.query(f'(tel_id == 2) & {condition}')['time_diff'].to_numpy()
-    time_diffs_m2 = df_events.query(f'(tel_id == 3) & {condition}')['time_diff'].to_numpy()
+    df_m1 = df_events.query(f'(tel_id == 2) & {condition}')
+    df_m2 = df_events.query(f'(tel_id == 3) & {condition}')
+
+    time_diffs_m1 = df_m1['time_diff'].to_numpy()
+    time_diffs_m2 = df_m2['time_diff'].to_numpy()
 
     if len(time_diffs_m1) >= len(time_diffs_m2):
         deadc_magic = calculate_deadc(time_diffs_m1, dead_time_magic)
@@ -198,8 +372,9 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     return event_table, deadc
 
 
-def create_event_list(event_table, deadc,
-                      source_name=None, source_ra=None, source_dec=None):
+def create_event_list(
+    event_table, deadc, source_name=None, source_ra=None, source_dec=None
+):
     """
     Creates an event list and its header.
 
@@ -231,7 +406,9 @@ def create_event_list(event_table, deadc,
     elapsed_time = np.sum(time_diffs)
     effective_time = elapsed_time * deadc
 
-    event_coords = SkyCoord(ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs')
+    event_coords = SkyCoord(
+        ra=event_table['reco_ra'], dec=event_table['reco_dec'], frame='icrs'
+    )
 
     if source_name is not None:
         source_coord = SkyCoord.from_name(source_name)
@@ -365,152 +542,8 @@ def create_pointing_table(event_table):
 
     return pnt_table, pnt_header
 
-def read_fits_bins_lo_hi(hdus_irfs, extname, tag):
-    """
-    Reads from a HDUS fits object two arrays of tag_LO and tag_HI.
-    It checks consistency of bins between different files before returning the value
 
-    Parameters
-    ----------
-    hdus_irfs: list
-        list of HDUS objects with IRFs
-    extname: string
-        name of the extension to read the data from in fits file
-    tag: string
-        name of the field in the extension to extract, _LO and _HI will be added
-
-    Returns
-    -------
-    bins: list of astropy.units.Quantity
-        list of ntuples (LO, HI) of bins (with size of extnames)
-    """
-
-    old_table = None
-    bins = list()
-    tag_lo=tag+'_LO'
-    tag_hi=tag+'_HI'
-    for hdus in hdus_irfs:
-        table = hdus[extname].data[0]
-        if old_table is not None:
-            if not old_table[tag_lo].shape == table[tag_lo].shape:
-                raise ValueError('Non matching bins in ' + extname)
-            if not ((old_table[tag_lo] == table[tag_lo]).all() and (old_table[tag_hi] == table[tag_hi]).all()):
-                raise ValueError('Non matching bins in ' + extname)
-        else:
-            bins.append(join_bin_lo_hi(table[tag_lo], table[tag_hi]))
-        old_table = table
-    bins = u.Quantity(np.array(bins), hdus[extname].columns[tag_lo].unit, copy=False)
-
-    return bins
-
-def interpolate_irf(input_file_dl2, input_irf_dir, method='linear'):
-    """
-    Interpolates a grid of IRFs read from a given directory to a specified DL2 file
-
-    Parameters
-    ----------
-    input_file_dl2: string
-        path to the  DL2 file
-    input_irf_dir: string
-        path to the directory with IRFs, files must follow irf*theta_<zenith>_az_<azimuth>_*.fits.gz format
-    method: 'linear’, ‘nearest’, ‘cubic’
-        interpolation method
-
-    Returns
-    -------
-    irfs: list
-        list of interpolated IRFs: effective area, energy dispersion, ghcuts
-    """
-    filepaths=glob.glob(input_irf_dir+"/irf*theta_*_az_*_*.fits.gz")
-    re_float="([-+]?(?:\d*\.\d+|\d+))"
-    regex="irf_\S+_theta_"+re_float+"_az_"+re_float+"_\S+.fits.gz"
-
-    aeff_ext_name="EFFECTIVE AREA"
-    edisp_ext_name="ENERGY DISPERSION"
-    points=[]
-    hdus_irfs=[]
-    aeff_all=[]
-    edisp_all=[]
-    ghcuts_low_last=None
-    ghcuts_high_last=None
-    ghcuts_center_last=None
-    ghcuts_all=[]
-    extra_headers_list=['TELESCOP', 'INSTRUME', 'FOVALIGN', 'QUAL_CUT', 'IRF_TYPE', 'DL2_WEIG', 'GH_CUT', 'GH_EFF', 'RAD_MAX', 'TH_EFF']
-    for file in filepaths:
-        name=os.path.basename(file)
-        logger.info("loading file: "+name)
-        if (re.fullmatch(regex, name)):
-            irf_theta, irf_az=re.findall(regex, name)[0]
-            coszd=np.cos(np.radians(float(irf_theta)))
-            irf_az=np.radians(float(irf_az))
-            points.append([coszd, irf_az])
-            hdus_irf=fits.open(file)
-            hdus_irfs.append(hdus_irf)
-            
-            aeff=hdus_irf["EFFECTIVE AREA"]            
-            aeff_all.append(aeff.data['EFFAREA'][0])
-            edisp=hdus_irf["ENERGY DISPERSION"]
-            edisp_all.append(edisp.data['MATRIX'][0])
-            ghcuts=hdus_irf["GH_CUTS"] 
-            ghcuts_low=u.Quantity(ghcuts.data['low'], unit=ghcuts.columns['low'].unit)
-            ghcuts_high=u.Quantity(ghcuts.data['high'], unit=ghcuts.columns['high'].unit)
-            ghcuts_center=u.Quantity(ghcuts.data['center'], unit=ghcuts.columns['center'].unit)
-            if ghcuts_low_last is not None:
-                if (ghcuts_low_last!=ghcuts_low).any() or (ghcuts_high_last!=ghcuts_high).any() or (ghcuts_center_last!=ghcuts_center).any():
-                    raise ValueError('Non matching bins in GH_CUTS')                    
-                        
-            ghcuts_all.append(ghcuts.data['cut'])
-            
-            ghcuts_low_last=ghcuts_low
-            ghcuts_high_last=ghcuts_high
-            ghcuts_center_last=ghcuts_center
-        else:
-            logger.warning("skipping "+ name)
-
-    # fix me! only the last file is checked, no consistency checks
-    extra_headers={key: aeff.header[key] for key in list(set(extra_headers_list) & set(aeff.header.keys()))}    
-
-    points=np.array(points)
-    aeff_energ_bins=read_fits_bins_lo_hi(hdus_irfs, aeff_ext_name, "ENERG")
-    aeff_theta_bins=read_fits_bins_lo_hi(hdus_irfs, aeff_ext_name, "THETA")
-    
-    edisp_energ_bins=read_fits_bins_lo_hi(hdus_irfs, edisp_ext_name, "ENERG")
-    edisp_migra_bins=read_fits_bins_lo_hi(hdus_irfs, edisp_ext_name, "MIGRA")
-    edisp_theta_bins=read_fits_bins_lo_hi(hdus_irfs, edisp_ext_name, "THETA")
-    
-    
-    aeff_all= u.Quantity(np.array(aeff_all), hdus_irf[aeff_ext_name].columns["EFFAREA"].unit, copy=False)
-    edisp_all= u.Quantity(np.array(edisp_all), hdus_irf[edisp_ext_name].columns["MATRIX"].unit, copy=False)
-    ghcuts_all=np.array(ghcuts_all)
-    
-    # now read the file and check for what to interpolate
-    data=pd.read_hdf(input_file_dl2, 'events/parameters')
-    data_coszd = np.mean(np.sin(data['pointing_alt']))
-    data_az = np.mean(data['pointing_az'])
-    
-    target=np.array([data_coszd, data_az])
-    logger.info("interpolate for: "+str(target))
-    aeff_interp=interp.interpolate_effective_area_per_energy_and_fov (aeff_all, points, target, method=method)
-    
-    # here we need to swap axes because the function expects shape: (n_grid_points, n_energy_bins, n_migration_bins, n_fov_offset_bins)
-    edisp_interp=interp.interpolate_energy_dispersion(np.swapaxes(edisp_all, 1, 3), points, target, method=method)
-    
-    # now create the HDUS
-    # to have the same format we need to loose one dimention, this might need to be rewised for files with many bins in offset angle!
-    aeff_hdu=create_aeff2d_hdu(aeff_interp[...,0], aeff_energ_bins[0], aeff_theta_bins[0], extname=aeff_ext_name, **extra_headers)
-    edisp_hdu=create_energy_dispersion_hdu(edisp_interp[0,...], edisp_energ_bins[0], edisp_migra_bins[0], edisp_theta_bins[0], extname=edisp_ext_name)
-    
-    ghcuts_interp = griddata(points, ghcuts_all, target, method=method)
-    
-    ghcuts_table=QTable()
-    ghcuts_table['low']=ghcuts_low
-    ghcuts_table['high']=ghcuts_high
-    ghcuts_table['center']=ghcuts_center
-    ghcuts_table['cut']=ghcuts_interp[0]
-    ghcuts_hdu = fits.BinTableHDU(ghcuts_table, header=ghcuts.header, name="GH_CUTS")
-    return [aeff_hdu, edisp_hdu, ghcuts_hdu]
-
-def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config, hdus_irfs=None):
+def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     """
     Creates a DL3 data file with input DL2 data and IRF files.
 
@@ -518,64 +551,155 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config, hdus_irfs=Non
     ----------
     input_file_dl2: str
         Path to an input DL2 data file
-    input_file_irf: str
-        Path to an input IRF file
+    input_dir_irf: str
+        Path to a directory where input IRF files are stored
     output_dir: str
         Path to a directory where to save an output DL3 data file
     config: dict
         Configuration for the LST-1 + MAGIC analysis
-    hdus_irfs: list
-        List of BinTableHDU with IRFs
     """
 
-    config_dl3 = config['dl2_to_dl3']
+    # Load the input IRF files:
+    irf_data, extra_header = load_irf_files(input_dir_irf)
 
-    logger.info('\nConfiguration for the DL3 process:')
-    logger.info(config_dl3)
-
-    hdus = fits.HDUList([fits.PrimaryHDU(), ])
-
-    if hdus_irfs is None:
-        # Load the input IRF file:
-        logger.info('\nLoading the input IRF file:')
-        logger.info(input_file_irf)
-
-        hdus_irf = fits.open(input_file_irf)
-        header = hdus_irf[1].header
-        hdus += hdus_irf[1:]
-    else:
-        header = hdus_irfs[0].header
-        hdus += hdus_irfs
-
-    quality_cuts = header['QUAL_CUT']
-    irf_type = header['IRF_TYPE']
-    dl2_weight = header['DL2_WEIG']
-
-    logger.info(f'\nQuality cuts: {quality_cuts}')
-    logger.info(f'IRF type: {irf_type}')
-    logger.info(f'DL2 weight: {dl2_weight}')
-
+    quality_cuts = extra_header.get('QUAL_CUT')
+    irf_type = extra_header.get('IRF_TYPE')
+    dl2_weight = extra_header.get('DL2_WEIG')
 
     # Load the input DL2 data file:
-    logger.info('\nLoading the input DL2 data file:')
-    logger.info(input_file_dl2)
+    event_table, deadc = load_dl2_data_file(
+        input_file_dl2, quality_cuts, irf_type, dl2_weight
+    )
 
-    event_table, deadc = load_dl2_data_file(input_file_dl2, quality_cuts, irf_type, dl2_weight)
+    pointing_coszd = np.mean(np.sin(event_table['pointing_alt']))
+    pointing_az = np.mean(event_table['pointing_az'])
+    target_point = [pointing_coszd, pointing_az]
+
+    # Interpolate the IRFs:
+    config_dl3 = config['dl2_to_dl3']
+
+    interpolation_method = config_dl3.pop("irf_interpolation_method")
+    extra_header['IRF_INTP'] = interpolation_method
+
+    hdus = fits.HDUList([fits.PrimaryHDU()])
+
+    logger.info('\nInterpolating the effective area...')
+
+    aeff_interp = interpolate_effective_area_per_energy_and_fov(
+        effective_area=irf_data['effective_area'],
+        grid_points=irf_data['grid_point'],
+        target_point=target_point,
+        method=interpolation_method,
+    )
+
+    hdu_aeff = create_aeff2d_hdu(
+        effective_area=aeff_interp[:, 0],
+        true_energy_bins=irf_data['energy_bins'],
+        fov_offset_bins=irf_data['fov_offset_bins'],
+        point_like=True,
+        extname="EFFECTIVE AREA",
+        **extra_header,
+    )
+
+    hdus.append(hdu_aeff)
+
+    logger.info('Interpolating the energy dispersion...')
+
+    edisp_interp = interpolate_energy_dispersion(
+        energy_dispersions=irf_data['energy_dispersion'],
+        grid_points=irf_data['grid_point'],
+        target_point=target_point,
+        method=interpolation_method,
+    )
+
+    hdu_edisp = create_energy_dispersion_hdu(
+        energy_dispersion=edisp_interp[0],
+        true_energy_bins=irf_data['energy_bins'],
+        migration_bins=irf_data['migration_bins'],
+        fov_offset_bins=irf_data['fov_offset_bins'],
+        point_like=True,
+        extname='ENERGY DISPERSION',
+    )
+
+    hdus.append(hdu_edisp)
+
+    if len(irf_data['background']) > 1:
+        logger.info(
+            'Warning: more than one background models are found, but the '
+            'interpolation method for them is not implemented. Skipping.'
+        )
+
+    elif len(irf_data['background']) == 1:
+        hdu_bkg = create_background_2d_hdu(
+            background_2d=irf_data['background'].T,
+            reco_energy_bins=irf_data['energy_bins'],
+            fov_offset_bins=irf_data['fov_offset_bins'],
+            extname="BACKGROUND",
+        )
+
+        hdus.append(hdu_bkg)
+
+    if len(irf_data['gh_cuts']) > 0:
+        logger.info('Interpolating the dynamic gammaness cuts...')
+
+        gh_cuts_interp = griddata(
+            points=irf_data['grid_point'],
+            values=irf_data['gh_cuts'],
+            xi=target_point,
+            method=interpolation_method,
+        )
+
+        hdu_gh_cuts = create_gh_cuts_hdu(
+            gh_cuts=gh_cuts_interp.T[:, 0],
+            reco_energy_bins=irf_data['energy_bins'],
+            fov_offset_bins=irf_data['fov_offset_bins'],
+            extname='GH_CUTS',
+            **extra_header,
+        )
+
+        hdus.append(hdu_gh_cuts)
+
+    if len(irf_data['rad_max']) > 0:
+        logger.info('Interpolating the dynamic theta cuts...')
+
+        rad_max_interp = griddata(
+            points=irf_data['grid_point'],
+            values=irf_data['rad_max'].to_value(u.deg),
+            xi=target_point,
+            method=interpolation_method,
+        )
+
+        hdu_rad_max = create_rad_max_hdu(
+            rad_max=u.Quantity(rad_max_interp.T[:, 0], u.deg),
+            reco_energy_bins=irf_data['energy_bins'],
+            fov_offset_bins=irf_data['fov_offset_bins'],
+            point_like=True,
+            extname="RAD_MAX",
+            **extra_header,
+        )
+
+        hdus.append(hdu_rad_max)
 
     # Apply gammaness cuts:
-    if 'GH_CUT' in header:
-        logger.info('\nApplying a global gammaness cut...')
+    if 'GH_CUT' in extra_header:
+        logger.info('\nApplying the global gammaness cut:')
 
-        global_gam_cut = header['GH_CUT']
+        global_gam_cut = extra_header['GH_CUT']
+        logger.info(f'\tGlobal cut value: {global_gam_cut}')
+
         event_table = event_table[event_table['gammaness'] > global_gam_cut]
 
     else:
-        logger.info('\nApplying dynamic gammaness cuts...')
+        logger.info('\nApplying the dynamic gammaness cuts...')
 
-        if hdus_irfs is None:
-            cut_table_gh = QTable.read(input_file_irf, 'GH_CUTS')
-        else:            
-            cut_table_gh = QTable(hdus_irfs[-1].data, names=hdus_irfs[-1].columns.names, units=hdus_irfs[-1].columns.units)
+        gh_cuts = hdus['GH_CUTS'].data
+
+        cut_table_gh = QTable()
+        cut_table_gh['low'] = gh_cuts['ENERG_LO'] * u.TeV
+        cut_table_gh['high'] = gh_cuts['ENERG_HI'] * u.TeV
+        cut_table_gh['cut'] = gh_cuts['GH_CUT'][0, 0]
+
+        logger.info(f"\nGammaness cut table:\n{cut_table_gh}")
 
         mask_gh_gamma = evaluate_binned_cut(
             values=event_table['gammaness'],
@@ -589,10 +713,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config, hdus_irfs=Non
     # Create an event list HDU:
     logger.info('\nCreating an event list HDU...')
 
-    source_name=config_dl3['source_name']
-    source_ra=config_dl3['source_ra']
-    source_dec=config_dl3['source_dec']
-    event_list, event_header = create_event_list(event_table, deadc, source_name, source_ra, source_dec)
+    event_list, event_header = create_event_list(event_table, deadc, **config_dl3)
 
     hdu_event = fits.BinTableHDU(event_list, header=event_header, name='EVENTS')
     hdus.append(hdu_event)
@@ -626,9 +747,7 @@ def dl2_to_dl3(input_file_dl2, input_file_irf, output_dir, config, hdus_irfs=Non
         raise RuntimeError('Could not parse information from the input file name.')
 
     hdus.writeto(output_file, overwrite=True)
-
-    logger.info('\nOutput file')
-    logger.info(output_file)
+    logger.info(f'\nOutput file:\n{output_file}')
 
 
 def main():
@@ -638,50 +757,48 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        '--input-file-dl2', '-d', dest='input_file_dl2', type=str, required=True,
+        '--input-file-dl2',
+        '-d',
+        dest='input_file_dl2',
+        type=str,
+        required=True,
         help='Path to an input DL2 data file.',
     )
 
     parser.add_argument(
-        '--input-file-irf', '-i', dest='input_file_irf', type=str, required=False, default=None,
-        help='Path to an input IRF file (single).',
-    )
-
-    parser.add_argument(
-        '--input-dir-irf', dest='input_dir_irf', type=str, required=False,
+        '--input-dir-irf',
+        '-i',
+        dest='input_dir_irf',
+        type=str,
+        required=False,
         help='Path to an input IRF directory (interpolation will be applied).',
     )
 
     parser.add_argument(
-        '--output-dir', '-o', dest='output_dir', type=str, default='./data',
+        '--output-dir',
+        '-o',
+        dest='output_dir',
+        type=str,
+        default='./data',
         help='Path to a directory where to save an output DL3 data file.',
     )
 
     parser.add_argument(
-        '--config-file', '-c', dest='config_file', type=str, default='./config.yaml',
-       help='Path to a yaml configuration file.',
+        '--config-file',
+        '-c',
+        dest='config_file',
+        type=str,
+        default='./config.yaml',
+        help='Path to a yaml configuration file.',
     )
 
     args = parser.parse_args()
-    if (((args.input_file_irf is None) and (args.input_dir_irf is None)) or 
-        ((args.input_file_irf is not None) and (args.input_dir_irf is not None))):
-        logger.error ("Please provide either input-file-irf or input-dir-irf")
-        raise RuntimeError('Wrong IRF paths.')
 
     with open(args.config_file, 'rb') as f:
         config = yaml.safe_load(f)
 
-    config_dl3 = config['dl2_to_dl3']
-
-    hdus_irfs = None
-    if args.input_dir_irf is not None:
-        interpolation_method = 'linear'
-        if 'interpolation_method' in config_dl3:
-            interpolation_method = config_dl3['interpolation_method']
-            hdus_irfs=interpolate_irf(args.input_file_dl2, args.input_dir_irf, method=interpolation_method)
-
     # Process the input data:
-    dl2_to_dl3(args.input_file_dl2, args.input_file_irf, args.output_dir, config, hdus_irfs)
+    dl2_to_dl3(args.input_file_dl2, args.input_dir_irf, args.output_dir, config)
 
     logger.info('\nDone.')
 
