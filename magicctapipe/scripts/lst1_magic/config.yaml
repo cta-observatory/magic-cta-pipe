@@ -199,8 +199,8 @@ create_irf:
 
     energy_bins:   # log space
         start: 0.01   # unit: [TeV]
-        stop: 100   # unit: [TeV]
-        num: 21   # number of edges (nbins = num - 1)
+        stop: 1000   # unit: [TeV]
+        num: 26   # number of edges (nbins = num - 1)
 
     migration_bins:   # log space
         start: 0.2
