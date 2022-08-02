@@ -2,15 +2,13 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script creates a DL3 data file with input DL2 data and IRF files.
-Event cuts are extracted from the input IRF file and are applied to the input DL2 events.
+The settings used for creating the IRFs are automatically applied to the DL2 events.
 
 Usage:
 $ python lst1_magic_dl2_to_dl3.py
 --input-file-dl2 ./data/dl2_LST-1_MAGIC.Run03265.h5
---input-file-irf ./data/irf_zd_40deg_az_90deg_software_gam_dyn0.6_theta_glob0.2.fits.gz
+--input-dir-irf ./data/irf
 --output-dir ./data
 --config-file ./config.yaml
 """
