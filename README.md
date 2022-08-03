@@ -39,7 +39,7 @@ In general, if you want to add a new feature or fix a bug, please open a new iss
 
 # Available scripts
 
-*magic-cta-pipe* scripts to perform the analysis of MAGIC only and MAGIC+LST1 data. Both types of analysis can be performed using the scripts within the *lst1_magic* folder.
+*magic-cta-pipe* scripts to perform the analysis of MAGIC only and MAGIC+LST1 data. Both types of analysis can be performed using the scripts within the *lst1_magic* folder. See the [README](https://github.com/cta-observatory/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/README.md) for more details on how to run the analysis.
 
 <!--
 A brief description:
