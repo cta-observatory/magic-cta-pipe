@@ -11,13 +11,11 @@ MAGIC-only analysis starts from MAGIC calibrated data (\_Y\_ files). The analysi
 - `magic_calib_to_dl1.py` on real and MC data (if you use MCs produced with MMCS), to convert them into DL1 format
 - if you use SimTelArray MCs, run `lst1_magic_mc_dl0_to_dl1.py` over them to convert them into DL1 format
 - optionally, but recommended, `merge_hdf_files.py` to merge subruns and/or runs together
-- `lst1_magic_stereo_reco.py` to add stereo parameters to the DL1 data
+- `lst1_magic_stereo_reco.py` to add stereo parameters to the DL1 data (use `--magic-only` argument if the MC DL1 data contains LST-1 events)
 - `lst1_magic_train_rfs.py` to train the RFs (energy, direction, classification) on train gamma MCs and protons
 - `lst1_magic_dl1_stereo_to_dl2.py` to apply the RFs to stereo DL1 data (real and test MCs) and produce DL2 data
 - `lst1_magig_create_irf.py` to create the IRF (use `magic_stereo` as `irf_type` in the configuration file)
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
-
-Some of the scripts above need to be run with special arguments if MAGIC only data should be selected. Please run the scripts with `-h` option for the first time to check what are the options available.
 
 ## MAGIC+LST-1 analysis
 
