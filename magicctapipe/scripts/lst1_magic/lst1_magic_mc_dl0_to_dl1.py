@@ -484,7 +484,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     # Save the simulation configuration:
     with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
-        writer.write("config", event_source.simulation_config)
+        writer.write("config", sim_config)
 
     logger.info("\nOutput file:")
     logger.info(output_file)
