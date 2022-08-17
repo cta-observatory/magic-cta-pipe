@@ -40,6 +40,7 @@ from .functions import (
     check_tel_combination,
     save_pandas_to_table,
     get_dl2_mean,
+    create_gh_cuts_hdu,
 )
 
 from .plot import (
@@ -98,6 +99,7 @@ __all__ = [
     "check_tel_combination",
     "save_pandas_to_table",
     "get_dl2_mean",
+    "create_gh_cuts_hdu",
     "save_plt",
     "load_default_plot_settings",
     "load_default_plot_settings_02",
@@ -117,4 +119,3 @@ __all__ = [
     "make_title_str",
     "get_key_if_exists",
 ]
-
