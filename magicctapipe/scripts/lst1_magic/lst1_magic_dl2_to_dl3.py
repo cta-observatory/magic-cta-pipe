@@ -31,10 +31,7 @@ from astropy.time import Time
 from astropy.table import QTable
 from astropy.coordinates import SkyCoord
 from pyirf.cuts import evaluate_binned_cut
-from magicctapipe.utils import (
-    get_dl2_mean,
-    check_tel_combination,
-)
+from magicctapipe.utils import get_dl2_mean, get_stereo_events
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -108,16 +105,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     df_events.set_index(['obs_id', 'event_id', 'tel_id'], inplace=True)
     df_events.sort_index(inplace=True)
 
-    # Apply the quality cuts:
-    if quality_cuts is not None:
-        logger.info('\nApplying the quality cuts...')
-
-        df_events.query(quality_cuts, inplace=True)
-        df_events['multiplicity'] = df_events.groupby(['obs_id', 'event_id']).size()
-        df_events.query('multiplicity > 1', inplace=True)
-
-    combo_types = check_tel_combination(df_events)
-    df_events.update(combo_types)
+    df_events = get_stereo_events(df_events, quality_cuts)
 
     # Select the events of the specified IRF type:
     logger.info(f'\nExtracting the events of the "{irf_type}" type...')

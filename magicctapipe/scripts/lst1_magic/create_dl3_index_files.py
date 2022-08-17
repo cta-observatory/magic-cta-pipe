@@ -2,14 +2,12 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
 This script creates IRF index files using the modules developed in lstchain.
 Output files will be saved in the same directory of input DL3 files.
 
 Usage:
 $ python create_dl3_index_files.py
---input-dir ./data/dl3
+--input-dir ./dl3
 """
 
 import argparse
@@ -20,13 +18,11 @@ from pathlib import Path
 
 from lstchain.high_level import create_hdu_index_hdu, create_obs_index_hdu
 
+__all__ = ["create_dl3_index_files"]
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-__all__ = [
-    "create_dl3_index_files",
-]
 
 
 def create_dl3_index_files(input_dir):

@@ -30,7 +30,7 @@ from astropy.io import fits
 from astropy.table import QTable, table
 from astropy.time import Time
 from magicctapipe import __version__
-from magicctapipe.utils import check_tel_combination, get_dl2_mean
+from magicctapipe.utils import get_dl2_mean, get_stereo_events
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
@@ -88,16 +88,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
-    # Apply the quality cuts:
-    if quality_cuts is not None:
-        logger.info(f"\nApplying the quality cuts\n{quality_cuts}")
-
-        df_events.query(quality_cuts, inplace=True)
-        df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
-        df_events.query("multiplicity > 1", inplace=True)
-
-    combo_types = check_tel_combination(df_events)
-    df_events.update(combo_types)
+    df_events = get_stereo_events(df_events, quality_cuts)
 
     # Select the events of the specified IRF type:
     logger.info(f"\nExtracting the events of the '{irf_type}' type...")
@@ -245,7 +236,8 @@ def apply_dynamic_theta_cut(
 ):
     """
     Applies dynamic (energy-dependent) theta cuts to input events.
-    The cuts are computed in each energy bin so as to keep the specified gamma efficiency.
+    The cuts are computed in each energy bin so as to keep the specified
+    gamma efficiency.
 
     Parameters
     ----------

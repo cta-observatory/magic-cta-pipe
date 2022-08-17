@@ -35,11 +35,11 @@ from .functions import (
     calculate_disp,
     calculate_impact,
     calculate_mean_direction,
-    calculate_angular_distance,
     transform_altaz_to_radec,
-    check_tel_combination,
-    save_pandas_to_table,
     get_dl2_mean,
+    get_off_regions,
+    get_stereo_events,
+    save_pandas_to_table,
 )
 
 from .plot import (
@@ -93,11 +93,11 @@ __all__ = [
     "calculate_disp",
     "calculate_impact",
     "calculate_mean_direction",
-    "calculate_angular_distance",
     "transform_altaz_to_radec",
-    "check_tel_combination",
-    "save_pandas_to_table",
     "get_dl2_mean",
+    "get_off_regions",
+    "get_stereo_events",
+    "save_pandas_to_table",
     "save_plt",
     "load_default_plot_settings",
     "load_default_plot_settings_02",
@@ -117,4 +117,3 @@ __all__ = [
     "make_title_str",
     "get_key_if_exists",
 ]
-
