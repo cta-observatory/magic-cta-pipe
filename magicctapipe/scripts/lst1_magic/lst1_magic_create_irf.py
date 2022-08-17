@@ -150,7 +150,7 @@ def load_dl2_data_file(
 
     pointing_zd = np.mean(90 - event_table["pointing_alt"].to_value(u.deg))
     pointing_az = np.mean(event_table["pointing_az"].to_value(u.deg))
-    pointing = np.array([np.round(pointing_zd, 3), np.round(pointing_az, 3)])
+    pointing = np.array([pointing_zd.round(3), pointing_az.round(3)])
 
     # Load the simulation configuration:
     sim_config = pd.read_hdf(input_file, key="simulation/config")
@@ -251,7 +251,8 @@ def apply_dynamic_theta_cut(
 ):
     """
     Applies dynamic (energy-dependent) theta cuts to input events.
-    The cuts are computed in each energy bin so as to keep the specified gamma efficiency.
+    The cuts are computed in each energy bin so as to keep the specified
+    gamma efficiency.
 
     Parameters
     ----------
@@ -424,7 +425,7 @@ def create_irf(
         "INSTRUME": "LST-1_MAGIC",
         "FOVALIGN": "RADEC",
         "PNT_ZD": (pnt_gamma[0], "deg"),
-        "PNT_AZ": (pnt_gamma[0], "deg"),
+        "PNT_AZ": (pnt_gamma[1], "deg"),
         "IRF_TYPE": irf_type,
     }
 
@@ -456,7 +457,7 @@ def create_irf(
     elif gam_cut_type == "dynamic":
         logger.info("\nApplying the dynamic gammaness cuts:")
 
-        gh_efficiency = config_irf["gammaness"]["gamma_efficiency"]
+        gh_efficiency = config_irf["gammaness"]["efficiency"]
         gh_cut_min = config_irf["gammaness"]["min_cut"]
         gh_cut_max = config_irf["gammaness"]["max_cut"]
 
@@ -503,7 +504,7 @@ def create_irf(
     elif theta_cut_type == "dynamic":
         logger.info("\nApplying the dynamic theta cuts:")
 
-        theta_efficiency = config_irf["theta"]["gamma_efficiency"]
+        theta_efficiency = config_irf["theta"]["efficiency"]
         theta_cut_min = u.Quantity(config_irf["theta"]["min_cut"], u.deg)
         theta_cut_max = u.Quantity(config_irf["theta"]["max_cut"], u.deg)
 
