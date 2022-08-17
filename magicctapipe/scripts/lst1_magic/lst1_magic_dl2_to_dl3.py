@@ -577,6 +577,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     )
 
     pointing_coszd = np.mean(np.sin(event_table["pointing_alt"]))
+    # FIX ME: how to compute the mean if the azimuth makes a full 2pi turn:
     pointing_az = np.mean(event_table["pointing_az"])
     target_point = [pointing_coszd, pointing_az]
 
@@ -775,7 +776,7 @@ def main():
         "-i",
         dest="input_dir_irf",
         type=str,
-        required=False,
+        required=True,
         help="Path to an input IRF directory (interpolation will be applied).",
     )
 
