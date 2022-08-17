@@ -15,8 +15,12 @@ from astropy.coordinates import (
     SkyOffsetFrame,
     angular_separation,
 )
+from astropy.io import fits
+from astropy.table import QTable
 from astropy.time import Time
 from ctapipe.coordinates import TelescopeFrame
+from magicctapipe import __version__
+from pyirf.binning import split_bin_lo_hi
 
 __all__ = [
     "calculate_disp",
@@ -27,6 +31,7 @@ __all__ = [
     "get_off_regions",
     "get_stereo_events",
     "save_pandas_to_table",
+    "create_gh_cuts_hdu",
 ]
 
 logger = logging.getLogger(__name__)
@@ -542,3 +547,55 @@ def save_pandas_to_table(event_data, output_file, group_name, table_name, mode="
 
     with tables.open_file(output_file, mode=mode) as f_out:
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
+
+
+def create_gh_cuts_hdu(
+    gh_cuts, reco_energy_bins, fov_offset_bins, extname, **header_cards
+):
+    """
+    Creates a fits binary table HDU for gammaness cuts.
+
+    Parameters
+    ----------
+    gh_cuts:
+        Array of the gamma/hadron cut.
+        Must have shape (n_reco_energy_bins, n_fov_offset_bins)
+    reco_energy_bins:
+        Bin edges in the reconstructed energy
+    fov_offset_bins:
+        Bin edges in the field of view offset.
+        For Point-Like IRFs, only giving a single bin is appropriate
+    extname: str
+        Name for the output BinTableHDU
+    **header_cards
+        Additional metadata to add to the header
+    Returns
+    -------
+    hdu_gh_cuts: astropy.io.fits.hdu.table.BinTableHDU
+        Gamma/hadron cuts HDU
+    """
+
+    energy_lo, energy_hi = split_bin_lo_hi(reco_energy_bins[np.newaxis, :].to(u.TeV))
+    theta_lo, theta_hi = split_bin_lo_hi(fov_offset_bins[np.newaxis, :].to(u.deg))
+
+    gh_cuts_table = QTable()
+    gh_cuts_table["ENERG_LO"] = energy_lo
+    gh_cuts_table["ENERG_HI"] = energy_hi
+    gh_cuts_table["THETA_LO"] = theta_lo
+    gh_cuts_table["THETA_HI"] = theta_hi
+    gh_cuts_table["GH_CUTS"] = gh_cuts.T[np.newaxis, :]
+
+    header = fits.Header()
+    header["CREATOR"] = f"magicctapipe v{__version__}"
+    header["HDUCLAS1"] = "RESPONSE"
+    header["HDUCLAS2"] = "GH_CUTS"
+    header["HDUCLAS3"] = "POINT-LIKE"
+    header["HDUCLAS4"] = "GH_CUTS_2D"
+    header["DATE"] = Time.now().utc.iso
+
+    for key, value in header_cards.items():
+        header[key] = value
+
+    hdu_gh_cuts = fits.BinTableHDU(gh_cuts_table, header=header, name=extname)
+
+    return hdu_gh_cuts

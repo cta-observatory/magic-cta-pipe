@@ -40,6 +40,7 @@ from .functions import (
     get_off_regions,
     get_stereo_events,
     save_pandas_to_table,
+    create_gh_cuts_hdu,
 )
 
 from .plot import (
@@ -98,6 +99,7 @@ __all__ = [
     "get_off_regions",
     "get_stereo_events",
     "save_pandas_to_table",
+    "create_gh_cuts_hdu",
     "save_plt",
     "load_default_plot_settings",
     "load_default_plot_settings_02",
