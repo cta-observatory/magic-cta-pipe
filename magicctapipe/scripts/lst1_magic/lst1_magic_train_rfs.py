@@ -5,8 +5,8 @@
 This script trains energy, direction regressors and event classifiers
 with input DL1-stereo data. The RFs are currently trained per telescope
 combination and per telescope type. When training event classifiers, the
-number of gamma MC or background samples is automatically adjusted so
-that the RFs are trained with the same number of samples.
+number of gamma MC or background samples is adjusted so that the RFs are
+trained with the same number of samples.
 
 Please specify the RF type that will be trained by using "--train-energy",
 "--train-direction" or "--train-classifier" arguments.
@@ -76,6 +76,7 @@ TEL_COMBINATIONS = {
 }
 
 
+@u.quantity_input(offaxis_min=u.deg, offaxis_max=u.deg)
 def load_train_data_file(
     input_file, offaxis_min=None, offaxis_max=None, true_event_class=None
 ):
@@ -475,7 +476,6 @@ def main():
         "-b",
         dest="input_file_bkg",
         type=str,
-        default=None,
         help="Path to an input DL1-stereo background data file.",
     )
 
@@ -543,11 +543,11 @@ def main():
 
     if args.train_classifier:
         train_event_classifier(
-            args.input_file_gamma,
-            args.input_file_bkg,
-            args.output_dir,
-            config,
-            args.use_unsigned,
+            input_file_gamma=args.input_file_gamma,
+            input_file_bkg=args.input_file_bkg,
+            output_dir=args.output_dir,
+            config=config,
+            use_unsigned_features=args.use_unsigned,
         )
 
     logger.info("\nDone.")

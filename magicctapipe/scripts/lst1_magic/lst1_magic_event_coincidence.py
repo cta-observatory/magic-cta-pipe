@@ -54,7 +54,7 @@ from ctapipe.containers import EventType
 from ctapipe.coordinates import CameraFrame
 from ctapipe.instrument import SubarrayDescription
 from lstchain.reco.utils import add_delta_t_key
-from magicctapipe.utils import save_pandas_to_table, get_stereo_events
+from magicctapipe.utils import get_stereo_events, save_pandas_to_table
 
 __all__ = ["load_lst_data_file", "load_magic_data_file", "event_coincidence"]
 
@@ -66,10 +66,10 @@ NSEC2SEC = 1e-9
 USEC2SEC = 1e-6
 SEC2USEC = 1e6
 
-# The final digit of a timestamp in sec:
-TIME_ACCURACY = 1e-7
+# The final digit of a timestamp:
+TIME_ACCURACY = 1e-7  # unit: [sec]
 
-# The LST nominal/effective focal lengths used in a simulation:
+# The LST nominal/effective focal lengths:
 NOMINAL_FOCLEN_LST = u.Quantity(28, u.m)
 EFFECTIVE_FOCLEN_LST = u.Quantity(29.30565, u.m)
 
@@ -86,7 +86,7 @@ TEL_POSITIONS = {
 def load_lst_data_file(input_file):
     """
     Loads an input LST-1 data file and arranges the contents for the
-    event coincidence.
+    event coincidence with MAGIC.
 
     Parameters
     ----------
@@ -140,7 +140,7 @@ def load_lst_data_file(input_file):
 
     logger.info(f"LST-1: {len(event_data)} events")
 
-    # Rename the column names:
+    # Rename the columns:
     event_data.rename(
         columns={
             "delta_t": "time_diff",
@@ -195,7 +195,7 @@ def load_magic_data_file(input_dir):
         MAGIC subarray description
     """
 
-    file_mask = f"{input_dir}/dl*.h5"
+    file_mask = f"{input_dir}/dl1_*.h5"
 
     input_files = glob.glob(file_mask)
     input_files.sort()
@@ -253,7 +253,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     input_dir_magic: str
         Path to a directory where input MAGIC data files are stored
     output_dir: str
-        Path to a directory where to save an output coincidence data file
+        Path to a directory where to save an output data file
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     """
@@ -364,7 +364,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         # Note that there are two conditions for the event coincidence.
         # The first one includes both edges of the coincidence window,
         # and the other one includes only the right edge. The latter
-        # means the number of coincident events between the offset steps:
+        # means the number of coincident events between the offsets:
 
         n_events_lst = len(time_lst)
 

@@ -265,7 +265,7 @@ class DirectionRegressor:
 
             # Reconstruct the Alt/Az directions of the head and tail
             # candidates, i.e., the directions on the major shower axis
-            # but separated from the image CoG by the DISP parameter:
+            # but separated by the DISP parameter from the image CoG:
 
             tel_pointing = AltAz(
                 alt=u.Quantity(df_events["pointing_alt"].to_numpy(), u.rad),
@@ -312,8 +312,8 @@ class DirectionRegressor:
         # Get the flip combinations minimizing the sum of the angular
         # distances between the head and tail candidates.
 
-        # Here we first define all the possible flip combinations, for
-        # example, in case that we have two telescope images in total
+        # Here we first define all the possible flip combinations. For
+        # example, in case that we have two telescope images, in total
         # 4 combinations are defined as follows:
         #   [(head, head), (head, tail), (tail, head), (tail, tail)]
         # where the i-th element of each tuple means the flip of i-th
@@ -323,8 +323,8 @@ class DirectionRegressor:
             list(itertools.product([0, 1], repeat=len(tel_ids)))
         )
 
-        # Next, we define all the any 2 telescope combinations, for
-        # example, in case of 3 telescopes in total 3 combinations are
+        # Next, we define all the any 2 telescope combinations. For
+        # example, in case of 3 telescopes, in total 3 combinations are
         # defined as follows:
         #                 [(1, 2), (1, 3), (2, 3)]
         # where the elements of the tuples mean the telescope IDs.
@@ -372,7 +372,7 @@ class DirectionRegressor:
 
         # Finally, we extract the indices of the flip combinations for
         # each event with which the angular distances become minimum,
-        # and returns only those events as the output data:
+        # and keeps only those events for the output data:
 
         distances = np.array(distances)
         distances_min = distances.min(axis=0)

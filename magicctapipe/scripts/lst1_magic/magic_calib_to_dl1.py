@@ -5,18 +5,22 @@
 This script processes the events of MAGIC calibrated data (*_Y_*.root)
 with the MARS-like image cleaning and computes the DL1 parameters, i.e.,
 Hillas, timing and leakage parameters. It saves only the events that all
-the DL1 parameters are successfully reconstructed. The telescope IDs
-will be reset to the following ones for the combined analysis with LST-1
-whose telescope ID is 1:
+the DL1 parameters are successfully reconstructed. For simulation data,
+it also calculates some additional parameters, i.e., the DISP parameter,
+impact distance and off-axis angle.
+
+When saving data to an output file, the telescope IDs will be reset to
+the following ones for the convenience of the combined analysis with
+LST-1, whose telescope ID is set to 1:
 
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-When the input is real data, the script searches for all the subrun
-files belonging to the same observation ID and stored in the same
-directory as the input subrun file. Then, it reads the drive reports
-from the files and uses the information to reconstruct the telescope
-pointing direction. Thus, it is best to store all the subrun files in
-the same directory.
+When the input is real data, it searches for all the subrun files
+belonging to the same observation ID and stored in the same directory
+as the input subrun file. Then, it reads the drive reports and uses the
+information to reconstruct the telescope pointing direction. Since the
+accuracy of the reconstruction improves, it is recommended to store all
+the subrun files in the same directory.
 
 If the "--process-run" argument is given, it not only reads the drive
 reports but also processes all the events of the subrun files at once.
@@ -59,7 +63,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-# Ignore RuntimeWarnings appeared during the image cleaning:
+# Ignore RuntimeWarnings appeared during the image cleaning
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
 SEC2NSEC = 1e9
@@ -81,10 +85,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         Configuration for the LST-1 + MAGIC analysis
     process_run: bool
         If `True`, it processes the events of all the subrun files
-        found in the same directory of the input subrun file
+        found in the same directory of the input subrun file at once
+        (applicable only to real data)
     """
 
-    # Load the input file:
+    # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
 
     event_source = MAGICEventSource(input_file, process_run=process_run)
@@ -110,7 +115,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     camera_geom = subarray.tel[tel_id].camera.geometry
     tel_position = subarray.positions[tel_id]
 
-    # Configure the MAGIC image cleaning:
+    # Configure the MAGIC image cleaning
     config_clean = config["MAGIC"]["magic_clean"]
 
     if is_simulation and config_clean["find_hotpixels"]:
@@ -127,12 +132,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     find_hotpixels = config_clean["find_hotpixels"]
 
     if find_hotpixels:
-        pedestal_type = config_clean.pop("pedestal_type")
-        i_ped_type = PEDESTAL_TYPES.index(pedestal_type)
+        i_ped_type = PEDESTAL_TYPES.index(config_clean["pedestal_type"])
 
     magic_clean = MAGICClean(camera_geom, config_clean)
 
-    # Prepare for saving data to an output file:
+    # Prepare for saving data to an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     if is_simulation:
@@ -149,7 +153,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             subrun_id = event_source.metadata["subrun_number"][0]
             output_file = f"{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5"
 
-    # Start processing the events:
+    # Start processing the events
     logger.info("\nProcessing the events...")
 
     with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
@@ -159,22 +163,21 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
 
-            # Apply the image cleaning:
-            image = event.dl1.tel[tel_id].image
-            peak_time = event.dl1.tel[tel_id].peak_time
-
+            # Apply the image cleaning
             if find_hotpixels:
                 pixel_status = event.mon.tel[tel_id].pixel_status
                 unsuitable_mask = np.logical_or(
-                    pixel_status.hardware_failing_pixels[0],
-                    pixel_status.pedestal_failing_pixels[i_ped_type],
+                    pixel_status.hardware_failing_pixels[0],  # dead pixels
+                    pixel_status.pedestal_failing_pixels[i_ped_type],  # bad RMS pixels
                 )
 
             else:
                 unsuitable_mask = None
 
             signal_pixels, image, peak_time = magic_clean.clean_image(
-                image, peak_time, unsuitable_mask
+                event.dl1.tel[tel_id].image,
+                event.dl1.tel[tel_id].peak_time,
+                unsuitable_mask,
             )
 
             if not np.any(signal_pixels):
@@ -216,15 +219,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
             if is_simulation:
 
-                # Calculate the off-axis angle:
-                off_axis = angular_separation(
-                    lon1=event.pointing.tel[tel_id].azimuth,
-                    lat1=event.pointing.tel[tel_id].altitude,
-                    lon2=event.simulation.shower.az,
-                    lat2=event.simulation.shower.alt,
-                )
-
-                # Calculate the DISP parameter:
+                # Calculate the additional parameters
                 true_disp = calculate_disp(
                     pointing_alt=event.pointing.tel[tel_id].altitude,
                     pointing_az=event.pointing.tel[tel_id].azimuth,
@@ -235,7 +230,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     camera_frame=camera_geom.frame,
                 )
 
-                # Calculate the impact distance:
                 true_impact = calculate_impact(
                     shower_alt=event.simulation.shower.alt,
                     shower_az=event.simulation.shower.az,
@@ -246,7 +240,14 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     tel_pos_z=tel_position[2],
                 )
 
-                # Set the simulated event information to the container:
+                off_axis = angular_separation(
+                    lon1=event.pointing.tel[tel_id].azimuth,
+                    lat1=event.pointing.tel[tel_id].altitude,
+                    lon2=event.simulation.shower.az,
+                    lat2=event.simulation.shower.alt,
+                )
+
+                # Set the simulated event information to the container
                 event_info = SimEventInfoContainer(
                     obs_id=event.index.obs_id,
                     event_id=event.index.event_id,
@@ -265,15 +266,15 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 )
 
             else:
-                # The UNIX format with the "long" sub-format can get the
-                # timestamp without affected by a rounding issue:
+                # The UNIX format with the "long" sub-format can get
+                # the timestamp without affected by a rounding issue
                 timestamp = event.trigger.tel[tel_id].time.to_value(
                     format="unix", subfmt="long"
                 )
 
                 # To keep the precision of the timestamp for the event
                 # coincidence with LST-1, here we save the integral and
-                # fractional parts separately:
+                # fractional parts separately
                 fractional, integral = np.modf(timestamp)
 
                 time_sec = int(np.round(integral)) * u.s
@@ -281,7 +282,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
                 time_diff = time_diffs[event.count]
 
-                # Set the real event information to the container:
+                # Set the real event information to the container
                 event_info = RealEventInfoContainer(
                     obs_id=event.index.obs_id,
                     event_id=event.index.event_id,
@@ -294,14 +295,14 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     n_islands=n_islands,
                 )
 
-            # Reset the telescope IDs:
+            # Reset the telescope IDs
             if tel_id == 1:
                 event_info.tel_id = 2  # MAGIC-I
 
             elif tel_id == 2:
                 event_info.tel_id = 3  # MAGIC-II
 
-            # Save the parameters to the output file:
+            # Save the parameters to the output file
             writer.write(
                 "parameters", (event_info, hillas_params, timing_params, leakage_params)
             )
@@ -309,7 +310,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
 
-    # Reset the telescope IDs of the subarray descriptions:
+    # Reset the telescope IDs of the subarray descriptions
     tel_positions_magic = {
         2: subarray.positions[1],  # MAGIC-I
         3: subarray.positions[2],  # MAGIC-II
@@ -324,11 +325,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
     )
 
-    # Save the subarray description:
+    # Save the subarray description
     subarray_magic.to_hdf(output_file)
 
     if is_simulation:
-        # Save the simulation configuration:
+        # Save the simulation configuration
         with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
             writer.write("config", event_source.simulation_config[obs_id])
 
@@ -380,7 +381,7 @@ def main():
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
-    # Process the input data:
+    # Process the input data
     magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
 
     logger.info("\nDone.")

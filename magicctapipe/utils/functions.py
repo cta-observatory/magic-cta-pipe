@@ -55,8 +55,15 @@ TEL_COMBINATIONS = {
 GROUP_INDEX = ["obs_id", "event_id"]
 
 
+@u.quantity_input
 def calculate_disp(
-    pointing_alt, pointing_az, shower_alt, shower_az, cog_x, cog_y, camera_frame
+    pointing_alt: u.rad,
+    pointing_az: u.rad,
+    shower_alt: u.deg,
+    shower_az: u.deg,
+    cog_x: u.m,
+    cog_y: u.m,
+    camera_frame,
 ):
     """
     Calculates the DISP parameter, i.e., the angular distance between
@@ -99,14 +106,21 @@ def calculate_disp(
     return disp
 
 
+@u.quantity_input
 def calculate_impact(
-    shower_alt, shower_az, core_x, core_y, tel_pos_x, tel_pos_y, tel_pos_z
+    shower_alt: u.deg,
+    shower_az: u.deg,
+    core_x: u.m,
+    core_y: u.m,
+    tel_pos_x: u.m,
+    tel_pos_y: u.m,
+    tel_pos_z: u.m,
 ):
     """
     Calculates the impact distance, i.e., the closest distance between
     a shower axis and a telescope position.
 
-    It uses a formula derived from a hand calculation, but it is
+    It uses the equations derived from a hand calculation, but it is
     confirmed that the result is consistent with what is done in MARS.
 
     In ctapipe v0.16.0 the function to calculate the impact distance is
@@ -119,9 +133,9 @@ def calculate_impact(
     shower_az: astropy.units.quantity.Quantity
         Azimuth of the event arrival direction
     core_x: astropy.units.quantity.Quantity
-        Core position of the shower axis along the geographical north
+        Core position along the geographical north
     core_y: astropy.units.quantity.Quantity
-        Core position of the shower axis along the geographical west
+        Core position along the geographical west
     tel_pos_x: astropy.units.quantity.Quantity
         Telescope position along the geographical north
     tel_pos_y: astropy.units.quantity.Quantity
@@ -220,9 +234,10 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
     return lon_mean, lat_mean
 
 
-def transform_altaz_to_radec(alt, az, obs_time):
+@u.quantity_input
+def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
     """
-    Transforms the AltAz direction measured from ORM to the RaDec
+    Transforms the Alt/Az direction measured from ORM to the RA/Dec
     coordinate by using the observation time.
 
     Parameters
@@ -256,8 +271,8 @@ def transform_altaz_to_radec(alt, az, obs_time):
 
 def get_dl2_mean(event_data, weight_type=None):
     """
-    Calculates the mean of the tel-wise DL2 parameters per shower event,
-    and returns them as a data frame with some additional parameters.
+    Calculates the mean of the telescope-wise DL2 parameters per shower
+    event and returns them with some additional parameters.
 
     The input data is supposed to have the index (obs_id, event_id) to
     group up the shower events.
@@ -267,7 +282,7 @@ def get_dl2_mean(event_data, weight_type=None):
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of shower events
     weight_type: str
-        Type of the weights for averaging the tel-wise parameters,
+        Type of the weights for averaging the telescope-wise parameters,
         'variance' to use the inverse of the RF variance, and
         'intensity' to use the linear-scale intensity parameter
 
@@ -295,9 +310,7 @@ def get_dl2_mean(event_data, weight_type=None):
         gammaness_weights = event_data["intensity"]
 
     else:
-        raise RuntimeError(
-            f"Unknown weight type '{weight_type}'. Select 'variance' or 'intensity'."
-        )
+        raise ValueError(f"unknown weight type '{weight_type}'")
 
     # Calculate the mean of the reconstructed energies in log scale:
     weighted_energy = np.log10(event_data["reco_energy"]) * energy_weights
@@ -384,8 +397,13 @@ def get_dl2_mean(event_data, weight_type=None):
     return event_data_mean
 
 
+@u.quantity_input
 def get_off_regions(
-    pointing_ra, pointing_dec, on_coord_ra, on_coord_dec, n_off_regions
+    pointing_ra: u.deg,
+    pointing_dec: u.deg,
+    on_coord_ra: u.deg,
+    on_coord_dec: u.deg,
+    n_off_regions,
 ):
     """
     Gets OFF region(s) where to estimate the backgrounds of wobble
@@ -454,7 +472,7 @@ def get_off_regions(
 
 def get_stereo_events(event_data, quality_cuts=None):
     """
-    Get stereo events from input data surviving specified quality cuts.
+    Gets stereo events from input data surviving specified quality cuts.
 
     The input data is supposed to have the index (obs_id, event_id) to
     group up the shower events.
@@ -549,26 +567,28 @@ def save_pandas_to_table(event_data, output_file, group_name, table_name, mode="
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
 
 
+@u.quantity_input
 def create_gh_cuts_hdu(
-    gh_cuts, reco_energy_bins, fov_offset_bins, extname, **header_cards
+    gh_cuts, reco_energy_bins: u.TeV, fov_offset_bins: u.deg, extname, **header_cards
 ):
     """
     Creates a fits binary table HDU for gammaness cuts.
 
     Parameters
     ----------
-    gh_cuts:
+    gh_cuts: astropy.table.table.QTable
         Array of the gamma/hadron cut.
         Must have shape (n_reco_energy_bins, n_fov_offset_bins)
-    reco_energy_bins:
+    reco_energy_bins: astropy.units.quantity.Quantity
         Bin edges in the reconstructed energy
-    fov_offset_bins:
+    fov_offset_bins: astropy.units.quantity.Quantity
         Bin edges in the field of view offset.
         For Point-Like IRFs, only giving a single bin is appropriate
     extname: str
         Name for the output BinTableHDU
     **header_cards
         Additional metadata to add to the header
+
     Returns
     -------
     hdu_gh_cuts: astropy.io.fits.hdu.table.BinTableHDU

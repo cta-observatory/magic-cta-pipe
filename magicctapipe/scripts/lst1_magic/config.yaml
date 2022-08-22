@@ -193,9 +193,9 @@ event_classifier:
 
 create_irf:
     quality_cuts: null
-    irf_type: "software"  # select "hardware", "software(_with_any2)" or "magic_stereo"
-    dl2_weight: null  # select null, "variance" or "intensity"
-    obs_time: 50  # used for modeling backgrounds, unit: [hour]
+    irf_type: "software"  # select "hardware", "software(_with_any2)" or "magic_only"
+    dl2_weight: null  # select "variance" or "intensity"
+    irf_obs_time: 50  # used for creating a background HDU, unit: [hour]
 
     energy_bins:   # log space
         start: 0.01   # unit: [TeV]
@@ -207,11 +207,6 @@ create_irf:
         stop: 5
         num: 31  # number of edges (nbins = num - 1)
 
-    fov_offset_bins:  # linear space
-        start: 0.3  # unit: [deg]
-        stop: 0.5  # unit: [deg]
-        num: 2  # number of edges (nbins = num - 1)
-
     bkg_fov_offset_bins:  # linear space
         start: 0  # unit: [deg]
         stop: 10  # unit: [deg]
@@ -220,21 +215,20 @@ create_irf:
     gammaness:
         cut_type: "dynamic"   # select "global" or "dynamic"
         global_cut_value: 0.8   # used for the global cut
-        efficiency: 0.9   # used for the dynamic cut
-        min_cut: 0.05   # used for the dynamic cut
-        max_cut: 0.85   # used for the dynamic cut
+        efficiency: 0.9   # used for the dynamic cuts
+        min_cut: 0.05   # used for the dynamic cuts
+        max_cut: 0.85   # used for the dynamic cuts
 
     theta:
         cut_type: "global"   # select "global" or "dynamic"
         global_cut_value: 0.2   # used for the global cut
-        efficiency: 0.75   # used for the dynamic cut
-        min_cut: 0.1   # used for the dynamic cut
-        max_cut: 0.45   # used for the dynamic cut
+        efficiency: 0.75   # used for the dynamic cuts
+        min_cut: 0.1   # used for the dynamic cuts
+        max_cut: 0.45   # used for the dynamic cuts
 
 
 dl2_to_dl3:
-    irf_interpolation_method: "nearest" # "nearest" - no interpolation (closest point taken), "linear", "cubic" - interpolation
+    interpolation_method: "nearest"  # select "nearest", "linear" or "cubic"
     source_name: "Crab"
-    source_ra: null   # used when the source name is null
-    source_dec: null   # used when the source name is null
-
+    source_ra: null   # used when the source name cannot be resolved
+    source_dec: null   # used when the source name cannot be resolved

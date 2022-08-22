@@ -5,7 +5,7 @@ import numpy as np
 from astropy import units as u
 from ctapipe.core import Container, Field
 
-__all__ = ["BaseEventInfoContainer", "SimEventInfoContainer", "RealEventInfoContainer"]
+__all__ = ["BaseEventInfoContainer", "RealEventInfoContainer", "SimEventInfoContainer"]
 
 
 class BaseEventInfoContainer(Container):
@@ -20,6 +20,14 @@ class BaseEventInfoContainer(Container):
     n_islands = Field(-1, "Number of islands of a cleaned image")
 
 
+class RealEventInfoContainer(BaseEventInfoContainer):
+    """Container to store real event information"""
+
+    time_sec = Field(np.nan * u.s, "Seconds of an event trigger time", u.s)
+    time_nanosec = Field(np.nan * u.ns, "Nanoseconds of an event trigger time", u.ns)
+    time_diff = Field(np.nan * u.s, "Time difference from the previous event", u.s)
+
+
 class SimEventInfoContainer(BaseEventInfoContainer):
     """Container to store simulated event information"""
 
@@ -32,11 +40,3 @@ class SimEventInfoContainer(BaseEventInfoContainer):
     true_impact = Field(np.nan * u.m, "True impact distance of a simulated event", u.m)
     off_axis = Field(np.nan * u.deg, "Off-axis angle of a simulated event", u.deg)
     magic_stereo = Field(None, "Boolean where `True` means M1 and M2 are triggered")
-
-
-class RealEventInfoContainer(BaseEventInfoContainer):
-    """Container to store real event information"""
-
-    time_sec = Field(np.nan * u.s, "Seconds of an event trigger time", u.s)
-    time_nanosec = Field(np.nan * u.ns, "Nanoseconds of an event trigger time", u.ns)
-    time_diff = Field(np.nan * u.s, "Time difference from the previous event", u.s)

@@ -10,7 +10,7 @@ When the input is real data containing LST-1 and MAGIC events, it checks
 if the angular distance of their pointing directions is lower than the
 limit specified in the configuration file. This is in principle to avoid
 the reconstruction of the data taken in too-mispointing conditions. For
-example, DL1 data may contain the coincident events taken with different
+example, DL1 data may contain coincident events taken with different
 wobble offsets between the systems.
 
 If the "--magic-only" argument is given, it reconstructs the stereo
@@ -164,15 +164,15 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
         if theta_max > theta_uplim:
             logger.info(
-                f"--> The maximum angular distance {theta_max:.3f} "
-                f"is larger than the limit {theta_uplim}. Exiting."
+                f"--> The maximum angular distance is {theta_max:.3f}, "
+                f"which is larger than the limit {theta_uplim}. Exiting."
             )
             sys.exit()
 
         else:
             logger.info(
-                f"--> The maximum angular distance {theta_max:.3f} "
-                f"is smaller than the limit {theta_uplim}."
+                f"--> The maximum angular distance is {theta_max:.3f}, "
+                f"which is smaller than the limit {theta_uplim}."
             )
 
     # Configure the HillasReconstructor:
@@ -189,9 +189,9 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         lon=event_data["pointing_az"], lat=event_data["pointing_alt"]
     )
 
-    group = event_data.groupby(["obs_id", "event_id"]).size()
-    obs_ids = group.index.get_level_values("obs_id")
-    event_ids = group.index.get_level_values("event_id")
+    group_size = event_data.groupby(["obs_id", "event_id"]).size()
+    obs_ids = group_size.index.get_level_values("obs_id")
+    event_ids = group_size.index.get_level_values("event_id")
 
     for i_evt, (obs_id, event_id) in enumerate(zip(obs_ids, event_ids)):
 
@@ -233,7 +233,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         hillas_reconstructor(event)
 
         stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
-        stereo_params.az.wrap_at(360 * u.deg, inplace=True)
+        stereo_params.az.wrap_at(360 * u.deg, inplace=True)  # wrap at 0 <= az < 360 deg
 
         for tel_id in tel_ids:
 

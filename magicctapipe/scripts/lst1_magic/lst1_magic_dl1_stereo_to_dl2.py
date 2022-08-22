@@ -48,8 +48,8 @@ def apply_rfs(event_data, estimator):
     """
     Applies trained RFs to input DL1-stereo data.
 
-    It selects only the events whose telescope combination type is same
-    as the input RFs.
+    It selects only the events from the input data whose telescope
+    combination type is same as the input RFs.
 
     Parameters
     ----------
@@ -105,7 +105,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     event_data = get_stereo_events(event_data)
 
-    # Start reconstructing the DL2 parameters:
+    # Prepare for reconstructing the DL2 parameters:
     logger.info(f"\nInput RF directory:\n{input_dir_rfs}")
 
     mask_energy_regressor = f"{input_dir_rfs}/energy_regressors_*.joblib"

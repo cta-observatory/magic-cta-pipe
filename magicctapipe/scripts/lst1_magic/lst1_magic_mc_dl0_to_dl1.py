@@ -5,9 +5,9 @@
 This script processes LST-1 and MAGIC events of simtel MC DL0 data
 (*.simtel.gz) and computes the DL1 parameters, i.e., Hillas, timing and
 leakage parameters. It saves only the events that all the DL1 parameters
-are successfully reconstructed. Before running the script, please
-confirm that the telescope IDs are correctly assigned to each telescope
-with the 'mc_tel_ids' setting in the configuration file.
+are successfully reconstructed. Before running it, please confirm that
+the telescope IDs are correctly assigned to each telescope with the
+"mc_tel_ids" setting in the configuration file.
 
 When saving data to an output file the telescope IDs will be reset to
 the following ones:
@@ -63,7 +63,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-# Particle types obtained from a CORSIKA input card:
+# The CORSIKA particle types:
 PARTICLE_TYPES = {1: "gamma", 3: "electron", 14: "proton", 402: "helium"}
 
 
@@ -306,8 +306,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     peak_time = event.dl1.tel[tel_id].peak_time.astype(np.float64)
 
                     if use_charge_correction:
-                        # Scale the charges of the DL1 image by the
-                        # correction factor:
+                        # Scale the charges by the correction factor:
                         image *= correction_factor
 
                     # Apply the image cleaning:
@@ -349,15 +348,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     camera_geoms[tel_id], image, signal_pixels
                 )
 
-                # Calculate the off-axis angle:
-                off_axis = angular_separation(
-                    lon1=event.pointing.tel[tel_id].azimuth,
-                    lat1=event.pointing.tel[tel_id].altitude,
-                    lon2=event.simulation.shower.az,
-                    lat2=event.simulation.shower.alt,
-                )
-
-                # Calculate the DISP parameter:
+                # Calculate the additional parameters:
                 true_disp = calculate_disp(
                     pointing_alt=event.pointing.tel[tel_id].altitude,
                     pointing_az=event.pointing.tel[tel_id].azimuth,
@@ -368,7 +359,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     camera_frame=camera_geoms[tel_id].frame,
                 )
 
-                # Calculate the impact parameter:
                 true_impact = calculate_impact(
                     shower_alt=event.simulation.shower.alt,
                     shower_az=event.simulation.shower.az,
@@ -377,6 +367,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     tel_pos_x=tel_positions[tel_id][0],
                     tel_pos_y=tel_positions[tel_id][1],
                     tel_pos_z=tel_positions[tel_id][2],
+                )
+
+                off_axis = angular_separation(
+                    lon1=event.pointing.tel[tel_id].azimuth,
+                    lat1=event.pointing.tel[tel_id].altitude,
+                    lon2=event.simulation.shower.az,
+                    lat2=event.simulation.shower.alt,
                 )
 
                 # Set the event information:
