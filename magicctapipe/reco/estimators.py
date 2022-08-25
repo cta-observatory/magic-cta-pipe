@@ -45,28 +45,28 @@ class EnergyRegressor:
 
     def fit(self, event_data):
         """
-        Trains RFs per telescope with input training samples.
+        Trains RFs per telescope.
 
         Parameters
         ----------
         event_data: pandas.core.frame.DataFrame
-            Pandas data frame of training samples
+            Pandas data frame of shower events
         """
 
         self.telescope_rfs.clear()
 
-        # Train RFs per telescope:
+        # Train RFs per telescope
         tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}").copy()
-            df_events.dropna(subset=self.features, inplace=True)
+            df_events = event_data.query(f"tel_id == {tel_id}")
 
             if self.use_unsigned_features:
-                df_events[self.features] = np.abs(df_events[self.features])
+                x_train = np.abs(df_events[self.features].to_numpy())
+            else:
+                x_train = df_events[self.features].to_numpy()
 
-            x_train = df_events[self.features].to_numpy()
             y_train = np.log10(df_events["true_energy"].to_numpy())
             weights = df_events["event_weight"].to_numpy()
 
@@ -79,7 +79,7 @@ class EnergyRegressor:
 
     def predict(self, event_data):
         """
-        Reconstructs the energies of input events with trained RFs.
+        Reconstructs the energies with trained RFs.
 
         Parameters
         ----------
@@ -94,18 +94,18 @@ class EnergyRegressor:
 
         reco_params = pd.DataFrame()
 
-        # Apply trained RFs per telescope:
+        # Apply trained RFs per telescope
         tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
         for tel_id in tel_ids:
 
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
-            df_events.dropna(subset=self.features, inplace=True)
 
             if self.use_unsigned_features:
-                df_events[self.features] = np.abs(df_events[self.features])
+                x_predict = np.abs(df_events[self.features].to_numpy())
+            else:
+                x_predict = df_events[self.features].to_numpy()
 
-            x_predict = df_events[self.features].to_numpy()
             reco_energy = 10 ** self.telescope_rfs[tel_id].predict(x_predict)
 
             responses_per_estimator = []
@@ -127,7 +127,7 @@ class EnergyRegressor:
 
     def save(self, output_file):
         """
-        Saves trained RFs in an output joblib file.
+        Saves trained RFs in a joblib file.
 
         Parameters
         ----------
@@ -146,7 +146,7 @@ class EnergyRegressor:
 
     def load(self, input_file):
         """
-        Loads trained RFs from an input joblib file.
+        Loads trained RFs from a joblib file.
 
         Parameters
         ----------
@@ -193,28 +193,28 @@ class DirectionRegressor:
 
     def fit(self, event_data):
         """
-        Trains RFs per telescope with input training samples.
+        Trains RFs per telescope.
 
         Parameters
         ----------
         event_data: pandas.core.frame.DataFrame
-            Pandas data frame of training samples
+            Pandas data frame of shower events
         """
 
         self.telescope_rfs.clear()
 
-        # Train RFs per telescope:
+        # Train RFs per telescope
         tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}").copy()
-            df_events.dropna(subset=self.features, inplace=True)
+            df_events = event_data.query(f"tel_id == {tel_id}")
 
             if self.use_unsigned_features:
-                df_events[self.features] = np.abs(df_events[self.features])
+                x_train = np.abs(df_events[self.features].to_numpy())
+            else:
+                x_train = df_events[self.features].to_numpy()
 
-            x_train = df_events[self.features].to_numpy()
             y_train = df_events["true_disp"].to_numpy()
             weights = df_events["event_weight"].to_numpy()
 
@@ -227,8 +227,8 @@ class DirectionRegressor:
 
     def predict(self, event_data):
         """
-        Reconstructs the arrival directions of input events with trained
-        RFs, and performs the MARS-like head-tail discriminations.
+        Reconstructs the arrival directions with trained RFs, and
+        performs the MARS-like head-tail discriminations.
 
         Parameters
         ----------
@@ -243,18 +243,18 @@ class DirectionRegressor:
 
         reco_params = pd.DataFrame()
 
-        # Apply trained RFs per telescope:
+        # Apply trained RFs per telescope
         tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}").copy()
-            df_events.dropna(subset=self.features, inplace=True)
+            df_events = event_data.query(f"tel_id == {tel_id}")
 
             if self.use_unsigned_features:
-                df_events[self.features] = np.abs(df_events[self.features])
+                x_predict = np.abs(df_events[self.features].to_numpy())
+            else:
+                x_predict = df_events[self.features].to_numpy()
 
-            x_predict = df_events[self.features].to_numpy()
             reco_disp = self.telescope_rfs[tel_id].predict(x_predict)
 
             responses_per_estimator = []
@@ -265,7 +265,7 @@ class DirectionRegressor:
 
             # Reconstruct the Alt/Az directions of the head and tail
             # candidates, i.e., the directions on the major shower axis
-            # but separated by the DISP parameter from the image CoG:
+            # and separated by the DISP parameter from the image CoG
 
             tel_pointing = AltAz(
                 alt=u.Quantity(df_events["pointing_alt"].to_numpy(), u.rad),
@@ -299,7 +299,7 @@ class DirectionRegressor:
                         "reco_disp_var": reco_disp_var,
                         "reco_alt": reco_alt_per_flip,
                         "reco_az": reco_az_per_flip,
-                        "flip": np.repeat(flip, len(df_events)),
+                        "flip": flip,
                     },
                     index=df_events.index,
                 )
@@ -314,10 +314,10 @@ class DirectionRegressor:
 
         # Here we first define all the possible flip combinations. For
         # example, in case that we have two telescope images, in total
-        # 4 combinations are defined as follows:
+        # 4 combinations can be defined as follows:
         #   [(head, head), (head, tail), (tail, head), (tail, tail)]
-        # where the i-th element of each tuple means the flip of i-th
-        # image. In case of 3 images we have in total 8 combinations:
+        # where the i-th element of each tuple means the i-th telescope
+        # image. In case of 3 images we have in total 8 combinations.
 
         flip_combinations = np.array(
             list(itertools.product([0, 1], repeat=len(tel_ids)))
@@ -328,7 +328,7 @@ class DirectionRegressor:
         # defined as follows:
         #                 [(1, 2), (1, 3), (2, 3)]
         # where the elements of the tuples mean the telescope IDs.
-        # In case of 2 telescopes there is only one combination:
+        # In case of 2 telescopes there is only one combination.
 
         tel_combinations = list(itertools.combinations(tel_ids, 2))
 
@@ -339,19 +339,16 @@ class DirectionRegressor:
 
         for flip_combo in flip_combinations:
 
-            # Extract the telescope-wise data with a given flip
-            # combination, and set them to the container:
-
             container = {}
 
+            # Set the directions of a given flip combination
             for tel_id, flip in zip(tel_ids, flip_combo):
                 container[tel_id] = reco_params.query(
                     f"(tel_id == {tel_id}) & (flip == {flip})"
                 )
 
             # Then, we calculate the angular distances for each any 2
-            # telescope combination and sum up them:
-
+            # telescope combination and sum up them
             dists_per_flip_combo = np.zeros(n_events)
 
             for tel_combo in tel_combinations:
@@ -371,9 +368,7 @@ class DirectionRegressor:
             distances.append(dists_per_flip_combo.tolist())
 
         # Finally, we extract the indices of the flip combinations for
-        # each event with which the angular distances become minimum,
-        # and keeps only those events for the output data:
-
+        # each event with which the angular distances become minimum
         distances = np.array(distances)
         distances_min = distances.min(axis=0)
 
@@ -398,8 +393,7 @@ class DirectionRegressor:
 
         # Add the minimum angular distances to the output data frame,
         # since they are useful to separate gamma and hadron events
-        # (hadron events tend to have larger distances than gammas):
-
+        # (hadron events tend to have larger distances than gammas)
         df_disp_diff = pd.DataFrame(
             data={"disp_diff_sum": distances_min}, index=group_size.index
         )
@@ -410,7 +404,7 @@ class DirectionRegressor:
 
     def save(self, output_file):
         """
-        Saves trained RFs to an output joblib file.
+        Saves trained RFs to a joblib file.
 
         Parameters
         ----------
@@ -430,7 +424,7 @@ class DirectionRegressor:
 
     def load(self, input_file):
         """
-        Loads trained RFs from an input joblib file.
+        Loads trained RFs from a joblib file.
 
         Parameters
         ----------
@@ -473,28 +467,28 @@ class EventClassifier:
 
     def fit(self, event_data):
         """
-        Trains RFs per telescope with input training samples.
+        Trains RFs per telescope.
 
         Parameters
         ----------
         event_data: pandas.core.frame.DataFrame
-            Pandas data frame of training samples
+            Pandas data frame of shower events
         """
 
         self.telescope_rfs.clear()
 
-        # Train RFs per telescope:
+        # Train RFs per telescope
         tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}").copy()
-            df_events.dropna(subset=self.features, inplace=True)
+            df_events = event_data.query(f"tel_id == {tel_id}")
 
             if self.use_unsigned_features:
-                df_events[self.features] = np.abs(df_events[self.features])
+                x_train = np.abs(df_events[self.features].to_numpy())
+            else:
+                x_train = df_events[self.features].to_numpy()
 
-            x_train = df_events[self.features].to_numpy()
             y_train = df_events["true_event_class"].to_numpy()
             weights = df_events["event_weight"].to_numpy()
 
@@ -507,7 +501,7 @@ class EventClassifier:
 
     def predict(self, event_data):
         """
-        Reconstructs the gammaness of input events.
+        Reconstructs the gammaness.
 
         Parameters
         ----------
@@ -517,30 +511,30 @@ class EventClassifier:
         Returns
         -------
         reco_params: pandas.core.frame.DataFrame
-            Pandas data frame of reconstructed gammaness
+            Pandas data frame of the gammaness
         """
 
         reco_params = pd.DataFrame()
 
-        # Apply trained RFs per telescope:
+        # Apply trained RFs per telescope
         tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}").copy()
-            df_events.dropna(subset=self.features, inplace=True)
+            df_events = event_data.query(f"tel_id == {tel_id}")
 
             if self.use_unsigned_features:
-                df_events[self.features] = np.abs(df_events[self.features])
+                x_predict = np.abs(df_events[self.features].to_numpy())
+            else:
+                x_predict = df_events[self.features].to_numpy()
 
-            x_predict = df_events[self.features].to_numpy()
             gammaness = self.telescope_rfs[tel_id].predict_proba(x_predict)[:, 0]
 
-            # Compute the variance of the binomial distribution. In case
-            # the gammaness is 0 or 1, we set the artificial values to
-            # avoid that the inverse of the variance becomes infinite:
-
+            # Compute the variance of the binomial distribution
             gammaness_var = gammaness * (1 - gammaness)
+
+            # Set the artificial finite value in case the variance is 0,
+            # to avoid the inverse value becomes infinite
             gammaness_var[gammaness == 1] = 0.99 * (1 - 0.99)
             gammaness_var[gammaness == 0] = 0.01 * (1 - 0.01)
 
@@ -557,7 +551,7 @@ class EventClassifier:
 
     def save(self, output_file):
         """
-        Saves trained RFs in an output joblib file.
+        Saves trained RFs in a joblib file.
 
         Parameters
         ----------
@@ -576,7 +570,7 @@ class EventClassifier:
 
     def load(self, input_file):
         """
-        Loads trained RFs from an input joblib file.
+        Loads trained RFs from a joblib file.
 
         Parameters
         ----------

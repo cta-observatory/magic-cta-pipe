@@ -19,7 +19,7 @@ from .energy_utils import (
 
 from .event_processing import (
     RegressorClassifierBase,
-    EnergyRegressor,
+    # EnergyRegressor,
     HillasFeatureSelector,
     EventFeatureSelector,
     EventFeatureTargetSelector,
@@ -62,7 +62,7 @@ __all__ = [
     "evaluate_performance_energy",
     "plot_migmatrix",
     "RegressorClassifierBase",
-    "EnergyRegressor",
+    # "EnergyRegressor",
     "HillasFeatureSelector",
     "EventFeatureSelector",
     "EventFeatureTargetSelector",
@@ -83,4 +83,3 @@ __all__ = [
     "check_stereo",
     "write_stereo",
 ]
-

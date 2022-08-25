@@ -4,12 +4,7 @@
 """
 This script processes DL1-stereo events and reconstructs the DL2
 parameters, i.e., energy, direction and gammaness, with trained RFs.
-The RFs are currently applied per telescope combination and per
-telescope type.
-
-If the input is real data, the telescope pointing and reconstructed
-event arrival directions will be transformed from the Alt/Az to the
-RA/Dec coordinate using timestamps.
+The RFs are applied per telescope combination and per telescope type.
 
 Usage:
 $ python lst1_magic_dl1_stereo_to_dl2.py
@@ -41,15 +36,11 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-NSEC2SEC = 1e-9
-
 
 def apply_rfs(event_data, estimator):
     """
-    Applies trained RFs to input DL1-stereo data.
-
-    It selects only the events from the input data whose telescope
-    combination type is same as the input RFs.
+    Applies trained RFs to DL1-stereo events, whose telescope
+    combination type is same as the RFs.
 
     Parameters
     ----------
@@ -70,6 +61,7 @@ def apply_rfs(event_data, estimator):
         f"(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})"
     ).copy()
 
+    df_events.dropna(subset=estimator.features, inplace=True)
     df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
     df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
 
@@ -93,7 +85,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         Path to a directory where to save an output DL2 data file
     """
 
-    # Load the input DL1-stereo data file:
+    # Load the input DL1-stereo data file
     logger.info(f"\nInput DL1-stereo data file:\n{input_file_dl1}")
 
     event_data = pd.read_hdf(input_file_dl1, key="events/parameters")
@@ -105,14 +97,14 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     event_data = get_stereo_events(event_data)
 
-    # Prepare for reconstructing the DL2 parameters:
+    # Prepare for reconstructing the DL2 parameters
     logger.info(f"\nInput RF directory:\n{input_dir_rfs}")
 
     mask_energy_regressor = f"{input_dir_rfs}/energy_regressors_*.joblib"
     mask_direction_regressor = f"{input_dir_rfs}/direction_regressors_*.joblib"
     mask_event_classifier = f"{input_dir_rfs}/event_classifiers_*.joblib"
 
-    # Reconstruct the energies:
+    # Reconstruct the energies
     input_rfs_energy = glob.glob(mask_energy_regressor)
     input_rfs_energy.sort()
 
@@ -131,7 +123,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     del energy_regressor
 
-    # Reconstruct the arrival directions:
+    # Reconstruct the arrival directions
     input_rfs_direction = glob.glob(mask_direction_regressor)
     input_rfs_direction.sort()
 
@@ -150,7 +142,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     del direction_regressor
 
-    # Reconstruct the gammaness:
+    # Reconstruct the gammaness
     input_rfs_class = glob.glob(mask_event_classifier)
     input_rfs_class.sort()
 
@@ -169,10 +161,10 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     del event_classifier
 
-    # Compute the RA/Dec directions:
+    # Transform the Alt/Az to the RA/Dec coordinate
     if not is_simulation:
 
-        logger.info("\nTransforming pointing Alt/Az to the RA/Dec coordinate...")
+        logger.info("\nTransforming the pointing Alt/Az to the RA/Dec coordinate...")
 
         if "timestamp" in event_data.columns:
             timestamps = Time(
@@ -180,9 +172,9 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
             )
 
         else:
-            # Handle the case when the input is MAGIC-only real data:
-            time_sec = event_data["time_sec"].to_numpy()
-            time_nanosec = event_data["time_nanosec"].to_numpy() * NSEC2SEC
+            # Handle the case when the input is MAGIC real data
+            time_sec = event_data["time_sec"].to_numpy() * u.s
+            time_nanosec = event_data["time_nanosec"].to_numpy() * u.ns
 
             timestamps = Time(time_sec + time_nanosec, format="unix", scale="utc")
 
@@ -200,7 +192,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
         if "reco_alt" in event_data.columns:
 
-            logger.info("Transforming reconstructed Alt/Az to the RA/Dec coordinate...")
+            logger.info("Transforming the reco Alt/Az to the RA/Dec coordinate...")
 
             reco_ra, reco_dec = transform_altaz_to_radec(
                 alt=u.Quantity(event_data["reco_alt"].values, u.deg),
@@ -211,7 +203,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
             event_data["reco_ra"] = reco_ra.to_value(u.deg)
             event_data["reco_dec"] = reco_dec.to_value(u.deg)
 
-    # Save the data in an output file:
+    # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     input_file_name = Path(input_file_dl1).name
@@ -232,8 +224,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         sim_config = pd.read_hdf(input_file_dl1, key="simulation/config")
 
         save_pandas_to_table(
-            sim_config,
-            output_file,
+            data=sim_config,
+            output_file=output_file,
             group_name="/simulation",
             table_name="config",
             mode="a",
@@ -277,7 +269,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Process the input data:
+    # Process the input data
     dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir)
 
     logger.info("\nDone.")

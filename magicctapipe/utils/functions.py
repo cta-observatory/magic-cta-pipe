@@ -38,12 +38,12 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-# The geographical coordinate of ORM:
+# The geographical coordinate of ORM
 LON_ORM = u.Quantity(-17.89064, u.deg)
 LAT_ORM = u.Quantity(28.76177, u.deg)
 HEIGHT_ORM = u.Quantity(2199.835, u.m)
 
-# The combinations of the telescope IDs:
+# The telescope combination types
 TEL_COMBINATIONS = {
     "m1_m2": [2, 3],  # combo_type = 0
     "lst1_m1": [1, 2],  # combo_type = 1
@@ -51,7 +51,7 @@ TEL_COMBINATIONS = {
     "lst1_m1_m2": [1, 2, 3],  # combo_type = 3
 }
 
-# The pandas index to group up shower events:
+# The pandas index to group up shower events
 GROUP_INDEX = ["obs_id", "event_id"]
 
 
@@ -90,15 +90,17 @@ def calculate_disp(
     Returns
     -------
     disp: astropy.units.quantity.Quantity
-        Calculated DISP parameter
+        DISP parameter
     """
 
+    # Transform the image CoG position to the Alt/Az direction
     tel_pointing = AltAz(alt=pointing_alt, az=pointing_az)
     tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
     cog_coord = SkyCoord(cog_x, cog_y, frame=camera_frame)
     cog_coord = cog_coord.transform_to(tel_frame).altaz
 
+    # Calculate the DISP parameter
     disp = angular_separation(
         lon1=cog_coord.az, lat1=cog_coord.alt, lon2=shower_az, lat2=shower_alt
     )
@@ -120,7 +122,7 @@ def calculate_impact(
     Calculates the impact distance, i.e., the closest distance between
     a shower axis and a telescope position.
 
-    It uses the equations derived from a hand calculation, but it is
+    It uses equations derived from a hand calculation, but it is
     confirmed that the result is consistent with what is done in MARS.
 
     In ctapipe v0.16.0 the function to calculate the impact distance is
@@ -146,7 +148,7 @@ def calculate_impact(
     Returns
     -------
     impact: astropy.units.quantity.Quantity
-        Calculated impact distance
+        Impact distance
     """
 
     diff_x = tel_pos_x - core_x
@@ -169,7 +171,7 @@ def calculate_impact(
 
 def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
     """
-    Calculates the mean of input directions per shower event.
+    Calculates the mean direction per shower event.
 
     The input data is supposed to be the pandas Series with the
     index (obs_id, event_id) to group up the shower events.
@@ -181,10 +183,9 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
     lat: pandas.core.series.Series
         Latitude in a spherical coordinate
     weights: pandas.core.series.Series
-        Weights applied when calculating the mean direction
+        Weights for the input directions
     unit: str
-        Unit of the input (and output) longitude and latitude -
-        "rad", "radian", "deg" or "degree" are allowed
+        Unit of the input (and output) angles
 
     Returns
     -------
@@ -198,26 +199,32 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
         lon = np.deg2rad(lon)
         lat = np.deg2rad(lat)
 
+    # Transform the input directions to the cartesian coordinate and
+    # then calculate the mean position for each axis
     x_coords = np.cos(lat) * np.cos(lon)
     y_coords = np.cos(lat) * np.sin(lon)
     z_coords = np.sin(lat)
 
     if weights is None:
-        weights = pd.Series(data=1, index=lon.index)
+        x_coord_mean = x_coords.groupby(GROUP_INDEX).mean()
+        y_coord_mean = y_coords.groupby(GROUP_INDEX).mean()
+        z_coord_mean = z_coords.groupby(GROUP_INDEX).mean()
 
-    weighted_x_coords = x_coords * weights
-    weighted_y_coords = y_coords * weights
-    weighted_z_coords = z_coords * weights
+    else:
+        df_cartesian = pd.DataFrame(
+            data={
+                "weight": weights,
+                "weighted_x_coord": x_coords * weights,
+                "weighted_y_coord": y_coords * weights,
+                "weighted_z_coord": z_coords * weights,
+            }
+        )
 
-    weighted_x_coords_sum = weighted_x_coords.groupby(GROUP_INDEX).sum()
-    weighted_y_coords_sum = weighted_y_coords.groupby(GROUP_INDEX).sum()
-    weighted_z_coords_sum = weighted_z_coords.groupby(GROUP_INDEX).sum()
+        group_sum = df_cartesian.groupby(GROUP_INDEX).sum()
 
-    weights_sum = weights.groupby(GROUP_INDEX).sum()
-
-    x_coord_mean = weighted_x_coords_sum / weights_sum
-    y_coord_mean = weighted_y_coords_sum / weights_sum
-    z_coord_mean = weighted_z_coords_sum / weights_sum
+        x_coord_mean = group_sum["weighted_x_coord"] / group_sum["weight"]
+        y_coord_mean = group_sum["weighted_y_coord"] / group_sum["weight"]
+        z_coord_mean = group_sum["weighted_z_coord"] / group_sum["weight"]
 
     coord_mean = SkyCoord(
         x=x_coord_mean.values,
@@ -226,10 +233,11 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
         representation_type="cartesian",
     )
 
+    # Transform the cartesian to the spherical coordinate
     coord_mean = coord_mean.spherical
 
-    lon_mean = pd.Series(data=coord_mean.lon.to_value(unit), index=weights_sum.index)
-    lat_mean = pd.Series(data=coord_mean.lat.to_value(unit), index=weights_sum.index)
+    lon_mean = pd.Series(data=coord_mean.lon.to_value(unit), index=x_coord_mean.index)
+    lat_mean = pd.Series(data=coord_mean.lat.to_value(unit), index=x_coord_mean.index)
 
     return lon_mean, lat_mean
 
@@ -269,10 +277,9 @@ def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
     return ra, dec
 
 
-def get_dl2_mean(event_data, weight_type=None):
+def get_dl2_mean(event_data, weight_type="simple"):
     """
-    Calculates the mean of the telescope-wise DL2 parameters per shower
-    event and returns them with some additional parameters.
+    Gets the mean DL2 parameters per shower event.
 
     The input data is supposed to have the index (obs_id, event_id) to
     group up the shower events.
@@ -282,9 +289,10 @@ def get_dl2_mean(event_data, weight_type=None):
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of shower events
     weight_type: str
-        Type of the weights for averaging the telescope-wise parameters,
-        'variance' to use the inverse of the RF variance, and
-        'intensity' to use the linear-scale intensity parameter
+        Type of the weights for the telescope-wise DL2 parameters -
+        "simple" does not use any weights for calculations,
+        "variance" uses the inverse of the RF variance, and
+        "intensity" uses the linear-scale intensity parameter
 
     Returns
     -------
@@ -294,10 +302,27 @@ def get_dl2_mean(event_data, weight_type=None):
 
     is_simulation = "true_energy" in event_data.columns
 
-    if weight_type is None:
-        energy_weights = pd.Series(data=1, index=event_data.index)
-        direction_weights = pd.Series(data=1, index=event_data.index)
-        gammaness_weights = pd.Series(data=1, index=event_data.index)
+    # Create a mean data frame
+    if is_simulation:
+        params = ["combo_type", "multiplicity", "true_energy", "true_alt", "true_az"]
+    else:
+        params = ["combo_type", "multiplicity", "timestamp"]
+
+    event_data_mean = event_data[params].groupby(GROUP_INDEX).mean()
+
+    # Calculate the mean pointing direction
+    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
+        event_data["pointing_az"], event_data["pointing_alt"]
+    )
+
+    event_data_mean["pointing_alt"] = pointing_alt_mean
+    event_data_mean["pointing_az"] = pointing_az_mean
+
+    # Define the weights for the DL2 parameters
+    if weight_type == "simple":
+        energy_weights = 1
+        direction_weights = None
+        gammaness_weights = 1
 
     elif weight_type == "variance":
         energy_weights = 1 / event_data["reco_energy_var"]
@@ -309,69 +334,35 @@ def get_dl2_mean(event_data, weight_type=None):
         direction_weights = event_data["intensity"]
         gammaness_weights = event_data["intensity"]
 
-    else:
-        raise ValueError(f"unknown weight type '{weight_type}'")
-
-    # Calculate the mean of the reconstructed energies in log scale:
-    weighted_energy = np.log10(event_data["reco_energy"]) * energy_weights
-
-    energy_weights_sum = energy_weights.groupby(GROUP_INDEX).sum()
-    weighted_energy_sum = weighted_energy.groupby(GROUP_INDEX).sum()
-
-    reco_energy_mean = 10 ** (weighted_energy_sum / energy_weights_sum)
-
-    # Calculate the mean of the reconstructed arrival directions:
-    reco_az_mean, reco_alt_mean = calculate_mean_direction(
-        lon=event_data["reco_az"],
-        lat=event_data["reco_alt"],
-        weights=direction_weights,
-        unit="deg",
-    )
-
-    # Calculate the mean of the gammaness:
-    weighted_gammaness = event_data["gammaness"] * gammaness_weights
-
-    gammaness_weights_sum = gammaness_weights.groupby(GROUP_INDEX).sum()
-    weighted_gammaness_sum = weighted_gammaness.groupby(GROUP_INDEX).sum()
-
-    gammaness_mean = weighted_gammaness_sum / gammaness_weights_sum
-
-    # Create a mean data frame:
-    group_mean = event_data.groupby(GROUP_INDEX).mean()
-
-    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
-        lon=event_data["pointing_az"], lat=event_data["pointing_alt"]
-    )
-
-    event_data_mean = pd.DataFrame(
+    df_events = pd.DataFrame(
         data={
-            "combo_type": group_mean["combo_type"].to_numpy(),
-            "multiplicity": group_mean["multiplicity"].to_numpy(),
-            "pointing_alt": pointing_alt_mean.to_numpy(),
-            "pointing_az": pointing_az_mean.to_numpy(),
-            "reco_energy": reco_energy_mean.to_numpy(),
-            "reco_alt": reco_alt_mean.to_numpy(),
-            "reco_az": reco_az_mean.to_numpy(),
-            "gammaness": gammaness_mean.to_numpy(),
-        },
-        index=group_mean.index,
+            "energy_weight": energy_weights,
+            "gammaness_weight": gammaness_weights,
+            "weighted_energy": np.log10(event_data["reco_energy"]) * energy_weights,
+            "weighted_gammaness": event_data["gammaness"] * gammaness_weights,
+        }
     )
 
-    if is_simulation:
-        # Add the MC parameters:
-        df_mc_mean = group_mean[["true_energy", "true_alt", "true_az"]]
-        event_data_mean = event_data_mean.join(df_mc_mean)
+    # Calculate the mean DL2 parameters
+    group_sum = df_events.groupby(GROUP_INDEX).sum()
 
-    else:
+    reco_energy_mean = 10 ** (group_sum["weighted_energy"] / group_sum["energy_weight"])
+    gammaness_mean = group_sum["weighted_gammaness"] / group_sum["gammaness_weight"]
+
+    reco_az_mean, reco_alt_mean = calculate_mean_direction(
+        event_data["reco_az"], event_data["reco_alt"], direction_weights, unit="deg",
+    )
+
+    event_data_mean["reco_energy"] = reco_energy_mean
+    event_data_mean["reco_alt"] = reco_alt_mean
+    event_data_mean["reco_az"] = reco_az_mean
+    event_data_mean["gammaness"] = gammaness_mean
+
+    # Transform the Alt/Az to the RA/Dec coordinate
+    if not is_simulation:
+
         timestamps_mean = Time(
-            group_mean["timestamp"].to_numpy(), format="unix", scale="utc"
-        )
-
-        # Convert the mean Alt/Az to the RA/Dec coordinate:
-        reco_ra_mean, reco_dec_mean = transform_altaz_to_radec(
-            alt=u.Quantity(reco_alt_mean.to_numpy(), u.deg),
-            az=u.Quantity(reco_az_mean.to_numpy(), u.deg),
-            obs_time=timestamps_mean,
+            event_data_mean["timestamp"].to_numpy(), format="unix", scale="utc"
         )
 
         pointing_ra_mean, pointing_dec_mean = transform_altaz_to_radec(
@@ -380,19 +371,16 @@ def get_dl2_mean(event_data, weight_type=None):
             obs_time=timestamps_mean,
         )
 
-        # Add the additional parameters:
-        df_radec_time = pd.DataFrame(
-            data={
-                "reco_ra": reco_ra_mean.to_value(u.deg),
-                "reco_dec": reco_dec_mean.to_value(u.deg),
-                "pointing_ra": pointing_ra_mean.to_value(u.deg),
-                "pointing_dec": pointing_dec_mean.to_value(u.deg),
-                "timestamp": timestamps_mean.value,
-            },
-            index=group_mean.index,
+        reco_ra_mean, reco_dec_mean = transform_altaz_to_radec(
+            alt=u.Quantity(reco_alt_mean.to_numpy(), u.deg),
+            az=u.Quantity(reco_az_mean.to_numpy(), u.deg),
+            obs_time=timestamps_mean,
         )
 
-        event_data_mean = event_data_mean.join(df_radec_time)
+        event_data_mean["pointing_ra"] = pointing_ra_mean
+        event_data_mean["pointing_dec"] = pointing_dec_mean
+        event_data_mean["reco_ra"] = reco_ra_mean
+        event_data_mean["reco_dec"] = reco_dec_mean
 
     return event_data_mean
 
@@ -406,10 +394,10 @@ def get_off_regions(
     n_off_regions,
 ):
     """
-    Gets OFF region(s) where to estimate the backgrounds of wobble
-    observation data.
+    Gets the coordinates of OFF regions to estimate the backgrounds of
+    wobble observation data.
 
-    It calculates the wobble offset and rotation angle with formulas
+    It calculates the wobble offset and rotation angle with equations
     derived from a hand calculation.
 
     Parameters
@@ -428,20 +416,20 @@ def get_off_regions(
     Returns
     -------
     off_coords: dict
-        Coordinate(s) of the center of the OFF region(s)
+        Coordinates of the center of the OFF regions
     """
 
     ra_diff = pointing_ra - on_coord_ra
 
-    # Calculate the wobble offset:
+    # Calculate the wobble offset
     wobble_offset = np.arccos(
         np.cos(on_coord_dec) * np.cos(pointing_dec) * np.cos(ra_diff)
         + np.sin(on_coord_dec) * np.sin(pointing_dec)
     )
 
-    logger.info(f"Wobble offset: {wobble_offset.to(u.deg):.3f}")
+    logger.info(f"Wobble offset: {wobble_offset.to(u.deg).round(3)}")
 
-    # Calculate the wobble rotation angle:
+    # Calculate the wobble rotation angle
     numerator_1 = np.sin(pointing_dec) * np.cos(on_coord_dec)
     numerator_2 = np.cos(pointing_dec) * np.sin(on_coord_dec) * np.cos(ra_diff)
     denominator = np.cos(pointing_dec) * np.sin(ra_diff)
@@ -449,9 +437,9 @@ def get_off_regions(
     wobble_rotation = np.arctan2(numerator_1 - numerator_2, denominator)
     wobble_rotation = Angle(wobble_rotation).wrap_at(360 * u.deg)
 
-    logger.info(f"Wobble rotation angle: {wobble_rotation.to(u.deg):.3f}")
+    logger.info(f"Wobble rotation angle: {wobble_rotation.to(u.deg).round(3)}")
 
-    # Compute the OFF coordinates:
+    # Compute the OFF coordinates
     wobble_coord = SkyCoord(pointing_ra, pointing_dec, frame="icrs")
 
     rotations_off = np.arange(0, 359, 360 / (n_off_regions + 1)) * u.deg
@@ -472,25 +460,20 @@ def get_off_regions(
 
 def get_stereo_events(event_data, quality_cuts=None):
     """
-    Gets stereo events from input data surviving specified quality cuts.
+    Gets stereo events surviving specified quality cuts.
 
     The input data is supposed to have the index (obs_id, event_id) to
     group up the shower events.
 
-    It adds the multiplicity of the telescopes and the telescope
-    combination types, defined as follows, to the output data frame:
-
-    MAGIC-I + MAGIC-II:  combo_type = 0
-    LST-1 + MAGIC-I:  combo_type = 1
-    LST-1 + MAGIC-II:  combo_type = 2
-    LST-1 + MAGIC-I + MAGIC-II:  combo_type = 3
+    It adds the telescope multiplicity and combination types to the
+    output data frame.
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of shower events
     quality_cuts: str
-        Quality cuts applied before extracting stereo events
+        Quality cuts applied to the input data
 
     Returns
     -------
@@ -500,19 +483,19 @@ def get_stereo_events(event_data, quality_cuts=None):
 
     event_data_stereo = event_data.copy()
 
-    # Apply the quality cuts:
+    # Apply the quality cuts
     if quality_cuts is not None:
         logger.info(f"\nApplying the quality cuts:\n{quality_cuts}")
         event_data_stereo.query(quality_cuts, inplace=True)
 
-    # Extract stereo events:
+    # Extract stereo events
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(GROUP_INDEX).size()
     event_data_stereo.query("multiplicity == [2, 3]", inplace=True)
 
     n_events_total = len(event_data_stereo.groupby(GROUP_INDEX).size())
     logger.info(f"\nIn total {n_events_total} stereo events are found:")
 
-    # Check the telescope combination types:
+    # Check the telescope combination types
     for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
 
         df_events = event_data_stereo.query(
@@ -534,14 +517,14 @@ def get_stereo_events(event_data, quality_cuts=None):
     return event_data_stereo
 
 
-def save_pandas_to_table(event_data, output_file, group_name, table_name, mode="w"):
+def save_pandas_to_table(data, output_file, group_name, table_name, mode="w"):
     """
     Saves a pandas data frame in a table.
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
-        Pandas data frame of shower events
+    data: pandas.core.frame.DataFrame
+        Pandas data frame
     output_file: str
         Path to an output HDF file
     group_name: str
@@ -549,22 +532,21 @@ def save_pandas_to_table(event_data, output_file, group_name, table_name, mode="
     table_name: str
         Name of the output table
     mode: str
-        Mode of saving the data if a file already exists at the path
-        of the output file, 'w' for overwriting the file with the new
-        table, and 'a' for appending the table to the file
+        Mode of saving the data if a file already exists at the output
+        file path, "w" for overwriting the file with the new table, and
+        "a" for appending the table to the file
     """
 
-    values = event_data.to_numpy()
-    params = event_data.dtypes.index
-    dtypes = event_data.dtypes.values
+    params = data.dtypes.index
+    dtypes = data.dtypes.values
 
-    event_table = np.array(
-        [tuple(array) for array in values],
+    data_array = np.array(
+        [tuple(array) for array in data.to_numpy()],
         dtype=np.dtype([(param, dtype) for param, dtype in zip(params, dtypes)]),
     )
 
     with tables.open_file(output_file, mode=mode) as f_out:
-        f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
+        f_out.create_table(group_name, table_name, createparents=True, obj=data_array)
 
 
 @u.quantity_input
@@ -576,28 +558,28 @@ def create_gh_cuts_hdu(
 
     Parameters
     ----------
-    gh_cuts: astropy.table.table.QTable
-        Array of the gamma/hadron cut.
-        Must have shape (n_reco_energy_bins, n_fov_offset_bins)
+    gh_cuts: numpy.ndarray
+        Array of the gammaness cuts, which must have the shape
+        (n_reco_energy_bins, n_fov_offset_bins)
     reco_energy_bins: astropy.units.quantity.Quantity
         Bin edges in the reconstructed energy
     fov_offset_bins: astropy.units.quantity.Quantity
-        Bin edges in the field of view offset.
-        For Point-Like IRFs, only giving a single bin is appropriate
+        Bin edges in the field of view offset
     extname: str
-        Name for the output BinTableHDU
+        Name for the output HDU
     **header_cards
         Additional metadata to add to the header
 
     Returns
     -------
     hdu_gh_cuts: astropy.io.fits.hdu.table.BinTableHDU
-        Gamma/hadron cuts HDU
+        Gammaness-cuts HDU
     """
 
     energy_lo, energy_hi = split_bin_lo_hi(reco_energy_bins[np.newaxis, :].to(u.TeV))
     theta_lo, theta_hi = split_bin_lo_hi(fov_offset_bins[np.newaxis, :].to(u.deg))
 
+    # Create a table
     gh_cuts_table = QTable()
     gh_cuts_table["ENERG_LO"] = energy_lo
     gh_cuts_table["ENERG_HI"] = energy_hi
@@ -605,6 +587,7 @@ def create_gh_cuts_hdu(
     gh_cuts_table["THETA_HI"] = theta_hi
     gh_cuts_table["GH_CUTS"] = gh_cuts.T[np.newaxis, :]
 
+    # Create a header
     header = fits.Header()
     header["CREATOR"] = f"magicctapipe v{__version__}"
     header["HDUCLAS1"] = "RESPONSE"
@@ -616,6 +599,7 @@ def create_gh_cuts_hdu(
     for key, value in header_cards.items():
         header[key] = value
 
+    # Create a HDU
     hdu_gh_cuts = fits.BinTableHDU(gh_cuts_table, header=header, name=extname)
 
     return hdu_gh_cuts

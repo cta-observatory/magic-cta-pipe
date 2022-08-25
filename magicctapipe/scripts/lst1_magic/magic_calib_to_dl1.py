@@ -5,9 +5,7 @@
 This script processes the events of MAGIC calibrated data (*_Y_*.root)
 with the MARS-like image cleaning and computes the DL1 parameters, i.e.,
 Hillas, timing and leakage parameters. It saves only the events that all
-the DL1 parameters are successfully reconstructed. For simulation data,
-it also calculates some additional parameters, i.e., the DISP parameter,
-impact distance and off-axis angle.
+the DL1 parameters are successfully reconstructed.
 
 When saving data to an output file, the telescope IDs will be reset to
 the following ones for the convenience of the combined analysis with
@@ -15,12 +13,12 @@ LST-1, whose telescope ID is set to 1:
 
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
-When the input is real data, it searches for all the subrun files
-belonging to the same observation ID and stored in the same directory
-as the input subrun file. Then, it reads the drive reports and uses the
-information to reconstruct the telescope pointing direction. Since the
-accuracy of the reconstruction improves, it is recommended to store all
-the subrun files in the same directory.
+When the input is real data, it searches for all the subrun files with
+the same observation ID and stored in the same directory as the input
+subrun file. Then, it reads the drive reports and uses the information
+to reconstruct the telescope pointing direction. Since the accuracy of
+the reconstruction improves, it is recommended to store all the subrun
+files in the same directory.
 
 If the "--process-run" argument is given, it not only reads the drive
 reports but also processes all the events of the subrun files at once.
@@ -66,8 +64,6 @@ logger.setLevel(logging.INFO)
 # Ignore RuntimeWarnings appeared during the image cleaning
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
-SEC2NSEC = 1e9
-
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
@@ -103,13 +99,12 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info(f"Is simulation: {is_simulation}")
 
     if not is_simulation:
-        time_diffs = event_source.event_time_diffs
-
         logger.info("\nThe following files are found to read the drive reports:")
         for subrun_file in event_source.file_list_drive:
             logger.info(subrun_file)
 
         logger.info(f"\nProcess run: {process_run}")
+        time_diffs = event_source.event_time_diffs
 
     subarray = event_source.subarray
     camera_geom = subarray.tel[tel_id].camera.geometry
@@ -141,9 +136,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     if is_simulation:
         regex = r"GA_M\d_(\S+)_\d_\d+_Y_*"
-        file_name = Path(input_file).name
+        input_file_name = Path(input_file).name
 
-        parser = re.findall(regex, file_name)[0]
+        parser = re.findall(regex, input_file_name)[0]
         output_file = f"{output_dir}/dl1_M{tel_id}_GA_{parser}.Run{obs_id}.h5"
 
     else:
@@ -175,15 +170,15 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 unsuitable_mask = None
 
             signal_pixels, image, peak_time = magic_clean.clean_image(
-                event.dl1.tel[tel_id].image,
-                event.dl1.tel[tel_id].peak_time,
-                unsuitable_mask,
+                event_image=event.dl1.tel[tel_id].image,
+                event_pulse_time=event.dl1.tel[tel_id].peak_time,
+                unsuitable_mask=unsuitable_mask,
             )
 
             if not np.any(signal_pixels):
-                logger.info(
+                logger.warning(
                     f"--> {event.count} event (event ID: {event.index.event_id}) "
-                    "could not survive the image cleaning. Skipping."
+                    "could not survive the image cleaning. Skipping..."
                 )
                 continue
 
@@ -195,13 +190,13 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             peak_time_masked = peak_time[signal_pixels]
 
             if np.any(image_masked < 0):
-                logger.info(
+                logger.warning(
                     f"--> {event.count} event (event ID: {event.index.event_id}) "
-                    "cannot be parametrized due to negative charge pixels. Skipping."
+                    "cannot be parametrized due to negative charge pixels. Skipping..."
                 )
                 continue
 
-            # Parametrize the image:
+            # Parametrize the image
             hillas_params = hillas_parameters(camera_geom_masked, image_masked)
 
             timing_params = timing_parameters(
@@ -209,9 +204,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             )
 
             if np.isnan(timing_params.slope):
-                logger.info(
+                logger.warning(
                     f"--> {event.count} event (event ID: {event.index.event_id}) "
-                    "failed to get finite timing parameters. Skipping."
+                    "failed to get finite timing parameters. Skipping..."
                 )
                 continue
 
@@ -266,8 +261,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 )
 
             else:
-                # The UNIX format with the "long" sub-format can get
-                # the timestamp without affected by a rounding issue
+                # The UNIX format with the "long" sub-format can get the
+                # timestamp without affected by a rounding issue
                 timestamp = event.trigger.tel[tel_id].time.to_value(
                     format="unix", subfmt="long"
                 )
@@ -277,8 +272,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 # fractional parts separately
                 fractional, integral = np.modf(timestamp)
 
-                time_sec = int(np.round(integral)) * u.s
-                time_nanosec = int(np.round(fractional * SEC2NSEC)) * u.ns
+                time_sec = u.Quantity(integral, u.s).round()
+                time_nanosec = u.Quantity(fractional, u.s).to(u.ns).round()
 
                 time_diff = time_diffs[event.count]
 

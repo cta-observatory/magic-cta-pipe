@@ -3,10 +3,10 @@
 
 """
 This script trains energy, direction regressors and event classifiers
-with input DL1-stereo data. The RFs are currently trained per telescope
+with DL1-stereo events. The RFs are currently trained per telescope
 combination and per telescope type. When training event classifiers, the
-number of gamma MC or background samples is adjusted so that the RFs are
-trained with the same number of samples.
+number of gamma MC or proton MC events is adjusted so that the RFs are
+trained with the same number of events.
 
 Please specify the RF type that will be trained by using "--train-energy",
 "--train-direction" or "--train-classifier" arguments.
@@ -15,13 +15,13 @@ If the "--use-unsigned" argument is given, the RFs will be trained with
 unsigned features.
 
 Since it allows only one input file for each event class, before running
-this script it would be needed to merge the files of training samples
-with "magicctapipe/scripts/lst1_magic/merge_hdf_files.py".
+this script it would be needed to merge DL1-stereo files with the script
+"magicctapipe/scripts/lst1_magic/merge_hdf_files.py".
 
 Usage:
 $ python lst1_magic_train_rfs.py
 --input-file-gamma ./dl1_stereo/dl1_stereo_gamma_40deg_90deg_run1_to_500.h5
---input-file-bkg ./dl1_stereo/dl1_stereo_proton_40deg_90deg_run1_to_5000.h5
+--input-file-proton ./dl1_stereo/dl1_stereo_proton_40deg_90deg_run1_to_5000.h5
 --output-dir ./rfs
 --config-file ./config.yaml
 (--train-energy)
@@ -65,9 +65,10 @@ EVENT_WEIGHT = 1
 
 # Use true Alt/Az directions for the pandas index in order to classify
 # the events simulated by different telescope pointing directions but
-# have the same observation ID:
+# have the same observation ID
 GROUP_INDEX = ["obs_id", "event_id", "true_alt", "true_az"]
 
+# The telescope combination types
 TEL_COMBINATIONS = {
     "m1_m2": [2, 3],
     "lst1_m1": [1, 2],
@@ -81,8 +82,8 @@ def load_train_data_file(
     input_file, offaxis_min=None, offaxis_max=None, true_event_class=None
 ):
     """
-    Loads an input DL1-stereo data file as training samples and
-    separates the shower events per telescope combination type.
+    Loads a DL1-stereo data file and separates the shower events per
+    telescope combination type.
 
     Parameters
     ----------
@@ -93,19 +94,18 @@ def load_train_data_file(
     offaxis_max: astropy.units.quantity.Quantity
         Maximum shower off-axis angle allowed
     true_event_class: int
-        True event class of input events
+        True event class of the input events
 
     Returns
     -------
     data_train: dict
-        Pandas data frames of the events per telescope combination type
+        Pandas data frames of the shower events separated by the
+        telescope combination types
     """
 
     event_data = pd.read_hdf(input_file, key="events/parameters")
     event_data.set_index(GROUP_INDEX + ["tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
-
-    event_data["event_weight"] = EVENT_WEIGHT
 
     if offaxis_min is not None:
         logger.info(f"Minimum off-axis angle allowed: {offaxis_min}")
@@ -118,9 +118,12 @@ def load_train_data_file(
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
 
-    data_train = {}
+    event_data["event_weight"] = EVENT_WEIGHT
 
-    logger.info("\nNumber of events per telescope combination type:")
+    n_events_total = len(event_data.groupby(GROUP_INDEX).size())
+    logger.info(f"\nIn total {n_events_total} stereo events are found:")
+
+    data_train = {}
 
     for tel_combo, tel_ids in TEL_COMBINATIONS.items():
 
@@ -150,14 +153,12 @@ def check_feature_importance(estimator):
         Trained regressor or classifier
     """
 
-    logger.info("\nFeature importance:")
-
     features = np.array(estimator.features)
     tel_ids = estimator.telescope_rfs.keys()
 
     for tel_id in tel_ids:
 
-        logger.info(f"\tTelescope {tel_id}:")
+        logger.info(f"\nTelescope {tel_id} feature importance:")
         telescope_rf = estimator.telescope_rfs[tel_id]
 
         importances = telescope_rf.feature_importances_
@@ -166,7 +167,7 @@ def check_feature_importance(estimator):
         features_sort = features[indices_sort]
 
         for feature, importance in zip(features_sort, importances_sort):
-            logger.info(f"\t\t{feature}: {importance}")
+            logger.info(f"\t{feature}: {importance.round(5)}")
 
 
 def get_events_at_random(event_data, n_random):
@@ -183,7 +184,7 @@ def get_events_at_random(event_data, n_random):
     Returns
     -------
     data_selected: pandas.core.frame.DataFrame
-        Pandas data frame of the events randomly extracted
+        Pandas data frame of the shower events randomly extracted
     """
 
     data_selected = pd.DataFrame()
@@ -204,7 +205,7 @@ def get_events_at_random(event_data, n_random):
 
 def train_energy_regressor(input_file, output_dir, config, use_unsigned_features=False):
     """
-    Trains energy regressors with input gamma MC DL1-stereo data.
+    Trains energy regressors with gamma MC DL1-stereo events.
 
     Parameters
     ----------
@@ -220,8 +221,8 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
 
     config_rf = config["energy_regressor"]
 
-    offaxis_min = config_rf["gamma_offaxis"].get("min")
-    offaxis_max = config_rf["gamma_offaxis"].get("max")
+    offaxis_min = config_rf["gamma_offaxis"]["min"]
+    offaxis_max = config_rf["gamma_offaxis"]["max"]
 
     if offaxis_min is not None:
         offaxis_min *= u.deg
@@ -229,12 +230,12 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
     if offaxis_max is not None:
         offaxis_max *= u.deg
 
-    # Load the input file:
+    # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
 
     data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
 
-    # Configure the energy regressor:
+    # Configure the energy regressor
     rf_settings = config_rf["settings"]
     features = config_rf["features"]
 
@@ -247,7 +248,7 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
 
     energy_regressor = EnergyRegressor(rf_settings, features, use_unsigned_features)
 
-    # Train the regressors per telescope combination type:
+    # Train the regressors per telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
@@ -276,7 +277,7 @@ def train_direction_regressor(
     input_file, output_dir, config, use_unsigned_features=False
 ):
     """
-    Trains direction regressors with input gamma MC DL1-stereo data.
+    Trains direction regressors with gamma MC DL1-stereo events.
 
     Parameters
     ----------
@@ -292,8 +293,8 @@ def train_direction_regressor(
 
     config_rf = config["direction_regressor"]
 
-    offaxis_min = config_rf["gamma_offaxis"].get("min")
-    offaxis_max = config_rf["gamma_offaxis"].get("max")
+    offaxis_min = config_rf["gamma_offaxis"]["min"]
+    offaxis_max = config_rf["gamma_offaxis"]["max"]
 
     if offaxis_min is not None:
         offaxis_min *= u.deg
@@ -301,7 +302,7 @@ def train_direction_regressor(
     if offaxis_max is not None:
         offaxis_max *= u.deg
 
-    # Load the input file:
+    # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
 
     data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
@@ -309,7 +310,7 @@ def train_direction_regressor(
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_descriptions = subarray.tel
 
-    # Configure the direction regressor:
+    # Configure the direction regressor
     rf_settings = config_rf["settings"]
     features = config_rf["features"]
 
@@ -324,7 +325,7 @@ def train_direction_regressor(
         rf_settings, features, tel_descriptions, use_unsigned_features
     )
 
-    # Train the regressors per telescope combination:
+    # Train the regressors per telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
@@ -352,18 +353,17 @@ def train_direction_regressor(
 
 
 def train_event_classifier(
-    input_file_gamma, input_file_bkg, output_dir, config, use_unsigned_features=False
+    input_file_gamma, input_file_proton, output_dir, config, use_unsigned_features=False
 ):
     """
-    Trains event classifiers with input gamma MC and background
-    DL1-stereo data.
+    Trains event classifiers with gamma and proton MC DL1-stereo events.
 
     Parameters
     ----------
     input_file_gamma: str
         Path to an input gamma MC DL1-stereo data file
-    input_file_bkg: str
-        Path to an input background DL1-stereo data file
+    input_file_proton: str
+        Path to an input proton MC DL1-stereo data file
     output_dir: str
         Path to a directory where to save trained RFs
     config: dict
@@ -374,8 +374,8 @@ def train_event_classifier(
 
     config_rf = config["event_classifier"]
 
-    offaxis_min = config_rf["gamma_offaxis"].get("min")
-    offaxis_max = config_rf["gamma_offaxis"].get("max")
+    offaxis_min = config_rf["gamma_offaxis"]["min"]
+    offaxis_max = config_rf["gamma_offaxis"]["max"]
 
     if offaxis_min is not None:
         offaxis_min *= u.deg
@@ -383,18 +383,20 @@ def train_event_classifier(
     if offaxis_max is not None:
         offaxis_max *= u.deg
 
-    # Load the input files:
+    # Load the input files
     logger.info(f"\nInput gamma MC data file:\n{input_file_gamma}")
 
     data_gamma = load_train_data_file(
         input_file_gamma, offaxis_min, offaxis_max, EVENT_CLASS_GAMMA
     )
 
-    logger.info(f"\nInput background data file:\n{input_file_bkg}")
+    logger.info(f"\nInput proton MC data file:\n{input_file_proton}")
 
-    data_bkg = load_train_data_file(input_file_bkg, true_event_class=EVENT_CLASS_BKG)
+    data_proton = load_train_data_file(
+        input_file_proton, true_event_class=EVENT_CLASS_BKG
+    )
 
-    # Configure the event classifier:
+    # Configure the event classifier
     rf_settings = config_rf["settings"]
     features = config_rf["features"]
 
@@ -407,38 +409,38 @@ def train_event_classifier(
 
     event_classifier = EventClassifier(rf_settings, features, use_unsigned_features)
 
-    # Train the classifiers per telescope combination:
+    # Train the classifiers per telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
 
-    common_combinations = set(data_gamma.keys()) & set(data_bkg.keys())
+    common_combinations = set(data_gamma.keys()) & set(data_proton.keys())
 
     for tel_combo in sorted(common_combinations):
 
         logger.info(f'\nTraining event classifiers for the "{tel_combo}" type...')
 
         n_events_gamma = len(data_gamma[tel_combo].groupby(GROUP_INDEX).size())
-        n_events_bkg = len(data_bkg[tel_combo].groupby(GROUP_INDEX).size())
+        n_events_proton = len(data_proton[tel_combo].groupby(GROUP_INDEX).size())
 
-        # Adjust the number of training samples:
-        if n_events_gamma > n_events_bkg:
+        # Adjust the number of training samples
+        if n_events_gamma > n_events_proton:
             logger.info(
-                f"--> The number of gamma MC events is adjusted to {n_events_bkg}"
+                f"--> The number of gamma MC events is adjusted to {n_events_proton}"
             )
             data_gamma[tel_combo] = get_events_at_random(
-                data_gamma[tel_combo], n_events_bkg
+                data_gamma[tel_combo], n_events_proton
             )
 
-        elif n_events_bkg > n_events_gamma:
+        elif n_events_proton > n_events_gamma:
             logger.info(
-                f"--> The number of background events is adjusted to {n_events_gamma}"
+                f"--> The number of proton MC events is adjusted to {n_events_gamma}"
             )
-            data_bkg[tel_combo] = get_events_at_random(
-                data_bkg[tel_combo], n_events_gamma
+            data_proton[tel_combo] = get_events_at_random(
+                data_proton[tel_combo], n_events_gamma
             )
 
-        data_train = data_gamma[tel_combo].append(data_bkg[tel_combo])
+        data_train = data_gamma[tel_combo].append(data_proton[tel_combo])
         event_classifier.fit(data_train)
 
         check_feature_importance(event_classifier)
@@ -472,11 +474,11 @@ def main():
     )
 
     parser.add_argument(
-        "--input-file-bkg",
-        "-b",
-        dest="input_file_bkg",
+        "--input-file-proton",
+        "-p",
+        dest="input_file_proton",
         type=str,
-        help="Path to an input DL1-stereo background data file.",
+        help="Path to an input DL1-stereo proton MC data file.",
     )
 
     parser.add_argument(
@@ -544,7 +546,7 @@ def main():
     if args.train_classifier:
         train_event_classifier(
             input_file_gamma=args.input_file_gamma,
-            input_file_bkg=args.input_file_bkg,
+            input_file_proton=args.input_file_proton,
             output_dir=args.output_dir,
             config=config,
             use_unsigned_features=args.use_unsigned,

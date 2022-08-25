@@ -35,16 +35,16 @@ import numpy as np
 import tables
 from ctapipe.instrument import SubarrayDescription
 
-__all__ = ["write_to_table", "merge_hdf_files"]
+__all__ = ["write_data_to_table", "merge_hdf_files"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def write_to_table(input_file_mask, output_file):
+def write_data_to_table(input_file_mask, output_file):
     """
-    Writes input data to a new table.
+    Writes data to a new table.
 
     Parameters
     ----------
@@ -99,13 +99,12 @@ def write_to_table(input_file_mask, output_file):
     subarray = SubarrayDescription.from_hdf(input_files[0])
     subarray.to_hdf(output_file)
 
-    logger.info(f"--> {output_file}")
+    logger.info(f"--> Output file: {output_file}")
 
 
 def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=False):
     """
-    Merges input HDF files produced by the LST-1 + MAGIC combined
-    analysis pipeline.
+    Merges the HDF files produced by the combined analysis pipeline.
 
     Parameters
     ----------
@@ -121,6 +120,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         (applicable only to MAGIC real data)
     """
 
+    # Find the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
     input_file_mask = f"{input_dir}/*.h5"
@@ -128,13 +128,16 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     input_files = glob.glob(input_file_mask)
     input_files.sort()
 
+    if len(input_files) == 0:
+        raise FileNotFoundError("Could not find HDF files in the input directory.")
+
     # Parse information from the input file names
     regex_run = re.compile(r"(\S+run)(\d+)\.h5", re.IGNORECASE)
     regex_subrun = re.compile(r"(\S+run)(\d+)\.(\d+)\.h5", re.IGNORECASE)
 
-    file_names = np.array([])
-    run_ids = np.array([])
-    subrun_ids = np.array([])
+    file_names = []
+    run_ids = []
+    subrun_ids = []
 
     for input_file in input_files:
 
@@ -142,14 +145,14 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
         if re.fullmatch(regex_run, input_file_name):
             parser = re.findall(regex_run, input_file_name)[0]
-            file_names = np.append(file_names, parser[0])
-            run_ids = np.append(run_ids, parser[1])
+            file_names.append(parser[0])
+            run_ids.append(parser[1])
 
         elif re.fullmatch(regex_subrun, input_file_name):
             parser = re.findall(regex_subrun, input_file_name)[0]
-            file_names = np.append(file_names, parser[0])
-            run_ids = np.append(run_ids, parser[1])
-            subrun_ids = np.append(subrun_ids, parser[2])
+            file_names.append(parser[0])
+            run_ids.append(parser[1])
+            subrun_ids.append(parser[2])
 
     file_names_unique = np.unique(file_names)
     n_file_names = len(file_names_unique)
@@ -162,10 +165,11 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         match_file_type = file_names_unique[1] == replaced_name
 
         if (n_file_names == 2) and match_file_type:
+            # Assume that the input files are telescope-wise MAGIC data
             output_file_name = file_names_unique[0].replace("M1", "MAGIC")
 
         else:
-            RuntimeError(f"multiple types of files are found under {input_dir}")
+            RuntimeError(f"Multiple types of files are found under {input_dir}")
 
     # Merge the input files
     run_ids_unique = np.unique(run_ids)
@@ -185,7 +189,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
                 file_mask = f"{input_dir}/*Run{run_id}.{subrun_id}.h5"
                 output_file = f"{output_dir}/{output_file_name}{run_id}.{subrun_id}.h5"
 
-                write_to_table(file_mask, output_file)
+                write_data_to_table(file_mask, output_file)
 
     elif run_wise:
         logger.info("\nMerging the input files run-wise...")
@@ -194,7 +198,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             file_mask = f"{input_dir}/*Run{run_id}.*h5"
             output_file = f"{output_dir}/{output_file_name}{run_id}.h5"
 
-            write_to_table(file_mask, output_file)
+            write_data_to_table(file_mask, output_file)
 
     else:
         logger.info("\nMerging the input files...")
@@ -205,13 +209,13 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             output_file = f"{output_dir}/{output_file_name}{run_ids_unique[0]}.h5"
 
         else:
-            run_id_min = np.min(run_ids_unique.astype(int))
-            run_id_max = np.max(run_ids_unique.astype(int))
+            run_id_min = run_ids_unique.astype(int).min()
+            run_id_max = run_ids_unique.astype(int).max()
 
             string_lengths_unique = np.unique([len(x) for x in run_ids_unique])
 
             if len(string_lengths_unique) == 1:
-                # Handle the case that the run_ids are zero-padded
+                # Handle the case that the run IDs are zero-padded
                 run_id_min = str(run_id_min).zfill(string_lengths_unique[0])
                 run_id_max = str(run_id_max).zfill(string_lengths_unique[0])
 
@@ -219,7 +223,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
                 f"{output_dir}/{output_file_name}{run_id_min}_to_{run_id_max}.h5"
             )
 
-        write_to_table(file_mask, output_file)
+        write_data_to_table(file_mask, output_file)
 
 
 def main():
@@ -250,14 +254,14 @@ def main():
         "--run-wise",
         dest="run_wise",
         action="store_true",
-        help="Merge input files run-wise (applicable to real data).",
+        help="Merge input files run-wise (applicable only to real data).",
     )
 
     parser.add_argument(
         "--subrun-wise",
         dest="subrun_wise",
         action="store_true",
-        help="Merge input files subrun-wise (applicable to MAGIC real data).",
+        help="Merge input files subrun-wise (applicable only to MAGIC real data).",
     )
 
     args = parser.parse_args()

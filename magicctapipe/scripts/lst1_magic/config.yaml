@@ -68,15 +68,15 @@ MAGIC:
 
 event_coincidence:
     timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"
-    window_width: 0.6  # unit: [usec]
+    window_half_width: 300  # unit: [nsec]
     time_offset:
-        start: -10.0  # unit: [usec]
+        start: -5.0  # unit: [usec]
         stop: 0.0  # unit: [usec]
 
 
 stereo_reco:
     quality_cuts: "(intensity > 50) & (width > 0)"
-    theta_uplim: 6  # unit: [arcmin]
+    theta_uplim: 6.0  # unit: [arcmin]
 
 
 energy_regressor:
@@ -194,13 +194,13 @@ event_classifier:
 create_irf:
     quality_cuts: null
     irf_type: "software"  # select "hardware", "software(_with_any2)" or "magic_only"
-    dl2_weight: null  # select "variance" or "intensity"
+    dl2_weight: "simple"  # select "simple", "variance" or "intensity"
     irf_obs_time: 50  # used for creating a background HDU, unit: [hour]
 
-    energy_bins:   # log space
-        start: 0.01   # unit: [TeV]
-        stop: 1000   # unit: [TeV]
-        num: 26   # number of edges (nbins = num - 1)
+    energy_bins:  # log space
+        start: 0.01  # unit: [TeV]
+        stop: 1000  # unit: [TeV]
+        num: 26  # number of edges (nbins = num - 1)
 
     migration_bins:  # log space
         start: 0.2
@@ -213,22 +213,22 @@ create_irf:
         num: 21  # number of edges (nbins = num - 1)
 
     gammaness:
-        cut_type: "dynamic"   # select "global" or "dynamic"
-        global_cut_value: 0.8   # used for the global cut
-        efficiency: 0.9   # used for the dynamic cuts
-        min_cut: 0.05   # used for the dynamic cuts
-        max_cut: 0.85   # used for the dynamic cuts
+        cut_type: "dynamic"  # select "global" or "dynamic"
+        global_cut_value: 0.8  # used for the global cut
+        efficiency: 0.9  # used for the dynamic cuts
+        min_cut: 0.05  # used for the dynamic cuts
+        max_cut: 0.85  # used for the dynamic cuts
 
     theta:
-        cut_type: "global"   # select "global" or "dynamic"
-        global_cut_value: 0.2   # used for the global cut
-        efficiency: 0.75   # used for the dynamic cuts
-        min_cut: 0.1   # used for the dynamic cuts
-        max_cut: 0.45   # used for the dynamic cuts
+        cut_type: "global"  # select "global" or "dynamic"
+        global_cut_value: 0.2  # used for the global cut
+        efficiency: 0.75  # used for the dynamic cuts
+        min_cut: 0.1  # used for the dynamic cuts
+        max_cut: 0.45  # used for the dynamic cuts
 
 
 dl2_to_dl3:
     interpolation_method: "nearest"  # select "nearest", "linear" or "cubic"
     source_name: "Crab"
-    source_ra: null   # used when the source name cannot be resolved
-    source_dec: null   # used when the source name cannot be resolved
+    source_ra: null  # used when the source name cannot be resolved
+    source_dec: null  # used when the source name cannot be resolved
