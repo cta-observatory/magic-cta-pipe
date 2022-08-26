@@ -5,7 +5,6 @@ import logging
 
 import numpy as np
 import pandas as pd
-import tables
 from astropy import units as u
 from astropy.coordinates import (
     AltAz,
@@ -15,33 +14,21 @@ from astropy.coordinates import (
     SkyOffsetFrame,
     angular_separation,
 )
-from astropy.io import fits
-from astropy.table import QTable
-from astropy.time import Time
 from ctapipe.coordinates import TelescopeFrame
-from magicctapipe import __version__
-from pyirf.binning import split_bin_lo_hi
 
 __all__ = [
     "calculate_disp",
     "calculate_impact",
     "calculate_mean_direction",
+    "calculate_pointing_separation",
+    "calculate_off_coordinates",
+    "calculate_dead_time_correction",
     "transform_altaz_to_radec",
-    "get_dl2_mean",
-    "get_off_regions",
-    "get_stereo_events",
-    "save_pandas_to_table",
-    "create_gh_cuts_hdu",
 ]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-# The geographical coordinate of ORM
-LON_ORM = u.Quantity(-17.89064, u.deg)
-LAT_ORM = u.Quantity(28.76177, u.deg)
-HEIGHT_ORM = u.Quantity(2199.835, u.m)
 
 # The telescope combination types
 TEL_COMBINATIONS = {
@@ -53,6 +40,19 @@ TEL_COMBINATIONS = {
 
 # The pandas index to group up shower events
 GROUP_INDEX = ["obs_id", "event_id"]
+
+# The LST/MAGIC readout dead times
+DEAD_TIME_LST = 7.6 * u.us
+DEAD_TIME_MAGIC = 26 * u.us
+
+# The upper limit of event time differences used when calculating
+# the dead time correction factor
+TIME_DIFF_UPLIM = 0.1 * u.s
+
+# The geographical coordinate of ORM
+LON_ORM = u.Quantity(-17.89064, u.deg)
+LAT_ORM = u.Quantity(28.76177, u.deg)
+HEIGHT_ORM = u.Quantity(2199.835, u.m)
 
 
 @u.quantity_input
@@ -242,151 +242,55 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
     return lon_mean, lat_mean
 
 
-@u.quantity_input
-def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
+def calculate_pointing_separation(event_data):
     """
-    Transforms the Alt/Az direction measured from ORM to the RA/Dec
-    coordinate by using the observation time.
+    Calculates the angular distance of the LST-1 and MAGIC pointing
+    directions.
 
-    Parameters
-    ----------
-    alt: astropy.units.quantity.Quantity
-        Altitude measured from ORM
-    az: astropy.units.quantity.Quantity
-        Azimuth measured from ORM
-    obs_time: astropy.time.core.Time
-        Observation time when the direction was measured
-
-    Returns
-    -------
-    ra: astropy.coordinates.angles.Longitude
-        Right ascension of the input direction
-    dec: astropy.coordinates.angles.Latitude
-        Declination of the input direction
-    """
-
-    location = EarthLocation.from_geodetic(lon=LON_ORM, lat=LAT_ORM, height=HEIGHT_ORM)
-    horizon_frames = AltAz(location=location, obstime=obs_time)
-
-    event_coord = SkyCoord(alt=alt, az=az, frame=horizon_frames)
-    event_coord = event_coord.transform_to("icrs")
-
-    ra = event_coord.ra
-    dec = event_coord.dec
-
-    return ra, dec
-
-
-def get_dl2_mean(event_data, weight_type="simple"):
-    """
-    Gets the mean DL2 parameters per shower event.
-
-    The input data is supposed to have the index (obs_id, event_id) to
-    group up the shower events.
+    The input data is supposed to have the index
+    (obs_id, event_id, tel_id).
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
-        Pandas data frame of shower events
-    weight_type: str
-        Type of the weights for the telescope-wise DL2 parameters -
-        "simple" does not use any weights for calculations,
-        "variance" uses the inverse of the RF variance, and
-        "intensity" uses the linear-scale intensity parameter
+        Pandas data frame of LST-1 and MAGIC events
 
     Returns
     -------
-    event_data_mean: pandas.core.frame.DataFrame
-        Pandas data frame of shower events with the mean parameters
+    theta: astropy.units.quantity.Quantity
+        Angular distance of the LST-1 and MAGIC pointing directions
     """
 
-    is_simulation = "true_energy" in event_data.columns
+    df_lst = event_data.query("tel_id == 1")
 
-    # Create a mean data frame
-    if is_simulation:
-        params = ["combo_type", "multiplicity", "true_energy", "true_alt", "true_az"]
-    else:
-        params = ["combo_type", "multiplicity", "timestamp"]
+    obs_ids = df_lst.index.get_level_values("obs_id").tolist()
+    event_ids = df_lst.index.get_level_values("event_id").tolist()
 
-    event_data_mean = event_data[params].groupby(GROUP_INDEX).mean()
-
-    # Calculate the mean pointing direction
-    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
-        event_data["pointing_az"], event_data["pointing_alt"]
+    multi_indices = pd.MultiIndex.from_arrays(
+        [obs_ids, event_ids], names=["obs_id", "event_id"]
     )
 
-    event_data_mean["pointing_alt"] = pointing_alt_mean
-    event_data_mean["pointing_az"] = pointing_az_mean
+    df_magic = event_data.query("tel_id == [2, 3]")
+    df_magic.reset_index(level="tel_id", inplace=True)
+    df_magic = df_magic.loc[multi_indices]
 
-    # Define the weights for the DL2 parameters
-    if weight_type == "simple":
-        energy_weights = 1
-        direction_weights = None
-        gammaness_weights = 1
-
-    elif weight_type == "variance":
-        energy_weights = 1 / event_data["reco_energy_var"]
-        direction_weights = 1 / event_data["reco_disp_var"]
-        gammaness_weights = 1 / event_data["gammaness_var"]
-
-    elif weight_type == "intensity":
-        energy_weights = event_data["intensity"]
-        direction_weights = event_data["intensity"]
-        gammaness_weights = event_data["intensity"]
-
-    df_events = pd.DataFrame(
-        data={
-            "energy_weight": energy_weights,
-            "gammaness_weight": gammaness_weights,
-            "weighted_energy": np.log10(event_data["reco_energy"]) * energy_weights,
-            "weighted_gammaness": event_data["gammaness"] * gammaness_weights,
-        }
+    # Calculate the mean of the M1 and M2 pointing directions
+    pointing_az_magic, pointing_alt_magic = calculate_mean_direction(
+        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"]
     )
 
-    # Calculate the mean DL2 parameters
-    group_sum = df_events.groupby(GROUP_INDEX).sum()
-
-    reco_energy_mean = 10 ** (group_sum["weighted_energy"] / group_sum["energy_weight"])
-    gammaness_mean = group_sum["weighted_gammaness"] / group_sum["gammaness_weight"]
-
-    reco_az_mean, reco_alt_mean = calculate_mean_direction(
-        event_data["reco_az"], event_data["reco_alt"], direction_weights, unit="deg",
+    theta = angular_separation(
+        lon1=u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad),
+        lat1=u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad),
+        lon2=u.Quantity(pointing_az_magic.to_numpy(), u.rad),
+        lat2=u.Quantity(pointing_alt_magic.to_numpy(), u.rad),
     )
 
-    event_data_mean["reco_energy"] = reco_energy_mean
-    event_data_mean["reco_alt"] = reco_alt_mean
-    event_data_mean["reco_az"] = reco_az_mean
-    event_data_mean["gammaness"] = gammaness_mean
-
-    # Transform the Alt/Az to the RA/Dec coordinate
-    if not is_simulation:
-
-        timestamps_mean = Time(
-            event_data_mean["timestamp"].to_numpy(), format="unix", scale="utc"
-        )
-
-        pointing_ra_mean, pointing_dec_mean = transform_altaz_to_radec(
-            alt=u.Quantity(pointing_alt_mean.to_numpy(), u.rad),
-            az=u.Quantity(pointing_az_mean.to_numpy(), u.rad),
-            obs_time=timestamps_mean,
-        )
-
-        reco_ra_mean, reco_dec_mean = transform_altaz_to_radec(
-            alt=u.Quantity(reco_alt_mean.to_numpy(), u.deg),
-            az=u.Quantity(reco_az_mean.to_numpy(), u.deg),
-            obs_time=timestamps_mean,
-        )
-
-        event_data_mean["pointing_ra"] = pointing_ra_mean
-        event_data_mean["pointing_dec"] = pointing_dec_mean
-        event_data_mean["reco_ra"] = reco_ra_mean
-        event_data_mean["reco_dec"] = reco_dec_mean
-
-    return event_data_mean
+    return theta
 
 
 @u.quantity_input
-def get_off_regions(
+def calculate_off_coordinates(
     pointing_ra: u.deg,
     pointing_dec: u.deg,
     on_coord_ra: u.deg,
@@ -458,148 +362,97 @@ def get_off_regions(
     return off_coords
 
 
-def get_stereo_events(event_data, quality_cuts=None):
+def calculate_dead_time_correction(event_data):
     """
-    Gets stereo events surviving specified quality cuts.
+    Calculates the dead time correction factor, i.e., the factor to
+    estimate the effective time from the total observation time.
 
-    The input data is supposed to have the index (obs_id, event_id) to
-    group up the shower events.
+    It uses the following equations to get the correction factor
+    "deadc", where <time_diff> is the mean of the trigger time
+    differences of consecutive events:
 
-    It adds the telescope multiplicity and combination types to the
-    output data frame.
+    rate = 1 / (<time_diff> - dead_time)
+    deadc = 1 / (1 + rate * dead_time) = 1 - dead_time / <time_diff>
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
         Pandas data frame of shower events
-    quality_cuts: str
-        Quality cuts applied to the input data
 
     Returns
     -------
-    event_data_stereo: pandas.core.frame.DataFrame
-        Pandas data frame of the stereo events surviving the cuts
+    deadc_total: float
+        Total dead time correction factor
     """
 
-    event_data_stereo = event_data.copy()
+    df_events = event_data.query(f"0 < time_diff < {TIME_DIFF_UPLIM.to_value(u.s)}")
 
-    # Apply the quality cuts
-    if quality_cuts is not None:
-        logger.info(f"\nApplying the quality cuts:\n{quality_cuts}")
-        event_data_stereo.query(quality_cuts, inplace=True)
+    logger.info("\nCalculating the dead time correction factor...")
 
-    # Extract stereo events
-    event_data_stereo["multiplicity"] = event_data_stereo.groupby(GROUP_INDEX).size()
-    event_data_stereo.query("multiplicity == [2, 3]", inplace=True)
+    deadc_list = []
 
-    n_events_total = len(event_data_stereo.groupby(GROUP_INDEX).size())
-    logger.info(f"\nIn total {n_events_total} stereo events are found:")
+    # Calculate the LST-1 correction factor
+    time_diffs_lst = df_events.query("tel_id == 1")["time_diff"]
 
-    # Check the telescope combination types
-    for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
+    if len(time_diffs_lst) > 0:
+        deadc_lst = 1 - DEAD_TIME_LST.to_value(u.s) / time_diffs_lst.mean()
+        logger.info(f"LST-1: {deadc_lst.round(3)}")
 
-        df_events = event_data_stereo.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})"
-        ).copy()
+        deadc_list.append(deadc_lst)
 
-        df_events["multiplicity"] = df_events.groupby(GROUP_INDEX).size()
-        df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
+    # Calculate the MAGIC correction factor with one of the telescopes
+    # whose number of events is larger than the other
+    time_diffs_m1 = df_events.query("tel_id == 2")["time_diff"]
+    time_diffs_m2 = df_events.query("tel_id == 3")["time_diff"]
 
-        n_events = int(len(df_events.groupby(GROUP_INDEX).size()))
-        percentage = np.round(100 * n_events / n_events_total, 1)
+    if len(time_diffs_m1) > len(time_diffs_m2):
+        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m1.mean()
+        logger.info(f"MAGIC-I: {deadc_magic.round(3)}")
+    else:
+        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m2.mean()
+        logger.info(f"MAGIC-II: {deadc_magic.round(3)}")
 
-        logger.info(
-            f"\t{tel_combo} (type {combo_type}): {n_events} events ({percentage}%)"
-        )
+    deadc_list.append(deadc_magic)
 
-        event_data_stereo.loc[df_events.index, "combo_type"] = combo_type
+    # Calculate the total correction factor as the multiplicity of the
+    # telescope-wise correction factors
+    deadc_total = np.prod(deadc_list)
 
-    return event_data_stereo
+    logger.info(f"--> Total correction factor: {deadc_total.round(3)}")
 
-
-def save_pandas_to_table(data, output_file, group_name, table_name, mode="w"):
-    """
-    Saves a pandas data frame in a table.
-
-    Parameters
-    ----------
-    data: pandas.core.frame.DataFrame
-        Pandas data frame
-    output_file: str
-        Path to an output HDF file
-    group_name: str
-        Group name of the output table
-    table_name: str
-        Name of the output table
-    mode: str
-        Mode of saving the data if a file already exists at the output
-        file path, "w" for overwriting the file with the new table, and
-        "a" for appending the table to the file
-    """
-
-    params = data.dtypes.index
-    dtypes = data.dtypes.values
-
-    data_array = np.array(
-        [tuple(array) for array in data.to_numpy()],
-        dtype=np.dtype([(param, dtype) for param, dtype in zip(params, dtypes)]),
-    )
-
-    with tables.open_file(output_file, mode=mode) as f_out:
-        f_out.create_table(group_name, table_name, createparents=True, obj=data_array)
+    return deadc_total
 
 
 @u.quantity_input
-def create_gh_cuts_hdu(
-    gh_cuts, reco_energy_bins: u.TeV, fov_offset_bins: u.deg, extname, **header_cards
-):
+def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
     """
-    Creates a fits binary table HDU for gammaness cuts.
+    Transforms the Alt/Az direction measured from ORM to the RA/Dec
+    coordinate by using the observation time.
 
     Parameters
     ----------
-    gh_cuts: numpy.ndarray
-        Array of the gammaness cuts, which must have the shape
-        (n_reco_energy_bins, n_fov_offset_bins)
-    reco_energy_bins: astropy.units.quantity.Quantity
-        Bin edges in the reconstructed energy
-    fov_offset_bins: astropy.units.quantity.Quantity
-        Bin edges in the field of view offset
-    extname: str
-        Name for the output HDU
-    **header_cards
-        Additional metadata to add to the header
+    alt: astropy.units.quantity.Quantity
+        Altitude measured from ORM
+    az: astropy.units.quantity.Quantity
+        Azimuth measured from ORM
+    obs_time: astropy.time.core.Time
+        Observation time when the direction was measured
 
     Returns
     -------
-    hdu_gh_cuts: astropy.io.fits.hdu.table.BinTableHDU
-        Gammaness-cuts HDU
+    ra: astropy.coordinates.angles.Longitude
+        Right ascension of the input direction
+    dec: astropy.coordinates.angles.Latitude
+        Declination of the input direction
     """
 
-    energy_lo, energy_hi = split_bin_lo_hi(reco_energy_bins[np.newaxis, :].to(u.TeV))
-    theta_lo, theta_hi = split_bin_lo_hi(fov_offset_bins[np.newaxis, :].to(u.deg))
+    location = EarthLocation.from_geodetic(lon=LON_ORM, lat=LAT_ORM, height=HEIGHT_ORM)
+    horizon_frames = AltAz(location=location, obstime=obs_time)
 
-    # Create a table
-    gh_cuts_table = QTable()
-    gh_cuts_table["ENERG_LO"] = energy_lo
-    gh_cuts_table["ENERG_HI"] = energy_hi
-    gh_cuts_table["THETA_LO"] = theta_lo
-    gh_cuts_table["THETA_HI"] = theta_hi
-    gh_cuts_table["GH_CUTS"] = gh_cuts.T[np.newaxis, :]
+    event_coord = SkyCoord(alt=alt, az=az, frame=horizon_frames)
+    event_coord = event_coord.transform_to("icrs")
 
-    # Create a header
-    header = fits.Header()
-    header["CREATOR"] = f"magicctapipe v{__version__}"
-    header["HDUCLAS1"] = "RESPONSE"
-    header["HDUCLAS2"] = "GH_CUTS"
-    header["HDUCLAS3"] = "POINT-LIKE"
-    header["HDUCLAS4"] = "GH_CUTS_2D"
-    header["DATE"] = Time.now().utc.iso
+    ra = event_coord.ra
+    dec = event_coord.dec
 
-    for key, value in header_cards.items():
-        header[key] = value
-
-    # Create a HDU
-    hdu_gh_cuts = fits.BinTableHDU(gh_cuts_table, header=header, name=extname)
-
-    return hdu_gh_cuts
+    return ra, dec

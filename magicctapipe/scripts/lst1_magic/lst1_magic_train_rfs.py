@@ -32,21 +32,20 @@ $ python lst1_magic_train_rfs.py
 
 import argparse
 import logging
-import random
 import time
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
+from magicctapipe.io import (
+    check_feature_importance,
+    get_events_at_random,
+    load_train_data_file,
+)
 from magicctapipe.reco import DirectionRegressor, EnergyRegressor, EventClassifier
 
 __all__ = [
-    "load_train_data_file",
-    "check_feature_importance",
-    "get_events_at_random",
     "train_energy_regressor",
     "train_direction_regressor",
     "train_event_classifier",
@@ -56,151 +55,13 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-EVENT_CLASS_GAMMA = 0
-EVENT_CLASS_BKG = 1
-
-# Here event weights are set to 1, meaning no weights.
-# ToBeChecked: what weights are best for training RFs?
-EVENT_WEIGHT = 1
-
 # Use true Alt/Az directions for the pandas index in order to classify
 # the events simulated by different telescope pointing directions but
 # have the same observation ID
 GROUP_INDEX = ["obs_id", "event_id", "true_alt", "true_az"]
 
-# The telescope combination types
-TEL_COMBINATIONS = {
-    "m1_m2": [2, 3],
-    "lst1_m1": [1, 2],
-    "lst1_m2": [1, 3],
-    "lst1_m1_m2": [1, 2, 3],
-}
-
-
-@u.quantity_input(offaxis_min=u.deg, offaxis_max=u.deg)
-def load_train_data_file(
-    input_file, offaxis_min=None, offaxis_max=None, true_event_class=None
-):
-    """
-    Loads a DL1-stereo data file and separates the shower events per
-    telescope combination type.
-
-    Parameters
-    ----------
-    input_file: str
-        Path to an input DL1-stereo data file
-    offaxis_min: astropy.units.quantity.Quantity
-        Minimum shower off-axis angle allowed
-    offaxis_max: astropy.units.quantity.Quantity
-        Maximum shower off-axis angle allowed
-    true_event_class: int
-        True event class of the input events
-
-    Returns
-    -------
-    data_train: dict
-        Pandas data frames of the shower events separated by the
-        telescope combination types
-    """
-
-    event_data = pd.read_hdf(input_file, key="events/parameters")
-    event_data.set_index(GROUP_INDEX + ["tel_id"], inplace=True)
-    event_data.sort_index(inplace=True)
-
-    if offaxis_min is not None:
-        logger.info(f"Minimum off-axis angle allowed: {offaxis_min}")
-        event_data.query(f"off_axis >= {offaxis_min.to_value(u.deg)}", inplace=True)
-
-    if offaxis_max is not None:
-        logger.info(f"Maximum off-axis angle allowed: {offaxis_max}")
-        event_data.query(f"off_axis <= {offaxis_max.to_value(u.deg)}", inplace=True)
-
-    if true_event_class is not None:
-        event_data["true_event_class"] = true_event_class
-
-    event_data["event_weight"] = EVENT_WEIGHT
-
-    n_events_total = len(event_data.groupby(GROUP_INDEX).size())
-    logger.info(f"\nIn total {n_events_total} stereo events are found:")
-
-    data_train = {}
-
-    for tel_combo, tel_ids in TEL_COMBINATIONS.items():
-
-        df_events = event_data.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})"
-        ).copy()
-
-        df_events["multiplicity"] = df_events.groupby(GROUP_INDEX).size()
-        df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
-
-        n_events = len(df_events.groupby(GROUP_INDEX).size())
-        logger.info(f"\t{tel_combo}: {n_events} events")
-
-        if n_events > 0:
-            data_train[tel_combo] = df_events
-
-    return data_train
-
-
-def check_feature_importance(estimator):
-    """
-    Checks the feature importance of trained RFs.
-
-    Parameters
-    ----------
-    estimator: magicctapipe.reco.estimator
-        Trained regressor or classifier
-    """
-
-    features = np.array(estimator.features)
-    tel_ids = estimator.telescope_rfs.keys()
-
-    for tel_id in tel_ids:
-
-        logger.info(f"\nTelescope {tel_id} feature importance:")
-        telescope_rf = estimator.telescope_rfs[tel_id]
-
-        importances = telescope_rf.feature_importances_
-        importances_sort = np.sort(importances)[::-1]
-        indices_sort = np.argsort(importances)[::-1]
-        features_sort = features[indices_sort]
-
-        for feature, importance in zip(features_sort, importances_sort):
-            logger.info(f"\t{feature}: {importance.round(5)}")
-
-
-def get_events_at_random(event_data, n_random):
-    """
-    Extracts a given number of events at random.
-
-    Parameters
-    ----------
-    event_data: pandas.core.frame.DataFrame
-        Pandas data frame of shower events
-    n_random:
-        The number of events to be extracted at random
-
-    Returns
-    -------
-    data_selected: pandas.core.frame.DataFrame
-        Pandas data frame of the shower events randomly extracted
-    """
-
-    data_selected = pd.DataFrame()
-
-    n_events = len(event_data.groupby(GROUP_INDEX).size())
-    indices = random.sample(range(n_events), n_random)
-
-    tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
-
-    for tel_id in tel_ids:
-        df_events = event_data.query(f"tel_id == {tel_id}").copy()
-        data_selected = data_selected.append(df_events.iloc[indices])
-
-    data_selected.sort_index(inplace=True)
-
-    return data_selected
+EVENT_CLASS_GAMMA = 0
+EVENT_CLASS_BKG = 1
 
 
 def train_energy_regressor(input_file, output_dir, config, use_unsigned_features=False):

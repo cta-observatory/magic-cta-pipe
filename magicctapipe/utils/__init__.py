@@ -32,15 +32,13 @@ from .gti import (
 )
 
 from .functions import (
+    calculate_dead_time_correction,
     calculate_disp,
     calculate_impact,
     calculate_mean_direction,
+    calculate_off_coordinates,
+    calculate_pointing_separation,
     transform_altaz_to_radec,
-    get_dl2_mean,
-    get_off_regions,
-    get_stereo_events,
-    save_pandas_to_table,
-    create_gh_cuts_hdu,
 )
 
 from .plot import (
@@ -91,15 +89,13 @@ __all__ = [
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
+    "calculate_dead_time_correction",
     "calculate_disp",
     "calculate_impact",
     "calculate_mean_direction",
+    "calculate_off_coordinates",
+    "calculate_pointing_separation",
     "transform_altaz_to_radec",
-    "get_dl2_mean",
-    "get_off_regions",
-    "get_stereo_events",
-    "save_pandas_to_table",
-    "create_gh_cuts_hdu",
     "save_plt",
     "load_default_plot_settings",
     "load_default_plot_settings_02",

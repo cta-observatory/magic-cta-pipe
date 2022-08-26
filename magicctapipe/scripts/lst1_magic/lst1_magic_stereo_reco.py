@@ -34,7 +34,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
-from astropy.coordinates import Angle, angular_separation
+from astropy.coordinates import Angle
 from ctapipe.containers import (
     ArrayEventContainer,
     CameraHillasParametersContainer,
@@ -42,65 +42,18 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
+from magicctapipe.io import get_stereo_events, save_pandas_to_table
 from magicctapipe.utils import (
     calculate_impact,
     calculate_mean_direction,
-    get_stereo_events,
-    save_pandas_to_table,
+    calculate_pointing_separation,
 )
 
-__all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
+__all__ = ["stereo_reconstruction"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-
-def calculate_pointing_separation(event_data):
-    """
-    Calculates the angular distance of the LST-1 and MAGIC pointing
-    directions.
-
-    The input data is supposed to have the index
-    (obs_id, event_id, tel_id).
-
-    Parameters
-    ----------
-    event_data: pandas.core.frame.DataFrame
-        Pandas data frame of LST-1 and MAGIC events
-
-    Returns
-    -------
-    theta: astropy.units.quantity.Quantity
-        Angular distance of the LST-1 and MAGIC pointing directions
-    """
-
-    df_lst = event_data.query("tel_id == 1")
-
-    obs_ids = df_lst.index.get_level_values("obs_id").tolist()
-    event_ids = df_lst.index.get_level_values("event_id").tolist()
-
-    multi_indices = pd.MultiIndex.from_arrays(
-        [obs_ids, event_ids], names=["obs_id", "event_id"]
-    )
-
-    df_magic = event_data.query("tel_id == [2, 3]")
-    df_magic.reset_index(level="tel_id", inplace=True)
-    df_magic = df_magic.loc[multi_indices]
-
-    # Calculate the mean of the M1 and M2 pointing directions
-    pointing_az_magic, pointing_alt_magic = calculate_mean_direction(
-        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"]
-    )
-
-    theta = angular_separation(
-        lon1=u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad),
-        lat1=u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad),
-        lon2=u.Quantity(pointing_az_magic.to_numpy(), u.rad),
-        lat2=u.Quantity(pointing_alt_magic.to_numpy(), u.rad),
-    )
-
-    return theta
 
 
 def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=False):

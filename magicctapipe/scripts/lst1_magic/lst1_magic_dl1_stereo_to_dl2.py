@@ -23,12 +23,9 @@ import pandas as pd
 from astropy import units as u
 from astropy.time import Time
 from ctapipe.instrument import SubarrayDescription
+from magicctapipe.io import get_stereo_events, save_pandas_to_table
 from magicctapipe.reco import DirectionRegressor, EnergyRegressor, EventClassifier
-from magicctapipe.utils import (
-    get_stereo_events,
-    save_pandas_to_table,
-    transform_altaz_to_radec,
-)
+from magicctapipe.utils import transform_altaz_to_radec
 
 __all__ = ["apply_rfs", "dl1_stereo_to_dl2"]
 

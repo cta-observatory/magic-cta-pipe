@@ -41,7 +41,6 @@ $ python lst1_magic_event_coincidence.py
 """
 
 import argparse
-import glob
 import logging
 import sys
 import time
@@ -52,13 +51,15 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
-from ctapipe.containers import EventType
-from ctapipe.coordinates import CameraFrame
 from ctapipe.instrument import SubarrayDescription
-from lstchain.reco.utils import add_delta_t_key
-from magicctapipe.utils import get_stereo_events, save_pandas_to_table
+from magicctapipe.io import (
+    get_stereo_events,
+    load_lst_data_file,
+    load_magic_data_file,
+    save_pandas_to_table,
+)
 
-__all__ = ["load_lst_data_file", "load_magic_data_file", "event_coincidence"]
+__all__ = ["event_coincidence"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -70,10 +71,6 @@ SEC2NSEC = 1e9
 # The final digit of timestamps
 TIME_ACCURACY = 100 * u.ns
 
-# The LST nominal/effective focal lengths
-NOMINAL_FOCLEN_LST = 28 * u.m
-EFFECTIVE_FOCLEN_LST = 29.30565 * u.m
-
 # The telescope IDs and names
 TEL_NAMES = {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"}
 
@@ -83,162 +80,6 @@ TEL_POSITIONS = {
     2: [39.3, -62.55, -0.97] * u.m,  # MAGIC-I
     3: [-31.21, -14.57, 0.2] * u.m,  # MAGIC-II
 }
-
-
-def load_lst_data_file(input_file):
-    """
-    Loads a LST-1 data file and arranges the contents for the event
-    coincidence with MAGIC.
-
-    Parameters
-    ----------
-    input_file: str
-        Path to an input LST-1 data file
-
-    Returns
-    -------
-    event_data: pandas.core.frame.DataFrame
-        Pandas data frame of LST-1 events
-    subarray: ctapipe.instrument.subarray.SubarrayDescription
-        LST-1 subarray description
-    """
-
-    # Load the input file
-    event_data = pd.read_hdf(
-        input_file, key="dl1/event/telescope/parameters/LST_LSTCam"
-    )
-
-    event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    event_data.sort_index(inplace=True)
-
-    # Add the trigger time differences of consecutive events
-    event_data = add_delta_t_key(event_data)
-
-    # Exclude interleaved events
-    event_data.query(f"event_type == {EventType.SUBARRAY.value}", inplace=True)
-
-    # Exclude poorly reconstructed events
-    event_data.dropna(
-        subset=["intensity", "time_gradient", "alt_tel", "az_tel"], inplace=True
-    )
-
-    # Check the duplication of event IDs and exclude them.
-    # ToBeChecked: if it still happens in recent data or not
-    event_ids, counts = np.unique(
-        event_data.index.get_level_values("event_id"), return_counts=True
-    )
-
-    if np.any(counts > 1):
-        event_ids_dup = event_ids[counts > 1].tolist()
-        event_data.query(f"event_id != {event_ids_dup}", inplace=True)
-
-        logger.warning(
-            f"WARNING: The duplications of the event IDs are found: {event_ids_dup}"
-        )
-
-    logger.info(f"LST-1: {len(event_data)} events")
-
-    # Rename the columns
-    event_data.rename(
-        columns={
-            "delta_t": "time_diff",
-            "alt_tel": "pointing_alt",
-            "az_tel": "pointing_az",
-            "leakage_pixels_width_1": "pixels_width_1",
-            "leakage_pixels_width_2": "pixels_width_2",
-            "leakage_intensity_width_1": "intensity_width_1",
-            "leakage_intensity_width_2": "intensity_width_2",
-            "time_gradient": "slope",
-        },
-        inplace=True,
-    )
-
-    # Change the units of parameters
-    optics = pd.read_hdf(input_file, key="configuration/instrument/telescope/optics")
-    focal_length = optics["equivalent_focal_length"][0]
-
-    event_data["length"] = focal_length * np.tan(np.deg2rad(event_data["length"]))
-    event_data["width"] = focal_length * np.tan(np.deg2rad(event_data["width"]))
-
-    event_data["phi"] = np.rad2deg(event_data["phi"])
-    event_data["psi"] = np.rad2deg(event_data["psi"])
-
-    # Read the subarray description
-    subarray = SubarrayDescription.from_hdf(input_file)
-
-    if focal_length == NOMINAL_FOCLEN_LST:
-        # Set the effective focal length to the subarray
-        subarray.tel[1].optics.equivalent_focal_length = EFFECTIVE_FOCLEN_LST
-        subarray.tel[1].camera.geometry.frame = CameraFrame(
-            focal_length=EFFECTIVE_FOCLEN_LST
-        )
-
-    return event_data, subarray
-
-
-def load_magic_data_file(input_dir):
-    """
-    Loads MAGIC data files.
-
-    Parameters
-    ----------
-    input_dir: str
-        Path to a directory where input MAGIC data files are stored
-
-    Returns
-    -------
-    event_data: pandas.core.frame.DataFrame
-        Pandas data frame of MAGIC events
-    subarray: ctapipe.instrument.subarray.SubarrayDescription
-        MAGIC subarray description
-    """
-
-    # Find the input files
-    file_mask = f"{input_dir}/dl1_*.h5"
-
-    input_files = glob.glob(file_mask)
-    input_files.sort()
-
-    if len(input_files) == 0:
-        raise FileNotFoundError(
-            "Could not find MAGIC data files in the input directory."
-        )
-
-    # Load the input files
-    logger.info("\nThe following files are found:")
-
-    data_list = []
-
-    for input_file in input_files:
-
-        logger.info(input_file)
-
-        df_events = pd.read_hdf(input_file, key="events/parameters")
-        data_list.append(df_events)
-
-    event_data = pd.concat(data_list)
-
-    event_data.rename(
-        columns={"obs_id": "obs_id_magic", "event_id": "event_id_magic"}, inplace=True
-    )
-
-    event_data.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
-    event_data.sort_index(inplace=True)
-
-    tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
-
-    for tel_id in tel_ids:
-
-        tel_name = TEL_NAMES.get(tel_id)
-        n_events = len(event_data.query(f"tel_id == {tel_id}"))
-
-        logger.info(f"{tel_name}: {n_events} events")
-
-    # Read the subarray description from the first input file, assuming
-    # that it is consistent with the others
-    subarray = SubarrayDescription.from_hdf(input_files[0])
-
-    return event_data, subarray
 
 
 def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):

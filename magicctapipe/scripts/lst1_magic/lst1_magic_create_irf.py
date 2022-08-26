@@ -39,12 +39,11 @@ import time
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, vstack
-from magicctapipe.utils import create_gh_cuts_hdu, get_dl2_mean, get_stereo_events
+from magicctapipe.io import create_gh_cuts_hdu, load_mc_dl2_data_file
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
@@ -53,125 +52,18 @@ from pyirf.io.gadf import (
     create_rad_max_hdu,
 )
 from pyirf.irf import background_2d, effective_area_per_energy, energy_dispersion
-from pyirf.simulations import SimulatedEventsInfo
 from pyirf.spectral import (
     IRFDOC_ELECTRON_SPECTRUM,
     IRFDOC_PROTON_SPECTRUM,
     PowerLaw,
     calculate_event_weights,
 )
-from pyirf.utils import calculate_source_fov_offset, calculate_theta
 
-__all__ = ["load_mc_dl2_data_file", "create_irf"]
+__all__ = ["create_irf"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-
-def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
-    """
-    Loads a MC DL2 data file and applies event selections.
-
-    Parameters
-    ----------
-    input_file: str
-        Path to an input MC DL2 data file
-    quality_cuts: str
-        Quality cuts applied to the input events
-    irf_type: str
-        Type of the IRFs which will be created -
-        "software(_only_3tel)", "magic_only" or "hardware" are allowed
-    dl2_weight: str
-        Type of the weight for averaging telescope-wise DL2 parameters -
-        "simple", "variance" or "intensity" are allowed
-
-    Returns
-    -------
-    event_table: astropy.table.table.QTable
-        Astropy table of MC DL2 events
-    pointing: numpy.ndarray
-        Telescope mean pointing direction (Zd, Az) in degree
-    sim_info: pyirf.simulations.SimulatedEventsInfo
-        Container of the simulation information
-    """
-
-    df_events = pd.read_hdf(input_file, key="events/parameters")
-    df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    df_events.sort_index(inplace=True)
-
-    df_events = get_stereo_events(df_events, quality_cuts)
-
-    # Select the events of the specified IRF type
-    logger.info(f"\nExtracting the events of the '{irf_type}' type...")
-
-    if irf_type == "software":
-        df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
-
-    elif irf_type == "software_only_3tel":
-        df_events.query("combo_type == 3", inplace=True)
-
-    elif irf_type == "magic_only":
-        df_events.query("combo_type == 0", inplace=True)
-
-    elif irf_type != "hardware":
-        raise KeyError(f"Unknown IRF type '{irf_type}'.")
-
-    n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
-    logger.info(f"--> {n_events} stereo events")
-
-    # Compute the mean of the DL2 parameters
-    logger.info(f"\nDL2 weight type: {dl2_weight}")
-
-    df_dl2_mean = get_dl2_mean(df_events, dl2_weight)
-    df_dl2_mean.reset_index(inplace=True)
-
-    # Convert the pandas data frame to the astropy QTable
-    event_table = QTable.from_pandas(df_dl2_mean)
-
-    event_table["pointing_alt"] *= u.rad
-    event_table["pointing_az"] *= u.rad
-    event_table["true_alt"] *= u.deg
-    event_table["true_az"] *= u.deg
-    event_table["reco_alt"] *= u.deg
-    event_table["reco_az"] *= u.deg
-    event_table["true_energy"] *= u.TeV
-    event_table["reco_energy"] *= u.TeV
-
-    event_table["theta"] = calculate_theta(
-        events=event_table,
-        assumed_source_az=event_table["true_az"],
-        assumed_source_alt=event_table["true_alt"],
-    )
-
-    event_table["true_source_fov_offset"] = calculate_source_fov_offset(event_table)
-    event_table["reco_source_fov_offset"] = calculate_source_fov_offset(
-        event_table, prefix="reco"
-    )
-
-    pointing_zd = np.mean(90 - event_table["pointing_alt"].to_value(u.deg))
-    pointing_az = np.mean(event_table["pointing_az"].to_value(u.deg))
-    pointing = np.array([pointing_zd.round(3), pointing_az.round(3)])
-
-    # Load the simulation configuration
-    sim_config = pd.read_hdf(input_file, key="simulation/config")
-
-    n_total_showers = (
-        sim_config["num_showers"][0]
-        * sim_config["shower_reuse"][0]
-        * len(np.unique(event_table["obs_id"]))
-    )
-
-    sim_info = SimulatedEventsInfo(
-        n_showers=n_total_showers,
-        energy_min=u.Quantity(sim_config["energy_range_min"][0], u.TeV),
-        energy_max=u.Quantity(sim_config["energy_range_max"][0], u.TeV),
-        max_impact=u.Quantity(sim_config["max_scatter_range"][0], u.m),
-        spectral_index=sim_config["spectral_index"][0],
-        viewcone=u.Quantity(sim_config["max_viewcone_radius"][0], u.deg),
-    )
-
-    return event_table, pointing, sim_info
 
 
 def create_irf(
