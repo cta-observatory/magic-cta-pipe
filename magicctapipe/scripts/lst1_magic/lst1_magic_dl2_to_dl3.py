@@ -66,20 +66,20 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 # The geographical coordinate of ORM
-ORM_LAT = 28.76177  # unit: [deg]
-ORM_LON = -17.89064  # unit: [deg]
-ORM_HEIGHT = 2199.835  # unit: [m]
+ORM_LAT = 28.76177 * u.deg
+ORM_LON = -17.89064 * u.deg
+ORM_HEIGHT = 2199.835 * u.m
 
 # The LST/MAGIC readout dead times
-DEAD_TIME_LST = 7.6e-6  # unit: [sec]
-DEAD_TIME_MAGIC = 26e-6  # unit: [sec]
+DEAD_TIME_LST = 7.6 * u.us
+DEAD_TIME_MAGIC = 26 * u.us
 
 # The upper limit of event time differences used when calculating
 # the dead time correction factor
-TIME_DIFF_UPLIM = 0.1  # unit: [sec]
+TIME_DIFF_UPLIM = 0.1 * u.s
 
 # The MJD reference time
-MJDREF = Time(0, format="unix", scale="utc").mjd
+MJDREF = Time(0, format="unix", scale="utc")
 
 
 def calculate_deadc(event_data):
@@ -91,8 +91,8 @@ def calculate_deadc(event_data):
     "deadc", where <time_diff> is the mean of the trigger time
     differences of consecutive events:
 
-    # rate = 1 / (<time_diff> - dead_time)
-    # deadc = 1 / (1 + rate * dead_time) = 1 - dead_time / <time_diff>
+    rate = 1 / (<time_diff> - dead_time)
+    deadc = 1 / (1 + rate * dead_time) = 1 - dead_time / <time_diff>
 
     Parameters
     ----------
@@ -105,38 +105,39 @@ def calculate_deadc(event_data):
         Total dead time correction factor
     """
 
-    df_events = event_data.query(f"0 < time_diff < {TIME_DIFF_UPLIM}")
+    df_events = event_data.query(f"0 < time_diff < {TIME_DIFF_UPLIM.to_value(u.s)}")
 
     logger.info("\nCalculating the dead time correction factor...")
 
     deadc_list = []
 
-    # Calculate the LST-1 correction factor:
+    # Calculate the LST-1 correction factor
     time_diffs_lst = df_events.query("tel_id == 1")["time_diff"]
 
     if len(time_diffs_lst) > 0:
-        deadc_lst = 1 - DEAD_TIME_LST / time_diffs_lst.mean()
+        deadc_lst = 1 - DEAD_TIME_LST.to_value(u.s) / time_diffs_lst.mean()
         logger.info(f"LST-1: {deadc_lst.round(3)}")
 
         deadc_list.append(deadc_lst)
 
     # Calculate the MAGIC correction factor with one of the telescopes
-    # whose number of events is larger than the other:
+    # whose number of events is larger than the other
     time_diffs_m1 = df_events.query("tel_id == 2")["time_diff"]
     time_diffs_m2 = df_events.query("tel_id == 3")["time_diff"]
 
     if len(time_diffs_m1) > len(time_diffs_m2):
-        deadc_magic = 1 - DEAD_TIME_MAGIC / time_diffs_m1.mean()
+        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m1.mean()
         logger.info(f"MAGIC-I: {deadc_magic.round(3)}")
     else:
-        deadc_magic = 1 - DEAD_TIME_MAGIC / time_diffs_m2.mean()
+        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m2.mean()
         logger.info(f"MAGIC-II: {deadc_magic.round(3)}")
 
     deadc_list.append(deadc_magic)
 
     # Calculate the total correction factor as the multiplicity of the
-    # telescope-wise correction factors:
+    # telescope-wise correction factors
     deadc_total = np.prod(deadc_list)
+
     logger.info(f"--> Total correction factor: {deadc_total.round(3)}")
 
     return deadc_total
@@ -167,7 +168,7 @@ def load_irf_files(input_dir_irf):
     n_input_files = len(input_files_irf)
 
     if n_input_files == 0:
-        raise FileNotFoundError(f"IRF files are not found under {input_dir_irf}")
+        raise FileNotFoundError("Could not find IRF files in the input directory.")
 
     extra_header = {
         "TELESCOP": [],
@@ -199,7 +200,7 @@ def load_irf_files(input_dir_irf):
         "bkg_fov_offset_bins": [],
     }
 
-    logger.info("\nInput IRF files:")
+    logger.info("\nThe following files are found:")
 
     for input_file in input_files_irf:
 
@@ -212,12 +213,12 @@ def load_irf_files(input_dir_irf):
             if key in header:
                 extra_header[key].append(header[key])
 
-        # Read the grid point:
+        # Read the grid point
         coszd = np.cos(np.deg2rad(header["PNT_ZD"]))
         azimuth = np.deg2rad(header["PNT_AZ"])
         grid_point = [coszd, azimuth]
 
-        # Read the IRF data:
+        # Read the IRF data
         aeff_data = hdus_irf["EFFECTIVE AREA"].data[0]
         edisp_data = hdus_irf["ENERGY DISPERSION"].data[0]
 
@@ -249,7 +250,7 @@ def load_irf_files(input_dir_irf):
             radmax_data = hdus_irf["RAD_MAX"].data[0]
             irf_data["rad_max"].append(radmax_data["RAD_MAX"])
 
-    # Check the IRF data consistency:
+    # Check the IRF data consistency
     for key in irf_data.keys():
 
         irf_data[key] = np.array(irf_data[key])
@@ -271,7 +272,7 @@ def load_irf_files(input_dir_irf):
             elif n_unique_bins > 1:
                 raise ValueError(f"The '{key}' of the input IRF files does not match.")
 
-    # Check the header consistency:
+    # Check the header consistency
     for key in list(extra_header.keys()):
 
         n_data = len(extra_header[key])
@@ -288,7 +289,7 @@ def load_irf_files(input_dir_irf):
         else:
             extra_header[key] = unique_values[0]
 
-    # Set the units to the IRF data:
+    # Set the units to the IRF data
     irf_data["effective_area"] *= u.m**2
     irf_data["background"] *= u.Unit("MeV-1 s-1 sr-1")
     irf_data["rad_max"] *= u.deg
@@ -301,7 +302,7 @@ def load_irf_files(input_dir_irf):
 
 def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     """
-    Loads an input DL2 data file.
+    Loads a DL2 data file.
 
     Parameters
     ----------
@@ -310,9 +311,12 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     quality_cuts: str
         Quality cuts applied to the input events
     irf_type: str
-        Type of the LST-1 + MAGIC IRFs
+        Type of the IRFs which will be created -
+        "software(_only_3tel)", "magic_only" or "hardware" are allowed
     dl2_weight: str
-        Type of the weight for averaging telescope-wise DL2 parameters
+        Type of the weight for averaging telescope-wise DL2 parameters -
+        "simple", "variance" or "intensity" are allowed
+
 
     Returns
     -------
@@ -328,29 +332,35 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
 
     df_events = get_stereo_events(df_events, quality_cuts)
 
-    # Select the events of the specified IRF type:
+    # Select the events of the specified IRF type
     logger.info(f'\nExtracting the events of the "{irf_type}" type...')
 
     if irf_type == "software":
-        df_events.query("combo_type == 3", inplace=True)
-
-    elif irf_type == "software_with_any2":
         df_events.query("combo_type > 0", inplace=True)
+
+    elif irf_type == "software_only_3tel":
+        df_events.query("combo_type == 3", inplace=True)
 
     elif irf_type == "magic_only":
         df_events.query("combo_type == 0", inplace=True)
 
+    elif irf_type == "hardware":
+        logger.warning(
+            "WARNING: Please confirm that this IRF type is correct for the input data, "
+            "since the hardware trigger between LST-1 and MAGIC may NOT be used."
+        )
+
     n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
 
-    # Calculate the dead time correction factor:
+    # Calculate the dead time correction factor
     deadc = calculate_deadc(df_events)
 
-    # Compute the mean of the DL2 parameters:
+    # Compute the mean of the DL2 parameters
     df_dl2_mean = get_dl2_mean(df_events, dl2_weight)
     df_dl2_mean.reset_index(inplace=True)
 
-    # Convert the pandas data frame to the astropy QTable:
+    # Convert the pandas data frame to the astropy QTable
     event_table = QTable.from_pandas(df_dl2_mean)
 
     event_table["pointing_alt"] *= u.rad
@@ -382,10 +392,10 @@ def create_event_list(event_table, deadc, source_name, source_ra=None, source_de
         Name of the observed source
     source_ra: astropy.units.quantity.Quantity
         Right ascension of the observed source
-        (Used only when the source name can not be resolved)
+        (Used only when the source name cannot be resolved)
     source_dec: astropy.units.quantity.Quantity
         Declination of the observed source
-        (Used only when the source name can not be resolved)
+        (Used only when the source name cannot be resolved)
 
     Returns
     -------
@@ -395,11 +405,13 @@ def create_event_list(event_table, deadc, source_name, source_ra=None, source_de
         Astropy header for the event list
     """
 
+    mjdreff, mjdrefi = np.modf(MJDREF.mjd)
+
     time_start = Time(event_table["timestamp"][0], format="unix", scale="utc")
     time_end = Time(event_table["timestamp"][-1], format="unix", scale="utc")
     time_diffs = np.diff(event_table["timestamp"])
 
-    elapsed_time = np.sum(time_diffs)
+    elapsed_time = time_diffs.sum()
     effective_time = elapsed_time * deadc
 
     event_coords = SkyCoord(
@@ -444,8 +456,8 @@ def create_event_list(event_table, deadc, source_name, source_ra=None, source_de
     event_header["TIME-END"] = time_end.to_value("iso", "date_hms")[11:]
     event_header["TSTART"] = time_start.value
     event_header["TSTOP"] = time_end.value
-    event_header["MJDREFI"] = np.modf(MJDREF)[1]
-    event_header["MJDREFF"] = np.modf(MJDREF)[0]
+    event_header["MJDREFI"] = mjdrefi
+    event_header["MJDREFF"] = mjdreff
     event_header["TIMEUNIT"] = "s"
     event_header["TIMESYS"] = "UTC"
     event_header["TIMEREF"] = "TOPOCENTER"
@@ -486,6 +498,8 @@ def create_gti_table(event_table):
         Astropy header for the GTI table
     """
 
+    mjdreff, mjdrefi = np.modf(MJDREF.mjd)
+
     gti_table = QTable(
         data={
             "START": u.Quantity(event_table["timestamp"][0], ndmin=1),
@@ -497,8 +511,8 @@ def create_gti_table(event_table):
     gti_header["CREATED"] = Time.now().utc.iso
     gti_header["HDUCLAS1"] = "GTI"
     gti_header["OBS_ID"] = np.unique(event_table["obs_id"])[0]
-    gti_header["MJDREFI"] = np.modf(MJDREF)[1]
-    gti_header["MJDREFF"] = np.modf(MJDREF)[0]
+    gti_header["MJDREFI"] = mjdrefi
+    gti_header["MJDREFF"] = mjdreff
     gti_header["TIMEUNIT"] = "s"
     gti_header["TIMESYS"] = "UTC"
     gti_header["TIMEREF"] = "TOPOCENTER"
@@ -523,6 +537,8 @@ def create_pointing_table(event_table):
         Astropy header for the pointing table
     """
 
+    mjdreff, mjdrefi = np.modf(MJDREF.mjd)
+
     pnt_table = QTable(
         data={
             "TIME": u.Quantity(event_table["timestamp"][0], ndmin=1),
@@ -537,14 +553,14 @@ def create_pointing_table(event_table):
     pnt_header["CREATED"] = Time.now().utc.iso
     pnt_header["HDUCLAS1"] = "POINTING"
     pnt_header["OBS_ID"] = np.unique(event_table["obs_id"])[0]
-    pnt_header["MJDREFI"] = np.modf(MJDREF)[1]
-    pnt_header["MJDREFF"] = np.modf(MJDREF)[0]
+    pnt_header["MJDREFI"] = mjdrefi
+    pnt_header["MJDREFF"] = mjdreff
     pnt_header["TIMEUNIT"] = "s"
     pnt_header["TIMESYS"] = "UTC"
     pnt_header["TIMEREF"] = "TOPOCENTER"
-    pnt_header["OBSGEO-L"] = (ORM_LON, "Geographic longitude of the telescopes (deg)")
-    pnt_header["OBSGEO-B"] = (ORM_LAT, "Geographic latitude of the telescopes (deg)")
-    pnt_header["OBSGEO-H"] = (ORM_HEIGHT, "Geographic height of the telescopes (m)")
+    pnt_header["OBSGEO-L"] = (ORM_LON.to_value(u.deg), "Geographic longitude (deg)")
+    pnt_header["OBSGEO-B"] = (ORM_LAT.to_value(u.deg), "Geographic latitude (deg)")
+    pnt_header["OBSGEO-H"] = (ORM_HEIGHT.to_value(u.m), "Geographic height (m)")
 
     return pnt_table, pnt_header
 
@@ -574,6 +590,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         config_dl3["source_dec"] *= u.deg
 
     # Load the input IRF files
+    logger.info(f"\nInput IRF directory:{input_dir_irf}")
+
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
     logger.info(f"\nGrid points:\n{irf_data['grid_point'].round(5).tolist()}")
@@ -600,7 +618,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # ranges, i.e., 0 <= az < 360 deg and -180 <= az < 180 deg, and then
     # calculate the mean with the range of smaller STD.
 
-    pointing_coszd_mean = np.mean(np.sin(event_table["pointing_alt"].to_value(u.rad)))
+    pointing_coszd_mean = np.sin(event_table["pointing_alt"].to_value(u.rad)).mean()
 
     pointing_az_wrap_360deg = Angle(event_table["pointing_az"]).wrap_at(360 * u.deg)
     pointing_az_wrap_180deg = Angle(event_table["pointing_az"]).wrap_at(180 * u.deg)
@@ -723,7 +741,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(hdu_rad_max)
 
-    # Apply the interpolated gammaness cuts:
+    # Apply the interpolated gammaness cuts
     if "GH_CUT" in extra_header:
         logger.info("\nApplying the global gammaness cut:")
 
@@ -753,7 +771,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         event_table = event_table[mask_gh_gamma]
 
-    # Create an event list HDU:
+    # Create an event list HDU
     logger.info("\n\nCreating an event list HDU...")
 
     event_list, event_header = create_event_list(event_table, deadc, **config_dl3)
@@ -761,7 +779,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     hdu_event = fits.BinTableHDU(event_list, header=event_header, name="EVENTS")
     hdus.append(hdu_event)
 
-    # Create a GTI table:
+    # Create a GTI table
     logger.info("Creating a GTI HDU...")
 
     gti_table, gti_header = create_gti_table(event_table)
@@ -769,7 +787,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     hdu_gti = fits.BinTableHDU(gti_table, header=gti_header, name="GTI")
     hdus.append(hdu_gti)
 
-    # Create a pointing table:
+    # Create a pointing table
     logger.info("Creating a pointing HDU...")
 
     pnt_table, pnt_header = create_pointing_table(event_table)
@@ -777,15 +795,16 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     hdu_pnt = fits.BinTableHDU(pnt_table, header=pnt_header, name="POINTING")
     hdus.append(hdu_pnt)
 
-    # Save the data in an output file:
+    # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     input_file_name = Path(input_file_dl2).name
 
-    output_file_name = input_file_name.replace("dl2", "dl3")
+    output_file_name = input_file_name.replace("dl2", "dl3").replace(".h5", ".fits.gz")
     output_file = f"{output_dir}/{output_file_name}"
 
     hdus.writeto(output_file, overwrite=True)
+
     logger.info(f"\nOutput file:\n{output_file}")
 
 
@@ -836,7 +855,7 @@ def main():
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
-    # Process the input data:
+    # Process the input data
     dl2_to_dl3(args.input_file_dl2, args.input_dir_irf, args.output_dir, config)
 
     logger.info("\nDone.")

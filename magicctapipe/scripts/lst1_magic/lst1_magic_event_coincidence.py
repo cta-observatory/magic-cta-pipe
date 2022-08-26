@@ -103,8 +103,7 @@ def load_lst_data_file(input_file):
         LST-1 subarray description
     """
 
-    logger.info(f"\nInput LST-1 data file:\n{input_file}")
-
+    # Load the input file
     event_data = pd.read_hdf(
         input_file, key="dl1/event/telescope/parameters/LST_LSTCam"
     )
@@ -179,12 +178,12 @@ def load_lst_data_file(input_file):
 
 def load_magic_data_file(input_dir):
     """
-    Loads MAGIC data file(s).
+    Loads MAGIC data files.
 
     Parameters
     ----------
     input_dir: str
-        Path to a directory where input MAGIC data file(s) are stored
+        Path to a directory where input MAGIC data files are stored
 
     Returns
     -------
@@ -195,8 +194,6 @@ def load_magic_data_file(input_dir):
     """
 
     # Find the input files
-    logger.info(f"\nInput MAGIC directory:\n{input_dir}")
-
     file_mask = f"{input_dir}/dl1_*.h5"
 
     input_files = glob.glob(file_mask)
@@ -208,7 +205,7 @@ def load_magic_data_file(input_dir):
         )
 
     # Load the input files
-    logger.info("\nThe following MAGIC data file(s) are found:")
+    logger.info("\nThe following files are found:")
 
     data_list = []
 
@@ -263,8 +260,14 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     config_coincidence = config["event_coincidence"]
 
-    # Load the input files
+    # Load the input LST-1 data file
+    logger.info(f"\nInput LST-1 data file:\n{input_file_lst}")
+
     data_lst, subarray_lst = load_lst_data_file(input_file_lst)
+
+    # Load the input MAGIC data files
+    logger.info(f"\nInput MAGIC directory:\n{input_dir_magic}")
+
     data_magic, subarray_magic = load_magic_data_file(input_dir_magic)
 
     # Exclude the parameters non-common to LST-1 and MAGIC data

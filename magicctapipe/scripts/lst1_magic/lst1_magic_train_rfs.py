@@ -232,7 +232,6 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
 
     # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
-
     data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
 
     # Configure the energy regressor
@@ -304,7 +303,6 @@ def train_direction_regressor(
 
     # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
-
     data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
 
     subarray = SubarrayDescription.from_hdf(input_file)

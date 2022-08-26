@@ -120,9 +120,9 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         (applicable only to MAGIC real data)
     """
 
-    # Find the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
+    # Find the input files
     input_file_mask = f"{input_dir}/*.h5"
 
     input_files = glob.glob(input_file_mask)
