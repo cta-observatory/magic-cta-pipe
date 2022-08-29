@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import logging
-
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -20,39 +18,14 @@ __all__ = [
     "calculate_disp",
     "calculate_impact",
     "calculate_mean_direction",
-    "calculate_pointing_separation",
     "calculate_off_coordinates",
-    "calculate_dead_time_correction",
     "transform_altaz_to_radec",
 ]
 
-logger = logging.getLogger(__name__)
-logger.addHandler(logging.StreamHandler())
-logger.setLevel(logging.INFO)
-
-# The telescope combination types
-TEL_COMBINATIONS = {
-    "m1_m2": [2, 3],  # combo_type = 0
-    "lst1_m1": [1, 2],  # combo_type = 1
-    "lst1_m2": [1, 3],  # combo_type = 2
-    "lst1_m1_m2": [1, 2, 3],  # combo_type = 3
-}
-
-# The pandas index to group up shower events
-GROUP_INDEX = ["obs_id", "event_id"]
-
-# The LST/MAGIC readout dead times
-DEAD_TIME_LST = 7.6 * u.us
-DEAD_TIME_MAGIC = 26 * u.us
-
-# The upper limit of event time differences used when calculating
-# the dead time correction factor
-TIME_DIFF_UPLIM = 0.1 * u.s
-
-# The geographical coordinate of ORM
-LON_ORM = u.Quantity(-17.89064, u.deg)
-LAT_ORM = u.Quantity(28.76177, u.deg)
-HEIGHT_ORM = u.Quantity(2199.835, u.m)
+# The geographic coordinate of ORM
+LON_ORM = -17.89064 * u.deg
+LAT_ORM = 28.76177 * u.deg
+HEIGHT_ORM = 2199.835 * u.m
 
 
 @u.quantity_input
@@ -66,8 +39,8 @@ def calculate_disp(
     camera_frame,
 ):
     """
-    Calculates the DISP parameter, i.e., the angular distance between
-    an event arrival direction and the center of gravity (CoG) of the
+    Calculates the DISP parameter, i.e., the angular distance between an
+    event arrival direction and the center of gravity (CoG) of the
     shower image.
 
     Parameters
@@ -119,13 +92,13 @@ def calculate_impact(
     tel_pos_z: u.m,
 ):
     """
-    Calculates the impact distance, i.e., the closest distance between
-    a shower axis and a telescope position.
+    Calculates the impact parameter, i.e., the closest distance between a
+    shower axis and a telescope position.
 
     It uses equations derived from a hand calculation, but it is
     confirmed that the result is consistent with what is done in MARS.
 
-    In ctapipe v0.16.0 the function to calculate the impact distance is
+    In ctapipe v0.16.0 the function to calculate the impact parameter is
     implemented, so we may replace it to the official one in future.
 
     Parameters
@@ -148,7 +121,7 @@ def calculate_impact(
     Returns
     -------
     impact: astropy.units.quantity.Quantity
-        Impact distance
+        Impact parameter
     """
 
     diff_x = tel_pos_x - core_x
@@ -169,12 +142,12 @@ def calculate_impact(
     return impact
 
 
-def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
+def calculate_mean_direction(lon, lat, unit, weights=None):
     """
     Calculates the mean direction per shower event.
 
-    The input data is supposed to be the pandas Series with the
-    index (obs_id, event_id) to group up the shower events.
+    Please note that the input data is supposed to be the pandas Series
+    with the index (obs_id, event_id) to group telescope-wise events.
 
     Parameters
     ----------
@@ -182,10 +155,10 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
         Longitude in a spherical coordinate
     lat: pandas.core.series.Series
         Latitude in a spherical coordinate
-    weights: pandas.core.series.Series
-        Weights for the input directions
     unit: str
         Unit of the input (and output) angles
+    weights: pandas.core.series.Series
+        Weights for the input directions
 
     Returns
     -------
@@ -206,9 +179,9 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
     z_coords = np.sin(lat)
 
     if weights is None:
-        x_coord_mean = x_coords.groupby(GROUP_INDEX).mean()
-        y_coord_mean = y_coords.groupby(GROUP_INDEX).mean()
-        z_coord_mean = z_coords.groupby(GROUP_INDEX).mean()
+        x_coord_mean = x_coords.groupby(["obs_id", "event_id"]).mean()
+        y_coord_mean = y_coords.groupby(["obs_id", "event_id"]).mean()
+        z_coord_mean = z_coords.groupby(["obs_id", "event_id"]).mean()
 
     else:
         df_cartesian = pd.DataFrame(
@@ -220,16 +193,16 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
             }
         )
 
-        group_sum = df_cartesian.groupby(GROUP_INDEX).sum()
+        group_sum = df_cartesian.groupby(["obs_id", "event_id"]).sum()
 
         x_coord_mean = group_sum["weighted_x_coord"] / group_sum["weight"]
         y_coord_mean = group_sum["weighted_y_coord"] / group_sum["weight"]
         z_coord_mean = group_sum["weighted_z_coord"] / group_sum["weight"]
 
     coord_mean = SkyCoord(
-        x=x_coord_mean.values,
-        y=y_coord_mean.values,
-        z=z_coord_mean.values,
+        x=x_coord_mean.to_numpy(),
+        y=y_coord_mean.to_numpy(),
+        z=z_coord_mean.to_numpy(),
         representation_type="cartesian",
     )
 
@@ -242,53 +215,6 @@ def calculate_mean_direction(lon, lat, weights=None, unit="rad"):
     return lon_mean, lat_mean
 
 
-def calculate_pointing_separation(event_data):
-    """
-    Calculates the angular distance of the LST-1 and MAGIC pointing
-    directions.
-
-    The input data is supposed to have the index
-    (obs_id, event_id, tel_id).
-
-    Parameters
-    ----------
-    event_data: pandas.core.frame.DataFrame
-        Pandas data frame of LST-1 and MAGIC events
-
-    Returns
-    -------
-    theta: astropy.units.quantity.Quantity
-        Angular distance of the LST-1 and MAGIC pointing directions
-    """
-
-    df_lst = event_data.query("tel_id == 1")
-
-    obs_ids = df_lst.index.get_level_values("obs_id").tolist()
-    event_ids = df_lst.index.get_level_values("event_id").tolist()
-
-    multi_indices = pd.MultiIndex.from_arrays(
-        [obs_ids, event_ids], names=["obs_id", "event_id"]
-    )
-
-    df_magic = event_data.query("tel_id == [2, 3]")
-    df_magic.reset_index(level="tel_id", inplace=True)
-    df_magic = df_magic.loc[multi_indices]
-
-    # Calculate the mean of the M1 and M2 pointing directions
-    pointing_az_magic, pointing_alt_magic = calculate_mean_direction(
-        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"]
-    )
-
-    theta = angular_separation(
-        lon1=u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad),
-        lat1=u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad),
-        lon2=u.Quantity(pointing_az_magic.to_numpy(), u.rad),
-        lat2=u.Quantity(pointing_alt_magic.to_numpy(), u.rad),
-    )
-
-    return theta
-
-
 @u.quantity_input
 def calculate_off_coordinates(
     pointing_ra: u.deg,
@@ -298,8 +224,8 @@ def calculate_off_coordinates(
     n_off_regions,
 ):
     """
-    Gets the coordinates of OFF regions to estimate the backgrounds of
-    wobble observation data.
+    Calculates the coordinates of the centers of OFF regions to estimate
+    the backgrounds for wobble observation data.
 
     It calculates the wobble offset and rotation angle with equations
     derived from a hand calculation.
@@ -320,7 +246,7 @@ def calculate_off_coordinates(
     Returns
     -------
     off_coords: dict
-        Coordinates of the center of the OFF regions
+        Coordinates of the centers of the OFF regions
     """
 
     ra_diff = pointing_ra - on_coord_ra
@@ -331,8 +257,6 @@ def calculate_off_coordinates(
         + np.sin(on_coord_dec) * np.sin(pointing_dec)
     )
 
-    logger.info(f"Wobble offset: {wobble_offset.to(u.deg).round(3)}")
-
     # Calculate the wobble rotation angle
     numerator_1 = np.sin(pointing_dec) * np.cos(on_coord_dec)
     numerator_2 = np.cos(pointing_dec) * np.sin(on_coord_dec) * np.cos(ra_diff)
@@ -340,8 +264,6 @@ def calculate_off_coordinates(
 
     wobble_rotation = np.arctan2(numerator_1 - numerator_2, denominator)
     wobble_rotation = Angle(wobble_rotation).wrap_at(360 * u.deg)
-
-    logger.info(f"Wobble rotation angle: {wobble_rotation.to(u.deg).round(3)}")
 
     # Compute the OFF coordinates
     wobble_coord = SkyCoord(pointing_ra, pointing_dec, frame="icrs")
@@ -355,72 +277,13 @@ def calculate_off_coordinates(
     for i_off, rotation in enumerate(rotations_off, start=1):
 
         skyoffset_frame = SkyOffsetFrame(origin=wobble_coord, rotation=-rotation)
-        off_coord = SkyCoord(wobble_offset, u.Quantity(0, u.deg), frame=skyoffset_frame)
 
-        off_coords[i_off] = off_coord.transform_to("icrs")
+        off_coord = SkyCoord(wobble_offset, u.Quantity(0, u.deg), frame=skyoffset_frame)
+        off_coord = off_coord.transform_to("icrs")
+
+        off_coords[i_off] = off_coord
 
     return off_coords
-
-
-def calculate_dead_time_correction(event_data):
-    """
-    Calculates the dead time correction factor, i.e., the factor to
-    estimate the effective time from the total observation time.
-
-    It uses the following equations to get the correction factor
-    "deadc", where <time_diff> is the mean of the trigger time
-    differences of consecutive events:
-
-    rate = 1 / (<time_diff> - dead_time)
-    deadc = 1 / (1 + rate * dead_time) = 1 - dead_time / <time_diff>
-
-    Parameters
-    ----------
-    event_data: pandas.core.frame.DataFrame
-        Pandas data frame of shower events
-
-    Returns
-    -------
-    deadc_total: float
-        Total dead time correction factor
-    """
-
-    df_events = event_data.query(f"0 < time_diff < {TIME_DIFF_UPLIM.to_value(u.s)}")
-
-    logger.info("\nCalculating the dead time correction factor...")
-
-    deadc_list = []
-
-    # Calculate the LST-1 correction factor
-    time_diffs_lst = df_events.query("tel_id == 1")["time_diff"]
-
-    if len(time_diffs_lst) > 0:
-        deadc_lst = 1 - DEAD_TIME_LST.to_value(u.s) / time_diffs_lst.mean()
-        logger.info(f"LST-1: {deadc_lst.round(3)}")
-
-        deadc_list.append(deadc_lst)
-
-    # Calculate the MAGIC correction factor with one of the telescopes
-    # whose number of events is larger than the other
-    time_diffs_m1 = df_events.query("tel_id == 2")["time_diff"]
-    time_diffs_m2 = df_events.query("tel_id == 3")["time_diff"]
-
-    if len(time_diffs_m1) > len(time_diffs_m2):
-        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m1.mean()
-        logger.info(f"MAGIC-I: {deadc_magic.round(3)}")
-    else:
-        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m2.mean()
-        logger.info(f"MAGIC-II: {deadc_magic.round(3)}")
-
-    deadc_list.append(deadc_magic)
-
-    # Calculate the total correction factor as the multiplicity of the
-    # telescope-wise correction factors
-    deadc_total = np.prod(deadc_list)
-
-    logger.info(f"--> Total correction factor: {deadc_total.round(3)}")
-
-    return deadc_total
 
 
 @u.quantity_input

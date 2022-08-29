@@ -33,16 +33,16 @@ $ python lst1_magic_train_rfs.py
 import argparse
 import logging
 import time
+import random
 from pathlib import Path
 
+
 import yaml
+import numpy as np
+import pandas as pd
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.io import (
-    check_feature_importance,
-    get_events_at_random,
-    load_train_data_file,
-)
+from magicctapipe.io import load_train_data_file
 from magicctapipe.reco import DirectionRegressor, EnergyRegressor, EventClassifier
 
 __all__ = [
@@ -55,13 +55,9 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-# Use true Alt/Az directions for the pandas index in order to classify
-# the events simulated by different telescope pointing directions but
-# have the same observation ID
-GROUP_INDEX = ["obs_id", "event_id", "true_alt", "true_az"]
-
+# True event class of gamma and proton MC events
 EVENT_CLASS_GAMMA = 0
-EVENT_CLASS_BKG = 1
+EVENT_CLASS_PROTON = 1
 
 
 def train_energy_regressor(input_file, output_dir, config, use_unsigned_features=False):
@@ -118,8 +114,16 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
         logger.info(f'\nTraining energy regressors for the "{tel_combo}" type...')
         energy_regressor.fit(data_train[tel_combo])
 
-        check_feature_importance(energy_regressor)
+        # Check the feature importance
+        for tel_id, telescope_rf in energy_regressor.telescope_rfs.items():
 
+            logger.info(f"\nTelescope {tel_id} feature importance:")
+            importances = telescope_rf.feature_importances_
+
+            for feature, importance in zip(features, importances):
+                logger.info(f"\t{feature}: {importance.round(5)}")
+
+        # Save the trained RFs to an output file
         if use_unsigned_features:
             output_file = f"{output_dir}/energy_regressors_{tel_combo}_unsigned.joblib"
         else:
@@ -194,8 +198,16 @@ def train_direction_regressor(
         logger.info(f'\nTraining direction regressors for the "{tel_combo}" type...')
         direction_regressor.fit(data_train[tel_combo])
 
-        check_feature_importance(direction_regressor)
+        # Check the feature importance
+        for tel_id, telescope_rf in direction_regressor.telescope_rfs.items():
 
+            logger.info(f"\nTelescope {tel_id} feature importance:")
+            importances = telescope_rf.feature_importances_
+
+            for feature, importance in zip(features, importances):
+                logger.info(f"\t{feature}: {importance.round(5)}")
+
+        # Save the trained RFs to an output file
         if use_unsigned_features:
             output_file = (
                 f"{output_dir}/direction_regressors_{tel_combo}_unsigned.joblib"
@@ -252,7 +264,7 @@ def train_event_classifier(
     logger.info(f"\nInput proton MC data file:\n{input_file_proton}")
 
     data_proton = load_train_data_file(
-        input_file_proton, true_event_class=EVENT_CLASS_BKG
+        input_file_proton, true_event_class=EVENT_CLASS_PROTON
     )
 
     # Configure the event classifier
@@ -279,31 +291,48 @@ def train_event_classifier(
 
         logger.info(f'\nTraining event classifiers for the "{tel_combo}" type...')
 
-        n_events_gamma = len(data_gamma[tel_combo].groupby(GROUP_INDEX).size())
-        n_events_proton = len(data_proton[tel_combo].groupby(GROUP_INDEX).size())
+        multi_indices_gamma = np.unique(data_gamma[tel_combo].index)
+        multi_indices_proton = np.unique(data_proton[tel_combo].index)
+
+        n_events_gamma = len(multi_indices_gamma)
+        n_events_proton = len(multi_indices_proton)
 
         # Adjust the number of training samples
         if n_events_gamma > n_events_proton:
-            logger.info(
-                f"--> The number of gamma MC events is adjusted to {n_events_proton}"
+
+            multi_indices_random = pd.MultiIndex.from_tuples(
+                tuples=random.sample(multi_indices_gamma.tolist(), n_events_proton),
+                names=multi_indices_gamma.names,
             )
-            data_gamma[tel_combo] = get_events_at_random(
-                data_gamma[tel_combo], n_events_proton
-            )
+            data_gamma[tel_combo] = data_gamma[tel_combo].loc[multi_indices_random]
+            data_gamma[tel_combo].sort_index(inplace=True)
+
+            logger.info(f"--> Extracted {n_events_proton} events from the gamma MCs")
 
         elif n_events_proton > n_events_gamma:
-            logger.info(
-                f"--> The number of proton MC events is adjusted to {n_events_gamma}"
+
+            multi_indices_random = pd.MultiIndex.from_tuples(
+                tuples=random.sample(multi_indices_proton.tolist(), n_events_gamma),
+                names=multi_indices_proton.names,
             )
-            data_proton[tel_combo] = get_events_at_random(
-                data_proton[tel_combo], n_events_gamma
-            )
+            data_proton[tel_combo] = data_proton[tel_combo].loc[multi_indices_random]
+            data_proton[tel_combo].sort_index(inplace=True)
+
+            logger.info(f"--> Extracted {n_events_gamma} events from the proton MCs")
 
         data_train = data_gamma[tel_combo].append(data_proton[tel_combo])
         event_classifier.fit(data_train)
 
-        check_feature_importance(event_classifier)
+        # Check the feature importance
+        for tel_id, telescope_rf in event_classifier.telescope_rfs.items():
 
+            logger.info(f"\nTelescope {tel_id} feature importance:")
+            importances = telescope_rf.feature_importances_
+
+            for feature, importance in zip(features, importances):
+                logger.info(f"\t{feature}: {importance.round(5)}")
+
+        # Save the trained RFs to an output file
         if use_unsigned_features:
             output_file = f"{output_dir}/event_classifiers_{tel_combo}_unsigned.joblib"
         else:

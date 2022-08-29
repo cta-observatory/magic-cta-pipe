@@ -34,7 +34,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
-from astropy.coordinates import Angle
+from astropy.coordinates import Angle, angular_separation
 from ctapipe.containers import (
     ArrayEventContainer,
     CameraHillasParametersContainer,
@@ -46,7 +46,6 @@ from magicctapipe.io import get_stereo_events, save_pandas_to_table
 from magicctapipe.utils import (
     calculate_impact,
     calculate_mean_direction,
-    calculate_pointing_separation,
 )
 
 __all__ = ["stereo_reconstruction"]
@@ -112,7 +111,34 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             "LST-1 and MAGIC pointing directions..."
         )
 
-        theta = calculate_pointing_separation(event_data)
+        # Extract LST-1 events
+        df_lst = event_data.query("tel_id == 1")
+
+        # Extract the MAGIC events seen by also LST-1
+        obs_ids = df_lst.index.get_level_values("obs_id").tolist()
+        event_ids = df_lst.index.get_level_values("event_id").tolist()
+
+        multi_indices = pd.MultiIndex.from_arrays(
+            [obs_ids, event_ids], names=["obs_id", "event_id"]
+        )
+
+        df_magic = event_data.query("tel_id == [2, 3]")
+        df_magic.reset_index(level="tel_id", inplace=True)
+        df_magic = df_magic.loc[multi_indices]
+
+        # Calculate the mean of the M1 and M2 pointing directions
+        pointing_az_magic, pointing_alt_magic = calculate_mean_direction(
+            lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"], unit="rad"
+        )
+
+        # Calculate the angular distance of their pointing directions
+        theta = angular_separation(
+            lon1=u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad),
+            lat1=u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad),
+            lon2=u.Quantity(pointing_az_magic.to_numpy(), u.rad),
+            lat2=u.Quantity(pointing_alt_magic.to_numpy(), u.rad),
+        )
+
         theta_max = theta.to(u.arcmin).max()
         theta_uplim = config_stereo["theta_uplim"] * u.arcmin
 
@@ -136,7 +162,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     logger.info("\nReconstructing the stereo parameters...")
 
     pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
-        lon=event_data["pointing_az"], lat=event_data["pointing_alt"]
+        lon=event_data["pointing_az"], lat=event_data["pointing_alt"], unit="rad"
     )
 
     group_size = event_data.groupby(["obs_id", "event_id"]).size()

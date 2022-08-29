@@ -54,8 +54,8 @@ from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.io import (
     get_stereo_events,
-    load_lst_data_file,
-    load_magic_data_file,
+    load_lst_dl1_data_file,
+    load_magic_dl1_data_files,
     save_pandas_to_table,
 )
 
@@ -104,12 +104,12 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     # Load the input LST-1 data file
     logger.info(f"\nInput LST-1 data file:\n{input_file_lst}")
 
-    data_lst, subarray_lst = load_lst_data_file(input_file_lst)
+    data_lst, subarray_lst = load_lst_dl1_data_file(input_file_lst)
 
     # Load the input MAGIC data files
     logger.info(f"\nInput MAGIC directory:\n{input_dir_magic}")
 
-    data_magic, subarray_magic = load_magic_data_file(input_dir_magic)
+    data_magic, subarray_magic = load_magic_dl1_data_files(input_dir_magic)
 
     # Exclude the parameters non-common to LST-1 and MAGIC data
     timestamp_type_lst = config_coincidence["timestamp_type_lst"]
