@@ -48,11 +48,58 @@ from magicctapipe.utils import (
     calculate_mean_direction,
 )
 
-__all__ = ["stereo_reconstruction"]
+__all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+
+
+def calculate_pointing_separation(event_data):
+    """
+    Calculates the angular distance of the LST-1 and MAGIC pointing
+    directions.
+
+    Parameters
+    ----------
+    event_data: pandas.core.frame.DataFrame
+        Data frame of LST-1 and MAGIC events
+
+    Returns
+    -------
+    theta: astropy.units.quantity.Quantity
+        Angular distance of the LST-1 and MAGIC pointing directions
+    """
+
+    # Extract LST-1 events
+    df_lst = event_data.query("tel_id == 1")
+
+    # Extract the MAGIC events seen by also LST-1
+    obs_ids = df_lst.index.get_level_values("obs_id").tolist()
+    event_ids = df_lst.index.get_level_values("event_id").tolist()
+
+    multi_indices = pd.MultiIndex.from_arrays(
+        [obs_ids, event_ids], names=["obs_id", "event_id"]
+    )
+
+    df_magic = event_data.query("tel_id == [2, 3]")
+    df_magic.reset_index(level="tel_id", inplace=True)
+    df_magic = df_magic.loc[multi_indices]
+
+    # Calculate the mean of the M1 and M2 pointing directions
+    pointing_az_magic, pointing_alt_magic = calculate_mean_direction(
+        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"]
+    )
+
+    # Calculate the angular distance of their pointing directions
+    theta = angular_separation(
+        lon1=u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad),
+        lat1=u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad),
+        lon2=u.Quantity(pointing_az_magic.to_numpy(), u.rad),
+        lat2=u.Quantity(pointing_alt_magic.to_numpy(), u.rad),
+    )
+
+    return theta
 
 
 def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=False):
@@ -107,38 +154,11 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     if not is_simulation and (tel_ids != [2, 3]):
 
         logger.info(
-            "\nChecking the angular distance of the "
+            "\nCalculating the angular distance of the "
             "LST-1 and MAGIC pointing directions..."
         )
 
-        # Extract LST-1 events
-        df_lst = event_data.query("tel_id == 1")
-
-        # Extract the MAGIC events seen by also LST-1
-        obs_ids = df_lst.index.get_level_values("obs_id").tolist()
-        event_ids = df_lst.index.get_level_values("event_id").tolist()
-
-        multi_indices = pd.MultiIndex.from_arrays(
-            [obs_ids, event_ids], names=["obs_id", "event_id"]
-        )
-
-        df_magic = event_data.query("tel_id == [2, 3]")
-        df_magic.reset_index(level="tel_id", inplace=True)
-        df_magic = df_magic.loc[multi_indices]
-
-        # Calculate the mean of the M1 and M2 pointing directions
-        pointing_az_magic, pointing_alt_magic = calculate_mean_direction(
-            lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"], unit="rad"
-        )
-
-        # Calculate the angular distance of their pointing directions
-        theta = angular_separation(
-            lon1=u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad),
-            lat1=u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad),
-            lon2=u.Quantity(pointing_az_magic.to_numpy(), u.rad),
-            lat2=u.Quantity(pointing_alt_magic.to_numpy(), u.rad),
-        )
-
+        theta = calculate_pointing_separation(event_data)
         theta_max = theta.to(u.arcmin).max()
         theta_uplim = config_stereo["theta_uplim"] * u.arcmin
 
@@ -215,7 +235,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         if not stereo_params.is_valid:
             logger.warning(
                 f"--> event {i_evt} (event ID {event_id}) failed to get valid stereo "
-                "parameters, possibly due to the image(s) of width = 0. Skipping..."
+                "parameters, possibly due to images of width = 0. Skipping..."
             )
             continue
 
