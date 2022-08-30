@@ -68,15 +68,15 @@ MAGIC:
 
 event_coincidence:
     timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"
-    window_half_width: 300  # unit: [nsec]
+    window_half_width: "300 ns"
     time_offset:
-        start: -5.0  # unit: [usec]
-        stop: 0.0  # unit: [usec]
+        start: "-10 us"
+        stop: "0 us"
 
 
 stereo_reco:
     quality_cuts: "(intensity > 50) & (width > 0)"
-    theta_uplim: 6.0  # unit: [arcmin]
+    theta_uplim: "6 arcmin"
 
 
 energy_regressor:
@@ -112,8 +112,8 @@ energy_regressor:
     ]
 
     gamma_offaxis:
-        min: null  # unit: [deg]
-        max: null  # unit: [deg]
+        min: null
+        max: null
 
 
 disp_regressor:
@@ -149,8 +149,8 @@ disp_regressor:
     ]
 
     gamma_offaxis:
-        min: null  # unit: [deg]
-        max: null  # unit: [deg]
+        min: null
+        max: null
 
 
 event_classifier:
@@ -187,30 +187,30 @@ event_classifier:
     ]
 
     gamma_offaxis:
-        min: null  # unit: [deg]
-        max: null  # unit: [deg]
+        min: null
+        max: null
 
 
 create_irf:
     quality_cuts: null
     irf_type: "software"  # select "software(_only_3tel)", "magic_only" or "hardware"
     dl2_weight: "simple"  # select "simple", "variance" or "intensity"
-    irf_obs_time: 50  # used for creating a background HDU, unit: [hour]
+    irf_obs_time: "50 h"  # used for creating a background HDU
 
     energy_bins:  # log space
-        start: 0.01  # unit: [TeV]
-        stop: 1000  # unit: [TeV]
-        num: 26  # number of edges (nbins = num - 1)
+        start: "0.01 TeV"
+        stop: "1000 TeV"
+        n_edges: 26
 
     migration_bins:  # log space
         start: 0.2
         stop: 5
-        num: 31  # number of edges (nbins = num - 1)
+        n_edges: 31
 
     bkg_fov_offset_bins:  # linear space
-        start: 0  # unit: [deg]
-        stop: 10  # unit: [deg]
-        num: 21  # number of edges (nbins = num - 1)
+        start: "0 deg"
+        stop: "10 deg"
+        n_edges: 21
 
     gammaness:
         cut_type: "dynamic"  # select "global" or "dynamic"
@@ -221,10 +221,10 @@ create_irf:
 
     theta:
         cut_type: "global"  # select "global" or "dynamic"
-        global_cut_value: 0.2  # used for the global cut
+        global_cut_value: "0.2 deg"  # used for the global cut
         efficiency: 0.75  # used for the dynamic cuts
-        min_cut: 0.1  # used for the dynamic cuts
-        max_cut: 0.45  # used for the dynamic cuts
+        min_cut: "0.1 deg"  # used for the dynamic cuts
+        max_cut: "0.45 deg"  # used for the dynamic cuts
 
 
 dl2_to_dl3:

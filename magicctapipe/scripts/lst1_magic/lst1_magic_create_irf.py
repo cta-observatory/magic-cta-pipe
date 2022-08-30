@@ -91,7 +91,7 @@ def create_irf(
     quality_cuts = config_irf["quality_cuts"]
     irf_type = config_irf["irf_type"]
     dl2_weight = config_irf["dl2_weight"]
-    irf_obs_time = config_irf.get("irf_obs_time", 50) * u.hour
+    irf_obs_time = u.Quantity(config_irf.get("irf_obs_time", "50 h"))
 
     # Load the input gamma MC data file
     logger.info(f"\nInput gamma MC DL2 data file:\n{input_file_gamma}")
@@ -168,24 +168,42 @@ def create_irf(
     bkg_exists = len(table_bkg) > 0
 
     # Prepare for creating IRFs
-    logger.info("\nEnergy bins (log space, unit = TeV):")
-    for key, value in config_irf["energy_bins"].items():
+    config_eng_bins = config_irf["energy_bins"]
+
+    logger.info("\nEnergy bins (log space):")
+    for key, value in config_eng_bins.items():
         logger.info(f"\t{key}: {value}")
 
-    energy_bins = np.geomspace(**config_irf["energy_bins"]) * u.TeV
+    energy_bins = np.geomspace(
+        start=u.Quantity(config_eng_bins["start"]).to_value(u.TeV).round(3),
+        stop=u.Quantity(config_eng_bins["stop"]).to_value(u.TeV).round(3),
+        num=config_eng_bins["n_edges"],
+    ) * u.TeV
+
+    config_migra_bins = config_irf["migration_bins"]
 
     logger.info("\nMigration bins (log space):")
-    for key, value in config_irf["migration_bins"].items():
+    for key, value in config_migra_bins.items():
         logger.info(f"\t{key}: {value}")
 
-    migration_bins = np.geomspace(**config_irf["migration_bins"])
+    migration_bins = np.geomspace(
+        start=config_migra_bins["start"],
+        stop=config_migra_bins["stop"],
+        num=config_migra_bins["n_edges"],
+    )
 
     if bkg_exists:
-        logger.info("\nBackground FoV offset bins (linear space, unit = deg):")
-        for key, value in config_irf["bkg_fov_offset_bins"].items():
+        config_bkg_fov_bins = config_irf["bkg_fov_offset_bins"]
+
+        logger.info("\nBackground FoV offset bins (linear space):")
+        for key, value in config_bkg_fov_bins.items():
             logger.info(f"\t{key}: {value}")
 
-        bkg_fov_offset_bins = np.linspace(**config_irf["bkg_fov_offset_bins"]) * u.deg
+        bkg_fov_offset_bins = np.linspace(
+            start=u.Quantity(config_bkg_fov_bins["start"]).to_value(u.deg),
+            stop=u.Quantity(config_bkg_fov_bins["stop"]).to_value(u.deg),
+            num=config_bkg_fov_bins["n_edges"],
+        ) * u.deg
 
     extra_header = {
         "TELESCOP": "CTA-N",
@@ -294,11 +312,11 @@ def create_irf(
     if theta_cut_type == "global":
         logger.info("\nApplying the global theta cut:")
 
-        global_theta_cut = u.Quantity(config_irf["theta"]["global_cut_value"], u.deg)
+        global_theta_cut = u.Quantity(config_irf["theta"]["global_cut_value"])
         logger.info(f"\tGlobal cut value: {global_theta_cut}")
 
         theta_cut_config = f"theta_glob{global_theta_cut.value}"
-        extra_header["RAD_MAX"] = (global_theta_cut.value, "deg")
+        extra_header["RAD_MAX"] = (global_theta_cut.to_value(u.deg), "deg")
 
         # Apply the global theta cut
         table_gamma = table_gamma[table_gamma["theta"] < global_theta_cut]
@@ -307,8 +325,8 @@ def create_irf(
         logger.info("\nApplying the dynamic theta cuts:")
 
         theta_efficiency = config_irf["theta"]["efficiency"]
-        theta_cut_min = u.Quantity(config_irf["theta"]["min_cut"], u.deg)
-        theta_cut_max = u.Quantity(config_irf["theta"]["max_cut"], u.deg)
+        theta_cut_min = u.Quantity(config_irf["theta"]["min_cut"])
+        theta_cut_max = u.Quantity(config_irf["theta"]["max_cut"])
 
         logger.info(f"\tEfficiency: {theta_efficiency}")
         logger.info(f"\tMinimum cut allowed: {theta_cut_min}")
@@ -317,8 +335,8 @@ def create_irf(
         theta_cut_config = f"theta_dyn{theta_efficiency}"
 
         extra_header["TH_EFF"] = (theta_efficiency, "gamma efficiency")
-        extra_header["TH_MIN"] = (theta_cut_min.value, "deg")
-        extra_header["TH_MAX"] = (theta_cut_max.value, "deg")
+        extra_header["TH_MIN"] = (theta_cut_min.to_value(u.deg), "deg")
+        extra_header["TH_MAX"] = (theta_cut_max.to_value(u.deg), "deg")
 
         # Compute the cuts satisfying the efficiency
         theta_percentile = 100 * theta_efficiency

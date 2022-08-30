@@ -125,14 +125,13 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     data_magic.drop(params_non_common, axis=1, errors="ignore", inplace=True)
 
     # Prepare for the event coincidence
-    window_half_width = u.Quantity(
-        int(config_coincidence["window_half_width"]), unit=u.ns, dtype=int
-    )
+    window_half_width = u.Quantity(config_coincidence["window_half_width"])
+    window_half_width = u.Quantity(window_half_width.to(u.ns).round(), dtype=int)
 
     logger.info(f"\nCoincidence window half width: {window_half_width}")
 
-    offset_start = config_coincidence["time_offset"]["start"] * u.us
-    offset_stop = config_coincidence["time_offset"]["stop"] * u.us
+    offset_start = u.Quantity(config_coincidence["time_offset"]["start"])
+    offset_stop = u.Quantity(config_coincidence["time_offset"]["stop"])
 
     logger.info(f"\nTime offsets:\n\tstart: {offset_start}\n\tstop: {offset_stop}")
 

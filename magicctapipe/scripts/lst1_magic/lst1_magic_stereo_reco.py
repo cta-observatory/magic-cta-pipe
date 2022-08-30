@@ -160,7 +160,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
         theta = calculate_pointing_separation(event_data)
         theta_max = theta.to(u.arcmin).max()
-        theta_uplim = config_stereo["theta_uplim"] * u.arcmin
+        theta_uplim = u.Quantity(config_stereo["theta_uplim"])
 
         if theta_max > theta_uplim:
             logger.info(

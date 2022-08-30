@@ -80,10 +80,10 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
     offaxis_max = config_rf["gamma_offaxis"]["max"]
 
     if offaxis_min is not None:
-        offaxis_min *= u.deg
+        offaxis_min = u.Quantity(offaxis_min)
 
     if offaxis_max is not None:
-        offaxis_max *= u.deg
+        offaxis_max = u.Quantity(offaxis_max)
 
     # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
@@ -160,10 +160,10 @@ def train_disp_regressor(
     offaxis_max = config_rf["gamma_offaxis"]["max"]
 
     if offaxis_min is not None:
-        offaxis_min *= u.deg
+        offaxis_min = u.Quantity(offaxis_min)
 
     if offaxis_max is not None:
-        offaxis_max *= u.deg
+        offaxis_max = u.Quantity(offaxis_max)
 
     # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
@@ -246,10 +246,10 @@ def train_event_classifier(
     offaxis_max = config_rf["gamma_offaxis"]["max"]
 
     if offaxis_min is not None:
-        offaxis_min *= u.deg
+        offaxis_min = u.Quantity(offaxis_min)
 
     if offaxis_max is not None:
-        offaxis_max *= u.deg
+        offaxis_max = u.Quantity(offaxis_max)
 
     # Load the input files
     logger.info(f"\nInput gamma MC data file:\n{input_file_gamma}")
