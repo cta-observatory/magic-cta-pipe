@@ -6,7 +6,7 @@ from .lst1_magic_event_coincidence import event_coincidence
 from .lst1_magic_mc_dl0_to_dl1 import mc_dl0_to_dl1
 from .lst1_magic_stereo_reco import stereo_reconstruction
 from .lst1_magic_train_rfs import (
-    train_direction_regressor,
+    train_disp_regressor,
     train_energy_regressor,
     train_event_classifier,
 )
@@ -21,7 +21,7 @@ __all__ = [
     "event_coincidence",
     "mc_dl0_to_dl1",
     "stereo_reconstruction",
-    "train_direction_regressor",
+    "train_disp_regressor",
     "train_energy_regressor",
     "train_event_classifier",
     "magic_calib_to_dl1",

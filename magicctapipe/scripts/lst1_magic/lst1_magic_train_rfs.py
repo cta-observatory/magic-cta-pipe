@@ -2,14 +2,14 @@
 # coding: utf-8
 
 """
-This script trains energy, direction regressors and event classifiers
-with DL1-stereo events. The RFs are currently trained per telescope
-combination and per telescope type. When training event classifiers, the
-number of gamma MC or proton MC events is adjusted so that the RFs are
-trained with the same number of events.
+This script trains energy, DISP regressors and event classifiers with
+DL1-stereo events. The RFs are trained per telescope combination and per
+telescope type. When training event classifiers, the number of gamma MC
+or proton MC events is adjusted so that the RFs are trained with the
+same number of events.
 
 Please specify the RF type that will be trained by using "--train-energy",
-"--train-direction" or "--train-classifier" arguments.
+"--train-disp" or "--train-classifier" arguments.
 
 If the "--use-unsigned" argument is given, the RFs will be trained with
 unsigned features.
@@ -25,7 +25,7 @@ $ python lst1_magic_train_rfs.py
 --output-dir ./rfs
 --config-file ./config.yaml
 (--train-energy)
-(--train-direction)
+(--train-disp)
 (--train-classifier)
 (--use-unsigned)
 """
@@ -36,18 +36,16 @@ import time
 import random
 from pathlib import Path
 
-
 import yaml
 import numpy as np
 import pandas as pd
 from astropy import units as u
-from ctapipe.instrument import SubarrayDescription
 from magicctapipe.io import load_train_data_file
-from magicctapipe.reco import DirectionRegressor, EnergyRegressor, EventClassifier
+from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = [
     "train_energy_regressor",
-    "train_direction_regressor",
+    "train_disp_regressor",
     "train_event_classifier",
 ]
 
@@ -89,6 +87,7 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
 
     # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
+
     data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
 
     # Configure the energy regressor
@@ -104,7 +103,7 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
 
     energy_regressor = EnergyRegressor(rf_settings, features, use_unsigned_features)
 
-    # Train the regressors per telescope combination type
+    # Train the regressor per telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
@@ -137,11 +136,11 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
         logger.info(output_file)
 
 
-def train_direction_regressor(
+def train_disp_regressor(
     input_file, output_dir, config, use_unsigned_features=False
 ):
     """
-    Trains direction regressors with gamma MC DL1-stereo events.
+    Trains DISP regressors with gamma MC DL1-stereo events.
 
     Parameters
     ----------
@@ -155,7 +154,7 @@ def train_direction_regressor(
         If `True`, it uses unsigned features for training RFs
     """
 
-    config_rf = config["direction_regressor"]
+    config_rf = config["disp_regressor"]
 
     offaxis_min = config_rf["gamma_offaxis"]["min"]
     offaxis_max = config_rf["gamma_offaxis"]["max"]
@@ -168,12 +167,10 @@ def train_direction_regressor(
 
     # Load the input file
     logger.info(f"\nInput file:\n{input_file}")
+
     data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
 
-    subarray = SubarrayDescription.from_hdf(input_file)
-    tel_descriptions = subarray.tel
-
-    # Configure the direction regressor
+    # Configure the DISP regressor
     rf_settings = config_rf["settings"]
     features = config_rf["features"]
 
@@ -184,22 +181,22 @@ def train_direction_regressor(
     logger.info(f"\nFeatures:\n{features}")
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
-    direction_regressor = DirectionRegressor(
-        rf_settings, features, tel_descriptions, use_unsigned_features
+    disp_regressor = DispRegressor(
+        rf_settings, features, use_unsigned_features
     )
 
-    # Train the regressors per telescope combination type
+    # Train the regressor per telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
 
     for tel_combo in data_train.keys():
 
-        logger.info(f'\nTraining direction regressors for the "{tel_combo}" type...')
-        direction_regressor.fit(data_train[tel_combo])
+        logger.info(f'\nTraining DISP regressors for the "{tel_combo}" type...')
+        disp_regressor.fit(data_train[tel_combo])
 
         # Check the feature importance
-        for tel_id, telescope_rf in direction_regressor.telescope_rfs.items():
+        for tel_id, telescope_rf in disp_regressor.telescope_rfs.items():
 
             logger.info(f"\nTelescope {tel_id} feature importance:")
             importances = telescope_rf.feature_importances_
@@ -210,12 +207,12 @@ def train_direction_regressor(
         # Save the trained RFs to an output file
         if use_unsigned_features:
             output_file = (
-                f"{output_dir}/direction_regressors_{tel_combo}_unsigned.joblib"
+                f"{output_dir}/disp_regressors_{tel_combo}_unsigned.joblib"
             )
         else:
-            output_file = f"{output_dir}/direction_regressors_{tel_combo}.joblib"
+            output_file = f"{output_dir}/disp_regressors_{tel_combo}.joblib"
 
-        direction_regressor.save(output_file)
+        disp_regressor.save(output_file)
         output_files.append(output_file)
 
     logger.info("\nOutput file(s):")
@@ -280,7 +277,7 @@ def train_event_classifier(
 
     event_classifier = EventClassifier(rf_settings, features, use_unsigned_features)
 
-    # Train the classifiers per telescope combination type
+    # Train the classifier per telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
@@ -395,10 +392,10 @@ def main():
     )
 
     parser.add_argument(
-        "--train-direction",
-        dest="train_direction",
+        "--train-disp",
+        dest="train_disp",
         action="store_true",
-        help="Train direction regressors.",
+        help="Train DISP regressors.",
     )
 
     parser.add_argument(
@@ -426,8 +423,8 @@ def main():
             args.input_file_gamma, args.output_dir, config, args.use_unsigned
         )
 
-    if args.train_direction:
-        train_direction_regressor(
+    if args.train_disp:
+        train_disp_regressor(
             args.input_file_gamma, args.output_dir, config, args.use_unsigned
         )
 

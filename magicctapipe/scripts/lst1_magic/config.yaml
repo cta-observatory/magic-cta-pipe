@@ -116,7 +116,7 @@ energy_regressor:
         max: null  # unit: [deg]
 
 
-direction_regressor:
+disp_regressor:
     settings:
         n_estimators: 150
         criterion: "squared_error"
