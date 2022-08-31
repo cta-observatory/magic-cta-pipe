@@ -368,7 +368,7 @@ def save_pandas_to_table(event_data, output_file, group_name, table_name, mode="
     with tables.open_file(output_file, mode=mode) as f_out:
 
         values = [tuple(array) for array in event_data.to_numpy()]
-        dtypes = np.dtype([(dtype.index, dtype) for dtype in event_data.dtypes])
+        dtypes = np.dtype([(name, dtype) for name, dtype in zip(event_data.dtypes.index, event_data.dtypes)])
 
         event_table = np.array(values, dtype=dtypes)
         f_out.create_table(group_name, table_name, createparents=True, obj=event_table)
