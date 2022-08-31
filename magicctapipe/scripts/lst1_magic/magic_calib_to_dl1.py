@@ -174,7 +174,7 @@ def magic_calib_to_dl1(
     find_hotpixels = config_clean["find_hotpixels"]
 
     if find_hotpixels:
-        pedestal_type = config_clean.pop("pedestal_type")
+        pedestal_type = config_clean["pedestal_type"]
         i_ped_type = np.where(pedestal_types == pedestal_type)[0][0]
 
     magic_clean = MAGICClean(camera_geom, config_clean)

@@ -24,7 +24,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 from astropy import units as u
-from astropy.coordinates import angular_separation
+from astropy.coordinates import Angle, angular_separation
 from ctapipe.calib import CameraCalibrator
 from ctapipe.core import Container, Field
 from ctapipe.image import (
@@ -50,6 +50,14 @@ from traitlets.config import Config
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+
+# From a CORSIKA input card:
+primary_particles = {
+    1: "gamma",
+    3: "electron",
+    14: "proton",
+    402: "helium",
+}
 
 __all__ = [
     "EventInfoContainer",
@@ -220,24 +228,20 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     # Prepare for saving data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    regex_off = r"(\S+)_run(\d+)_.*_off(\S+)\.simtel.gz"
-    regex = r"(\S+)_run(\d+)[_\.].*simtel.gz"
+    sim_config = event_source.simulation_config
+    corsika_inputcard = event_source.file_.corsika_inputcards[0].decode()
 
-    file_name = Path(input_file).name
+    regex = r".*\nPRMPAR\s+(\d)\s+.*"
+    primary_id = int(re.findall(regex, corsika_inputcard)[0])
+    particle = primary_particles[primary_id]
 
-    if re.fullmatch(regex_off, file_name):
-        parser = re.findall(regex_off, file_name)[0]
-        output_file = (
-            f"{output_dir}/"
-            f"dl1_{parser[0]}_off{parser[2]}deg_LST-1_MAGIC_run{parser[1]}.h5"
-        )
+    zenith = 90 - sim_config["max_alt"].to_value(u.deg)
+    azimuth = Angle(sim_config["max_az"]).wrap_at(360 * u.deg).degree
 
-    elif re.fullmatch(regex, file_name):
-        parser = re.findall(regex, file_name)[0]
-        output_file = f"{output_dir}/dl1_{parser[0]}_LST-1_MAGIC_run{parser[1]}.h5"
-
-    else:
-        raise RuntimeError("Could not parse information from the input file name.")
+    output_file = (
+        f"{output_dir}/dl1_{particle}_zd_{zenith.round(3)}deg_"
+        f"az_{azimuth.round(3)}deg_LST-1_MAGIC_run{obs_id}.h5"
+    )
 
     # Start processing the events:
     logger.info("\nProcessing the events...")
@@ -480,7 +484,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     # Save the simulation configuration:
     with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
-        writer.write("config", event_source.simulation_config)
+        writer.write("config", sim_config)
 
     logger.info("\nOutput file:")
     logger.info(output_file)

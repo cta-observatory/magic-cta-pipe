@@ -2,16 +2,16 @@
 name: magic-lst1
 channels:
   - default
-  - cta-observatory
+  - conda-forge
 dependencies:
   - python=3.7
   - pip
   - astropy
   - black
   - bokeh=1.0
-  - conda-forge::nbsphinx
-  - conda-forge::ctapipe=0.12
-  - conda-forge::gammapy=0.19.0
+  - nbsphinx
+  - ctapipe=0.12
+  - gammapy=0.19.0
   - cython
   - graphviz
   - h5py
@@ -26,6 +26,7 @@ dependencies:
   - numpydoc
   - pandas
   - pre-commit
+  - protozfits=2.0
   - psutil
   - pytables
   - pytest
@@ -40,16 +41,16 @@ dependencies:
   - sphinx_rtd_theme
   - tqdm
   - traitlets
+  - uproot~=4.1
   - vitables
   - wheel
   - xz
   - zlib
   - zstandard
-  - conda-forge::eventio>=1.5.0
-  - conda-forge::corsikaio
+  - eventio>=1.5.0
+  - corsikaio
   - pip:
       - lstchain~=0.9.6
       - ctapipe_io_magic~=0.4.5
-      - uproot~=4.1
       - ctaplot~=0.5.5
       - pyirf~=0.6.0

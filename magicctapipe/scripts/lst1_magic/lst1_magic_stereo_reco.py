@@ -199,10 +199,6 @@ def stereo_reconstruction(
     # Configure the HillasReconstructor:
     hillas_reconstructor = HillasReconstructor(subarray)
 
-    # Since the reconstructor requires the ArrayEventContainer as an input,
-    # here we initialize it and reset necessary information event-by-event:
-    event = ArrayEventContainer()
-
     # Start processing the events:
     logger.info("\nReconstructing the stereo parameters...")
 
@@ -216,6 +212,8 @@ def stereo_reconstruction(
     event_ids = group.index.get_level_values("event_id")
 
     for i_evt, (obs_id, event_id) in enumerate(zip(obs_ids, event_ids)):
+
+        event = ArrayEventContainer()
 
         if i_evt % 100 == 0:
             logger.info(f"{i_evt} events")

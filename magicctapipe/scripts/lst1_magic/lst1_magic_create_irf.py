@@ -18,7 +18,6 @@ $ python lst1_magic_create_irf.py
 import argparse
 import logging
 import operator
-import re
 import time
 from pathlib import Path
 
@@ -28,8 +27,6 @@ import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, table
-from astropy.time import Time
-from magicctapipe import __version__
 from magicctapipe.utils import check_tel_combination, get_dl2_mean
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
@@ -47,6 +44,7 @@ from pyirf.spectral import (
     calculate_event_weights,
 )
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
+from magicctapipe.utils import create_gh_cuts_hdu
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -60,7 +58,9 @@ __all__ = [
 ]
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
+def load_dl2_data_file(
+    input_file, quality_cuts=None, irf_type="hardware", dl2_weight=None
+):
     """
     Loads an input MC DL2 data file, applies event selections and
     returns as an astropy table.
@@ -80,6 +80,8 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     -------
     event_table: astropy.table.table.QTable
         Astropy table of MC DL2 events
+    pointing: numpy.ndarray
+        Telescope mean pointing direction (Zd, Az) in degree
     sim_info: pyirf.simulations.SimulatedEventsInfo
         Container of simulation information
     """
@@ -146,6 +148,10 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
         event_table, prefix="reco"
     )
 
+    pointing_zd = np.mean(90 - event_table["pointing_alt"].to_value(u.deg))
+    pointing_az = np.mean(event_table["pointing_az"].to_value(u.deg))
+    pointing = np.array([pointing_zd.round(3), pointing_az.round(3)])
+
     # Load the simulation configuration:
     sim_config = pd.read_hdf(input_file, key="simulation/config")
 
@@ -163,7 +169,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
         viewcone=u.Quantity(sim_config["max_viewcone_radius"][0], u.deg),
     )
 
-    return event_table, sim_info
+    return event_table, pointing, sim_info
 
 
 def apply_dynamic_gammaness_cut(
@@ -199,9 +205,9 @@ def apply_dynamic_gammaness_cut(
         Astropy table of the gammaness cuts
     """
 
-    logger.info(f"Gamma efficiency: {gamma_efficiency}")
-    logger.info(f"Minimum gammaness cut allowed: {min_cut}")
-    logger.info(f"Maximum gammaness cut allowed: {max_cut}")
+    logger.info(f"\tGamma efficiency: {gamma_efficiency}")
+    logger.info(f"\tMinimum gammaness cut allowed: {min_cut}")
+    logger.info(f"\tMaximum gammaness cut allowed: {max_cut}")
 
     # Compute the cuts satisfying the efficiency:
     percentile = 100 * (1 - gamma_efficiency)
@@ -245,7 +251,8 @@ def apply_dynamic_theta_cut(
 ):
     """
     Applies dynamic (energy-dependent) theta cuts to input events.
-    The cuts are computed in each energy bin so as to keep the specified gamma efficiency.
+    The cuts are computed in each energy bin so as to keep the specified
+    gamma efficiency.
 
     Parameters
     ----------
@@ -268,9 +275,9 @@ def apply_dynamic_theta_cut(
         Astropy table of the theta cuts
     """
 
-    logger.info(f"Gamma efficiency: {gamma_efficiency}")
-    logger.info(f"Minimum theta cut allowed: {min_cut}")
-    logger.info(f"Maximum theta cut allowed: {max_cut}")
+    logger.info(f"\tGamma efficiency: {gamma_efficiency}")
+    logger.info(f"\tMinimum theta cut allowed: {min_cut}")
+    logger.info(f"\tMaximum theta cut allowed: {max_cut}")
 
     # Compute the cuts satisfying the efficiency:
     percentile = 100 * gamma_efficiency
@@ -327,7 +334,7 @@ def create_irf(
     # Load the input gamma MC file:
     logger.info(f"\nInput gamma MC DL2 data file:\n{input_file_gamma}")
 
-    table_gamma, sim_info_gamma = load_dl2_data_file(
+    table_gamma, pnt_gamma, sim_info_gamma = load_dl2_data_file(
         input_file_gamma, quality_cuts, irf_type, dl2_weight
     )
 
@@ -341,9 +348,15 @@ def create_irf(
         # Load the input proton MC file:
         logger.info(f"\nInput proton MC DL2 data file:\n{input_file_proton}")
 
-        table_proton, sim_info_proton = load_dl2_data_file(
+        table_proton, pnt_proton, sim_info_proton = load_dl2_data_file(
             input_file_proton, quality_cuts, irf_type, dl2_weight
         )
+
+        if np.any(pnt_proton != pnt_gamma):
+            raise ValueError(
+                f"Proton MC pointing direction {pnt_proton} deg "
+                f"do not match with that of gamma MC {pnt_gamma} deg."
+            )
 
         simulated_spectrum_proton = PowerLaw.from_simulation(
             sim_info_proton, obs_time_irf
@@ -358,9 +371,15 @@ def create_irf(
         # Load the input electron MC file:
         logger.info(f"\nInput electron MC DL2 data file:\n{input_file_electron}")
 
-        table_electron, sim_info_electron = load_dl2_data_file(
+        table_electron, pnt_electron, sim_info_electron = load_dl2_data_file(
             input_file_electron, quality_cuts, irf_type, dl2_weight
         )
+
+        if np.any(pnt_electron != pnt_gamma):
+            raise ValueError(
+                f"Electron MC pointing direction {pnt_electron} deg "
+                f"do not match with that of gamma MC {pnt_gamma} deg."
+            )
 
         simulated_spectrum_electron = PowerLaw.from_simulation(
             sim_info_electron, obs_time_irf
@@ -377,38 +396,44 @@ def create_irf(
 
     # Prepare for creating IRFs:
     logger.info("\nEnergy bins (log space, unit = TeV):")
-    for key, value in config_irf["energy_bins"]:
-        print(f"\t{key}: {value}")
+    for key, value in config_irf["energy_bins"].items():
+        logger.info(f"\t{key}: {value}")
 
     energy_bins = np.geomspace(**config_irf["energy_bins"]) * u.TeV
 
     logger.info("\nMigration bins (log space):")
-    for key, value in config_irf["migration_bins"]:
-        print(f"\t{key}: {value}")
+    for key, value in config_irf["migration_bins"].items():
+        logger.info(f"\t{key}: {value}")
 
     migration_bins = np.geomspace(**config_irf["migration_bins"])
 
     logger.info("\nFoV offset bins (linear space, unit = deg):")
-    for key, value in config_irf["fov_offset_bins"]:
-        print(f"\t{key}: {value}")
+    for key, value in config_irf["fov_offset_bins"].items():
+        logger.info(f"\t{key}: {value}")
 
-    fov_offset_bins = np.linspace(**config_irf["fov_offset_bins"])
+    fov_offset_bins = np.linspace(**config_irf["fov_offset_bins"]) * u.deg
 
     if not only_gamma_mc:
         logger.info("\nBackground FoV offset bins (linear space, unit = deg):")
-        for key, value in config_irf["bkg_fov_offset_bins"]:
-            print(f"\t{key}: {value}")
+        for key, value in config_irf["bkg_fov_offset_bins"].items():
+            logger.info(f"\t{key}: {value}")
 
         bkg_fov_offset_bins = np.linspace(**config_irf["bkg_fov_offset_bins"]) * u.deg
 
-    extra_headers = {
+    extra_header = {
         "TELESCOP": "CTA-N",
         "INSTRUME": "LST-1_MAGIC",
         "FOVALIGN": "RADEC",
-        "QUAL_CUT": quality_cuts,
+        "PNT_ZD": (pnt_gamma[0], "deg"),
+        "PNT_AZ": (pnt_gamma[1], "deg"),
         "IRF_TYPE": irf_type,
-        "DL2_WEIG": dl2_weight,
     }
+
+    if quality_cuts is not None:
+        extra_header["QUAL_CUT"] = quality_cuts
+
+    if dl2_weight is not None:
+        extra_header["DL2_WEIG"] = dl2_weight
 
     hdus_irf = fits.HDUList([fits.PrimaryHDU()])
 
@@ -419,7 +444,7 @@ def create_irf(
         logger.info("\nApplying the global gammaness cut:")
 
         global_gam_cut = config_irf["gammaness"]["global_cut_value"]
-        logger.info(f"Global cut value: {global_gam_cut}")
+        logger.info(f"\tGlobal cut value: {global_gam_cut}")
 
         table_gamma = table_gamma[table_gamma["gammaness"] > global_gam_cut]
 
@@ -427,35 +452,37 @@ def create_irf(
             table_bkg = table_bkg[table_bkg["gammaness"] > global_gam_cut]
 
         gam_cut_config = f"gam_glob{global_gam_cut}"
-        extra_headers["GH_CUT"] = global_gam_cut
+        extra_header["GH_CUT"] = global_gam_cut
 
     elif gam_cut_type == "dynamic":
         logger.info("\nApplying the dynamic gammaness cuts:")
 
-        gamma_efficiency = config_irf["gammaness"]["gamma_efficiency"]
-        min_cut = config_irf["gammaness"]["min_cut"]
-        max_cut = config_irf["gammaness"]["max_cut"]
+        gh_efficiency = config_irf["gammaness"]["efficiency"]
+        gh_cut_min = config_irf["gammaness"]["min_cut"]
+        gh_cut_max = config_irf["gammaness"]["max_cut"]
 
         table_gamma, table_bkg, cut_table_gh = apply_dynamic_gammaness_cut(
-            table_gamma, table_bkg, energy_bins, gamma_efficiency, min_cut, max_cut
+            table_gamma, table_bkg, energy_bins, gh_efficiency, gh_cut_min, gh_cut_max
         )
 
-        logger.info(f"Gammaness cut table:\n{cut_table_gh}")
+        logger.info(f"\nGammaness cut table:\n{cut_table_gh}")
 
-        gam_cut_config = f"gam_dyn{gamma_efficiency}"
-        extra_headers["GH_EFF"] = (gamma_efficiency, "gamma efficiency")
+        gam_cut_config = f"gam_dyn{gh_efficiency}"
+        extra_header["GH_EFF"] = (gh_efficiency, "gh efficiency")
+        extra_header["GH_MIN"] = gh_cut_min
+        extra_header["GH_MAX"] = gh_cut_max
 
         logger.info("\nCreating a gammaness-cut HDU...")
 
-        gh_header = fits.Header()
-        gh_header["CREATOR"] = f"magicctapipe v{__version__}"
-        gh_header["DATE"] = Time.now().utc.iso
+        hdu_gh_cuts = create_gh_cuts_hdu(
+            gh_cuts=cut_table_gh["cut"][:, np.newaxis],
+            reco_energy_bins=energy_bins,
+            fov_offset_bins=fov_offset_bins,
+            extname="GH_CUTS",
+            **extra_header,
+        )
 
-        for k, v in extra_headers.items():
-            gh_header[k] = v
-
-        hdu_gh = fits.BinTableHDU(cut_table_gh, header=gh_header, name="GH_CUTS")
-        hdus_irf.append(hdu_gh)
+        hdus_irf.append(hdu_gh_cuts)
 
     else:
         raise KeyError(f'Unknown type of the gammaness cut "{gam_cut_type}".')
@@ -467,28 +494,30 @@ def create_irf(
         logger.info("\nApplying the global theta cut:")
 
         global_theta_cut = u.Quantity(config_irf["theta"]["global_cut_value"], u.deg)
-        logger.info(f"Global cut value: {global_theta_cut}")
+        logger.info(f"\tGlobal cut value: {global_theta_cut}")
 
         table_gamma = table_gamma[table_gamma["theta"] < global_theta_cut]
 
         theta_cut_config = f"theta_glob{global_theta_cut.value}"
-        extra_headers["RAD_MAX"] = (global_theta_cut.value, "deg")
+        extra_header["RAD_MAX"] = (global_theta_cut.value, "deg")
 
     elif theta_cut_type == "dynamic":
         logger.info("\nApplying the dynamic theta cuts:")
 
-        gamma_efficiency = config_irf["theta"]["gamma_efficiency"]
-        min_cut = u.Quantity(config_irf["theta"]["min_cut"], u.deg)
-        max_cut = u.Quantity(config_irf["theta"]["max_cut"], u.deg)
+        theta_efficiency = config_irf["theta"]["efficiency"]
+        theta_cut_min = u.Quantity(config_irf["theta"]["min_cut"], u.deg)
+        theta_cut_max = u.Quantity(config_irf["theta"]["max_cut"], u.deg)
 
         table_gamma, cut_table_theta = apply_dynamic_theta_cut(
-            table_gamma, energy_bins, gamma_efficiency, min_cut, max_cut
+            table_gamma, energy_bins, theta_efficiency, theta_cut_min, theta_cut_max
         )
 
-        logger.info(f"Theta cut table:\n{cut_table_theta}")
+        logger.info(f"\nTheta cut table:\n{cut_table_theta}")
 
-        extra_headers["TH_EFF"] = (gamma_efficiency, "gamma efficiency")
-        theta_cut_config = f"theta_dyn{gamma_efficiency}"
+        theta_cut_config = f"theta_dyn{theta_efficiency}"
+        extra_header["TH_EFF"] = (theta_efficiency, "gamma efficiency")
+        extra_header["TH_MIN"] = (theta_cut_min.value, "deg")
+        extra_header["TH_MAX"] = (theta_cut_max.value, "deg")
 
         logger.info("\nCreating a rad-max HDU...")
 
@@ -498,7 +527,7 @@ def create_irf(
             fov_offset_bins=fov_offset_bins,
             point_like=True,
             extname="RAD_MAX",
-            **extra_headers,
+            **extra_header,
         )
 
         hdus_irf.append(hdu_rad_max)
@@ -523,13 +552,13 @@ def create_irf(
             fov_offset_bins=fov_offset_bins,
             point_like=True,
             extname="EFFECTIVE AREA",
-            **extra_headers,
+            **extra_header,
         )
 
     hdus_irf.append(hdu_aeff)
 
     # Create an energy dispersion HDU:
-    logger.info("\nCreating an energy dispersion HDU...")
+    logger.info("Creating an energy dispersion HDU...")
 
     edisp = energy_dispersion(
         selected_events=table_gamma,
@@ -545,44 +574,39 @@ def create_irf(
         fov_offset_bins=fov_offset_bins,
         point_like=True,
         extname="ENERGY DISPERSION",
-        **extra_headers,
+        **extra_header,
     )
 
     hdus_irf.append(hdu_edisp)
 
     # Create a background HDU:
     if not only_gamma_mc:
-        logger.info("\nCreating a background HDU...")
+        logger.info("Creating a background HDU...")
 
-        bkg2d = background_2d(
+        bkg = background_2d(
             events=table_bkg,
             reco_energy_bins=energy_bins,
             fov_offset_bins=bkg_fov_offset_bins,
             t_obs=obs_time_irf,
         )
 
-        hdu_bkg2d = create_background_2d_hdu(
-            background_2d=bkg2d.T,
+        hdu_bkg = create_background_2d_hdu(
+            background_2d=bkg.T,
             reco_energy_bins=energy_bins,
             fov_offset_bins=bkg_fov_offset_bins,
             extname="BACKGROUND",
-            **extra_headers,
+            **extra_header,
         )
 
-        hdus_irf.append(hdu_bkg2d)
+        hdus_irf.append(hdu_bkg)
 
     # Save the data in an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    regex = r"dl2_gamma_(\S+)_run.*"
-    file_name = Path(input_file_gamma).name
-
-    if re.fullmatch(regex, file_name):
-        parser = re.findall(regex, file_name)[0]
-        output_file = (
-            f"{output_dir}"
-            f"/irf_{parser}_{irf_type}_{gam_cut_config}_{theta_cut_config}.fits.gz"
-        )
+    output_file = (
+        f"{output_dir}/irf_zd_{pnt_gamma[0]}deg_az_{pnt_gamma[1]}deg"
+        f"_{irf_type}_{gam_cut_config}_{theta_cut_config}.fits.gz"
+    )
 
     hdus_irf.writeto(output_file, overwrite=True)
     logger.info(f"\nOutput file:\n{output_file}")
