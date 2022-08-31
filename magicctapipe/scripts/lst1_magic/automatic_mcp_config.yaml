@@ -1,13 +1,18 @@
 Data:
-  dates: ["2020_12_14","2020_12_16"] #dates
-  run-numbers: ["05093664", "05093663", "05093711"] #runnumbers, does not have to be sorted
+  dates: ["2020_12_14"] #,"2020_12_16"] #dates
+  run-numbers: ["05093664"] #, "05093663", "05093711"] #runnumbers, does not have to be sorted
   input-path: "/remote/ceph/group/magic/MAGIC-LST/Data/MAGIC/CrabNebula/1.Calibrated/"
   output-path: "/home/iwsatlas1/ejobst/Software/Internship/Elli/temp_folder_2"
 
 MCs:
-  input-path: "/home/iwsatlas1/ejobst/Software/Internship/Elli/mcp/magic/simtel"
+  input-path: "/remote/ceph/group/magic/MAGIC-LST/Data/MAGIC/MCs/fixed_pointing"
 
 Settings:
   RFs: ["energy", "classifier", "direction"]
 
+# if this is used, the files need to be saved the same way as it is done here; e.g /dl1 /dl1_stereo /dl2 /dl3 etc.
+# when not starting at calib to dl1, input_path does not need to be changed, only the output_path which will be input as well as output path 
+# when finishing before the end of the script, nothing needs to be changed
 
+Start-at: "dl1_to_dl1_stereo" #"calib_to_dl1", "dl1_to_dl1_stereo", "train_RFs", "dl1_stereo_to_dl2", "create_IRF", "dl2_to_dl3", "dl3_index"
+Stop-after: "dl1_to_dl1_stereo" #"calib_to_dl1", "dl1_to_dl1_stereo", "train_RFs", "dl1_stereo_to_dl2", "create_IRF", "dl2_to_dl3", "dl3_index"
