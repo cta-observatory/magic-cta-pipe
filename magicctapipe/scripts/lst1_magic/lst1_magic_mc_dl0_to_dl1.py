@@ -5,9 +5,9 @@
 This script processes LST-1 and MAGIC events of simtel MC DL0 data
 (*.simtel.gz) and computes the DL1 parameters, i.e., Hillas, timing and
 leakage parameters. It saves only the events that all the DL1 parameters
-are successfully reconstructed. Please confirm that the telescope IDs
-are correctly assigned to each telescope with the "mc_tel_ids" setting
-in the configuration file.
+are successfully reconstructed. Please confirm that the telescope ID is
+correctly assigned to each telescope with the "mc_tel_ids" setting in
+the configuration file.
 
 When saving data to an output file the telescope IDs will be reset to
 the following ones:
@@ -20,9 +20,9 @@ array for the convenience of the geometrical stereo reconstruction.
 
 Usage:
 $ python lst1_magic_mc_dl0_to_dl1.py
---input-file ./dl0/gamma_40deg_90deg_run1.simtel.gz
---output-dir ./dl1
---config-file ./config.yaml
+--input-file dl0/gamma_40deg_90deg_run1.simtel.gz
+--output-dir dl1
+--config-file config.yaml
 """
 
 import argparse

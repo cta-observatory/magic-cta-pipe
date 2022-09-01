@@ -92,13 +92,13 @@ def calculate_impact(
     tel_pos_z: u.m,
 ):
     """
-    Calculates the impact parameter, i.e., the closest distance between a
-    shower axis and a telescope position.
+    Calculates the impact parameter, i.e., the closest distance between
+    a shower axis and a telescope position.
 
     It uses equations derived from a hand calculation, but it is
     confirmed that the result is consistent with what is done in MARS.
 
-    In ctapipe v0.16.0 the function to calculate the impact parameter is
+    In ctapipe v0.16.0 a function to calculate the impact parameter is
     implemented, so we may replace it to the official one in future.
 
     Parameters
@@ -108,13 +108,13 @@ def calculate_impact(
     shower_az: astropy.units.quantity.Quantity
         Azimuth of the event arrival direction
     core_x: astropy.units.quantity.Quantity
-        Core position along the geographical north
+        Core position along the geographic north
     core_y: astropy.units.quantity.Quantity
-        Core position along the geographical west
+        Core position along the geographic west
     tel_pos_x: astropy.units.quantity.Quantity
-        Telescope position along the geographical north
+        Telescope position along the geographic north
     tel_pos_y: astropy.units.quantity.Quantity
-        Telescope position along the geographical west
+        Telescope position along the geographic west
     tel_pos_z: astropy.units.quantity.Quantity
         Telescope height from the reference altitude
 
@@ -156,7 +156,8 @@ def calculate_mean_direction(lon, lat, unit, weights=None):
     lat: pandas.core.series.Series
         Latitude in a spherical coordinate
     unit: str
-        Unit of the input (and output) angles
+        Unit of the input (and output) angles -
+        "deg", "degree", "rad" or "radian" are allowed
     weights: pandas.core.series.Series
         Weights for the input directions
 
@@ -265,7 +266,7 @@ def calculate_off_coordinates(
     wobble_rotation = np.arctan2(numerator_1 - numerator_2, denominator)
     wobble_rotation = Angle(wobble_rotation).wrap_at(360 * u.deg)
 
-    # Compute the OFF coordinates
+    # Calculate the OFF coordinates
     wobble_coord = SkyCoord(pointing_ra, pointing_dec, frame="icrs")
 
     rotations_off = np.arange(0, 359, 360 / (n_off_regions + 1)) * u.deg
@@ -290,7 +291,7 @@ def calculate_off_coordinates(
 def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
     """
     Transforms the Alt/Az direction measured from ORM to the RA/Dec
-    coordinate by using the observation time.
+    coordinate.
 
     Parameters
     ----------
@@ -299,7 +300,7 @@ def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
     az: astropy.units.quantity.Quantity
         Azimuth measured from ORM
     obs_time: astropy.time.core.Time
-        Observation time when the direction was measured
+        Time when the direction was measured
 
     Returns
     -------

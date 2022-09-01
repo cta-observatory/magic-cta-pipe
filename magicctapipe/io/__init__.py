@@ -13,6 +13,8 @@ from .gadf import (
     create_pointing_hdu,
 )
 from .io import (
+    TEL_COMBINATIONS,
+    TEL_NAMES,
     get_dl2_mean,
     get_stereo_events,
     load_dl2_data_file,
@@ -21,7 +23,7 @@ from .io import (
     load_magic_dl1_data_files,
     load_mc_dl2_data_file,
     load_train_data_file,
-    save_pandas_to_table,
+    save_pandas_data_in_table,
 )
 
 __all__ = [
@@ -32,6 +34,8 @@ __all__ = [
     "create_gh_cuts_hdu",
     "create_gti_hdu",
     "create_pointing_hdu",
+    "TEL_NAMES",
+    "TEL_COMBINATIONS",
     "get_dl2_mean",
     "get_stereo_events",
     "load_dl2_data_file",
@@ -40,5 +44,5 @@ __all__ = [
     "load_magic_dl1_data_files",
     "load_mc_dl2_data_file",
     "load_train_data_file",
-    "save_pandas_to_table",
+    "save_pandas_data_in_table",
 ]

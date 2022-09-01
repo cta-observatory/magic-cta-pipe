@@ -7,6 +7,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn.ensemble
+from magicctapipe.io import TEL_NAMES
 
 __all__ = ["EnergyRegressor", "DispRegressor", "EventClassifier"]
 
@@ -74,19 +75,20 @@ class EnergyRegressor:
             else:
                 x_train = df_events[self.features].to_numpy()
 
+            # Use logarithmic energy for the target values
             y_train = np.log10(df_events["true_energy"].to_numpy())
             weights = df_events["event_weight"].to_numpy()
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
-            logger.info(f"Telescope {tel_id}...")
+            logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train, sample_weight=weights)
 
             self.telescope_rfs[tel_id] = regressor
 
     def predict(self, event_data):
         """
-        Reconstructs the energies with trained RFs.
+        Reconstructs the energies of primary particles with trained RFs.
 
         Parameters
         ----------
@@ -96,7 +98,7 @@ class EnergyRegressor:
         Returns
         -------
         reco_params: pandas.core.frame.DataFrame
-            Data frame of the reconstructed energies
+            Data frame of the shower events with reconstructed energies
         """
 
         reco_params = pd.DataFrame()
@@ -183,9 +185,7 @@ class DispRegressor:
         Telescope-wise RFs
     """
 
-    def __init__(
-        self, settings={}, features=[], use_unsigned_features=None
-    ):
+    def __init__(self, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
@@ -233,7 +233,7 @@ class DispRegressor:
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
-            logger.info(f"Telescope {tel_id}...")
+            logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train, sample_weight=weights)
 
             self.telescope_rfs[tel_id] = regressor
@@ -250,7 +250,7 @@ class DispRegressor:
         Returns
         -------
         reco_params: pandas.core.frame.DataFrame
-            Data frame of the reconstructed DISP parameter
+            Data frame of the shower events with the DISP parameter
         """
 
         reco_params = pd.DataFrame()
@@ -328,7 +328,7 @@ class EventClassifier:
     Attributes
     ----------
     settings: dict
-        Settings of RF regressors
+        Settings of RF classifiers
     features: list
         Parameters for training RFs
     use_unsigned_features: bool
@@ -385,7 +385,7 @@ class EventClassifier:
 
             classifier = sklearn.ensemble.RandomForestClassifier(**self.settings)
 
-            logger.info(f"Telescope {tel_id}...")
+            logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
             classifier.fit(x_train, y_train, sample_weight=weights)
 
             self.telescope_rfs[tel_id] = classifier
@@ -402,7 +402,7 @@ class EventClassifier:
         Returns
         -------
         reco_params: pandas.core.frame.DataFrame
-            Data frame of the gammaness
+            Data frame of the shower events with the gammaness
         """
 
         reco_params = pd.DataFrame()
@@ -419,20 +419,21 @@ class EventClassifier:
 
             gammaness = telescope_rf.predict_proba(x_predict)[:, 0]
 
-            # Compute the variance of the binomial distribution
+            # Calculate the variance of the binomial distribution
             gammaness_var = gammaness * (1 - gammaness)
 
-            # Set the artificial finite value in case the variance is 0,
-            # to avoid the inverse value becomes infinite
+            # Set the artificial finite value in case the variance is 0
+            # to avoid that the inverse value, which may be used for the
+            # weights of averaging telescope-wise values, is infinite
             gammaness_var[gammaness == 1] = 0.99 * (1 - 0.99)
             gammaness_var[gammaness == 0] = 0.01 * (1 - 0.01)
 
-            df_reco_class = pd.DataFrame(
+            df_gammaness = pd.DataFrame(
                 data={"gammaness": gammaness, "gammaness_var": gammaness_var},
                 index=df_events.index,
             )
 
-            reco_params = reco_params.append(df_reco_class)
+            reco_params = reco_params.append(df_gammaness)
 
         reco_params.sort_index(inplace=True)
 

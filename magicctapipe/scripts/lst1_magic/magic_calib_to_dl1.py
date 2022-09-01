@@ -15,19 +15,19 @@ MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 When the input is real data, it searches for all the subrun files with
 the same observation ID and stored in the same directory as the input
-subrun file. Then, it reads the drive reports and uses the information
-to reconstruct the telescope pointing direction. Since the accuracy of
-the reconstruction improves, it is recommended to store all the subrun
-files in the same directory.
+subrun file. Then, it reads drive reports and uses the information to
+reconstruct the telescope pointing direction. Since the accuracy of the
+reconstruction improves, it is recommended to store all the subrun files
+in the same directory.
 
 If the "--process-run" argument is given, it not only reads the drive
 reports but also processes all the events of the subrun files at once.
 
 Usage:
 $ python magic_calib_to_dl1.py
---input-file ./calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
---output-dir ./dl1
---config-file ./config.yaml
+--input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
+--output-dir dl1
+--config-file config.yaml
 (--process-run)
 """
 
@@ -64,6 +64,10 @@ logger.setLevel(logging.INFO)
 # Ignore RuntimeWarnings appeared during the image cleaning
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
+# The conversion factor from seconds to nanoseconds
+SEC2NSEC = 1e9
+
+# The pedestal types allowed to find badrms pixels
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
@@ -90,16 +94,17 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     event_source = MAGICEventSource(input_file, process_run=process_run)
 
+    is_simulation = event_source.is_simulation
+    logger.info(f"\nIs simulation: {is_simulation}")
+
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
-    is_simulation = event_source.is_simulation
-
-    logger.info(f"\nObservation ID: {obs_id}")
-    logger.info(f"Telescope ID: {tel_id}")
-    logger.info(f"Is simulation: {is_simulation}")
 
     if not is_simulation:
-        logger.info("\nThe following files are found to read the drive reports:")
+        logger.info(f"\nObservation ID: {obs_id}")
+        logger.info(f"Telescope ID: {tel_id}")
+
+        logger.info("\nThe following files are found to read drive reports:")
         for subrun_file in event_source.file_list_drive:
             logger.info(subrun_file)
 
@@ -161,10 +166,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             # Apply the image cleaning
             if find_hotpixels:
                 pixel_status = event.mon.tel[tel_id].pixel_status
-                unsuitable_mask = np.logical_or(
-                    pixel_status.hardware_failing_pixels[0],  # dead pixels
-                    pixel_status.pedestal_failing_pixels[i_ped_type],  # bad RMS pixels
-                )
+                dead_pixels = pixel_status.hardware_failing_pixels[0]
+                badrms_pixels = pixel_status.pedestal_failing_pixels[i_ped_type]
+                unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
             else:
                 unsuitable_mask = None
@@ -272,8 +276,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 # fractional parts separately
                 fractional, integral = np.modf(timestamp)
 
-                time_sec = u.Quantity(integral, u.s).round()
-                time_nanosec = u.Quantity(fractional, u.s).to(u.ns).round()
+                time_sec = u.Quantity(integral, unit=u.s, dtype=int)
+                time_nanosec = u.Quantity(
+                    np.round(fractional * SEC2NSEC), unit=u.ns, dtype=int
+                )
 
                 time_diff = time_diffs[event.count]
 
