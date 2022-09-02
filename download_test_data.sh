@@ -39,70 +39,21 @@ if [ -z "$TEST_DATA_PASSWORD" ]; then
     echo
 fi
 
-if ! wget \
-    -i test_data_real.txt \
-    --user="$TEST_DATA_USER" \
-    --password="$TEST_DATA_PASSWORD" \
-    --no-check-certificate \
-    --no-verbose \
-    --timestamping \
-    --directory-prefix=test_data/real/calibrated; then
-    echo "Problem in downloading the test data set for real data."
-fi
+files=( "test_data_real.txt" "test_data_images_real.txt" "test_data_superstar_real.txt" "test_data_simulated.txt" "test_data_images_simulated.txt" "test_data_superstar_simulated.txt")
+dirs=(  "real/calibrated"    "real/images"               "real/superstar"               "simulated/calibrated"    "simulated/images"               "simulated/superstar")
 
-if ! wget \
-    -i test_data_images_real.txt \
-    --user="$TEST_DATA_USER" \
-    --password="$TEST_DATA_PASSWORD" \
-    --no-check-certificate \
-    --no-verbose \
-    --timestamping \
-    --directory-prefix=test_data/real/images; then
-    echo "Problem in downloading the test data set for real data."
-fi
-
-if ! wget \
-    -i test_data_superstar_real.txt \
-    --user="$TEST_DATA_USER" \
-    --password="$TEST_DATA_PASSWORD" \
-    --no-check-certificate \
-    --no-verbose \
-    --timestamping \
-    --directory-prefix=test_data/real/superstar; then
-    echo "Problem in downloading the test data set for real data."
-fi
-
-if ! wget \
-    -i test_data_simulated.txt \
-    --user="$TEST_DATA_USER" \
-    --password="$TEST_DATA_PASSWORD" \
-    --no-check-certificate \
-    --no-verbose \
-    --timestamping \
-    --directory-prefix=test_data/simulated/calibrated; then
-    echo "Problem in downloading the test data set for simulated data."
-fi
-
-if ! wget \
-    -i test_data_images_simulated.txt \
-    --user="$TEST_DATA_USER" \
-    --password="$TEST_DATA_PASSWORD" \
-    --no-check-certificate \
-    --no-verbose \
-    --timestamping \
-    --directory-prefix=test_data/simulated/images; then
-    echo "Problem in downloading the test data set for simulated data."
-fi
-
-if ! wget \
-    -i test_data_superstar_simulated.txt \
-    --user="$TEST_DATA_USER" \
-    --password="$TEST_DATA_PASSWORD" \
-    --no-check-certificate \
-    --no-verbose \
-    --timestamping \
-    --directory-prefix=test_data/simulated/superstar; then
-    echo "Problem in downloading the test data set for simulated data."
-fi
-
-rm -f test_data_real.txt test_data_simulated.txt test_data_images_real.txt test_data_superstar_real.txt test_data_images_simulated.txt test_data_superstar_simulated.txt
+for i in "${!files[@]}"; do
+    if ! wget \
+	 -i ${files[i]} \
+	 --user="$TEST_DATA_USER" \
+	 --password="$TEST_DATA_PASSWORD" \
+	 --no-check-certificate \
+	 --no-verbose \
+	 --timestamping \
+	 --directory-prefix=test_data/${dirs[i]}; then
+	echo "Problem in downloading the test data set (${dirs[i]})"
+    fi
+    rm -f ${files[i]}
+done
+unset TEST_DATA_USER
+unset TEST_DATA_PASSWORD
