@@ -194,7 +194,7 @@ event_classifier:
 create_irf:
     quality_cuts: null
     irf_type: "software"  # select "software(_only_3tel)", "magic_only" or "hardware"
-    dl2_weight: "simple"  # select "simple", "variance" or "intensity"
+    dl2_weight_type: "simple"  # select "simple", "variance" or "intensity"
     irf_obs_time: "50 h"  # used for creating a background HDU
 
     energy_bins:  # log space
@@ -220,7 +220,7 @@ create_irf:
         max_cut: 0.85  # used for the dynamic cuts
 
     theta:
-        cut_type: "global"  # select "global" or "dynamic"
+        cut_type: "dynamic"  # select "global" or "dynamic"
         global_cut_value: "0.2 deg"  # used for the global cut
         efficiency: 0.75  # used for the dynamic cuts
         min_cut: "0.1 deg"  # used for the dynamic cuts

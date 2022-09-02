@@ -10,7 +10,7 @@ Usage:
 $ python lst1_magic_dl1_stereo_to_dl2.py
 --input-file-dl1 dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
 --input-dir-rfs rfs
---output-dir dl2
+(--output-dir dl2)
 """
 
 import argparse
@@ -59,14 +59,15 @@ def apply_rfs(event_data, estimator):
     """
 
     tel_ids = list(estimator.telescope_rfs.keys())
+    n_tel_ids = len(tel_ids)
 
     df_events = event_data.query(
-        f"(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})"
+        f"(tel_id == {tel_ids}) & (multiplicity == {n_tel_ids})"
     ).copy()
 
     df_events.dropna(subset=estimator.features, inplace=True)
     df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
-    df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
+    df_events.query(f"multiplicity == {n_tel_ids}", inplace=True)
 
     reco_params = estimator.predict(df_events)
 
@@ -292,18 +293,20 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     mask_event_classifier = f"{input_dir_rfs}/event_classifiers_*.joblib"
 
     # Reconstruct the energies
-    input_rfs_energy = glob.glob(mask_energy_regressor)
-    input_rfs_energy.sort()
+    input_files_energy = glob.glob(mask_energy_regressor)
+    input_files_energy.sort()
 
-    if len(input_rfs_energy) > 0:
+    n_files_energy = len(input_files_energy)
 
-        logger.info("\nReconstructing the energies...")
+    if n_files_energy > 0:
+
+        logger.info(f"\nIn total {n_files_energy} energy regressor files are found:")
         energy_regressor = EnergyRegressor()
 
-        for input_rfs in input_rfs_energy:
+        for input_file in input_files_energy:
 
-            logger.info(input_rfs)
-            energy_regressor.load(input_rfs)
+            logger.info(f"Applying {input_file}...")
+            energy_regressor.load(input_file)
 
             reco_params = apply_rfs(event_data, energy_regressor)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
@@ -311,18 +314,20 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     del energy_regressor
 
     # Reconstruct the DISP parameter
-    input_rfs_disp = glob.glob(mask_disp_regressor)
-    input_rfs_disp.sort()
+    input_files_dips = glob.glob(mask_disp_regressor)
+    input_files_dips.sort()
 
-    if len(input_rfs_disp) > 0:
+    n_files_disp = len(input_files_dips)
 
-        logger.info("\nReconstructing the DISP parameter...")
+    if n_files_disp > 0:
+
+        logger.info(f"\nIn total {n_files_disp} DISP regressor files are found:")
         disp_regressor = DispRegressor()
 
-        for input_rfs in input_rfs_disp:
+        for input_file in input_files_dips:
 
-            logger.info(input_rfs)
-            disp_regressor.load(input_rfs)
+            logger.info(f"Applying {input_file}...")
+            disp_regressor.load(input_file)
 
             reco_params = apply_rfs(event_data, disp_regressor)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
@@ -336,18 +341,20 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     del disp_regressor
 
     # Reconstruct the gammaness
-    input_rfs_class = glob.glob(mask_event_classifier)
-    input_rfs_class.sort()
+    input_files_class = glob.glob(mask_event_classifier)
+    input_files_class.sort()
 
-    if len(input_rfs_class) > 0:
+    n_files_class = len(input_files_class)
 
-        logger.info("\nReconstructing the gammaness...")
+    if n_files_class > 0:
+
+        logger.info(f"\nIn total {n_files_class} event classifier files are found:")
         event_classifier = EventClassifier()
 
-        for input_rfs in input_rfs_class:
+        for input_file in input_files_class:
 
-            logger.info(input_rfs)
-            event_classifier.load(input_rfs)
+            logger.info(f"Applying {input_file}...")
+            event_classifier.load(input_file)
 
             reco_params = apply_rfs(event_data, event_classifier)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params

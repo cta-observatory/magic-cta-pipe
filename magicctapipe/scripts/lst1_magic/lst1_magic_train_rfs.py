@@ -21,9 +21,9 @@ this script it would be needed to merge DL1-stereo files with the script
 Usage:
 $ python lst1_magic_train_rfs.py
 --input-file-gamma dl1_stereo/dl1_stereo_gamma_40deg_90deg.h5
---input-file-proton dl1_stereo/dl1_stereo_proton_40deg_90deg.h5
---output-dir rfs
---config-file config.yaml
+(--input-file-proton dl1_stereo/dl1_stereo_proton_40deg_90deg.h5)
+(--output-dir rfs)
+(--config-file config.yaml)
 (--train-energy)
 (--train-disp)
 (--train-classifier)
@@ -376,7 +376,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     parser.add_argument(

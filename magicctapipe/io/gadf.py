@@ -54,7 +54,7 @@ def create_gh_cuts_hdu(
     Returns
     -------
     gh_cuts_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        HDU for the gammaness cuts
+        Gammaness-cut HDU
     """
 
     energy_lo, energy_hi = split_bin_lo_hi(reco_energy_bins[np.newaxis, :].to(u.TeV))
@@ -119,7 +119,7 @@ def create_event_hdu(
     Returns
     -------
     event_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        HDU for the shower events
+        Event HDU
     """
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
@@ -185,7 +185,7 @@ def create_event_hdu(
             ("TIMEUNIT", "s"),
             ("TIMESYS", "UTC"),
             ("TIMEREF", "TOPOCENTER"),
-            ("ONTIME", on_time),
+            ("ONTIME", on_time.value),
             ("TELAPSE", elapsed_time.to_value(u.s)),
             ("DEADC", deadc),
             ("LIVETIME", effective_time.value),
@@ -222,7 +222,7 @@ def create_gti_hdu(event_data):
     Returns
     -------
     gti_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        HDU for GTI
+        GTI HDU
     """
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
@@ -257,7 +257,7 @@ def create_gti_hdu(event_data):
 
 def create_pointing_hdu(event_data):
     """
-    Creates a fits binary table HDU for the telescope pointing.
+    Creates a fits binary table HDU for the pointing direction.
 
     Parameters
     ----------
@@ -267,7 +267,7 @@ def create_pointing_hdu(event_data):
     Returns
     -------
     pointing_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        HDU for the telescope pointing
+        Pointing HDU
     """
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)

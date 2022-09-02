@@ -21,8 +21,8 @@ array for the convenience of the geometrical stereo reconstruction.
 Usage:
 $ python lst1_magic_mc_dl0_to_dl1.py
 --input-file dl0/gamma_40deg_90deg_run1.simtel.gz
---output-dir dl1
---config-file config.yaml
+(--output-dir dl1)
+(--config-file config.yaml)
 """
 
 import argparse
@@ -479,7 +479,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     args = parser.parse_args()

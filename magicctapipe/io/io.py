@@ -108,12 +108,14 @@ def get_stereo_events(
 
     for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
 
+        n_tel_ids = len(tel_ids)
+
         df_events = event_data_stereo.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})"
+            f"(tel_id == {tel_ids}) & (multiplicity == {n_tel_ids})"
         ).copy()
 
         df_events["multiplicity"] = df_events.groupby(group_index).size()
-        df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
+        df_events.query(f"multiplicity == {n_tel_ids}", inplace=True)
 
         n_events = int(len(df_events.groupby(group_index).size()))
         percentage = np.round(100 * n_events / n_events_total, 1)
@@ -166,7 +168,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
 
     # Calculate the mean pointing direction
     pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
-        event_data["pointing_az"], event_data["pointing_alt"], unit="rad"
+        lon=event_data["pointing_az"], lat=event_data["pointing_alt"], unit="rad"
     )
 
     event_data_mean["pointing_alt"] = pointing_alt_mean
@@ -207,7 +209,10 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     gammaness_mean = group_sum["weighted_gammaness"] / group_sum["gammaness_weight"]
 
     reco_az_mean, reco_alt_mean = calculate_mean_direction(
-        event_data["reco_az"], event_data["reco_alt"], direction_weights, unit="deg"
+        lon=event_data["reco_az"],
+        lat=event_data["reco_alt"],
+        unit="deg",
+        weights=direction_weights,
     )
 
     event_data_mean["reco_energy"] = reco_energy_mean
@@ -389,11 +394,8 @@ def load_magic_dl1_data_files(input_dir):
     tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
     for tel_id in tel_ids:
-
-        tel_name = TEL_NAMES.get(tel_id)
         n_events = len(event_data.query(f"tel_id == {tel_id}"))
-
-        logger.info(f"{tel_name}: {n_events} events")
+        logger.info(f"{TEL_NAMES[tel_id]}: {n_events} events")
 
     # Read the subarray description from the first input file, assuming
     # that it is consistent with the others
@@ -452,12 +454,14 @@ def load_train_data_file(
 
     for tel_combo, tel_ids in TEL_COMBINATIONS.items():
 
+        n_tel_ids = len(tel_ids)
+
         df_events = event_data.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})"
+            f"(tel_id == {tel_ids}) & (multiplicity == {n_tel_ids})"
         ).copy()
 
         df_events["multiplicity"] = df_events.groupby(GROUP_INDEX_TRAIN).size()
-        df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
+        df_events.query(f"multiplicity == {n_tel_ids}", inplace=True)
 
         n_events = len(df_events.groupby(GROUP_INDEX_TRAIN).size())
         logger.info(f"\t{tel_combo}: {n_events} events")
@@ -468,7 +472,7 @@ def load_train_data_file(
     return data_train
 
 
-def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
+def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
@@ -484,7 +488,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
         "software_only_3tel" uses only the 3-tels events,
         "magic_only" assumes MAGIC-only stereo observations, and
         "hardware" assumes the LST-1 + MAGIC hardware trigger condition
-    dl2_weight: str
+    dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
@@ -492,8 +496,8 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     -------
     event_table: astropy.table.table.QTable
         Table of the MC DL2 events surviving the cuts
-    pointing: numpy.ndarray
-        Telescope mean pointing direction (Zd, Az) in degree
+    pointing: astropy.units.quantity.Quantity
+        Telescope mean pointing direction (Zenith, Azimuth)
     sim_info: pyirf.simulations.SimulatedEventsInfo
         Container of the simulation information
 
@@ -529,7 +533,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     logger.info(f"--> {n_events} stereo events")
 
     # Get the mean DL2 parameters
-    df_dl2_mean = get_dl2_mean(df_events, dl2_weight)
+    df_dl2_mean = get_dl2_mean(df_events, dl2_weight_type)
     df_dl2_mean.reset_index(inplace=True)
 
     # Convert the pandas data frame to astropy QTable
@@ -556,9 +560,9 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     )
 
     # Get the telescope pointing direction
-    pointing_zd = 90 - event_table["pointing_alt"].mean().to_value(u.deg)
-    pointing_az = event_table["pointing_az"].mean().to_value(u.deg)
-    pointing = np.array([pointing_zd.round(3), pointing_az.round(3)])
+    pointing_zd = 90 * u.deg - event_table["pointing_alt"].mean().to(u.deg)
+    pointing_az = event_table["pointing_az"].mean().to(u.deg)
+    pointing = u.Quantity([pointing_zd.round(3), pointing_az.round(3)])
 
     # Get the simulation configuration
     sim_config = pd.read_hdf(input_file, key="simulation/config")
@@ -581,7 +585,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     return event_table, pointing, sim_info
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
+def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
     """
     Loads a DL2 data file for processing to DL3.
 
@@ -597,7 +601,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
         "software_only_3tel" uses only the 3-tels events,
         "magic_only" assumes MAGIC-only stereo observations, and
         "hardware" assumes the LST-1 + MAGIC hardware trigger condition
-    dl2_weight: str
+    dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
@@ -640,7 +644,7 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight):
     logger.info(f"--> {n_events} stereo events")
 
     # Get the mean DL2 parameters
-    df_dl2_mean = get_dl2_mean(event_data, dl2_weight)
+    df_dl2_mean = get_dl2_mean(event_data, dl2_weight_type)
     df_dl2_mean.reset_index(inplace=True)
 
     # Convert the pandas data frame to astropy QTable
@@ -727,7 +731,7 @@ def load_irf_files(input_dir_irf):
     ------
     FileNotFoundError
         If any IRF files could not be found in the input directory
-    ValueError
+    RuntimeError
         If the configurations of the input IRFs are not consistent
     """
 
@@ -830,7 +834,7 @@ def load_irf_files(input_dir_irf):
         n_data = len(irf_data[key])
 
         if (n_data != 0) and (n_data != n_input_files):
-            raise ValueError(
+            raise RuntimeError(
                 f"The number of '{key}' data (= {n_data}) does not match "
                 f"with that of the input IRF files (= {n_input_files})."
             )
@@ -843,7 +847,9 @@ def load_irf_files(input_dir_irf):
                 irf_data[key] = unique_bins[0]
 
             elif n_unique_bins > 1:
-                raise ValueError(f"The '{key}' of the input IRF files does not match.")
+                raise RuntimeError(
+                    f"The '{key}' of the input IRF files does not match."
+                )
 
     # Check the header consistency
     for key in list(extra_header.keys()):
@@ -855,7 +861,7 @@ def load_irf_files(input_dir_irf):
             extra_header.pop(key)
 
         elif (n_data != n_input_files) or len(unique_values) > 1:
-            raise ValueError(
+            raise RuntimeError(
                 "The configurations of the input IRF files do not match, "
                 "at least the setting '{key}'."
             )

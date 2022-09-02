@@ -14,8 +14,8 @@ class BaseEventInfoContainer(Container):
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
     tel_id = Field(-1, "Telescope ID")
-    pointing_alt = Field(np.nan * u.rad, "Altitude of the telescope pointing", u.rad)
-    pointing_az = Field(np.nan * u.rad, "Azimuth of the telescope pointing", u.rad)
+    pointing_alt = Field(np.nan * u.rad, "Altitude of the pointing direction", u.rad)
+    pointing_az = Field(np.nan * u.rad, "Azimuth of the pointing direction", u.rad)
     n_pixels = Field(-1, "Number of pixels of a cleaned image")
     n_islands = Field(-1, "Number of islands of a cleaned image")
 

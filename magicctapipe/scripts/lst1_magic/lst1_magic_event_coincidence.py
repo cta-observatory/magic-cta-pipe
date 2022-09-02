@@ -36,8 +36,8 @@ Usage:
 $ python lst1_magic_event_coincidence.py
 --input-file-lst dl1/LST-1/dl1_LST-1.Run03265.0040.h5
 --input-dir-magic dl1/MAGIC
---output-dir dl1_coincidence
---config-file config.yaml
+(--output-dir dl1_coincidence)
+(--config-file config.yaml)
 """
 
 import argparse
@@ -446,7 +446,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     args = parser.parse_args()

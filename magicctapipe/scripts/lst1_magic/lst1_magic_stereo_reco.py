@@ -19,8 +19,8 @@ parameters using only MAGIC events.
 Usage:
 $ python lst1_magic_stereo_reco.py
 --input-file dl1_coincidence/dl1_LST-1_MAGIC.Run03265.0040.h5
---output-dir dl1_stereo
---config-file config.yaml
+(--output-dir dl1_stereo)
+(--config-file config.yaml)
 (--magic-only)
 """
 
@@ -334,7 +334,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     parser.add_argument(

@@ -7,7 +7,7 @@ analysis pipeline. It parses information from the file names, so they
 should follow the convention, i.e., *Run*.*.h5 or *run*.h5.
 
 If no output directory is specified with the "--output-dir" argument,
-it saves merged file(s) in the "merged" directory which will be created
+it saves merged files in the "merged" directory which will be created
 under the input directory.
 
 If the "--run-wise" argument is given, it merges input files run-wise.
@@ -18,8 +18,8 @@ real data files subrun-wise (for example, dl1_M1.Run05093711.001.h5
 
 Usage:
 $ python merge_hdf_files.py
---input-dir ./dl1
-(--output-dir ./dl1_merged)
+--input-dir dl1
+(--output-dir dl1_merged)
 (--run-wise)
 (--subrun-wise)
 """
@@ -104,25 +104,32 @@ def write_data_to_table(input_file_mask, output_file):
 
 def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=False):
     """
-    Merges the HDF files produced by the combined analysis pipeline.
+    Merges HDF files produced by the combined analysis pipeline.
 
     Parameters
     ----------
     input_dir: str
         Path to a directory where input HDF files are stored
     output_dir: str
-        Path to a directory where to save output HDF file(s)
+        Path to a directory where to save output HDF files
     run_wise: bool
         If `True`, it merges the input files run-wise
         (applicable only to real data)
     subrun_wise: bool
         If `True`, it merges the input files subrun-wise
         (applicable only to MAGIC real data)
+
+    Raises
+    ------
+    FileNotFoundError
+        If any HDF files could not be found in the input directory
+    RuntimeError
+        If multiple types of files are found in the input directory
     """
 
+    # Find the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
-    # Find the input files
     input_file_mask = f"{input_dir}/*.h5"
 
     input_files = glob.glob(input_file_mask)
@@ -169,7 +176,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             output_file_name = file_names_unique[0].replace("M1", "MAGIC")
 
         else:
-            RuntimeError(f"Multiple types of files are found under {input_dir}")
+            RuntimeError("Multiple types of files are found in the input directory.")
 
     # Merge the input files
     run_ids_unique = np.unique(run_ids)
@@ -246,7 +253,6 @@ def main():
         "-o",
         dest="output_dir",
         type=str,
-        default=None,
         help="Path to a directory where to save output HDF files.",
     )
 

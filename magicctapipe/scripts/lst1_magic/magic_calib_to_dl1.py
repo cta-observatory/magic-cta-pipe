@@ -26,8 +26,8 @@ reports but also processes all the events of the subrun files at once.
 Usage:
 $ python magic_calib_to_dl1.py
 --input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
---output-dir dl1
---config-file config.yaml
+(--output-dir dl1)
+(--config-file config.yaml)
 (--process-run)
 """
 
@@ -367,7 +367,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     parser.add_argument(
