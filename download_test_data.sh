@@ -25,7 +25,7 @@ echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulate
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/images/GA_M2_za35to50_8_824319_I_w0.h5" >> test_data_images_simulated.txt
 
 echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/superstar/GA_za35to50_8_824318_S_w0.root" > test_data_superstar_simulated.txt
-echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/superstar/GA_za35to50_8_824319_S_w0.root" > test_data_superstar_simulated.txt
+echo "https://webdav-magic.pic.es:8451/Users/ctapipe_io_magic/test_data/simulated/superstar/GA_za35to50_8_824319_S_w0.root" >> test_data_superstar_simulated.txt
 
 if [ -z "$TEST_DATA_USER" ]; then
     echo -n "Username: "

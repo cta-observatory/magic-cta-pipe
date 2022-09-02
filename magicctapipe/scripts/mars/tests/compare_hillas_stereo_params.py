@@ -26,6 +26,7 @@ def compare_hillas_stereo_parameters(
     This fuction compares the values of the hillas and stereo parameters for MARS and magic-ctapipe. It returns a list of True/False
     corresponding to the input compared parameters.
     True : Error found, False : No Errors
+    The second parameter returned is the list of fractions of events with a problem in a given parameter
     ----------
     config_file: path of config file
     params_key: key in the dl1_stereo files (magic-cta-pipe output) where the hillas and stereo params are saved
@@ -84,8 +85,8 @@ def compare_hillas_stereo_parameters(
     df_mcp_m1 = df_mcp_cut[df_mcp_cut["tel_id"] == 2]
     df_mcp_m2 = df_mcp_cut[df_mcp_cut["tel_id"] == 3]
 
-    print(f"NUmber of M1 events after cut {df_mcp_m1.shape[0]}")
-    print(f"NUmber of M2 events after cut {df_mcp_m2.shape[0]}")
+    print(f"Number of M1 events after cut {df_mcp_m1.shape[0]}")
+    print(f"Number of M2 events after cut {df_mcp_m2.shape[0]}")
 
     # ---------------
     # read MARS data
@@ -129,9 +130,10 @@ def compare_hillas_stereo_parameters(
     # --------------------------
     df_merge_m1 = pd.merge(df_mars_cut, df_mcp_m1, on=["event_id"], how="inner")
     df_merge_m2 = pd.merge(df_mars_cut, df_mcp_m2, on=["event_id"], how="inner")
-    print(f"NUmber of M1 events after merging {df_merge_m1.shape[0]}")
-    print(f"NUmber of M2 events after merging {df_merge_m2.shape[0]}")
+    print(f"Number of M1 events after merging {df_merge_m1.shape[0]}")
+    print(f"Number of M2 events after merging {df_merge_m2.shape[0]}")
     comparison = []
+    comparison_fraction = []
 
     for par in config["Params"]:
         df_params = pd.DataFrame()
@@ -233,6 +235,7 @@ def compare_hillas_stereo_parameters(
             )
             errors_found = True
         comparison.append(errors_found)
+        comparison_fraction.append(error.size/len(df_params))
 
         # ----------------------
         # plot image (optional)
@@ -284,4 +287,4 @@ def compare_hillas_stereo_parameters(
                 transparent=False,
             )
             plt.close()
-    return comparison
+    return comparison, comparison_fraction
