@@ -187,11 +187,11 @@ def compare_hillas_stereo_parameters(
             df_params = df_params.drop(df_params[df_params[par + "_mars"] < 0].index)
         #   df_params = df_params.drop(df_params[np.isnan(df_params[par+"_mars"])].index)
         elif par == "slope_M1":
-            df_params["event_id"] = df_merge_m2["event_id"]
+            df_params["event_id"] = df_merge_m1["event_id"]
             df_params[par + "_mcp"] = abs(
-                df_merge_m2[mcp_params[par]] * scale_factors[par]
+                df_merge_m1[mcp_params[par]] * scale_factors[par]
             )
-            df_params[par + "_mars"] = abs(df_merge_m2["mars_" + par])
+            df_params[par + "_mars"] = abs(df_merge_m1["mars_" + par])
         elif par == "slope_M2":
             df_params["event_id"] = df_merge_m2["event_id"]
             df_params[par + "_mcp"] = abs(
@@ -231,6 +231,7 @@ def compare_hillas_stereo_parameters(
         else:
             df_params.to_hdf(
                 f'{config["Output_paths"]["file_output_directory"]}/{filename_no_ext}_hillas_comparison.h5',
+                par,
                 "a",
             )
             errors_found = True
