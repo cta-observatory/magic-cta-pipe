@@ -215,7 +215,7 @@ def compare_hillas_stereo_parameters(
         df_params["relative_error"] = (
             df_params[par + "_mars"] - df_params[par + "_mcp"]
         ) / df_params[par + "_mcp"]
-        error = df_params.loc[(df_params["relative_error"] > threshold[par])].to_numpy()
+        error = df_params.loc[(np.abs(df_params["relative_error"]) > threshold[par])].to_numpy()
 
         Path(config["Output_paths"]["file_output_directory"]).mkdir(
             exist_ok=True, parents=True
