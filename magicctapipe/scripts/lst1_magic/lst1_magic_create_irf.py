@@ -185,11 +185,14 @@ def create_irf(
     for key, value in config_eng_bins.items():
         logger.info(f"\t{key}: {value}")
 
-    energy_bins = np.geomspace(
-        start=u.Quantity(config_eng_bins["start"]).to_value(u.TeV).round(3),
-        stop=u.Quantity(config_eng_bins["stop"]).to_value(u.TeV).round(3),
-        num=config_eng_bins["n_edges"],
-    ) * u.TeV
+    energy_bins = u.Quantity(
+        value=np.geomspace(
+            start=u.Quantity(config_eng_bins["start"]).to_value(u.TeV).round(3),
+            stop=u.Quantity(config_eng_bins["stop"]).to_value(u.TeV).round(3),
+            num=config_eng_bins["n_edges"],
+        ),
+        unit=u.TeV,
+    )
 
     config_migra_bins = config_irf["migration_bins"]
 
@@ -210,11 +213,14 @@ def create_irf(
         for key, value in config_bkg_fov_bins.items():
             logger.info(f"\t{key}: {value}")
 
-        bkg_fov_offset_bins = np.linspace(
-            start=u.Quantity(config_bkg_fov_bins["start"]).to_value(u.deg),
-            stop=u.Quantity(config_bkg_fov_bins["stop"]).to_value(u.deg),
-            num=config_bkg_fov_bins["n_edges"],
-        ) * u.deg
+        bkg_fov_offset_bins = u.Quantity(
+            value=np.linspace(
+                start=u.Quantity(config_bkg_fov_bins["start"]).to_value(u.deg),
+                stop=u.Quantity(config_bkg_fov_bins["stop"]).to_value(u.deg),
+                num=config_bkg_fov_bins["n_edges"],
+            ),
+            unit=u.deg,
+        )
 
     extra_header = {
         "TELESCOP": "CTA-N",
