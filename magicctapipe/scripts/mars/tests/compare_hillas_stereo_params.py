@@ -225,7 +225,7 @@ def compare_hillas_stereo_parameters(
         )
 
         if (
-            error.size <= len(df_params) * 0.001
+            len(error) <= len(df_params) * 0.005
         ):  # percentage of the events, that is allowed to have errors bigger than the specified threshold
             errors_found = False
         else:
@@ -236,7 +236,7 @@ def compare_hillas_stereo_parameters(
             )
             errors_found = True
         comparison.append(errors_found)
-        comparison_fraction.append(error.size/len(df_params))
+        comparison_fraction.append(len(error)/len(df_params))
 
         # ----------------------
         # plot image (optional)
