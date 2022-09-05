@@ -21,8 +21,8 @@ mars_params = {
     "az_disp" : "MStereoParDisp.fDirectionAz",
     "zd_disp" : "MStereoParDisp.fDirectionZd",
     "impact_disp_M1" : "MStereoParDisp.fM1Impact", "impact_disp_M2" : "MStereoParDisp.fM2Impact",
-    # "n_islands" : "MImagePar_1./MImagePar_1.fNumIslands",
-    "leakage_M1" : "MNewImagePar_1./MNewImagePar_1.fLeakage1", "leakage_M2" : "MNewImagePar_2./MNewImagePar_2.fLeakage1"
+    # "n_islands" : "MImagePar_1.fNumIslands",
+    "leakage_M1" : "MNewImagePar_1.fLeakage1", "leakage_M2" : "MNewImagePar_2.fLeakage1"
 
 }
 mcp_params = {
@@ -31,6 +31,8 @@ mcp_params = {
     "size_M1" : "intensity", "size_M2" : "intensity",
     "slope_M1" : "slope", "slope_M2" : "slope",
     "delta_M1" : "psi", "delta_M2" : "psi",
+    # the camera frames are defined differently in MARS and ctapipe; 
+    # so x -> -y and y -> -x; the sign is added in the scaling factors
     "cogx_M1" : "y", "cogx_M2" : "y",
     "cogy_M1" : "x", "cogy_M2" : "x",
     "hmax" : "h_max",
@@ -48,7 +50,7 @@ mcp_params = {
     # "n_islands" : "n_islands",
     "leakage_M1" : "intensity_width_1", "leakage_M2" : "intensity_width_1"
 }
-
+# mcp units are converted into MARS units
 scale_factors = {
     "length_M1" : 1000. / 1.0713, "length_M2" : 1000. / 1.0713,
     "width_M1" : 1000. / 1.0713, "width_M2" : 1000. / 1.0713,
@@ -79,7 +81,7 @@ labels_and_units = {
     "width_M1" : "Width M1 [mm]", "width_M2" : "Width M2 [mm]",
     "size_M1" : "Size M1 [phe]", "size_M2" : "Size M2 [phe]",
     "delta_M1" : "Delta M1 [rad]", "delta_M2" : "Delta M2 [rad]",
-    "slope_M1" : "Time Gradient M1", "slope_M2" : "Time Gradient M2",
+    "slope_M1" : "Time Gradient M1[time slices/mm]", "slope_M2" : "Time Gradient M2[time slices/mm]",
     "cogx_M1" : "Cog_x M1 [mm]", "cogx_M2" : "Cog_x M2 [mm]",
     "cogy_M1" : "Cog_y M1 [mm]", "cogy_M2" : "Cog_y M2 [mm]",
     "hmax" : "Max height [cm]",

@@ -144,12 +144,6 @@ def test_compare_hillas_stereo_params(
     config_mcp = {
         "mc_tel_ids": {"LST-1": 1, "MAGIC-I": 2, "MAGIC-II": 3},
         "MAGIC": {
-            "image_extractor": {
-                "type": "SlidingWindowMaxSum",
-                "window_width": 5,
-                "apply_integration_correction": False,
-            },
-            "charge_correction": {"use": True, "correction_factor": 1.143},
             "magic_clean": {
                 "use_time": True,
                 "use_sum": True,
@@ -160,18 +154,7 @@ def test_compare_hillas_stereo_params(
                 "find_hotpixels": "auto",
                 "pedestal_type": "from_extractor_rndm",
             },  # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
-            "muon_ring": {
-                "thr_low": 25,
-                "tailcut": [12, 8],
-                "ring_completeness_threshold": 25,
-            },
         },
-        "event_coincidence": {
-            "type_lst_time": "dragon_time",  # select 'dragon_time', 'tib_time' or 'ucts_time'
-            "window_width": 0.6,  # unit: [usec]
-            "offset_start": -10.0,  # unit: [usec]
-            "offset_stop": 0.0,
-        },  # unit: [usec]
         "stereo_reco": {"quality_cuts": "(intensity > 50) & (width > 0)"},
     }
 
