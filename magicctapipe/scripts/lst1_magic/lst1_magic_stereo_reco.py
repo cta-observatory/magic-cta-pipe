@@ -128,8 +128,9 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
+    logger.info(f"\nMAGIC-only analysis: {magic_only_analysis}")
+
     if magic_only_analysis:
-        logger.info("\nSelecting only MAGIC events...")
         event_data.query("tel_id > 1", inplace=True)
 
     quality_cuts = config_stereo["quality_cuts"]

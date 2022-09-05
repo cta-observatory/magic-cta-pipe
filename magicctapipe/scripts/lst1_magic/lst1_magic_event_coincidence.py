@@ -21,9 +21,10 @@ events coincident with LST-1 events. Non-coincident MAGIC events are
 discarded since according to simulations they are mostly hadron.
 
 Please note that for the data taken before 12th June 2021, a coincidence
-peak should be found around the time offset of -3.1 us. For the data
-taken after that date, however, there is an additional global offset and
-so the peak is shifted to the time offset of -6.5 us. Thus, it would be
+peak should be found around the time offset of -3.1 us, which could be
+explained by the trigger time delays of both systems. For the data taken
+after that date, however, there is an additional global offset and so
+the peak is shifted to the time offset of -6.5 us. Thus, it would be
 needed to tune the offset scan region depending on the date when the
 data were taken. The reason of the shift is under investigation.
 
@@ -97,10 +98,10 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         Configuration for the LST-1 + MAGIC analysis
     """
 
-    config_coincidence = config["event_coincidence"]
+    config_coinc = config["event_coincidence"]
 
-    # Load the input LST-1 data file
-    logger.info(f"\nInput LST-1 file:\n{input_file_lst}")
+    # Load the input LST-1 DL1 data file
+    logger.info(f"\nInput LST-1 DL1 data file:\n{input_file_lst}")
 
     data_lst, subarray_lst = load_lst_dl1_data_file(input_file_lst)
 
@@ -110,7 +111,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     data_magic, subarray_magic = load_magic_dl1_data_files(input_dir_magic)
 
     # Exclude the parameters non-common to LST-1 and MAGIC data
-    timestamp_type_lst = config_coincidence["timestamp_type_lst"]
+    timestamp_type_lst = config_coinc["timestamp_type_lst"]
     logger.info(f"\nLST timestamp type: {timestamp_type_lst}")
 
     data_lst.rename(columns={timestamp_type_lst: "timestamp"}, inplace=True)
@@ -123,13 +124,14 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     data_magic.drop(params_non_common, axis=1, errors="ignore", inplace=True)
 
     # Prepare for the event coincidence
-    window_half_width = u.Quantity(config_coincidence["window_half_width"])
-    window_half_width = u.Quantity(window_half_width.to(u.ns).round(), dtype=int)
+    window_half_width = u.Quantity(
+        u.Quantity(config_coinc["window_half_width"]).to(u.ns).round(), dtype=int
+    )
 
     logger.info(f"\nCoincidence window half width: {window_half_width}")
 
-    offset_start = u.Quantity(config_coincidence["time_offset"]["start"])
-    offset_stop = u.Quantity(config_coincidence["time_offset"]["stop"])
+    offset_start = u.Quantity(config_coinc["time_offset"]["start"])
+    offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
 
     logger.info(f"\nTime offsets:\n\tstart: {offset_start}\n\tstop: {offset_stop}")
 

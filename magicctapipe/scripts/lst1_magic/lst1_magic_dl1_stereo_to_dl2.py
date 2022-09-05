@@ -59,15 +59,15 @@ def apply_rfs(event_data, estimator):
     """
 
     tel_ids = list(estimator.telescope_rfs.keys())
-    n_tel_ids = len(tel_ids)
+    multiplicity = len(tel_ids)
 
     df_events = event_data.query(
-        f"(tel_id == {tel_ids}) & (multiplicity == {n_tel_ids})"
+        f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
     ).copy()
 
     df_events.dropna(subset=estimator.features, inplace=True)
     df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
-    df_events.query(f"multiplicity == {n_tel_ids}", inplace=True)
+    df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
     reco_params = estimator.predict(df_events)
 
@@ -157,12 +157,14 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
     for tel_ids in TEL_COMBINATIONS.values():
 
+        multiplicity = 2 * len(tel_ids)
+
         df_events = reco_params_flips.query(
-            f"(multiplicity == {2 * len(tel_ids)}) & (tel_id == {tel_ids})"
+            f"(multiplicity == {multiplicity}) & (tel_id == {tel_ids})"
         ).copy()
 
         df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
-        df_events.query(f"multiplicity == {2 * len(tel_ids)}", inplace=True)
+        df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
         n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
 

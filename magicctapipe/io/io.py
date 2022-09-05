@@ -108,14 +108,14 @@ def get_stereo_events(
 
     for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
 
-        n_tel_ids = len(tel_ids)
+        multiplicity = len(tel_ids)
 
         df_events = event_data_stereo.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {n_tel_ids})"
+            f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
 
         df_events["multiplicity"] = df_events.groupby(group_index).size()
-        df_events.query(f"multiplicity == {n_tel_ids}", inplace=True)
+        df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
         n_events = int(len(df_events.groupby(group_index).size()))
         percentage = np.round(100 * n_events / n_events_total, 1)
@@ -357,7 +357,7 @@ def load_magic_dl1_data_files(input_dir):
     Raises
     ------
     FileNotFoundError
-        If any MAGIC files could not be found in the input directory
+        If any DL1 data files could not be found in the input directory
     """
 
     # Find the input files
@@ -368,11 +368,11 @@ def load_magic_dl1_data_files(input_dir):
 
     if len(input_files) == 0:
         raise FileNotFoundError(
-            "Could not find any MAGIC files in the input directory."
+            "Could not find any DL1 data files in the input directory."
         )
 
     # Load the input files
-    logger.info("\nThe following MAGIC files are found:")
+    logger.info("\nThe following DL1 data files are found:")
 
     data_list = []
 
@@ -454,14 +454,14 @@ def load_train_data_file(
 
     for tel_combo, tel_ids in TEL_COMBINATIONS.items():
 
-        n_tel_ids = len(tel_ids)
+        multiplicity = len(tel_ids)
 
         df_events = event_data.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {n_tel_ids})"
+            f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
 
         df_events["multiplicity"] = df_events.groupby(GROUP_INDEX_TRAIN).size()
-        df_events.query(f"multiplicity == {n_tel_ids}", inplace=True)
+        df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
         n_events = len(df_events.groupby(GROUP_INDEX_TRAIN).size())
         logger.info(f"\t{tel_combo}: {n_events} events")
