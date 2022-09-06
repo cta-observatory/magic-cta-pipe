@@ -137,7 +137,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
 
     logger.info(
-        f"\nTime offsets:"
+        "\nTime offsets:"
         f"\n\tstart: {offset_start}"
         f"\n\tstop: {offset_stop}"
         f"\n\tstep: {TIME_ACCURACY}"

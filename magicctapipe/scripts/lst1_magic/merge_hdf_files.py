@@ -216,13 +216,15 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             output_file = f"{output_dir}/{output_file_name}{run_ids_unique[0]}.h5"
 
         else:
-            run_id_min = run_ids_unique.astype(int).min()
-            run_id_max = run_ids_unique.astype(int).max()
-
             string_lengths_unique = np.unique([len(x) for x in run_ids_unique])
 
+            # Check the minimum and maximum run IDs with the "int" type
+            run_ids_unique = run_ids_unique.astype(int)
+            run_id_min = run_ids_unique.min()
+            run_id_max = run_ids_unique.max()
+
             if len(string_lengths_unique) == 1:
-                # Handle the case that the run IDs are zero-padded
+                # Handle the case when the run IDs are zero-padded
                 run_id_min = str(run_id_min).zfill(string_lengths_unique[0])
                 run_id_max = str(run_id_max).zfill(string_lengths_unique[0])
 

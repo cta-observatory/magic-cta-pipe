@@ -271,7 +271,7 @@ def create_irf(
     if gh_cut_type == "global":
 
         gh_cut_value = config_irf["gammaness"]["global_cut_value"]
-        logger.info(f"\nGlobal gammaness cut:" f"\n\tcut_value: {gh_cut_value}")
+        logger.info("\nGlobal gammaness cut:" f"\n\tcut_value: {gh_cut_value}")
 
         gh_cut_config = f"gh_glob{gh_cut_value}"
         extra_header["GH_CUT"] = gh_cut_value
@@ -293,7 +293,7 @@ def create_irf(
         gh_cut_max = config_irf["gammaness"]["max_cut"]
 
         logger.info(
-            f"\nDynamic gammaness cuts:"
+            "\nDynamic gammaness cuts:"
             f"\n\tefficiency: {gh_efficiency}"
             f"\n\tmin_cut: {gh_cut_min}"
             f"\n\tmax_cut: {gh_cut_max}"
@@ -363,7 +363,7 @@ def create_irf(
     if theta_cut_type == "global":
 
         theta_cut_value = u.Quantity(config_irf["theta"]["global_cut_value"])
-        logger.info(f"\nGlobal theta cut:" f"\n\tcut_value: {theta_cut_value}")
+        logger.info("\nGlobal theta cut:" f"\n\tcut_value: {theta_cut_value}")
 
         theta_cut_config = f"theta_glob{theta_cut_value.to_value(u.deg)}deg"
         extra_header["RAD_MAX"] = (theta_cut_value.to_value(u.deg), "deg")
@@ -381,7 +381,7 @@ def create_irf(
         theta_cut_max = u.Quantity(config_irf["theta"]["max_cut"])
 
         logger.info(
-            f"\nDynamic theta cuts:"
+            "\nDynamic theta cuts:"
             f"\n\tefficiency: {theta_efficiency}"
             f"\n\tmin_cut: {theta_cut_min}"
             f"\n\tmax_cut: {theta_cut_max}"
