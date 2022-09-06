@@ -3,13 +3,13 @@
 
 """
 This script trains energy, DISP regressors and event classifiers with
-DL1-stereo events. The RFs are trained per telescope combination and per
-telescope type. When training event classifiers, the number of gamma MC
-or proton MC events is adjusted so that the RFs are trained with the
-same number of events.
+DL1-stereo events. The RFs are trained per telescope combination type
+and per telescope. When training event classifiers, gamma or proton MC
+events are randomly extracted so that the RFs are trained with the same
+number of events by both types of primary particles.
 
 Please specify the RF type that will be trained by using
-"--train-energy", "--train-disp" or "--train-classifier" arguments.
+"--train-energy", "--train-disp" and "--train-classifier" arguments.
 
 If the "--use-unsigned" argument is given, the RFs will be trained with
 unsigned features.
@@ -96,8 +96,9 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
     for key, value in rf_settings.items():
         logger.info(f"\t{key}: {value}")
 
-    logger.info(f"\nFeatures:\n{features}")
-    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
+    logger.info(
+        f"\nFeatures:\n{features}" f"\n\nUse unsigned features: {use_unsigned_features}"
+    )
 
     energy_regressor = EnergyRegressor(rf_settings, features, use_unsigned_features)
 
@@ -176,8 +177,9 @@ def train_disp_regressor(input_file, output_dir, config, use_unsigned_features=F
     for key, value in rf_settings.items():
         logger.info(f"\t{key}: {value}")
 
-    logger.info(f"\nFeatures:\n{features}")
-    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
+    logger.info(
+        f"\nFeatures:\n{features}" f"\n\nUse unsigned features: {use_unsigned_features}"
+    )
 
     disp_regressor = DispRegressor(rf_settings, features, use_unsigned_features)
 
@@ -269,8 +271,9 @@ def train_event_classifier(
     for key, value in rf_settings.items():
         logger.info(f"\t{key}: {value}")
 
-    logger.info(f"\nFeatures:\n{features}")
-    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
+    logger.info(
+        f"\nFeatures:\n{features}" f"\n\nUse unsigned features: {use_unsigned_features}"
+    )
 
     event_classifier = EventClassifier(rf_settings, features, use_unsigned_features)
 

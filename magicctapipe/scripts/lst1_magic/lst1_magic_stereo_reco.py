@@ -9,7 +9,7 @@ the configuration file are applied to events before the reconstruction.
 When the input is real data containing LST-1 and MAGIC events, it checks
 if the angular distance of their pointing directions is lower than the
 limit specified in the configuration file. This is in principle to avoid
-the reconstruction of the data taken in too-mispointing conditions. For
+the reconstruction of the data taken in too-mispointing situations. For
 example, DL1 data may contain coincident events taken with different
 wobble offsets between the systems.
 
@@ -85,7 +85,7 @@ def calculate_pointing_separation(event_data):
 
     # Calculate the mean of the M1 and M2 pointing directions
     pnt_az_magic, pnt_alt_magic = calculate_mean_direction(
-        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"]
+        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"], unit="rad"
     )
 
     # Calculate the angular distance of their pointing directions
@@ -128,16 +128,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
-    logger.info(f"\nMAGIC-only analysis: {magic_only_analysis}")
-
-    if magic_only_analysis:
-        event_data.query("tel_id > 1", inplace=True)
-
-    quality_cuts = config_stereo["quality_cuts"]
-    logger.info(f"\nQuality cuts: {quality_cuts}")
-
-    event_data = get_stereo_events(event_data, quality_cuts)
-
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_positions = subarray.positions
 
@@ -147,6 +137,19 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             f"\t{TEL_NAMES[tel_id]}: {subarray.tel[tel_id].name}, "
             f"position = {tel_positions[tel_id].round(2)}"
         )
+
+    # Apply the event cuts
+    quality_cuts = config_stereo["quality_cuts"]
+
+    logger.info(
+        f"\nMAGIC-only analysis: {magic_only_analysis}"
+        f"\nQuality cuts: {quality_cuts}"
+    )
+
+    if magic_only_analysis:
+        event_data.query("tel_id > 1", inplace=True)
+
+    event_data = get_stereo_events(event_data, quality_cuts)
 
     # Check the angular distance of the LST-1 and MAGIC pointing directions
     tel_ids = np.unique(event_data.index.get_level_values("tel_id")).tolist()
@@ -239,7 +242,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             )
             continue
 
-        stereo_params.az.wrap_at(360 * u.deg, inplace=True)  # wrap at 0 <= az < 360 deg
+        stereo_params.az.wrap_at(360 * u.deg, inplace=True)  # Wrap at 0 <= az < 360 deg
 
         for tel_id in tel_ids:
 

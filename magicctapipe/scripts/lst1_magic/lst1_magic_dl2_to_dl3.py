@@ -79,12 +79,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     config_dl3 = config["dl2_to_dl3"]
 
-    if config_dl3["source_ra"] is not None:
-        config_dl3["source_ra"] = u.Quantity(config_dl3["source_ra"])
-
-    if config_dl3["source_dec"] is not None:
-        config_dl3["source_dec"] = u.Quantity(config_dl3["source_dec"])
-
     # Load the input IRF files
     logger.info(f"\nInput IRF directory:\n{input_dir_irf}")
 
@@ -128,7 +122,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     logger.info(f"\nTarget point: {target_point.round(5).tolist()}")
 
     # Prepare for the IRF interpolations
-    interpolation_method = config_dl3.pop("interpolation_method")
+    interpolation_method = config_dl3["interpolation_method"]
     logger.info(f"\nInterpolation method: {interpolation_method}")
 
     extra_header["IRF_INTP"] = interpolation_method
@@ -242,10 +236,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         # Apply the global gammaness cut
         gh_cut_value = extra_header["GH_CUT"]
 
-        logger.info(
-            f"\nGlobal gammaness cut:\n\tcut_value: {gh_cut_value}"
-            "\n\nApplying the global gammaness cut..."
-        )
+        logger.info("\nApplying the global gammaness cut...")
 
         mask_gh = event_table["gammaness"] > gh_cut_value
         event_table = event_table[mask_gh]
@@ -279,7 +270,19 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Create an event list HDU
     logger.info("\nCreating an event list HDU...")
 
-    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
+    source_name = config_dl3["source_name"]
+    source_ra = config_dl3["source_ra"]
+    source_dec = config_dl3["source_dec"]
+
+    if source_ra is not None:
+        source_ra = u.Quantity(source_ra)
+
+    if source_dec is not None:
+        source_dec = u.Quantity(source_dec)
+
+    event_hdu = create_event_hdu(
+        event_table, on_time, deadc, source_name, source_ra, source_dec
+    )
 
     hdus.append(event_hdu)
 

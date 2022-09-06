@@ -105,7 +105,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     camera_geoms = {}
 
-    logger.info("\nSubarray Description:")
+    logger.info("\nSubarray configuration:")
     for tel_name, tel_id in sorted(allowed_tel_ids.items(), key=lambda x: x[1]):
         logger.info(
             f"\tTelescope {tel_id} (assumed to be {tel_name}): "
@@ -114,7 +114,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         )
         camera_geoms[tel_id] = tel_descriptions[tel_id].camera.geometry
 
-    # Configure the LST processors
+    # Configure the LST event processors
     config_lst = config["LST"]
 
     logger.info("\nLST image extractor:")
@@ -141,12 +141,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         rng = np.random.default_rng(obs_id)
 
     if increase_psf:
-        logger.info("\nLST PSF modifier:")
-        for key, value in config_lst["increase_psf"].items():
-            logger.info(f"\t{key}: {value}")
+        smeared_light_fraction = config_lst["increase_psf"]["fraction"]
+        logger.info(f"\nLST PSF modifier:" f"\n\tfraction: {smeared_light_fraction}")
 
         set_numba_seed(obs_id)
-        smeared_light_fraction = config_lst["increase_psf"]["smeared_light_fraction"]
 
     logger.info("\nLST tailcuts cleaning:")
     for key, value in config_lst["tailcuts_clean"].items():
@@ -168,7 +166,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     logger.info(f"\nLST use only main island: {use_only_main_island}")
 
-    # Configure the MAGIC processors
+    # Configure the MAGIC event processors
     config_magic = config["MAGIC"]
 
     logger.info("\nMAGIC image extractor:")

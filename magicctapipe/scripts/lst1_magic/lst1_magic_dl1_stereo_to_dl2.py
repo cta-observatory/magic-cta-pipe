@@ -4,7 +4,7 @@
 """
 This script processes DL1-stereo events and reconstructs the DL2
 parameters, i.e., energy, direction and gammaness, with trained RFs.
-The RFs are applied per telescope combination and per telescope type.
+The RFs are applied per telescope combination type and per telescope.
 
 Usage:
 $ python lst1_magic_dl1_stereo_to_dl2.py

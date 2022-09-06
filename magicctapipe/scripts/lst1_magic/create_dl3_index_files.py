@@ -49,7 +49,9 @@ def create_dl3_index_files(input_dir):
     input_files.sort()
 
     if len(input_files) == 0:
-        raise FileNotFoundError("Could not find DL3 data files in the input directory.")
+        raise FileNotFoundError(
+            "Could not find any DL3 data files in the input directory."
+        )
 
     logger.info("\nThe following DL3 data files are found:")
 

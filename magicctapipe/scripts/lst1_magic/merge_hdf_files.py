@@ -136,7 +136,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     input_files.sort()
 
     if len(input_files) == 0:
-        raise FileNotFoundError("Could not find HDF files in the input directory.")
+        raise FileNotFoundError("Could not find any HDF files in the input directory.")
 
     # Parse information from the input file names
     regex_run = re.compile(r"(\S+run)(\d+)\.h5", re.IGNORECASE)

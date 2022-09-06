@@ -19,7 +19,7 @@ LST:
 
     increase_psf:
         use: true
-        smeared_light_fraction: 0.125
+        fraction: 0.125
 
     tailcuts_clean:
         picture_thresh: 8

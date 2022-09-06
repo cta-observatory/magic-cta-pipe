@@ -64,7 +64,7 @@ logger.setLevel(logging.INFO)
 # Ignore RuntimeWarnings appeared during the image cleaning
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
-# The pedestal types allowed to find badrms pixels
+# The pedestal types allowed to find bad RMS pixels
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
@@ -98,10 +98,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     tel_id = event_source.telescope
 
     if not is_simulation:
-        logger.info(f"\nObservation ID: {obs_id}")
-        logger.info(f"Telescope ID: {tel_id}")
-
-        logger.info("\nThe following files are found to read drive reports:")
+        logger.info(
+            f"\nObservation ID: {obs_id}"
+            f"\nTelescope ID: {tel_id}"
+            "\n\nThe following files are found to read drive reports:"
+        )
         for subrun_file in event_source.file_list_drive:
             logger.info(subrun_file)
 
@@ -126,12 +127,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     for key, value in config_clean.items():
         logger.info(f"\t{key}: {value}")
 
-    find_hotpixels = config_clean["find_hotpixels"]
-
-    if find_hotpixels:
-        i_ped_type = PEDESTAL_TYPES.index(config_clean["pedestal_type"])
-
     magic_clean = MAGICClean(camera_geom, config_clean)
+
+    if config_clean["find_hotpixels"]:
+        i_ped_type = PEDESTAL_TYPES.index(config_clean["pedestal_type"])
 
     # Prepare for saving data to an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -161,7 +160,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 logger.info(f"{event.count} events")
 
             # Apply the image cleaning
-            if find_hotpixels:
+            if config_clean["find_hotpixels"]:
                 pixel_status = event.mon.tel[tel_id].pixel_status
                 dead_pixels = pixel_status.hardware_failing_pixels[0]
                 badrms_pixels = pixel_status.pedestal_failing_pixels[i_ped_type]
@@ -308,7 +307,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
 
-    # Reset the telescope IDs of the subarray descriptions
+    # Reset the telescope IDs of the subarray description
     tel_positions_magic = {
         2: subarray.positions[1],  # MAGIC-I
         3: subarray.positions[2],  # MAGIC-II
