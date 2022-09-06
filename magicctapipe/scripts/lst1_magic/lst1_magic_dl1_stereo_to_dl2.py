@@ -3,31 +3,34 @@
 
 """
 This script processes DL1-stereo events and reconstructs the DL2
-parameters, i.e., energy, disp and gammaness, with trained RFs.
-The RFs are applied per telescope combination and per telescope type.
+parameters, i.e., energy, direction and gammaness, with trained RFs.
+The RFs are applied per telescope combination type and per telescope.
 
 Usage:
 $ python lst1_magic_dl1_stereo_to_dl2.py
---input-file-dl1 ./dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
---input-dir-rfs ./rfs
---output-dir ./dl2
+--input-file-dl1 dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
+--input-dir-rfs rfs
+(--output-dir dl2)
 """
 
-import itertools
 import argparse
 import glob
+import itertools
 import logging
 import time
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
-
-import pandas as pd
-import numpy as np
-from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.io import get_stereo_events, save_pandas_to_table
+from magicctapipe.io import (
+    TEL_COMBINATIONS,
+    get_stereo_events,
+    save_pandas_data_in_table,
+)
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
@@ -45,25 +48,26 @@ def apply_rfs(event_data, estimator):
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
-        Pandas data frame of shower events
+        Data frame of shower events
     estimator: magicctapipe.reco.estimator
         Trained regressor or classifier
 
     Returns
     -------
     reco_params: pandas.core.frame.DataFrame
-        Pandas data frame of the DL2 parameters
+        Data frame of the shower events with reconstructed parameters
     """
 
     tel_ids = list(estimator.telescope_rfs.keys())
+    multiplicity = len(tel_ids)
 
     df_events = event_data.query(
-        f"(tel_id == {tel_ids}) & (multiplicity == {len(tel_ids)})"
+        f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
     ).copy()
 
     df_events.dropna(subset=estimator.features, inplace=True)
     df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
-    df_events.query(f"multiplicity == {len(tel_ids)}", inplace=True)
+    df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
     reco_params = estimator.predict(df_events)
 
@@ -72,22 +76,34 @@ def apply_rfs(event_data, estimator):
 
 def reconstruct_arrival_direction(event_data, tel_descriptions):
     """
+    Reconstructs the arrival directions of shower events with the
+    MARS-like DISP method.
 
+    Parameters
+    ----------
+    event_data: pandas.core.frame.DataFrame
+        Data frame of shower events
+    tel_descriptions: dict
+        Telescope descriptions
+
+    Returns
+    -------
+    reco_params: pandas.core.frame.DataFrame
+        Data frame of the shower events with reconstructed directions
     """
 
     reco_params_flips = pd.DataFrame()
+
+    # First of all, we reconstruct the Alt/Az directions of all the head
+    # and tail candidates per telescope, i.e., the directions separated
+    # by the DISP parameter from the image CoG along the shower axis.
+    # Here the flip parameter (0 or 1) distinguishes the head and tail.
 
     tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
 
     for tel_id in tel_ids:
 
-        print(tel_id)
-
-        df_events = event_data.query(f'tel_id == {tel_id}')
-
-        # Reconstruct the Alt/Az directions of the head and tail
-        # candidates, i.e., the directions on the major shower axis
-        # and separated by the DISP parameter from the image CoG
+        df_events = event_data.query(f"tel_id == {tel_id}")
 
         tel_pointing = AltAz(
             alt=u.Quantity(df_events["pointing_alt"].to_numpy(), u.rad),
@@ -100,7 +116,9 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
             u.Quantity(df_events["x"].to_numpy(), u.m),
             u.Quantity(df_events["y"].to_numpy(), u.m),
             frame=tel_descriptions[tel_id].camera.geometry.frame,
-        ).transform_to(tel_frame)
+        )
+
+        event_coord = event_coord.transform_to(tel_frame)
 
         for flip in [0, 1]:
 
@@ -109,15 +127,14 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
             event_coord_per_flip = event_coord.directional_offset_by(
                 position_angle=u.Quantity(psi_per_flip, u.deg),
                 separation=u.Quantity(df_events["reco_disp"].to_numpy(), u.deg),
-            ).altaz
+            )
 
-            reco_alt_per_flip = event_coord_per_flip.alt.to_value(u.deg)
-            reco_az_per_flip = event_coord_per_flip.az.to_value(u.deg)
+            event_coord_per_flip = event_coord_per_flip.altaz
 
             df_altaz_per_flip = pd.DataFrame(
                 data={
-                    "reco_alt": reco_alt_per_flip,
-                    "reco_az": reco_az_per_flip,
+                    "reco_alt": event_coord_per_flip.alt.to_value(u.deg),
+                    "reco_az": event_coord_per_flip.az.to_value(u.deg),
                     "flip": flip,
                 },
                 index=df_events.index,
@@ -131,27 +148,25 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     group_size = reco_params_flips.groupby(["obs_id", "event_id"]).size()
     reco_params_flips["multiplicity"] = group_size
 
-    # ====================
+    # Then, we get the flip combination minimizing the sum of the
+    # angular distances between the head and tail candidates per shower
+    # event. In order to speed up the calculations, here we separate the
+    # input events by the telescope combination types.
 
     reco_params = pd.DataFrame()
 
-    tel_combinations = [[1, 2], [1, 3], [2, 3], [1, 2, 3]]
+    for tel_ids in TEL_COMBINATIONS.values():
 
-    for tel_ids in tel_combinations:
-
-        print(tel_ids)
+        multiplicity = 2 * len(tel_ids)
 
         df_events = reco_params_flips.query(
-            f"(multiplicity == {2 * len(tel_ids)}) & (tel_id == {tel_ids})",
+            f"(multiplicity == {multiplicity}) & (tel_id == {tel_ids})"
         ).copy()
 
         df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
-        df_events.query(f"multiplicity == {2 * len(tel_ids)}", inplace=True)
+        df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
         n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
-
-        # Get the flip combinations minimizing the sum of the angular
-        # distances between the head and tail candidates.
 
         # Here we first define all the possible flip combinations. For
         # example, in case that we have two telescope images, in total
@@ -164,12 +179,12 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
             list(itertools.product([0, 1], repeat=len(tel_ids)))
         )
 
-        # Next, we define all the any 2 telescope combinations. For
-        # example, in case of 3 telescopes, in total 3 combinations are
-        # defined as follows:
+        # Next, we define all the possible any 2 telescope combinations.
+        # For example, in case of 3 telescopes, in total 3 combinations
+        # are defined as follows:
         #                 [(1, 2), (1, 3), (2, 3)]
-        # where the elements of the tuples mean the telescope IDs.
-        # In case of 2 telescopes there is only one combination.
+        # where the elements of the tuples mean the telescope IDs. In
+        # case of 2 telescopes there is only one combination.
 
         tel_any2_combinations = list(itertools.combinations(tel_ids, 2))
 
@@ -197,6 +212,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
                     lat2=u.Quantity(container[tel_id_2]["reco_alt"].to_numpy(), u.deg),
                 )
 
+                # Sum up the distance per flip combination
                 distances[i_flip] += theta.to_value(u.deg)
 
         # Finally, we extract the indices of the flip combinations for
@@ -221,6 +237,9 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
         df_events = df_events.loc[multi_indices]
 
+        # Add the minimum angular distances to the output data frame,
+        # since they are useful to separate gamma and hadron events
+        # (hadron events tend to have larger distances than gammas)
         disp_diffs_sum = pd.Series(
             data=distances_min,
             index=df_events.groupby(["obs_id", "event_id"]).size().index,
@@ -276,18 +295,20 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     mask_event_classifier = f"{input_dir_rfs}/event_classifiers_*.joblib"
 
     # Reconstruct the energies
-    input_rfs_energy = glob.glob(mask_energy_regressor)
-    input_rfs_energy.sort()
+    input_files_energy = glob.glob(mask_energy_regressor)
+    input_files_energy.sort()
 
-    if len(input_rfs_energy) > 0:
+    n_files_energy = len(input_files_energy)
 
-        logger.info("\nReconstructing the energies...")
+    if n_files_energy > 0:
+
+        logger.info(f"\nIn total {n_files_energy} energy regressor files are found:")
         energy_regressor = EnergyRegressor()
 
-        for input_rfs in input_rfs_energy:
+        for input_file in input_files_energy:
 
-            logger.info(input_rfs)
-            energy_regressor.load(input_rfs)
+            logger.info(f"Applying {input_file}...")
+            energy_regressor.load(input_file)
 
             reco_params = apply_rfs(event_data, energy_regressor)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
@@ -295,18 +316,20 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     del energy_regressor
 
     # Reconstruct the DISP parameter
-    input_rfs_disp = glob.glob(mask_disp_regressor)
-    input_rfs_disp.sort()
+    input_files_dips = glob.glob(mask_disp_regressor)
+    input_files_dips.sort()
 
-    if len(input_rfs_disp) > 0:
+    n_files_disp = len(input_files_dips)
 
-        logger.info("\nReconstructing the DISP parameter...")
+    if n_files_disp > 0:
+
+        logger.info(f"\nIn total {n_files_disp} DISP regressor files are found:")
         disp_regressor = DispRegressor()
 
-        for input_rfs in input_rfs_disp:
+        for input_file in input_files_dips:
 
-            logger.info(input_rfs)
-            disp_regressor.load(input_rfs)
+            logger.info(f"Applying {input_file}...")
+            disp_regressor.load(input_file)
 
             reco_params = apply_rfs(event_data, disp_regressor)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
@@ -320,23 +343,37 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     del disp_regressor
 
     # Reconstruct the gammaness
-    input_rfs_class = glob.glob(mask_event_classifier)
-    input_rfs_class.sort()
+    input_files_class = glob.glob(mask_event_classifier)
+    input_files_class.sort()
 
-    if len(input_rfs_class) > 0:
+    n_files_class = len(input_files_class)
 
-        logger.info("\nReconstructing the gammaness...")
+    if n_files_class > 0:
+
+        logger.info(f"\nIn total {n_files_class} event classifier files are found:")
         event_classifier = EventClassifier()
 
-        for input_rfs in input_rfs_class:
+        for input_file in input_files_class:
 
-            logger.info(input_rfs)
-            event_classifier.load(input_rfs)
+            logger.info(f"Applying {input_file}...")
+            event_classifier.load(input_file)
 
             reco_params = apply_rfs(event_data, event_classifier)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del event_classifier
+
+    # In case of the MAGIC-only analysis, here we drop the "time_sec"
+    # and "time_nanosec" parameters but instead set the "timestamp"
+    # parameter, since the precise timestamps are not needed anymore
+    if "time_sec" in event_data.columns:
+
+        time_sec = event_data["time_sec"].to_numpy() * u.s
+        time_nanosec = event_data["time_nanosec"].to_numpy() * u.ns
+        timestamps = time_sec + time_nanosec
+
+        event_data["timestamp"] = timestamps.to_value(u.s)
+        event_data.drop(columns=["time_sec", "time_nanosec"], inplace=True)
 
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -348,7 +385,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     event_data.reset_index(inplace=True)
 
-    save_pandas_to_table(
+    save_pandas_data_in_table(
         event_data, output_file, group_name="/events", table_name="parameters"
     )
 
@@ -357,7 +394,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     if is_simulation:
         sim_config = pd.read_hdf(input_file_dl1, key="simulation/config")
 
-        save_pandas_to_table(
+        save_pandas_data_in_table(
             data=sim_config,
             output_file=output_file,
             group_name="/simulation",

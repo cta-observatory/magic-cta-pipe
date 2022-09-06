@@ -15,7 +15,7 @@ MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 When the input is real data, it searches for all the subrun files with
 the same observation ID and stored in the same directory as the input
-subrun file. Then, it reads the drive reports and uses the information
+subrun file. Then, it reads their drive reports and uses the information
 to reconstruct the telescope pointing direction. Since the accuracy of
 the reconstruction improves, it is recommended to store all the subrun
 files in the same directory.
@@ -25,9 +25,9 @@ reports but also processes all the events of the subrun files at once.
 
 Usage:
 $ python magic_calib_to_dl1.py
---input-file ./calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
---output-dir ./dl1
---config-file ./config.yaml
+--input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
+(--output-dir dl1)
+(--config-file config.yaml)
 (--process-run)
 """
 
@@ -64,6 +64,7 @@ logger.setLevel(logging.INFO)
 # Ignore RuntimeWarnings appeared during the image cleaning
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
+# The pedestal types allowed to find bad RMS pixels
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
@@ -90,16 +91,18 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     event_source = MAGICEventSource(input_file, process_run=process_run)
 
+    is_simulation = event_source.is_simulation
+    logger.info(f"\nIs simulation: {is_simulation}")
+
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
-    is_simulation = event_source.is_simulation
-
-    logger.info(f"\nObservation ID: {obs_id}")
-    logger.info(f"Telescope ID: {tel_id}")
-    logger.info(f"Is simulation: {is_simulation}")
 
     if not is_simulation:
-        logger.info("\nThe following files are found to read the drive reports:")
+        logger.info(
+            f"\nObservation ID: {obs_id}"
+            f"\nTelescope ID: {tel_id}"
+            "\n\nThe following files are found to read drive reports:"
+        )
         for subrun_file in event_source.file_list_drive:
             logger.info(subrun_file)
 
@@ -124,12 +127,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     for key, value in config_clean.items():
         logger.info(f"\t{key}: {value}")
 
-    find_hotpixels = config_clean["find_hotpixels"]
-
-    if find_hotpixels:
-        i_ped_type = PEDESTAL_TYPES.index(config_clean["pedestal_type"])
-
     magic_clean = MAGICClean(camera_geom, config_clean)
+
+    if config_clean["find_hotpixels"]:
+        i_ped_type = PEDESTAL_TYPES.index(config_clean["pedestal_type"])
 
     # Prepare for saving data to an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -159,12 +160,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 logger.info(f"{event.count} events")
 
             # Apply the image cleaning
-            if find_hotpixels:
+            if config_clean["find_hotpixels"]:
                 pixel_status = event.mon.tel[tel_id].pixel_status
-                unsuitable_mask = np.logical_or(
-                    pixel_status.hardware_failing_pixels[0],  # dead pixels
-                    pixel_status.pedestal_failing_pixels[i_ped_type],  # bad RMS pixels
-                )
+                dead_pixels = pixel_status.hardware_failing_pixels[0]
+                badrms_pixels = pixel_status.pedestal_failing_pixels[i_ped_type]
+                unsuitable_mask = np.logical_or(dead_pixels, badrms_pixels)
 
             else:
                 unsuitable_mask = None
@@ -272,8 +272,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 # fractional parts separately
                 fractional, integral = np.modf(timestamp)
 
-                time_sec = u.Quantity(integral, u.s).round()
-                time_nanosec = u.Quantity(fractional, u.s).to(u.ns).round()
+                time_sec = u.Quantity(integral, unit=u.s, dtype=int)
+                time_nanosec = u.Quantity(
+                    u.Quantity(fractional, u.s).to(u.ns).round(), dtype=int
+                )
 
                 time_diff = time_diffs[event.count]
 
@@ -305,7 +307,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
 
-    # Reset the telescope IDs of the subarray descriptions
+    # Reset the telescope IDs of the subarray description
     tel_positions_magic = {
         2: subarray.positions[1],  # MAGIC-I
         3: subarray.positions[2],  # MAGIC-II
@@ -361,7 +363,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     parser.add_argument(

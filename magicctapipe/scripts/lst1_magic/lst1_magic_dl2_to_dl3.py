@@ -2,23 +2,23 @@
 # coding: utf-8
 
 """
-This script processes DL2 events and creates a DL3 data file with input
-IRF file(s). It reads the configurations of the IRFs, and if they are
+This script processes DL2 events and creates a DL3 data file with the
+IRFs. At first it reads the configurations of the IRFs and if they are
 consistent, it applies the same condition cuts to the input DL2 events.
 
-For the interpolation of the IRFs and the dynamic gammaness/theta cuts,
-there are three methods, "nearest", "linear" or "cubic", which can be
-specified in the configuration file. The "nearest" method just selects
-the IRFs of the closest pointing direction in (cos(Zd), Az), which works
-even if the input is only one file. The other methods work only when
-there are multiple IRFs available from different pointing directions.
+There are three methods for the interpolation of the IRFs, "nearest",
+"linear" and "cubic", which can be specified in the configuration file.
+The "nearest" method just selects the IRFs of the closest pointing
+direction in (cos(Zenith), Azimuth), which works even if there is only
+one input IRF file. The other methods work only when there are multiple
+IRFs available from different pointing directions.
 
 Usage:
 $ python lst1_magic_dl2_to_dl3.py
---input-file-dl2 ./dl2_LST-1_MAGIC.Run03265.h5
---input-dir-irf ./irf
---output-dir ./dl3
---config-file ./config.yaml
+--input-file-dl2 dl2_LST-1_MAGIC.Run03265.h5
+--input-dir-irf irf
+(--output-dir dl3)
+(--config-file config.yaml)
 """
 
 import argparse
@@ -63,7 +63,7 @@ logger.setLevel(logging.INFO)
 
 def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     """
-    Creates a DL3 data file with input DL2 data and IRF files.
+    Processes DL2 events and creates a DL3 data file with the IRFs.
 
     Parameters
     ----------
@@ -79,14 +79,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     config_dl3 = config["dl2_to_dl3"]
 
-    if config_dl3["source_ra"] is not None:
-        config_dl3["source_ra"] *= u.deg
-
-    if config_dl3["source_dec"] is not None:
-        config_dl3["source_dec"] *= u.deg
-
     # Load the input IRF files
-    logger.info(f"\nInput IRF directory:{input_dir_irf}")
+    logger.info(f"\nInput IRF directory:\n{input_dir_irf}")
 
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
@@ -97,14 +91,14 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         logger.info(f"\t{key}: {value}")
 
     # Load the input DL2 data file
-    logger.info(f"\n\nInput DL2 data file:\n{input_file_dl2}")
+    logger.info(f"\nInput DL2 data file:\n{input_file_dl2}")
 
     quality_cuts = extra_header.get("QUAL_CUT")
     irf_type = extra_header["IRF_TYPE"]
-    dl2_weight = extra_header.get("DL2_WEIG")
+    dl2_weight_type = extra_header["DL2_WEIG"]
 
-    event_table, deadc = load_dl2_data_file(
-        input_file_dl2, quality_cuts, irf_type, dl2_weight
+    event_table, on_time, deadc = load_dl2_data_file(
+        input_file_dl2, quality_cuts, irf_type, dl2_weight_type
     )
 
     # Calculate the mean pointing direction for the target point of the
@@ -114,22 +108,22 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # ranges, i.e., 0 <= az < 360 deg and -180 <= az < 180 deg, and then
     # calculate the mean with the range of smaller STD.
 
-    pointing_coszd_mean = np.sin(event_table["pointing_alt"].to_value(u.rad)).mean()
+    pnt_coszd_mean = np.sin(event_table["pointing_alt"].value).mean()
 
-    pointing_az_wrap_360deg = Angle(event_table["pointing_az"]).wrap_at(360 * u.deg)
-    pointing_az_wrap_180deg = Angle(event_table["pointing_az"]).wrap_at(180 * u.deg)
+    pnt_az_wrap_360deg = Angle(event_table["pointing_az"]).wrap_at(360 * u.deg)
+    pnt_az_wrap_180deg = Angle(event_table["pointing_az"]).wrap_at(180 * u.deg)
 
-    if pointing_az_wrap_360deg.std() <= pointing_az_wrap_180deg.std():
-        pointing_az_mean = pointing_az_wrap_360deg.mean().value
+    if pnt_az_wrap_360deg.std() <= pnt_az_wrap_180deg.std():
+        pnt_az_mean = pnt_az_wrap_360deg.mean().value
     else:
-        pointing_az_mean = pointing_az_wrap_180deg.mean().wrap_at(360 * u.deg).value
+        pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at(360 * u.deg).value
 
-    target_point = np.array([pointing_coszd_mean, pointing_az_mean])
+    target_point = np.array([pnt_coszd_mean, pnt_az_mean])
     logger.info(f"\nTarget point: {target_point.round(5).tolist()}")
 
     # Prepare for the IRF interpolations
-    interpolation_method = config_dl3.pop("interpolation_method")
-    logger.info(f"\n\nInterpolation method: {interpolation_method}")
+    interpolation_method = config_dl3["interpolation_method"]
+    logger.info(f"\nInterpolation method: {interpolation_method}")
 
     extra_header["IRF_INTP"] = interpolation_method
 
@@ -177,11 +171,11 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus.append(edisp_hdu)
 
-    # Check the existence of the background IRF
+    # Check the existence of the background model
     if len(irf_data["background"]) > 1:
         logger.warning(
             "WARNING: More than one background models are found, but the "
-            "interpolation method for them is not implemented. Skipping."
+            "interpolation method for them is not implemented. Skipping..."
         )
 
     elif len(irf_data["background"]) == 1:
@@ -194,7 +188,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(bkg_hdu)
 
-    # Interpolate the gammaness cuts and create the HDU
+    # Interpolate the gammaness cuts and create the HDU if they exist
     if len(irf_data["gh_cuts"]) > 0:
         logger.info("Interpolating the dynamic gammaness cuts...")
 
@@ -209,13 +203,12 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             gh_cuts=gh_cuts_interp.T[:, 0],
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
-            extname="GH_CUTS",
             **extra_header,
         )
 
         hdus.append(gh_cuts_hdu)
 
-    # Interpolate the theta cuts and create the HDU
+    # Interpolate the theta cuts and create the HDU if they exist
     if len(irf_data["rad_max"]) > 0:
         logger.info("Interpolating the dynamic theta cuts...")
 
@@ -237,40 +230,59 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(rad_max_hdu)
 
-    # Apply the interpolated gammaness cuts
+    # Apply the gammaness cut
     if "GH_CUT" in extra_header:
-        logger.info("\nApplying the global gammaness cut:")
 
-        global_gam_cut = extra_header["GH_CUT"]
-        logger.info(f"\tGlobal cut value: {global_gam_cut}")
+        # Apply the global gammaness cut
+        gh_cut_value = extra_header["GH_CUT"]
 
-        event_table = event_table[event_table["gammaness"] > global_gam_cut]
+        logger.info("\nApplying the global gammaness cut...")
+
+        mask_gh = event_table["gammaness"] > gh_cut_value
+        event_table = event_table[mask_gh]
 
     else:
-        logger.info("\nApplying the dynamic gammaness cuts...")
-
+        # Apply the interpolated dynamic gammaness cuts
         gh_cuts = hdus["GH_CUTS"].data[0]
 
-        cut_table_gh = QTable()
-        cut_table_gh["low"] = gh_cuts["ENERG_LO"] * u.TeV
-        cut_table_gh["high"] = gh_cuts["ENERG_HI"] * u.TeV
-        cut_table_gh["cut"] = gh_cuts["GH_CUTS"][0]
+        gh_cut_table = QTable(
+            data={
+                "low": gh_cuts["ENERG_LO"] * u.TeV,
+                "high": gh_cuts["ENERG_HI"] * u.TeV,
+                "cut": gh_cuts["GH_CUTS"][0],
+            }
+        )
 
-        logger.info(f"\nGammaness cut table:\n{cut_table_gh}")
+        logger.info(
+            f"\nGammaness cut table:\n\n{gh_cut_table}"
+            "\n\nApplying the dynamic gammaness cuts..."
+        )
 
-        mask_gh_gamma = evaluate_binned_cut(
+        mask_gh = evaluate_binned_cut(
             values=event_table["gammaness"],
             bin_values=event_table["reco_energy"],
-            cut_table=cut_table_gh,
+            cut_table=gh_cut_table,
             op=operator.ge,
         )
 
-        event_table = event_table[mask_gh_gamma]
+        event_table = event_table[mask_gh]
 
     # Create an event list HDU
-    logger.info("\n\nCreating an event list HDU...")
+    logger.info("\nCreating an event list HDU...")
 
-    event_hdu = create_event_hdu(event_table, deadc, **config_dl3)
+    source_name = config_dl3["source_name"]
+    source_ra = config_dl3["source_ra"]
+    source_dec = config_dl3["source_dec"]
+
+    if source_ra is not None:
+        source_ra = u.Quantity(source_ra)
+
+    if source_dec is not None:
+        source_dec = u.Quantity(source_dec)
+
+    event_hdu = create_event_hdu(
+        event_table, on_time, deadc, source_name, source_ra, source_dec
+    )
 
     hdus.append(event_hdu)
 
@@ -322,7 +334,7 @@ def main():
         dest="input_dir_irf",
         type=str,
         required=True,
-        help="Path to a directory where input IRF file(s) are stored.",
+        help="Path to a directory where input IRF files are stored.",
     )
 
     parser.add_argument(
@@ -340,7 +352,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     args = parser.parse_args()

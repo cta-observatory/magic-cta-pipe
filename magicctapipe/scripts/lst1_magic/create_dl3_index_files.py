@@ -7,7 +7,7 @@ files. They will be saved in the same directory as the input DL3 files.
 
 Usage:
 $ python create_dl3_index_files.py
---input-dir ./dl3
+--input-dir dl3
 """
 
 import argparse
@@ -33,20 +33,27 @@ def create_dl3_index_files(input_dir):
     ----------
     input_dir: str
         Path to a directory where input DL3 data files are stored
+
+    Raises
+    ------
+    FileNotFoundError
+        If any DL3 data files could not be found in the input directory
     """
 
+    # Find the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
-    # Find the input files
     file_mask = f"{input_dir}/dl3_*.fits.gz"
 
     input_files = glob.glob(file_mask)
     input_files.sort()
 
     if len(input_files) == 0:
-        raise FileNotFoundError("Could not find DL3 data files in the input directory.")
+        raise FileNotFoundError(
+            "Could not find any DL3 data files in the input directory."
+        )
 
-    logger.info("\nThe following files are found:")
+    logger.info("\nThe following DL3 data files are found:")
 
     file_names = []
 

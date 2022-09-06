@@ -54,7 +54,7 @@ def create_gh_cuts_hdu(
     Returns
     -------
     gh_cuts_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        Gammaness-cuts HDU
+        Gammaness-cut HDU
     """
 
     energy_lo, energy_hi = split_bin_lo_hi(reco_energy_bins[np.newaxis, :].to(u.TeV))
@@ -92,8 +92,10 @@ def create_gh_cuts_hdu(
     return gh_cuts_hdu
 
 
-@u.quantity_input(source_ra=u.deg, source_dec=u.deg)
-def create_event_hdu(event_data, deadc, source_name, source_ra=None, source_dec=None):
+@u.quantity_input(on_time=u.s, source_ra=u.deg, source_dec=u.deg)
+def create_event_hdu(
+    event_data, on_time, deadc, source_name, source_ra=None, source_dec=None
+):
     """
     Creates a fits binary table HDU for shower events.
 
@@ -101,6 +103,8 @@ def create_event_hdu(event_data, deadc, source_name, source_ra=None, source_dec=
     ----------
     event_data: astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
+    on_time: astropy.table.table.QTable
+        ON time of the input data
     deadc: float
         Dead time correction factor
     source_name: str
@@ -115,24 +119,28 @@ def create_event_hdu(event_data, deadc, source_name, source_ra=None, source_dec=
     Returns
     -------
     event_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        HDU for the shower events
+        Event HDU
     """
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
 
     time_start = Time(event_data["timestamp"][0], format="unix", scale="utc")
-    time_end = Time(event_data["timestamp"][-1], format="unix", scale="utc")
-    time_diffs = np.diff(event_data["timestamp"])
+    time_start_iso = time_start.to_value("iso", "date_hms")
 
-    elapsed_time = time_diffs.sum()
-    effective_time = elapsed_time * deadc
+    time_end = Time(event_data["timestamp"][-1], format="unix", scale="utc")
+    time_end_iso = time_end.to_value("iso", "date_hms")
+
+    elapsed_time = time_end - time_start
+    effective_time = on_time * deadc
 
     event_coords = SkyCoord(
         ra=event_data["reco_ra"], dec=event_data["reco_dec"], frame="icrs"
     )
 
+    event_coords = event_coords.galactic
+
     try:
-        # Try to get the source coordinate by the name at first
+        # Try to get the coordinate from the source name
         source_coord = SkyCoord.from_name(source_name, frame="icrs")
 
     except Exception:
@@ -153,10 +161,10 @@ def create_event_hdu(event_data, deadc, source_name, source_ra=None, source_dec=
             "ENERGY": event_data["reco_energy"],
             "GAMMANESS": event_data["gammaness"],
             "MULTIP": event_data["multiplicity"],
-            "GLON": event_coords.galactic.l.to(u.deg),
-            "GLAT": event_coords.galactic.b.to(u.deg),
-            "ALT": event_data["reco_alt"],
-            "AZ": event_data["reco_az"],
+            "GLON": event_coords.l.to(u.deg),
+            "GLAT": event_coords.b.to(u.deg),
+            "ALT": event_data["reco_alt"].to(u.deg),
+            "AZ": event_data["reco_az"].to(u.deg),
         }
     )
 
@@ -166,10 +174,10 @@ def create_event_hdu(event_data, deadc, source_name, source_ra=None, source_dec=
             ("CREATED", Time.now().utc.iso),
             ("HDUCLAS1", "EVENTS"),
             ("OBS_ID", np.unique(event_data["obs_id"])[0]),
-            ("DATE-OBS", time_start.to_value("iso", "date")),
-            ("TIME-OBS", time_start.to_value("iso", "date_hms")[11:]),
-            ("DATE-END", time_end.to_value("iso", "date")),
-            ("TIME-END", time_end.to_value("iso", "date_hms")[11:]),
+            ("DATE-OBS", time_start_iso[:10]),
+            ("TIME-OBS", time_start_iso[11:]),
+            ("DATE-END", time_end_iso[:10]),
+            ("TIME-END", time_end_iso[11:]),
             ("TSTART", time_start.value),
             ("TSTOP", time_end.value),
             ("MJDREFI", mjdrefi),
@@ -177,8 +185,8 @@ def create_event_hdu(event_data, deadc, source_name, source_ra=None, source_dec=
             ("TIMEUNIT", "s"),
             ("TIMESYS", "UTC"),
             ("TIMEREF", "TOPOCENTER"),
-            ("ONTIME", elapsed_time.value),
-            ("TELAPSE", elapsed_time.value),
+            ("ONTIME", on_time.value),
+            ("TELAPSE", elapsed_time.to_value(u.s)),
             ("DEADC", deadc),
             ("LIVETIME", effective_time.value),
             ("OBJECT", source_name),
@@ -214,7 +222,7 @@ def create_gti_hdu(event_data):
     Returns
     -------
     gti_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        HDU for GTI
+        GTI HDU
     """
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
@@ -249,7 +257,7 @@ def create_gti_hdu(event_data):
 
 def create_pointing_hdu(event_data):
     """
-    Creates a fits binary table HDU for the telescope pointing.
+    Creates a fits binary table HDU for the pointing direction.
 
     Parameters
     ----------
@@ -259,7 +267,7 @@ def create_pointing_hdu(event_data):
     Returns
     -------
     pointing_hdu: astropy.io.fits.hdu.table.BinTableHDU
-        HDU for the telescope pointing
+        Pointing HDU
     """
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)

@@ -5,9 +5,9 @@
 This script processes LST-1 and MAGIC events of simtel MC DL0 data
 (*.simtel.gz) and computes the DL1 parameters, i.e., Hillas, timing and
 leakage parameters. It saves only the events that all the DL1 parameters
-are successfully reconstructed. Please confirm that the telescope IDs
-are correctly assigned to each telescope with the "mc_tel_ids" setting
-in the configuration file.
+are successfully reconstructed. Please confirm that the telescope ID is
+correctly assigned to each telescope with the "mc_tel_ids" setting in
+the configuration file.
 
 When saving data to an output file the telescope IDs will be reset to
 the following ones:
@@ -20,9 +20,9 @@ array for the convenience of the geometrical stereo reconstruction.
 
 Usage:
 $ python lst1_magic_mc_dl0_to_dl1.py
---input-file ./dl0/gamma_40deg_90deg_run1.simtel.gz
---output-dir ./dl1
---config-file ./config.yaml
+--input-file dl0/gamma_40deg_90deg_run1.simtel.gz
+(--output-dir dl1)
+(--config-file config.yaml)
 """
 
 import argparse
@@ -105,7 +105,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     camera_geoms = {}
 
-    logger.info("\nSubarray Description:")
+    logger.info("\nSubarray configuration:")
     for tel_name, tel_id in sorted(allowed_tel_ids.items(), key=lambda x: x[1]):
         logger.info(
             f"\tTelescope {tel_id} (assumed to be {tel_name}): "
@@ -114,7 +114,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         )
         camera_geoms[tel_id] = tel_descriptions[tel_id].camera.geometry
 
-    # Configure the LST processors
+    # Configure the LST event processors
     config_lst = config["LST"]
 
     logger.info("\nLST image extractor:")
@@ -141,12 +141,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         rng = np.random.default_rng(obs_id)
 
     if increase_psf:
-        logger.info("\nLST PSF modifier:")
-        for key, value in config_lst["increase_psf"].items():
-            logger.info(f"\t{key}: {value}")
+        smeared_light_fraction = config_lst["increase_psf"]["fraction"]
+        logger.info(f"\nLST PSF modifier:" f"\n\tfraction: {smeared_light_fraction}")
 
         set_numba_seed(obs_id)
-        smeared_light_fraction = config_lst["increase_psf"]["smeared_light_fraction"]
 
     logger.info("\nLST tailcuts cleaning:")
     for key, value in config_lst["tailcuts_clean"].items():
@@ -168,7 +166,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     logger.info(f"\nLST use only main island: {use_only_main_island}")
 
-    # Configure the MAGIC processors
+    # Configure the MAGIC event processors
     config_magic = config["MAGIC"]
 
     logger.info("\nMAGIC image extractor:")
@@ -479,7 +477,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file.",
     )
 
     args = parser.parse_args()
