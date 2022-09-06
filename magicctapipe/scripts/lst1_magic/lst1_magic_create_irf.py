@@ -122,9 +122,27 @@ def create_irf(
     # Load the background data files
     event_table_bkg = QTable()
 
-    irf_obs_time = u.Quantity(config_irf.get("irf_obs_time", "50 h"))
+    is_proton_mc = input_file_proton is not None
+    is_electron_mc = input_file_electron is not None
 
-    if input_file_proton is not None:
+    if is_proton_mc and (not is_electron_mc):
+        logger.info(
+            "\nWARNING: Proton MC exists but electron MC does not. "
+            "Skipping the creation of the background model..."
+        )
+
+    elif is_electron_mc and (not is_proton_mc):
+        logger.info(
+            "\nWARNING: Electron MC exists but proton MC does not. "
+            "Skipping the creation of the background model..."
+        )
+
+    is_bkg_mc = np.all([is_proton_mc, is_electron_mc])
+
+    if is_bkg_mc:
+
+        irf_obs_time = u.Quantity(config_irf["irf_obs_time"])
+        logger.info(f"\nIRF observation time: {irf_obs_time}")
 
         # Load the input proton MC DL2 data file
         logger.info(f"\nInput proton MC DL2 data file:\n{input_file_proton}")
@@ -151,8 +169,6 @@ def create_irf(
 
         event_table_bkg = vstack([event_table_bkg, event_table_proton])
 
-    if input_file_electron is not None:
-
         # Load the input electron MC DL2 data file
         logger.info(f"\nInput electron MC DL2 data file:\n{input_file_electron}")
 
@@ -177,8 +193,6 @@ def create_irf(
         )
 
         event_table_bkg = vstack([event_table_bkg, event_table_electron])
-
-    bkg_exists = len(event_table_bkg) > 0
 
     # Prepare for creating IRFs
     eng_bins_start = u.Quantity(config["energy_bins"]["start"])
@@ -212,11 +226,10 @@ def create_irf(
         f"\n\tn_edges: {migra_bins_n_edges}"
     )
 
-    migration_bins = np.geomspace(
-        migra_bins_start, migra_bins_stop, migra_bins_n_edges
-    )
+    migration_bins = np.geomspace(migra_bins_start, migra_bins_stop, migra_bins_n_edges)
 
-    if bkg_exists:
+    if is_bkg_mc:
+
         bkg_fov_bins_start = u.Quantity(config["bkg_fov_offset_bins"]["start"])
         bkg_fov_bins_stop = u.Quantity(config["bkg_fov_offset_bins"]["stop"])
         bkg_fov_bins_n_edges = config["bkg_fov_offset_bins"]["n_edges"]
@@ -269,7 +282,7 @@ def create_irf(
         mask_gh_gamma = event_table_gamma["gammaness"] > gh_cut_value
         event_table_gamma = event_table_gamma[mask_gh_gamma]
 
-        if bkg_exists:
+        if is_bkg_mc:
             mask_gh_bkg = event_table_bkg["gammaness"] > gh_cut_value
             event_table_bkg = event_table_bkg[mask_gh_bkg]
 
@@ -319,7 +332,7 @@ def create_irf(
 
         event_table_gamma = event_table_gamma[mask_gh_gamma]
 
-        if bkg_exists:
+        if is_bkg_mc:
             mask_gh_bkg = evaluate_binned_cut(
                 values=event_table_bkg["gammaness"],
                 bin_values=event_table_bkg["reco_energy"],
@@ -469,7 +482,7 @@ def create_irf(
     irf_hdus.append(edisp_hdu)
 
     # Create a background HDU
-    if bkg_exists:
+    if is_bkg_mc:
         logger.info("Creating a background HDU...")
 
         bkg = background_2d(
