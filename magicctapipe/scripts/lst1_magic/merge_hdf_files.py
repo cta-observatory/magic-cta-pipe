@@ -189,6 +189,9 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     if subrun_wise:
         logger.info("\nMerging the input files subrun-wise...")
 
+        run_ids = np.array(run_ids)
+        subrun_ids = np.array(subrun_ids)
+
         for run_id in run_ids_unique:
             subrun_ids_unique = np.unique(subrun_ids[run_ids == run_id])
 
