@@ -69,7 +69,8 @@ def apply_rfs(event_data, estimator):
     df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
     df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
-    reco_params = estimator.predict(df_events)
+    if len(df_events) > 0:
+        reco_params = estimator.predict(df_events)
 
     return reco_params
 
