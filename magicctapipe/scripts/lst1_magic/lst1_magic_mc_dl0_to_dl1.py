@@ -327,6 +327,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 image_masked = image[signal_pixels]
                 peak_time_masked = peak_time[signal_pixels]
 
+                if np.any(image_masked < 0):
+                    logger.warning(
+                        f"--> {event.count} event (event ID: {event.index.event_id}, "
+                        f"telescope {tel_id}) cannot be parametrized due to negative "
+                        "charge pixels. Skipping..."
+                    )
+                    continue
+
                 # Parametrize the image
                 hillas_params = hillas_parameters(camera_geom_masked, image_masked)
 
