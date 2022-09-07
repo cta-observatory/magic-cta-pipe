@@ -68,7 +68,7 @@ class EnergyRegressor:
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}")
+            df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
             if self.use_unsigned_features:
@@ -107,7 +107,7 @@ class EnergyRegressor:
         # Apply trained RFs per telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
-            df_events = event_data.query(f"tel_id == {tel_id}")
+            df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
             if len(df_events) > 0:
@@ -229,7 +229,7 @@ class DispRegressor:
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}")
+            df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
             if self.use_unsigned_features:
@@ -267,7 +267,7 @@ class DispRegressor:
         # Apply trained RFs per telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
-            df_events = event_data.query(f"tel_id == {tel_id}")
+            df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
             if len(df_events) > 0:
@@ -389,7 +389,7 @@ class EventClassifier:
 
         for tel_id in tel_ids:
 
-            df_events = event_data.query(f"tel_id == {tel_id}")
+            df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
             if self.use_unsigned_features:
@@ -427,7 +427,7 @@ class EventClassifier:
         # Apply trained RFs per telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
-            df_events = event_data.query(f"tel_id == {tel_id}")
+            df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
             if len(df_events) > 0:
