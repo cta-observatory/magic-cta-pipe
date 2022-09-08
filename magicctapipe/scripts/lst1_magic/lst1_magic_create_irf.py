@@ -195,9 +195,9 @@ def create_irf(
         event_table_bkg = vstack([event_table_bkg, event_table_electron])
 
     # Prepare for creating IRFs
-    eng_bins_start = u.Quantity(config["energy_bins"]["start"])
-    eng_bins_stop = u.Quantity(config["energy_bins"]["stop"])
-    eng_bins_n_edges = config["energy_bins"]["n_edges"]
+    eng_bins_start = u.Quantity(config_irf["energy_bins"]["start"])
+    eng_bins_stop = u.Quantity(config_irf["energy_bins"]["stop"])
+    eng_bins_n_edges = config_irf["energy_bins"]["n_edges"]
 
     logger.info(
         "\nEnergy bins (log space):"
@@ -215,9 +215,9 @@ def create_irf(
         unit=u.TeV,
     )
 
-    migra_bins_start = config["migration_bins"]["start"]
-    migra_bins_stop = config["migration_bins"]["stop"]
-    migra_bins_n_edges = config["migration_bins"]["n_edges"]
+    migra_bins_start = config_irf["migration_bins"]["start"]
+    migra_bins_stop = config_irf["migration_bins"]["stop"]
+    migra_bins_n_edges = config_irf["migration_bins"]["n_edges"]
 
     logger.info(
         "\nMigration bins (log space):"
@@ -230,9 +230,9 @@ def create_irf(
 
     if is_bkg_mc:
 
-        bkg_fov_bins_start = u.Quantity(config["bkg_fov_offset_bins"]["start"])
-        bkg_fov_bins_stop = u.Quantity(config["bkg_fov_offset_bins"]["stop"])
-        bkg_fov_bins_n_edges = config["bkg_fov_offset_bins"]["n_edges"]
+        bkg_fov_bins_start = u.Quantity(config_irf["bkg_fov_offset_bins"]["start"])
+        bkg_fov_bins_stop = u.Quantity(config_irf["bkg_fov_offset_bins"]["stop"])
+        bkg_fov_bins_n_edges = config_irf["bkg_fov_offset_bins"]["n_edges"]
 
         logger.info(
             "\nBackground FoV offset bins (linear space):"
