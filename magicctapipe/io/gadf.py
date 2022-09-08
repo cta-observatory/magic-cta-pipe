@@ -301,6 +301,6 @@ def create_pointing_hdu(event_data):
     )
 
     # Create a HDU
-    pointing_hdu = fits.BinTableHDU(qtable, header=header, name="GTI")
+    pointing_hdu = fits.BinTableHDU(qtable, header=header, name="POINTING")
 
     return pointing_hdu
