@@ -84,9 +84,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
-    logger.info(f"\nGrid points:\n{irf_data['grid_point'].round(5).tolist()}")
-
-    logger.info("\nExtra header:")
+    logger.info("\n\nExtra header:")
     for key, value in extra_header.items():
         logger.info(f"\t{key}: {value}")
 
@@ -119,11 +117,15 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at(360 * u.deg).value
 
     target_point = np.array([pnt_coszd_mean, pnt_az_mean])
-    logger.info(f"\nTarget point: {target_point.round(5).tolist()}")
 
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3["interpolation_method"]
-    logger.info(f"\nInterpolation method: {interpolation_method}")
+
+    logger.info(
+        f"\nInterpolation method: {interpolation_method}"
+        f"\n\nGrid points (cosZd, Az):\n{irf_data['grid_point'].round(5).tolist()}"
+        f"\n\nTarget point (cosZd, Az):\n{target_point.round(5).tolist()}"
+    )
 
     extra_header["IRF_INTP"] = interpolation_method
 
