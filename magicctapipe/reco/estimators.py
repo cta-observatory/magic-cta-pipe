@@ -53,7 +53,7 @@ class EnergyRegressor:
 
     def fit(self, event_data):
         """
-        Trains RFs per telescope.
+        Train a RF per telescope.
 
         Parameters
         ----------
@@ -63,7 +63,7 @@ class EnergyRegressor:
 
         self.telescope_rfs.clear()
 
-        # Train RFs per telescope
+        # Train a RF per telescope
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
@@ -102,32 +102,32 @@ class EnergyRegressor:
             Data frame of the shower events with reconstructed energies
         """
 
-        reco_params = pd.DataFrame()
+        reco_params = pd.DataFrame(
+            data={"reco_energy": [], "reco_energy_var": []},
+            index=pd.MultiIndex.from_tuples([], names=event_data.index.names),
+        )
 
-        # Apply trained RFs per telescope
+        # Apply trained RFs to the input data
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
-            if len(df_events) > 0:
+            if df_events.empty:
+                continue
 
-                if self.use_unsigned_features:
-                    x_predict = np.abs(df_events[self.features].to_numpy())
-                else:
-                    x_predict = df_events[self.features].to_numpy()
-
-                reco_energy = 10 ** telescope_rf.predict(x_predict)
-
-                responses_per_estimator = []
-                for estimator in telescope_rf.estimators_:
-                    responses_per_estimator.append(estimator.predict(x_predict))
-
-                reco_energy_var = np.var(responses_per_estimator, axis=0)
-
+            if self.use_unsigned_features:
+                x_predict = np.abs(df_events[self.features].to_numpy())
             else:
-                reco_energy = []
-                reco_energy_var = []
+                x_predict = df_events[self.features].to_numpy()
+
+            reco_energy = 10 ** telescope_rf.predict(x_predict)
+
+            responses_per_estimator = []
+            for estimator in telescope_rf.estimators_:
+                responses_per_estimator.append(estimator.predict(x_predict))
+
+            reco_energy_var = np.var(responses_per_estimator, axis=0)
 
             df_reco_energy = pd.DataFrame(
                 data={"reco_energy": reco_energy, "reco_energy_var": reco_energy_var},
@@ -214,7 +214,7 @@ class DispRegressor:
 
     def fit(self, event_data):
         """
-        Trains RFs per telescope.
+        Trains a RF per telescope.
 
         Parameters
         ----------
@@ -224,7 +224,7 @@ class DispRegressor:
 
         self.telescope_rfs.clear()
 
-        # Train RFs per telescope
+        # Train a RF per telescope
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
@@ -262,32 +262,32 @@ class DispRegressor:
             Data frame of the shower events with the DISP parameter
         """
 
-        reco_params = pd.DataFrame()
+        reco_params = pd.DataFrame(
+            data={"reco_disp": [], "reco_disp_var": []},
+            index=pd.MultiIndex.from_tuples([], names=event_data.index.names),
+        )
 
-        # Apply trained RFs per telescope
+        # Apply trained RFs to the input data
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
-            if len(df_events) > 0:
+            if df_events.empty:
+                continue
 
-                if self.use_unsigned_features:
-                    x_predict = np.abs(df_events[self.features].to_numpy())
-                else:
-                    x_predict = df_events[self.features].to_numpy()
-
-                reco_disp = telescope_rf.predict(x_predict)
-
-                responses_per_estimator = []
-                for estimator in telescope_rf.estimators_:
-                    responses_per_estimator.append(estimator.predict(x_predict))
-
-                reco_disp_var = np.var(responses_per_estimator, axis=0)
-
+            if self.use_unsigned_features:
+                x_predict = np.abs(df_events[self.features].to_numpy())
             else:
-                reco_disp = []
-                reco_disp_var = []
+                x_predict = df_events[self.features].to_numpy()
+
+            reco_disp = telescope_rf.predict(x_predict)
+
+            responses_per_estimator = []
+            for estimator in telescope_rf.estimators_:
+                responses_per_estimator.append(estimator.predict(x_predict))
+
+            reco_disp_var = np.var(responses_per_estimator, axis=0)
 
             df_reco_disp = pd.DataFrame(
                 data={"reco_disp": reco_disp, "reco_disp_var": reco_disp_var},
@@ -374,7 +374,7 @@ class EventClassifier:
 
     def fit(self, event_data):
         """
-        Trains RFs per telescope.
+        Trains a RF per telescope.
 
         Parameters
         ----------
@@ -384,7 +384,7 @@ class EventClassifier:
 
         self.telescope_rfs.clear()
 
-        # Train RFs per telescope
+        # Train a RF per telescope
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
@@ -422,35 +422,35 @@ class EventClassifier:
             Data frame of the shower events with the gammaness
         """
 
-        reco_params = pd.DataFrame()
+        reco_params = pd.DataFrame(
+            data={"gammaness": [], "gammaness_var": []},
+            index=pd.MultiIndex.from_tuples([], names=event_data.index.names),
+        )
 
-        # Apply trained RFs per telescope
+        # Apply trained RFs to the input data
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
-            if len(df_events) > 0:
+            if df_events.empty:
+                continue
 
-                if self.use_unsigned_features:
-                    x_predict = np.abs(df_events[self.features].to_numpy())
-                else:
-                    x_predict = df_events[self.features].to_numpy()
-
-                gammaness = telescope_rf.predict_proba(x_predict)[:, 0]
-
-                # Calculate the variance of the binomial distribution
-                gammaness_var = gammaness * (1 - gammaness)
-
-                # Set the artificial finite value in case the variance is 0
-                # to avoid that the inverse value, which may be used for the
-                # weights of averaging telescope-wise values, is infinite
-                gammaness_var[gammaness == 1] = 0.99 * (1 - 0.99)
-                gammaness_var[gammaness == 0] = 0.01 * (1 - 0.01)
-
+            if self.use_unsigned_features:
+                x_predict = np.abs(df_events[self.features].to_numpy())
             else:
-                gammaness = []
-                gammaness_var = []
+                x_predict = df_events[self.features].to_numpy()
+
+            gammaness = telescope_rf.predict_proba(x_predict)[:, 0]
+
+            # Calculate the variance of the binomial distribution
+            gammaness_var = gammaness * (1 - gammaness)
+
+            # Set the artificial finite value in case the variance is 0
+            # to avoid that the inverse value, which may be used for the
+            # weights of averaging telescope-wise values, is infinite
+            gammaness_var[gammaness == 1] = 0.99 * (1 - 0.99)
+            gammaness_var[gammaness == 0] = 0.01 * (1 - 0.01)
 
             df_gammaness = pd.DataFrame(
                 data={"gammaness": gammaness, "gammaness_var": gammaness_var},
