@@ -84,7 +84,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
-    logger.info("\n\nExtra header:")
+    logger.info("\nExtra header:")
     for key, value in extra_header.items():
         logger.info(f"\t{key}: {value}")
 
@@ -269,8 +269,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         event_table = event_table[mask_gh]
 
-    # Create an event list HDU
-    logger.info("\nCreating an event list HDU...")
+    # Create an event HDU
+    logger.info("\nCreating an event HDU...")
 
     source_name = config_dl3["source_name"]
     source_ra = config_dl3["source_ra"]
