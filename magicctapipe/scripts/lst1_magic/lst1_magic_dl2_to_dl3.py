@@ -42,10 +42,7 @@ from magicctapipe.io import (
     load_irf_files,
 )
 from pyirf.cuts import evaluate_binned_cut
-from pyirf.interpolation import (
-    interpolate_effective_area_per_energy_and_fov,
-    interpolate_energy_dispersion,
-)
+from pyirf.interpolation import interpolate_effective_area_per_energy_and_fov
 from pyirf.io import (
     create_aeff2d_hdu,
     create_background_2d_hdu,
@@ -131,7 +128,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus = fits.HDUList([fits.PrimaryHDU()])
 
-    # Interpolate the effective area and create the HDU
+    # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
 
     aeff_interp = interpolate_effective_area_per_energy_and_fov(
@@ -152,14 +149,22 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus.append(aeff_hdu)
 
-    # Interpolate the energy dispersion and create the HDU
+    # Interpolate the energy dispersion with a custom way, since there
+    # is a bug in the function of pyirf v0.6.0 about the renormalization
     logger.info("Interpolating the energy dispersion...")
 
-    edisp_interp = interpolate_energy_dispersion(
-        energy_dispersions=irf_data["energy_dispersion"],
-        grid_points=irf_data["grid_point"],
-        target_point=target_point,
+    edisp_interp = griddata(
+        points=irf_data["grid_points"],
+        values=irf_data["energy_dispersion"],
+        xi=target_point,
         method=interpolation_method,
+    )
+
+    norm = np.sum(edisp_interp, axis=2, keepdims=True)  # Along the migration axis
+    mask_zeros = norm != 0
+
+    edisp_interp = np.divide(
+        edisp_interp, norm, out=np.zeros_like(edisp_interp), where=mask_zeros
     )
 
     edisp_hdu = create_energy_dispersion_hdu(
@@ -190,7 +195,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(bkg_hdu)
 
-    # Interpolate the gammaness cuts and create the HDU if they exist
+    # Interpolate the dynamic gammaness cuts if they exist
     if len(irf_data["gh_cuts"]) > 0:
         logger.info("Interpolating the dynamic gammaness cuts...")
 
@@ -210,7 +215,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(gh_cuts_hdu)
 
-    # Interpolate the theta cuts and create the HDU if they exist
+    # Interpolate the dynamic theta cuts if they exist
     if len(irf_data["rad_max"]) > 0:
         logger.info("Interpolating the dynamic theta cuts...")
 
