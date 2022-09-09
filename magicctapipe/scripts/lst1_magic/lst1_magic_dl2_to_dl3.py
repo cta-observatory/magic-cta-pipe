@@ -154,7 +154,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     logger.info("Interpolating the energy dispersion...")
 
     edisp_interp = griddata(
-        points=irf_data["grid_points"],
+        points=irf_data["grid_point"],
         values=irf_data["energy_dispersion"],
         xi=target_point,
         method=interpolation_method,
