@@ -239,10 +239,10 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
             obs_time=timestamps_mean,
         )
 
-        event_data_mean["pointing_ra"] = pointing_ra_mean
-        event_data_mean["pointing_dec"] = pointing_dec_mean
-        event_data_mean["reco_ra"] = reco_ra_mean
-        event_data_mean["reco_dec"] = reco_dec_mean
+        event_data_mean["pointing_ra"] = pointing_ra_mean.to_value(u.deg)
+        event_data_mean["pointing_dec"] = pointing_dec_mean.to_value(u.deg)
+        event_data_mean["reco_ra"] = reco_ra_mean.to_value(u.deg)
+        event_data_mean["reco_dec"] = reco_dec_mean.to_value(u.deg)
 
     return event_data_mean
 
