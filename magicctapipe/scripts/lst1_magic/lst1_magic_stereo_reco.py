@@ -122,6 +122,12 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     logger.info(f"\nInput file:\n{input_file}")
 
     event_data = pd.read_hdf(input_file, key="events/parameters")
+
+    # It sometimes happens that there are MAGIC events whose event and
+    # telescope IDs are duplicated, so here we exclude those events
+    event_data.drop_duplicates(
+        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
+    )
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
