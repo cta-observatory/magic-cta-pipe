@@ -145,11 +145,17 @@ def create_event_hdu(
 
     except Exception:
         # Use the input RA/Dec coordinate instead
-        logger.warning(
-            f"WARNING: The source name '{source_name}' could not be resolved. "
-            f"Setting the input RA/Dec coordinate ({source_ra}, {source_dec})..."
-        )
-        source_coord = SkyCoord(ra=source_ra, dec=source_dec, frame="icrs")
+        if (source_ra is None) or (source_dec is None):
+            raise ValueError(
+                f"The source name '{source_name}' could not be resolved, "
+                "but the input RA/Dec coordinate is also set to None."
+            )
+        else:
+            logger.warning(
+                f"WARNING: The source name '{source_name}' could not be resolved. "
+                f"Setting the input RA/Dec coordinate ({source_ra}, {source_dec})..."
+            )
+            source_coord = SkyCoord(ra=source_ra, dec=source_dec, frame="icrs")
 
     # Create a table
     qtable = QTable(
