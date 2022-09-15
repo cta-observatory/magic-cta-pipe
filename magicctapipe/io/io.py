@@ -460,6 +460,8 @@ def load_train_data_files(
         data_list.append(df_events)
 
     event_data = pd.concat(data_list)
+    event_data.set_index(GROUP_INDEX_TRAIN, inplace=True)
+    event_data.sort_index(inplace=True)
 
     if offaxis_min is not None:
         event_data.query(f"off_axis >= {offaxis_min.to_value(u.deg)}", inplace=True)
