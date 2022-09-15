@@ -239,13 +239,15 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
         # Add the minimum angular distances to the output data frame,
         # since they are useful to separate gamma and hadron events
         # (hadron events tend to have larger distances than gammas)
-        disp_diffs_sum = pd.Series(
-            data=distances_min,
+        df_disp_diffs = pd.Series(
+            data={
+                "disp_diff_sum": distances_min,
+                "disp_diff_mean": distances_min / len(tel_any2_combinations),
+            },
             index=df_events.groupby(["obs_id", "event_id"]).size().index,
-            name="disp_diff_sum",
         )
 
-        df_events = df_events.join(disp_diffs_sum)
+        df_events = df_events.join(df_disp_diffs)
 
         reco_params = reco_params.append(df_events)
 
