@@ -231,7 +231,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     sim_config = event_source.simulation_config
     corsika_inputcard = event_source.file_.corsika_inputcards[0].decode()
 
-    regex = r".*\nPRMPAR\s+(\d)\s+.*"
+    regex = r".*\nPRMPAR\s+(\d+)\s+.*"
     primary_id = int(re.findall(regex, corsika_inputcard)[0])
     particle = primary_particles[primary_id]
 
