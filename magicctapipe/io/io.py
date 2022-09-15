@@ -25,7 +25,7 @@ __all__ = [
     "get_dl2_mean",
     "load_lst_dl1_data_file",
     "load_magic_dl1_data_files",
-    "load_train_data_file",
+    "load_train_data_files",
     "load_mc_dl2_data_file",
     "load_dl2_data_file",
     "load_irf_files",
@@ -405,17 +405,17 @@ def load_magic_dl1_data_files(input_dir):
 
 
 @u.quantity_input(offaxis_min=u.deg, offaxis_max=u.deg)
-def load_train_data_file(
-    input_file, offaxis_min=None, offaxis_max=None, true_event_class=None
+def load_train_data_files(
+    input_dir, offaxis_min=None, offaxis_max=None, true_event_class=None
 ):
     """
-    Loads a DL1-stereo data file and separates the shower events per
+    Loads DL1-stereo data files and separates the shower events per
     telescope combination type for training RFs.
 
     Parameters
     ----------
-    input_file: str
-        Path to an input DL1-stereo data file
+    input_dir: str
+        Path to a directory where input DL1-stereo files are stored
     offaxis_min: astropy.units.quantity.Quantity
         Minimum shower off-axis angle allowed
     offaxis_max: astropy.units.quantity.Quantity
@@ -428,12 +428,38 @@ def load_train_data_file(
     data_train: dict
         Data frames of the shower events separated by the telescope
         combination types
+
+    Raises
+    ------
+    FileNotFoundError
+        If any DL1-stereo data files could not be found in the input
+        directory
     """
 
-    # Load the input file
-    event_data = pd.read_hdf(input_file, key="events/parameters")
-    event_data.set_index(GROUP_INDEX_TRAIN, inplace=True)
-    event_data.sort_index(inplace=True)
+    # Find the input files
+    file_mask = f"{input_dir}/dl1_stereo_*.h5"
+
+    input_files = glob.glob(file_mask)
+    input_files.sort()
+
+    if len(input_files) == 0:
+        raise FileNotFoundError(
+            "Could not find any DL1-stereo data files in the input directory."
+        )
+
+    # Load the input files
+    logger.info("\nThe following DL1-stereo data files are found:")
+
+    data_list = []
+
+    for input_file in input_files:
+
+        logger.info(input_file)
+
+        df_events = pd.read_hdf(input_file, key="events/parameters")
+        data_list.append(df_events)
+
+    event_data = pd.concat(data_list)
 
     if offaxis_min is not None:
         event_data.query(f"off_axis >= {offaxis_min.to_value(u.deg)}", inplace=True)
@@ -712,30 +738,30 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
 
 def load_irf_files(input_dir_irf):
     """
-    Loads input IRF files and checks the consistency of their
+    Loads input IRF data files and checks the consistency of their
     configurations for the IRF interpolation.
 
     Parameters
     ----------
     input_dir_irf: str
-        Path to a directory where input IRF files are stored
+        Path to a directory where input IRF data files are stored
 
     Returns
     -------
     irf_data: dict
         Combined IRF data
     extra_header: dict
-        Extra header of input IRF files
+        Extra header of input IRF data files
 
     Raises
     ------
     FileNotFoundError
-        If any IRF files could not be found in the input directory
+        If any IRF data files could not be found in the input directory
     RuntimeError
         If the configurations of the input IRFs are not consistent
     """
 
-    # Find the IRF files
+    # Find the input files
     irf_file_mask = f"{input_dir_irf}/irf_*.fits.gz"
 
     input_files_irf = glob.glob(irf_file_mask)
@@ -744,9 +770,11 @@ def load_irf_files(input_dir_irf):
     n_input_files = len(input_files_irf)
 
     if n_input_files == 0:
-        raise FileNotFoundError("Could not find any IRF files in the input directory.")
+        raise FileNotFoundError(
+            "Could not find any IRF data files in the input directory."
+        )
 
-    # Load the IRF files
+    # Load the input files
     extra_header = {
         "TELESCOP": [],
         "INSTRUME": [],
@@ -777,7 +805,7 @@ def load_irf_files(input_dir_irf):
         "bkg_fov_offset_bins": [],
     }
 
-    logger.info("\nThe following IRF files are found:")
+    logger.info("\nThe following IRF data files are found:")
 
     for input_file in input_files_irf:
 
@@ -836,7 +864,7 @@ def load_irf_files(input_dir_irf):
         if (n_data != 0) and (n_data != n_input_files):
             raise RuntimeError(
                 f"The number of '{key}' data (= {n_data}) does not match "
-                f"with that of the input IRF files (= {n_input_files})."
+                f"with that of the input IRF data files (= {n_input_files})."
             )
 
         if "bins" in key:
@@ -848,7 +876,7 @@ def load_irf_files(input_dir_irf):
 
             elif n_unique_bins > 1:
                 raise RuntimeError(
-                    f"The '{key}' of the input IRF files does not match."
+                    f"The '{key}' of the input IRF data files does not match."
                 )
 
     # Check the header consistency
@@ -862,7 +890,7 @@ def load_irf_files(input_dir_irf):
 
         elif (n_data != n_input_files) or len(unique_values) > 1:
             raise RuntimeError(
-                "The configurations of the input IRF files do not match, "
+                "The configurations of the input IRF data files do not match, "
                 "at least the setting '{key}'."
             )
         else:

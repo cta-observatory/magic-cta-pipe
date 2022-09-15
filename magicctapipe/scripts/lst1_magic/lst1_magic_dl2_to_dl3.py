@@ -76,7 +76,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     config_dl3 = config["dl2_to_dl3"]
 
-    # Load the input IRF files
+    # Load the input IRF data files
     logger.info(f"\nInput IRF directory:\n{input_dir_irf}")
 
     irf_data, extra_header = load_irf_files(input_dir_irf)

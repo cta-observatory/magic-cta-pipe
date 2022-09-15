@@ -14,14 +14,10 @@ Please specify the RF type that will be trained by using
 If the "--use-unsigned" argument is given, the RFs will be trained with
 unsigned features.
 
-Since it allows only one input file for each event class, before running
-this script it would be needed to merge DL1-stereo files with the script
-"magicctapipe/scripts/lst1_magic/merge_hdf_files.py".
-
 Usage:
 $ python lst1_magic_train_rfs.py
---input-file-gamma dl1_stereo/dl1_stereo_gamma_40deg_90deg.h5
-(--input-file-proton dl1_stereo/dl1_stereo_proton_40deg_90deg.h5)
+--input-dir-gamma dl1_stereo/gamma
+(--input-dir-proton dl1_stereo/proton)
 (--output-dir rfs)
 (--config-file config.yaml)
 (--train-energy)
@@ -40,7 +36,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
-from magicctapipe.io import TEL_NAMES, load_train_data_file
+from magicctapipe.io import TEL_NAMES, load_train_data_files
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["train_energy_regressor", "train_disp_regressor", "train_event_classifier"]
@@ -54,14 +50,14 @@ EVENT_CLASS_GAMMA = 0
 EVENT_CLASS_PROTON = 1
 
 
-def train_energy_regressor(input_file, output_dir, config, use_unsigned_features=False):
+def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=False):
     """
     Trains energy regressors with gamma MC DL1-stereo events.
 
     Parameters
     ----------
-    input_file: str
-        Path to an input gamma MC DL1-stereo data file
+    input_dir: str
+        Path to a directory where input gamma MC data files are stored
     output_dir: str
         Path to a directory where to save trained RFs
     config: dict
@@ -72,8 +68,8 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
 
     config_rf = config["energy_regressor"]
 
-    # Load the input file
-    logger.info(f"\nInput file:\n{input_file}")
+    # Load the input files
+    logger.info(f"\nInput directory:\n{input_dir}")
 
     offaxis_min = config_rf["gamma_offaxis"]["min"]
     offaxis_max = config_rf["gamma_offaxis"]["max"]
@@ -86,7 +82,7 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
         offaxis_max = u.Quantity(offaxis_max)
         logger.info(f"Maximum off-axis angle allowed: {offaxis_max}")
 
-    data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
+    data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
 
     # Configure the energy regressor
     rf_settings = config_rf["settings"]
@@ -135,14 +131,14 @@ def train_energy_regressor(input_file, output_dir, config, use_unsigned_features
         logger.info(output_file)
 
 
-def train_disp_regressor(input_file, output_dir, config, use_unsigned_features=False):
+def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=False):
     """
     Trains DISP regressors with gamma MC DL1-stereo events.
 
     Parameters
     ----------
-    input_file: str
-        Path to an input gamma MC DL1-stereo data file
+    input_dir: str
+        Path to a directory where input gamma MC data files are found
     output_dir: str
         Path to a directory where to save trained RFs
     config: dict
@@ -153,8 +149,8 @@ def train_disp_regressor(input_file, output_dir, config, use_unsigned_features=F
 
     config_rf = config["disp_regressor"]
 
-    # Load the input file
-    logger.info(f"\nInput file:\n{input_file}")
+    # Load the input files
+    logger.info(f"\nInput directory:\n{input_dir}")
 
     offaxis_min = config_rf["gamma_offaxis"]["min"]
     offaxis_max = config_rf["gamma_offaxis"]["max"]
@@ -167,7 +163,7 @@ def train_disp_regressor(input_file, output_dir, config, use_unsigned_features=F
         offaxis_max = u.Quantity(offaxis_max)
         logger.info(f"Maximum off-axis angle allowed: {offaxis_max}")
 
-    data_train = load_train_data_file(input_file, offaxis_min, offaxis_max)
+    data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
 
     # Configure the DISP regressor
     rf_settings = config_rf["settings"]
@@ -217,17 +213,17 @@ def train_disp_regressor(input_file, output_dir, config, use_unsigned_features=F
 
 
 def train_event_classifier(
-    input_file_gamma, input_file_proton, output_dir, config, use_unsigned_features=False
+    input_dir_gamma, input_dir_proton, output_dir, config, use_unsigned_features=False
 ):
     """
     Trains event classifiers with gamma and proton MC DL1-stereo events.
 
     Parameters
     ----------
-    input_file_gamma: str
-        Path to an input gamma MC DL1-stereo data file
-    input_file_proton: str
-        Path to an input proton MC DL1-stereo data file
+    input_dir_gamma: str
+        Path to a directory where input gamma MC data files are found
+    input_dir_proton: str
+        Path to a directory where input proton MC data files are found
     output_dir: str
         Path to a directory where to save trained RFs
     config: dict
@@ -238,8 +234,8 @@ def train_event_classifier(
 
     config_rf = config["event_classifier"]
 
-    # Load the input gamma MC data file
-    logger.info(f"\nInput gamma MC data file:\n{input_file_gamma}")
+    # Load the input gamma MC data files
+    logger.info(f"\nInput gamma MC directory:\n{input_dir_gamma}")
 
     offaxis_min = config_rf["gamma_offaxis"]["min"]
     offaxis_max = config_rf["gamma_offaxis"]["max"]
@@ -252,15 +248,15 @@ def train_event_classifier(
         offaxis_max = u.Quantity(offaxis_max)
         logger.info(f"Maximum off-axis angle allowed: {offaxis_max}")
 
-    data_gamma = load_train_data_file(
-        input_file_gamma, offaxis_min, offaxis_max, EVENT_CLASS_GAMMA
+    data_gamma = load_train_data_files(
+        input_dir_gamma, offaxis_min, offaxis_max, EVENT_CLASS_GAMMA
     )
 
-    # Load the input proton MC data file
-    logger.info(f"\nInput proton MC data file:\n{input_file_proton}")
+    # Load the input proton MC data files
+    logger.info(f"\nInput proton MC directory:\n{input_dir_proton}")
 
-    data_proton = load_train_data_file(
-        input_file_proton, true_event_class=EVENT_CLASS_PROTON
+    data_proton = load_train_data_files(
+        input_dir_proton, true_event_class=EVENT_CLASS_PROTON
     )
 
     # Configure the event classifier
@@ -348,20 +344,20 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--input-file-gamma",
+        "--input-dir-gamma",
         "-g",
-        dest="input_file_gamma",
+        dest="input_dir_gamma",
         type=str,
         required=True,
-        help="Path to an input DL1-stereo gamma MC data file.",
+        help="Path to a directory where input gamma MC data files are stored.",
     )
 
     parser.add_argument(
-        "--input-file-proton",
+        "--input-dir-proton",
         "-p",
-        dest="input_file_proton",
+        dest="input_dir_proton",
         type=str,
-        help="Path to an input DL1-stereo proton MC data file.",
+        help="Path to a directory where input proton MC data files are stored.",
     )
 
     parser.add_argument(
@@ -418,18 +414,18 @@ def main():
     # Train RFs:
     if args.train_energy:
         train_energy_regressor(
-            args.input_file_gamma, args.output_dir, config, args.use_unsigned
+            args.input_dir_gamma, args.output_dir, config, args.use_unsigned
         )
 
     if args.train_disp:
         train_disp_regressor(
-            args.input_file_gamma, args.output_dir, config, args.use_unsigned
+            args.input_dir_gamma, args.output_dir, config, args.use_unsigned
         )
 
     if args.train_classifier:
         train_event_classifier(
-            input_file_gamma=args.input_file_gamma,
-            input_file_proton=args.input_file_proton,
+            input_dir_gamma=args.input_dir_gamma,
+            input_dir_proton=args.input_dir_proton,
             output_dir=args.output_dir,
             config=config,
             use_unsigned_features=args.use_unsigned,

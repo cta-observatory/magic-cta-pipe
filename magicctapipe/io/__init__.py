@@ -22,7 +22,7 @@ from .io import (
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
     load_mc_dl2_data_file,
-    load_train_data_file,
+    load_train_data_files,
     save_pandas_data_in_table,
 )
 
@@ -43,6 +43,6 @@ __all__ = [
     "load_lst_dl1_data_file",
     "load_magic_dl1_data_files",
     "load_mc_dl2_data_file",
-    "load_train_data_file",
+    "load_train_data_files",
     "save_pandas_data_in_table",
 ]
