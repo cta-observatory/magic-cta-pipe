@@ -14,6 +14,10 @@ Please specify the RF type that will be trained by using
 If the "--use-unsigned" argument is given, the RFs will be trained with
 unsigned features.
 
+Before running the script, it would be better to merge input MC files
+per telescope pointing direction with the following script:
+"magic-cta-pipe/magicctapipe/scripts/lst1_magic/merge_hdf_files.py"
+
 Usage:
 $ python lst1_magic_train_rfs.py
 --input-dir-gamma dl1_stereo/gamma
