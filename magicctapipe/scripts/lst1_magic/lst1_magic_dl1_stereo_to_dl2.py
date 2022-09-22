@@ -239,7 +239,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
         # Add the minimum angular distances to the output data frame,
         # since they are useful to separate gamma and hadron events
         # (hadron events tend to have larger distances than gammas)
-        df_disp_diffs = pd.Series(
+        df_disp_diffs = pd.DataFrame(
             data={
                 "disp_diff_sum": distances_min,
                 "disp_diff_mean": distances_min / len(tel_any2_combinations),
@@ -304,11 +304,12 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     if n_files_energy > 0:
 
         logger.info(f"\nIn total {n_files_energy} energy regressor files are found:")
-        energy_regressor = EnergyRegressor()
 
         for input_file in input_files_energy:
 
             logger.info(f"Applying {input_file}...")
+
+            energy_regressor = EnergyRegressor()
             energy_regressor.load(input_file)
 
             reco_params = apply_rfs(event_data, energy_regressor)
@@ -325,11 +326,12 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     if n_files_disp > 0:
 
         logger.info(f"\nIn total {n_files_disp} DISP regressor files are found:")
-        disp_regressor = DispRegressor()
 
         for input_file in input_files_dips:
 
             logger.info(f"Applying {input_file}...")
+
+            disp_regressor = DispRegressor()
             disp_regressor.load(input_file)
 
             reco_params = apply_rfs(event_data, disp_regressor)
@@ -352,11 +354,12 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     if n_files_class > 0:
 
         logger.info(f"\nIn total {n_files_class} event classifier files are found:")
-        event_classifier = EventClassifier()
 
         for input_file in input_files_class:
 
             logger.info(f"Applying {input_file}...")
+
+            event_classifier = EventClassifier()
             event_classifier.load(input_file)
 
             reco_params = apply_rfs(event_data, event_classifier)
