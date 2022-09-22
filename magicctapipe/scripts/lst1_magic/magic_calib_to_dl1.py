@@ -34,6 +34,7 @@ $ python magic_calib_to_dl1.py
 import argparse
 import logging
 import re
+import sys
 import time
 import warnings
 from pathlib import Path
@@ -98,11 +99,26 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     tel_id = event_source.telescope
 
     if not is_simulation:
+
+        is_stereo = event_source.is_stereo
+        is_sumt = event_source.is_sumt
+
         logger.info(
             f"\nObservation ID: {obs_id}"
             f"\nTelescope ID: {tel_id}"
-            "\n\nThe following files are found to read drive reports:"
+            f"\n\nIs stereo: {is_stereo}"
+            f"\nIs SUM trigger: {is_sumt}"
         )
+
+        if not is_stereo:
+            logger.info("\nMono trigger data is not yet supported. Exiting.")
+            sys.exit()
+
+        if is_sumt:
+            logger.info("\nSUM trigger data is not yet supported. Exiting.")
+            sys.exit()
+
+        logger.info("\nThe following files are found to read drive reports:")
         for subrun_file in event_source.file_list_drive:
             logger.info(subrun_file)
 
