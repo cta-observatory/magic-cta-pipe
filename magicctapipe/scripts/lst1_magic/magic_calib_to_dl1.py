@@ -113,7 +113,7 @@ def magic_calib_to_dl1(
     logger.info(
         f"\nObservation ID: {obs_id}"
         f"\nTelescope ID: {tel_id}"
-        f"\n\nIs stereo: {is_stereo}"
+        f"\n\nIs stereo trigger: {is_stereo}"
         f"\nIs SUM trigger: {is_sumt}"
     )
 
