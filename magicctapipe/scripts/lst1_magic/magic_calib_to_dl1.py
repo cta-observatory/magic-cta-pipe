@@ -23,12 +23,16 @@ files in the same directory.
 If the "--process-run" argument is given, it not only reads the drive
 reports but also processes all the events of the subrun files at once.
 
+If the "--allow-mono" argument is given, it process the events even if
+the input data was taken with the mono trigger
+
 Usage:
 $ python magic_calib_to_dl1.py
 --input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 (--output-dir dl1)
 (--config-file config.yaml)
 (--process-run)
+(--allow-mono)
 """
 
 import argparse
@@ -69,7 +73,9 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
-def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
+def magic_calib_to_dl1(
+    input_file, output_dir, config, process_run=False, allow_mono_trigger=False
+):
     """
     Processes MAGIC calibrated events and computes the DL1 parameters.
 
@@ -85,6 +91,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         If `True`, it processes the events of all the subrun files
         found in the same directory of the input subrun file at once
         (applicable only to real data)
+    allow_mono_trigger: bool
+        If `True`, it processes the events even if the input data was
+        taken with the mono trigger
     """
 
     # Load the input file
@@ -98,25 +107,36 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
+    is_stereo = event_source.is_stereo
+    is_sumt = event_source.is_sumt
+
+    logger.info(
+        f"\nObservation ID: {obs_id}"
+        f"\nTelescope ID: {tel_id}"
+        f"\n\nIs stereo: {is_stereo}"
+        f"\nIs SUM trigger: {is_sumt}"
+    )
+
+    if is_simulation and not is_stereo:
+        logger.info("\nMono trigger MC data is not yet supported. Exiting.")
+        sys.exit()
+
+    if is_sumt:
+        logger.info("\nSUM trigger data is not yet fully supported. Exiting.")
+        sys.exit()
+
     if not is_simulation:
 
-        is_stereo = event_source.is_stereo
-        is_sumt = event_source.is_sumt
-
-        logger.info(
-            f"\nObservation ID: {obs_id}"
-            f"\nTelescope ID: {tel_id}"
-            f"\n\nIs stereo: {is_stereo}"
-            f"\nIs SUM trigger: {is_sumt}"
-        )
-
         if not is_stereo:
-            logger.info("\nMono trigger data is not yet supported. Exiting.")
-            sys.exit()
+            logger.info(f"\nAllow mono trigger: {allow_mono_trigger}")
 
-        if is_sumt:
-            logger.info("\nSUM trigger data is not yet supported. Exiting.")
-            sys.exit()
+            if not allow_mono_trigger:
+                logger.info(
+                    "\nThe input data was taken with the mono trigger. Please set the "
+                    "'allow_mono_trigger' option to `True` (or use the '--allow-mono' "
+                    "argument of the script) if you are sure to process them. Exiting."
+                )
+                sys.exit()
 
         logger.info("\nThe following files are found to read drive reports:")
         for subrun_file in event_source.file_list_drive:
@@ -389,13 +409,22 @@ def main():
         help="Process the events of all the subrun files at once.",
     )
 
+    parser.add_argument(
+        "--allow-mono",
+        dest="allow_mono",
+        action="store_true",
+        help="Process the events even if the data was taken with the mono trigger.",
+    )
+
     args = parser.parse_args()
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
     # Process the input data
-    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
+    magic_calib_to_dl1(
+        args.input_file, args.output_dir, config, args.process_run, args.allow_mono
+    )
 
     logger.info("\nDone.")
 
