@@ -255,8 +255,8 @@ def create_irf(
         "TELESCOP": "CTA-N",
         "INSTRUME": "LST-1_MAGIC",
         "FOVALIGN": "RADEC",
-        "PNT_ZD": (pnt_gamma[0].value, "deg"),
-        "PNT_AZ": (pnt_gamma[1].value, "deg"),
+        "PNT_ZD": (pnt_gamma[0].to_value(u.deg), "deg"),
+        "PNT_AZ": (pnt_gamma[1].to_value(u.deg), "deg"),
         "IRF_TYPE": irf_type,
         "DL2_WEIG": dl2_weight_type,
     }
@@ -507,8 +507,9 @@ def create_irf(
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_file = (
-        f"{output_dir}/irf_zd_{pnt_gamma[0].value}deg_az_{pnt_gamma[1].value}deg"
-        f"_{irf_type}_{gh_cut_config}_{theta_cut_config}.fits.gz"
+        f"{output_dir}/irf_zd_{pnt_gamma[0].to_value(u.deg)}deg_"
+        f"az_{pnt_gamma[1].to_value(u.deg)}deg_"
+        f"{irf_type}_{gh_cut_config}_{theta_cut_config}.fits.gz"
     )
 
     irf_hdus.writeto(output_file, overwrite=True)
