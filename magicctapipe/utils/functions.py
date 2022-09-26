@@ -224,8 +224,8 @@ def calculate_off_coordinates(
     Calculates the coordinates of the centers of OFF regions to estimate
     the backgrounds for wobble observation data.
 
-    It calculates the wobble offset and rotation angle with equations
-    derived from a hand calculation.
+    It calculates the wobble rotation angle with equations derived from
+    a hand calculation.
 
     Parameters
     ----------
@@ -246,15 +246,14 @@ def calculate_off_coordinates(
         Coordinates of the centers of the OFF regions
     """
 
-    ra_diff = pointing_ra - on_coord_ra
-
     # Calculate the wobble offset
-    wobble_offset = np.arccos(
-        np.cos(on_coord_dec) * np.cos(pointing_dec) * np.cos(ra_diff)
-        + np.sin(on_coord_dec) * np.sin(pointing_dec)
+    wobble_offset = angular_separation(
+        lon1=pointing_ra, lat1=pointing_dec, lon2=on_coord_ra, lat2=on_coord_dec
     )
 
     # Calculate the wobble rotation angle
+    ra_diff = pointing_ra - on_coord_ra
+
     numerator_1 = np.sin(pointing_dec) * np.cos(on_coord_dec)
     numerator_2 = np.cos(pointing_dec) * np.sin(on_coord_dec) * np.cos(ra_diff)
     denominator = np.cos(pointing_dec) * np.sin(ra_diff)
