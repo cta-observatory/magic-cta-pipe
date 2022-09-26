@@ -144,8 +144,10 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     reco_params_flips.set_index("flip", append=True, inplace=True)
     reco_params_flips.sort_index(inplace=True)
 
+    # Calculate the telescope multiplicity by dividing the group size of
+    # the shower events by the number of flips (= 2)
     group_size = reco_params_flips.groupby(["obs_id", "event_id"]).size()
-    reco_params_flips["multiplicity"] = group_size
+    reco_params_flips["multiplicity"] = group_size / 2
 
     # Then, we get the flip combination minimizing the sum of the
     # angular distances between the head and tail candidates per shower
@@ -156,11 +158,10 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
     for tel_ids in TEL_COMBINATIONS.values():
 
-        # Apply the multiplicity cut of N_flips (= 2) and N_tels
-        multiplicity = 2 * len(tel_ids)
+        multiplicity = len(tel_ids)
 
         df_events = reco_params_flips.query(
-            f"(multiplicity == {multiplicity}) & (tel_id == {tel_ids})"
+            f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
 
         df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
