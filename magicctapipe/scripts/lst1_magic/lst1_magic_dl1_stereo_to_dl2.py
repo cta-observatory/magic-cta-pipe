@@ -156,6 +156,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
     for tel_ids in TEL_COMBINATIONS.values():
 
+        # Apply the multiplicity cut of N_flips (= 2) and N_tels
         multiplicity = 2 * len(tel_ids)
 
         df_events = reco_params_flips.query(
@@ -178,7 +179,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
             list(itertools.product([0, 1], repeat=len(tel_ids)))
         )
 
-        # Next, we define all the possible any 2 telescope combinations.
+        # Next, we define all the possible 2 telescopes combinations.
         # For example, in case of 3 telescopes, in total 3 combinations
         # are defined as follows:
         #                 [(1, 2), (1, 3), (2, 3)]
