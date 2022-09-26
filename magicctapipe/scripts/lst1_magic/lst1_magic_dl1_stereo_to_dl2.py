@@ -215,15 +215,11 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
                 # Sum up the distance per flip combination
                 distances[i_flip] += theta.to_value(u.deg)
 
-        # Finally, we extract the indices of the flip combinations for
-        # each event with which the angular distances become minimum
-        distances = np.array(distances)
+        # Extracts the minimum distances and their flip combinations
         distances_min = distances.min(axis=0)
+        indices_at_min = distances.argmin(axis=0)
 
-        condition = distances == distances_min
-        indices = np.where(condition.transpose())[1]
-
-        flips = flip_combinations[indices].ravel()
+        flips = flip_combinations[indices_at_min].ravel()
 
         group_size = df_events.groupby(["obs_id", "event_id", "tel_id"]).size()
 
