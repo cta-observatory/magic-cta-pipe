@@ -202,19 +202,19 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     else:
         raise ValueError(f"Unknown weight type '{weight_type}'.")
 
+    # Calculate the mean DL2 parameters
     df_events = pd.DataFrame(
         data={
             "energy_weight": energy_weights,
             "gammaness_weight": gammaness_weights,
-            "weighted_energy": np.log10(event_data["reco_energy"]) * energy_weights,
+            "weighted_log_energy": np.log10(event_data["reco_energy"]) * energy_weights,
             "weighted_gammaness": event_data["gammaness"] * gammaness_weights,
         }
     )
 
-    # Calculate the mean DL2 parameters
     group_sum = df_events.groupby(group_index).sum()
 
-    reco_energy_mean = 10 ** (group_sum["weighted_energy"] / group_sum["energy_weight"])
+    log_energy_mean = group_sum["weighted_log_energy"] / group_sum["energy_weight"]
     gammaness_mean = group_sum["weighted_gammaness"] / group_sum["gammaness_weight"]
 
     reco_az_mean, reco_alt_mean = calculate_mean_direction(
@@ -224,7 +224,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
         weights=direction_weights,
     )
 
-    event_data_mean["reco_energy"] = reco_energy_mean
+    event_data_mean["reco_energy"] = 10 ** log_energy_mean
     event_data_mean["reco_alt"] = reco_alt_mean
     event_data_mean["reco_az"] = reco_az_mean
     event_data_mean["gammaness"] = gammaness_mean
