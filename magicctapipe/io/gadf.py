@@ -94,14 +94,14 @@ def create_gh_cuts_hdu(
 
 @u.quantity_input(on_time=u.s, source_ra=u.deg, source_dec=u.deg)
 def create_event_hdu(
-    event_data, on_time, deadc, source_name, source_ra=None, source_dec=None
+    event_table, on_time, deadc, source_name, source_ra=None, source_dec=None
 ):
     """
     Creates a fits binary table HDU for shower events.
 
     Parameters
     ----------
-    event_data: astropy.table.table.QTable
+    event_table: astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
     on_time: astropy.table.table.QTable
         ON time of the input data
@@ -124,17 +124,17 @@ def create_event_hdu(
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
 
-    time_start = Time(event_data["timestamp"][0], format="unix", scale="utc")
+    time_start = Time(event_table["timestamp"][0], format="unix", scale="utc")
     time_start_iso = time_start.to_value("iso", "date_hms")
 
-    time_end = Time(event_data["timestamp"][-1], format="unix", scale="utc")
+    time_end = Time(event_table["timestamp"][-1], format="unix", scale="utc")
     time_end_iso = time_end.to_value("iso", "date_hms")
 
     elapsed_time = time_end - time_start
     effective_time = on_time * deadc
 
     event_coords = SkyCoord(
-        ra=event_data["reco_ra"], dec=event_data["reco_dec"], frame="icrs"
+        ra=event_table["reco_ra"], dec=event_table["reco_dec"], frame="icrs"
     )
 
     event_coords = event_coords.galactic
@@ -160,17 +160,17 @@ def create_event_hdu(
     # Create a table
     qtable = QTable(
         data={
-            "EVENT_ID": event_data["event_id"],
-            "TIME": event_data["timestamp"],
-            "RA": event_data["reco_ra"],
-            "DEC": event_data["reco_dec"],
-            "ENERGY": event_data["reco_energy"],
-            "GAMMANESS": event_data["gammaness"],
-            "MULTIP": event_data["multiplicity"],
+            "EVENT_ID": event_table["event_id"],
+            "TIME": event_table["timestamp"],
+            "RA": event_table["reco_ra"],
+            "DEC": event_table["reco_dec"],
+            "ENERGY": event_table["reco_energy"],
+            "GAMMANESS": event_table["gammaness"],
+            "MULTIP": event_table["multiplicity"],
             "GLON": event_coords.l.to(u.deg),
             "GLAT": event_coords.b.to(u.deg),
-            "ALT": event_data["reco_alt"].to(u.deg),
-            "AZ": event_data["reco_az"].to(u.deg),
+            "ALT": event_table["reco_alt"].to(u.deg),
+            "AZ": event_table["reco_az"].to(u.deg),
         }
     )
 
@@ -179,7 +179,7 @@ def create_event_hdu(
         cards=[
             ("CREATED", Time.now().utc.iso),
             ("HDUCLAS1", "EVENTS"),
-            ("OBS_ID", np.unique(event_data["obs_id"])[0]),
+            ("OBS_ID", np.unique(event_table["obs_id"])[0]),
             ("DATE-OBS", time_start_iso[:10]),
             ("TIME-OBS", time_start_iso[11:]),
             ("DATE-END", time_end_iso[:10]),
@@ -200,10 +200,10 @@ def create_event_hdu(
             ("N_TELS", 3),
             ("TELLIST", "LST-1_MAGIC"),
             ("INSTRUME", "LST-1_MAGIC"),
-            ("RA_PNT", event_data["pointing_ra"][0].value, "deg"),
-            ("DEC_PNT", event_data["pointing_dec"][0].value, "deg"),
-            ("ALT_PNT", event_data["pointing_alt"][0].to_value(u.deg), "deg"),
-            ("AZ_PNT", event_data["pointing_az"][0].to_value(u.deg), "deg"),
+            ("RA_PNT", event_table["pointing_ra"][0].value, "deg"),
+            ("DEC_PNT", event_table["pointing_dec"][0].value, "deg"),
+            ("ALT_PNT", event_table["pointing_alt"][0].to_value(u.deg), "deg"),
+            ("AZ_PNT", event_table["pointing_az"][0].to_value(u.deg), "deg"),
             ("RA_OBJ", source_coord.ra.to_value(u.deg), "deg"),
             ("DEC_OBJ", source_coord.dec.to_value(u.deg), "deg"),
             ("FOVALIGN", "RADEC"),
@@ -216,13 +216,13 @@ def create_event_hdu(
     return event_hdu
 
 
-def create_gti_hdu(event_data):
+def create_gti_hdu(event_table):
     """
     Creates a fits binary table HDU for Good Time Interval (GTI).
 
     Parameters
     ----------
-    event_data: astropy.table.table.QTable
+    event_table: astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
 
     Returns
@@ -236,8 +236,8 @@ def create_gti_hdu(event_data):
     # Create a table
     qtable = QTable(
         data={
-            "START": u.Quantity(event_data["timestamp"][0], ndmin=1),
-            "STOP": u.Quantity(event_data["timestamp"][-1], ndmin=1),
+            "START": u.Quantity(event_table["timestamp"][0], ndmin=1),
+            "STOP": u.Quantity(event_table["timestamp"][-1], ndmin=1),
         }
     )
 
@@ -246,7 +246,7 @@ def create_gti_hdu(event_data):
         cards=[
             ("CREATED", Time.now().utc.iso),
             ("HDUCLAS1", "GTI"),
-            ("OBS_ID", np.unique(event_data["obs_id"])[0]),
+            ("OBS_ID", np.unique(event_table["obs_id"])[0]),
             ("MJDREFI", mjdrefi),
             ("MJDREFF", mjdreff),
             ("TIMEUNIT", "s"),
@@ -261,13 +261,13 @@ def create_gti_hdu(event_data):
     return gti_hdu
 
 
-def create_pointing_hdu(event_data):
+def create_pointing_hdu(event_table):
     """
     Creates a fits binary table HDU for the pointing direction.
 
     Parameters
     ----------
-    event_data: astropy.table.table.QTable
+    event_table: astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
 
     Returns
@@ -281,11 +281,11 @@ def create_pointing_hdu(event_data):
     # Create a table
     qtable = QTable(
         data={
-            "TIME": u.Quantity(event_data["timestamp"][0], ndmin=1),
-            "RA_PNT": u.Quantity(event_data["pointing_ra"][0], ndmin=1),
-            "DEC_PNT": u.Quantity(event_data["pointing_dec"][0], ndmin=1),
-            "ALT_PNT": u.Quantity(event_data["pointing_alt"][0].to(u.deg), ndmin=1),
-            "AZ_PNT": u.Quantity(event_data["pointing_az"][0].to(u.deg), ndmin=1),
+            "TIME": u.Quantity(event_table["timestamp"][0], ndmin=1),
+            "RA_PNT": u.Quantity(event_table["pointing_ra"][0], ndmin=1),
+            "DEC_PNT": u.Quantity(event_table["pointing_dec"][0], ndmin=1),
+            "ALT_PNT": u.Quantity(event_table["pointing_alt"][0].to(u.deg), ndmin=1),
+            "AZ_PNT": u.Quantity(event_table["pointing_az"][0].to(u.deg), ndmin=1),
         }
     )
 
@@ -294,7 +294,7 @@ def create_pointing_hdu(event_data):
         cards=[
             ("CREATED", Time.now().utc.iso),
             ("HDUCLAS1", "POINTING"),
-            ("OBS_ID", np.unique(event_data["obs_id"])[0]),
+            ("OBS_ID", np.unique(event_table["obs_id"])[0]),
             ("MJDREFI", mjdrefi),
             ("MJDREFF", mjdreff),
             ("TIMEUNIT", "s"),
