@@ -224,7 +224,7 @@ create_irf:
         global_cut_value: "0.2 deg"  # used for the global cut
         efficiency: 0.75  # used for the dynamic cuts
         min_cut: "0.1 deg"  # used for the dynamic cuts
-        max_cut: "0.45 deg"  # used for the dynamic cuts
+        max_cut: "0.3 deg"  # used for the dynamic cuts
 
 
 dl2_to_dl3:
