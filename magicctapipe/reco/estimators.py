@@ -63,7 +63,7 @@ class EnergyRegressor:
 
         self.telescope_rfs.clear()
 
-        # Train a RF per telescope
+        # Loop over every telescope
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
@@ -82,6 +82,7 @@ class EnergyRegressor:
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
+            # Train a telescope RF
             logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train, sample_weight=weights)
 
@@ -107,7 +108,7 @@ class EnergyRegressor:
             index=pd.MultiIndex.from_tuples([], names=event_data.index.names),
         )
 
-        # Apply trained RFs to the input data
+        # Loop over every telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
@@ -121,6 +122,8 @@ class EnergyRegressor:
             if self.use_unsigned_features:
                 x_predict = np.abs(x_predict)
 
+            # Apply the trained RF. Since the predicted values are in
+            # logarithmic scale, here we convert them to the normal one.
             reco_energy = 10 ** telescope_rf.predict(x_predict)
 
             responses_per_estimator = []
@@ -224,7 +227,7 @@ class DispRegressor:
 
         self.telescope_rfs.clear()
 
-        # Train a RF per telescope
+        # Loop over every telescope
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
@@ -242,6 +245,7 @@ class DispRegressor:
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
+            # Train a telescope RF
             logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train, sample_weight=weights)
 
@@ -267,7 +271,7 @@ class DispRegressor:
             index=pd.MultiIndex.from_tuples([], names=event_data.index.names),
         )
 
-        # Apply trained RFs to the input data
+        # Loop over every telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
@@ -281,6 +285,7 @@ class DispRegressor:
             if self.use_unsigned_features:
                 x_predict = np.abs(x_predict)
 
+            # Apply the trained RF
             reco_disp = telescope_rf.predict(x_predict)
 
             responses_per_estimator = []
@@ -384,7 +389,7 @@ class EventClassifier:
 
         self.telescope_rfs.clear()
 
-        # Train a RF per telescope
+        # Loop over every telescope
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
@@ -402,6 +407,7 @@ class EventClassifier:
 
             classifier = sklearn.ensemble.RandomForestClassifier(**self.settings)
 
+            # Train a telescope RF
             logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
             classifier.fit(x_train, y_train, sample_weight=weights)
 
@@ -427,7 +433,7 @@ class EventClassifier:
             index=pd.MultiIndex.from_tuples([], names=event_data.index.names),
         )
 
-        # Apply trained RFs to the input data
+        # Loop over every telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
 
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
@@ -441,6 +447,7 @@ class EventClassifier:
             if self.use_unsigned_features:
                 x_predict = np.abs(x_predict)
 
+            # Apply the trained RF
             gammaness = telescope_rf.predict_proba(x_predict)[:, 0]
 
             # Calculate the variance of the binomial distribution
