@@ -438,7 +438,7 @@ def create_irf(
     else:
         raise ValueError(f"Unknown theta-cut type '{theta_cut_type}'.")
 
-    # Create an effective-are HDU
+    # Create an effective-area HDU
     logger.info("\nCreating an effective-area HDU...")
 
     with np.errstate(invalid="ignore", divide="ignore"):
