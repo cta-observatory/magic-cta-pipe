@@ -10,6 +10,7 @@ from astropy.io import fits
 from astropy.table import QTable
 from astropy.time import Time
 from magicctapipe import __version__
+from magicctapipe.io import TEL_COMBINATIONS
 from pyirf.binning import split_bin_lo_hi
 
 __all__ = [
@@ -130,9 +131,18 @@ def create_event_hdu(
     time_end = Time(event_table["timestamp"][-1], format="unix", scale="utc")
     time_end_iso = time_end.to_value("iso", "date_hms")
 
+    # Calculate the elapsed and effective time
     elapsed_time = time_end - time_start
     effective_time = on_time * deadc
 
+    # Get the instruments used for the observation
+    combo_types_unique = np.unique(event_table["combo_type"])
+    tel_combos = np.array(list(TEL_COMBINATIONS.keys()))[combo_types_unique]
+
+    tel_list = np.unique([tel_combo.split("_") for tel_combo in tel_combos])
+    instrument = "_".join(tel_list).upper()
+
+    # Transfer the RA/Dec directions to the galactic coordinate
     event_coords = SkyCoord(
         ra=event_table["reco_ra"], dec=event_table["reco_dec"], frame="icrs"
     )
@@ -140,11 +150,11 @@ def create_event_hdu(
     event_coords = event_coords.galactic
 
     try:
-        # Try to get the coordinate from the source name
+        # Try to get the source coordinate from the input name
         source_coord = SkyCoord.from_name(source_name, frame="icrs")
 
     except Exception:
-        # Use the input RA/Dec coordinate instead
+        # Use the input source coordinate instead
         if (source_ra is None) or (source_dec is None):
             raise ValueError(
                 f"The source name '{source_name}' could not be resolved, "
@@ -197,9 +207,9 @@ def create_event_hdu(
             ("LIVETIME", effective_time.value),
             ("OBJECT", source_name),
             ("OBS_MODE", "WOBBLE"),
-            ("N_TELS", 3),
-            ("TELLIST", "LST-1_MAGIC"),
-            ("INSTRUME", "LST-1_MAGIC"),
+            ("N_TELS", np.max(event_table["multiplicity"])),
+            ("TELLIST", instrument),
+            ("INSTRUME", instrument),
             ("RA_PNT", event_table["pointing_ra"][0].value, "deg"),
             ("DEC_PNT", event_table["pointing_dec"][0].value, "deg"),
             ("ALT_PNT", event_table["pointing_alt"][0].to_value(u.deg), "deg"),
