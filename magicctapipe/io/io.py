@@ -106,6 +106,7 @@ def get_stereo_events(
     n_events_total = len(event_data_stereo.groupby(group_index).size())
     logger.info(f"\nIn total {n_events_total} stereo events are found:")
 
+    # Loop over every telescope combination type
     for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
 
         multiplicity = len(tel_ids)
@@ -113,6 +114,14 @@ def get_stereo_events(
         df_events = event_data_stereo.query(
             f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
+
+        # Here we recalculate the multiplicity and apply the cut again,
+        # since with the above cut the events belonging to other
+        # combination types are also extracted. For example, in case of
+        # tel_id = [1, 2], the tel 1 events of the combination [1, 3]
+        # and the tel 2 events of the combination [2, 3] remain in the
+        # data frame, whose multiplicity will be recalculated as 1 and
+        # so will be removed with the following cuts.
 
         df_events["multiplicity"] = df_events.groupby(group_index).size()
         df_events.query(f"multiplicity == {multiplicity}", inplace=True)
