@@ -71,10 +71,10 @@ class EnergyRegressor:
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
+            x_train = df_events[self.features].to_numpy()
+
             if self.use_unsigned_features:
-                x_train = np.abs(df_events[self.features].to_numpy())
-            else:
-                x_train = df_events[self.features].to_numpy()
+                x_train = np.abs(x_train)
 
             # Use logarithmic energy for the target values
             y_train = np.log10(df_events["true_energy"].to_numpy())
@@ -116,10 +116,10 @@ class EnergyRegressor:
             if df_events.empty:
                 continue
 
+            x_predict = df_events[self.features].to_numpy()
+
             if self.use_unsigned_features:
-                x_predict = np.abs(df_events[self.features].to_numpy())
-            else:
-                x_predict = df_events[self.features].to_numpy()
+                x_predict = np.abs(x_predict)
 
             reco_energy = 10 ** telescope_rf.predict(x_predict)
 
@@ -232,10 +232,10 @@ class DispRegressor:
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
+            x_train = df_events[self.features].to_numpy()
+
             if self.use_unsigned_features:
-                x_train = np.abs(df_events[self.features].to_numpy())
-            else:
-                x_train = df_events[self.features].to_numpy()
+                x_train = np.abs(x_train)
 
             y_train = df_events["true_disp"].to_numpy()
             weights = df_events["event_weight"].to_numpy()
@@ -276,10 +276,10 @@ class DispRegressor:
             if df_events.empty:
                 continue
 
+            x_predict = df_events[self.features].to_numpy()
+
             if self.use_unsigned_features:
-                x_predict = np.abs(df_events[self.features].to_numpy())
-            else:
-                x_predict = df_events[self.features].to_numpy()
+                x_predict = np.abs(x_predict)
 
             reco_disp = telescope_rf.predict(x_predict)
 
@@ -392,10 +392,10 @@ class EventClassifier:
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
+            x_train = df_events[self.features].to_numpy()
+
             if self.use_unsigned_features:
-                x_train = np.abs(df_events[self.features].to_numpy())
-            else:
-                x_train = df_events[self.features].to_numpy()
+                x_train = np.abs(x_train)
 
             y_train = df_events["true_event_class"].to_numpy()
             weights = df_events["event_weight"].to_numpy()
@@ -436,10 +436,10 @@ class EventClassifier:
             if df_events.empty:
                 continue
 
+            x_predict = df_events[self.features].to_numpy()
+
             if self.use_unsigned_features:
-                x_predict = np.abs(df_events[self.features].to_numpy())
-            else:
-                x_predict = df_events[self.features].to_numpy()
+                x_predict = np.abs(x_predict)
 
             gammaness = telescope_rf.predict_proba(x_predict)[:, 0]
 
