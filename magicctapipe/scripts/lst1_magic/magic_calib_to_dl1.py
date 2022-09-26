@@ -298,7 +298,7 @@ def magic_calib_to_dl1(
 
             else:
                 # The UNIX format with the "long" sub-format can get the
-                # timestamp without affected by a rounding issue
+                # timestamp without being affected by the rounding issue
                 timestamp = event.trigger.tel[tel_id].time.to_value(
                     format="unix", subfmt="long"
                 )
