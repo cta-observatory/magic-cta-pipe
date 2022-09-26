@@ -201,10 +201,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
                     f"(tel_id == {tel_id}) & (flip == {flip})"
                 )
 
-            for tel_any2_combo in tel_any2_combinations:
-
-                tel_id_1 = tel_any2_combo[0]
-                tel_id_2 = tel_any2_combo[1]
+            for (tel_id_1, tel_id_2) in tel_any2_combinations:
 
                 theta = angular_separation(
                     lon1=u.Quantity(container[tel_id_1]["reco_az"].to_numpy(), u.deg),
