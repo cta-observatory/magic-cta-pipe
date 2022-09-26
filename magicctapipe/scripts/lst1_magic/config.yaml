@@ -12,14 +12,14 @@ LST:
 
     increase_nsb:
         use: true
-        extra_noise_in_dim_pixels: 1.2
-        extra_bias_in_dim_pixels: 0.5
+        extra_noise_in_dim_pixels: 1.27
+        extra_bias_in_dim_pixels: 0.665
         transition_charge: 8
-        extra_noise_in_bright_pixels: 1.2
+        extra_noise_in_bright_pixels: 2.08
 
     increase_psf:
-        use: true
-        fraction: 0.125
+        use: false
+        fraction: 0
 
     tailcuts_clean:
         picture_thresh: 8
