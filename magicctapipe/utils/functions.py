@@ -13,6 +13,7 @@ from astropy.coordinates import (
     angular_separation,
 )
 from ctapipe.coordinates import TelescopeFrame
+from magicctapipe.io import LON_ORM, LAT_ORM, HEIGHT_ORM
 
 __all__ = [
     "calculate_disp",
@@ -21,11 +22,6 @@ __all__ = [
     "calculate_off_coordinates",
     "transform_altaz_to_radec",
 ]
-
-# The geographic coordinate of ORM
-LON_ORM = -17.89064 * u.deg
-LAT_ORM = 28.76177 * u.deg
-HEIGHT_ORM = 2199.835 * u.m
 
 
 @u.quantity_input

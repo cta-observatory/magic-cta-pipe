@@ -7,6 +7,9 @@ from .containers import (
     SimEventInfoContainer,
 )
 from .gadf import (
+    LON_ORM,
+    LAT_ORM,
+    HEIGHT_ORM,
     create_event_hdu,
     create_gh_cuts_hdu,
     create_gti_hdu,
@@ -30,6 +33,9 @@ __all__ = [
     "BaseEventInfoContainer",
     "RealEventInfoContainer",
     "SimEventInfoContainer",
+    "LON_ORM",
+    "LAT_ORM",
+    "HEIGHT_ORM",
     "create_event_hdu",
     "create_gh_cuts_hdu",
     "create_gti_hdu",
