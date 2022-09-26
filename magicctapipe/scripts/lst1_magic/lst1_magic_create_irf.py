@@ -13,10 +13,11 @@ the hardware trigger between LST-1 and MAGIC, allowing for the events of
 all the telescope combinations. The "software(_only_3tel)" types are
 supposed for the software coincidence with LST-mono and MAGIC-stereo,
 allowing for only the events triggering both M1 and M2. The "software"
-allows for the events of the any 2 telescope combinations except the M1
-and M2 combination, and the "software_only_3tel" allows only for the
-events of the three telescopes combination. The "magic_only" allows only
-for the events of M1 and M2 telescopes combination.
+type allows for the events of the any 2 telescope combinations except
+the M1 and M2 combination, which are not coincident with LST-1 events.
+The "software_only_3tel" type allows only for the events of the three
+telescopes combination. The "magic_only" type allows only for the events
+of M1 and M2 telescopes combination.
 
 There are 2 types for gammaness and theta cuts, which are "global" and
 "dynamic". In case of the dynamic cuts, the optimal cuts satisfying an
