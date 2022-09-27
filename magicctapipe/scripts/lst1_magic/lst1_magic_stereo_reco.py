@@ -96,6 +96,8 @@ def calculate_pointing_separation(event_data):
         lat2=u.Quantity(pnt_alt_magic.to_numpy(), u.rad),
     )
 
+    theta = pd.Series(data=theta.to_value(u.deg), index=multi_indices)
+
     return theta
 
 
@@ -163,25 +165,38 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     if (not is_simulation) and (tel_ids != [2, 3]):
 
         logger.info(
-            "\nCalculating the angular distance of the "
-            "LST-1 and MAGIC pointing directions..."
+            "\nChecking the angular distances of the LST-1 and MAGIC "
+            "pointing directions..."
         )
 
+        # Calculate the angular distance
         theta = calculate_pointing_separation(event_data)
-        theta_max = theta.to(u.arcmin).max()
         theta_uplim = u.Quantity(config_stereo["theta_uplim"])
 
-        if theta_max > theta_uplim:
+        condition = u.Quantity(theta.to_numpy(), u.deg) > theta_uplim
+        n_events = np.count_nonzero(condition)
+
+        if np.all(condition):
             logger.info(
-                f"--> The maximum angular distance is {theta_max.round(3)}, "
-                f"which is larger than the limit {theta_uplim}. Exiting..."
+                "--> All the events are taken with larger angular distances "
+                f"than the limit {theta_uplim}. Exiting."
             )
             sys.exit()
 
+        elif n_events > 0:
+            logger.info(
+                f"--> Excluding {n_events} stereo events whose angular distances "
+                f"are larger than the limit {theta_uplim}."
+            )
+
+            event_data.reset_index(level="tel_id", inplace=True)
+            event_data = event_data.loc[theta[condition].index]
+            event_data.set_index("tel_id", append=True, inplace=True)
+
         else:
             logger.info(
-                f"--> The maximum angular distance is {theta_max.round(3)}, "
-                f"which is smaller than the limit {theta_uplim}."
+                "--> All the events were taken with smaller angular distances "
+                f"than the limit {theta_uplim}."
             )
 
     # Configure the HillasReconstructor
