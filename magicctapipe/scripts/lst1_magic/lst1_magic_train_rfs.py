@@ -54,6 +54,9 @@ logger.setLevel(logging.INFO)
 EVENT_CLASS_GAMMA = 0
 EVENT_CLASS_PROTON = 1
 
+# Set the random seed
+random.seed(1000)
+
 
 def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=False):
     """
