@@ -7,11 +7,12 @@ with more than one telescope information. The quality cuts specified in
 the configuration file are applied to events before the reconstruction.
 
 When the input is real data containing LST-1 and MAGIC events, it checks
-if the angular distance of their pointing directions is lower than the
-limit specified in the configuration file. This is in principle to avoid
-the reconstruction of the data taken in too-mispointing situations. For
-example, DL1 data may contain coincident events taken with different
-wobble offsets between the systems.
+the angular distances of their pointing directions, and exclude the
+events taken with larger distances than the limit specified in the
+configuration file. This is in principle to avoid the reconstruction of
+the events taken in too-mispointing situations. For example, DL1 data
+may contain coincident events taken with different wobble offsets
+between the systems.
 
 If the "--magic-only" argument is given, it reconstructs the stereo
 parameters using only MAGIC events.
