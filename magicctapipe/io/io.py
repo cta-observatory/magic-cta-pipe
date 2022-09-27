@@ -475,7 +475,7 @@ def load_train_data_files(
 
     logger.info(
         f"\nMinimum off-axis angle allowed: {offaxis_min}"
-        f"Maximum off-axis angle allowed: {offaxis_min}"
+        f"\nMaximum off-axis angle allowed: {offaxis_min}"
     )
 
     if offaxis_min is not None:
