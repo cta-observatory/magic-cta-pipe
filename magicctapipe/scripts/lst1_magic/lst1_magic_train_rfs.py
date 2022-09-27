@@ -39,7 +39,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
-from astropy import units as u
 from magicctapipe.io import load_train_data_files
 from magicctapipe.io.io import TEL_NAMES
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
@@ -81,14 +80,6 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
     offaxis_min = config_rf["gamma_offaxis"]["min"]
     offaxis_max = config_rf["gamma_offaxis"]["max"]
-
-    if offaxis_min is not None:
-        offaxis_min = u.Quantity(offaxis_min)
-        logger.info(f"Minimum off-axis angle allowed: {offaxis_min}")
-
-    if offaxis_max is not None:
-        offaxis_max = u.Quantity(offaxis_max)
-        logger.info(f"Maximum off-axis angle allowed: {offaxis_max}")
 
     data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
 
@@ -162,14 +153,6 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
     offaxis_min = config_rf["gamma_offaxis"]["min"]
     offaxis_max = config_rf["gamma_offaxis"]["max"]
-
-    if offaxis_min is not None:
-        offaxis_min = u.Quantity(offaxis_min)
-        logger.info(f"Minimum off-axis angle allowed: {offaxis_min}")
-
-    if offaxis_max is not None:
-        offaxis_max = u.Quantity(offaxis_max)
-        logger.info(f"Maximum off-axis angle allowed: {offaxis_max}")
 
     data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
 
@@ -247,14 +230,6 @@ def train_event_classifier(
 
     offaxis_min = config_rf["gamma_offaxis"]["min"]
     offaxis_max = config_rf["gamma_offaxis"]["max"]
-
-    if offaxis_min is not None:
-        offaxis_min = u.Quantity(offaxis_min)
-        logger.info(f"Minimum off-axis angle allowed: {offaxis_min}")
-
-    if offaxis_max is not None:
-        offaxis_max = u.Quantity(offaxis_max)
-        logger.info(f"Maximum off-axis angle allowed: {offaxis_max}")
 
     data_gamma = load_train_data_files(
         input_dir_gamma, offaxis_min, offaxis_max, EVENT_CLASS_GAMMA

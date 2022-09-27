@@ -413,7 +413,6 @@ def load_magic_dl1_data_files(input_dir):
     return event_data, subarray
 
 
-@u.quantity_input(offaxis_min=u.deg, offaxis_max=u.deg)
 def load_train_data_files(
     input_dir, offaxis_min=None, offaxis_max=None, true_event_class=None
 ):
@@ -425,10 +424,12 @@ def load_train_data_files(
     ----------
     input_dir: str
         Path to a directory where input DL1-stereo files are stored
-    offaxis_min: astropy.units.quantity.Quantity
-        Minimum shower off-axis angle allowed
-    offaxis_max: astropy.units.quantity.Quantity
-        Maximum shower off-axis angle allowed
+    offaxis_min: str
+        Minimum shower off-axis angle allowed, whose format should be
+        acceptable by `astropy.units.quantity.Quantity`
+    offaxis_max: str
+        Maximum shower off-axis angle allowed, whose format should be
+        acceptable by `astropy.units.quantity.Quantity`
     true_event_class: int
         True event class of the input events
 
@@ -472,11 +473,18 @@ def load_train_data_files(
     event_data.set_index(GROUP_INDEX_TRAIN, inplace=True)
     event_data.sort_index(inplace=True)
 
+    logger.info(
+        f"\nMinimum off-axis angle allowed: {offaxis_min}"
+        f"Maximum off-axis angle allowed: {offaxis_min}"
+    )
+
     if offaxis_min is not None:
-        event_data.query(f"off_axis >= {offaxis_min.to_value(u.deg)}", inplace=True)
+        offaxis_min = u.Quantity(offaxis_min).to_value(u.deg)
+        event_data.query(f"off_axis >= {offaxis_min}", inplace=True)
 
     if offaxis_max is not None:
-        event_data.query(f"off_axis <= {offaxis_max.to_value(u.deg)}", inplace=True)
+        offaxis_max = u.Quantity(offaxis_max).to_value(u.deg)
+        event_data.query(f"off_axis <= {offaxis_max}", inplace=True)
 
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
