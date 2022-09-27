@@ -246,6 +246,8 @@ def calculate_off_coordinates(
         Coordinates of the centers of the OFF regions
     """
 
+    wobble_coord = SkyCoord(pointing_ra, pointing_dec, frame="icrs")
+
     # Calculate the wobble offset
     wobble_offset = angular_separation(
         lon1=pointing_ra, lat1=pointing_dec, lon2=on_coord_ra, lat2=on_coord_dec
@@ -254,17 +256,19 @@ def calculate_off_coordinates(
     # Calculate the wobble rotation angle
     ra_diff = pointing_ra - on_coord_ra
 
-    numerator_1 = np.sin(pointing_dec) * np.cos(on_coord_dec)
-    numerator_2 = np.cos(pointing_dec) * np.sin(on_coord_dec) * np.cos(ra_diff)
+    numerator = np.sin(pointing_dec) * np.cos(on_coord_dec)
+    numerator -= np.cos(pointing_dec) * np.sin(on_coord_dec) * np.cos(ra_diff)
     denominator = np.cos(pointing_dec) * np.sin(ra_diff)
 
-    wobble_rotation = np.arctan2(numerator_1 - numerator_2, denominator)
+    wobble_rotation = np.arctan2(numerator, denominator)
     wobble_rotation = Angle(wobble_rotation).wrap_at(360 * u.deg)
 
     # Calculate the OFF coordinates
-    wobble_coord = SkyCoord(pointing_ra, pointing_dec, frame="icrs")
+    rotation_step = 360 / (n_off_regions + 1)
+    rotations_off = np.arange(0, 359, rotation_step) * u.deg
 
-    rotations_off = np.arange(0, 359, 360 / (n_off_regions + 1)) * u.deg
+    # Remove the angle 180 degree with which the OFF region is created
+    # at the same coordinate as the ON region
     rotations_off = rotations_off[rotations_off.to_value(u.deg) != 180]
     rotations_off += wobble_rotation
 
