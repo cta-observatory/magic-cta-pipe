@@ -7,17 +7,12 @@ from .containers import (
     SimEventInfoContainer,
 )
 from .gadf import (
-    LON_ORM,
-    LAT_ORM,
-    HEIGHT_ORM,
     create_event_hdu,
     create_gh_cuts_hdu,
     create_gti_hdu,
     create_pointing_hdu,
 )
 from .io import (
-    TEL_COMBINATIONS,
-    TEL_NAMES,
     get_dl2_mean,
     get_stereo_events,
     load_dl2_data_file,
@@ -33,15 +28,10 @@ __all__ = [
     "BaseEventInfoContainer",
     "RealEventInfoContainer",
     "SimEventInfoContainer",
-    "LON_ORM",
-    "LAT_ORM",
-    "HEIGHT_ORM",
     "create_event_hdu",
     "create_gh_cuts_hdu",
     "create_gti_hdu",
     "create_pointing_hdu",
-    "TEL_NAMES",
-    "TEL_COMBINATIONS",
     "get_dl2_mean",
     "get_stereo_events",
     "load_dl2_data_file",

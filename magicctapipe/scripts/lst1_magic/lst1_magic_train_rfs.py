@@ -40,7 +40,8 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
-from magicctapipe.io import TEL_NAMES, load_train_data_files
+from magicctapipe.io import load_train_data_files
+from magicctapipe.io.io import TEL_NAMES
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["train_energy_regressor", "train_disp_regressor", "train_event_classifier"]

@@ -57,12 +57,12 @@ import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.io import (
-    TEL_NAMES,
     get_stereo_events,
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
     save_pandas_data_in_table,
 )
+from magicctapipe.io.io import TEL_NAMES
 
 __all__ = ["event_coincidence"]
 

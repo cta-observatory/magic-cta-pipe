@@ -42,7 +42,8 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
-from magicctapipe.io import TEL_NAMES, get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io.io import TEL_NAMES
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]

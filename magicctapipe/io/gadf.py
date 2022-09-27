@@ -10,7 +10,8 @@ from astropy.io import fits
 from astropy.table import QTable
 from astropy.time import Time
 from magicctapipe import __version__
-from magicctapipe.io import TEL_COMBINATIONS
+from magicctapipe.io.io import TEL_COMBINATIONS
+from magicctapipe.utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
 from pyirf.binning import split_bin_lo_hi
 
 __all__ = [
@@ -23,11 +24,6 @@ __all__ = [
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-# The geographic coordinate of ORM
-LON_ORM = -17.89064 * u.deg
-LAT_ORM = 28.76177 * u.deg
-HEIGHT_ORM = 2199.835 * u.m
 
 # The MJD reference time
 MJDREF = Time(0, format="unix", scale="utc")

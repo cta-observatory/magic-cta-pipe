@@ -224,7 +224,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
         weights=direction_weights,
     )
 
-    event_data_mean["reco_energy"] = 10 ** log_energy_mean
+    event_data_mean["reco_energy"] = 10**log_energy_mean
     event_data_mean["reco_alt"] = reco_alt_mean
     event_data_mean["reco_az"] = reco_az_mean
     event_data_mean["gammaness"] = gammaness_mean
