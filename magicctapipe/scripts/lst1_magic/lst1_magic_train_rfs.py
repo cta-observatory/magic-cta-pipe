@@ -78,25 +78,28 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     # Load the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
-    event_data_train = load_train_data_files(
-        input_dir, config_rf["gamma_offaxis"]["min"], config_rf["gamma_offaxis"]["max"]
-    )
+    offaxis_min = config_rf["gamma_offaxis"]["min"]
+    offaxis_max = config_rf["gamma_offaxis"]["max"]
+
+    event_data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
 
     # Configure the energy regressor
+    rf_settings = config_rf["settings"]
+    features = config_rf["features"]
+
     logger.info("\nRF settings:")
-    for key, value in config_rf["settings"].items():
+    for key, value in rf_settings.items():
         logger.info(f"\t{key}: {value}")
 
-    logger.info(
-        f"\nFeatures:\n{config_rf['features']}"
-        f"\n\nUse unsigned features: {use_unsigned_features}"
-    )
+    logger.info("\nFeatures:")
+    for i_param, feature in enumerate(features, start=1):
+        logger.info(f"\t{i_param}: {feature}")
 
-    energy_regressor = EnergyRegressor(
-        config_rf["settings"], config_rf["features"], use_unsigned_features
-    )
+    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
-    # Train the RFs per telescope combination type
+    energy_regressor = EnergyRegressor(rf_settings, features, use_unsigned_features)
+
+    # Loop over every telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
@@ -104,15 +107,17 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     for tel_combo, df_train in event_data_train.items():
 
         logger.info(f"\nEnergy regressors for the '{tel_combo}' type:")
+
+        # Train the RFs
         energy_regressor.fit(df_train)
 
-        # Check the feature importances
+        # Check the feature importance
         for tel_id, telescope_rf in energy_regressor.telescope_rfs.items():
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importances:")
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
             importances = telescope_rf.feature_importances_
 
-            for feature, importance in zip(energy_regressor.features, importances):
+            for feature, importance in zip(features, importances):
                 logger.info(f"\t{feature}: {importance.round(5)}")
 
         # Save the trained RFs to an output file
@@ -136,7 +141,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     Parameters
     ----------
     input_dir: str
-        Path to a directory where input gamma MC data files are found
+        Path to a directory where input gamma MC data files are stored
     output_dir: str
         Path to a directory where to save trained RFs
     config: dict
@@ -150,25 +155,28 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     # Load the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
-    event_data_train = load_train_data_files(
-        input_dir, config_rf["gamma_offaxis"]["min"], config_rf["gamma_offaxis"]["max"]
-    )
+    offaxis_min = config_rf["gamma_offaxis"]["min"]
+    offaxis_max = config_rf["gamma_offaxis"]["max"]
+
+    event_data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
 
     # Configure the DISP regressor
+    rf_settings = config_rf["settings"]
+    features = config_rf["features"]
+
     logger.info("\nRF settings:")
-    for key, value in config_rf["settings"].items():
+    for key, value in rf_settings.items():
         logger.info(f"\t{key}: {value}")
 
-    logger.info(
-        f"\nFeatures:\n{config_rf['features']}"
-        f"\n\nUse unsigned features: {use_unsigned_features}"
-    )
+    logger.info("\nFeatures:")
+    for i_param, feature in enumerate(features, start=1):
+        logger.info(f"\t{i_param}: {feature}")
 
-    disp_regressor = DispRegressor(
-        config_rf["settings"], config_rf["features"], use_unsigned_features
-    )
+    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
-    # Train the RFs per telescope combination type
+    disp_regressor = DispRegressor(rf_settings, features, use_unsigned_features)
+
+    # Loop over every telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
@@ -176,15 +184,17 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     for tel_combo, df_train in event_data_train.items():
 
         logger.info(f"\nDISP regressors for the '{tel_combo}' type:")
+
+        # Train the RFs
         disp_regressor.fit(df_train)
 
         # Check the feature importance
         for tel_id, telescope_rf in disp_regressor.telescope_rfs.items():
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importances:")
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
             importances = telescope_rf.feature_importances_
 
-            for feature, importance in zip(disp_regressor.features, importances):
+            for feature, importance in zip(features, importances):
                 logger.info(f"\t{feature}: {importance.round(5)}")
 
         # Save the trained RFs to an output file
@@ -210,9 +220,9 @@ def train_event_classifier(
     Parameters
     ----------
     input_dir_gamma: str
-        Path to a directory where input gamma MC data files are found
+        Path to a directory where input gamma MC data files are stored
     input_dir_proton: str
-        Path to a directory where input proton MC data files are found
+        Path to a directory where input proton MC data files are stored
     output_dir: str
         Path to a directory where to save trained RFs
     config: dict
@@ -226,11 +236,11 @@ def train_event_classifier(
     # Load the input gamma MC data files
     logger.info(f"\nInput gamma MC directory:\n{input_dir_gamma}")
 
+    offaxis_min = config_rf["gamma_offaxis"]["min"]
+    offaxis_max = config_rf["gamma_offaxis"]["max"]
+
     event_data_gamma = load_train_data_files(
-        input_dir=input_dir_gamma,
-        offaxis_min=config_rf["gamma_offaxis"]["min"],
-        offaxis_max=config_rf["gamma_offaxis"]["max"],
-        true_event_class=EVENT_CLASS_GAMMA,
+        input_dir_gamma, offaxis_min, offaxis_max, EVENT_CLASS_GAMMA
     )
 
     # Load the input proton MC data files
@@ -241,20 +251,22 @@ def train_event_classifier(
     )
 
     # Configure the event classifier
+    rf_settings = config_rf["settings"]
+    features = config_rf["features"]
+
     logger.info("\nRF settings:")
-    for key, value in config_rf["settings"].items():
+    for key, value in rf_settings.items():
         logger.info(f"\t{key}: {value}")
 
-    logger.info(
-        f"\nFeatures:\n{config_rf['features']}"
-        f"\n\nUse unsigned features: {use_unsigned_features}"
-    )
+    logger.info("\nFeatures:")
+    for i_param, feature in enumerate(features, start=1):
+        logger.info(f"\t{i_param}: {feature}")
 
-    event_classifier = EventClassifier(
-        config_rf["settings"], config_rf["features"], use_unsigned_features
-    )
+    logger.info(f"\n\nUse unsigned features: {use_unsigned_features}")
 
-    # Train the RFs per telescope combination type
+    event_classifier = EventClassifier(rf_settings, features, use_unsigned_features)
+
+    # Loop over every telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_files = []
@@ -298,15 +310,17 @@ def train_event_classifier(
             df_proton.sort_index(inplace=True)
 
         df_train = df_gamma.append(df_proton)
+
+        # Train the RFS
         event_classifier.fit(df_train)
 
         # Check the feature importance
         for tel_id, telescope_rf in event_classifier.telescope_rfs.items():
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importances:")
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
             importances = telescope_rf.feature_importances_
 
-            for feature, importance in zip(event_classifier.features, importances):
+            for feature, importance in zip(features, importances):
                 logger.info(f"\t{feature}: {importance.round(5)}")
 
         # Save the trained RFs to an output file
@@ -335,7 +349,7 @@ def main():
         dest="input_dir_gamma",
         type=str,
         required=True,
-        help="Path to a directory where input gamma MC data files are stored.",
+        help="Path to a directory where input gamma MC data files are stored",
     )
 
     parser.add_argument(
@@ -343,7 +357,7 @@ def main():
         "-p",
         dest="input_dir_proton",
         type=str,
-        help="Path to a directory where input proton MC data files are stored.",
+        help="Path to a directory where input proton MC data files are stored",
     )
 
     parser.add_argument(
@@ -352,7 +366,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save trained RFs.",
+        help="Path to a directory where to save trained RFs",
     )
 
     parser.add_argument(
@@ -361,35 +375,35 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a configuration file.",
+        help="Path to a configuration file",
     )
 
     parser.add_argument(
         "--train-energy",
         dest="train_energy",
         action="store_true",
-        help="Train energy regressors.",
+        help="Train energy regressors",
     )
 
     parser.add_argument(
         "--train-disp",
         dest="train_disp",
         action="store_true",
-        help="Train DISP regressors.",
+        help="Train DISP regressors",
     )
 
     parser.add_argument(
         "--train-classifier",
         dest="train_classifier",
         action="store_true",
-        help="Train event classifiers.",
+        help="Train event classifiers",
     )
 
     parser.add_argument(
         "--use-unsigned",
         dest="use_unsigned",
         action="store_true",
-        help="Use unsigned features for training RFs.",
+        help="Use unsigned features for training RFs",
     )
 
     args = parser.parse_args()
@@ -397,7 +411,7 @@ def main():
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
-    # Train RFs:
+    # Train RFs
     if args.train_energy:
         train_energy_regressor(
             args.input_dir_gamma, args.output_dir, config, args.use_unsigned
@@ -415,6 +429,11 @@ def main():
             output_dir=args.output_dir,
             config=config,
             use_unsigned_features=args.use_unsigned,
+        )
+
+    if not any([args.train_energy, args.train_disp, args.train_classifier]):
+        raise ValueError(
+            "The RF type is not specified. Please see the usage with '--help' option."
         )
 
     logger.info("\nDone.")
