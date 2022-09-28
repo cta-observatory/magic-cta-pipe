@@ -33,10 +33,7 @@ from astropy.time import Time
 from magicctapipe.utils import check_tel_combination, create_gh_cuts_hdu, get_dl2_mean
 from pyirf.binning import join_bin_lo_hi
 from pyirf.cuts import evaluate_binned_cut
-from pyirf.interpolation import (
-    interpolate_effective_area_per_energy_and_fov,
-    interpolate_energy_dispersion,
-)
+from pyirf.interpolation import interpolate_effective_area_per_energy_and_fov
 from pyirf.io import (
     create_aeff2d_hdu,
     create_background_2d_hdu,
@@ -609,13 +606,22 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus.append(hdu_aeff)
 
+    # Interpolate the energy dispersion with a custom way, since there
+    # is a bug in the function of pyirf v0.6.0 about the renormalization
     logger.info("Interpolating the energy dispersion...")
 
-    edisp_interp = interpolate_energy_dispersion(
-        energy_dispersions=irf_data["energy_dispersion"],
-        grid_points=irf_data["grid_point"],
-        target_point=target_point,
+    edisp_interp = griddata(
+        points=irf_data["grid_point"],
+        values=irf_data["energy_dispersion"],
+        xi=target_point,
         method=interpolation_method,
+    )
+
+    norm = np.sum(edisp_interp, axis=2, keepdims=True)  # Along the migration axis
+    mask_zeros = norm != 0
+
+    edisp_interp = np.divide(
+        edisp_interp, norm, out=np.zeros_like(edisp_interp), where=mask_zeros
     )
 
     hdu_edisp = create_energy_dispersion_hdu(
