@@ -93,11 +93,11 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     logger.info(f"\nInput DL2 data file:\n{input_file_dl2}")
 
     quality_cuts = extra_header.get("QUAL_CUT")
-    irf_type = extra_header["IRF_TYPE"]
+    event_type = extra_header["EVT_TYPE"]
     dl2_weight_type = extra_header["DL2_WEIG"]
 
     event_table, on_time, deadc = load_dl2_data_file(
-        input_file_dl2, quality_cuts, irf_type, dl2_weight_type
+        input_file_dl2, quality_cuts, event_type, dl2_weight_type
     )
 
     # Calculate the mean pointing direction for the target point of the

@@ -193,9 +193,9 @@ event_classifier:
 
 create_irf:
     quality_cuts: null
-    irf_type: "software"  # select "software", "software_only_3tel", "magic_only" or "hardware"
+    event_type: "software"  # select "software", "software_only_3tel", "magic_only" or "hardware"
     dl2_weight_type: "simple"  # select "simple", "variance" or "intensity"
-    irf_obs_time: "50 h"  # used for creating a background HDU
+    irf_obs_time: "50 h"  # used when creating a background HDU
 
     energy_bins:  # log space
         start: "0.01 TeV"
@@ -207,7 +207,17 @@ create_irf:
         stop: 5
         n_edges: 31
 
-    bkg_fov_offset_bins:  # linear space
+    fov_offset_bins:  # linear space, used for diffuse MCs
+        start: "0 deg"
+        stop: "0.5 deg"
+        n_edges: 2
+
+    source_offset_bins:  # linear space, used when creating PSF HDU
+        start: "0 deg"
+        stop: "1 deg"
+        n_edges: 101
+
+    bkg_fov_offset_bins:  # linear space, used when creating background HDU
         start: "0 deg"
         stop: "10 deg"
         n_edges: 21

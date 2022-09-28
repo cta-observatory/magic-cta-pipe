@@ -517,7 +517,7 @@ def load_train_data_files(
     return data_train
 
 
-def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
+def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
@@ -527,12 +527,12 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
         Path to an input MC DL2 data file
     quality_cuts: str
         Quality cuts applied to the input events
-    irf_type: str
-        Type of the IRFs which will be created -
-        "software" assumes the software coincidence with any2 events,
-        "software_only_3tel" uses only the 3-tels events,
-        "magic_only" assumes MAGIC-only stereo observations, and
-        "hardware" assumes the LST-1 + MAGIC hardware trigger condition
+    event_type: str
+        Type of the events which will be used -
+        "software" uses software coincident events,
+        "software_only_3tel" uses only 3-tel combination events,
+        "magic_only" uses only MAGIC-stereo combination events, and
+        "hardware" uses all the any2 combination events
     dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
@@ -560,19 +560,19 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
     df_events = get_stereo_events(df_events, quality_cuts)
 
     # Extract the events of the specified IRF type
-    logger.info(f"\nExtracting the events of the '{irf_type}' type...")
+    logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
-    if irf_type == "software":
+    if event_type == "software":
         df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
 
-    elif irf_type == "software_only_3tel":
+    elif event_type == "software_only_3tel":
         df_events.query("combo_type == 3", inplace=True)
 
-    elif irf_type == "magic_only":
+    elif event_type == "magic_only":
         df_events.query("combo_type == 0", inplace=True)
 
-    elif irf_type != "hardware":
-        raise ValueError(f"Unknown IRF type '{irf_type}'.")
+    elif event_type != "hardware":
+        raise ValueError(f"Unknown IRF type '{event_type}'.")
 
     n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
@@ -630,7 +630,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
     return event_table, pointing, sim_info
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
+def load_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
     """
     Loads a DL2 data file for processing to DL3.
 
@@ -640,12 +640,12 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
         Path to an input DL2 data file
     quality_cuts: str
         Quality cuts applied to the input events
-    irf_type: str
-        Type of the IRFs which will be created -
-        "software" assumes the software coincidence with any2 events,
-        "software_only_3tel" uses only the 3-tels events,
-        "magic_only" assumes MAGIC-only stereo observations, and
-        "hardware" assumes the LST-1 + MAGIC hardware trigger condition
+    event_type: str
+        Type of the events which will be used -
+        "software" uses software coincident events,
+        "software_only_3tel" uses only 3-tel combination events,
+        "magic_only" uses only MAGIC-stereo combination events, and
+        "hardware" uses all the any2 combination events
     dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
@@ -668,20 +668,20 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
     event_data = get_stereo_events(event_data, quality_cuts)
 
     # Extract the events of the specified IRF type
-    logger.info(f"\nExtracting the events of the '{irf_type}' type...")
+    logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
-    if irf_type == "software":
+    if event_type == "software":
         event_data.query("combo_type > 0", inplace=True)
 
-    elif irf_type == "software_only_3tel":
+    elif event_type == "software_only_3tel":
         event_data.query("combo_type == 3", inplace=True)
 
-    elif irf_type == "magic_only":
+    elif event_type == "magic_only":
         event_data.query("combo_type == 0", inplace=True)
 
-    elif irf_type == "hardware":
+    elif event_type == "hardware":
         logger.warning(
-            "WARNING: Please confirm that this IRF type is correct for the input data, "
+            "WARNING: Please confirm that this type is correct for the input data, "
             "since the hardware trigger between LST-1 and MAGIC may NOT be used."
         )
 
@@ -799,7 +799,7 @@ def load_irf_files(input_dir_irf):
         "INSTRUME": [],
         "FOVALIGN": [],
         "QUAL_CUT": [],
-        "IRF_TYPE": [],
+        "EVT_TYPE": [],
         "DL2_WEIG": [],
         "GH_CUT": [],
         "GH_EFF": [],
