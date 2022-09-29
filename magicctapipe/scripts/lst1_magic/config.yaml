@@ -209,8 +209,8 @@ create_irf:
 
     fov_offset_bins:  # linear space, used for diffuse MCs
         start: "0 deg"
-        stop: "0.5 deg"
-        n_edges: 2
+        stop: "1 deg"
+        n_edges: 6
 
     source_offset_bins:  # linear space, used when creating PSF HDU
         start: "0 deg"
