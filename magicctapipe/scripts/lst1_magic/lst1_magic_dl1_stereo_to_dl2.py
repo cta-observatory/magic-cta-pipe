@@ -6,6 +6,10 @@ This script processes DL1-stereo events and reconstructs the DL2
 parameters, i.e., energy, direction and gammaness, with trained RFs.
 The RFs are applied per telescope combination type and per telescope.
 
+For reconstructing the arrival directions, it uses the MARS-like DISP
+method, i.e., select the closest combination with which the angular
+distances of all the head and tail candidates become minimum.
+
 Usage:
 $ python lst1_magic_dl1_stereo_to_dl2.py
 --input-file-dl1 dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
@@ -65,6 +69,7 @@ def apply_rfs(event_data, estimator):
     df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
     df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
+    # Apply the RFs
     reco_params = estimator.predict(df_events)
 
     return reco_params
@@ -88,7 +93,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
         Data frame of the shower events with reconstructed directions
     """
 
-    reco_params_flips = pd.DataFrame()
+    params_with_flips = pd.DataFrame()
 
     # First of all, we reconstruct the Alt/Az directions of all the head
     # and tail candidates per telescope, i.e., the directions separated
@@ -108,19 +113,19 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
         tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-        event_coord = SkyCoord(
+        cog_coord = SkyCoord(
             u.Quantity(df_events["x"].to_numpy(), u.m),
             u.Quantity(df_events["y"].to_numpy(), u.m),
             frame=tel_descriptions[tel_id].camera.geometry.frame,
         )
 
-        event_coord = event_coord.transform_to(tel_frame)
+        cog_coord = cog_coord.transform_to(tel_frame)
 
         for flip in [0, 1]:
 
             psi_per_flip = df_events["psi"].to_numpy() + 180 * flip
 
-            event_coord_per_flip = event_coord.directional_offset_by(
+            event_coord_per_flip = cog_coord.directional_offset_by(
                 position_angle=u.Quantity(psi_per_flip, u.deg),
                 separation=u.Quantity(df_events["reco_disp"].to_numpy(), u.deg),
             )
@@ -136,20 +141,20 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
                 index=df_events.index,
             )
 
-            reco_params_flips = reco_params_flips.append(df_altaz_per_flip)
+            params_with_flips = params_with_flips.append(df_altaz_per_flip)
 
-    reco_params_flips.set_index("flip", append=True, inplace=True)
-    reco_params_flips.sort_index(inplace=True)
+    params_with_flips.set_index("flip", append=True, inplace=True)
+    params_with_flips.sort_index(inplace=True)
 
     # Calculate the telescope multiplicity by dividing the group size of
     # the shower events by the number of flips (= 2)
-    group_size = reco_params_flips.groupby(["obs_id", "event_id"]).size()
-    reco_params_flips["multiplicity"] = group_size / 2
+    group_size = params_with_flips.groupby(["obs_id", "event_id"]).size()
+    params_with_flips["multiplicity"] = group_size / 2
 
-    # Then, we get the flip combination minimizing the sum of the
-    # angular distances between the head and tail candidates per shower
-    # event. In order to speed up the calculations, here we separate the
-    # input events by the telescope combination types.
+    # Then, we get the flip combination minimizing the angular distances
+    # of the head and tail candidates per shower event. In order to
+    # speed up the calculations, here we separate the input events by
+    # the telescope combination types.
 
     reco_params = pd.DataFrame()
 
@@ -157,7 +162,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
         multiplicity = len(tel_ids)
 
-        df_events = reco_params_flips.query(
+        df_events = params_with_flips.query(
             f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
 
@@ -168,7 +173,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
         # Here we first define all the possible flip combinations. For
         # example, in case that we have two telescope images, in total
-        # 4 combinations can be defined as follows:
+        # 4 combinations are defined as follows:
         #   [(head, head), (head, tail), (tail, head), (tail, tail)]
         # where the i-th element of each tuple means the i-th telescope
         # image. In case of 3 images we have in total 8 combinations.
@@ -186,6 +191,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
         tel_any2_combinations = list(itertools.combinations(tel_ids, 2))
 
+        # Loop over every flip combination
         distances = np.zeros((len(flip_combinations), n_events))
 
         for i_flip, flip_combo in enumerate(flip_combinations):
@@ -198,8 +204,9 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
                     f"(tel_id == {tel_id}) & (flip == {flip})"
                 )
 
-            for (tel_id_1, tel_id_2) in tel_any2_combinations:
+            for tel_id_1, tel_id_2 in tel_any2_combinations:
 
+                # Calculate the distance of the any2 combination
                 theta = angular_separation(
                     lon1=u.Quantity(container[tel_id_1]["reco_az"].to_numpy(), u.deg),
                     lat1=u.Quantity(container[tel_id_1]["reco_alt"].to_numpy(), u.deg),
@@ -226,6 +233,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
             arrays=[obs_ids, event_ids, tel_ids, flips], names=df_events.index.names
         )
 
+        # Keep only the information of the closest combinations
         df_events = df_events.loc[multi_indices]
 
         # Add the minimum angular distances to the output data frame,
@@ -287,7 +295,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     mask_disp_regressor = f"{input_dir_rfs}/disp_regressors_*.joblib"
     mask_event_classifier = f"{input_dir_rfs}/event_classifiers_*.joblib"
 
-    # Reconstruct the energies
+    # Find the energy regressors
     input_files_energy = glob.glob(mask_energy_regressor)
     input_files_energy.sort()
 
@@ -304,12 +312,13 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
             energy_regressor = EnergyRegressor()
             energy_regressor.load(input_file)
 
+            # Apply the RFs
             reco_params = apply_rfs(event_data, energy_regressor)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del energy_regressor
 
-    # Reconstruct the DISP parameter
+    # Find the DISP regressors
     input_files_dips = glob.glob(mask_disp_regressor)
     input_files_dips.sort()
 
@@ -326,6 +335,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
             disp_regressor = DispRegressor()
             disp_regressor.load(input_file)
 
+            # Apply the RFs
             reco_params = apply_rfs(event_data, disp_regressor)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
@@ -337,7 +347,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     del disp_regressor
 
-    # Reconstruct the gammaness
+    # Find the event classifiers
     input_files_class = glob.glob(mask_event_classifier)
     input_files_class.sort()
 
@@ -354,6 +364,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
             event_classifier = EventClassifier()
             event_classifier.load(input_file)
 
+            # Apply the RFs
             reco_params = apply_rfs(event_data, event_classifier)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
@@ -385,9 +396,11 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         event_data, output_file, group_name="/events", table_name="parameters"
     )
 
+    # Save the subarray description
     subarray.to_hdf(output_file)
 
     if is_simulation:
+        # Save the simulation configuration
         sim_config = pd.read_hdf(input_file_dl1, key="simulation/config")
 
         save_pandas_data_in_table(
@@ -413,7 +426,7 @@ def main():
         dest="input_file_dl1",
         type=str,
         required=True,
-        help="Path to an input DL1-stereo data file.",
+        help="Path to an input DL1-stereo data file",
     )
 
     parser.add_argument(
@@ -422,7 +435,7 @@ def main():
         dest="input_dir_rfs",
         type=str,
         required=True,
-        help="Path to a directory where trained RFs are stored.",
+        help="Path to a directory where trained RFs are stored",
     )
 
     parser.add_argument(
@@ -431,7 +444,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save an output DL2 data file.",
+        help="Path to a directory where to save an output DL2 data file",
     )
 
     args = parser.parse_args()
