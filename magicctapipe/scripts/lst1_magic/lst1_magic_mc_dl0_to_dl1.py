@@ -222,7 +222,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         f"az_{azimuth.round(3)}deg_LST-1_MAGIC_run{obs_id}.h5"
     )
 
-    # Start processing the events
+    # Loop over every shower event
     logger.info("\nProcessing the events...")
 
     with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
@@ -467,7 +467,7 @@ def main():
         dest="input_file",
         type=str,
         required=True,
-        help="Path to an input simtel MC DL0 data file.",
+        help="Path to an input simtel MC DL0 data file",
     )
 
     parser.add_argument(
@@ -476,7 +476,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save an output DL1 data file.",
+        help="Path to a directory where to save an output DL1 data file",
     )
 
     parser.add_argument(
@@ -485,7 +485,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a configuration file.",
+        help="Path to a configuration file",
     )
 
     args = parser.parse_args()
