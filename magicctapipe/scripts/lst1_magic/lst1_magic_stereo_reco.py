@@ -149,17 +149,15 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         )
 
     # Apply the event cuts
-    quality_cuts = config_stereo["quality_cuts"]
-
     logger.info(
         f"\nMAGIC-only analysis: {magic_only_analysis}"
-        f"\nQuality cuts: {quality_cuts}"
+        f"\nQuality cuts: {config_stereo['quality_cuts']}"
     )
 
     if magic_only_analysis:
         event_data.query("tel_id > 1", inplace=True)
 
-    event_data = get_stereo_events(event_data, quality_cuts)
+    event_data = get_stereo_events(event_data, config_stereo["quality_cuts"])
 
     # Check the angular distance of the LST-1 and MAGIC pointing directions
     tel_ids = np.unique(event_data.index.get_level_values("tel_id")).tolist()
@@ -181,13 +179,13 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         if np.all(condition):
             logger.info(
                 "--> All the events are taken with larger angular distances "
-                f"than the limit {theta_uplim}. Exiting."
+                f"than the limit {theta_uplim}. Exiting..."
             )
             sys.exit()
 
         elif n_events > 0:
             logger.info(
-                f"--> Excluding {n_events} stereo events whose angular distances "
+                f"--> Exclude {n_events} stereo events whose angular distances "
                 f"are larger than the limit {theta_uplim}."
             )
 
@@ -204,7 +202,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     # Configure the HillasReconstructor
     hillas_reconstructor = HillasReconstructor(subarray)
 
-    # Start processing the events
+    # Loop over every shower event
     logger.info("\nReconstructing the stereo parameters...")
 
     pnt_az_mean, pnt_alt_mean = calculate_mean_direction(
@@ -265,7 +263,8 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             )
             continue
 
-        stereo_params.az.wrap_at(360 * u.deg, inplace=True)  # Wrap at 0 <= az < 360 deg
+        # Wrap the azimuth at the angle 0 <= az < 360 deg
+        stereo_params.az.wrap_at(360 * u.deg, inplace=True)
 
         for tel_id in tel_ids:
 
@@ -315,9 +314,11 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         event_data, output_file, group_name="/events", table_name="parameters"
     )
 
+    # Save the subarray description
     subarray.to_hdf(output_file)
 
     if is_simulation:
+        # Save the simulation configuration
         sim_config = pd.read_hdf(input_file, key="simulation/config")
 
         save_pandas_data_in_table(
@@ -343,7 +344,7 @@ def main():
         dest="input_file",
         type=str,
         required=True,
-        help="Path to an input DL1 data file.",
+        help="Path to an input DL1 data file",
     )
 
     parser.add_argument(
@@ -352,7 +353,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save an output DL1-stereo data file.",
+        help="Path to a directory where to save an output DL1-stereo data file",
     )
 
     parser.add_argument(
@@ -361,14 +362,14 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a configuration file.",
+        help="Path to a configuration file",
     )
 
     parser.add_argument(
         "--magic-only",
         dest="magic_only",
         action="store_true",
-        help="Reconstruct the stereo parameters using only MAGIC events.",
+        help="Reconstruct the stereo parameters using only MAGIC events",
     )
 
     args = parser.parse_args()

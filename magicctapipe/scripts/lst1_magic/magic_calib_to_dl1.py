@@ -9,7 +9,7 @@ the DL1 parameters are successfully reconstructed.
 
 When saving data to an output file, the telescope IDs will be reset to
 the following ones for the convenience of the combined analysis with
-LST-1, whose telescope ID is set to 1:
+LST-1, whose telescope ID is 1:
 
 MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
@@ -18,13 +18,15 @@ the same observation ID and stored in the same directory as the input
 subrun file. Then, it reads their drive reports and uses the information
 to reconstruct the telescope pointing direction. Since the accuracy of
 the reconstruction improves, it is recommended to store all the subrun
-files in the same directory.
-
-If the "--process-run" argument is given, it not only reads the drive
-reports but also processes all the events of the subrun files at once.
+files in the same directory. If the "--process-run" argument is given,
+it not only reads the drive reports but also processes all the events of
+the subrun files at once.
 
 If the "--allow-mono" argument is given, it process the events even if
-the input data was taken with the mono trigger
+the input (real) data was taken with the L1 4NN mono trigger.
+
+Please note that SUM trigger data and mono trigger MC data are not yet
+supported with this script.
 
 Usage:
 $ python magic_calib_to_dl1.py
@@ -69,7 +71,7 @@ logger.setLevel(logging.INFO)
 # Ignore RuntimeWarnings appeared during the image cleaning
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
-# The pedestal types allowed to find bad RMS pixels
+# The pedestal types to find bad RMS pixels
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
@@ -107,34 +109,33 @@ def magic_calib_to_dl1(
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
-    is_stereo = event_source.is_stereo
-    is_sumt = event_source.is_sumt
+    is_stereo_trigger = event_source.is_stereo
+    is_sum_trigger = event_source.is_sumt
 
     logger.info(
         f"\nObservation ID: {obs_id}"
         f"\nTelescope ID: {tel_id}"
-        f"\n\nIs stereo trigger: {is_stereo}"
-        f"\nIs SUM trigger: {is_sumt}"
+        f"\n\nIs stereo trigger: {is_stereo_trigger}"
+        f"\nIs SUM trigger: {is_sum_trigger}"
     )
 
-    if is_simulation and not is_stereo:
-        logger.info("\nMono trigger MC data is not yet supported. Exiting.")
+    if is_simulation and not is_stereo_trigger:
+        logger.info("\nMono trigger MC data is not yet supported. Exiting...")
         sys.exit()
 
-    if is_sumt:
-        logger.info("\nSUM trigger data is not yet fully supported. Exiting.")
+    if is_sum_trigger:
+        logger.info("\nSUM trigger data is not yet fully supported. Exiting...")
         sys.exit()
 
     if not is_simulation:
 
-        if not is_stereo:
+        if not is_stereo_trigger:
             logger.info(f"\nAllow mono trigger: {allow_mono_trigger}")
 
             if not allow_mono_trigger:
                 logger.info(
-                    "\nThe input data was taken with the mono trigger. Please set the "
-                    "'allow_mono_trigger' option to `True` (or use the '--allow-mono' "
-                    "argument of the script) if you are sure to process them. Exiting."
+                    "\nMono trigger data are not allowed. Please set the option "
+                    "to `True` if you are sure to process them. Exiting..."
                 )
                 sys.exit()
 
@@ -146,6 +147,7 @@ def magic_calib_to_dl1(
         time_diffs = event_source.event_time_diffs
 
     subarray = event_source.subarray
+
     camera_geom = subarray.tel[tel_id].camera.geometry
     tel_position = subarray.positions[tel_id]
 
@@ -166,6 +168,7 @@ def magic_calib_to_dl1(
     magic_clean = MAGICClean(camera_geom, config_clean)
 
     if config_clean["find_hotpixels"]:
+        # Get the index of the pedestal type
         i_ped_type = PEDESTAL_TYPES.index(config_clean["pedestal_type"])
 
     # Prepare for saving data to an output file
@@ -185,7 +188,7 @@ def magic_calib_to_dl1(
             subrun_id = event_source.metadata["subrun_number"][0]
             output_file = f"{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5"
 
-    # Start processing the events
+    # Loop over every shower event
     logger.info("\nProcessing the events...")
 
     with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
@@ -381,7 +384,7 @@ def main():
         dest="input_file",
         type=str,
         required=True,
-        help="Path to an input MAGIC calibrated data file.",
+        help="Path to an input MAGIC calibrated data file",
     )
 
     parser.add_argument(
@@ -390,7 +393,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save an output DL1 data file.",
+        help="Path to a directory where to save an output DL1 data file",
     )
 
     parser.add_argument(
@@ -399,21 +402,21 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a configuration file.",
+        help="Path to a configuration file",
     )
 
     parser.add_argument(
         "--process-run",
         dest="process_run",
         action="store_true",
-        help="Process the events of all the subrun files at once.",
+        help="Process the events of all the subrun files at once",
     )
 
     parser.add_argument(
         "--allow-mono",
         dest="allow_mono",
         action="store_true",
-        help="Process the events even if the data was taken with the mono trigger.",
+        help="Process the events even if the data was taken with the mono trigger",
     )
 
     args = parser.parse_args()

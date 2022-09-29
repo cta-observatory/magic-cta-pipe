@@ -75,29 +75,29 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
     config_rf = config["energy_regressor"]
 
+    gamma_offaxis = config_rf["gamma_offaxis"]
+
     # Load the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
-    offaxis_min = config_rf["gamma_offaxis"]["min"]
-    offaxis_max = config_rf["gamma_offaxis"]["max"]
-
-    event_data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
+    event_data_train = load_train_data_files(
+        input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
+    )
 
     # Configure the energy regressor
-    rf_settings = config_rf["settings"]
-    features = config_rf["features"]
-
     logger.info("\nRF settings:")
-    for key, value in rf_settings.items():
+    for key, value in config_rf["settings"].items():
         logger.info(f"\t{key}: {value}")
 
     logger.info("\nFeatures:")
-    for i_param, feature in enumerate(features, start=1):
+    for i_param, feature in enumerate(config_rf["features"], start=1):
         logger.info(f"\t{i_param}: {feature}")
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
-    energy_regressor = EnergyRegressor(rf_settings, features, use_unsigned_features)
+    energy_regressor = EnergyRegressor(
+        config_rf["settings"], config_rf["features"], use_unsigned_features
+    )
 
     # Loop over every telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -117,7 +117,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
             logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
             importances = telescope_rf.feature_importances_
 
-            for feature, importance in zip(features, importances):
+            for feature, importance in zip(energy_regressor.features, importances):
                 logger.info(f"\t{feature}: {importance.round(5)}")
 
         # Save the trained RFs to an output file
@@ -152,29 +152,29 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
     config_rf = config["disp_regressor"]
 
+    gamma_offaxis = config_rf["gamma_offaxis"]
+
     # Load the input files
     logger.info(f"\nInput directory:\n{input_dir}")
 
-    offaxis_min = config_rf["gamma_offaxis"]["min"]
-    offaxis_max = config_rf["gamma_offaxis"]["max"]
-
-    event_data_train = load_train_data_files(input_dir, offaxis_min, offaxis_max)
+    event_data_train = load_train_data_files(
+        input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
+    )
 
     # Configure the DISP regressor
-    rf_settings = config_rf["settings"]
-    features = config_rf["features"]
-
     logger.info("\nRF settings:")
-    for key, value in rf_settings.items():
+    for key, value in config_rf["settings"].items():
         logger.info(f"\t{key}: {value}")
 
     logger.info("\nFeatures:")
-    for i_param, feature in enumerate(features, start=1):
+    for i_param, feature in enumerate(config_rf["features"], start=1):
         logger.info(f"\t{i_param}: {feature}")
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
-    disp_regressor = DispRegressor(rf_settings, features, use_unsigned_features)
+    disp_regressor = DispRegressor(
+        config_rf["settings"], config_rf["features"], use_unsigned_features
+    )
 
     # Loop over every telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -194,7 +194,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
             logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
             importances = telescope_rf.feature_importances_
 
-            for feature, importance in zip(features, importances):
+            for feature, importance in zip(disp_regressor.features, importances):
                 logger.info(f"\t{feature}: {importance.round(5)}")
 
         # Save the trained RFs to an output file
@@ -233,14 +233,13 @@ def train_event_classifier(
 
     config_rf = config["event_classifier"]
 
+    gamma_offaxis = config_rf["gamma_offaxis"]
+
     # Load the input gamma MC data files
     logger.info(f"\nInput gamma MC directory:\n{input_dir_gamma}")
 
-    offaxis_min = config_rf["gamma_offaxis"]["min"]
-    offaxis_max = config_rf["gamma_offaxis"]["max"]
-
     event_data_gamma = load_train_data_files(
-        input_dir_gamma, offaxis_min, offaxis_max, EVENT_CLASS_GAMMA
+        input_dir_gamma, gamma_offaxis["min"], gamma_offaxis["max"], EVENT_CLASS_GAMMA
     )
 
     # Load the input proton MC data files
@@ -251,20 +250,19 @@ def train_event_classifier(
     )
 
     # Configure the event classifier
-    rf_settings = config_rf["settings"]
-    features = config_rf["features"]
-
     logger.info("\nRF settings:")
-    for key, value in rf_settings.items():
+    for key, value in config_rf["settings"].items():
         logger.info(f"\t{key}: {value}")
 
     logger.info("\nFeatures:")
-    for i_param, feature in enumerate(features, start=1):
+    for i_param, feature in enumerate(config_rf["features"], start=1):
         logger.info(f"\t{i_param}: {feature}")
 
     logger.info(f"\n\nUse unsigned features: {use_unsigned_features}")
 
-    event_classifier = EventClassifier(rf_settings, features, use_unsigned_features)
+    event_classifier = EventClassifier(
+        config_rf["settings"], config_rf["features"], use_unsigned_features
+    )
 
     # Loop over every telescope combination type
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -320,7 +318,7 @@ def train_event_classifier(
             logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
             importances = telescope_rf.feature_importances_
 
-            for feature, importance in zip(features, importances):
+            for feature, importance in zip(event_classifier.features, importances):
                 logger.info(f"\t{feature}: {importance.round(5)}")
 
         # Save the trained RFs to an output file
