@@ -2,12 +2,9 @@
 # coding: utf-8
 
 """
-This script processes MC DL2 events and creates the IRFs. Now it can
-create only point-like IRFs, i.e., the effective area, energy migration
-and background model. If the input data is only gamma MC, it also skips
-the creation of the background model.
+This script processes MC DL2 events and creates the IRFs.
 
-There are 4 different IRF types which can be specified by the "event_type"
+There are 4 different types which can be specified by the "event_type"
 setting in the configuration file. The "hardware" type is supposed for
 the hardware trigger between LST-1 and MAGIC, allowing for the events of
 all the telescope combinations. The "software(_only_3tel)" types are
@@ -124,35 +121,45 @@ def create_irf(
     logger.info(f"\nIs diffuse MC: {is_diffuse_mc}")
 
     if is_diffuse_mc:
-        logger.info("\nCreating FoV offset bins from the input configuration...")
+
+        logger.info("\nCreating FoV offset bins from the configuration...")
 
         config_fov_bins = config_irf["fov_offset_bins"]
 
-        logger.info("\nFoV offset bins (linear space)")
-        for key, value in config_fov_bins.items():
-            logger.info(f"\t{key}: {value}")
+        fov_bins_start = u.Quantity(config_fov_bins["start"])
+        fov_bins_stop = u.Quantity(config_fov_bins["stop"])
+        fov_bins_n_edges = config_fov_bins["n_edges"]
+
+        logger.info(
+            "Fov offset bins (linear scale):"
+            f"start: {fov_bins_start}"
+            f"stop: {fov_bins_stop}"
+            f"n_edges: {fov_bins_n_edges}"
+        )
 
         fov_offset_bins = u.Quantity(
             value=np.linspace(
-                start=u.Quantity(config_fov_bins["start"]).to_value(u.deg).round(1),
-                stop=u.Quantity(config_fov_bins["stop"]).to_value(u.deg).round(1),
-                num=config_fov_bins["n_edges"],
+                start=fov_bins_start.to_value(u.deg).round(1),
+                stop=fov_bins_stop.to_value(u.deg).round(1),
+                num=fov_bins_n_edges,
             ),
             unit=u.deg,
         )
 
     else:
-        logger.info("\nCreating FoV offset bins from the true source FoV offset...")
+        logger.info("\nCreating FoV offset bins from the true FoV offset...")
 
-        true_src_fov_offset = event_table_gamma["true_source_fov_offset"].to(u.deg)
-        fov_offset_bins = u.Quantity([-0.1, 0.1], u.deg) + true_src_fov_offset.mean()
+        true_fov_offset = event_table_gamma["true_source_fov_offset"].to(u.deg)
+        mean_true_fov_offset = true_fov_offset.mean().round(1)
+
+        fov_offset_bins = u.Quantity([-0.1, 0.1], u.deg) + mean_true_fov_offset
 
         logger.info(
-            f"\nTrue source FoV offset: {true_src_fov_offset}"
+            f"\nMean true FoV offset: {mean_true_fov_offset}"
             f"\n--> FoV offset bins: {fov_offset_bins}"
         )
 
-    is_point_like = len(fov_offset_bins) == 1
+    is_point_like = len(fov_offset_bins) == 2
 
     if is_point_like:
         logger.info("\nIRF type: POINT-LIKE")
@@ -163,24 +170,19 @@ def create_irf(
     is_proton_mc = input_file_proton is not None
     is_electron_mc = input_file_electron is not None
 
-    is_bkg_mc = np.all([is_proton_mc, is_electron_mc])
+    is_bkg_mc = all([is_proton_mc, is_electron_mc])
+    logger.info(f"\nIs full background MCs: {is_bkg_mc}")
 
     if is_point_like and is_bkg_mc:
-        logger.info(
-            "\nWARNING: Background MCs exist but the gamma MCs are point-like data. "
-            "Skipping the creation of the background model..."
+        logger.warning(
+            "\nWARNING: Skips the creation of a background model though the background "
+            "MCs exist, since it is not included in the POINT-LIKE IRFs."
         )
 
-    elif is_proton_mc and (not is_electron_mc):
-        logger.info(
-            "\nWARNING: Proton MC exists but electron MC does not. "
-            "Skipping the creation of the background model..."
-        )
-
-    elif is_electron_mc and (not is_proton_mc):
-        logger.info(
-            "\nWARNING: Electron MC exists but proton MC does not. "
-            "Skipping the creation of the background model..."
+    if (not is_point_like) and (not is_bkg_mc):
+        logger.warning(
+            "\nWARNING: Skips the creation of a background model though the IRF type "
+            "is FULL-ENCLOSURE, since both or either of background MCs are missing."
         )
 
     # Load the input background data files
@@ -520,19 +522,18 @@ def create_irf(
     with np.errstate(invalid="ignore", divide="ignore"):
 
         if is_diffuse_mc:
-            aeff = effective_area_per_energy(
-                selected_events=event_table_gamma,
-                simulation_info=sim_info_gamma,
-                true_energy_bins=energy_bins,
-            )[:, np.newaxis]
-
-        else:
             aeff = effective_area_per_energy_and_fov(
                 selected_events=event_table_gamma,
                 simulation_info=sim_info_gamma,
                 true_energy_bins=energy_bins,
                 fov_offset_bins=fov_offset_bins,
             )
+        else:
+            aeff = effective_area_per_energy(
+                selected_events=event_table_gamma,
+                simulation_info=sim_info_gamma,
+                true_energy_bins=energy_bins,
+            )[:, np.newaxis]
 
         aeff_hdu = create_aeff2d_hdu(
             effective_area=aeff,
