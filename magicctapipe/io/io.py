@@ -126,11 +126,12 @@ def get_stereo_events(
         df_events["multiplicity"] = df_events.groupby(group_index).size()
         df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
-        n_events = int(len(df_events.groupby(group_index).size()))
-        percentage = np.round(100 * n_events / n_events_total, 1)
+        n_events = len(df_events.groupby(group_index).size())
+        percentage = 100 * n_events / n_events_total
 
         logger.info(
-            f"\t{tel_combo} (type {combo_type}): {n_events} events ({percentage}%)"
+            f"\t{tel_combo} (type {combo_type}): "
+            f"{int(n_events)} events ({np.round(percentage, 1)}%)"
         )
 
         event_data_stereo.loc[df_events.index, "combo_type"] = combo_type
@@ -176,12 +177,12 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     event_data_mean = event_data[params].groupby(group_index).mean()
 
     # Calculate the mean pointing direction
-    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
+    pnt_az_mean, pnt_alt_mean = calculate_mean_direction(
         lon=event_data["pointing_az"], lat=event_data["pointing_alt"], unit="rad"
     )
 
-    event_data_mean["pointing_alt"] = pointing_alt_mean
-    event_data_mean["pointing_az"] = pointing_az_mean
+    event_data_mean["pointing_alt"] = pnt_alt_mean
+    event_data_mean["pointing_az"] = pnt_az_mean
 
     # Define the weights for the DL2 parameters
     if weight_type == "simple":
@@ -229,16 +230,16 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     event_data_mean["reco_az"] = reco_az_mean
     event_data_mean["gammaness"] = gammaness_mean
 
-    # Transform the Alt/Az to the RA/Dec coordinate
+    # Transform the Alt/Az directions to the RA/Dec coordinate
     if not is_simulation:
 
         timestamps_mean = Time(
             event_data_mean["timestamp"].to_numpy(), format="unix", scale="utc"
         )
 
-        pointing_ra_mean, pointing_dec_mean = transform_altaz_to_radec(
-            alt=u.Quantity(pointing_alt_mean.to_numpy(), u.rad),
-            az=u.Quantity(pointing_az_mean.to_numpy(), u.rad),
+        pnt_ra_mean, pnt_dec_mean = transform_altaz_to_radec(
+            alt=u.Quantity(pnt_alt_mean.to_numpy(), u.rad),
+            az=u.Quantity(pnt_az_mean.to_numpy(), u.rad),
             obs_time=timestamps_mean,
         )
 
@@ -248,8 +249,8 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
             obs_time=timestamps_mean,
         )
 
-        event_data_mean["pointing_ra"] = pointing_ra_mean.to_value(u.deg)
-        event_data_mean["pointing_dec"] = pointing_dec_mean.to_value(u.deg)
+        event_data_mean["pointing_ra"] = pnt_ra_mean.to_value(u.deg)
+        event_data_mean["pointing_dec"] = pnt_dec_mean.to_value(u.deg)
         event_data_mean["reco_ra"] = reco_ra_mean.to_value(u.deg)
         event_data_mean["reco_dec"] = reco_dec_mean.to_value(u.deg)
 
