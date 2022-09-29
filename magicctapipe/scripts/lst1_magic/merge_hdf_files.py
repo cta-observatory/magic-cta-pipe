@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This script merges HDF files produced by the LST-1 + MAGIC combined
+This script merges the HDF files produced by the LST-1 + MAGIC combined
 analysis pipeline. It parses information from the file names, so they
 should follow the convention, i.e., *Run*.*.h5 or *run*.h5.
 
@@ -54,6 +54,7 @@ def write_data_to_table(input_file_mask, output_file):
         Path to an output HDF file
     """
 
+    # Find the input files
     input_files = glob.glob(input_file_mask)
     input_files.sort()
 
@@ -104,7 +105,7 @@ def write_data_to_table(input_file_mask, output_file):
 
 def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=False):
     """
-    Merges HDF files produced by the combined analysis pipeline.
+    Merges the HDF files produced by the combined analysis pipeline.
 
     Parameters
     ----------
@@ -223,6 +224,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
             # Check the minimum and maximum run IDs with the "int" type
             run_ids_unique = run_ids_unique.astype(int)
+
             run_id_min = run_ids_unique.min()
             run_id_max = run_ids_unique.max()
 
@@ -250,7 +252,7 @@ def main():
         dest="input_dir",
         type=str,
         required=True,
-        help="Path to a directory where input HDF files are stored.",
+        help="Path to a directory where input HDF files are stored",
     )
 
     parser.add_argument(
@@ -258,21 +260,21 @@ def main():
         "-o",
         dest="output_dir",
         type=str,
-        help="Path to a directory where to save output HDF files.",
+        help="Path to a directory where to save output HDF files",
     )
 
     parser.add_argument(
         "--run-wise",
         dest="run_wise",
         action="store_true",
-        help="Merge input files run-wise (applicable only to real data).",
+        help="Merge input files run-wise (applicable only to real data)",
     )
 
     parser.add_argument(
         "--subrun-wise",
         dest="subrun_wise",
         action="store_true",
-        help="Merge input files subrun-wise (applicable only to MAGIC real data).",
+        help="Merge input files subrun-wise (applicable only to MAGIC real data)",
     )
 
     args = parser.parse_args()
