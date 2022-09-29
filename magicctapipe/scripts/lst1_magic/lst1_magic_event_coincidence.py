@@ -395,6 +395,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         profiles, output_file, group_name="/coincidence", table_name="profile", mode="a"
     )
 
+    # Save the subarray description
     tel_descriptions = {
         1: subarray_lst.tel[1],  # LST-1
         2: subarray_magic.tel[2],  # MAGIC-I
