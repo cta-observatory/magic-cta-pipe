@@ -120,11 +120,11 @@ def magic_calib_to_dl1(
     )
 
     if is_simulation and not is_stereo_trigger:
-        logger.info("\nMono trigger MC data is not yet supported. Exiting.")
+        logger.info("\nMono trigger MC data is not yet supported. Exiting...")
         sys.exit()
 
     if is_sum_trigger:
-        logger.info("\nSUM trigger data is not yet fully supported. Exiting.")
+        logger.info("\nSUM trigger data is not yet fully supported. Exiting...")
         sys.exit()
 
     if not is_simulation:
@@ -135,7 +135,7 @@ def magic_calib_to_dl1(
             if not allow_mono_trigger:
                 logger.info(
                     "\nMono trigger data are not allowed. Please set the option "
-                    "to `True` if you are sure to process them. Exiting."
+                    "to `True` if you are sure to process them. Exiting..."
                 )
                 sys.exit()
 
