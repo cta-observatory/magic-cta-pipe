@@ -19,7 +19,7 @@ from .energy_utils import (
 
 from .event_processing import (
     RegressorClassifierBase,
-    EnergyRegressor,
+    # EnergyRegressor,
     HillasFeatureSelector,
     EventFeatureSelector,
     EventFeatureTargetSelector,
@@ -38,8 +38,8 @@ from .global_utils import (
 )
 
 from .estimators import (
+    DispRegressor,
     EnergyRegressor,
-    DirectionRegressor,
     EventClassifier,
 )
 
@@ -62,7 +62,7 @@ __all__ = [
     "evaluate_performance_energy",
     "plot_migmatrix",
     "RegressorClassifierBase",
-    "EnergyRegressor",
+    # "EnergyRegressor",
     "HillasFeatureSelector",
     "EventFeatureSelector",
     "EventFeatureTargetSelector",
@@ -75,12 +75,11 @@ __all__ = [
     "compute_event_weights",
     "get_weights_mc_dir_class",
     "check_train_test_intersections",
+    "DispRegressor",
     "EnergyRegressor",
-    "DirectionRegressor",
     "EventClassifier",
     "write_hillas",
     "check_write_stereo",
     "check_stereo",
     "write_stereo",
 ]
-
