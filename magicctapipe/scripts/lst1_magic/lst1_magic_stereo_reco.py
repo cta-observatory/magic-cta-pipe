@@ -322,7 +322,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         sim_config = pd.read_hdf(input_file, key="simulation/config")
 
         save_pandas_data_in_table(
-            data=sim_config,
+            input_data=sim_config,
             output_file=output_file,
             group_name="/simulation",
             table_name="config",
