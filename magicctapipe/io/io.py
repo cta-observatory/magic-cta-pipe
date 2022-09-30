@@ -476,7 +476,7 @@ def load_train_data_files(
 
     logger.info(
         f"\nMinimum off-axis angle allowed: {offaxis_min}"
-        f"\nMaximum off-axis angle allowed: {offaxis_min}"
+        f"\nMaximum off-axis angle allowed: {offaxis_max}"
     )
 
     if offaxis_min is not None:
@@ -927,13 +927,15 @@ def load_irf_files(input_dir_irf):
     return irf_data, extra_header
 
 
-def save_pandas_data_in_table(data, output_file, group_name, table_name, mode="w"):
+def save_pandas_data_in_table(
+    input_data, output_file, group_name, table_name, mode="w"
+):
     """
     Saves a pandas data frame in a table.
 
     Parameters
     ----------
-    data: pandas.core.frame.DataFrame
+    input_data: pandas.core.frame.DataFrame
         Pandas data frame
     output_file: str
         Path to an output HDF file
@@ -947,13 +949,10 @@ def save_pandas_data_in_table(data, output_file, group_name, table_name, mode="w
         "a" for appending the table to the file
     """
 
-    params = data.dtypes.index
-    dtypes = data.dtypes.values
+    values = [tuple(array) for array in input_data.to_numpy()]
+    dtypes = np.dtype(list(zip(input_data.dtypes.index, input_data.dtypes.values)))
 
-    data_array = np.array(
-        [tuple(array) for array in data.to_numpy()],
-        dtype=np.dtype([(param, dtype) for param, dtype in zip(params, dtypes)]),
-    )
+    data_array = np.array(values, dtype=dtypes)
 
     with tables.open_file(output_file, mode=mode) as f_out:
         f_out.create_table(group_name, table_name, createparents=True, obj=data_array)
