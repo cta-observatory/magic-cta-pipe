@@ -824,7 +824,7 @@ def load_irf_files(input_dir_irf):
     }
 
     irf_data = {
-        "grid_point": [],
+        "grid_points": [],
         "effective_area": [],
         "energy_dispersion": [],
         "psf_table": [],
@@ -864,7 +864,7 @@ def load_irf_files(input_dir_irf):
         fov_offset_bins = join_bin_lo_hi(aeff_data["THETA_LO"], aeff_data["THETA_HI"])
         migration_bins = join_bin_lo_hi(edisp_data["MIGRA_LO"], edisp_data["MIGRA_HI"])
 
-        irf_data["grid_point"].append(grid_point)
+        irf_data["grid_points"].append(grid_point)
         irf_data["effective_area"].append(aeff_data["EFFAREA"])
         irf_data["energy_dispersion"].append(np.swapaxes(edisp_data["MATRIX"], 0, 2))
         irf_data["energy_bins"].append(energy_bins)

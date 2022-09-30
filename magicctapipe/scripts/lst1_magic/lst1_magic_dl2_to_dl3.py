@@ -82,7 +82,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
     logger.info("\nGrid points (cosZd, Az):")
-    for grid_point in irf_data["grid_point"]:
+    for grid_point in irf_data["grid_points"]:
         logger.info(grid_point.round(5).tolist())
 
     logger.info("\nExtra header:")
@@ -133,7 +133,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     aeff_interp = interpolate_effective_area_per_energy_and_fov(
         effective_area=irf_data["effective_area"],
-        grid_points=irf_data["grid_point"],
+        grid_points=irf_data["grid_points"],
         target_point=target_point,
         method=interpolation_method,
     )
@@ -154,7 +154,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     logger.info("Interpolating the energy dispersion...")
 
     edisp_interp = griddata(
-        points=irf_data["grid_point"],
+        points=irf_data["grid_points"],
         values=irf_data["energy_dispersion"],
         xi=target_point,
         method=interpolation_method,
@@ -200,7 +200,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         logger.info("Interpolating the dynamic gammaness cuts...")
 
         gh_cuts_interp = griddata(
-            points=irf_data["grid_point"],
+            points=irf_data["grid_points"],
             values=irf_data["gh_cuts"],
             xi=target_point,
             method=interpolation_method,
@@ -220,7 +220,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         logger.info("Interpolating the dynamic theta cuts...")
 
         rad_max_interp = griddata(
-            points=irf_data["grid_point"],
+            points=irf_data["grid_points"],
             values=irf_data["rad_max"].to_value(u.deg),
             xi=target_point,
             method=interpolation_method,
