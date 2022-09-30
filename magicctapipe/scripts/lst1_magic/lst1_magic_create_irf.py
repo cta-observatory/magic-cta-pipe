@@ -621,7 +621,7 @@ def create_irf(
             )
 
             bkg_hdu = create_background_2d_hdu(
-                background_2d=bkg.T,
+                background_2d=bkg,
                 reco_energy_bins=energy_bins,
                 fov_offset_bins=bkg_fov_offset_bins,
                 extname="BACKGROUND",
