@@ -547,7 +547,10 @@ def create_irf(
                 selected_events=event_table_gamma,
                 simulation_info=sim_info_gamma,
                 true_energy_bins=energy_bins,
-            )[:, np.newaxis]
+            )
+
+            # Add one dimension for the FoV offset bin
+            aeff = aeff[:, np.newaxis]
 
         aeff_hdu = create_aeff2d_hdu(
             effective_area=aeff,
