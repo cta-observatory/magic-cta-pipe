@@ -863,7 +863,7 @@ def load_irf_files(input_dir_irf):
         aeff_data = irf_hdus["EFFECTIVE AREA"].data[0]
         edisp_data = irf_hdus["ENERGY DISPERSION"].data[0]
 
-        irf_data["effective_area"].append(aeff_data["EFFAREA"].T)
+        irf_data["effective_area"].append(aeff_data["EFFAREA"])
         irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T)
 
         # Read the essential bins
