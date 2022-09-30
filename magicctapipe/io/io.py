@@ -827,12 +827,14 @@ def load_irf_files(input_dir_irf):
         "grid_point": [],
         "effective_area": [],
         "energy_dispersion": [],
+        "psf_table": [],
         "background": [],
         "gh_cuts": [],
         "rad_max": [],
         "energy_bins": [],
         "fov_offset_bins": [],
         "migration_bins": [],
+        "source_offset_bins": [],
         "bkg_fov_offset_bins": [],
     }
 
@@ -868,6 +870,13 @@ def load_irf_files(input_dir_irf):
         irf_data["energy_bins"].append(energy_bins)
         irf_data["fov_offset_bins"].append(fov_offset_bins)
         irf_data["migration_bins"].append(migration_bins)
+
+        if "PSF" in irf_hdus:
+            psf_data = irf_hdus["PSF"].data[0]
+            source_offset_bins = join_bin_lo_hi(psf_data["RAD_LO"], psf_data["RAD_HI"])
+
+            irf_data["psf_table"].append(psf_data["RPSF"])
+            irf_data["source_offset_bins"].append(source_offset_bins)
 
         if "BACKGROUND" in irf_hdus:
             bkg_data = irf_hdus["BACKGROUND"].data[0]
