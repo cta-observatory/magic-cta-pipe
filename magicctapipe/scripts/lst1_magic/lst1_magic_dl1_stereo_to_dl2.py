@@ -404,7 +404,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         sim_config = pd.read_hdf(input_file_dl1, key="simulation/config")
 
         save_pandas_data_in_table(
-            data=sim_config,
+            input_data=sim_config,
             output_file=output_file,
             group_name="/simulation",
             table_name="config",
