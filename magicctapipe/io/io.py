@@ -533,7 +533,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
         "software" uses software coincident events,
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
-        "hardware" uses all the any2 combination events
+        "hardware" uses all the telescope combination events
     dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
@@ -619,13 +619,24 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
         * len(np.unique(event_table["obs_id"]))
     )
 
+    min_viewcone_radius = sim_config["min_viewcone_radius"][0] * u.deg
+    max_viewcone_radius = sim_config["max_viewcone_radius"][0] * u.deg
+
+    viewcone_diff = max_viewcone_radius - min_viewcone_radius
+
+    if viewcone_diff < u.Quantity(0.001, u.deg):
+        # Handle ring-wobble MCs as same as point-like MCs
+        viewcone = 0 * u.deg
+    else:
+        viewcone = max_viewcone_radius
+
     sim_info = SimulatedEventsInfo(
         n_showers=n_total_showers,
         energy_min=u.Quantity(sim_config["energy_range_min"][0], u.TeV),
         energy_max=u.Quantity(sim_config["energy_range_max"][0], u.TeV),
         max_impact=u.Quantity(sim_config["max_scatter_range"][0], u.m),
         spectral_index=sim_config["spectral_index"][0],
-        viewcone=u.Quantity(sim_config["max_viewcone_radius"][0], u.deg),
+        viewcone=viewcone,
     )
 
     return event_table, pointing, sim_info
@@ -646,7 +657,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
         "software" uses software coincident events,
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
-        "hardware" uses all the any2 combination events
+        "hardware" uses all the telescope combination events
     dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
