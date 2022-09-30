@@ -934,7 +934,7 @@ def load_irf_files(input_dir_irf):
         elif (n_data != n_input_files) or len(unique_values) > 1:
             raise RuntimeError(
                 "The configurations of the input IRF data files do not match, "
-                "at least the setting '{key}'."
+                f"at least the setting '{key}'."
             )
         else:
             extra_header[key] = unique_values[0]
