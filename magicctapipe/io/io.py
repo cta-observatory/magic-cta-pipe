@@ -865,8 +865,8 @@ def load_irf_files(input_dir_irf):
         migration_bins = join_bin_lo_hi(edisp_data["MIGRA_LO"], edisp_data["MIGRA_HI"])
 
         irf_data["grid_points"].append(grid_point)
-        irf_data["effective_area"].append(aeff_data["EFFAREA"])
-        irf_data["energy_dispersion"].append(np.swapaxes(edisp_data["MATRIX"], 0, 2))
+        irf_data["effective_area"].append(aeff_data["EFFAREA"].T)
+        irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T)
         irf_data["energy_bins"].append(energy_bins)
         irf_data["fov_offset_bins"].append(fov_offset_bins)
         irf_data["migration_bins"].append(migration_bins)
@@ -875,7 +875,7 @@ def load_irf_files(input_dir_irf):
             psf_data = irf_hdus["PSF"].data[0]
             source_offset_bins = join_bin_lo_hi(psf_data["RAD_LO"], psf_data["RAD_HI"])
 
-            irf_data["psf_table"].append(psf_data["RPSF"])
+            irf_data["psf_table"].append(psf_data["RPSF"].T)
             irf_data["source_offset_bins"].append(source_offset_bins)
 
         if "BACKGROUND" in irf_hdus:
@@ -884,16 +884,16 @@ def load_irf_files(input_dir_irf):
                 bkg_data["THETA_LO"], bkg_data["THETA_HI"]
             )
 
-            irf_data["background"].append(bkg_data["BKG"])
+            irf_data["background"].append(bkg_data["BKG"].T)
             irf_data["bkg_fov_offset_bins"].append(bkg_fov_offset_bins)
 
         if "GH_CUTS" in irf_hdus:
             ghcuts_data = irf_hdus["GH_CUTS"].data[0]
-            irf_data["gh_cuts"].append(ghcuts_data["GH_CUTS"])
+            irf_data["gh_cuts"].append(ghcuts_data["GH_CUTS"].T)
 
         if "RAD_MAX" in irf_hdus:
             radmax_data = irf_hdus["RAD_MAX"].data[0]
-            irf_data["rad_max"].append(radmax_data["RAD_MAX"])
+            irf_data["rad_max"].append(radmax_data["RAD_MAX"].T)
 
     # Check the IRF data consistency
     for key in irf_data.keys():
