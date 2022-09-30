@@ -2,24 +2,30 @@
 # coding: utf-8
 
 """
-This script processes MC DL2 events and creates the IRFs.
+This script processes MC DL2 events and creates the IRFs. It can create
+two different IRF types based on the number of FoV offset bins,
+"POINT-LIKE" in case of one bin and "FULL-ENCLOSURE" in the other cases.
+The effective area and energy dispersion HDUs are created in case of the
+"POINT_LIKE" IRFs, and in addition the PSF table and background HDUs in
+case of the "FULL-ENCLOSURE" IRFs. When the input gamma MC is point-like
+data, it creates one bin around the true FoV offset and creates only the
+"POINT-LIKE" IRFs.
 
-There are 4 different types which can be specified by the "event_type"
-setting in the configuration file. The "hardware" type is supposed for
-the hardware trigger between LST-1 and MAGIC, allowing for the events of
-all the telescope combinations. The "software(_only_3tel)" types are
-supposed for the software coincidence with LST-mono and MAGIC-stereo,
+There are four different event types with which the IRFs will be
+created. The "hardware" type is supposed for the hardware trigger
+between LST-1 and MAGIC, allowing for the events of all the telescope
+combinations. The "software(_only_3tel)" types are supposed for the
+software coincidence with LST-mono and MAGIC-stereo observations,
 allowing for only the events triggering both M1 and M2. The "software"
-type allows for the events of the any 2 telescope combinations except
-the M1 and M2 combination, which are not coincident with LST-1 events.
-The "software_only_3tel" type allows only for the events of the three
-telescopes combination. The "magic_only" type allows only for the events
-of M1 and M2 telescopes combination.
+type allows for the events of the any two-telescopes combinations,
+except the M1 and M2 combination which are not coincident with LST-1
+events. The "software_only_3tel" type allows only for the events of the
+three telescopes combination. The "magic_only" type allows only for the
+events of M1 and M2 telescopes combination.
 
-There are 2 types for gammaness and theta cuts, which are "global" and
-"dynamic". In case of the dynamic cuts, the optimal cuts satisfying an
-efficiency will be calculated in each energy bin specified in the
-configuration file.
+There are two types of gammaness and theta cuts, "global" and "dynamic".
+In case of the dynamic cuts, the optimal cut satisfying a given
+efficiency will be calculated per energy bin.
 
 Usage:
 $ python lst1_magic_create_irf.py
@@ -131,7 +137,7 @@ def create_irf(
         fov_bins_n_edges = config_fov_bins["n_edges"]
 
         logger.info(
-            "Fov offset bins (linear scale):"
+            "\nFov offset bins (linear scale):"
             f"start: {fov_bins_start}"
             f"stop: {fov_bins_stop}"
             f"n_edges: {fov_bins_n_edges}"
