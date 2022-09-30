@@ -159,14 +159,19 @@ def create_irf(
             f"\n--> FoV offset bins: {fov_offset_bins}"
         )
 
-    is_point_like = len(fov_offset_bins) == 2
+    # Here we decide the IRF type based on the number of FoV offset
+    # bins, "POINT-LIKE" in case of 1 bin and "FULL-ENCLOSURE" in the
+    # other cases. It allows for creating the "POINT-LIKE" IRFs with
+    # diffuse gamma MCs by selecting a given FoV offset region.
+
+    is_point_like = len(fov_offset_bins) == 2  # 1 bin -> n_edges = 2
 
     if is_point_like:
         logger.info("\nIRF type: POINT-LIKE")
     else:
         logger.info("\nIRF type: FULL-ENCLOSURE")
 
-    # Check the input background data
+    # Check the existence of background MC data
     is_proton_mc = input_file_proton is not None
     is_electron_mc = input_file_electron is not None
 
@@ -176,16 +181,16 @@ def create_irf(
     if is_point_like and is_bkg_mc:
         logger.warning(
             "\nWARNING: Skips the creation of a background model though the background "
-            "MCs exist, since it is not included in the POINT-LIKE IRFs."
+            "MCs exist, since it is not included in the 'POINT-LIKE' IRFs."
         )
 
     if (not is_point_like) and (not is_bkg_mc):
         logger.warning(
             "\nWARNING: Skips the creation of a background model though the IRF type "
-            "is FULL-ENCLOSURE, since both or either of background MCs are missing."
+            "is 'FULL-ENCLOSURE', since both or either of background MCs are missing."
         )
 
-    # Load the input background data files
+    # Load the input background MC data files
     event_table_bkg = QTable()
 
     if not is_point_like and is_bkg_mc:
@@ -383,7 +388,7 @@ def create_irf(
         extra_header["GH_MIN"] = gh_cut_min
         extra_header["GH_MAX"] = gh_cut_max
 
-        # Apply the gammaness cuts satisfying the efficiency
+        # Calculate the dynamic gammaness cuts
         gh_percentile = 100 * (1 - gh_efficiency)
 
         gh_cut_table = calculate_percentile_cut(
@@ -401,6 +406,7 @@ def create_irf(
             "\n\nApplying the dynamic gammaness cuts..."
         )
 
+        # Apply the dynamic gammaness cuts
         mask_gh_gamma = evaluate_binned_cut(
             values=event_table_gamma["gammaness"],
             bin_values=event_table_gamma["reco_energy"],
@@ -473,7 +479,7 @@ def create_irf(
             extra_header["TH_MIN"] = (theta_cut_min.to_value(u.deg), "deg")
             extra_header["TH_MAX"] = (theta_cut_max.to_value(u.deg), "deg")
 
-            # Apply the theta cuts satisfying the efficiency
+            # Calculate the dynamic theta cuts
             theta_percentile = 100 * theta_efficiency
 
             theta_cut_table = calculate_percentile_cut(
@@ -491,6 +497,7 @@ def create_irf(
                 "\n\nApplying the dynamic theta cuts..."
             )
 
+            # Apply the dynamic theta cuts
             mask_theta = evaluate_binned_cut(
                 values=event_table_gamma["theta"],
                 bin_values=event_table_gamma["reco_energy"],
@@ -528,6 +535,7 @@ def create_irf(
                 true_energy_bins=energy_bins,
                 fov_offset_bins=fov_offset_bins,
             )
+
         else:
             aeff = effective_area_per_energy(
                 selected_events=event_table_gamma,
@@ -618,8 +626,8 @@ def create_irf(
 
     output_file = (
         f"{output_dir}/irf_zd_{pnt_gamma[0].to_value(u.deg)}deg_"
-        f"az_{pnt_gamma[1].to_value(u.deg)}deg_"
-        f"{event_type}_{gh_cut_config}_{theta_cut_config}.fits.gz"
+        f"az_{pnt_gamma[1].to_value(u.deg)}deg_{event_type}_"
+        f"{gh_cut_config}_{theta_cut_config}.fits.gz"
     )
 
     irf_hdus.writeto(output_file, overwrite=True)
