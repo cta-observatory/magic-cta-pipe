@@ -852,25 +852,30 @@ def load_irf_files(input_dir_irf):
             if key in header:
                 extra_header[key].append(header[key])
 
+        # Read the pointing direction
         pointing_coszd = np.cos(np.deg2rad(header["PNT_ZD"]))
         pointing_az = np.deg2rad(header["PNT_AZ"])
         grid_point = [pointing_coszd, pointing_az]
 
-        # Read the IRF data
+        irf_data["grid_points"].append(grid_point)
+
+        # Read the essential IRF data
         aeff_data = irf_hdus["EFFECTIVE AREA"].data[0]
         edisp_data = irf_hdus["ENERGY DISPERSION"].data[0]
 
+        irf_data["effective_area"].append(aeff_data["EFFAREA"].T)
+        irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T)
+
+        # Read the essential bins
         energy_bins = join_bin_lo_hi(aeff_data["ENERG_LO"], aeff_data["ENERG_HI"])
         fov_offset_bins = join_bin_lo_hi(aeff_data["THETA_LO"], aeff_data["THETA_HI"])
         migration_bins = join_bin_lo_hi(edisp_data["MIGRA_LO"], edisp_data["MIGRA_HI"])
 
-        irf_data["grid_points"].append(grid_point)
-        irf_data["effective_area"].append(aeff_data["EFFAREA"].T)
-        irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T)
         irf_data["energy_bins"].append(energy_bins)
         irf_data["fov_offset_bins"].append(fov_offset_bins)
         irf_data["migration_bins"].append(migration_bins)
 
+        # Read additional IRF data and bins if they exist
         if "PSF" in irf_hdus:
             psf_data = irf_hdus["PSF"].data[0]
             source_offset_bins = join_bin_lo_hi(psf_data["RAD_LO"], psf_data["RAD_HI"])
@@ -880,12 +885,10 @@ def load_irf_files(input_dir_irf):
 
         if "BACKGROUND" in irf_hdus:
             bkg_data = irf_hdus["BACKGROUND"].data[0]
-            bkg_fov_offset_bins = join_bin_lo_hi(
-                bkg_data["THETA_LO"], bkg_data["THETA_HI"]
-            )
+            bkg_offset_bins = join_bin_lo_hi(bkg_data["THETA_LO"], bkg_data["THETA_HI"])
 
             irf_data["background"].append(bkg_data["BKG"].T)
-            irf_data["bkg_fov_offset_bins"].append(bkg_fov_offset_bins)
+            irf_data["bkg_fov_offset_bins"].append(bkg_offset_bins)
 
         if "GH_CUTS" in irf_hdus:
             ghcuts_data = irf_hdus["GH_CUTS"].data[0]
