@@ -101,7 +101,6 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     # Here the flip parameter (0 or 1) distinguishes the head and tail.
 
     tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
-
     for tel_id in tel_ids:
 
         df_events = event_data.query(f"tel_id == {tel_id}")
@@ -149,7 +148,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     # Calculate the telescope multiplicity by dividing the group size of
     # the shower events by the number of flips (= 2)
     group_size = params_with_flips.groupby(["obs_id", "event_id"]).size()
-    params_with_flips["multiplicity"] = group_size / 2
+    params_with_flips["multiplicity"] = group_size // 2
 
     # Then, we get the flip combination minimizing the angular distances
     # of the head and tail candidates per shower event. In order to
@@ -166,7 +165,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
             f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
 
-        df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
+        df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()//2
         df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
         n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
@@ -205,7 +204,6 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
                 )
 
             for tel_id_1, tel_id_2 in tel_any2_combinations:
-
                 # Calculate the distance of the any2 combination
                 theta = angular_separation(
                     lon1=u.Quantity(container[tel_id_1]["reco_az"].to_numpy(), u.deg),
