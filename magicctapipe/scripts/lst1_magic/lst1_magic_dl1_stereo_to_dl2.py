@@ -149,7 +149,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     # Calculate the telescope multiplicity by dividing the group size of
     # the shower events by the number of flips (= 2)
     group_size = params_with_flips.groupby(["obs_id", "event_id"]).size()
-    params_with_flips["multiplicity"] = group_size / 2
+    params_with_flips["multiplicity"] = group_size // 2
 
     # Then, we get the flip combination minimizing the angular distances
     # of the head and tail candidates per shower event. In order to
@@ -166,7 +166,9 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
             f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
 
-        df_events["multiplicity"] = df_events.groupby(["obs_id", "event_id"]).size()
+        group_size = df_events.groupby(["obs_id", "event_id"]).size()
+
+        df_events["multiplicity"] = group_size // 2
         df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
         n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
