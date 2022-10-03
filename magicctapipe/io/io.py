@@ -950,10 +950,12 @@ def load_irf_files(input_dir_irf):
 
     # Set units to the IRF data
     irf_data["effective_area"] *= u.m**2
+    irf_data["psf_table"] *= u.Unit("sr-1")
     irf_data["background"] *= u.Unit("MeV-1 s-1 sr-1")
     irf_data["rad_max"] *= u.deg
     irf_data["energy_bins"] *= u.TeV
     irf_data["fov_offset_bins"] *= u.deg
+    irf_data["source_offset_bins"] *= u.deg
     irf_data["bkg_fov_offset_bins"] *= u.deg
 
     # Convert the list to the numpy ndarray
