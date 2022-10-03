@@ -550,7 +550,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
     Raises
     ------
     ValueError
-        If the input IRF type is not known
+        If the input event type is not known
     """
 
     # Load the input file
@@ -560,7 +560,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
 
     df_events = get_stereo_events(df_events, quality_cuts)
 
-    # Extract the events of the specified IRF type
+    # Extract the events of the specified event type
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     if event_type == "software":
@@ -573,7 +573,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
         df_events.query("combo_type == 0", inplace=True)
 
     elif event_type != "hardware":
-        raise ValueError(f"Unknown IRF type '{event_type}'.")
+        raise ValueError(f"Unknown event type '{event_type}'.")
 
     n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
@@ -679,7 +679,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
 
     event_data = get_stereo_events(event_data, quality_cuts)
 
-    # Extract the events of the specified IRF type
+    # Extract the events of the specified event type
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     if event_type == "software":
