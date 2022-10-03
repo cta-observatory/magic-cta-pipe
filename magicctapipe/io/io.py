@@ -941,7 +941,7 @@ def load_irf_files(input_dir_irf):
         elif n_values != n_input_files:
             raise RuntimeError(f"The configurations do not match, at least '{key}'.")
 
-        elif unique_values > 1:
+        elif len(unique_values) > 1:
             raise RuntimeError(f"The setting '{key}' does not match.")
 
         else:
