@@ -172,7 +172,8 @@ def create_irf(
     # other cases. It allows for creating the "POINT-LIKE" IRFs with
     # diffuse gamma MCs by selecting a given FoV offset region.
 
-    is_point_like = len(fov_offset_bins) == 2  # 1 bin -> n_edges = 2
+    n_fov_offset_bins = len(fov_offset_bins) - 1
+    is_point_like = n_fov_offset_bins == 1
 
     if is_point_like:
         logger.info("\nIRF type: POINT-LIKE")
