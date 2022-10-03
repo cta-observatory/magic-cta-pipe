@@ -9,7 +9,9 @@ The effective area and energy dispersion HDUs are created in case of the
 "POINT_LIKE" IRFs, and in addition the PSF table and background HDUs in
 case of the "FULL-ENCLOSURE" IRFs. When the input gamma MC is point-like
 data, it creates one bin around the true FoV offset and creates only the
-"POINT-LIKE" IRFs.
+"POINT-LIKE" IRFs. Please note that the ring-wobble MCs, whose angular
+difference of maximum and minimum viewcone angles must be 0.0002 degree,
+are handled as same as point-like data.
 
 There are four different event types with which the IRFs will be
 created. The "hardware" type is supposed for the hardware trigger
