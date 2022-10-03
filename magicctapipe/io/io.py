@@ -938,10 +938,7 @@ def load_irf_files(input_dir_irf):
             # Remove the empty card
             extra_header.pop(key)
 
-        elif n_values != n_input_files:
-            raise RuntimeError(f"The configurations do not match, at least '{key}'.")
-
-        elif len(unique_values) > 1:
+        elif (n_values != n_input_files) or len(unique_values) > 1:
             raise RuntimeError(f"The setting '{key}' does not match.")
 
         else:
