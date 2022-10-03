@@ -792,20 +792,6 @@ def load_irf_files(input_dir_irf):
         If the configurations of the input IRFs are not consistent
     """
 
-    # Find the input files
-    irf_file_mask = f"{input_dir_irf}/irf_*.fits.gz"
-
-    input_files_irf = glob.glob(irf_file_mask)
-    input_files_irf.sort()
-
-    n_input_files = len(input_files_irf)
-
-    if n_input_files == 0:
-        raise FileNotFoundError(
-            "Could not find any IRF data files in the input directory."
-        )
-
-    # Load the input files
     extra_header = {
         "TELESCOP": [],
         "INSTRUME": [],
@@ -838,6 +824,20 @@ def load_irf_files(input_dir_irf):
         "bkg_fov_offset_bins": [],
     }
 
+    # Find the input files
+    irf_file_mask = f"{input_dir_irf}/irf_*.fits.gz"
+
+    input_files_irf = glob.glob(irf_file_mask)
+    input_files_irf.sort()
+
+    n_input_files = len(input_files_irf)
+
+    if n_input_files == 0:
+        raise FileNotFoundError(
+            "Could not find any IRF data files in the input directory."
+        )
+
+    # Loop over every IRF data file
     logger.info("\nThe following IRF data files are found:")
 
     for input_file in input_files_irf:
@@ -901,42 +901,51 @@ def load_irf_files(input_dir_irf):
     # Check the IRF data consistency
     for key in irf_data.keys():
 
-        irf_data[key] = np.array(irf_data[key])
-        n_data = len(irf_data[key])
+        n_irf_data = len(irf_data[key])
 
-        if (n_data != 0) and (n_data != n_input_files):
+        if n_irf_data == 0:
+            continue
+
+        elif n_irf_data != n_input_files:
             raise RuntimeError(
-                f"The number of '{key}' data (= {n_data}) does not match "
+                f"The number of '{key}' data (= {n_irf_data}) does not match "
                 f"with that of the input IRF data files (= {n_input_files})."
             )
 
-        if "bins" in key:
+        elif "bins" in key:
+
+            n_edges_unique = np.unique([len(bins) for bins in irf_data[key]])
+
+            if len(n_edges_unique) > 1:
+                raise RuntimeError(f"The number of edges of '{key}' does not match.")
+
             unique_bins = np.unique(irf_data[key], axis=0)
-            n_unique_bins = len(unique_bins)
 
-            if n_unique_bins == 1:
+            if len(unique_bins) > 1:
+                raise RuntimeError(f"The binning of '{key}' do not match.")
+
+            else:
+                # Set the unique bins
                 irf_data[key] = unique_bins[0]
-
-            elif n_unique_bins > 1:
-                raise RuntimeError(
-                    f"The '{key}' of the input IRF data files does not match."
-                )
 
     # Check the header consistency
     for key in list(extra_header.keys()):
 
-        n_data = len(extra_header[key])
+        n_values = len(extra_header[key])
         unique_values = np.unique(extra_header[key])
 
-        if n_data == 0:
+        if n_values == 0:
+            # Remove the empty card
             extra_header.pop(key)
 
-        elif (n_data != n_input_files) or len(unique_values) > 1:
-            raise RuntimeError(
-                "The configurations of the input IRF data files do not match, "
-                f"at least the setting '{key}'."
-            )
+        elif n_values != n_input_files:
+            raise RuntimeError(f"The configurations do not match, at least '{key}'.")
+
+        elif unique_values > 1:
+            raise RuntimeError(f"The setting '{key}' does not match.")
+
         else:
+            # Set the unique value
             extra_header[key] = unique_values[0]
 
     # Set units to the IRF data
@@ -946,6 +955,10 @@ def load_irf_files(input_dir_irf):
     irf_data["energy_bins"] *= u.TeV
     irf_data["fov_offset_bins"] *= u.deg
     irf_data["bkg_fov_offset_bins"] *= u.deg
+
+    # Convert the list to the numpy ndarray
+    irf_data["energy_dispersion"] = np.array(irf_data["energy_dispersion"])
+    irf_data["migration_bins"] = np.array(irf_data["migration_bins"])
 
     return irf_data, extra_header
 
