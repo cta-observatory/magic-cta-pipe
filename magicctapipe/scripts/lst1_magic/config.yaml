@@ -53,10 +53,10 @@ MAGIC:
     magic_clean:
         use_time: true
         use_sum: true
-        picture_thresh: 6
-        boundary_thresh: 3.5
-        max_time_off: 4.5
-        max_time_diff: 1.5
+        picture_thresh: 6.0  # phe
+        boundary_thresh: 3.5  # phe
+        max_time_off: 4.5  # ns
+        max_time_diff: 1.5  # ns
         find_hotpixels: true
         pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
 
