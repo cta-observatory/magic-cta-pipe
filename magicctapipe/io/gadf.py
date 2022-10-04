@@ -133,10 +133,10 @@ def create_event_hdu(
 
     # Get the instruments used for the observation
     combo_types_unique = np.unique(event_table["combo_type"])
-    tel_combos = np.array(list(TEL_COMBINATIONS.keys()))[combo_types_unique]
+    tel_combos = np.array(list(TEL_COMBINATIONS.keys()))[combo_types_unique.astype(int)]
 
     tel_list = np.unique([tel_combo.split("_") for tel_combo in tel_combos])
-    instrument = "_".join(tel_list).upper()
+    instrument = "_".join(str(tel_list)).upper()
 
     # Transfer the RA/Dec directions to the galactic coordinate
     event_coords = SkyCoord(
