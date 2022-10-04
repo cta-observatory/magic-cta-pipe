@@ -168,6 +168,8 @@ def image_comparison(
         # get mcp data------------------------------------------------------------------------------
         if source.is_simulation:
             cleaning_config.update({"find_hotpixels": False})
+        else:
+            cleaning_config.update({"find_hotpixels": True})
 
         for k, v in cleaning_config.items():
             print(f"{k} : {v}")
