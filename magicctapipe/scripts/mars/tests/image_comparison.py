@@ -209,6 +209,10 @@ def image_comparison(
                 event_pulse_time,
             ) = magic_clean.clean_image(original_data_images_copy, event_pulse_time)
 
+        # print(f"Pixels selected after 1st step ({len(np.where(magic_clean.mask_step1 == True)[0])} pixels): {np.where(magic_clean.mask_step1 == True)[0]}")
+        # print(f"Pixels selected after 2nd step ({len(np.where(magic_clean.mask_step2 == True)[0])} pixels): {np.where(magic_clean.mask_step2 == True)[0]}")
+        # print(f"Pixels selected after 3rd step ({len(np.where(magic_clean.mask_step3 == True)[0])} pixels): {np.where(magic_clean.mask_step3 == True)[0]}")
+
         event_image_mcp = calibrated_data_images.copy()
         event_image_mcp[~clean_mask] = 0
 
