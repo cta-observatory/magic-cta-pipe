@@ -4,12 +4,10 @@ import numpy as np
 from scipy.sparse.csgraph import connected_components
 
 from ctapipe.image import (
-    tailcuts_clean,
     number_of_islands,
     hillas_parameters,
     timing_parameters,
     leakage_parameters,
-    apply_time_delta_cleaning,
 )
 
 __all__ = [
