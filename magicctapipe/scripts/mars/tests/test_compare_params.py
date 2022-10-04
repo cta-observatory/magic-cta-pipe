@@ -141,22 +141,40 @@ def test_compare_hillas_stereo_params(
     with open(config_params_file, "w") as outfile:
         yaml.dump(config_params, outfile, default_flow_style=False)
 
-    config_mcp = {
-        "mc_tel_ids": {"LST-1": 1, "MAGIC-I": 2, "MAGIC-II": 3},
-        "MAGIC": {
-            "magic_clean": {
-                "use_time": True,
-                "use_sum": True,
-                "picture_thresh": 6,
-                "boundary_thresh": 3.5,
-                "max_time_off": 4.5,
-                "max_time_diff": 1.5,
-                "find_hotpixels": "auto",
-                "pedestal_type": "from_extractor_rndm",
-            },  # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
-        },
-        "stereo_reco": {"quality_cuts": "(intensity > 50) & (width > 0)"},
-    }
+    if is_mc:
+        config_mcp = {
+            "mc_tel_ids": {"LST-1": 1, "MAGIC-I": 2, "MAGIC-II": 3},
+            "MAGIC": {
+                "magic_clean": {
+                    "use_time": True,
+                    "use_sum": True,
+                    "picture_thresh": 6,
+                    "boundary_thresh": 3.5,
+                    "max_time_off": 4.5,
+                    "max_time_diff": 1.5,
+                    "find_hotpixels": False,
+                    "pedestal_type": "from_extractor_rndm",
+                },  # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
+            },
+            "stereo_reco": {"quality_cuts": "(intensity > 50) & (width > 0)"},
+        }
+    else:
+        config_mcp = {
+            "mc_tel_ids": {"LST-1": 1, "MAGIC-I": 2, "MAGIC-II": 3},
+            "MAGIC": {
+                "magic_clean": {
+                    "use_time": True,
+                    "use_sum": True,
+                    "picture_thresh": 6,
+                    "boundary_thresh": 3.5,
+                    "max_time_off": 4.5,
+                    "max_time_diff": 1.5,
+                    "find_hotpixels": False,
+                    "pedestal_type": "from_extractor_rndm",
+                },  # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
+            },
+            "stereo_reco": {"quality_cuts": "(intensity > 50) & (width > 0)"},
+        }
 
     config_mcp_file = str(tmp_path / "config_mcp.yaml")
 
