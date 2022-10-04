@@ -56,12 +56,11 @@ for i in range(len(test_calibrated_real)):
 def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
 
     source = MAGICEventSource(
-            input_url=dataset_calibrated,
-            process_run=False,
-        )
+        input_url=dataset_calibrated,
+        process_run=False,
+    )
 
     is_mc = source.is_simulation
-    run_number = source.run_numbers[0]
 
     if is_mc:
         config_image = {
