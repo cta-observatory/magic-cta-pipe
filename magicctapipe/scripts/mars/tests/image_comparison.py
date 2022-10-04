@@ -34,10 +34,10 @@ def new_camera_geometry(camera_geom):
 
 # set configurations for the cleaning
 cleaning_config = dict(
-    picture_thresh=6,
+    picture_thresh=6.0,
     boundary_thresh=3.5,
-    max_time_off=4.5 * 1.64,
-    max_time_diff=1.5 * 1.64,
+    max_time_off=4.5,
+    max_time_diff=1.5,
     use_time=True,
     use_sum=True,
     find_hotpixels=True,
