@@ -169,6 +169,9 @@ def image_comparison(
         if source.is_simulation:
             cleaning_config.update({"find_hotpixels": False})
 
+        for k, v in cleaning_config.items():
+            print(f"{k} : {v}")
+
         magic_clean = MAGICClean(geometry_mcp, cleaning_config)
         original_data_images = event.dl1.tel[tel_id].image
         original_data_images_copy = original_data_images.copy()
