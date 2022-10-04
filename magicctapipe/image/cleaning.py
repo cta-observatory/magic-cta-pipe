@@ -53,17 +53,17 @@ class MAGICClean:
         if 'Window2NN' in configuration:
             self.Window2NN = configuration['Window2NN']
         else:
-            self.Window2NN = 0.82/1.639
+            self.Window2NN = 0.82 / 1.639
 
         if 'Window3NN' in configuration:
             self.Window3NN = configuration['Window3NN']
         else:
-            self.Window3NN = 1.15/1.639
+            self.Window3NN = 1.15 / 1.639
 
         if 'Window4NN' in configuration:
             self.Window4NN = configuration['Window4NN']
         else:
-            self.Window4NN = 1.80/1.639
+            self.Window4NN = 1.80 / 1.639
 
         if 'clipping' in configuration:
             self.clipping = configuration['clipping']
@@ -229,11 +229,11 @@ class MAGICClean:
         charge[charge > clipNN] = clipNN
 
         totcharge = np.sum(charge, axis=1)
-        meantime = np.sum(charge * self.event_pulse_time[NN],axis=1)/totcharge
+        meantime = np.sum(charge * self.event_pulse_time[NN], axis=1) / totcharge
 
-        meantime_proper = np.tile(meantime,(len(NN[0]),1)).transpose()
+        meantime_proper = np.tile(meantime, (len(NN[0]), 1)).transpose()
 
-        timeok = np.all(np.fabs(meantime_proper - self.event_pulse_time[NN]) < windowNN,axis=1)
+        timeok = np.all(np.fabs(meantime_proper - self.event_pulse_time[NN]) < windowNN, axis=1)
 
         selection = (timeok) * (totcharge > thresholdNN)
         mask[NN[selection]] = True
@@ -246,11 +246,11 @@ class MAGICClean:
         sumthresh3NN = self.SumThresh3NNPerPixel * 3 * self.configuration['picture_thresh']
         sumthresh4NN = self.SumThresh4NNPerPixel * 4 * self.configuration['picture_thresh']
 
-        clip2NN = 2.2  * sumthresh2NN/2.
-        clip3NN = 1.05 * sumthresh3NN/3.
-        clip4NN = 1.05 * sumthresh4NN/4.
+        clip2NN = 2.2 * sumthresh2NN / 2.
+        clip3NN = 1.05 * sumthresh3NN / 3.
+        clip4NN = 1.05 * sumthresh4NN / 4.
 
-        mask = np.asarray([False]*len(self.event_image))
+        mask = np.asarray([False] * len(self.event_image))
 
         if self.find_hotpixels:
 
