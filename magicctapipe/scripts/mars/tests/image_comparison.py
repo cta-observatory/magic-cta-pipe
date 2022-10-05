@@ -144,6 +144,14 @@ def image_comparison(
     disp_mars.add_colorbar(label="pixel charge")
     disp_mcp.add_colorbar(label="pixel charge")
 
+    if source.is_simulation:
+        cleaning_config.update({"find_hotpixels": False})
+    else:
+        cleaning_config.update({"find_hotpixels": True})
+
+    for k, v in cleaning_config.items():
+        print(f"{k} : {v}")
+
     for event_id in ids_to_compare:
         try:
             event = seeker.get_event_id(event_id)
@@ -166,13 +174,6 @@ def image_comparison(
         clean_mask_mars = event_image_mars != 0
 
         # get mcp data------------------------------------------------------------------------------
-        if source.is_simulation:
-            cleaning_config.update({"find_hotpixels": False})
-        else:
-            cleaning_config.update({"find_hotpixels": True})
-
-        for k, v in cleaning_config.items():
-            print(f"{k} : {v}")
 
         magic_clean = MAGICClean(geometry_mcp, cleaning_config)
         original_data_images = event.dl1.tel[tel_id].image
