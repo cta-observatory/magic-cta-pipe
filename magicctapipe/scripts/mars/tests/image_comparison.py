@@ -299,68 +299,69 @@ def image_comparison(
                 "a",
             )
 
-        # plotting ------------------------------------------------------------------------------------------------------
-        grid_shape = (2, 3)
+        if config["save_plots"] == True:
+            # plotting ------------------------------------------------------------------------------------------------------
+            grid_shape = (2, 3)
 
-        # original data
-        disp1.image = original_data_images
-        # pixels whose original value is negative
-        # negative_mask = calibrated_data_images < 0
-        disp1.set_limits_minmax(vmin, vmax)
-        ax1.set_title("original data")
+            # original data
+            disp1.image = original_data_images
+            # pixels whose original value is negative
+            # negative_mask = calibrated_data_images < 0
+            disp1.set_limits_minmax(vmin, vmax)
+            ax1.set_title("original data")
 
-        # mars_data
-        norm = matplotlib.colors.Normalize(vmin=0, vmax=vmax)
-        disp_mars.image = event_image_mars
-        disp_mars.set_limits_minmax(vmin, vmax)
-        disp_mars.highlight_pixels(
-            clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
-        )
-        # disp_mars.highlight_pixels(unsuitable_mask[:1039], color="magenta", alpha=1, linewidth=1)
-        ax2.set_title("MARS data")
+            # mars_data
+            norm = matplotlib.colors.Normalize(vmin=0, vmax=vmax)
+            disp_mars.image = event_image_mars
+            disp_mars.set_limits_minmax(vmin, vmax)
+            disp_mars.highlight_pixels(
+                clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
+            )
+            # disp_mars.highlight_pixels(unsuitable_mask[:1039], color="magenta", alpha=1, linewidth=1)
+            ax2.set_title("MARS data")
 
-        # mcp_data
-        disp_mcp.image = event_image_mcp
-        disp_mcp.set_limits_minmax(vmin, vmax)
-        disp_mcp.highlight_pixels(
-            clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
-        )
-        ax3.set_title("magic_cta_pipe data")
+            # mcp_data
+            disp_mcp.image = event_image_mcp
+            disp_mcp.set_limits_minmax(vmin, vmax)
+            disp_mcp.highlight_pixels(
+                clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
+            )
+            ax3.set_title("magic_cta_pipe data")
 
-        # differences between MARS and mcp
-        disp2.image = charge_differences[:1039]
-        disp2.highlight_pixels(
-            clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
-        )
-        ax4.set_title("differences MARS-mcp")
+            # differences between MARS and mcp
+            disp2.image = charge_differences[:1039]
+            disp2.highlight_pixels(
+                clean_mask_pixels[:1039], color="red", alpha=1, linewidth=1
+            )
+            ax4.set_title("differences MARS-mcp")
 
-        # the white outline shows the pixels used for the image after cleaning, the ones that are filled yellow show where differences are
-        # differences between MARS and the calibrated data
-        pix_diff_mars_copy = np.array(pix_diff_mars).copy()
-        pix_diff_mars_copy[np.array(event_image_mars) == 0] = 0
-        disp3.image = pix_diff_mars_copy > 0
-        disp3.highlight_pixels(
-            np.array(event_image_mars) != 0, color="white", alpha=1, linewidth=3
-        )
-        ax5.set_title("differences MARS-original data")
+            # the white outline shows the pixels used for the image after cleaning, the ones that are filled yellow show where differences are
+            # differences between MARS and the calibrated data
+            pix_diff_mars_copy = np.array(pix_diff_mars).copy()
+            pix_diff_mars_copy[np.array(event_image_mars) == 0] = 0
+            disp3.image = pix_diff_mars_copy > 0
+            disp3.highlight_pixels(
+                np.array(event_image_mars) != 0, color="white", alpha=1, linewidth=3
+            )
+            ax5.set_title("differences MARS-original data")
 
-        # mcp-orig-data-diff
-        pix_diff_mcp_copy = np.array(pix_diff_mcp).copy()
-        pix_diff_mcp_copy[np.array(event_image_mcp) == 0] = 0
-        disp4.image = pix_diff_mcp_copy > 0
-        disp4.highlight_pixels(
-            np.array(event_image_mcp) != 0, color="white", alpha=1, linewidth=3
-        )
-        ax6.set_title("differences mcp-original data")
+            # mcp-orig-data-diff
+            pix_diff_mcp_copy = np.array(pix_diff_mcp).copy()
+            pix_diff_mcp_copy[np.array(event_image_mcp) == 0] = 0
+            disp4.image = pix_diff_mcp_copy > 0
+            disp4.highlight_pixels(
+                np.array(event_image_mcp) != 0, color="white", alpha=1, linewidth=3
+            )
+            ax6.set_title("differences mcp-original data")
 
-        fig.suptitle(
-            f"Comparison_MARS_magic-cta-pipe: Event ID {event.index.event_id}, {run_num}, M{tel_id}",
-            fontsize=16,
-        )
-        plt.savefig(
-            f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png"
-        )
-        # print(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png")
-        # fig.savefig(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.pdf")
+            fig.suptitle(
+                f"Comparison_MARS_magic-cta-pipe: Event ID {event.index.event_id}, {run_num}, M{tel_id}",
+                fontsize=16,
+            )
+            plt.savefig(
+                f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png"
+            )
+            # print(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png")
+            # fig.savefig(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.pdf")
 
     return comparison
