@@ -86,6 +86,7 @@ def image_comparison(
     if max_events is not None:
         ids_to_compare = ids_to_compare[:max_events]
 
+    ids_to_compare = [*set(ids_to_compare)]
     print(len(ids_to_compare), "events will be compared", ids_to_compare)
 
     # we will now load the data files, and afterwards select the corresponding data for our events
