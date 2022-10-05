@@ -366,8 +366,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     event_data["event_id"] = group_mean["event_id"]
 
     event_data.dropna(subset=["obs_id", "event_id"], inplace=True)
-
     event_data = event_data.astype({"obs_id": int, "event_id": int})
+
     event_data.reset_index(inplace=True)
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
 
