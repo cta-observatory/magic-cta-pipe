@@ -1,6 +1,7 @@
 import copy
 import itertools
 import numpy as np
+import struct
 from scipy.sparse.csgraph import connected_components
 
 from ctapipe.image import (
@@ -18,6 +19,21 @@ __all__ = [
     'get_num_islands_MAGIC',
     'clean_image_params',
 ]
+
+
+def float_to_bin_int(num):
+    return ''.join('{:0>8b}'.format(c) for c in struct.pack('!f', num))
+
+
+def bin_to_float(binary):
+    return struct.unpack('!f', struct.pack('!I', int(binary, 2)))[0]
+
+
+def reduce_precision(charge):
+    return bin_to_float(bin((int(float_to_bin_int(charge), 2) + int(bin(0x00004000), 2)) & 0xffff8000))
+
+
+reduce_precision_vector = np.vectorize(reduce_precision)
 
 
 class MAGICClean:
@@ -549,6 +565,8 @@ class PixelTreatment:
         image_broadcast[~neighbors_unsuitable] = np.nan
 
         self.event_image[self.unsuitable_mask] = np.nanmean(image_broadcast,axis=1)
+
+        self.event_image[self.unsuitable_mask] = reduce_precision_vector(self.event_image[self.unsuitable_mask])
 
         self.unmapped_mask = copy.copy(unmapped_mask)
 
