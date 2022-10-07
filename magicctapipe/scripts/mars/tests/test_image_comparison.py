@@ -105,4 +105,6 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
             config_file=config_image_file, mode="use_all", tel_id=2, max_events=20
         )
 
+    print(len(list_image))
+
     assert list_image == []
