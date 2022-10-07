@@ -2,14 +2,12 @@
 # coding: utf-8
 
 """
-Author: Yoshiki Ohtani (ICRR, ohtani@icrr.u-tokyo.ac.jp)
-
-This script creates IRF index files using the modules developed in lstchain.
-Output files will be saved in the same directory of input DL3 files.
+This script creates DL3 index files, i.e., the HDU and observation index
+files. They will be saved in the same directory as the input DL3 files.
 
 Usage:
 $ python create_dl3_index_files.py
---input-dir ./data/dl3
+--input-dir dl3
 """
 
 import argparse
@@ -20,13 +18,11 @@ from pathlib import Path
 
 from lstchain.high_level import create_hdu_index_hdu, create_obs_index_hdu
 
+__all__ = ["create_dl3_index_files"]
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-__all__ = [
-    "create_dl3_index_files",
-]
 
 
 def create_dl3_index_files(input_dir):
@@ -37,28 +33,43 @@ def create_dl3_index_files(input_dir):
     ----------
     input_dir: str
         Path to a directory where input DL3 data files are stored
+
+    Raises
+    ------
+    FileNotFoundError
+        If any DL3 data files could not be found in the input directory
     """
+
+    # Find the input files
+    logger.info(f"\nInput directory:\n{input_dir}")
 
     file_mask = f"{input_dir}/dl3_*.fits.gz"
 
     input_files = glob.glob(file_mask)
     input_files.sort()
 
+    if len(input_files) == 0:
+        raise FileNotFoundError(
+            "Could not find any DL3 data files in the input directory."
+        )
+
+    logger.info("\nThe following DL3 data files are found:")
+
     file_names = []
 
-    logger.info("\nInput DL3 data files:")
-
     for input_file in input_files:
+
         logger.info(input_file)
-        file_name = Path(input_file).name
-        file_names.append(file_name)
+
+        input_file_name = Path(input_file).name
+        file_names.append(input_file_name)
+
+    # Create the DL3 index files
+    logger.info("\nCreating DL3 index files...")
 
     hdu_index_file = f"{input_dir}/hdu-index.fits.gz"
     obs_index_file = f"{input_dir}/obs-index.fits.gz"
 
-    logger.info("\nCreating DL3 index files...")
-
-    # Create a hdu index file:
     create_hdu_index_hdu(
         filename_list=file_names,
         fits_dir=Path(input_dir),
@@ -66,7 +77,6 @@ def create_dl3_index_files(input_dir):
         overwrite=True,
     )
 
-    # Create an observation index file:
     create_obs_index_hdu(
         filename_list=file_names,
         fits_dir=Path(input_dir),
@@ -92,7 +102,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Create the index files:
+    # Create the index files
     create_dl3_index_files(args.input_dir)
 
     logger.info("\nDone.")

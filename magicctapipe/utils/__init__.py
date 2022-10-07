@@ -35,12 +35,8 @@ from .functions import (
     calculate_disp,
     calculate_impact,
     calculate_mean_direction,
-    calculate_angular_distance,
+    calculate_off_coordinates,
     transform_altaz_to_radec,
-    check_tel_combination,
-    save_pandas_to_table,
-    get_dl2_mean,
-    create_gh_cuts_hdu,
 )
 
 from .plot import (
@@ -94,12 +90,8 @@ __all__ = [
     "calculate_disp",
     "calculate_impact",
     "calculate_mean_direction",
-    "calculate_angular_distance",
+    "calculate_off_coordinates",
     "transform_altaz_to_radec",
-    "check_tel_combination",
-    "save_pandas_to_table",
-    "get_dl2_mean",
-    "create_gh_cuts_hdu",
     "save_plt",
     "load_default_plot_settings",
     "load_default_plot_settings_02",

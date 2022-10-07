@@ -2,31 +2,31 @@
 # coding: utf-8
 
 """
-This script processes DL1 events and reconstructs the stereo parameters with more
-than one telescope information. The quality cuts specified in a configuration file
-are applied to events before the reconstruction.
+This script processes DL1 events and reconstructs the stereo parameters
+with more than one telescope information. The quality cuts specified in
+the configuration file are applied to events before the reconstruction.
 
-When an input is real data containing LST-1 and MAGIC events, it checks the angular
-distance of their pointing directions. Then, it stops the process when the distance
-is larger than the limit specified in a configuration file. This is in principle to
-avoid the reconstruction of the data taken in too-mispointing conditions, for example,
-DL1 data may contain the coincident events which are taken with different wobble
-offsets between the systems.
+When the input is real data containing LST-1 and MAGIC events, it checks
+the angular distances of their pointing directions, and exclude the
+events taken with larger distances than the limit specified in the
+configuration file. This is in principle to avoid the reconstruction of
+the events taken in too-mispointing situations. For example, DL1 data
+may contain coincident events taken with different wobble offsets
+between the systems.
 
-If the "--magic-only" option is given, it reconstructs the stereo parameters using
-only MAGIC images.
+If the "--magic-only" argument is given, it reconstructs the stereo
+parameters using only MAGIC events.
 
 Usage:
 $ python lst1_magic_stereo_reco.py
---input-file ./data/dl1_coincidence/dl1_LST-1_MAGIC.Run03265.0040.h5
---output-dir ./data/dl1_stereo
---config-file ./config.yaml
+--input-file dl1_coincidence/dl1_LST-1_MAGIC.Run03265.0040.h5
+(--output-dir dl1_stereo)
+(--config-file config.yaml)
 (--magic-only)
 """
 
 import argparse
 import logging
-import re
 import sys
 import time
 from pathlib import Path
@@ -43,32 +43,26 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
-from magicctapipe.utils import (
-    calculate_impact,
-    calculate_mean_direction,
-    check_tel_combination,
-    save_pandas_to_table,
-)
+from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io.io import TEL_NAMES
+from magicctapipe.utils import calculate_impact, calculate_mean_direction
+
+__all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-__all__ = [
-    "calculate_pointing_separation",
-    "stereo_reconstruction",
-]
-
 
 def calculate_pointing_separation(event_data):
     """
-    Calculates the angular distance of the
-    LST-1 and MAGIC pointing directions.
+    Calculates the angular distance of the LST-1 and MAGIC pointing
+    directions.
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
-        Pandas data frame of LST-1 and MAGIC events
+        Data frame of LST-1 and MAGIC events
 
     Returns
     -------
@@ -76,48 +70,42 @@ def calculate_pointing_separation(event_data):
         Angular distance of the LST-1 and MAGIC pointing directions
     """
 
+    # Extract LST-1 events
     df_lst = event_data.query("tel_id == 1")
 
-    pointing_az_lst = u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad)
-    pointing_alt_lst = u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad)
-
+    # Extract the MAGIC events seen by also LST-1
     obs_ids = df_lst.index.get_level_values("obs_id").tolist()
     event_ids = df_lst.index.get_level_values("event_id").tolist()
 
     multi_indices = pd.MultiIndex.from_arrays(
-        [obs_ids, event_ids],
-        names=["obs_id", "event_id"],
+        [obs_ids, event_ids], names=["obs_id", "event_id"]
     )
 
     df_magic = event_data.query("tel_id == [2, 3]")
     df_magic.reset_index(level="tel_id", inplace=True)
     df_magic = df_magic.loc[multi_indices]
 
-    # Calculate the mean of the M1 and M2 pointing directions:
-    pointing_az_magic, pointing_alt_magic = calculate_mean_direction(
-        lon=df_magic["pointing_az"],
-        lat=df_magic["pointing_alt"],
+    # Calculate the mean of the M1 and M2 pointing directions
+    pnt_az_magic, pnt_alt_magic = calculate_mean_direction(
+        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"], unit="rad"
     )
 
+    # Calculate the angular distance of their pointing directions
     theta = angular_separation(
-        lon1=pointing_az_lst,
-        lat1=pointing_alt_lst,
-        lon2=pointing_az_magic,
-        lat2=pointing_alt_magic,
+        lon1=u.Quantity(df_lst["pointing_az"].to_numpy(), u.rad),
+        lat1=u.Quantity(df_lst["pointing_alt"].to_numpy(), u.rad),
+        lon2=u.Quantity(pnt_az_magic.to_numpy(), u.rad),
+        lat2=u.Quantity(pnt_alt_magic.to_numpy(), u.rad),
     )
+
+    theta = pd.Series(data=theta.to_value(u.deg), index=multi_indices)
 
     return theta
 
 
-def stereo_reconstruction(
-    input_file,
-    output_dir,
-    config,
-    magic_only_analysis=False,
-):
+def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=False):
     """
-    Processes DL1 events and reconstructs the stereo parameters
-    with more than one telescope information.
+    Processes DL1 events and reconstructs the stereo parameters.
 
     Parameters
     ----------
@@ -128,18 +116,27 @@ def stereo_reconstruction(
     config: dict
         Configuration for the LST-1 + MAGIC analysis
     magic_only_analysis: bool
-        If True, it reconstructs the parameters using only MAGIC images
+        If `True`, it reconstructs the stereo parameters using only
+        MAGIC events
     """
 
-    logger.info(f"Input file:\n{input_file}")
-    logger.info(f"\nMAGIC-only analysis: {magic_only_analysis}")
+    config_stereo = config["stereo_reco"]
 
-    # Load the input file:
+    # Load the input file
+    logger.info(f"\nInput file:\n{input_file}")
+
     event_data = pd.read_hdf(input_file, key="events/parameters")
+
+    # It sometimes happens that there are MAGIC events whose event and
+    # telescope IDs are duplicated, so here we exclude those events
+    event_data.drop_duplicates(
+        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
+    )
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
     is_simulation = "true_energy" in event_data.columns
+    logger.info(f"\nIs simulation: {is_simulation}")
 
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_positions = subarray.positions
@@ -147,69 +144,74 @@ def stereo_reconstruction(
     logger.info("\nSubarray configuration:")
     for tel_id in subarray.tel.keys():
         logger.info(
-            f"\tTelescope {tel_id}: {subarray.tel[tel_id].name}, "
-            f"position = {tel_positions[tel_id]}"
+            f"\t{TEL_NAMES[tel_id]}: {subarray.tel[tel_id].name}, "
+            f"position = {tel_positions[tel_id].round(2)}"
         )
 
-    # Apply the event cuts:
+    # Apply the event cuts
+    logger.info(
+        f"\nMAGIC-only analysis: {magic_only_analysis}"
+        f"\nQuality cuts: {config_stereo['quality_cuts']}"
+    )
+
     if magic_only_analysis:
         event_data.query("tel_id > 1", inplace=True)
 
-    config_stereo = config["stereo_reco"]
+    event_data = get_stereo_events(event_data, config_stereo["quality_cuts"])
 
-    logger.info("\nApplying the quality cuts:")
-    logger.info(config_stereo["quality_cuts"])
+    # Check the angular distance of the LST-1 and MAGIC pointing directions
+    tel_ids = np.unique(event_data.index.get_level_values("tel_id")).tolist()
 
-    event_data.query(config_stereo["quality_cuts"], inplace=True)
-    event_data["multiplicity"] = event_data.groupby(["obs_id", "event_id"]).size()
-    event_data.query("multiplicity > 1", inplace=True)
-
-    combo_types = check_tel_combination(event_data)
-    event_data[combo_types.columns[0]] = combo_types
-
-    # Check the angular distance of the LST1 and MAGIC pointing directions:
-    if (not is_simulation) and (not magic_only_analysis):
+    if (not is_simulation) and (tel_ids != [2, 3]):
 
         logger.info(
-            "\nChecking the angular distance of the "
-            "LST-1 and MAGIC pointing directions..."
+            "\nChecking the angular distances of the LST-1 and MAGIC "
+            "pointing directions..."
         )
 
+        # Calculate the angular distance
         theta = calculate_pointing_separation(event_data)
+        theta_uplim = u.Quantity(config_stereo["theta_uplim"])
 
-        if len(theta) == 0:
-            logger.info("--> No LST-1 + MAGIC events are found.")
+        condition = u.Quantity(theta.to_numpy(), u.deg) > theta_uplim
+        n_events = np.count_nonzero(condition)
+
+        if np.all(condition):
+            logger.info(
+                "--> All the events are taken with larger angular distances "
+                f"than the limit {theta_uplim}. Exiting..."
+            )
+            sys.exit()
+
+        elif n_events > 0:
+            logger.info(
+                f"--> Exclude {n_events} stereo events whose angular distances "
+                f"are larger than the limit {theta_uplim}."
+            )
+
+            event_data.reset_index(level="tel_id", inplace=True)
+            event_data = event_data.loc[theta[condition].index]
+            event_data.set_index("tel_id", append=True, inplace=True)
 
         else:
-            theta_max = np.max(theta.to(u.arcmin))
-            theta_uplim = u.Quantity(config_stereo["theta_uplim"], u.arcmin)
+            logger.info(
+                "--> All the events were taken with smaller angular distances "
+                f"than the limit {theta_uplim}."
+            )
 
-            if theta_max > theta_uplim:
-                logger.info(
-                    f"--> The maximum angular distance {theta_max:.3f} is "
-                    f"larger than the limit {theta_uplim}. Exiting."
-                )
-                sys.exit()
-            else:
-                logger.info(
-                    f"--> The maximum angular distance {theta_max:.3f} is "
-                    f"smaller than the limit {theta_uplim}."
-                )
-
-    # Configure the HillasReconstructor:
+    # Configure the HillasReconstructor
     hillas_reconstructor = HillasReconstructor(subarray)
 
-    # Start processing the events:
+    # Loop over every shower event
     logger.info("\nReconstructing the stereo parameters...")
 
-    pointing_az_mean, pointing_alt_mean = calculate_mean_direction(
-        lon=event_data["pointing_az"],
-        lat=event_data["pointing_alt"],
+    pnt_az_mean, pnt_alt_mean = calculate_mean_direction(
+        lon=event_data["pointing_az"], lat=event_data["pointing_alt"], unit="rad"
     )
 
-    group = event_data.groupby(["obs_id", "event_id"]).size()
-    obs_ids = group.index.get_level_values("obs_id")
-    event_ids = group.index.get_level_values("event_id")
+    group_size = event_data.groupby(["obs_id", "event_id"]).size()
+    obs_ids = group_size.index.get_level_values("obs_id")
+    event_ids = group_size.index.get_level_values("event_id")
 
     for i_evt, (obs_id, event_id) in enumerate(zip(obs_ids, event_ids)):
 
@@ -218,123 +220,116 @@ def stereo_reconstruction(
         if i_evt % 100 == 0:
             logger.info(f"{i_evt} events")
 
-        event.pointing.array_altitude = pointing_alt_mean[i_evt]
-        event.pointing.array_azimuth = pointing_az_mean[i_evt]
+        event.pointing.array_altitude = pnt_alt_mean.loc[(obs_id, event_id)] * u.rad
+        event.pointing.array_azimuth = pnt_az_mean.loc[(obs_id, event_id)] * u.rad
 
-        df_evt = event_data.query(f"(obs_id == {obs_id}) & (event_id == {event_id})")
+        df_evt = event_data.loc[(obs_id, event_id, slice(None))]
 
         tel_ids = df_evt.index.get_level_values("tel_id")
 
         for tel_id in tel_ids:
 
-            df_tel = df_evt.query(f"tel_id == {tel_id}")
+            df_tel = df_evt.loc[(obs_id, event_id, tel_id)]
 
-            event.pointing.tel[tel_id].altitude = df_tel["pointing_alt"].iloc[0] * u.rad
-            event.pointing.tel[tel_id].azimuth = df_tel["pointing_az"].iloc[0] * u.rad
+            event.pointing.tel[tel_id].altitude = df_tel["pointing_alt"] * u.rad
+            event.pointing.tel[tel_id].azimuth = df_tel["pointing_az"] * u.rad
 
             hillas_params = CameraHillasParametersContainer(
-                intensity=float(df_tel["intensity"].iloc[0]),
-                x=u.Quantity(df_tel["x"].iloc[0], u.m),
-                y=u.Quantity(df_tel["y"].iloc[0], u.m),
-                r=u.Quantity(df_tel["r"].iloc[0], u.m),
-                phi=Angle(df_tel["phi"].iloc[0], u.deg),
-                length=u.Quantity(df_tel["length"].iloc[0], u.m),
-                width=u.Quantity(df_tel["width"].iloc[0], u.m),
-                psi=Angle(df_tel["psi"].iloc[0], u.deg),
-                skewness=float(df_tel["skewness"].iloc[0]),
-                kurtosis=float(df_tel["kurtosis"].iloc[0]),
+                intensity=float(df_tel["intensity"]),
+                x=u.Quantity(df_tel["x"], u.m),
+                y=u.Quantity(df_tel["y"], u.m),
+                r=u.Quantity(df_tel["r"], u.m),
+                phi=Angle(df_tel["phi"], u.deg),
+                length=u.Quantity(df_tel["length"], u.m),
+                width=u.Quantity(df_tel["width"], u.m),
+                psi=Angle(df_tel["psi"], u.deg),
+                skewness=float(df_tel["skewness"]),
+                kurtosis=float(df_tel["kurtosis"]),
             )
 
-            image_params = ImageParametersContainer(hillas=hillas_params)
-            event.dl1.tel[tel_id].parameters = image_params
+            event.dl1.tel[tel_id].parameters = ImageParametersContainer(
+                hillas=hillas_params
+            )
 
-        # Reconstruct the stereo parameters:
+        # Reconstruct the stereo parameters
         hillas_reconstructor(event)
 
         stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
 
-        if stereo_params.az < 0:
-            stereo_params.az += u.Quantity(360, u.deg)
+        if not stereo_params.is_valid:
+            logger.warning(
+                f"--> event {i_evt} (event ID {event_id}) failed to get valid stereo "
+                "parameters, possibly due to images of width = 0. Skipping..."
+            )
+            continue
+
+        # Wrap the azimuth at the angle 0 <= az < 360 deg
+        stereo_params.az.wrap_at(360 * u.deg, inplace=True)
 
         for tel_id in tel_ids:
 
-            # Calculate the impact parameter:
+            # Calculate the impact parameter
             impact = calculate_impact(
+                shower_alt=stereo_params.alt,
+                shower_az=stereo_params.az,
                 core_x=stereo_params.core_x,
                 core_y=stereo_params.core_y,
-                az=stereo_params.az,
-                alt=stereo_params.alt,
                 tel_pos_x=tel_positions[tel_id][0],
                 tel_pos_y=tel_positions[tel_id][1],
                 tel_pos_z=tel_positions[tel_id][2],
             )
 
-            # Set the stereo parameters to the data frame:
+            # Set the stereo parameters to the data frame
             params = {
-                "alt": stereo_params.alt.to(u.deg).value,
-                "alt_uncert": stereo_params.alt_uncert.to(u.deg).value,
-                "az": stereo_params.az.to(u.deg).value,
-                "az_uncert": stereo_params.az_uncert.to(u.deg).value,
-                "core_x": stereo_params.core_x.to(u.m).value,
-                "core_y": stereo_params.core_y.to(u.m).value,
-                "core_uncert": stereo_params.core_uncert.to(u.m).value,
-                "impact": impact.to(u.m).value,
-                "h_max": stereo_params.h_max.to(u.m).value,
-                "h_max_uncert": stereo_params.h_max_uncert.to(u.m).value,
-                "is_valid": int(stereo_params.is_valid),
+                "alt": stereo_params.alt.to_value(u.deg),
+                "alt_uncert": stereo_params.alt_uncert.to_value(u.deg),
+                "az": stereo_params.az.to_value(u.deg),
+                "az_uncert": stereo_params.az_uncert.to_value(u.deg),
+                "core_x": stereo_params.core_x.to_value(u.m),
+                "core_y": stereo_params.core_y.to_value(u.m),
+                "impact": impact.to_value(u.m),
+                "h_max": stereo_params.h_max.to_value(u.m),
             }
 
-            index = (obs_id, event_id, tel_id)
-            event_data.loc[index, params.keys()] = params.values()
+            event_data.loc[(obs_id, event_id, tel_id), params.keys()] = params.values()
 
     n_events_processed = i_evt + 1
     logger.info(f"{n_events_processed} events")
 
-    # Save the data in an output file:
+    # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    regex = r"dl1_(\S+)\.h5"
-    file_name = Path(input_file).name
+    input_file_name = Path(input_file).name
 
-    if re.fullmatch(regex, file_name):
-        parser = re.findall(regex, file_name)[0]
-
-        if magic_only_analysis:
-            output_file = f"{output_dir}/dl1_stereo_magic_only_{parser}.h5"
-        else:
-            output_file = f"{output_dir}/dl1_stereo_{parser}.h5"
-
+    if magic_only_analysis:
+        output_file_name = input_file_name.replace("dl1", "dl1_stereo_magic_only")
     else:
-        raise RuntimeError("Could not parse information from the input file name.")
+        output_file_name = input_file_name.replace("dl1", "dl1_stereo")
+
+    output_file = f"{output_dir}/{output_file_name}"
 
     event_data.reset_index(inplace=True)
 
-    save_pandas_to_table(
-        event_data,
-        output_file,
-        group_name="/events",
-        table_name="parameters",
-        mode="w",
+    save_pandas_data_in_table(
+        event_data, output_file, group_name="/events", table_name="parameters"
     )
 
-    if is_simulation:
-        sim_config = pd.read_hdf(
-            input_file,
-            key="simulation/config",
-        )
+    # Save the subarray description
+    subarray.to_hdf(output_file)
 
-        save_pandas_to_table(
-            sim_config,
-            output_file,
+    if is_simulation:
+        # Save the simulation configuration
+        sim_config = pd.read_hdf(input_file, key="simulation/config")
+
+        save_pandas_data_in_table(
+            input_data=sim_config,
+            output_file=output_file,
             group_name="/simulation",
             table_name="config",
             mode="a",
         )
 
-    subarray.to_hdf(output_file)
-
-    logger.info("\nOutput file:")
-    logger.info(output_file)
+    logger.info(f"\nOutput file:\n{output_file}")
 
 
 def main():
@@ -349,7 +344,7 @@ def main():
         dest="input_file",
         type=str,
         required=True,
-        help="Path to an input DL1 data file.",
+        help="Path to an input DL1 data file",
     )
 
     parser.add_argument(
@@ -358,7 +353,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save an output DL1-stereo data file.",
+        help="Path to a directory where to save an output DL1-stereo data file",
     )
 
     parser.add_argument(
@@ -367,14 +362,14 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a yaml configuration file.",
+        help="Path to a configuration file",
     )
 
     parser.add_argument(
         "--magic-only",
         dest="magic_only",
         action="store_true",
-        help="Reconstruct the stereo parameters using only MAGIC images.",
+        help="Reconstruct the stereo parameters using only MAGIC events",
     )
 
     args = parser.parse_args()
@@ -382,7 +377,7 @@ def main():
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
-    # Process the input data:
+    # Process the input data
     stereo_reconstruction(args.input_file, args.output_dir, config, args.magic_only)
 
     logger.info("\nDone.")

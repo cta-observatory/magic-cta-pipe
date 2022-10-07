@@ -14,7 +14,7 @@ MAGIC-only analysis starts from MAGIC calibrated data (\_Y\_ files). The analysi
 - `lst1_magic_stereo_reco.py` to add stereo parameters to the DL1 data (use `--magic-only` argument if the MC DL1 data contains LST-1 events)
 - `lst1_magic_train_rfs.py` to train the RFs (energy, direction, classification) on train gamma MCs and protons
 - `lst1_magic_dl1_stereo_to_dl2.py` to apply the RFs to stereo DL1 data (real and test MCs) and produce DL2 data
-- `lst1_magig_create_irf.py` to create the IRF (use `magic_stereo` as `irf_type` in the configuration file)
+- `lst1_magic_create_irf.py` to create the IRF (use `magic_stereo` as `irf_type` in the configuration file)
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
 
 ## MAGIC+LST-1 analysis
@@ -28,7 +28,7 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 - `lst1_magic_stereo_reco.py` to add stereo parameters to the DL1 data
 - `lst1_magic_train_rfs.py` to train the RFs (energy, direction, classification) on train gamma MCs and protons
 - `lst1_magic_dl1_stereo_to_dl2.py` to apply the RFs to stereo DL1 data (real and test MCs) and produce DL2 data
-- `lst1_magig_create_irf.py` to create the IRF
+- `lst1_magic_create_irf.py` to create the IRF
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
 
 ## High level analysis

@@ -6,20 +6,20 @@ mc_tel_ids:
 
 LST:
     image_extractor:
-        type: 'LocalPeakWindowSum'
+        type: "LocalPeakWindowSum"
         window_shift: 4
         window_width: 8
 
     increase_nsb:
         use: true
-        extra_noise_in_dim_pixels: 1.2
-        extra_bias_in_dim_pixels: 0.5
+        extra_noise_in_dim_pixels: 1.27
+        extra_bias_in_dim_pixels: 0.665
         transition_charge: 8
-        extra_noise_in_bright_pixels: 1.2
+        extra_noise_in_bright_pixels: 2.08
 
     increase_psf:
-        use: true
-        smeared_light_fraction: 0.125
+        use: false
+        fraction: 0
 
     tailcuts_clean:
         picture_thresh: 8
@@ -42,7 +42,7 @@ LST:
 
 MAGIC:
     image_extractor:
-        type: 'SlidingWindowMaxSum'
+        type: "SlidingWindowMaxSum"
         window_width: 5
         apply_integration_correction: false
 
@@ -58,7 +58,7 @@ MAGIC:
         max_time_off: 4.5  # ns
         max_time_diff: 1.5  # ns
         find_hotpixels: true
-        pedestal_type: 'from_extractor_rndm'   # select 'fundamental', 'from_extractor' or 'from_extractor_rndm'
+        pedestal_type: "from_extractor_rndm"
 
     muon_ring:
         thr_low: 25
@@ -67,27 +67,27 @@ MAGIC:
 
 
 event_coincidence:
-    type_lst_time: 'dragon_time'   # select 'dragon_time', 'tib_time' or 'ucts_time'
-    window_width: 0.6   # unit: [usec]
+    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"
+    window_half_width: "300 ns"
     time_offset:
-        start: -10.0   # unit: [usec]
-        stop: 0.0   # unit: [usec]
+        start: "-10 us"
+        stop: "0 us"
 
 
 stereo_reco:
-    quality_cuts: '(intensity > 50) & (width > 0)'
-    theta_uplim: 6   # unit: [arcmin]
+    quality_cuts: "(intensity > 50) & (width > 0)"
+    theta_uplim: "6 arcmin"
 
 
 energy_regressor:
     settings:
         n_estimators: 150
-        criterion: 'squared_error'
+        criterion: "squared_error"
         max_depth: 50
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: 'auto'
+        max_features: "auto"
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
         bootstrap: true
@@ -100,31 +100,31 @@ energy_regressor:
         max_samples: null
 
     features: [
-        'intensity',
-        'length',
-        'width',
-        'skewness',
-        'kurtosis',
-        'slope',
-        'intensity_width_2',
-        'h_max',
-        'impact',
+        "intensity",
+        "length",
+        "width",
+        "skewness",
+        "kurtosis",
+        "slope",
+        "intensity_width_2",
+        "h_max",
+        "impact",
     ]
 
     gamma_offaxis:
-        min: 0.2   # unit: [deg]
-        max: 0.6   # unit: [deg]
+        min: null
+        max: null
 
 
-direction_regressor:
+disp_regressor:
     settings:
         n_estimators: 150
-        criterion: 'squared_error'
+        criterion: "squared_error"
         max_depth: 50
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: 'auto'
+        max_features: "auto"
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
         bootstrap: true
@@ -137,31 +137,31 @@ direction_regressor:
         max_samples: null
 
     features: [
-        'intensity',
-        'length',
-        'width',
-        'skewness',
-        'kurtosis',
-        'slope',
-        'intensity_width_2',
-        'h_max',
-        'impact',
+        "intensity",
+        "length",
+        "width",
+        "skewness",
+        "kurtosis",
+        "slope",
+        "intensity_width_2",
+        "h_max",
+        "impact",
     ]
 
     gamma_offaxis:
-        min: 0.2   # unit: [deg]
-        max: 0.6   # unit: [deg]
+        min: null
+        max: null
 
 
 event_classifier:
     settings:
         n_estimators: 100
-        criterion: 'gini'
+        criterion: "gini"
         max_depth: 100
         min_samples_split: 2
         min_samples_leaf: 2
         min_weight_fraction_leaf: 0.0
-        max_features: 'auto'
+        max_features: "auto"
         max_leaf_nodes: null
         min_impurity_decrease: 0.0
         bootstrap: true
@@ -175,65 +175,60 @@ event_classifier:
         max_samples: null
 
     features: [
-        'intensity',
-        'length',
-        'width',
-        'skewness',
-        'kurtosis',
-        'slope',
-        'intensity_width_2',
-        'h_max',
-        'impact',
+        "intensity",
+        "length",
+        "width",
+        "skewness",
+        "kurtosis",
+        "slope",
+        "intensity_width_2",
+        "h_max",
+        "impact",
     ]
 
     gamma_offaxis:
-        min: 0.2   # unit: [deg]
-        max: 0.6   # unit: [deg]
+        min: null
+        max: null
 
 
 create_irf:
-    quality_cuts: null
-    irf_type: 'software'   # select 'hardware', 'software', 'software_with_any2' or 'magic_stereo'
-    dl2_weight: null   # type of the weight for averaging tel-wise DL2 parameters, null, 'var' or 'intensity'
-    obs_time: 50   # used for weighting background events, unit: [hour]
+    quality_cuts: "disp_diff_mean < 0.22"
+    irf_type: "software"  # select "software", "software_only_3tel", "magic_only" or "hardware"
+    dl2_weight_type: "simple"  # select "simple", "variance" or "intensity"
+    irf_obs_time: "50 h"  # used for creating a background HDU
 
-    energy_bins:   # log space
-        start: 0.01   # unit: [TeV]
-        stop: 1000   # unit: [TeV]
-        num: 26   # number of edges (nbins = num - 1)
+    energy_bins:  # log space
+        start: "0.01 TeV"
+        stop: "1000 TeV"
+        n_edges: 26
 
-    migration_bins:   # log space
+    migration_bins:  # log space
         start: 0.2
         stop: 5
-        num: 31   # number of edges (nbins = num - 1)
+        n_edges: 31
 
-    fov_offset_bins:  # linear space
-        start: 0.3   # unit: [deg]
-        stop: 0.5   # unit: [deg]
-        num: 2   # number of edges (nbins = num - 1)
-
-    bkg_fov_offset_bins:   # linear space
-        start: 0  # unit: [deg]
-        stop: 10  # unit: [deg]
-        num: 21  # number of bins in linear space
+    bkg_fov_offset_bins:  # linear space
+        start: "0 deg"
+        stop: "10 deg"
+        n_edges: 21
 
     gammaness:
-        cut_type: 'dynamic'   # select 'global' or 'dynamic'
-        global_cut_value: 0.8   # used for the global cut
-        efficiency: 0.9   # used for the dynamic cut
-        min_cut: 0.05   # used for the dynamic cut
-        max_cut: 0.85   # used for the dynamic cut
+        cut_type: "dynamic"  # select "global" or "dynamic"
+        global_cut_value: 0.8  # used for the global cut
+        efficiency: 0.9  # used for the dynamic cuts
+        min_cut: 0.05  # used for the dynamic cuts
+        max_cut: 0.85  # used for the dynamic cuts
 
     theta:
-        cut_type: 'global'   # select 'global' or 'dynamic'
-        global_cut_value: 0.2   # used for the global cut
-        efficiency: 0.75   # used for the dynamic cut
-        min_cut: 0.1   # used for the dynamic cut
-        max_cut: 0.45   # used for the dynamic cut
+        cut_type: "dynamic"  # select "global" or "dynamic"
+        global_cut_value: "0.2 deg"  # used for the global cut
+        efficiency: 0.75  # used for the dynamic cuts
+        min_cut: "0.1 deg"  # used for the dynamic cuts
+        max_cut: "0.3 deg"  # used for the dynamic cuts
 
 
 dl2_to_dl3:
-    irf_interpolation_method: 'nearest' # 'nearest' - no interpolation (closest point taken), 'linear', 'cubic' - interpolation
-    source_name: 'Crab'
-    source_ra: null   # used when the source name is null
-    source_dec: null   # used when the source name is null
+    interpolation_method: "nearest"  # select "nearest", "linear" or "cubic"
+    source_name: "Crab"
+    source_ra: null  # used when the source name cannot be resolved
+    source_dec: null  # used when the source name cannot be resolved
