@@ -272,7 +272,7 @@ def image_comparison(
         # the file gets saved in any case
         elif config["save_only_when_differences"] == False:
             with pd.HDFStore(f"{out_path}/{run_num}_image_comparison.h5") as store:
-                    store.put(f"/{event.index.event_id}_M{tel_id}", df_pixel, format="table", data_columns=True)
+                store.put(f"/{event.index.event_id}_M{tel_id}", df_pixel, format="table", data_columns=True)
 
         if config["save_plots"] == True:
             # plotting ------------------------------------------------------------------------------------------------------
