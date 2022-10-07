@@ -154,13 +154,6 @@ def magic_calib_to_dl1(
     # Configure the MAGIC image cleaning
     config_clean = config["MAGIC"]["magic_clean"]
 
-    if is_simulation and config_clean["find_hotpixels"]:
-        logger.warning(
-            "\nWARNING: Hot pixels do not exist in a simulation. "
-            "Setting the 'find_hotpixels' option to False..."
-        )
-        config_clean.update({"find_hotpixels": False})
-
     logger.info("\nMAGIC image cleaning:")
     for key, value in config_clean.items():
         logger.info(f"\t{key}: {value}")
