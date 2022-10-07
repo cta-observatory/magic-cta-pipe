@@ -119,13 +119,8 @@ def magic_calib_to_dl1(
         f"\nIs SUM trigger: {is_sum_trigger}"
     )
 
-    if is_simulation and not is_stereo_trigger:
-        logger.info("\nMono trigger MC data is not yet supported. Exiting...")
-        sys.exit()
-
     if is_sum_trigger:
-        logger.info("\nSUM trigger data is not yet fully supported. Exiting...")
-        sys.exit()
+        logger.warning("\nSUM trigger data is supported, but MaTaJu cleaning is not implemented.")
 
     if not is_simulation:
 
