@@ -86,6 +86,7 @@ def image_comparison(
     if max_events is not None:
         ids_to_compare = ids_to_compare[:max_events]
 
+    ids_to_compare = [*set(ids_to_compare)]
     print(len(ids_to_compare), "events will be compared", ids_to_compare)
 
     # we will now load the data files, and afterwards select the corresponding data for our events
@@ -265,20 +266,13 @@ def image_comparison(
         # the file only gets saved if there are differences between the images
         if config["save_only_when_differences"] == True:
             if any(charge_differences) == True:
-                df_pixel.to_hdf(
-                    f"{run_num}_image_comparison.h5",
-                    f"/{event.index.event_id}_M{tel_id}",
-                    "a",
-                )
-                # df_pix_diff.to_hdf(f"{out_path}{run_num}_{id_event}_M{telescope_id}_pixel_diff.h5", "/pixel_differences", "w")
+                with pd.HDFStore(f"{out_path}/{run_num}_image_comparison.h5") as store:
+                    store.put(f"/{event.index.event_id}_M{tel_id}", df_pixel, format="table", data_columns=True)
 
         # the file gets saved in any case
         elif config["save_only_when_differences"] == False:
-            df_pixel.to_hdf(
-                f"{run_num}_image_comparison.h5",
-                f"/{event.index.event_id}_M{tel_id}",
-                "a",
-            )
+            with pd.HDFStore(f"{out_path}/{run_num}_image_comparison.h5") as store:
+                    store.put(f"/{event.index.event_id}_M{tel_id}", df_pixel, format="table", data_columns=True)
 
         if config["save_plots"] == True:
             # plotting ------------------------------------------------------------------------------------------------------
