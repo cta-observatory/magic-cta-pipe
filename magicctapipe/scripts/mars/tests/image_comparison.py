@@ -144,11 +144,6 @@ def image_comparison(
     disp_mars.add_colorbar(label="pixel charge")
     disp_mcp.add_colorbar(label="pixel charge")
 
-    if source.is_simulation:
-        cleaning_config.update({"find_hotpixels": False})
-    else:
-        cleaning_config.update({"find_hotpixels": True})
-
     for k, v in cleaning_config.items():
         print(f"{k} : {v}")
 
@@ -180,37 +175,23 @@ def image_comparison(
         original_data_images_copy = original_data_images.copy()
         event_pulse_time = event.dl1.tel[tel_id].peak_time
 
-        neighbors_array = geometry_mcp.neighbor_matrix
+        badrmspixel_mask = event.mon.tel[
+            tel_id
+        ].pixel_status.pedestal_failing_pixels[2]
+        deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[
+            0
+        ]
+        unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
 
-        for pix in np.where(neighbors_array[138] is True)[0]:
-            print(
-                f"{pix} pixel charge before cleaning: {original_data_images_copy[pix]}"
-            )
-
-        if not source.is_simulation:
-            badrmspixel_mask = event.mon.tel[
-                tel_id
-            ].pixel_status.pedestal_failing_pixels[2]
-            deadpixel_mask = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[
-                0
-            ]
-            unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
-
-            (
-                clean_mask,
-                calibrated_data_images,
-                event_pulse_time,
-            ) = magic_clean.clean_image(
-                original_data_images_copy,
-                event_pulse_time,
-                unsuitable_mask=unsuitable_mask,
-            )
-        else:
-            (
-                clean_mask,
-                calibrated_data_images,
-                event_pulse_time,
-            ) = magic_clean.clean_image(original_data_images_copy, event_pulse_time)
+        (
+            clean_mask,
+            calibrated_data_images,
+            event_pulse_time,
+        ) = magic_clean.clean_image(
+            original_data_images_copy,
+            event_pulse_time,
+            unsuitable_mask=unsuitable_mask,
+        )
 
         # print(f"Pixels selected after 1st step ({len(np.where(magic_clean.mask_step1 == True)[0])} pixels): {np.where(magic_clean.mask_step1 == True)[0]}")
         # print(f"Pixels selected after 2nd step ({len(np.where(magic_clean.mask_step2 == True)[0])} pixels): {np.where(magic_clean.mask_step2 == True)[0]}")
