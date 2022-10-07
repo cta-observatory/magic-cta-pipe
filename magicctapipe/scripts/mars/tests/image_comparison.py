@@ -224,14 +224,14 @@ def image_comparison(
         charge_differences = abs(event_image_mars - event_image_mcp)
         clean_mask_pixels = charge_differences != 0
 
-        print(np.where(clean_mask_pixels == True)[0])
-
         if len(np.where(clean_mask_pixels == True)[0]) == 0:
             errors = False
         else:
             if np.any(
                 charge_differences >= 0.00000001 * vmax
             ):  # threshold for differences allowed. The difference cannot be higher than x% of the highest pixel charge
+                print(np.where(clean_mask_pixels == True)[0])
+                print(f"Charge differences: {charge_differences[clean_mask_pixels]}")
                 errors = True
 
         if errors:
