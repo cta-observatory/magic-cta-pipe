@@ -148,6 +148,8 @@ def image_comparison(
     for k, v in cleaning_config.items():
         print(f"{k} : {v}")
 
+    magic_clean = MAGICClean(geometry_mcp, cleaning_config)
+
     for event_id in ids_to_compare:
         try:
             event = seeker.get_event_id(event_id)
@@ -171,7 +173,6 @@ def image_comparison(
 
         # get mcp data------------------------------------------------------------------------------
 
-        magic_clean = MAGICClean(geometry_mcp, cleaning_config)
         original_data_images = event.dl1.tel[tel_id].image
         original_data_images_copy = original_data_images.copy()
         event_pulse_time = event.dl1.tel[tel_id].peak_time
