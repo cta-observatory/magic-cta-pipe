@@ -602,6 +602,7 @@ class PixelTreatment:
 
             if p0>=0 and p1>=0 and np.fabs(times[p0] - times[p1]) < 250:
                 self.event_pulse_time[ipixel] = (times[p0] + times[p1])/2.0
+                self.event_pulse_time[ipixel] = reduce_precision_vector(self.event_pulse_time[ipixel])
 
     def interpolate_times_fast(self):
 
