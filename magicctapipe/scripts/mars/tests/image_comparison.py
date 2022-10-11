@@ -67,6 +67,7 @@ def image_comparison(
     # load config file--------------------------------------------------------------------------------------------
     config = yaml.safe_load(open(config_file, "r"))
     out_path = config["output_files"]["file_path"]
+    trigger_pattern = config["trigger_pattern"]
     Path(out_path).mkdir(exist_ok=True, parents=True)
     comparison = []
 
@@ -75,19 +76,21 @@ def image_comparison(
         with uproot.open(
             config["input_files"]["magic_cta_pipe"][f"M{tel_id}"]
         ) as mcp_file:
-            ids_to_compare = mcp_file["Events"]["MRawEvtHeader.fStereoEvtNumber"].array(
-                library="np"
-            )
-            ids_to_compare = np.delete(ids_to_compare, np.where(ids_to_compare == 0)[0])
-            ids_to_compare = ids_to_compare.tolist()
+            ids_to_compare = mcp_file["Events"].arrays(
+                expressions = ["MRawEvtHeader.fStereoEvtNumber"],
+                cut = f"(MTriggerPattern.fPrescaled == {trigger_pattern})",
+                library = "np",
+                )
+            ids_to_compare = ids_to_compare["MRawEvtHeader.fStereoEvtNumber"].tolist()
+            ids_to_compare = [x for x in ids_to_compare if x != 0]
+
     elif mode == "use_ids_config":
         ids_to_compare = config["event_list"]
 
     if max_events is not None:
         ids_to_compare = ids_to_compare[:max_events]
 
-    ids_to_compare = [*set(ids_to_compare)]
-    print(len(ids_to_compare), "events will be compared", ids_to_compare)
+    print(len(ids_to_compare), "Events will be compared:", ids_to_compare)
 
     # we will now load the data files, and afterwards select the corresponding data for our events
     # get mars data ------------------------------------------------------------------------------------------------------
@@ -220,7 +223,7 @@ def image_comparison(
             vmax = mars_max
 
         vmin = 0
-        # print(vmax)
+
 
         # find differences------------------------------------------------------------------------------------------
         charge_differences = abs(event_image_mars - event_image_mcp)
