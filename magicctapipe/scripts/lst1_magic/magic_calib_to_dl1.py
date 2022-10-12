@@ -101,13 +101,13 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     tel_id = event_source.telescope
 
     logger.info(f"\nObservation ID: {obs_id}")
-    logger.info(f"\nTelescope ID: {tel_id}")
+    logger.info(f"Telescope ID: {tel_id}")
 
     is_stereo_trigger = event_source.is_stereo
     is_sum_trigger = event_source.is_sumt
 
-    logger.info(f"\n\nIs stereo trigger: {is_stereo_trigger}")
-    logger.info(f"\nIs SUM trigger: {is_sum_trigger}")
+    logger.info(f"\nIs stereo trigger: {is_stereo_trigger}")
+    logger.info(f"Is SUM trigger: {is_sum_trigger}")
 
     if is_sum_trigger:
         logger.warning(
