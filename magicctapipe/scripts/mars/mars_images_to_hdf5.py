@@ -186,7 +186,7 @@ class ImageContainerCleaned(Container):
     )
 
 
-def build_image_container_calibrated(run_number, event_id, tel, image_calibrated, image_cleaned):
+def build_image_container_calibrated(run_number, event_id, tel, image_charge_calibrated, image_charge_cleaned, image_time_calibrated, image_time_cleaned):
     """
     Builds a ImageContainerCalibrated
 
@@ -213,14 +213,16 @@ def build_image_container_calibrated(run_number, event_id, tel, image_calibrated
         obs_id=run_number,
         event_id=event_id,
         tel_id=tel,
-        image_calibrated=image_calibrated,
-        image_cleaned=image_cleaned,
+        image_charge_calibrated=image_charge_calibrated,
+        image_charge_cleaned=image_charge_cleaned,
+        image_time_calibrated=image_time_calibrated,
+        image_time_cleaned=image_time_cleaned,
     )
     # add parameters:
     # size, width, length, cog, slope, delta, leakage
 
 
-def build_image_container_cleaned(run_number, event_id, tel, image_cleaned):
+def build_image_container_cleaned(run_number, event_id, tel, image_charge_cleaned, image_time_cleaned):
     """
     Builds a ImageContainerCleaned
 
@@ -245,7 +247,8 @@ def build_image_container_cleaned(run_number, event_id, tel, image_cleaned):
         obs_id=run_number,
         event_id=event_id,
         tel_id=tel,
-        image_cleaned=image_cleaned,
+        image_charge_cleaned=image_charge_cleaned,
+        image_time_cleaned=image_time_cleaned,
     )
 
 
