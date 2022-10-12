@@ -51,6 +51,6 @@ dependencies:
   - corsikaio
   - pip:
       - lstchain~=0.9.6
-      - ctapipe_io_magic~=0.4.6
+      - ctapipe_io_magic~=0.4.7
       - ctaplot~=0.5.5
       - pyirf~=0.6.0
