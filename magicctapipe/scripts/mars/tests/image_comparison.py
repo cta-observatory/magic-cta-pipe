@@ -31,7 +31,6 @@ def new_camera_geometry(camera_geom):
         cam_rotation=camera_geom.cam_rotation,
     )
 
-
 # set configurations for the cleaning
 cleaning_config = dict(
     picture_thresh=6.0,
@@ -47,14 +46,13 @@ bad_pixels_config = dict(
     pedestalLevel=400, pedestalLevelVariance=4.5, pedestalType="FromExtractorRndm"
 )
 
-
 # define the image comparison function
 def image_comparison(
     config_file="config.yaml", mode="use_ids_config", tel_id=1, max_events=None
 ):
     """
     This tool compares the camera images of events processed by MARS and the magic-cta-pipeline.
-    The output is a png file with the camera images and a hdf5 file that contains the pixel information.
+    The output is a .png file with the camera images and a HDF5 file that contains the pixel information.
     The function returns a list with the Event IDs for events, where there's a difference between the images.
     ---
     config_file: Configuration file
@@ -70,8 +68,10 @@ def image_comparison(
     trigger_pattern = config["trigger_pattern"]
     Path(out_path).mkdir(exist_ok=True, parents=True)
     comparison = []
+    time_comparison = []
+    skipped_count = 0
 
-    # get id to compare from config file---------------------------------------------------------------------------
+    # get Event IDs for comparison--------------------------------------------------------------------------------------
     if mode == "use_all":
         with uproot.open(
             config["input_files"]["magic_cta_pipe"][f"M{tel_id}"]
@@ -95,23 +95,25 @@ def image_comparison(
     # we will now load the data files, and afterwards select the corresponding data for our events
     # get mars data ------------------------------------------------------------------------------------------------------
     mars_input = config["input_files"]["mars"]
-    image = []  # pixel charges
     events = []  # event ids
     telescope = []  # telescope id
     obs_id = []  # run number
+    image = []  # pixel charges
+    times = [] # pixel times 
 
     for image_container in read_images(mars_input, read_calibrated=True):
         events.append(image_container.event_id)
         telescope.append(image_container.tel_id)
         obs_id.append(image_container.obs_id)
         image.append(image_container.image_charge_cleaned)
+        times.append(image_container.image_time_cleaned) 
 
     mars_data = pd.DataFrame(
-        list(zip(events, telescope, obs_id, image)),
-        columns=["event_id", "tel_id", "obs_id", "image"],
+        list(zip(events, telescope, obs_id, image, times)),
+        columns=["event_id", "tel_id", "obs_id", "image", "times"],
     )
 
-    # get other data----------------------------------------------------------------------------------------------------
+    # compare data----------------------------------------------------------------------------------------------------
     # we loop through the events, and only compare those that are in ids_to_compare
 
     source = MAGICEventSource(
@@ -158,6 +160,7 @@ def image_comparison(
             event = seeker.get_event_id(event_id)
         except IndexError:
             print(f"Event with ID {event_id} not found in calibrated file. Skipping...")
+            skipped_count += 1
             continue
 
         print("Event ID:", event.index.event_id, "- Telecope ID:", tel_id)
@@ -169,12 +172,15 @@ def image_comparison(
         ]
         if mars_event.empty:
             print(f"Event with ID {event_id} not found in MARS file. Skipping...")
+            skipped_count += 1
             continue
+
         idx = mars_event["image"].index[0]
         event_image_mars = np.array(mars_event["image"][idx][:1039])
         clean_mask_mars = event_image_mars != 0
+        times_mars = np.array(mars_event["times"][idx][:1039]) 
 
-        # get mcp data------------------------------------------------------------------------------
+        # get MCP data------------------------------------------------------------------------------
 
         original_data_images = event.dl1.tel[tel_id].image
         original_data_images_copy = original_data_images.copy()
@@ -187,7 +193,6 @@ def image_comparison(
             0
         ]
         unsuitable_mask = np.logical_or(badrmspixel_mask, deadpixel_mask)
-
         (
             clean_mask,
             calibrated_data_images,
@@ -208,13 +213,14 @@ def image_comparison(
         # clipping for charges > 750
         event_image_mcp[event_image_mcp >= 750.0] = 750.0
 
+
         if not np.any(event_image_mcp):
             print(
                 f"Event ID {event.index.event_id} for telescope {tel_id} does not have any surviving pixel. Skipping..."
             )
             continue
 
-        # get max value for colorbar--------------------------------------------------------------------------------
+        # get maximum charge value for colorbar--------------------------------------------------------------------------------
         mcp_max = np.amax(event_image_mcp[clean_mask])
         mars_max = np.amax(event_image_mars[clean_mask_mars])
         if mcp_max >= mars_max:
@@ -225,7 +231,7 @@ def image_comparison(
         vmin = 0
 
 
-        # find differences------------------------------------------------------------------------------------------
+        # find pixel charge differences-----------------------------------------------------------------------------------
         charge_differences = abs(event_image_mars - event_image_mcp)
         clean_mask_pixels = charge_differences != 0
 
@@ -246,6 +252,30 @@ def image_comparison(
         # differences between calibrated data before cleaning and mcp/mars data
         pix_diff_mars = abs(event_image_mars - calibrated_data_images)
         pix_diff_mcp = abs(event_image_mcp - calibrated_data_images)
+
+        # find time differences--------------------------------------------------------------------------------------------
+
+        time_diff = abs(times_mars - event_pulse_time) 
+        print(time_diff)
+        print(np.amax(time_diff))
+        time_mask_pixels = time_diff >= 0.01
+        check = [i for i in range(len(time_diff)) if time_diff[i] >= 0.01]
+        print("Differences for pixel:", check, len(check))
+
+        time_errors = False
+        if len(np.where(time_mask_pixels == True)[0]) == 0:
+            time_errors = False
+        else:
+            if np.any(
+                time_diff >= 0.01
+            ):  
+                # print(np.where(time_mask_pixels == True)[0])
+                # print(f"Image time differences: {time_diff[time_mask_pixels]}")
+                time_errors = True
+
+        if time_errors:
+            time_comparison.append(event.index.event_id)
+            print(f"time errors found for {event.index.event_id}!")
 
         # create output file that contains the pixel values and differences------------------------------------------------
 
@@ -287,6 +317,9 @@ def image_comparison(
             # pixels whose original value is negative
             # negative_mask = calibrated_data_images < 0
             disp1.set_limits_minmax(vmin, vmax)
+            disp1.highlight_pixels(
+                time_mask_pixels[:1039], color="red", alpha=1, linewidth=1
+            )
             ax1.set_title("original data")
 
             # mars_data
@@ -314,7 +347,9 @@ def image_comparison(
             )
             ax4.set_title("differences MARS-mcp")
 
-            # the white outline shows the pixels used for the image after cleaning, the ones that are filled yellow show where differences are
+            # the white outline shows the pixels used for the image after cleaning, 
+            # the ones that are filled yellow show where differences are
+
             # differences between MARS and the calibrated data
             pix_diff_mars_copy = np.array(pix_diff_mars).copy()
             pix_diff_mars_copy[np.array(event_image_mars) == 0] = 0
@@ -342,5 +377,13 @@ def image_comparison(
             )
             # print(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.png")
             # fig.savefig(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.pdf")
+
+    print("Number of events compared:", len(ids_to_compare))
+    print("Number of events skipped:", skipped_count, \
+        "\nPercentage of events compared:", skipped_count/len(ids_to_compare))
+    print("Number of events with image time errors after cleaning:", len(time_comparison), \
+        "\nPercentage of events after cleaning:", len(time_comparison)/(len(ids_to_compare)-skipped_count))
+    print("Number of events with image charge errors after cleaning:", len(comparison), \
+        "\nPercentage of events after cleaning:", len(comparison)/(len(ids_to_compare)-skipped_count))
 
     return comparison
