@@ -136,6 +136,9 @@ def get_stereo_events(
 
         event_data_stereo.loc[df_events.index, "combo_type"] = combo_type
 
+    # Convert the combo_type from float to int
+    event_data_stereo = event_data_stereo.astype({"combo_type": int})
+
     return event_data_stereo
 
 
