@@ -13,7 +13,7 @@ under the input directory.
 If the "--run-wise" argument is given, it merges input files run-wise.
 It is applicable only to real data since MC data are already produced
 run-wise. The "--subrun-wise" argument can be also used to merge MAGIC
-real data files subrun-wise (for example, dl1_M1.Run05093711.001.h5
+DL1 real data subrun-wise (for example, dl1_M1.Run05093711.001.h5
 + dl1_M2.Run05093711.001.h5 -> dl1_MAGIC.Run05093711.001.h5).
 
 Usage:
@@ -163,21 +163,16 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             subrun_ids.append(parser[2])
 
     file_names_unique = np.unique(file_names)
-    n_file_names = len(file_names_unique)
 
-    if n_file_names == 1:
+    if len(file_names_unique) == 1:
         output_file_name = file_names_unique[0]
 
+    elif file_names_unique.tolist() == ["dl1_M1", "dl1_M2"]:
+        # Assume that the input files are telescope-wise MAGIC DL1 data
+        output_file_name = "dl1_MAGIC"
+
     else:
-        replaced_name = file_names_unique[0].replace("M1", "M2")
-        match_file_type = file_names_unique[1] == replaced_name
-
-        if (n_file_names == 2) and match_file_type:
-            # Assume that the input files are telescope-wise MAGIC data
-            output_file_name = file_names_unique[0].replace("M1", "MAGIC")
-
-        else:
-            RuntimeError("Multiple types of files are found in the input directory.")
+        RuntimeError("Multiple types of files are found in the input directory.")
 
     # Merge the input files
     run_ids_unique = np.unique(run_ids)
@@ -194,7 +189,12 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         subrun_ids = np.array(subrun_ids)
 
         for run_id in run_ids_unique:
-            subrun_ids_unique = np.unique(subrun_ids[run_ids == run_id])
+
+            subrun_ids_unique, counts = np.unique(
+                subrun_ids[run_ids == run_id], return_counts=True
+            )
+
+            subrun_ids_unique = subrun_ids_unique[counts > 1]
 
             for subrun_id in subrun_ids_unique:
                 file_mask = f"{input_dir}/*Run{run_id}.{subrun_id}.h5"
