@@ -104,7 +104,7 @@ def image_comparison(
         events.append(image_container.event_id)
         telescope.append(image_container.tel_id)
         obs_id.append(image_container.obs_id)
-        image.append(image_container.image_cleaned)
+        image.append(image_container.image_charge_cleaned)
 
     mars_data = pd.DataFrame(
         list(zip(events, telescope, obs_id, image)),
