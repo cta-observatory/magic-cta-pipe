@@ -172,7 +172,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         output_file_name = "dl1_MAGIC"
 
     else:
-        RuntimeError("Multiple types of files are found in the input directory.")
+        raise RuntimeError("Multiple types of files are found in the input directory.")
 
     # Merge the input files
     run_ids_unique = np.unique(run_ids)
