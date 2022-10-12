@@ -22,11 +22,9 @@ files in the same directory. If the "--process-run" argument is given,
 it not only reads the drive reports but also processes all the events of
 the subrun files at once.
 
-If the "--allow-mono" argument is given, it process the events even if
-the input (real) data was taken with the L1 4NN mono trigger.
-
-Please note that SUM trigger data and mono trigger MC data are not yet
-supported with this script.
+Please note that it is also possible to process SUM trigger data with
+this script, but since the MaTaJu cleaning is not yet implemented in
+this pipeline, it applies the standard MARS-like cleaning instead.
 
 Usage:
 $ python magic_calib_to_dl1.py
@@ -34,13 +32,11 @@ $ python magic_calib_to_dl1.py
 (--output-dir dl1)
 (--config-file config.yaml)
 (--process-run)
-(--allow-mono)
 """
 
 import argparse
 import logging
 import re
-import sys
 import time
 import warnings
 from pathlib import Path
@@ -75,9 +71,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
-def magic_calib_to_dl1(
-    input_file, output_dir, config, process_run=False, allow_mono_trigger=False
-):
+def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     """
     Processes MAGIC calibrated events and computes the DL1 parameters.
 
@@ -93,9 +87,6 @@ def magic_calib_to_dl1(
         If `True`, it processes the events of all the subrun files
         found in the same directory of the input subrun file at once
         (applicable only to real data)
-    allow_mono_trigger: bool
-        If `True`, it processes the events even if the input data was
-        taken with the mono trigger
     """
 
     # Load the input file
@@ -109,30 +100,22 @@ def magic_calib_to_dl1(
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
 
+    logger.info(f"\nObservation ID: {obs_id}")
+    logger.info(f"\nTelescope ID: {tel_id}")
+
     is_stereo_trigger = event_source.is_stereo
     is_sum_trigger = event_source.is_sumt
 
-    logger.info(
-        f"\nObservation ID: {obs_id}"
-        f"\nTelescope ID: {tel_id}"
-        f"\n\nIs stereo trigger: {is_stereo_trigger}"
-        f"\nIs SUM trigger: {is_sum_trigger}"
-    )
+    logger.info(f"\n\nIs stereo trigger: {is_stereo_trigger}")
+    logger.info(f"\nIs SUM trigger: {is_sum_trigger}")
 
     if is_sum_trigger:
-        logger.warning("\nSUM trigger data is supported, but MaTaJu cleaning is not implemented.")
+        logger.warning(
+            "\nWARNING: The MaTaJu cleaning is not yet implemented. "
+            "Will apply the standard MARS-like image cleaning."
+        )
 
     if not is_simulation:
-
-        if not is_stereo_trigger:
-            logger.info(f"\nAllow mono trigger: {allow_mono_trigger}")
-
-            if not allow_mono_trigger:
-                logger.info(
-                    "\nMono trigger data are not allowed. Please set the option "
-                    "to `True` if you are sure to process them. Exiting..."
-                )
-                sys.exit()
 
         logger.info("\nThe following files are found to read drive reports:")
         for subrun_file in event_source.file_list_drive:
@@ -400,22 +383,13 @@ def main():
         help="Process the events of all the subrun files at once",
     )
 
-    parser.add_argument(
-        "--allow-mono",
-        dest="allow_mono",
-        action="store_true",
-        help="Process the events even if the data was taken with the mono trigger",
-    )
-
     args = parser.parse_args()
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
     # Process the input data
-    magic_calib_to_dl1(
-        args.input_file, args.output_dir, config, args.process_run, args.allow_mono
-    )
+    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
 
     logger.info("\nDone.")
 
