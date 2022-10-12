@@ -21,6 +21,7 @@ from ctapipe.io import HDF5TableWriter, HDF5TableReader
 
 from ctapipe_io_magic import MARSDataLevel
 
+
 def parse_args(args):
     """
     Parse command line options and arguments.
@@ -143,15 +144,27 @@ class ImageContainerCalibrated(Container):
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
     tel_id = Field(-1, "Telescope ID")
-    image_calibrated = Field(
+    image_charge_calibrated = Field(
         None,
-        "Numpy array of pixels before cleaning, after calibration." "Shape: (n_pixel)",
+        "Numpy array of pixel charges before cleaning, after calibration." "Shape: (n_pixel)",
         dtype=">f8",
         ndim=1,
     )
-    image_cleaned = Field(
+    image_charge_cleaned = Field(
         None,
-        "Numpy array of pixels after cleaning." "Shape: (n_pixel)",
+        "Numpy array of pixel charges after cleaning." "Shape: (n_pixel)",
+        dtype=">f8",
+        ndim=1,
+    )
+    image_time_calibrated = Field(
+        None,
+        "Numpy array of pixel times before cleaning, after calibration." "Shape: (n_pixel)",
+        dtype=">f8",
+        ndim=1,
+    )
+    image_time_cleaned = Field(
+        None,
+        "Numpy array of pixel times after cleaning." "Shape: (n_pixel)",
         dtype=">f8",
         ndim=1,
     )
@@ -163,7 +176,13 @@ class ImageContainerCleaned(Container):
     tel_id = Field(-1, "Telescope ID")
     image_cleaned = Field(
         None,
-        "Numpy array of pixels after cleaning." "Shape: (n_pixel)", dtype=">f8", ndim=1,
+        "Numpy array of pixel charges after cleaning." "Shape: (n_pixel)", dtype=">f8", ndim=1,
+    )
+    image_time_cleaned = Field(
+        None,
+        "Numpy array of pixel times after cleaning." "Shape: (n_pixel)",
+        dtype=">f8",
+        ndim=1,
     )
 
 
@@ -341,28 +360,37 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                         branches = [
                             "UprootImageOrig",
                             "UprootImageOrigClean",
+                            "UprootTimeOrig",
+                            "UprootTimeOrigClean",
                             "MRawEvtHeader.fStereoEvtNumber"
                         ]
                     else:
                         branches = [
                             "UprootImageOrig_1",
                             "UprootImageOrigClean_1",
+                            "UprootTimeOrig_1",
+                            "UprootTimeOrigClean_1",
                             "MRawEvtHeader_1.fStereoEvtNumber",
                             "UprootImageOrig_2",
                             "UprootImageOrigClean_2",
+                            "UprootTimeOrig_2",
+                            "UprootTimeOrigClean_2",
                             "MRawEvtHeader_2.fStereoEvtNumber"
                         ]
                 else:
                     if datalevel == MARSDataLevel.STAR:
                         branches = [
                             "UprootImageOrigClean",
+                            "UprootTimeOrigClean",
                             "MRawEvtHeader.fStereoEvtNumber"
                         ]
                     else:
                         branches = [
                             "UprootImageOrigClean_1",
+                            "UprootTimeOrigClean_1",
                             "MRawEvtHeader_1.fStereoEvtNumber",
                             "UprootImageOrigClean_2",
+                            "UprootTimeOrigClean_2",
                             "MRawEvtHeader_2.fStereoEvtNumber"
                         ]
 
@@ -384,7 +412,9 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                     batch["MRawEvtHeader.fStereoEvtNumber"][j],
                                     telescope,
                                     np.array(batch["UprootImageOrig"][j]),
-                                    np.array(batch["UprootImageOrigClean"][j])
+                                    np.array(batch["UprootImageOrigClean"][j]),
+                                    np.array(batch["UprootTimeOrig"][j]),
+                                    np.array(batch["UprootTimeOrigClean"][j])
                                     )
                                 writer.write(
                                     table_name=f'telescope/image/MAGIC/M{telescope}',
@@ -395,7 +425,8 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         run_number,
                                         batch["MRawEvtHeader.fStereoEvtNumber"][j],
                                         telescope,
-                                        np.array(batch["UprootImageOrigClean"][j])
+                                        np.array(batch["UprootImageOrigClean"][j]),
+                                        np.array(batch["UprootImageOrigClean"][j]),
                                     )
                                 writer.write(
                                     table_name=f'telescope/image/MAGIC/M{telescope}',
@@ -412,7 +443,9 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         batch["MRawEvtHeader_1.fStereoEvtNumber"][j],
                                         1,
                                         np.array(batch["UprootImageOrig_1"][j]),
-                                        np.array(batch["UprootImageOrigClean_1"][j])
+                                        np.array(batch["UprootImageOrigClean_1"][j]),
+                                        np.array(batch["UprootTimeOrig_1"][j]),
+                                        np.array(batch["UprootTimeOrigClean_1"][j]),
                                     )
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M1',
@@ -423,7 +456,9 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         batch["MRawEvtHeader_2.fStereoEvtNumber"][j],
                                         2,
                                         np.array(batch["UprootImageOrig_2"][j]),
-                                        np.array(batch["UprootImageOrigClean_2"][j])
+                                        np.array(batch["UprootImageOrigClean_2"][j]),
+                                        np.array(batch["UprootTimeOrig_2"][j]),
+                                        np.array(batch["UprootTimeOrigClean_2"][j]),
                                     )
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M2',
@@ -434,7 +469,8 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         run_number,
                                         batch["MRawEvtHeader_1.fStereoEvtNumber"][j],
                                         1,
-                                        np.array(batch["UprootImageOrigClean_1"][j])
+                                        np.array(batch["UprootImageOrigClean_1"][j]),
+                                        np.array(batch["UprootTimeOrigClean_1"][j]),
                                     )
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M1',
@@ -444,7 +480,8 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
                                         run_number,
                                         batch["MRawEvtHeader_2.fStereoEvtNumber"][j],
                                         2,
-                                        np.array(batch["UprootImageOrigClean_2"][j])
+                                        np.array(batch["UprootImageOrigClean_2"][j]),
+                                        np.array(batch["UprootTimeOrigClean_2"][j]),
                                     )
                                 writer.write(
                                     table_name='telescope/image/MAGIC/M2',
