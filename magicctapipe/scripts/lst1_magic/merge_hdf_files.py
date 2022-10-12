@@ -167,9 +167,9 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     if len(file_names_unique) == 1:
         output_file_name = file_names_unique[0]
 
-    elif file_names_unique.tolist() == ["dl1_M1", "dl1_M2"]:
+    elif file_names_unique.tolist() == ["dl1_M1.Run", "dl1_M2.Run"]:
         # Assume that the input files are telescope-wise MAGIC DL1 data
-        output_file_name = "dl1_MAGIC"
+        output_file_name = "dl1_MAGIC.Run"
 
     else:
         raise RuntimeError("Multiple types of files are found in the input directory.")
