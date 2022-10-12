@@ -229,12 +229,10 @@ def compare_hillas_stereo_parameters(
         ):  # percentage of the events, that is allowed to have errors bigger than the specified threshold
             errors_found = False
         else:
-            df_params.to_hdf(
-                f'{config["Output_paths"]["file_output_directory"]}/{filename_no_ext}_hillas_comparison.h5',
-                par,
-                "a",
-            )
+            with pd.HDFStore(f'{config["Output_paths"]["file_output_directory"]}/{filename_no_ext}_hillas_comparison.h5') as store:
+                store.put(f"/{par}", df_params, format="table", data_columns=True)
             errors_found = True
+            
         comparison.append(errors_found)
         comparison_fraction.append(len(error)/len(df_params))
 
