@@ -310,8 +310,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         # Apply the dynamic gammaness cuts
         gh_cut_table = QTable(
             data={
-                "low": irf_data["energy_bins"][:-1] * u.TeV,
-                "high": irf_data["energy_bins"][1:] * u.TeV,
+                "low": irf_data["energy_bins"][:-1],
+                "high": irf_data["energy_bins"][1:],
                 "cut": gh_cuts_interp.T[0],
             }
         )
