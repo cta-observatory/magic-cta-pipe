@@ -178,6 +178,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
         params = ["combo_type", "multiplicity", "timestamp"]
 
     event_data_mean = event_data[params].groupby(group_index).mean()
+    event_data_mean = event_data_mean.astype({"combo_type": int, "multiplicity": int})
 
     # Calculate the mean pointing direction
     pnt_az_mean, pnt_alt_mean = calculate_mean_direction(
