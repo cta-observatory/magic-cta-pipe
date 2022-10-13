@@ -85,7 +85,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     logger.info("\nGrid points (cosZd, Az):")
     for i_grid, grid_point in enumerate(irf_data["grid_points"], start=1):
-        logger.info(f"{i_grid}. {grid_point.round(5).tolist()}")
+        logger.info(f"\t{i_grid}: {grid_point.round(5).tolist()}")
 
     logger.info("\nExtra header:")
     for key, value in extra_header.items():
