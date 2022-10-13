@@ -959,7 +959,9 @@ def load_irf_files(input_dir_irf):
     irf_data["bkg_fov_offset_bins"] *= u.deg
 
     # Convert the list to the numpy ndarray
+    irf_data["grid_points"] = np.array(irf_data["grid_points"])
     irf_data["energy_dispersion"] = np.array(irf_data["energy_dispersion"])
+    irf_data["gh_cuts"] = np.array(irf_data["gh_cuts"])
     irf_data["migration_bins"] = np.array(irf_data["migration_bins"])
 
     return irf_data, extra_header
