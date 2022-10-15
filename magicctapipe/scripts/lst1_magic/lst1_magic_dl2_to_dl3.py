@@ -85,7 +85,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     logger.info("\nGrid points (cosZd, Az):")
     for i_grid, grid_point in enumerate(irf_data["grid_points"], start=1):
-        logger.info(f"{i_grid}. {grid_point.round(5).tolist()}")
+        logger.info(f"\t{i_grid}: {grid_point.round(5).tolist()}")
 
     logger.info("\nExtra header:")
     for key, value in extra_header.items():
@@ -310,8 +310,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         # Apply the dynamic gammaness cuts
         gh_cut_table = QTable(
             data={
-                "low": irf_data["energy_bins"][:-1] * u.TeV,
-                "high": irf_data["energy_bins"][1:] * u.TeV,
+                "low": irf_data["energy_bins"][:-1],
+                "high": irf_data["energy_bins"][1:],
                 "cut": gh_cuts_interp.T[0],
             }
         )
