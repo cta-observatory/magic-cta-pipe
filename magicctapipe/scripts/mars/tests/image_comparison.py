@@ -179,13 +179,14 @@ def image_comparison(
         idx = mars_event["image"].index[0]
         event_image_mars = np.array(mars_event["image"][idx][:1039])
         clean_mask_mars = event_image_mars != 0
-        times_mars = np.array(mars_event["times"][idx][:1039]) 
+        times_mars = np.array(mars_event["times"][idx][:1039])
 
         # get MCP data------------------------------------------------------------------------------
 
         original_data_images = event.dl1.tel[tel_id].image
         original_data_images_copy = original_data_images.copy()
-        event_pulse_time = event.dl1.tel[tel_id].peak_time
+        original_data_times = event.dl1.tel[tel_id].peak_time
+        original_data_times_copy = original_data_times.copy()
 
         badrmspixel_mask = event.mon.tel[
             tel_id
@@ -200,7 +201,7 @@ def image_comparison(
             event_pulse_time,
         ) = magic_clean.clean_image(
             original_data_images_copy,
-            event_pulse_time,
+            original_data_times_copy,
             unsuitable_mask=unsuitable_mask,
         )
 
@@ -210,10 +211,12 @@ def image_comparison(
 
         event_image_mcp = calibrated_data_images.copy()
         event_image_mcp[~clean_mask] = 0
+        event_times_mcp = event_pulse_time.copy()
+        event_times_mcp[~clean_mask] = 0
+        times_mars[~clean_mask_mars] = 0
 
         # clipping for charges > 750
         event_image_mcp[event_image_mcp >= 750.0] = 750.0
-
 
         if not np.any(event_image_mcp):
             print(
@@ -230,7 +233,6 @@ def image_comparison(
             vmax = mars_max
 
         vmin = 0
-
 
         # find pixel charge differences-----------------------------------------------------------------------------------
         charge_differences = abs(event_image_mars - event_image_mcp)
@@ -256,12 +258,12 @@ def image_comparison(
 
         # find time differences--------------------------------------------------------------------------------------------
 
-        time_diff = abs(times_mars - event_pulse_time) 
+        time_diff = abs(times_mars - event_times_mcp)
         print(time_diff)
         print(np.amax(time_diff))
         time_mask_pixels = time_diff >= 0.01
-        check = [i for i in range(len(time_diff)) if time_diff[i] >= 0.01]
-        print("Differences for pixel:", check, len(check))
+        print("Differences for pixel:", np.where(time_mask_pixels == True)[0], len(np.where(time_mask_pixels == True)[0]))
+        print(f"Number of pixels selected: {len(np.where(event_image_mcp != 0)[0])}")
 
         time_errors = False
         if len(np.where(time_mask_pixels == True)[0]) == 0:
@@ -319,7 +321,7 @@ def image_comparison(
             # negative_mask = calibrated_data_images < 0
             disp1.set_limits_minmax(vmin, vmax)
             disp1.highlight_pixels(
-                time_mask_pixels[:1039], color="red", alpha=1, linewidth=1
+                time_mask_pixels, color="red", alpha=1, linewidth=1
             )
             ax1.set_title("original data")
 
