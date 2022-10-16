@@ -65,6 +65,7 @@ def image_comparison(
     # load config file--------------------------------------------------------------------------------------------
     config = yaml.safe_load(open(config_file, "r"))
     out_path = config["output_files"]["file_path"]
+    print(f"Output path: {out_path}")
     trigger_pattern = config["trigger_pattern"]
     Path(out_path).mkdir(exist_ok=True, parents=True)
     comparison = []
