@@ -269,31 +269,22 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         # the left edge condition
         optimized_offset = time_offsets[time_offsets < average_offset][-1]
 
-        time_lolim = timestamps_lst + optimized_offset - window_half_width
-        time_uplim = timestamps_lst + optimized_offset + window_half_width
+        times_lolim = timestamps_lst + optimized_offset - window_half_width
+        times_uplim = timestamps_lst + optimized_offset + window_half_width
 
-        indices_lst = []
-        indices_magic = []
+        cond_lolim = timestamps_magic.value > times_lolim[:, np.newaxis].value
+        cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
 
-        for i_evt in range(len(timestamps_lst)):
+        mask = np.logical_and(cond_lolim, cond_uplim)
+        mask = mask[np.count_nonzero(mask, axis=1) == 1]
 
-            # Use only the right edge condition
-            cond_lolim = timestamps_magic.value > time_lolim[i_evt].value
-            cond_uplim = timestamps_magic.value <= time_uplim[i_evt].value
-
-            mask = np.logical_and(cond_lolim, cond_uplim)
-
-            if np.count_nonzero(mask) == 1:
-                indices_lst.append(i_evt)
-                indices_magic.append(np.where(mask)[0][0])
+        indices_lst, indices_magic = np.where(mask)
 
         n_events_at_avg = len(indices_lst)
         percentage = 100 * n_events_at_avg / n_events_magic
 
-        logger.info(
-            f"--> Number of coincident events: {n_events_at_avg}"
-            f"\n--> Ratio over the {tel_name} events: {np.round(percentage, 1)}%"
-        )
+        logger.info(f"--> Number of coincident events: {n_events_at_avg}")
+        logger.info(f"--> Fraction over the {tel_name} events: {percentage:.1f}%")
 
         multi_indices_magic = df_magic.iloc[indices_magic].index
         obs_ids_magic = multi_indices_magic.get_level_values("obs_id_magic")
@@ -328,7 +319,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             data={
                 "time_offset": time_offsets.to_value(u.us).round(1),
                 f"n_coincidence_tel{coincidence_id}": n_coincidence,
-                # f"n_coincidence_btwn_tel{coincidence_id}": n_coincidence_btwn,
             }
         )
 
