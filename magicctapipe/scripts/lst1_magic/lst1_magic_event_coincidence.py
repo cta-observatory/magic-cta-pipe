@@ -16,9 +16,7 @@ telescope images cannot survive the cleaning or fail to compute the DL1
 parameters. However, it's possible to perform the stereo analysis if
 LST-1 sees these events. Thus, it checks the event coincidence for each
 telescope combination (i.e., LST1 + M1 and LST1 + M2) and keeps any
-MAGIC events coincident with LST-1 events. Non-coincident MAGIC-stereo
-events are discarded since according to simulations they are mostly
-hadronic origin.
+MAGIC events coincident with LST-1 events.
 
 Unless there is any particular reason, please use the default half width
 300 ns for the coincidence window, which is optimized to reduce the
@@ -343,19 +341,21 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     # event that is different from the one that M2 event is coincident.
     # Here we drop such kind of events at the moment.
 
-    # Finally, we drop the MAGIC-stereo events non-coincident with LST-1
-    # since according to simulations they are mostly hadronic origin.
-
     group_mean = event_data.groupby(["obs_id_magic", "event_id_magic"]).mean()
 
-    event_data["obs_id"] = group_mean["obs_id"]
-    event_data["event_id"] = group_mean["event_id"]
+    event_data["obs_id"] = group_mean["obs_id_lst"]
+    event_data["event_id"] = group_mean["event_id_lst"]
 
-    event_data.dropna(subset=["obs_id", "event_id"], inplace=True)
+    indices = event_data[event_data["obs_id"].isna()].index
+
+    event_data.loc[indices, "obs_id"] = indices.get_level_values("obs_id_magic")
+    event_data.loc[indices, "event_id"] = indices.get_level_values("event_id_magic")
+
     event_data = event_data.astype({"obs_id": int, "event_id": int})
 
     event_data.reset_index(inplace=True)
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+    event_data.sort_index(inplace=True)
 
     event_data = get_stereo_events(event_data)
 
