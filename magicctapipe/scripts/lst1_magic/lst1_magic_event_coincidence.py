@@ -226,7 +226,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
         logger.info("\nChecking the event coincidence...")
 
-        for i_step, time_offset in enumerate(time_offsets):
+        for time_offset in time_offsets:
 
             times_lolim = timestamps_lst + time_offset - window_half_width
             times_uplim = timestamps_lst + time_offset + window_half_width
