@@ -11,7 +11,6 @@ from pathlib import Path
 from ctapipe_io_magic import MAGICEventSource
 from ctapipe.visualization import CameraDisplay
 from ctapipe.instrument import CameraGeometry, CameraDescription
-from ctapipe.io.eventseeker import EventSeeker
 from magicctapipe.image import MAGICClean
 from magicctapipe.scripts.mars import read_images
 
@@ -124,8 +123,6 @@ def image_comparison(
 
     run_num = source.obs_ids[0]
 
-    seeker = EventSeeker(event_source=source)
-
     MAGICCAM = CameraDescription.from_name("MAGICCam")
     GEOM = MAGICCAM.geometry
     geometry_mars = new_camera_geometry(GEOM)
@@ -156,11 +153,9 @@ def image_comparison(
 
     magic_clean = MAGICClean(geometry_mcp, cleaning_config)
 
-    for event_id in ids_to_compare:
-        try:
-            event = seeker.get_event_id(event_id)
-        except IndexError:
-            print(f"Event with ID {event_id} not found in calibrated file. Skipping...")
+    for event in source:
+        if event.index.event_id not in ids_to_compare:
+            print(f"Event with ID {event.index.event_id} not found in calibrated file. Skipping...")
             skipped_count += 1
             continue
 
@@ -172,7 +167,7 @@ def image_comparison(
             & (mars_data["tel_id"] == tel_id)
         ]
         if mars_event.empty:
-            print(f"Event with ID {event_id} not found in MARS file. Skipping...")
+            print(f"Event with ID {event.index.event_id} not found in MARS file. Skipping...")
             skipped_count += 1
             continue
 
