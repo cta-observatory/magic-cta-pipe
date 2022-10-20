@@ -284,9 +284,6 @@ def load_lst_dl1_data_file(input_file):
         input_file, key="dl1/event/telescope/parameters/LST_LSTCam"
     )
 
-    event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    event_data.sort_index(inplace=True)
-
     # Add the trigger time differences of consecutive events
     event_data = add_delta_t_key(event_data)
 
@@ -300,9 +297,7 @@ def load_lst_dl1_data_file(input_file):
 
     # Exclude the events with duplicated event IDs.
     # ToBeChecked: if it still happens in recently processed data
-    event_ids, counts = np.unique(
-        event_data.index.get_level_values("event_id"), return_counts=True
-    )
+    event_ids, counts = np.unique(event_data["event_id"], return_counts=True)
 
     if np.any(counts > 1):
         event_ids_dup = event_ids[counts > 1].tolist()
@@ -317,6 +312,8 @@ def load_lst_dl1_data_file(input_file):
     # Rename the columns
     event_data.rename(
         columns={
+            "obs_id": "obs_id_lst",
+            "event_id": "event_id_lst",
             "delta_t": "time_diff",
             "alt_tel": "pointing_alt",
             "az_tel": "pointing_az",
@@ -338,6 +335,10 @@ def load_lst_dl1_data_file(input_file):
 
     event_data["phi"] = np.rad2deg(event_data["phi"])
     event_data["psi"] = np.rad2deg(event_data["psi"])
+
+    # Set the multi index
+    event_data.set_index(["obs_id_lst", "event_id_lst", "tel_id"], inplace=True)
+    event_data.sort_index(inplace=True)
 
     # Read the subarray description
     subarray = SubarrayDescription.from_hdf(input_file)
