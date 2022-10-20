@@ -222,36 +222,32 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         # maximizing offset. Finally, we again check the coincidence at
         # the average offset and then save the coincident events.
 
-        n_events_lst = len(timestamps_lst)
-
-        n_coincidence = np.zeros(len(time_offsets), dtype=int)
-        n_coincidence_btwn = np.zeros(len(time_offsets), dtype=int)
+        n_coincidences = []
 
         logger.info("\nChecking the event coincidence...")
 
-        for i_step, time_offset in enumerate(time_offsets):
+        for time_offset in time_offsets:
 
-            time_lolim = timestamps_lst + time_offset - window_half_width
-            time_uplim = timestamps_lst + time_offset + window_half_width
+            times_lolim = timestamps_lst + time_offset - window_half_width
+            times_uplim = timestamps_lst + time_offset + window_half_width
 
-            for i_evt in range(n_events_lst):
+            cond_lolim = timestamps_magic.value >= times_lolim[:, np.newaxis].value
+            cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
 
-                cond_lolim = timestamps_magic.value >= time_lolim[i_evt].value
-                cond_uplim = timestamps_magic.value <= time_uplim[i_evt].value
-
-                mask = np.logical_and(cond_lolim, cond_uplim)
-
-                if np.count_nonzero(mask) == 1:
-                    n_coincidence[i_step] += 1
+            mask = np.logical_and(cond_lolim, cond_uplim)
+            n_coincidence = np.count_nonzero(mask, axis=1).tolist().count(1)
 
             logger.info(
-                f"time offset: {time_offset.to(u.us).round(1)} "
-                f"--> {n_coincidence[i_step]} events"
+                f"time offset: {time_offset.to(u.us):.1f} --> {n_coincidence} events"
             )
+
+            n_coincidences.append(n_coincidence)
+
+        n_coincidences = np.array(n_coincidences)
 
         # Sometimes there are more than one time offset maximizing the
         # number, so here we calculate the mean of them
-        offset_at_max = time_offsets[n_coincidence == n_coincidence.max()].mean()
+        offset_at_max = time_offsets[n_coincidences == n_coincidences.max()].mean()
 
         # The half width of the average region is defined as the "full"
         # width of the coincidence window, since the width of the
@@ -265,39 +261,30 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
         mask = np.logical_and(cond_lolim, cond_uplim)
 
-        average_offset = np.average(time_offsets[mask], weights=n_coincidence[mask])
-        logger.info(f"\nAverage offset: {average_offset.to(u.us).round(3)}")
+        average_offset = np.average(time_offsets[mask], weights=n_coincidences[mask])
+        logger.info(f"\nAverage offset: {average_offset.to(u.us):.3f}")
 
         # Check again the coincidence at the offset where the same
         # result is expected as the average offset when we remove
         # the left edge condition
         optimized_offset = time_offsets[time_offsets < average_offset][-1]
 
-        time_lolim = timestamps_lst + optimized_offset - window_half_width
-        time_uplim = timestamps_lst + optimized_offset + window_half_width
+        times_lolim = timestamps_lst + optimized_offset - window_half_width
+        times_uplim = timestamps_lst + optimized_offset + window_half_width
 
-        indices_lst = []
-        indices_magic = []
+        cond_lolim = timestamps_magic.value > times_lolim[:, np.newaxis].value
+        cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
 
-        for i_evt in range(n_events_lst):
+        mask = np.logical_and(cond_lolim, cond_uplim)
+        mask = mask[np.count_nonzero(mask, axis=1) == 1]
 
-            # Use only the right edge condition
-            cond_lolim = timestamps_magic.value > time_lolim[i_evt].value
-            cond_uplim = timestamps_magic.value <= time_uplim[i_evt].value
-
-            mask = np.logical_and(cond_lolim, cond_uplim)
-
-            if np.count_nonzero(mask) == 1:
-                indices_lst.append(i_evt)
-                indices_magic.append(np.where(mask)[0][0])
+        indices_lst, indices_magic = np.where(mask)
 
         n_events_at_avg = len(indices_lst)
         percentage = 100 * n_events_at_avg / n_events_magic
 
-        logger.info(
-            f"--> Number of coincident events: {n_events_at_avg}"
-            f"\n--> Ratio over the {tel_name} events: {np.round(percentage, 1)}%"
-        )
+        logger.info(f"--> Number of coincident events: {n_events_at_avg}")
+        logger.info(f"--> Fraction over the {tel_name} events: {percentage:.1f}%")
 
         multi_indices_magic = df_magic.iloc[indices_magic].index
         obs_ids_magic = multi_indices_magic.get_level_values("obs_id_magic")
@@ -332,7 +319,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             data={
                 "time_offset": time_offsets.to_value(u.us).round(1),
                 f"n_coincidence_tel{coincidence_id}": n_coincidence,
-                f"n_coincidence_btwn_tel{coincidence_id}": n_coincidence_btwn,
             }
         )
 
