@@ -20,7 +20,7 @@ to reconstruct the telescope pointing direction. Since the accuracy of
 the reconstruction improves, it is recommended to store all the subrun
 files in the same directory.
 
-If the "--process-run" argument is given, it not only reads the drive
+If the `--process-run` argument is given, it not only reads the drive
 reports but also processes all the events of the subrun files at once.
 
 Please note that it is also possible to process SUM trigger data with
@@ -74,7 +74,8 @@ PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     """
-    Processes MAGIC calibrated events and computes the DL1 parameters.
+    Processes the events of MAGIC calibrated data and computes the DL1
+    parameters.
 
     Parameters
     ----------
@@ -93,7 +94,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
-    event_source = MAGICEventSource(input_file, process_run=process_run, max_events=100)
+    event_source = MAGICEventSource(input_file, process_run=process_run)
 
     is_simulation = event_source.is_simulation
     logger.info(f"\nIs simulation: {is_simulation}")
@@ -170,6 +171,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 logger.info(f"{event.count} events")
 
             if config_clean["find_hotpixels"]:
+                # Find dead and bad RMS pixels
                 pixel_status = event.mon.tel[tel_id].pixel_status
                 dead_pixels = pixel_status.hardware_failing_pixels[0]
                 badrms_pixels = pixel_status.pedestal_failing_pixels[i_ped_type]
@@ -217,7 +219,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             if np.isnan(timing_params.slope):
                 logger.info(
                     f"--> {event.count} event (event ID: {event.index.event_id}) "
-                    "failed to compute finite timing parameters. Skipping..."
+                    "failed to extract finite timing parameters. Skipping..."
                 )
                 continue
 
