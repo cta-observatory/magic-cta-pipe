@@ -233,7 +233,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
 
             mask = np.logical_and(cond_lolim, cond_uplim)
-            n_coincidence = np.count_nonzero(mask, axis=1).tolist().count(1)
+            n_coincidence = np.count_nonzero(mask)
 
             logger.info(
                 f"time offset: {time_offset.to(u.us):.1f} --> {n_coincidence} events"
@@ -274,8 +274,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
 
         mask = np.logical_and(cond_lolim, cond_uplim)
-        mask = mask[np.count_nonzero(mask, axis=1) == 1]
-
         indices_lst, indices_magic = np.where(mask)
 
         n_events_at_avg = len(indices_lst)
@@ -294,6 +292,14 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df_lst["event_id_magic"] = event_ids_magic
         df_lst.reset_index(inplace=True)
         df_lst.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
+
+        # Assign also the LST-1 observation and event IDs to the MAGIC
+        # events coincident with the LST-1 events
+        obs_ids_lst = df_lst["obs_id_lst"].to_numpy()
+        event_ids_lst = df_lst["event_id_lst"].to_numpy()
+
+        df_magic.loc[multi_indices_magic, "obs_id_lst"] = obs_ids_lst
+        df_magic.loc[multi_indices_magic, "event_id_lst"] = event_ids_lst
 
         # Arrange the data frames
         coincidence_id = "1" + str(tel_id)  # Combination of the telescope IDs
