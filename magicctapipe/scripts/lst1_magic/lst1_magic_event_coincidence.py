@@ -166,7 +166,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     timestamps_lst = u.Quantity(timestamps_lst, unit="ns", dtype=int)
 
     # Loop over every telescope combination
-    tel_ids = event_data_magic.index.levels[2]
+    tel_ids = np.unique(event_data_magic.index.get_level_values("tel_id"))
 
     for tel_id in tel_ids:
 
