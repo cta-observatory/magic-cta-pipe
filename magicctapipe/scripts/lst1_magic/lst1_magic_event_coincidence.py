@@ -233,7 +233,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
 
             mask = np.logical_and(cond_lolim, cond_uplim)
-            n_coincidence = np.count_nonzero(mask, axis=1).tolist().count(1)
+            n_coincidence = np.count_nonzero(mask)
 
             logger.info(
                 f"time offset: {time_offset.to(u.us):.1f} --> {n_coincidence} events"
@@ -274,8 +274,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
 
         mask = np.logical_and(cond_lolim, cond_uplim)
-        mask = mask[np.count_nonzero(mask, axis=1) == 1]
-
         indices_lst, indices_magic = np.where(mask)
 
         n_events_at_avg = len(indices_lst)
