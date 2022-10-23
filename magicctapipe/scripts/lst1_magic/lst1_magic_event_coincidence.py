@@ -293,6 +293,14 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df_lst.reset_index(inplace=True)
         df_lst.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
 
+        # Assign also the LST-1 observation and event IDs to the MAGIC
+        # events coincident with the LST-1 events
+        obs_ids_lst = df_lst["obs_id_lst"].to_numpy()
+        event_ids_lst = df_lst["event_id_lst"].to_numpy()
+
+        df_magic.loc[multi_indices_magic, "obs_id_lst"] = obs_ids_lst
+        df_magic.loc[multi_indices_magic, "event_id_lst"] = event_ids_lst
+
         # Arrange the data frames
         coincidence_id = "1" + str(tel_id)  # Combination of the telescope IDs
 
