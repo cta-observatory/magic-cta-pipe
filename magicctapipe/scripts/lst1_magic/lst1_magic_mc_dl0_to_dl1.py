@@ -17,7 +17,7 @@ the following ones to match with those of real data:
 LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 In addition, the telescope coordinate will be converted to the one
-relative to the center of the LST-1 + MAGIC array (including the
+relative to the center of the LST-1 and MAGIC positions (including the
 altitude) for the convenience of the geometrical stereo reconstruction.
 
 Usage:
@@ -427,7 +427,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         logger.info(f"\nIn total {n_events_processed} events are processed.")
 
     # Convert the telescope coordinate to the one relative to the center
-    # of the LST-1 + MAGIC array, and reset the telescope IDs
+    # of the LST-1 and MAGIC positions, and reset the telescope IDs
     positions = [position.to_value("m") for position in tel_positions.values()]
     mean_position = np.mean(positions, axis=0) * u.m
 
