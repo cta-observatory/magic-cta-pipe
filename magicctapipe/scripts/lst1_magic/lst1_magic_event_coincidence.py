@@ -198,8 +198,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         if n_events_magic == 0:
             logger.warning(f"--> No {tel_name} events are found. Skipping...")
             continue
-        else:
-            logger.info(f"--> {n_events_magic} events are found.")
+
+        logger.info(f"--> {n_events_magic} events are found.")
 
         df_magic = df_magic.iloc[mask]
         timestamps_magic = timestamps_magic[mask]
