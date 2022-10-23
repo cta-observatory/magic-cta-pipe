@@ -241,6 +241,10 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
             n_coincidences.append(n_coincidence)
 
+        if not any(n_coincidences):
+            logger.info("\nNo coincident events are found. Skipping...")
+            continue
+
         n_coincidences = np.array(n_coincidences)
 
         # Sometimes there are more than one time offset maximizing the
