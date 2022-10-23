@@ -149,7 +149,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     event_data = pd.DataFrame()
     features = pd.DataFrame()
-    profiles = pd.DataFrame(data={"time_offset": time_offsets.to("us").round(1)})
+    profiles = pd.DataFrame(data={"time_offset": time_offsets.to_value("us").round(1)})
 
     # Arrange the LST timestamps. They are stored in the UNIX format in
     # units of seconds with 17 digits, 10 digits for the integral part
@@ -320,7 +320,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
         df_profile = pd.DataFrame(
             data={
-                "time_offset": time_offsets.to("us").round(1),
+                "time_offset": time_offsets.to_value("us").round(1),
                 f"n_coincidence_tel{coincidence_id}": n_coincidences,
             }
         )
