@@ -47,8 +47,10 @@ from pyirf.io import (
     create_aeff2d_hdu,
     create_background_2d_hdu,
     create_energy_dispersion_hdu,
+    create_psf_table_hdu,
     create_rad_max_hdu,
 )
+from pyirf.utils import cone_solid_angle
 from scipy.interpolate import griddata
 
 __all__ = ["dl2_to_dl3"]
@@ -82,8 +84,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
     logger.info("\nGrid points (cosZd, Az):")
-    for grid_point in irf_data["grid_point"]:
-        logger.info(grid_point.round(5).tolist())
+    for i_grid, grid_point in enumerate(irf_data["grid_points"], start=1):
+        logger.info(f"\t{i_grid}: {grid_point.round(5).tolist()}")
 
     logger.info("\nExtra header:")
     for key, value in extra_header.items():
@@ -93,11 +95,11 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     logger.info(f"\nInput DL2 data file:\n{input_file_dl2}")
 
     quality_cuts = extra_header.get("QUAL_CUT")
-    irf_type = extra_header["IRF_TYPE"]
+    event_type = extra_header["EVT_TYPE"]
     dl2_weight_type = extra_header["DL2_WEIG"]
 
     event_table, on_time, deadc = load_dl2_data_file(
-        input_file_dl2, quality_cuts, irf_type, dl2_weight_type
+        input_file_dl2, quality_cuts, event_type, dl2_weight_type
     )
 
     # Calculate the mean pointing direction for the target point of the
@@ -118,10 +120,10 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at(360 * u.deg).value
 
     target_point = np.array([pnt_coszd_mean, pnt_az_mean])
-    logger.info(f"\nTarget point (cosZd, Az):\n{target_point.round(5).tolist()}")
+    logger.info(f"\nTarget point (cosZd, Az): {target_point.round(5).tolist()}")
 
     # Prepare for the IRF interpolations
-    interpolation_method = config_dl3["interpolation_method"]
+    interpolation_method = config_dl3.pop("interpolation_method")
     logger.info(f"\nInterpolation method: {interpolation_method}")
 
     extra_header["IRF_INTP"] = interpolation_method
@@ -133,13 +135,15 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     aeff_interp = interpolate_effective_area_per_energy_and_fov(
         effective_area=irf_data["effective_area"],
-        grid_points=irf_data["grid_point"],
+        grid_points=irf_data["grid_points"],
         target_point=target_point,
         method=interpolation_method,
     )
 
+    aeff_interp = aeff_interp[:, :, 0]  # Remove the dimension of the grid points
+
     aeff_hdu = create_aeff2d_hdu(
-        effective_area=aeff_interp[:, 0],
+        effective_area=aeff_interp,
         true_energy_bins=irf_data["energy_bins"],
         fov_offset_bins=irf_data["fov_offset_bins"],
         point_like=True,
@@ -154,13 +158,15 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     logger.info("Interpolating the energy dispersion...")
 
     edisp_interp = griddata(
-        points=irf_data["grid_point"],
+        points=irf_data["grid_points"],
         values=irf_data["energy_dispersion"],
         xi=target_point,
         method=interpolation_method,
     )
 
-    norm = np.sum(edisp_interp, axis=2, keepdims=True)  # Along the migration axis
+    edisp_interp = edisp_interp[0]  # Remove the dimension of the grid points
+
+    norm = np.sum(edisp_interp, axis=1, keepdims=True)  # Along the migration axis
     mask_zeros = norm != 0
 
     edisp_interp = np.divide(
@@ -168,7 +174,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     )
 
     edisp_hdu = create_energy_dispersion_hdu(
-        energy_dispersion=edisp_interp[0],
+        energy_dispersion=edisp_interp,
         true_energy_bins=irf_data["energy_bins"],
         migration_bins=irf_data["migration_bins"],
         fov_offset_bins=irf_data["fov_offset_bins"],
@@ -178,16 +184,61 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus.append(edisp_hdu)
 
-    # Check the existence of the background model
-    if len(irf_data["background"]) > 1:
-        logger.warning(
-            "WARNING: More than one background models are found, but the "
-            "interpolation method for them is not implemented. Skipping..."
+    if len(irf_data["psf_table"]) > 1:
+
+        # Interpolate the PSF table with a custom way, since there is a
+        # bug in the function of pyirf v0.6.0 about the renormalization
+        logger.info("Interpolating the PSF table...")
+
+        psf_interp = griddata(
+            points=irf_data["grid_points"],
+            values=irf_data["psf_table"].to_value("sr-1"),
+            xi=target_point,
+            method=interpolation_method,
         )
 
-    elif len(irf_data["background"]) == 1:
+        # Remove the dimension of the grid points and add the unit
+        psf_interp = psf_interp[0] * u.Unit("sr-1")
+
+        # Re-normalize along the source offset axis
+        omegas = np.diff(cone_solid_angle(irf_data["source_offset_bins"]))
+
+        norm = np.sum(psf_interp * omegas, axis=2, keepdims=True)
+        mask_zeros = norm != 0
+
+        psf_interp = np.divide(
+            psf_interp, norm, out=np.zeros_like(psf_interp), where=mask_zeros
+        )
+
+        # Create a PSF table HDU
+        psf_hdu = create_psf_table_hdu(
+            psf=psf_interp,
+            true_energy_bins=irf_data["energy_bins"],
+            source_offset_bins=irf_data["source_offset_bins"],
+            fov_offset_bins=irf_data["fov_offset_bins"],
+            extname="PSF",
+            **extra_header,
+        )
+
+        hdus.append(psf_hdu)
+
+    if len(irf_data["background"]) > 1:
+
+        # Interpolate the background model
+        logger.info("Interpolating the background model...")
+
+        bkg = griddata(
+            points=irf_data["grid_points"],
+            values=irf_data["background"].to_value("MeV-1 s-1 sr-1"),
+            xi=target_point,
+            method=interpolation_method,
+        )
+
+        # Remove the dimension of the grid points and add the unit
+        bkg = bkg[0] * u.Unit("MeV-1 s-1 sr-1")
+
         bkg_hdu = create_background_2d_hdu(
-            background_2d=irf_data["background"].T,
+            background_2d=bkg,
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
             extname="BACKGROUND",
@@ -195,19 +246,23 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(bkg_hdu)
 
-    # Interpolate the dynamic gammaness cuts if they exist
     if len(irf_data["gh_cuts"]) > 0:
+
+        # Interpolate the dynamic gammaness cuts
         logger.info("Interpolating the dynamic gammaness cuts...")
 
         gh_cuts_interp = griddata(
-            points=irf_data["grid_point"],
+            points=irf_data["grid_points"],
             values=irf_data["gh_cuts"],
             xi=target_point,
             method=interpolation_method,
         )
 
+        # Remove the dimension of the grid points
+        gh_cuts_interp = gh_cuts_interp[0]
+
         gh_cuts_hdu = create_gh_cuts_hdu(
-            gh_cuts=gh_cuts_interp.T[:, 0],
+            gh_cuts=gh_cuts_interp,
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
             **extra_header,
@@ -215,19 +270,23 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(gh_cuts_hdu)
 
-    # Interpolate the dynamic theta cuts if they exist
     if len(irf_data["rad_max"]) > 0:
+
+        # Interpolate the dynamic theta cuts
         logger.info("Interpolating the dynamic theta cuts...")
 
         rad_max_interp = griddata(
-            points=irf_data["grid_point"],
+            points=irf_data["grid_points"],
             values=irf_data["rad_max"].to_value(u.deg),
             xi=target_point,
             method=interpolation_method,
         )
 
+        # Remove the dimension of the grid points and add the unit
+        rad_max_interp = rad_max_interp[0] * u.deg
+
         rad_max_hdu = create_rad_max_hdu(
-            rad_max=u.Quantity(rad_max_interp.T[:, 0], u.deg),
+            rad_max=rad_max_interp,
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
             point_like=True,
@@ -237,26 +296,23 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(rad_max_hdu)
 
-    # Apply the gammaness cut
     if "GH_CUT" in extra_header:
 
         # Apply the global gammaness cut
-        gh_cut_value = extra_header["GH_CUT"]
-
         logger.info("\nApplying the global gammaness cut...")
+
+        gh_cut_value = extra_header["GH_CUT"]
 
         mask_gh = event_table["gammaness"] > gh_cut_value
         event_table = event_table[mask_gh]
 
     else:
-        # Apply the interpolated dynamic gammaness cuts
-        gh_cuts = hdus["GH_CUTS"].data[0]
-
+        # Apply the dynamic gammaness cuts
         gh_cut_table = QTable(
             data={
-                "low": gh_cuts["ENERG_LO"] * u.TeV,
-                "high": gh_cuts["ENERG_HI"] * u.TeV,
-                "cut": gh_cuts["GH_CUTS"][0],
+                "low": irf_data["energy_bins"][:-1],
+                "high": irf_data["energy_bins"][1:],
+                "cut": gh_cuts_interp.T[0],
             }
         )
 
@@ -277,19 +333,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Create an event HDU
     logger.info("\nCreating an event HDU...")
 
-    source_name = config_dl3["source_name"]
-    source_ra = config_dl3["source_ra"]
-    source_dec = config_dl3["source_dec"]
-
-    if source_ra is not None:
-        source_ra = u.Quantity(source_ra)
-
-    if source_dec is not None:
-        source_dec = u.Quantity(source_dec)
-
-    event_hdu = create_event_hdu(
-        event_table, on_time, deadc, source_name, source_ra, source_dec
-    )
+    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
 
     hdus.append(event_hdu)
 
@@ -303,9 +347,9 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Create a pointing table
     logger.info("Creating a pointing HDU...")
 
-    pointing_hdu = create_pointing_hdu(event_table)
+    pnt_hdu = create_pointing_hdu(event_table)
 
-    hdus.append(pointing_hdu)
+    hdus.append(pnt_hdu)
 
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -332,7 +376,7 @@ def main():
         dest="input_file_dl2",
         type=str,
         required=True,
-        help="Path to an input DL2 data file.",
+        help="Path to an input DL2 data file",
     )
 
     parser.add_argument(
@@ -341,7 +385,7 @@ def main():
         dest="input_dir_irf",
         type=str,
         required=True,
-        help="Path to a directory where input IRF files are stored.",
+        help="Path to a directory where input IRF files are stored",
     )
 
     parser.add_argument(
@@ -350,7 +394,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save an output DL3 data file.",
+        help="Path to a directory where to save an output DL3 data file",
     )
 
     parser.add_argument(
@@ -359,7 +403,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a configuration file.",
+        help="Path to a configuration file",
     )
 
     args = parser.parse_args()

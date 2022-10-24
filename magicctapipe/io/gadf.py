@@ -89,7 +89,6 @@ def create_gh_cuts_hdu(
     return gh_cuts_hdu
 
 
-@u.quantity_input(on_time=u.s, source_ra=u.deg, source_dec=u.deg)
 def create_event_hdu(
     event_table, on_time, deadc, source_name, source_ra=None, source_dec=None
 ):
@@ -106,11 +105,13 @@ def create_event_hdu(
         Dead time correction factor
     source_name: str
         Name of the observed source
-    source_ra: astropy.units.quantity.Quantity
-        Right ascension of the observed source
+    source_ra: str
+        Right ascension of the observed source, whose format should be
+        acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
-    source_dec: astropy.units.quantity.Quantity
-        Declination of the observed source
+    source_dec: str
+        Declination of the observed source, whose format should be
+        acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
 
     Returns

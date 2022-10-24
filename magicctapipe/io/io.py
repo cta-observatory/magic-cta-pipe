@@ -519,7 +519,7 @@ def load_train_data_files(
     return data_train
 
 
-def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
+def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
@@ -529,12 +529,12 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
         Path to an input MC DL2 data file
     quality_cuts: str
         Quality cuts applied to the input events
-    irf_type: str
-        Type of the IRFs which will be created -
-        "software" assumes the software coincidence with any2 events,
-        "software_only_3tel" uses only the 3-tels events,
-        "magic_only" assumes MAGIC-only stereo observations, and
-        "hardware" assumes the LST-1 + MAGIC hardware trigger condition
+    event_type: str
+        Type of the events which will be used -
+        "software" uses software coincident events,
+        "software_only_3tel" uses only 3-tel combination events,
+        "magic_only" uses only MAGIC-stereo combination events, and
+        "hardware" uses all the telescope combination events
     dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
@@ -551,7 +551,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
     Raises
     ------
     ValueError
-        If the input IRF type is not known
+        If the input event type is not known
     """
 
     # Load the input file
@@ -561,20 +561,20 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
 
     df_events = get_stereo_events(df_events, quality_cuts)
 
-    # Extract the events of the specified IRF type
-    logger.info(f"\nExtracting the events of the '{irf_type}' type...")
+    # Extract the events of the specified event type
+    logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
-    if irf_type == "software":
+    if event_type == "software":
         df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
 
-    elif irf_type == "software_only_3tel":
+    elif event_type == "software_only_3tel":
         df_events.query("combo_type == 3", inplace=True)
 
-    elif irf_type == "magic_only":
+    elif event_type == "magic_only":
         df_events.query("combo_type == 0", inplace=True)
 
-    elif irf_type != "hardware":
-        raise ValueError(f"Unknown IRF type '{irf_type}'.")
+    elif event_type != "hardware":
+        raise ValueError(f"Unknown event type '{event_type}'.")
 
     n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
@@ -620,19 +620,30 @@ def load_mc_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
         * len(np.unique(event_table["obs_id"]))
     )
 
+    min_viewcone_radius = sim_config["min_viewcone_radius"][0] * u.deg
+    max_viewcone_radius = sim_config["max_viewcone_radius"][0] * u.deg
+
+    viewcone_diff = max_viewcone_radius - min_viewcone_radius
+
+    if viewcone_diff < u.Quantity(0.001, u.deg):
+        # Handle ring-wobble MCs as same as point-like MCs
+        viewcone = 0 * u.deg
+    else:
+        viewcone = max_viewcone_radius
+
     sim_info = SimulatedEventsInfo(
         n_showers=n_total_showers,
         energy_min=u.Quantity(sim_config["energy_range_min"][0], u.TeV),
         energy_max=u.Quantity(sim_config["energy_range_max"][0], u.TeV),
         max_impact=u.Quantity(sim_config["max_scatter_range"][0], u.m),
         spectral_index=sim_config["spectral_index"][0],
-        viewcone=u.Quantity(sim_config["max_viewcone_radius"][0], u.deg),
+        viewcone=viewcone,
     )
 
     return event_table, pointing, sim_info
 
 
-def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
+def load_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
     """
     Loads a DL2 data file for processing to DL3.
 
@@ -642,12 +653,12 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
         Path to an input DL2 data file
     quality_cuts: str
         Quality cuts applied to the input events
-    irf_type: str
-        Type of the IRFs which will be created -
-        "software" assumes the software coincidence with any2 events,
-        "software_only_3tel" uses only the 3-tels events,
-        "magic_only" assumes MAGIC-only stereo observations, and
-        "hardware" assumes the LST-1 + MAGIC hardware trigger condition
+    event_type: str
+        Type of the events which will be used -
+        "software" uses software coincident events,
+        "software_only_3tel" uses only 3-tel combination events,
+        "magic_only" uses only MAGIC-stereo combination events, and
+        "hardware" uses all the telescope combination events
     dl2_weight_type: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
@@ -669,21 +680,21 @@ def load_dl2_data_file(input_file, quality_cuts, irf_type, dl2_weight_type):
 
     event_data = get_stereo_events(event_data, quality_cuts)
 
-    # Extract the events of the specified IRF type
-    logger.info(f"\nExtracting the events of the '{irf_type}' type...")
+    # Extract the events of the specified event type
+    logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
-    if irf_type == "software":
+    if event_type == "software":
         event_data.query("combo_type > 0", inplace=True)
 
-    elif irf_type == "software_only_3tel":
+    elif event_type == "software_only_3tel":
         event_data.query("combo_type == 3", inplace=True)
 
-    elif irf_type == "magic_only":
+    elif event_type == "magic_only":
         event_data.query("combo_type == 0", inplace=True)
 
-    elif irf_type == "hardware":
+    elif event_type == "hardware":
         logger.warning(
-            "WARNING: Please confirm that this IRF type is correct for the input data, "
+            "WARNING: Please confirm that this type is correct for the input data, "
             "since the hardware trigger between LST-1 and MAGIC may NOT be used."
         )
 
@@ -782,6 +793,38 @@ def load_irf_files(input_dir_irf):
         If the configurations of the input IRFs are not consistent
     """
 
+    extra_header = {
+        "TELESCOP": [],
+        "INSTRUME": [],
+        "FOVALIGN": [],
+        "QUAL_CUT": [],
+        "EVT_TYPE": [],
+        "DL2_WEIG": [],
+        "GH_CUT": [],
+        "GH_EFF": [],
+        "GH_MIN": [],
+        "GH_MAX": [],
+        "RAD_MAX": [],
+        "TH_EFF": [],
+        "TH_MIN": [],
+        "TH_MAX": [],
+    }
+
+    irf_data = {
+        "grid_points": [],
+        "effective_area": [],
+        "energy_dispersion": [],
+        "psf_table": [],
+        "background": [],
+        "gh_cuts": [],
+        "rad_max": [],
+        "energy_bins": [],
+        "fov_offset_bins": [],
+        "migration_bins": [],
+        "source_offset_bins": [],
+        "bkg_fov_offset_bins": [],
+    }
+
     # Find the input files
     irf_file_mask = f"{input_dir_irf}/irf_*.fits.gz"
 
@@ -795,37 +838,7 @@ def load_irf_files(input_dir_irf):
             "Could not find any IRF data files in the input directory."
         )
 
-    # Load the input files
-    extra_header = {
-        "TELESCOP": [],
-        "INSTRUME": [],
-        "FOVALIGN": [],
-        "QUAL_CUT": [],
-        "IRF_TYPE": [],
-        "DL2_WEIG": [],
-        "GH_CUT": [],
-        "GH_EFF": [],
-        "GH_MIN": [],
-        "GH_MAX": [],
-        "RAD_MAX": [],
-        "TH_EFF": [],
-        "TH_MIN": [],
-        "TH_MAX": [],
-    }
-
-    irf_data = {
-        "grid_point": [],
-        "effective_area": [],
-        "energy_dispersion": [],
-        "background": [],
-        "gh_cuts": [],
-        "rad_max": [],
-        "energy_bins": [],
-        "fov_offset_bins": [],
-        "migration_bins": [],
-        "bkg_fov_offset_bins": [],
-    }
-
+    # Loop over every IRF data file
     logger.info("\nThe following IRF data files are found:")
 
     for input_file in input_files_irf:
@@ -840,90 +853,114 @@ def load_irf_files(input_dir_irf):
             if key in header:
                 extra_header[key].append(header[key])
 
+        # Read the pointing direction
         pointing_coszd = np.cos(np.deg2rad(header["PNT_ZD"]))
         pointing_az = np.deg2rad(header["PNT_AZ"])
         grid_point = [pointing_coszd, pointing_az]
 
-        # Read the IRF data
+        irf_data["grid_points"].append(grid_point)
+
+        # Read the essential IRF data
         aeff_data = irf_hdus["EFFECTIVE AREA"].data[0]
         edisp_data = irf_hdus["ENERGY DISPERSION"].data[0]
 
+        irf_data["effective_area"].append(aeff_data["EFFAREA"])
+        irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T)
+
+        # Read the essential bins
         energy_bins = join_bin_lo_hi(aeff_data["ENERG_LO"], aeff_data["ENERG_HI"])
         fov_offset_bins = join_bin_lo_hi(aeff_data["THETA_LO"], aeff_data["THETA_HI"])
         migration_bins = join_bin_lo_hi(edisp_data["MIGRA_LO"], edisp_data["MIGRA_HI"])
 
-        irf_data["grid_point"].append(grid_point)
-        irf_data["effective_area"].append(aeff_data["EFFAREA"])
-        irf_data["energy_dispersion"].append(np.swapaxes(edisp_data["MATRIX"], 0, 2))
         irf_data["energy_bins"].append(energy_bins)
         irf_data["fov_offset_bins"].append(fov_offset_bins)
         irf_data["migration_bins"].append(migration_bins)
 
+        # Read additional IRF data and bins if they exist
+        if "PSF" in irf_hdus:
+            psf_data = irf_hdus["PSF"].data[0]
+            source_offset_bins = join_bin_lo_hi(psf_data["RAD_LO"], psf_data["RAD_HI"])
+
+            irf_data["psf_table"].append(psf_data["RPSF"].T)
+            irf_data["source_offset_bins"].append(source_offset_bins)
+
         if "BACKGROUND" in irf_hdus:
             bkg_data = irf_hdus["BACKGROUND"].data[0]
-            bkg_fov_offset_bins = join_bin_lo_hi(
-                bkg_data["THETA_LO"], bkg_data["THETA_HI"]
-            )
+            bkg_offset_bins = join_bin_lo_hi(bkg_data["THETA_LO"], bkg_data["THETA_HI"])
 
-            irf_data["background"].append(bkg_data["BKG"])
-            irf_data["bkg_fov_offset_bins"].append(bkg_fov_offset_bins)
+            irf_data["background"].append(bkg_data["BKG"].T)
+            irf_data["bkg_fov_offset_bins"].append(bkg_offset_bins)
 
         if "GH_CUTS" in irf_hdus:
             ghcuts_data = irf_hdus["GH_CUTS"].data[0]
-            irf_data["gh_cuts"].append(ghcuts_data["GH_CUTS"])
+            irf_data["gh_cuts"].append(ghcuts_data["GH_CUTS"].T)
 
         if "RAD_MAX" in irf_hdus:
             radmax_data = irf_hdus["RAD_MAX"].data[0]
-            irf_data["rad_max"].append(radmax_data["RAD_MAX"])
+            irf_data["rad_max"].append(radmax_data["RAD_MAX"].T)
 
     # Check the IRF data consistency
     for key in irf_data.keys():
 
-        irf_data[key] = np.array(irf_data[key])
-        n_data = len(irf_data[key])
+        n_irf_data = len(irf_data[key])
 
-        if (n_data != 0) and (n_data != n_input_files):
+        if n_irf_data == 0:
+            continue
+
+        elif n_irf_data != n_input_files:
             raise RuntimeError(
-                f"The number of '{key}' data (= {n_data}) does not match "
+                f"The number of '{key}' data (= {n_irf_data}) does not match "
                 f"with that of the input IRF data files (= {n_input_files})."
             )
 
-        if "bins" in key:
+        elif "bins" in key:
+
+            n_edges_unique = np.unique([len(bins) for bins in irf_data[key]])
+
+            if len(n_edges_unique) > 1:
+                raise RuntimeError(f"The number of edges of '{key}' does not match.")
+
             unique_bins = np.unique(irf_data[key], axis=0)
-            n_unique_bins = len(unique_bins)
 
-            if n_unique_bins == 1:
+            if len(unique_bins) > 1:
+                raise RuntimeError(f"The binning of '{key}' do not match.")
+
+            else:
+                # Set the unique bins
                 irf_data[key] = unique_bins[0]
-
-            elif n_unique_bins > 1:
-                raise RuntimeError(
-                    f"The '{key}' of the input IRF data files does not match."
-                )
 
     # Check the header consistency
     for key in list(extra_header.keys()):
 
-        n_data = len(extra_header[key])
+        n_values = len(extra_header[key])
         unique_values = np.unique(extra_header[key])
 
-        if n_data == 0:
+        if n_values == 0:
+            # Remove the empty card
             extra_header.pop(key)
 
-        elif (n_data != n_input_files) or len(unique_values) > 1:
-            raise RuntimeError(
-                "The configurations of the input IRF data files do not match, "
-                "at least the setting '{key}'."
-            )
+        elif (n_values != n_input_files) or len(unique_values) > 1:
+            raise RuntimeError(f"The setting '{key}' does not match.")
+
         else:
+            # Set the unique value
             extra_header[key] = unique_values[0]
 
     # Set units to the IRF data
     irf_data["effective_area"] *= u.m**2
+    irf_data["psf_table"] *= u.Unit("sr-1")
     irf_data["background"] *= u.Unit("MeV-1 s-1 sr-1")
     irf_data["rad_max"] *= u.deg
     irf_data["energy_bins"] *= u.TeV
     irf_data["fov_offset_bins"] *= u.deg
+    irf_data["source_offset_bins"] *= u.deg
     irf_data["bkg_fov_offset_bins"] *= u.deg
+
+    # Convert the list to the numpy ndarray
+    irf_data["grid_points"] = np.array(irf_data["grid_points"])
+    irf_data["energy_dispersion"] = np.array(irf_data["energy_dispersion"])
+    irf_data["gh_cuts"] = np.array(irf_data["gh_cuts"])
+    irf_data["migration_bins"] = np.array(irf_data["migration_bins"])
 
     return irf_data, extra_header
 
