@@ -3,10 +3,11 @@
 
 """
 This script trains energy, DISP regressors and event classifiers with
-DL1-stereo events. The RFs are trained per telescope combination type
-and per telescope. When training event classifiers, gamma or proton MC
-events are randomly extracted so that the RFs are trained with the same
-number of events by both types of primary particles.
+DL1-stereo events. The input events are separated by the telescope
+combination types at first, and then telescope-wise RFs are trained for
+every combination type. When training event classifiers, gamma or proton
+MC events are randomly extracted so that the RFs are trained with the
+same number of events by both types of primary particles.
 
 Please specify the RF type that will be trained by using
 `--train-energy`, `--train-disp` and `--train-classifier` arguments.
