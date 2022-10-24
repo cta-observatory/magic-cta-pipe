@@ -173,31 +173,30 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         theta = calculate_pointing_separation(event_data)
         theta_uplim = u.Quantity(config_stereo["theta_uplim"])
 
-        condition = u.Quantity(theta.to_numpy(), u.deg) > theta_uplim
-        n_events = np.count_nonzero(condition)
+        mask = u.Quantity(theta, unit="deg") < theta_uplim
 
-        if np.all(condition):
-            logger.info(
-                "--> All the events are taken with larger angular distances "
-                f"than the limit {theta_uplim}. Exiting..."
-            )
-            sys.exit()
-
-        elif n_events > 0:
-            logger.info(
-                f"--> Exclude {n_events} stereo events whose angular distances "
-                f"are larger than the limit {theta_uplim}."
-            )
-
-            event_data.reset_index(level="tel_id", inplace=True)
-            event_data = event_data.loc[theta[condition].index]
-            event_data.set_index("tel_id", append=True, inplace=True)
-
-        else:
+        if all(mask):
             logger.info(
                 "--> All the events were taken with smaller angular distances "
                 f"than the limit {theta_uplim}."
             )
+
+        elif not any(mask):
+            logger.info(
+                "--> All the events were taken with larger angular distances "
+                f"than the limit {theta_uplim}. Exiting..."
+            )
+            sys.exit()
+
+        else:
+            logger.info(
+                f"--> Exclude {np.count_nonzero(mask)} stereo events whose "
+                f"angular distances are larger than the limit {theta_uplim}."
+            )
+
+            event_data.reset_index(level="tel_id", inplace=True)
+            event_data = event_data.loc[theta[mask].index]
+            event_data.set_index("tel_id", append=True, inplace=True)
 
     # Configure the HillasReconstructor
     hillas_reconstructor = HillasReconstructor(subarray)
