@@ -9,7 +9,7 @@ are successfully reconstructed.
 
 Since it cannot identify the telescopes of the input file, please
 confirm that the telescope ID is correctly assigned to each telescope
-by the `mc_tel_ids` setting in the configuration file.
+in the configuration file.
 
 When saving data to an output file, the telescope IDs will be reset to
 the following ones to match with those of real data:
