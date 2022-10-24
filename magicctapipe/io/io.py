@@ -479,17 +479,12 @@ def load_train_data_files(
     event_data.set_index(GROUP_INDEX_TRAIN, inplace=True)
     event_data.sort_index(inplace=True)
 
-    logger.info(
-        f"\nMinimum off-axis angle allowed: {offaxis_min}"
-        f"\nMaximum off-axis angle allowed: {offaxis_max}"
-    )
-
     if offaxis_min is not None:
-        offaxis_min = u.Quantity(offaxis_min).to_value(u.deg)
+        offaxis_min = u.Quantity(offaxis_min).to_value("deg")
         event_data.query(f"off_axis >= {offaxis_min}", inplace=True)
 
     if offaxis_max is not None:
-        offaxis_max = u.Quantity(offaxis_max).to_value(u.deg)
+        offaxis_max = u.Quantity(offaxis_max).to_value("deg")
         event_data.query(f"off_axis <= {offaxis_max}", inplace=True)
 
     if true_event_class is not None:
@@ -497,16 +492,17 @@ def load_train_data_files(
 
     event_data["event_weight"] = EVENT_WEIGHT
 
-    # Separate the events by the telescope combination types
     n_events_total = len(event_data.groupby(GROUP_INDEX_TRAIN).size())
     logger.info(f"\nIn total {n_events_total} stereo events are found:")
 
     data_train = {}
 
+    # Loop over every telescope combination type
     for tel_combo, tel_ids in TEL_COMBINATIONS.items():
 
         multiplicity = len(tel_ids)
 
+        # Extract the events of the given combination type
         df_events = event_data.query(
             f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
         ).copy()
