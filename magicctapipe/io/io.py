@@ -519,7 +519,7 @@ def load_train_data_files(
     return data_train
 
 
-def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
+def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
@@ -535,7 +535,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
         "hardware" uses all the telescope combination events
-    dl2_weight_type: str
+    weight_type_dl2: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
@@ -543,8 +543,8 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
     -------
     event_table: astropy.table.table.QTable
         Table of the MC DL2 events surviving the cuts
-    pointing: astropy.units.quantity.Quantity
-        Telescope mean pointing direction (Zenith, Azimuth)
+    pointing: numpy.ndarray
+        Telescope pointing direction (zd, az) in the unit of degree
     sim_info: pyirf.simulations.SimulatedEventsInfo
         Container of the simulation information
 
@@ -559,12 +559,14 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
+    # Apply the quality cuts and get the stereo events
     df_events = get_stereo_events(df_events, quality_cuts)
 
     # Extract the events of the specified event type
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     if event_type == "software":
+        # Now the events of the MAGIC-stereo combination are excluded
         df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
 
     elif event_type == "software_only_3tel":
@@ -580,10 +582,10 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
     logger.info(f"--> {n_events} stereo events")
 
     # Get the mean DL2 parameters
-    df_dl2_mean = get_dl2_mean(df_events, dl2_weight_type)
+    df_dl2_mean = get_dl2_mean(df_events, weight_type_dl2)
     df_dl2_mean.reset_index(inplace=True)
 
-    # Convert the pandas data frame to astropy QTable
+    # Convert the pandas data frame to the astropy QTable
     event_table = QTable.from_pandas(df_dl2_mean)
 
     event_table["pointing_alt"] *= u.rad
@@ -596,9 +598,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
     event_table["reco_energy"] *= u.TeV
 
     event_table["theta"] = calculate_theta(
-        events=event_table,
-        assumed_source_az=event_table["true_az"],
-        assumed_source_alt=event_table["true_alt"],
+        event_table, event_table["true_az"], event_table["true_alt"]
     )
 
     event_table["true_source_fov_offset"] = calculate_source_fov_offset(event_table)
@@ -607,9 +607,10 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
     )
 
     # Get the telescope pointing direction
-    pointing_zd = 90 * u.deg - event_table["pointing_alt"].mean().to(u.deg)
-    pointing_az = event_table["pointing_az"].mean().to(u.deg)
-    pointing = u.Quantity([pointing_zd.round(3), pointing_az.round(3)])
+    pointing_zd = 90 - event_table["pointing_alt"].mean().to_value("deg")
+    pointing_az = event_table["pointing_az"].mean().to_value("deg")
+
+    pointing = np.array([pointing_zd, pointing_az]).round(3)
 
     # Get the simulation configuration
     sim_config = pd.read_hdf(input_file, key="simulation/config")
@@ -625,7 +626,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
 
     viewcone_diff = max_viewcone_radius - min_viewcone_radius
 
-    if viewcone_diff < u.Quantity(0.001, u.deg):
+    if viewcone_diff < u.Quantity(0.001, unit="deg"):
         # Handle ring-wobble MCs as same as point-like MCs
         viewcone = 0 * u.deg
     else:
@@ -633,9 +634,9 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
 
     sim_info = SimulatedEventsInfo(
         n_showers=n_total_showers,
-        energy_min=u.Quantity(sim_config["energy_range_min"][0], u.TeV),
-        energy_max=u.Quantity(sim_config["energy_range_max"][0], u.TeV),
-        max_impact=u.Quantity(sim_config["max_scatter_range"][0], u.m),
+        energy_min=u.Quantity(sim_config["energy_range_min"][0], unit="TeV"),
+        energy_max=u.Quantity(sim_config["energy_range_max"][0], unit="TeV"),
+        max_impact=u.Quantity(sim_config["max_scatter_range"][0], unit="m"),
         spectral_index=sim_config["spectral_index"][0],
         viewcone=viewcone,
     )
@@ -643,7 +644,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type)
     return event_table, pointing, sim_info
 
 
-def load_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
+def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     """
     Loads a DL2 data file for processing to DL3.
 
@@ -659,7 +660,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
         "hardware" uses all the telescope combination events
-    dl2_weight_type: str
+    weight_type_dl2: str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
@@ -702,7 +703,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, dl2_weight_type):
     logger.info(f"--> {n_events} stereo events")
 
     # Get the mean DL2 parameters
-    df_dl2_mean = get_dl2_mean(event_data, dl2_weight_type)
+    df_dl2_mean = get_dl2_mean(event_data, weight_type_dl2)
     df_dl2_mean.reset_index(inplace=True)
 
     # Convert the pandas data frame to astropy QTable
