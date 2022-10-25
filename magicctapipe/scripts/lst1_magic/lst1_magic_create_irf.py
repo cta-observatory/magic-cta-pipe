@@ -355,6 +355,9 @@ def create_irf(
     if quality_cuts is not None:
         extra_header["QUAL_CUT"] = quality_cuts
 
+    if is_bkg_mc:
+        extra_header["IRF_OBST"] = (irf_obs_time.to_value("h"), "h")
+
     irf_hdus = fits.HDUList([fits.PrimaryHDU()])
 
     # Apply the gammaness cut
