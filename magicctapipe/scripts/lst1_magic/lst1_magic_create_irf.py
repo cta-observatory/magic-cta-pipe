@@ -45,6 +45,7 @@ import logging
 import operator
 import time
 from pathlib import Path
+from pprint import pformat
 
 import numpy as np
 import yaml
@@ -132,8 +133,7 @@ def create_irf(
         config_fov_bins = config_irf["fov_offset_bins"]
 
         logger.info("\nFov offset bins (linear scale):")
-        for key, value in config_fov_bins.items():
-            logger.info(f"\t{key}: {value}")
+        logger.info(pformat(config_fov_bins))
 
         fov_bins_start = u.Quantity(config_fov_bins["start"])
         fov_bins_stop = u.Quantity(config_fov_bins["stop"])
@@ -244,8 +244,7 @@ def create_irf(
     config_mig_bins = config_irf["migration_bins"]
 
     logger.info("\nEnergy bins (log space):")
-    for key, value in config_eng_bins.items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_eng_bins))
 
     eng_bins_start = u.Quantity(config_eng_bins["start"])
     eng_bins_stop = u.Quantity(config_eng_bins["stop"])
@@ -257,8 +256,7 @@ def create_irf(
     )
 
     logger.info("\nMigration bins (log space):")
-    for key, value in config_mig_bins.items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_mig_bins))
 
     migration_bins = np.geomspace(
         config_mig_bins["start"], config_mig_bins["stop"], config_mig_bins["n_edges"]
@@ -268,8 +266,7 @@ def create_irf(
         config_src_bins = config_irf["source_offset_bins"]
 
         logger.info("\nSource offset bins (linear space):")
-        for key, value in config_src_bins.items():
-            logger.info(f"\t{key}: {value}")
+        logger.info(pformat(config_src_bins))
 
         src_bins_start = u.Quantity(config_src_bins["start"])
         src_bins_stop = u.Quantity(config_src_bins["stop"])
@@ -284,8 +281,7 @@ def create_irf(
             config_bkg_bins = config_irf["bkg_fov_offset_bins"]
 
             logger.info("\nBackground FoV offset bins (linear space):")
-            for key, value in config_bkg_bins.items():
-                logger.info(f"\t{key}: {value}")
+            logger.info(pformat(config_bkg_bins))
 
             bkg_bins_start = u.Quantity(config_bkg_bins["start"])
             bkg_bins_stop = u.Quantity(config_bkg_bins["stop"])
@@ -321,9 +317,7 @@ def create_irf(
     if cut_type_gh == "global":
 
         cut_value_gh = config_gh_cuts["global_cut_value"]
-
-        logger.info("\nGlobal gammaness cut:")
-        logger.info(f"\tcut_value: {cut_value_gh}")
+        logger.info(f"\nGlobal gammaness cut: {cut_value_gh}")
 
         extra_header["GH_CUT"] = cut_value_gh
         output_suffix_gh = f"gh_glob{cut_value_gh}"
@@ -341,8 +335,7 @@ def create_irf(
         config_gh_cuts.pop("global_cut_value", None)
 
         logger.info("\nDynamic gammaness cuts:")
-        for key, value in config_gh_cuts.items():
-            logger.info(f"\t{key}: {value}")
+        logger.info(pformat(config_gh_cuts))
 
         gh_efficiency = config_gh_cuts["efficiency"]
         gh_cut_min = config_gh_cuts["min_cut"]
@@ -416,9 +409,7 @@ def create_irf(
         if cut_type_theta == "global":
 
             cut_value_theta = config_theta_cuts["global_cut_value"]
-
-            logger.info("\nGlobal theta cut:")
-            logger.info(f"\tcut_value: {cut_value_theta}")
+            logger.info(f"\nGlobal theta cut: {cut_value_theta}")
 
             cut_value_theta = u.Quantity(cut_value_theta).to_value("deg")
 
@@ -434,8 +425,7 @@ def create_irf(
             config_theta_cuts.pop("global_cut_value", None)
 
             logger.info("\nDynamic theta cuts:")
-            for key, value in config_theta_cuts.items():
-                logger.info(f"\t{key}: {value}")
+            logger.info(pformat(config_theta_cuts))
 
             theta_efficiency = config_theta_cuts["efficiency"]
             theta_cut_min = u.Quantity(config_theta_cuts["min_cut"])

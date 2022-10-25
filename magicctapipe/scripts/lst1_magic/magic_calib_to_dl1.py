@@ -41,6 +41,7 @@ import re
 import time
 import warnings
 from pathlib import Path
+from pprint import pformat
 
 import numpy as np
 import yaml
@@ -134,8 +135,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     config_clean = config["MAGIC"]["magic_clean"]
 
     logger.info("\nMAGIC image cleaning:")
-    for key, value in config_clean.items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_clean))
 
     magic_clean = MAGICClean(camera_geom, config_clean)
 
@@ -289,8 +289,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 time_nanosec = u.Quantity(fractional, unit="s").to("ns")
                 time_nanosec = u.Quantity(time_nanosec.round(), dtype=int)
 
-                time_diff = time_diffs[event.count]
-
                 # Set the real event information to the container
                 event_info = RealEventInfoContainer(
                     obs_id=event.index.obs_id,
@@ -299,7 +297,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     pointing_az=event.pointing.tel[tel_id].azimuth,
                     time_sec=time_sec,
                     time_nanosec=time_nanosec,
-                    time_diff=time_diff,
+                    time_diff=time_diffs[event.count],
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                 )

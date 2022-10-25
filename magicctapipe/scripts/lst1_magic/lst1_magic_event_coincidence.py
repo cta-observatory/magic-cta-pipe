@@ -49,6 +49,7 @@ import sys
 import time
 from decimal import Decimal
 from pathlib import Path
+from pprint import pformat
 
 import numpy as np
 import pandas as pd
@@ -133,8 +134,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
 
     logger.info("\nTime offsets:")
-    for key, value in config_coinc["time_offset"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_coinc["time_offset"]))
 
     offset_start = u.Quantity(config_coinc["time_offset"]["start"])
     offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])

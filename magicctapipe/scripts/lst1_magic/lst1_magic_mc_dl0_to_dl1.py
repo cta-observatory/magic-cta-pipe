@@ -29,6 +29,7 @@ $ python lst1_magic_mc_dl0_to_dl1.py
 
 import argparse
 import logging
+import pprint
 import re
 import time
 from pathlib import Path
@@ -64,6 +65,8 @@ __all__ = ["mc_dl0_to_dl1"]
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+
+pformat = pprint.PrettyPrinter().pformat
 
 # The CORSIKA particle types
 PARTICLE_TYPES = {1: "gamma", 3: "electron", 14: "proton", 402: "helium"}
@@ -110,18 +113,17 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     logger.info("\nSubarray configuration:")
     for tel_name, tel_id in allowed_tel_ids.items():
         logger.info(
-            f"\tTelescope {tel_id} (assumed to be {tel_name}): "
+            f"Telescope {tel_id} (assumed to be {tel_name}): "
             f"optics = {tel_descriptions[tel_id].optics}, "
             f"camera = {tel_descriptions[tel_id].camera}"
         )
         camera_geoms[tel_id] = tel_descriptions[tel_id].camera.geometry
 
-    # Configure the LST event processors
+    # Configure the LST calibrator
     config_lst = config["LST"]
 
     logger.info("\nLST image extractor:")
-    for key, value in config_lst["image_extractor"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_lst["image_extractor"]))
 
     extractor_type_lst = config_lst["image_extractor"].pop("type")
     config_extractor_lst = {extractor_type_lst: config_lst["image_extractor"]}
@@ -132,27 +134,24 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
+    # Configure the LST image cleaning
     increase_nsb = config_lst["increase_nsb"].pop("use")
     increase_psf = config_lst["increase_psf"].pop("use")
 
     if increase_nsb:
         logger.info("\nLST NSB modifier:")
-        for key, value in config_lst["increase_nsb"].items():
-            logger.info(f"\t{key}: {value}")
+        logger.info(pformat(config_lst["increase_nsb"]))
 
         rng = np.random.default_rng(obs_id)
 
     if increase_psf:
-        smeared_light_fraction = config_lst["increase_psf"]["fraction"]
-
         logger.info("\nLST PSF modifier:")
-        logger.info(f"\tfraction: {smeared_light_fraction}")
+        logger.info(pformat(config_lst["increase_psf"]))
 
         set_numba_seed(obs_id)
 
     logger.info("\nLST tailcuts cleaning:")
-    for key, value in config_lst["tailcuts_clean"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_lst["tailcuts_clean"]))
 
     use_time_delta_cleaning = config_lst["time_delta_cleaning"].pop("use")
     use_dynamic_cleaning = config_lst["dynamic_cleaning"].pop("use")
@@ -160,22 +159,19 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     if use_time_delta_cleaning:
         logger.info("\nLST time delta cleaning:")
-        for key, value in config_lst["time_delta_cleaning"].items():
-            logger.info(f"\t{key}: {value}")
+        logger.info(pformat(config_lst["time_delta_cleaning"]))
 
     if use_dynamic_cleaning:
         logger.info("\nLST dynamic cleaning:")
-        for key, value in config_lst["dynamic_cleaning"].items():
-            logger.info(f"\t{key}: {value}")
+        logger.info(pformat(config_lst["dynamic_cleaning"]))
 
     logger.info(f"\nLST use only main island: {use_only_main_island}")
 
-    # Configure the MAGIC event processors
+    # Configure the MAGIC calibrator
     config_magic = config["MAGIC"]
 
     logger.info("\nMAGIC image extractor:")
-    for key, value in config_magic["image_extractor"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_magic["image_extractor"]))
 
     extractor_type_magic = config_magic["image_extractor"].pop("type")
     config_extractor_magic = {extractor_type_magic: config_magic["image_extractor"]}
@@ -189,9 +185,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     use_charge_correction = config_magic["charge_correction"].pop("use")
 
     if use_charge_correction:
-        correction_factor = config_magic["charge_correction"]["correction_factor"]
-        logger.info(f"\nMAGIC charge correction factor: {correction_factor}")
+        logger.info("\nMAGIC charge correction:")
+        logger.info(pformat(config_magic["charge_correction"]))
 
+    # Configure the MAGIC image cleaning
     if config_magic["magic_clean"]["find_hotpixels"]:
         logger.warning(
             "\nWARNING: Hot pixels do not exist in a simulation. "
@@ -200,8 +197,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         config_magic["magic_clean"].update({"find_hotpixels": False})
 
     logger.info("\nMAGIC image cleaning:")
-    for key, value in config_magic["magic_clean"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(config_magic["magic_clean"]))
 
     magic_clean = {
         tel_id_m1: MAGICClean(camera_geoms[tel_id_m1], config_magic["magic_clean"]),
@@ -266,7 +262,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                         # Smear the image
                         image = random_psf_smearer(
                             image=image,
-                            fraction=smeared_light_fraction,
+                            fraction=config_lst["increase_psf"]["fraction"],
                             indices=camera_geoms[tel_id].neighbor_matrix_sparse.indices,
                             indptr=camera_geoms[tel_id].neighbor_matrix_sparse.indptr,
                         )
@@ -311,7 +307,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
                     if use_charge_correction:
                         # Scale the charges by the correction factor
-                        image *= correction_factor
+                        image *= config_magic["charge_correction"]["factor"]
 
                     # Apply the image cleaning
                     signal_pixels, image, peak_time = magic_clean[tel_id].clean_image(

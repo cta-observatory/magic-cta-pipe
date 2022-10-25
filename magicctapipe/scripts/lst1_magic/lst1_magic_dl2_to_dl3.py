@@ -26,6 +26,7 @@ import logging
 import operator
 import time
 from pathlib import Path
+from pprint import pformat
 
 import numpy as np
 import yaml
@@ -84,12 +85,10 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
     logger.info("\nGrid points (cosZd, Az):")
-    for i_grid, grid_point in enumerate(irf_data["grid_points"], start=1):
-        logger.info(f"\t{i_grid}: {grid_point.round(5).tolist()}")
+    logger.info(pformat(irf_data["grid_points"]))
 
     logger.info("\nExtra header:")
-    for key, value in extra_header.items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(pformat(extra_header))
 
     # Load the input DL2 data file
     logger.info(f"\nInput DL2 data file:\n{input_file_dl2}")
