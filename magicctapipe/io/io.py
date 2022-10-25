@@ -400,6 +400,10 @@ def load_magic_dl1_data_files(input_dir):
 
     event_data = pd.concat(data_list)
 
+    event_data.drop_duplicates(
+        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
+    )
+
     event_data.rename(
         columns={"obs_id": "obs_id_magic", "event_id": "event_id_magic"}, inplace=True
     )
