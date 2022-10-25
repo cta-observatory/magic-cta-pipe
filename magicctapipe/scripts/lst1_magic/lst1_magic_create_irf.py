@@ -310,7 +310,7 @@ def create_irf(
         extra_header["QUAL_CUT"] = quality_cuts
 
     if is_bkg_mc:
-        extra_header["OBST_IRF"] = (obs_time.to_value("h"), "h")
+        extra_header["IRF_OBST"] = (obs_time.to_value("h"), "h")
 
     irf_hdus = fits.HDUList([fits.PrimaryHDU()])
 

@@ -801,6 +801,7 @@ def load_irf_files(input_dir_irf):
         "QUAL_CUT": [],
         "EVT_TYPE": [],
         "DL2_WEIG": [],
+        "IRF_OBST": [],
         "GH_CUT": [],
         "GH_EFF": [],
         "GH_MIN": [],
