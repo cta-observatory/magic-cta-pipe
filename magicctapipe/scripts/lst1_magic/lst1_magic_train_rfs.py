@@ -45,7 +45,6 @@ from magicctapipe.io.io import TEL_NAMES, GROUP_INDEX_TRAIN
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = [
-    "check_feature_importance",
     "get_events_at_random",
     "train_energy_regressor",
     "train_disp_regressor",
@@ -62,28 +61,6 @@ EVENT_CLASS_PROTON = 1
 
 # Set the random seed
 random.seed(1000)
-
-
-def check_feature_importance(estimator):
-    """
-    Checks the feature importance of trained RFs.
-
-    Parameters
-    ----------
-    estimator: magicctapipe.reco.estimators
-        Estimator with trained RFs
-    """
-
-    features = estimator.features
-
-    # Loop over every telescope RF
-    for tel_id, telescope_rf in estimator.telescope_rfs.items():
-
-        logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-        importances = telescope_rf.feature_importances_
-
-        for feature, importance in zip(features, importances):
-            logger.info(f"\t{feature}: {importance:.5f}")
 
 
 def get_events_at_random(event_data, n_events_random):
@@ -179,7 +156,13 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
         energy_regressor.fit(df_train)
 
         # Check the feature importance
-        check_feature_importance(energy_regressor)
+        for tel_id, telescope_rf in energy_regressor.telescope_rfs.items():
+
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+            importances = telescope_rf.feature_importances_
+
+            for feature, importance in zip(energy_regressor.features, importances):
+                logger.info(f"\t{feature}: {importance:.5f}")
 
         # Save the trained RFs
         if use_unsigned_features:
@@ -255,7 +238,13 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
         disp_regressor.fit(df_train)
 
         # Check the feature importance
-        check_feature_importance(disp_regressor)
+        for tel_id, telescope_rf in disp_regressor.telescope_rfs.items():
+
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+            importances = telescope_rf.feature_importances_
+
+            for feature, importance in zip(disp_regressor.features, importances):
+                logger.info(f"\t{feature}: {importance:.5f}")
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
@@ -361,7 +350,13 @@ def train_event_classifier(
         event_classifier.fit(df_train)
 
         # Check the feature importance
-        check_feature_importance(event_classifier)
+        for tel_id, telescope_rf in event_classifier.telescope_rfs.items():
+
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+            importances = telescope_rf.feature_importances_
+
+            for feature, importance in zip(event_classifier.features, importances):
+                logger.info(f"\t{feature}: {importance:.5f}")
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
