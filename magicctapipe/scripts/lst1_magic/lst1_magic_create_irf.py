@@ -368,7 +368,7 @@ def create_irf(
         gh_cut_value = config_irf["gammaness"]["global_cut_value"]
         logger.info("\nGlobal gammaness cut:" f"\n\tcut_value: {gh_cut_value}")
 
-        gh_cut_config = f"gh_glob{gh_cut_value}"
+        output_suffix = f"gh_glob{gh_cut_value}"
         extra_header["GH_CUT"] = gh_cut_value
 
         # Apply the global gammaness cut
@@ -394,7 +394,7 @@ def create_irf(
             f"\n\tmax_cut: {gh_cut_max}"
         )
 
-        gh_cut_config = f"gh_dyn{gh_efficiency}"
+        output_suffix = f"gh_dyn{gh_efficiency}"
 
         extra_header["GH_EFF"] = gh_efficiency
         extra_header["GH_MIN"] = gh_cut_min
@@ -463,7 +463,7 @@ def create_irf(
             theta_cut_value = u.Quantity(config_irf["theta"]["global_cut_value"])
             logger.info("\nGlobal theta cut:" f"\n\tcut_value: {theta_cut_value}")
 
-            theta_cut_config = f"theta_glob{theta_cut_value.to_value(u.deg)}deg"
+            output_suffix += f"_theta_glob{theta_cut_value.to_value(u.deg)}deg"
             extra_header["RAD_MAX"] = (theta_cut_value.to_value(u.deg), "deg")
 
             # Apply the global theta cut
@@ -485,7 +485,7 @@ def create_irf(
                 f"\n\tmax_cut: {theta_cut_max}"
             )
 
-            theta_cut_config = f"theta_dyn{theta_efficiency}"
+            output_suffix += f"_theta_dyn{theta_efficiency}"
 
             extra_header["TH_EFF"] = theta_efficiency
             extra_header["TH_MIN"] = (theta_cut_min.to_value(u.deg), "deg")
@@ -641,8 +641,7 @@ def create_irf(
 
     output_file = (
         f"{output_dir}/irf_zd_{pnt_gamma[0].to_value(u.deg)}deg_"
-        f"az_{pnt_gamma[1].to_value(u.deg)}deg_{event_type}_"
-        f"{gh_cut_config}_{theta_cut_config}.fits.gz"
+        f"az_{pnt_gamma[1].to_value(u.deg)}deg_{event_type}_{output_suffix}.fits.gz"
     )
 
     irf_hdus.writeto(output_file, overwrite=True)
