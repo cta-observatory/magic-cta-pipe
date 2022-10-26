@@ -4,11 +4,11 @@ channels:
   - default
   - conda-forge
 dependencies:
-  - python=3.7
+  - python=3.8
   - pip
   - astropy
   - black
-  - bokeh=1.0
+  - bokeh
   - nbsphinx
   - ctapipe=0.12
   - gammapy=0.19.0
@@ -36,7 +36,7 @@ dependencies:
   - scikit-learn
   - scipy
   - setuptools
-  - sphinx=4.2
+  - sphinx
   - sphinx-automodapi
   - sphinx_rtd_theme
   - tqdm
@@ -50,7 +50,7 @@ dependencies:
   - eventio>=1.5.0
   - corsikaio
   - pip:
-      - lstchain~=0.9.6
+      - lstchain~=0.9.9
       - ctapipe_io_magic~=0.4.7
-      - ctaplot~=0.5.5
+      - ctaplot~=0.6.2
       - pyirf~=0.6.0

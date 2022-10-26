@@ -21,7 +21,7 @@ entry_points["console_scripts"] = [
 tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
 
 docs_require = [
-    "sphinx~=4.2",
+    "sphinx",
     "sphinx-automodapi",
     "sphinx_argparse",
     "sphinx_rtd_theme",
@@ -34,10 +34,10 @@ setup(
     packages=find_packages(),
     install_requires=[
         'astropy>=4.0.5,<5',
-        'lstchain~=0.9.6',
+        'lstchain~=0.9.9',
         'ctapipe~=0.12.0',
         'ctapipe_io_magic~=0.4.7',
-        'ctaplot~=0.5.5',
+        'ctaplot~=0.6.2',
         'eventio>=1.5.1,<2.0.0a0',  # at least 1.1.1, but not 2
         'gammapy~=0.19.0',
         'uproot~=4.1',
