@@ -180,6 +180,9 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     event_data_mean = event_data[params].groupby(group_index).mean()
     event_data_mean = event_data_mean.astype({"combo_type": int, "multiplicity": int})
 
+    event_indicies = event_data.groupby(group_index).mean().index.to_frame()
+    event_data_mean=pd.concat([event_indicies, event_data_mean], axis=1)
+
     # Calculate the mean pointing direction
     pnt_az_mean, pnt_alt_mean = calculate_mean_direction(
         lon=event_data["pointing_az"], lat=event_data["pointing_alt"], unit="rad"
