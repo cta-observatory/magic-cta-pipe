@@ -50,7 +50,7 @@ dependencies:
   - eventio>=1.5.0
   - corsikaio
   - pip:
-      - lstchain~=0.9.9
+      - lstchain~=0.9.6
       - ctapipe_io_magic~=0.4.7
-      - ctaplot~=0.6.2
+      - ctaplot~=0.5.5
       - pyirf~=0.6.0
