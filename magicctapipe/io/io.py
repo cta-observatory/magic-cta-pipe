@@ -181,7 +181,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     event_data_mean = event_data_mean.astype({"combo_type": int, "multiplicity": int})
 
     event_indicies = event_data.groupby(group_index).mean().index.to_frame()
-    event_data_mean=pd.concat([event_indicies, event_data_mean], axis=1)
+    event_data_mean = pd.concat([event_indicies, event_data_mean], axis=1)
 
     # Calculate the mean pointing direction
     pnt_az_mean, pnt_alt_mean = calculate_mean_direction(
@@ -232,7 +232,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
         weights=direction_weights,
     )
 
-    event_data_mean["reco_energy"] = 10**log_energy_mean
+    event_data_mean["reco_energy"] = 10 ** log_energy_mean
     event_data_mean["reco_alt"] = reco_alt_mean
     event_data_mean["reco_az"] = reco_az_mean
     event_data_mean["gammaness"] = gammaness_mean
@@ -959,7 +959,7 @@ def load_irf_files(input_dir_irf):
             extra_header[key] = unique_values[0]
 
     # Set units to the IRF data
-    irf_data["effective_area"] *= u.m**2
+    irf_data["effective_area"] *= u.m ** 2
     irf_data["psf_table"] *= u.Unit("sr-1")
     irf_data["background"] *= u.Unit("MeV-1 s-1 sr-1")
     irf_data["rad_max"] *= u.deg
