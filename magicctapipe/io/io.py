@@ -3,6 +3,7 @@
 
 import glob
 import logging
+import pprint
 
 import numpy as np
 import pandas as pd
@@ -21,6 +22,7 @@ from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
 
 __all__ = [
+    "format_dict",
     "get_stereo_events",
     "get_dl2_mean",
     "load_lst_dl1_data_file",
@@ -66,6 +68,29 @@ TIME_DIFF_UPLIM = 0.1 * u.s
 # The LST-1 and MAGIC readout dead times
 DEAD_TIME_LST = 7.6 * u.us
 DEAD_TIME_MAGIC = 26 * u.us
+
+
+def format_dict(input_dict):
+    """
+    Formats a dictionary and returns as a string.
+
+    Parameters
+    ----------
+    input_dict: dict
+        Dictionary that should be formatted
+
+    Returns
+    -------
+    string: str
+        The formatted dictionary
+    """
+
+    pp = pprint.PrettyPrinter(indent=0, width=10, sort_dicts=False)
+
+    string = pp.pformat(input_dict)[1:-1]
+    string = string.replace("'", "").replace(",", "")
+
+    return string
 
 
 def get_stereo_events(
