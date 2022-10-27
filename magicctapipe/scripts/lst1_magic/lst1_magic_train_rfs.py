@@ -215,8 +215,6 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     # Create the output directory
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    output_files = []
-
     # Loop over every telescope combination type
     for tel_combo, df_train in event_data_train.items():
 
@@ -240,11 +238,8 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
             output_file = f"{output_dir}/disp_regressors_{tel_combo}.joblib"
 
         disp_regressor.save(output_file)
-        output_files.append(output_file)
 
-    logger.info("\nOutput files:")
-    for output_file in output_files:
-        logger.info(output_file)
+        logger.info(f"\nOutput file: {output_file}")
 
 
 def train_event_classifier(
@@ -304,8 +299,6 @@ def train_event_classifier(
     # Create the output directory
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    output_files = []
-
     # Loop over every telescope combination type
     common_combinations = set(event_data_gamma.keys()) & set(event_data_proton.keys())
 
@@ -328,7 +321,7 @@ def train_event_classifier(
             logger.info(f"Extracting {n_events_gamma} proton MC events...")
             df_proton = get_events_at_random(df_proton, n_events_gamma)
 
-        df_train = df_gamma.append(df_proton)
+        df_train = pd.concat([df_gamma, df_proton])
 
         # Train the RFS
         event_classifier.fit(df_train)
@@ -348,11 +341,8 @@ def train_event_classifier(
             output_file = f"{output_dir}/event_classifiers_{tel_combo}.joblib"
 
         event_classifier.save(output_file)
-        output_files.append(output_file)
 
-    logger.info("\nOutput files:")
-    for output_file in output_files:
-        logger.info(output_file)
+        logger.info(f"\nOutput file: {output_file}")
 
 
 def main():
