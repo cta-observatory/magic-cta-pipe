@@ -320,7 +320,7 @@ def create_irf(
         logger.info(f"\nGlobal gammaness cut: {cut_value_gh}")
 
         extra_header["GH_CUT"] = cut_value_gh
-        output_suffix_gh = f"gh_glob{cut_value_gh}"
+        output_suffix = f"gh_glob{cut_value_gh}"
 
         # Apply the global gammaness cut
         mask_gh = event_table_gamma["gammaness"] > cut_value_gh
@@ -341,11 +341,11 @@ def create_irf(
         gh_cut_min = config_gh_cuts["min_cut"]
         gh_cut_max = config_gh_cuts["max_cut"]
 
-        output_suffix_gh = f"gh_dyn{gh_efficiency}"
-
         extra_header["GH_EFF"] = gh_efficiency
         extra_header["GH_MIN"] = gh_cut_min
         extra_header["GH_MAX"] = gh_cut_max
+
+        output_suffix = f"gh_dyn{gh_efficiency}"
 
         # Calculate dynamic gammaness cuts
         gh_percentile = 100 * (1 - gh_efficiency)
@@ -414,7 +414,7 @@ def create_irf(
             cut_value_theta = u.Quantity(cut_value_theta).to_value("deg")
 
             extra_header["RAD_MAX"] = (cut_value_theta, "deg")
-            output_suffix_theta = f"theta_glob{cut_value_theta}deg"
+            output_suffix += f"_theta_glob{cut_value_theta}deg"
 
             # Apply the global theta cut
             mask_theta = event_table_gamma["theta"].to_value("deg") < cut_value_theta
@@ -431,11 +431,11 @@ def create_irf(
             theta_cut_min = u.Quantity(config_theta_cuts["min_cut"])
             theta_cut_max = u.Quantity(config_theta_cuts["max_cut"])
 
-            output_suffix_theta = f"theta_dyn{theta_efficiency}"
-
             extra_header["TH_EFF"] = theta_efficiency
             extra_header["TH_MIN"] = (theta_cut_min.to_value("deg"), "deg")
             extra_header["TH_MAX"] = (theta_cut_max.to_value("deg"), "deg")
+
+            output_suffix += f"_theta_dyn{theta_efficiency}"
 
             # Calculate dynamic theta cuts
             theta_percentile = 100 * theta_efficiency
@@ -587,7 +587,7 @@ def create_irf(
 
     output_file = (
         f"{output_dir}/irf_zd_{pnt_gamma[0]}deg_az_{pnt_gamma[1]}deg_"
-        f"{event_type}_{output_suffix_gh}_{output_suffix_theta}.fits.gz"
+        f"{event_type}_{output_suffix}.fits.gz"
     )
 
     irf_hdus.writeto(output_file, overwrite=True)
