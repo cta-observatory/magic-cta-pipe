@@ -72,7 +72,7 @@ DEAD_TIME_MAGIC = 26 * u.us
 
 def format_dict(input_dict):
     """
-    Formats a dictionary and returns as a string.
+    Formats a dictionary to show its items.
 
     Parameters
     ----------
@@ -85,9 +85,11 @@ def format_dict(input_dict):
         The formatted dictionary
     """
 
-    pp = pprint.PrettyPrinter(indent=0, width=10, sort_dicts=False)
+    pp = pprint.PrettyPrinter(indent=4, width=5, sort_dicts=False)
 
-    string = pp.pformat(input_dict)[1:-1]
+    string = pp.pformat(input_dict)
+
+    string = string.replace("{", " ").replace("}", " ")
     string = string.replace("'", "").replace(",", "")
 
     return string

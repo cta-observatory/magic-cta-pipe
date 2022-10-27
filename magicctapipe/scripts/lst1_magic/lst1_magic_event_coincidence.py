@@ -49,7 +49,6 @@ import sys
 import time
 from decimal import Decimal
 from pathlib import Path
-from pprint import pformat
 
 import numpy as np
 import pandas as pd
@@ -57,6 +56,7 @@ import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.io import (
+    format_dict,
     get_stereo_events,
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
@@ -134,7 +134,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
 
     logger.info("\nTime offsets:")
-    logger.info(pformat(config_coinc["time_offset"]))
+    logger.info(format_dict(config_coinc["time_offset"]))
 
     offset_start = u.Quantity(config_coinc["time_offset"]["start"])
     offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])

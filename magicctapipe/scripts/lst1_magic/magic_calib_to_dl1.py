@@ -41,7 +41,6 @@ import re
 import time
 import warnings
 from pathlib import Path
-from pprint import pformat
 
 import numpy as np
 import yaml
@@ -57,7 +56,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer
+from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_dict
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -135,7 +134,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     config_clean = config["MAGIC"]["magic_clean"]
 
     logger.info("\nMAGIC image cleaning:")
-    logger.info(pformat(config_clean))
+    logger.info(format_dict(config_clean))
 
     magic_clean = MAGICClean(camera_geom, config_clean)
 
