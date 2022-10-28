@@ -8,7 +8,7 @@ specified in the configuration file are applied to the events before the
 reconstruction.
 
 When the input is real data containing LST-1 and MAGIC events, it checks
-the angular distances of their pointing directions and exclude the
+the angular distances of their pointing directions and excludes the
 events taken with larger distances than the limit specified in the
 configuration file. This is in principle to avoid the reconstruction of
 the events taken in too-mispointing situations. For example, DL1 data
@@ -44,8 +44,7 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
-from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
-from magicctapipe.io.io import TEL_NAMES
+from magicctapipe.io import format_dict, get_stereo_events, save_pandas_data_in_table
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
@@ -137,12 +136,8 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     subarray = SubarrayDescription.from_hdf(input_file)
     tel_positions = subarray.positions
 
-    logger.info("\nSubarray configuration:")
-    for tel_id in subarray.tel.keys():
-        logger.info(
-            f"\t{TEL_NAMES[tel_id]}: {subarray.tel[tel_id].name}, "
-            f"position = {tel_positions[tel_id].round(2)}"
-        )
+    logger.info("\nTelescope positions:")
+    logger.info(format_dict(tel_positions))
 
     # Apply the event cuts
     logger.info(f"\nMAGIC-only analysis: {magic_only_analysis}")
@@ -218,7 +213,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         event.pointing.array_altitude = pnt_alt_mean.loc[(obs_id, event_id)] * u.rad
         event.pointing.array_azimuth = pnt_az_mean.loc[(obs_id, event_id)] * u.rad
 
-        # Extract the data frame of the given observation and event IDs
+        # Extract the data frame of the shower event
         df_evt = event_data.loc[(obs_id, event_id, slice(None))]
 
         # Loop over every telescope
@@ -226,14 +221,12 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
         for tel_id in tel_ids:
 
-            # Extract the series of the given telescope ID
-            df_tel = df_evt.loc[(obs_id, event_id, tel_id)]
+            df_tel = df_evt.loc[tel_id]
 
-            # Assign the telescope pointing direction
+            # Assign the telescope information
             event.pointing.tel[tel_id].altitude = df_tel["pointing_alt"] * u.rad
             event.pointing.tel[tel_id].azimuth = df_tel["pointing_az"] * u.rad
 
-            # Create a Hillas parameters container
             hillas_params = CameraHillasParametersContainer(
                 intensity=float(df_tel["intensity"]),
                 x=u.Quantity(df_tel["x"], unit="m"),
@@ -247,7 +240,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 kurtosis=float(df_tel["kurtosis"]),
             )
 
-            # Assign the image parameters container
             event.dl1.tel[tel_id].parameters = ImageParametersContainer(
                 hillas=hillas_params
             )
@@ -264,7 +256,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             )
             continue
 
-        # Wrap the azimuth at the angle 0 <= az < 360 deg
         stereo_params.az.wrap_at("360 deg", inplace=True)
 
         for tel_id in tel_ids:
