@@ -7,8 +7,8 @@ This script processes LST-1 and MAGIC events of simtel MC DL0 data
 leakage parameters. It saves only the events that all the DL1 parameters
 are successfully reconstructed.
 
-Since it cannot identify the telescopes of the input file, please
-assign a correct telescope ID to each telescope in the configuration.
+Since it cannot identify the telescopes of the input file, please assign
+the correct telescope ID to each telescope in the configuration file.
 
 When saving data to an output file, the telescope IDs will be reset to
 the following ones to match with those of real data:
@@ -203,13 +203,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     regex = r".*\nPRMPAR\s+(\d+)\s+.*"
 
     particle_id = int(re.findall(regex, corsika_inputcard)[0])
-    primary_particle = PARTICLE_TYPES.get(particle_id, "unknown")
+    particle_type = PARTICLE_TYPES.get(particle_id, "unknown")
 
     zenith = 90 - sim_config["max_alt"].to_value("deg")
     azimuth = Angle(sim_config["max_az"]).wrap_at("360 deg").degree
 
     output_file = (
-        f"{output_dir}/dl1_{primary_particle}_zd_{zenith:.3f}deg_"
+        f"{output_dir}/dl1_{particle_type}_zd_{zenith:.3f}deg_"
         f"az_{azimuth:.3f}deg_LST-1_MAGIC_run{obs_id}.h5"
     )
 
@@ -414,8 +414,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     # Convert the telescope coordinate to the one relative to the center
     # of the LST-1 and MAGIC positions, and reset the telescope IDs
-    positions = [position.to_value("m") for position in tel_positions.values()]
-    mean_position = np.mean(positions, axis=0) * u.m
+    mean_position = u.Quantity(list(tel_positions.values())).mean(axis=0)
 
     tel_positions_lst1_magic = {
         1: tel_positions[tel_id_lst1] - mean_position,  # LST-1
