@@ -99,14 +99,16 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
         yaml.dump(config_image, outfile, default_flow_style=False)
 
     if "_M1_" in str(dataset_calibrated):
-        list_image = image_comparison(
+        comparison = image_comparison(
             config_file=config_image_file, mode="use_all", tel_id=1, max_events=20
         )
     else:
-        list_image = image_comparison(
+        comparison = image_comparison(
             config_file=config_image_file, mode="use_all", tel_id=2, max_events=20
         )
+    #image charge comparison
+    assert len(comparison[0]) <= 0.0003*comparison[2]
 
-    print(len(list_image))
+    #image time comparison
+    # assert len(comparison[1]) <= 0.0003*comparison[2]
 
-    assert list_image == []
