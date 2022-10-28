@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import re
 import glob
 import logging
 import pprint
@@ -16,10 +17,11 @@ from ctapipe.containers import EventType
 from ctapipe.coordinates import CameraFrame
 from ctapipe.instrument import SubarrayDescription
 from lstchain.reco.utils import add_delta_t_key
-from magicctapipe.utils import calculate_mean_direction, transform_altaz_to_radec
 from pyirf.binning import join_bin_lo_hi
 from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
+
+from magicctapipe.utils import calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
     "format_dict",
@@ -43,10 +45,10 @@ TEL_NAMES = {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"}
 
 # The telescope combination types
 TEL_COMBINATIONS = {
-    "m1_m2": [2, 3],  # combo_type = 0
-    "lst1_m1": [1, 2],  # combo_type = 1
-    "lst1_m2": [1, 3],  # combo_type = 2
-    "lst1_m1_m2": [1, 2, 3],  # combo_type = 3
+    "M1_M2": [2, 3],  # combo_type = 0
+    "LST1_M1": [1, 2],  # combo_type = 1
+    "LST1_M2": [1, 3],  # combo_type = 2
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
 }
 
 # The pandas multi index to classify the events simulated by different
@@ -62,7 +64,7 @@ NOMINAL_FOCLEN_LST = 28 * u.m
 EFFECTIVE_FOCLEN_LST = 29.30565 * u.m
 
 # The upper limit of the trigger time differences of consecutive events,
-# allowed when calculating the ON time and dead time correction factor
+# used when calculating the ON time and dead time correction factor
 TIME_DIFF_UPLIM = 0.1 * u.s
 
 # The LST-1 and MAGIC readout dead times
@@ -85,10 +87,11 @@ def format_dict(input_dict):
         The formatted dictionary
     """
 
-    pp = pprint.PrettyPrinter(indent=4, width=5, sort_dicts=False)
+    pp = pprint.PrettyPrinter(indent=4, width=1, sort_dicts=False)
 
     string = pp.pformat(input_dict)
 
+    string = re.sub(r"'\n\s+'", "", string)
     string = string.replace("{", " ").replace("}", " ")
     string = string.replace("'", "").replace(",", "")
 
@@ -101,8 +104,8 @@ def get_stereo_events(
     """
     Gets the stereo events surviving specified quality cuts.
 
-    It adds the telescope multiplicity and combination types to the
-    output data frame.
+    It also adds the telescope multiplicity `multiplicity` and
+    combination types `combo_type` to the output data frame.
 
     Parameters
     ----------
@@ -111,7 +114,7 @@ def get_stereo_events(
     quality_cuts: str
         Quality cuts applied to the input data
     group_index: list
-        Index to group telescope-wise events
+        Index to group telescope events
 
     Returns
     -------
@@ -129,9 +132,11 @@ def get_stereo_events(
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
     event_data_stereo.query("multiplicity == [2, 3]", inplace=True)
 
-    # Check the telescope combination types
+    # Check the total number of events
     n_events_total = len(event_data_stereo.groupby(group_index).size())
     logger.info(f"\nIn total {n_events_total} stereo events are found:")
+
+    n_events_per_combo = {}
 
     # Loop over every telescope combination type
     for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
@@ -153,18 +158,21 @@ def get_stereo_events(
         df_events["multiplicity"] = df_events.groupby(group_index).size()
         df_events.query(f"multiplicity == {multiplicity}", inplace=True)
 
+        # Assign the combination type
+        event_data_stereo.loc[df_events.index, "combo_type"] = combo_type
+
         n_events = len(df_events.groupby(group_index).size())
         percentage = 100 * n_events / n_events_total
 
-        logger.info(
-            f"\t{tel_combo} (type {combo_type}): "
-            f"{int(n_events)} events ({np.round(percentage, 1)}%)"
-        )
+        key = f"{tel_combo} (type {combo_type})"
+        value = f"{n_events:.0f} events ({percentage:.1f}%)"
 
-        event_data_stereo.loc[df_events.index, "combo_type"] = combo_type
+        n_events_per_combo[key] = value
 
-    # Convert the combo_type from float to int
     event_data_stereo = event_data_stereo.astype({"combo_type": int})
+
+    # Show the number of events per combination type
+    logger.info(format_dict(n_events_per_combo))
 
     return event_data_stereo
 
@@ -322,17 +330,8 @@ def load_lst_dl1_data_file(input_file):
         subset=["intensity", "time_gradient", "alt_tel", "az_tel"], inplace=True
     )
 
-    # Exclude the events with duplicated event IDs.
-    # ToBeChecked: if it still happens in recently processed data
-    event_ids, counts = np.unique(event_data["event_id"], return_counts=True)
-
-    if np.any(counts > 1):
-        event_ids_dup = event_ids[counts > 1].tolist()
-        event_data.query(f"event_id != {event_ids_dup}", inplace=True)
-
-        logger.warning(
-            f"WARNING: Excluded the events with duplicated event IDs: {event_ids_dup}"
-        )
+    # Exclude the events with duplicated event IDs
+    event_data.drop_duplicates(subset=["obs_id", "event_id"], keep=False, inplace=True)
 
     logger.info(f"LST-1: {len(event_data)} events")
 
@@ -353,7 +352,13 @@ def load_lst_dl1_data_file(input_file):
         inplace=True,
     )
 
-    # Change the units of parameters
+    event_data.set_index(["obs_id_lst", "event_id_lst", "tel_id"], inplace=True)
+    event_data.sort_index(inplace=True)
+
+    # Change the units to match with MAGIC and simulation data:
+    # length and width: from [deg] to [m]
+    # phi and psi: from [rad] to [deg]
+
     optics = pd.read_hdf(input_file, key="configuration/instrument/telescope/optics")
     focal_length = optics["equivalent_focal_length"][0]
 
@@ -363,15 +368,11 @@ def load_lst_dl1_data_file(input_file):
     event_data["phi"] = np.rad2deg(event_data["phi"])
     event_data["psi"] = np.rad2deg(event_data["psi"])
 
-    # Set the multi index
-    event_data.set_index(["obs_id_lst", "event_id_lst", "tel_id"], inplace=True)
-    event_data.sort_index(inplace=True)
-
     # Read the subarray description
     subarray = SubarrayDescription.from_hdf(input_file)
 
     if focal_length == NOMINAL_FOCLEN_LST:
-        # Set the effective focal length to the subarray
+        # Set the effective focal length to the subarray description
         subarray.tel[1].optics.equivalent_focal_length = EFFECTIVE_FOCLEN_LST
         subarray.tel[1].camera.geometry.frame = CameraFrame(
             focal_length=EFFECTIVE_FOCLEN_LST
@@ -427,21 +428,24 @@ def load_magic_dl1_data_files(input_dir):
 
     event_data = pd.concat(data_list)
 
+    # Drop the events whose event IDs are duplicated
     event_data.drop_duplicates(
         subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
     )
 
-    event_data.rename(
-        columns={"obs_id": "obs_id_magic", "event_id": "event_id_magic"}, inplace=True
-    )
-    event_data.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
-    event_data.sort_index(inplace=True)
-
-    tel_ids = np.unique(event_data.index.get_level_values("tel_id"))
+    tel_ids = np.unique(event_data["tel_id"])
 
     for tel_id in tel_ids:
         n_events = len(event_data.query(f"tel_id == {tel_id}"))
         logger.info(f"{TEL_NAMES[tel_id]}: {n_events} events")
+
+    # Rename the columns
+    event_data.rename(
+        columns={"obs_id": "obs_id_magic", "event_id": "event_id_magic"}, inplace=True
+    )
+
+    event_data.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
+    event_data.sort_index(inplace=True)
 
     # Read the subarray description from the first input file, assuming
     # that it is consistent with the others
