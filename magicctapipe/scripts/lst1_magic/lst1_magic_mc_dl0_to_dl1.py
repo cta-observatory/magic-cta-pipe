@@ -414,12 +414,12 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
     # Convert the telescope coordinate to the one relative to the center
     # of the LST-1 and MAGIC positions, and reset the telescope IDs
-    mean_position = u.Quantity(list(tel_positions.values())).mean(axis=0)
+    position_mean = u.Quantity(list(tel_positions.values())).mean(axis=0)
 
     tel_positions_lst1_magic = {
-        1: tel_positions[tel_id_lst1] - mean_position,  # LST-1
-        2: tel_positions[tel_id_m1] - mean_position,  # MAGIC-I
-        3: tel_positions[tel_id_m2] - mean_position,  # MAGIC-II
+        1: tel_positions[tel_id_lst1] - position_mean,  # LST-1
+        2: tel_positions[tel_id_m1] - position_mean,  # MAGIC-I
+        3: tel_positions[tel_id_m2] - position_mean,  # MAGIC-II
     }
 
     tel_descriptions_lst1_magic = {
