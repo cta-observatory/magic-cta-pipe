@@ -29,7 +29,7 @@ class EnergyRegressor:
     use_unsigned_features: bool
         If `True`, it trains RFs with unsigned features
     telescope_rfs: dict
-        Telescope-wise RFs
+        Telescope RFs
     """
 
     def __init__(self, settings={}, features=[], use_unsigned_features=None):
@@ -53,7 +53,7 @@ class EnergyRegressor:
 
     def fit(self, event_data):
         """
-        Train a RF per telescope.
+        Train a RF for every telescope.
 
         Parameters
         ----------
@@ -79,10 +79,11 @@ class EnergyRegressor:
             # Use logarithmic energy for the target values
             y_train = np.log10(df_events["true_energy"].to_numpy())
 
+            # Configure the RF regressor
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
@@ -123,6 +124,7 @@ class EnergyRegressor:
 
             # Apply the trained RF. Since the predicted values are in
             # logarithmic scale, here we convert them to the normal one.
+
             reco_energy = 10 ** telescope_rf.predict(x_predict)
 
             responses_per_estimator = []
@@ -136,7 +138,7 @@ class EnergyRegressor:
                 index=df_events.index,
             )
 
-            reco_params = reco_params.append(df_reco_energy)
+            reco_params = pd.concat([reco_params, df_reco_energy])
 
         reco_params.sort_index(inplace=True)
 
@@ -192,7 +194,7 @@ class DispRegressor:
     use_unsigned_features: bool
         If `True`, it trains RFs with unsigned features
     telescope_rfs: dict
-        Telescope-wise RFs
+        Telescope RFs
     """
 
     def __init__(self, settings={}, features=[], use_unsigned_features=None):
@@ -216,7 +218,7 @@ class DispRegressor:
 
     def fit(self, event_data):
         """
-        Trains a RF per telescope.
+        Trains a RF for every telescope.
 
         Parameters
         ----------
@@ -241,10 +243,11 @@ class DispRegressor:
 
             y_train = df_events["true_disp"].to_numpy()
 
+            # Configure the RF regressor
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
@@ -297,7 +300,7 @@ class DispRegressor:
                 index=df_events.index,
             )
 
-            reco_params = reco_params.append(df_reco_disp)
+            reco_params = pd.concat([reco_params, df_reco_disp])
 
         reco_params.sort_index(inplace=True)
 
@@ -353,7 +356,7 @@ class EventClassifier:
     use_unsigned_features: bool
         If `True`, it trains RFs with unsigned features
     telescope_rfs: dict
-        Telescope-wise RFs
+        Telescope RFs
     """
 
     def __init__(self, settings={}, features=[], use_unsigned_features=None):
@@ -377,7 +380,7 @@ class EventClassifier:
 
     def fit(self, event_data):
         """
-        Trains a RF per telescope.
+        Trains a RF for every telescope.
 
         Parameters
         ----------
@@ -402,10 +405,11 @@ class EventClassifier:
 
             y_train = df_events["true_event_class"].to_numpy()
 
+            # Configure the RF classifier
             classifier = sklearn.ensemble.RandomForestClassifier(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
             classifier.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = classifier
@@ -461,7 +465,7 @@ class EventClassifier:
                 index=df_events.index,
             )
 
-            reco_params = reco_params.append(df_gammaness)
+            reco_params = pd.concat([reco_params, df_gammaness])
 
         reco_params.sort_index(inplace=True)
 
