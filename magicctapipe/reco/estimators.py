@@ -78,13 +78,12 @@ class EnergyRegressor:
 
             # Use logarithmic energy for the target values
             y_train = np.log10(df_events["true_energy"].to_numpy())
-            weights = df_events["event_weight"].to_numpy()
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
             logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
-            regressor.fit(x_train, y_train, sample_weight=weights)
+            regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
 
@@ -241,13 +240,12 @@ class DispRegressor:
                 x_train = np.abs(x_train)
 
             y_train = df_events["true_disp"].to_numpy()
-            weights = df_events["event_weight"].to_numpy()
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
             logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
-            regressor.fit(x_train, y_train, sample_weight=weights)
+            regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
 
@@ -403,13 +401,12 @@ class EventClassifier:
                 x_train = np.abs(x_train)
 
             y_train = df_events["true_event_class"].to_numpy()
-            weights = df_events["event_weight"].to_numpy()
 
             classifier = sklearn.ensemble.RandomForestClassifier(**self.settings)
 
             # Train a telescope RF
             logger.info(f"Training {TEL_NAMES[tel_id]} RF...")
-            classifier.fit(x_train, y_train, sample_weight=weights)
+            classifier.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = classifier
 

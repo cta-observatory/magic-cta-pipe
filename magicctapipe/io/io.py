@@ -55,10 +55,6 @@ TEL_COMBINATIONS = {
 # telescope pointing directions but have the same observation ID
 GROUP_INDEX_TRAIN = ["obs_id", "event_id", "true_alt", "true_az"]
 
-# Event weight for training RFs, but it is set to 1, meaning no weights.
-# ToBeChecked: what weights are best for training RFs?
-EVENT_WEIGHT = 1
-
 # The LST nominal and effective focal lengths
 NOMINAL_FOCLEN_LST = 28 * u.m
 EFFECTIVE_FOCLEN_LST = 29.30565 * u.m
@@ -525,8 +521,6 @@ def load_train_data_files(
 
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
-
-    event_data["event_weight"] = EVENT_WEIGHT
 
     event_data = get_stereo_events(event_data, group_index=GROUP_INDEX_TRAIN)
 
