@@ -90,6 +90,7 @@ def image_comparison(
     if max_events is not None:
         ids_to_compare = ids_to_compare[:max_events]
 
+    ids_to_compare.sort()
     print(len(ids_to_compare), "Events will be compared:", ids_to_compare)
 
     # we will now load the data files, and afterwards select the corresponding data for our events
@@ -263,15 +264,8 @@ def image_comparison(
             print(f"Number of pixels selected: {len(np.where(event_image_mcp != 0)[0])}")
 
             time_errors = False
-            if len(np.where(time_mask_pixels == True)[0]) == 0:
-                time_errors = False
-            else:
-                if np.any(
-                    time_diff >= 0.01
-                ):  
-                    # print(np.where(time_mask_pixels == True)[0])
-                    # print(f"Image time differences: {time_diff[time_mask_pixels]}")
-                    time_errors = True
+            if len(np.where(time_mask_pixels == True)[0]) > 3: #number of pixels that are allowed to have a >1% difference in time
+                time_errors = True
 
             if time_errors:
                 time_comparison.append(event.index.event_id)
@@ -379,11 +373,10 @@ def image_comparison(
                 # fig.savefig(f"{out_path}/image-comparison-{run_num}_{event.index.event_id}_M{tel_id}.pdf")
 
     print("Number of events compared:", len(ids_to_compare))
-    print("Number of events skipped:", skipped_count, \
-        "\nPercentage of events compared:", skipped_count/len(ids_to_compare))
+    print("Number of events skipped:", skipped_count)
     print("Number of events with image time errors after cleaning:", len(time_comparison), \
-        "\nPercentage of events after cleaning:", len(time_comparison)/(len(ids_to_compare)-skipped_count))
+        "\nPercentage of events after cleaning:", len(time_comparison)/(len(ids_to_compare)))
     print("Number of events with image charge errors after cleaning:", len(comparison), \
-        "\nPercentage of events after cleaning:", len(comparison)/(len(ids_to_compare)-skipped_count))
+        "\nPercentage of events after cleaning:", len(comparison)/(len(ids_to_compare)))
 
-    return comparison
+    return (comparison, time_comparison, len(ids_to_compare))
