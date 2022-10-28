@@ -19,7 +19,7 @@ LST:
 
     increase_psf:
         use: false
-        fraction: 0
+        fraction: null
 
     tailcuts_clean:
         picture_thresh: 8

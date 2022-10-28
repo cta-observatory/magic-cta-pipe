@@ -8,8 +8,7 @@ leakage parameters. It saves only the events that all the DL1 parameters
 are successfully reconstructed.
 
 Since it cannot identify the telescopes of the input file, please
-confirm that the telescope ID is correctly assigned to each telescope
-in the configuration file.
+assign a correct telescope ID to each telescope in the configuration.
 
 When saving data to an output file, the telescope IDs will be reset to
 the following ones to match with those of real data:
@@ -84,19 +83,21 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         Configuration for the LST-1 + MAGIC analysis
     """
 
-    allowed_tel_ids = config["mc_tel_ids"]
-    logger.info(format_dict(allowed_tel_ids))
+    assigned_tel_ids = config["mc_tel_ids"]
 
-    tel_id_lst1 = allowed_tel_ids["LST-1"]
-    tel_id_m1 = allowed_tel_ids["MAGIC-I"]
-    tel_id_m2 = allowed_tel_ids["MAGIC-II"]
+    logger.info("\nAssigned telescope IDs:")
+    logger.info(format_dict(assigned_tel_ids))
+
+    tel_id_lst1 = assigned_tel_ids["LST-1"]
+    tel_id_m1 = assigned_tel_ids["MAGIC-I"]
+    tel_id_m2 = assigned_tel_ids["MAGIC-II"]
 
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
     event_source = EventSource(
         input_file,
-        allowed_tels=list(allowed_tel_ids.values()),
+        allowed_tels=list(assigned_tel_ids.values()),
         focal_length_choice="effective",
     )
 
@@ -106,14 +107,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     tel_descriptions = subarray.tel
     tel_positions = subarray.positions
 
-    logger.info("\nSubarray configuration:")
+    logger.info("\nSubarray description:")
     logger.info(format_dict(tel_descriptions))
 
     camera_geoms = {}
     for tel_id, telescope in tel_descriptions.items():
         camera_geoms[tel_id] = telescope.camera.geometry
 
-    # Configure the LST calibrator
+    # Configure the LST event processors
     config_lst = config["LST"]
 
     logger.info("\nLST image extractor:")
@@ -128,40 +129,37 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
-    # Configure the LST image cleaning
+    logger.info("\nLST NSB modifier:")
+    logger.info(format_dict(config_lst["increase_nsb"]))
+
+    logger.info("\nLST PSF modifier:")
+    logger.info(format_dict(config_lst["increase_psf"]))
+
     increase_nsb = config_lst["increase_nsb"].pop("use")
     increase_psf = config_lst["increase_psf"].pop("use")
 
     if increase_nsb:
-        logger.info("\nLST NSB modifier:")
-        logger.info(format_dict(config_lst["increase_nsb"]))
-
         rng = np.random.default_rng(obs_id)
 
     if increase_psf:
-        logger.info("\nLST PSF modifier:")
-        logger.info(format_dict(config_lst["increase_psf"]))
-
         set_numba_seed(obs_id)
 
     logger.info("\nLST tailcuts cleaning:")
     logger.info(format_dict(config_lst["tailcuts_clean"]))
 
+    logger.info("\nLST time delta cleaning:")
+    logger.info(format_dict(config_lst["time_delta_cleaning"]))
+
+    logger.info("\nLST dynamic cleaning:")
+    logger.info(format_dict(config_lst["dynamic_cleaning"]))
+
     use_time_delta_cleaning = config_lst["time_delta_cleaning"].pop("use")
     use_dynamic_cleaning = config_lst["dynamic_cleaning"].pop("use")
+
     use_only_main_island = config_lst["use_only_main_island"]
-
-    if use_time_delta_cleaning:
-        logger.info("\nLST time delta cleaning:")
-        logger.info(format_dict(config_lst["time_delta_cleaning"]))
-
-    if use_dynamic_cleaning:
-        logger.info("\nLST dynamic cleaning:")
-        logger.info(format_dict(config_lst["dynamic_cleaning"]))
-
     logger.info(f"\nLST use only main island: {use_only_main_island}")
 
-    # Configure the MAGIC calibrator
+    # Configure the MAGIC event processor
     config_magic = config["MAGIC"]
 
     logger.info("\nMAGIC image extractor:")
@@ -176,13 +174,11 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         subarray=subarray,
     )
 
+    logger.info("\nMAGIC charge correction:")
+    logger.info(format_dict(config_magic["charge_correction"]))
+
     use_charge_correction = config_magic["charge_correction"].pop("use")
 
-    if use_charge_correction:
-        logger.info("\nMAGIC charge correction:")
-        logger.info(format_dict(config_magic["charge_correction"]))
-
-    # Configure the MAGIC image cleaning
     if config_magic["magic_clean"]["find_hotpixels"]:
         logger.warning(
             "\nWARNING: Hot pixels do not exist in a simulation. "
@@ -341,8 +337,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 if np.isnan(timing_params.slope):
                     logger.info(
                         f"--> {event.count} event (event ID: {event.index.event_id}, "
-                        f"telescope {tel_id}) failed to extract finite "
-                        "timing parameters. Skipping..."
+                        f"telescope {tel_id}) failed to extract finite timing "
+                        "parameters. Skipping..."
                     )
                     continue
 
