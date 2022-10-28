@@ -239,7 +239,7 @@ def calculate_off_coordinates(
     on_coord_dec: astropy.units.quantity.Quantity
         Declination of the center of the ON region
     n_off_regions: int
-        Number of OFF regions to be extracted
+        Number of OFF regions to be created
 
     Returns
     -------
@@ -264,12 +264,13 @@ def calculate_off_coordinates(
     wobble_rotation = np.arctan2(numerator, denominator)
     wobble_rotation = Angle(wobble_rotation).wrap_at("360 deg")
 
-    # Calculate the rotation angles for the OFF regions
+    # Calculate the rotation angles for the OFF regions. Here we remove
+    # the angle 180 deg with which the OFF region will be created at the
+    # same coordinate as the ON region.
+
     rotation_step = 360 / (n_off_regions + 1)
     rotations_off = np.arange(0, 359, rotation_step) * u.deg
 
-    # Remove the angle 180 deg with which the OFF region is created
-    # at the same coordinate as the ON region
     rotations_off = rotations_off[rotations_off.to_value("deg") != 180]
     rotations_off += wobble_rotation
 
