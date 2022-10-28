@@ -159,7 +159,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     use_only_main_island = config_lst["use_only_main_island"]
     logger.info(f"\nLST use only main island: {use_only_main_island}")
 
-    # Configure the MAGIC event processor
+    # Configure the MAGIC event processors
     config_magic = config["MAGIC"]
 
     logger.info("\nMAGIC image extractor:")
