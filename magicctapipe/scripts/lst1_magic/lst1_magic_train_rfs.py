@@ -40,7 +40,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
-from magicctapipe.io import format_dict, load_train_data_files
+from magicctapipe.io import format_object, load_train_data_files
 from magicctapipe.io.io import GROUP_INDEX_TRAIN, TEL_NAMES
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
@@ -117,7 +117,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     gamma_offaxis = config_rf["gamma_offaxis"]
 
     logger.info("\nGamma off-axis angles allowed:")
-    logger.info(gamma_offaxis)
+    logger.info(format_object(gamma_offaxis))
 
     # Load the input files
     logger.info(f"\nInput directory: {input_dir}")
@@ -127,11 +127,11 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     )
 
     # Configure the energy regressor
-    logger.info("\nRF settings:")
-    logger.info(format_dict(config_rf["settings"]))
+    logger.info("\nRF regressors:")
+    logger.info(format_object(config_rf["settings"]))
 
     logger.info("\nFeatures:")
-    logger.info(format_dict(config_rf["features"]))
+    logger.info(format_object(config_rf["features"]))
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
@@ -154,9 +154,10 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
         for tel_id, telescope_rf in energy_regressor.telescope_rfs.items():
 
             importances = telescope_rf.feature_importances_.round(5)
+            importances = dict(zip(energy_regressor.features, importances))
 
             logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            logger.info(format_dict(dict(zip(energy_regressor.features, importances))))
+            logger.info(format_object(importances))
 
         # Save the trained RFs
         if use_unsigned_features:
@@ -190,7 +191,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     gamma_offaxis = config_rf["gamma_offaxis"]
 
     logger.info("\nGamma off-axis angles allowed:")
-    logger.info(gamma_offaxis)
+    logger.info(format_object(gamma_offaxis))
 
     # Load the input files
     logger.info(f"\nInput directory: {input_dir}")
@@ -200,11 +201,11 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     )
 
     # Configure the DISP regressor
-    logger.info("\nRF settings:")
-    logger.info(format_dict(config_rf["settings"]))
+    logger.info("\nRF regressors:")
+    logger.info(format_object(config_rf["settings"]))
 
     logger.info("\nFeatures:")
-    logger.info(format_dict(config_rf["features"]))
+    logger.info(format_object(config_rf["features"]))
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
@@ -227,9 +228,10 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
         for tel_id, telescope_rf in disp_regressor.telescope_rfs.items():
 
             importances = telescope_rf.feature_importances_.round(5)
+            importances = dict(zip(disp_regressor.features, importances))
 
             logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            logger.info(format_dict(dict(zip(disp_regressor.features, importances))))
+            logger.info(format_object(importances))
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
@@ -267,7 +269,7 @@ def train_event_classifier(
     gamma_offaxis = config_rf["gamma_offaxis"]
 
     logger.info("\nGamma off-axis angles allowed:")
-    logger.info(gamma_offaxis)
+    logger.info(format_object(gamma_offaxis))
 
     # Load the input gamma MC data files
     logger.info(f"\nInput gamma MC directory: {input_dir_gamma}")
@@ -284,11 +286,11 @@ def train_event_classifier(
     )
 
     # Configure the event classifier
-    logger.info("\nRF settings:")
-    logger.info(format_dict(config_rf["settings"]))
+    logger.info("\nRF classifiers:")
+    logger.info(format_object(config_rf["settings"]))
 
     logger.info("\nFeatures:")
-    logger.info(format_dict(config_rf["features"]))
+    logger.info(format_object(config_rf["features"]))
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
@@ -323,16 +325,17 @@ def train_event_classifier(
 
         df_train = pd.concat([df_gamma, df_proton])
 
-        # Train the RFS
+        # Train the RFs
         event_classifier.fit(df_train)
 
         # Check the feature importance
         for tel_id, telescope_rf in event_classifier.telescope_rfs.items():
 
             importances = telescope_rf.feature_importances_.round(5)
+            importances = dict(zip(event_classifier.features, importances))
 
             logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            logger.info(format_dict(dict(zip(event_classifier.features, importances))))
+            logger.info(format_object(importances))
 
         # Save the trained RFs to an output file
         if use_unsigned_features:

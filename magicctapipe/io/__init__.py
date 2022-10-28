@@ -13,7 +13,7 @@ from .gadf import (
     create_pointing_hdu,
 )
 from .io import (
-    format_dict,
+    format_object,
     get_dl2_mean,
     get_stereo_events,
     load_dl2_data_file,
@@ -33,7 +33,7 @@ __all__ = [
     "create_gh_cuts_hdu",
     "create_gti_hdu",
     "create_pointing_hdu",
-    "format_dict",
+    "format_object",
     "get_dl2_mean",
     "get_stereo_events",
     "load_dl2_data_file",

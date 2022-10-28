@@ -24,7 +24,7 @@ from pyirf.utils import calculate_source_fov_offset, calculate_theta
 from magicctapipe.utils import calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
-    "format_dict",
+    "format_object",
     "get_stereo_events",
     "get_dl2_mean",
     "load_lst_dl1_data_file",
@@ -72,9 +72,9 @@ DEAD_TIME_LST = 7.6 * u.us
 DEAD_TIME_MAGIC = 26 * u.us
 
 
-def format_dict(input_dict):
+def format_object(input_object):
     """
-    Formats a dictionary to show its items.
+    Formats a object (dictionary or list) to show its elements.
 
     Parameters
     ----------
@@ -84,15 +84,16 @@ def format_dict(input_dict):
     Returns
     -------
     string: str
-        The formatted dictionary
+        The formatted object
     """
 
     pp = pprint.PrettyPrinter(indent=4, width=1, sort_dicts=False)
 
-    string = pp.pformat(input_dict)
+    string = pp.pformat(input_object)
 
     string = re.sub(r"'\n\s+'", "", string)
     string = string.replace("{", " ").replace("}", " ")
+    string = string.replace("[", " ").replace("]", " ")
     string = string.replace("'", "").replace(",", "")
 
     return string
@@ -172,7 +173,7 @@ def get_stereo_events(
     event_data_stereo = event_data_stereo.astype({"combo_type": int})
 
     # Show the number of events per combination type
-    logger.info(format_dict(n_events_per_combo))
+    logger.info(format_object(n_events_per_combo))
 
     return event_data_stereo
 
@@ -527,28 +528,16 @@ def load_train_data_files(
 
     event_data["event_weight"] = EVENT_WEIGHT
 
-    n_events_total = len(event_data.groupby(GROUP_INDEX_TRAIN).size())
-    logger.info(f"\nIn total {n_events_total} stereo events are found:")
+    event_data = get_stereo_events(event_data, group_index=GROUP_INDEX_TRAIN)
 
     data_train = {}
 
     # Loop over every telescope combination type
-    for tel_combo, tel_ids in TEL_COMBINATIONS.items():
+    for combo_type, tel_combo in enumerate(TEL_COMBINATIONS.keys()):
 
-        multiplicity = len(tel_ids)
+        df_events = event_data.query(f"combo_type == {combo_type}")
 
-        # Extract the events of the given combination type
-        df_events = event_data.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
-        ).copy()
-
-        df_events["multiplicity"] = df_events.groupby(GROUP_INDEX_TRAIN).size()
-        df_events.query(f"multiplicity == {multiplicity}", inplace=True)
-
-        n_events = len(df_events.groupby(GROUP_INDEX_TRAIN).size())
-        logger.info(f"\t{tel_combo}: {n_events} events")
-
-        if n_events > 0:
+        if not df_events.empty:
             data_train[tel_combo] = df_events
 
     return data_train

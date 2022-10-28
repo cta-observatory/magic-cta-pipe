@@ -51,7 +51,7 @@ import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, vstack
-from magicctapipe.io import create_gh_cuts_hdu, format_dict, load_mc_dl2_data_file
+from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
@@ -132,7 +132,7 @@ def create_irf(
         config_fov_bins = config_irf["fov_offset_bins"]
 
         logger.info("\nFov offset bins (linear scale):")
-        logger.info(format_dict(config_fov_bins))
+        logger.info(format_object(config_fov_bins))
 
         fov_bins_start = u.Quantity(config_fov_bins["start"])
         fov_bins_stop = u.Quantity(config_fov_bins["stop"])
@@ -243,7 +243,7 @@ def create_irf(
     config_mig_bins = config_irf["migration_bins"]
 
     logger.info("\nEnergy bins (log space):")
-    logger.info(format_dict(config_eng_bins))
+    logger.info(format_object(config_eng_bins))
 
     eng_bins_start = u.Quantity(config_eng_bins["start"])
     eng_bins_stop = u.Quantity(config_eng_bins["stop"])
@@ -255,7 +255,7 @@ def create_irf(
     )
 
     logger.info("\nMigration bins (log space):")
-    logger.info(format_dict(config_mig_bins))
+    logger.info(format_object(config_mig_bins))
 
     migration_bins = np.geomspace(
         config_mig_bins["start"], config_mig_bins["stop"], config_mig_bins["n_edges"]
@@ -265,7 +265,7 @@ def create_irf(
         config_src_bins = config_irf["source_offset_bins"]
 
         logger.info("\nSource offset bins (linear space):")
-        logger.info(format_dict(config_src_bins))
+        logger.info(format_object(config_src_bins))
 
         src_bins_start = u.Quantity(config_src_bins["start"])
         src_bins_stop = u.Quantity(config_src_bins["stop"])
@@ -280,7 +280,7 @@ def create_irf(
             config_bkg_bins = config_irf["bkg_fov_offset_bins"]
 
             logger.info("\nBackground FoV offset bins (linear space):")
-            logger.info(format_dict(config_bkg_bins))
+            logger.info(format_object(config_bkg_bins))
 
             bkg_bins_start = u.Quantity(config_bkg_bins["start"])
             bkg_bins_stop = u.Quantity(config_bkg_bins["stop"])
@@ -334,7 +334,7 @@ def create_irf(
         config_gh_cuts.pop("global_cut_value", None)
 
         logger.info("\nDynamic gammaness cuts:")
-        logger.info(format_dict(config_gh_cuts))
+        logger.info(format_object(config_gh_cuts))
 
         gh_efficiency = config_gh_cuts["efficiency"]
         gh_cut_min = config_gh_cuts["min_cut"]
@@ -424,7 +424,7 @@ def create_irf(
             config_theta_cuts.pop("global_cut_value", None)
 
             logger.info("\nDynamic theta cuts:")
-            logger.info(format_dict(config_theta_cuts))
+            logger.info(format_object(config_theta_cuts))
 
             theta_efficiency = config_theta_cuts["efficiency"]
             theta_cut_min = u.Quantity(config_theta_cuts["min_cut"])

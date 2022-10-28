@@ -54,7 +54,7 @@ from lstchain.image.modifier import (
     set_numba_seed,
 )
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import SimEventInfoContainer, format_dict
+from magicctapipe.io import SimEventInfoContainer, format_object
 from magicctapipe.utils import calculate_disp, calculate_impact
 from traitlets.config import Config
 
@@ -86,7 +86,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     assigned_tel_ids = config["mc_tel_ids"]
 
     logger.info("\nAssigned telescope IDs:")
-    logger.info(format_dict(assigned_tel_ids))
+    logger.info(format_object(assigned_tel_ids))
 
     tel_id_lst1 = assigned_tel_ids["LST-1"]
     tel_id_m1 = assigned_tel_ids["MAGIC-I"]
@@ -108,7 +108,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     tel_positions = subarray.positions
 
     logger.info("\nSubarray description:")
-    logger.info(format_dict(tel_descriptions))
+    logger.info(format_object(tel_descriptions))
 
     camera_geoms = {}
     for tel_id, telescope in tel_descriptions.items():
@@ -118,7 +118,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     config_lst = config["LST"]
 
     logger.info("\nLST image extractor:")
-    logger.info(format_dict(config_lst["image_extractor"]))
+    logger.info(format_object(config_lst["image_extractor"]))
 
     extractor_type_lst = config_lst["image_extractor"].pop("type")
     config_extractor_lst = {extractor_type_lst: config_lst["image_extractor"]}
@@ -130,10 +130,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     )
 
     logger.info("\nLST NSB modifier:")
-    logger.info(format_dict(config_lst["increase_nsb"]))
+    logger.info(format_object(config_lst["increase_nsb"]))
 
     logger.info("\nLST PSF modifier:")
-    logger.info(format_dict(config_lst["increase_psf"]))
+    logger.info(format_object(config_lst["increase_psf"]))
 
     increase_nsb = config_lst["increase_nsb"].pop("use")
     increase_psf = config_lst["increase_psf"].pop("use")
@@ -145,13 +145,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         set_numba_seed(obs_id)
 
     logger.info("\nLST tailcuts cleaning:")
-    logger.info(format_dict(config_lst["tailcuts_clean"]))
+    logger.info(format_object(config_lst["tailcuts_clean"]))
 
     logger.info("\nLST time delta cleaning:")
-    logger.info(format_dict(config_lst["time_delta_cleaning"]))
+    logger.info(format_object(config_lst["time_delta_cleaning"]))
 
     logger.info("\nLST dynamic cleaning:")
-    logger.info(format_dict(config_lst["dynamic_cleaning"]))
+    logger.info(format_object(config_lst["dynamic_cleaning"]))
 
     use_time_delta_cleaning = config_lst["time_delta_cleaning"].pop("use")
     use_dynamic_cleaning = config_lst["dynamic_cleaning"].pop("use")
@@ -163,7 +163,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     config_magic = config["MAGIC"]
 
     logger.info("\nMAGIC image extractor:")
-    logger.info(format_dict(config_magic["image_extractor"]))
+    logger.info(format_object(config_magic["image_extractor"]))
 
     extractor_type_magic = config_magic["image_extractor"].pop("type")
     config_extractor_magic = {extractor_type_magic: config_magic["image_extractor"]}
@@ -175,7 +175,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     )
 
     logger.info("\nMAGIC charge correction:")
-    logger.info(format_dict(config_magic["charge_correction"]))
+    logger.info(format_object(config_magic["charge_correction"]))
 
     use_charge_correction = config_magic["charge_correction"].pop("use")
 
@@ -187,7 +187,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
         config_magic["magic_clean"].update({"find_hotpixels": False})
 
     logger.info("\nMAGIC image cleaning:")
-    logger.info(format_dict(config_magic["magic_clean"]))
+    logger.info(format_object(config_magic["magic_clean"]))
 
     magic_clean = {
         tel_id_m1: MAGICClean(camera_geoms[tel_id_m1], config_magic["magic_clean"]),

@@ -38,7 +38,7 @@ from magicctapipe.io import (
     create_gh_cuts_hdu,
     create_gti_hdu,
     create_pointing_hdu,
-    format_dict,
+    format_object,
     load_dl2_data_file,
     load_irf_files,
 )
@@ -85,10 +85,10 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
     logger.info("\nGrid points (cosZd, Az):")
-    logger.info(format_dict(irf_data["grid_points"]))
+    logger.info(format_object(irf_data["grid_points"]))
 
     logger.info("\nExtra header:")
-    logger.info(format_dict(extra_header))
+    logger.info(format_object(extra_header))
 
     # Load the input DL2 data file
     logger.info(f"\nInput DL2 data file:\n{input_file_dl2}")

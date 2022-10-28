@@ -44,7 +44,7 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
-from magicctapipe.io import format_dict, get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io import format_object, get_stereo_events, save_pandas_data_in_table
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
@@ -137,7 +137,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     tel_positions = subarray.positions
 
     logger.info("\nTelescope positions:")
-    logger.info(format_dict(tel_positions))
+    logger.info(format_object(tel_positions))
 
     # Apply the event cuts
     logger.info(f"\nMAGIC-only analysis: {magic_only_analysis}")
