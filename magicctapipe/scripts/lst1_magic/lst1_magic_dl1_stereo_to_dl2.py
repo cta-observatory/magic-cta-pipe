@@ -236,7 +236,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
         reco_params = pd.concat([reco_params, df_events])
 
     reco_params.reset_index(level="flip", inplace=True)
-    reco_params.drop("flip", axis=1, inplace=True)
+    reco_params.drop(["flip", "combo_type"], axis=1, inplace=True)
     reco_params.sort_index(inplace=True)
 
     return reco_params
@@ -353,9 +353,9 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     del event_classifier
 
-    # In case of MAGIC-only analyses, here we drop the `time_sec` and
-    # `time_nanosec`` parameters but instead set the `timestamp``
-    # parameter, since the precise timestamps are not needed anymore
+    # In case of MAGIC-only analyses, here we drop `time_sec` and
+    # `time_nanosec` but instead set `timestamp`, since the precise
+    # timestamps are not needed anymore
     if "time_sec" in event_data.columns:
 
         time_sec = u.Quantity(event_data["time_sec"], unit="s")
