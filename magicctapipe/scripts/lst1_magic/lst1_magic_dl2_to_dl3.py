@@ -184,7 +184,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus.append(edisp_hdu)
 
-    if len(irf_data["psf_table"]) > 1:
+    if len(irf_data["psf_table"]) > 0:
 
         # Interpolate the PSF table with a custom way, since there is a
         # bug in the function of pyirf v0.6.0 about the renormalization
@@ -222,7 +222,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(psf_hdu)
 
-    if len(irf_data["background"]) > 1:
+    if len(irf_data["background"]) > 0:
 
         # Interpolate the background model
         logger.info("Interpolating the background model...")
