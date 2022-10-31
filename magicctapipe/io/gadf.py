@@ -145,7 +145,7 @@ def create_event_hdu(
     tel_list = [tel_combo.split("_") for tel_combo in tel_combos]
     tel_list_unique = np.unique(sum(tel_list, []))
 
-    instruments = "_".join(tel_list_unique).upper()
+    instruments = "_".join(tel_list_unique)
 
     # Transfer the RA/Dec directions to the galactic coordinate
     event_coords = SkyCoord(
