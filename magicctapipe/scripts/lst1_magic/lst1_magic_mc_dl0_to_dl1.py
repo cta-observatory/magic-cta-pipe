@@ -209,8 +209,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     azimuth = Angle(sim_config["max_az"]).wrap_at("360 deg").degree
 
     output_file = (
-        f"{output_dir}/dl1_{particle_type}_zd_{zenith:.3f}deg_"
-        f"az_{azimuth:.3f}deg_LST-1_MAGIC_run{obs_id}.h5"
+        f"{output_dir}/dl1_{particle_type}_zd_{zenith.round(3)}deg_"
+        f"az_{azimuth.round(3)}deg_LST-1_MAGIC_run{obs_id}.h5"
     )
 
     # Loop over every shower event
