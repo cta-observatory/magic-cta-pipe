@@ -19,7 +19,7 @@ LST:
 
     increase_psf:
         use: false
-        fraction: 0
+        fraction: null
 
     tailcuts_clean:
         picture_thresh: 8
@@ -48,7 +48,7 @@ MAGIC:
 
     charge_correction:
         use: true
-        correction_factor: 1.143
+        factor: 1.143
 
     magic_clean:
         use_time: true
@@ -194,8 +194,8 @@ event_classifier:
 create_irf:
     quality_cuts: "disp_diff_mean < 0.22"
     event_type: "software"  # select "software", "software_only_3tel", "magic_only" or "hardware"
-    dl2_weight_type: "simple"  # select "simple", "variance" or "intensity"
-    irf_obs_time: "50 h"  # used when creating a background HDU
+    weight_type_dl2: "simple"  # select "simple", "variance" or "intensity"
+    obs_time_irf: "50 h"  # used when creating a background HDU
 
     energy_bins:  # log space
         start: "0.01 TeV"

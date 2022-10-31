@@ -3,20 +3,21 @@
 
 """
 This script trains energy, DISP regressors and event classifiers with
-DL1-stereo events. The RFs are trained per telescope combination type
-and per telescope. When training event classifiers, gamma or proton MC
-events are randomly extracted so that the RFs are trained with the same
-number of events by both types of primary particles.
+DL1-stereo events. The input events are separated by the telescope
+combination types at first, and then telescope-wise RFs are trained for
+every combination type. When training event classifiers, gamma or proton
+MC events are randomly extracted so that the RFs are trained with the
+same number of events by both types of primary particles.
 
 Please specify the RF type that will be trained by using
-"--train-energy", "--train-disp" and "--train-classifier" arguments.
+`--train-energy`, `--train-disp` and `--train-classifier` arguments.
 
-If the "--use-unsigned" argument is given, the RFs will be trained with
+If the `--use-unsigned` argument is given, the RFs will be trained with
 unsigned features.
 
 Before running the script, it would be better to merge input MC files
 per telescope pointing direction with the following script:
-"magic-cta-pipe/magicctapipe/scripts/lst1_magic/merge_hdf_files.py"
+`magic-cta-pipe/magicctapipe/scripts/lst1_magic/merge_hdf_files.py`
 
 Usage:
 $ python lst1_magic_train_rfs.py
@@ -39,22 +40,60 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
-from magicctapipe.io import load_train_data_files
-from magicctapipe.io.io import TEL_NAMES
+from magicctapipe.io import format_object, load_train_data_files
+from magicctapipe.io.io import GROUP_INDEX_TRAIN, TEL_NAMES
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
-__all__ = ["train_energy_regressor", "train_disp_regressor", "train_event_classifier"]
+__all__ = [
+    "get_events_at_random",
+    "train_energy_regressor",
+    "train_disp_regressor",
+    "train_event_classifier",
+]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-# True event class of gamma and proton MC events
+# True event class of gamma and proton MCs
 EVENT_CLASS_GAMMA = 0
 EVENT_CLASS_PROTON = 1
 
 # Set the random seed
 random.seed(1000)
+
+
+def get_events_at_random(event_data, n_events_random):
+    """
+    Extracts a given number of shower events randomly.
+
+    Parameters
+    ----------
+    event_data: pandas.core.frame.DataFrame
+        Data frame of shower events
+    n_events_random: int or float
+        Number of events to be extracted randomly
+
+    Returns
+    -------
+    event_data_selected: pandas.core.frame.DataFrame
+        Data frame of the shower events extracted randomly
+    """
+
+    # Get the unique multi indices
+    multi_indices_unique = np.unique(event_data.index).tolist()
+
+    # Extract a given number of indices randomly
+    multi_indices_random = pd.MultiIndex.from_tuples(
+        tuples=random.sample(multi_indices_unique, n_events_random),
+        names=event_data.index.names,
+    )
+
+    # Extract the events of the random indices
+    event_data_selected = event_data.loc[multi_indices_random]
+    event_data_selected.sort_index(inplace=True)
+
+    return event_data_selected
 
 
 def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=False):
@@ -77,21 +116,22 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
     gamma_offaxis = config_rf["gamma_offaxis"]
 
+    logger.info("\nGamma off-axis angles allowed:")
+    logger.info(format_object(gamma_offaxis))
+
     # Load the input files
-    logger.info(f"\nInput directory:\n{input_dir}")
+    logger.info(f"\nInput directory: {input_dir}")
 
     event_data_train = load_train_data_files(
         input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
     )
 
     # Configure the energy regressor
-    logger.info("\nRF settings:")
-    for key, value in config_rf["settings"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info("\nRF regressors:")
+    logger.info(format_object(config_rf["settings"]))
 
     logger.info("\nFeatures:")
-    for i_param, feature in enumerate(config_rf["features"], start=1):
-        logger.info(f"\t{i_param}: {feature}")
+    logger.info(format_object(config_rf["features"]))
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
@@ -99,11 +139,10 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
         config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
-    # Loop over every telescope combination type
+    # Create the output directory
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    output_files = []
-
+    # Loop over every telescope combination type
     for tel_combo, df_train in event_data_train.items():
 
         logger.info(f"\nEnergy regressors for the '{tel_combo}' type:")
@@ -114,24 +153,21 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
         # Check the feature importance
         for tel_id, telescope_rf in energy_regressor.telescope_rfs.items():
 
+            importances = telescope_rf.feature_importances_.round(5)
+            importances = dict(zip(energy_regressor.features, importances))
+
             logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            importances = telescope_rf.feature_importances_
+            logger.info(format_object(importances))
 
-            for feature, importance in zip(energy_regressor.features, importances):
-                logger.info(f"\t{feature}: {importance.round(5)}")
-
-        # Save the trained RFs to an output file
+        # Save the trained RFs
         if use_unsigned_features:
             output_file = f"{output_dir}/energy_regressors_{tel_combo}_unsigned.joblib"
         else:
             output_file = f"{output_dir}/energy_regressors_{tel_combo}.joblib"
 
         energy_regressor.save(output_file)
-        output_files.append(output_file)
 
-    logger.info("\nOutput file(s):")
-    for output_file in output_files:
-        logger.info(output_file)
+        logger.info(f"\nOutput file: {output_file}")
 
 
 def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=False):
@@ -154,21 +190,22 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
     gamma_offaxis = config_rf["gamma_offaxis"]
 
+    logger.info("\nGamma off-axis angles allowed:")
+    logger.info(format_object(gamma_offaxis))
+
     # Load the input files
-    logger.info(f"\nInput directory:\n{input_dir}")
+    logger.info(f"\nInput directory: {input_dir}")
 
     event_data_train = load_train_data_files(
         input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
     )
 
     # Configure the DISP regressor
-    logger.info("\nRF settings:")
-    for key, value in config_rf["settings"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info("\nRF regressors:")
+    logger.info(format_object(config_rf["settings"]))
 
     logger.info("\nFeatures:")
-    for i_param, feature in enumerate(config_rf["features"], start=1):
-        logger.info(f"\t{i_param}: {feature}")
+    logger.info(format_object(config_rf["features"]))
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
@@ -176,11 +213,10 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
         config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
-    # Loop over every telescope combination type
+    # Create the output directory
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    output_files = []
-
+    # Loop over every telescope combination type
     for tel_combo, df_train in event_data_train.items():
 
         logger.info(f"\nDISP regressors for the '{tel_combo}' type:")
@@ -191,11 +227,11 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
         # Check the feature importance
         for tel_id, telescope_rf in disp_regressor.telescope_rfs.items():
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            importances = telescope_rf.feature_importances_
+            importances = telescope_rf.feature_importances_.round(5)
+            importances = dict(zip(disp_regressor.features, importances))
 
-            for feature, importance in zip(disp_regressor.features, importances):
-                logger.info(f"\t{feature}: {importance.round(5)}")
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+            logger.info(format_object(importances))
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
@@ -204,11 +240,8 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
             output_file = f"{output_dir}/disp_regressors_{tel_combo}.joblib"
 
         disp_regressor.save(output_file)
-        output_files.append(output_file)
 
-    logger.info("\nOutput file(s):")
-    for output_file in output_files:
-        logger.info(output_file)
+        logger.info(f"\nOutput file: {output_file}")
 
 
 def train_event_classifier(
@@ -235,40 +268,40 @@ def train_event_classifier(
 
     gamma_offaxis = config_rf["gamma_offaxis"]
 
+    logger.info("\nGamma off-axis angles allowed:")
+    logger.info(format_object(gamma_offaxis))
+
     # Load the input gamma MC data files
-    logger.info(f"\nInput gamma MC directory:\n{input_dir_gamma}")
+    logger.info(f"\nInput gamma MC directory: {input_dir_gamma}")
 
     event_data_gamma = load_train_data_files(
         input_dir_gamma, gamma_offaxis["min"], gamma_offaxis["max"], EVENT_CLASS_GAMMA
     )
 
     # Load the input proton MC data files
-    logger.info(f"\nInput proton MC directory:\n{input_dir_proton}")
+    logger.info(f"\nInput proton MC directory: {input_dir_proton}")
 
     event_data_proton = load_train_data_files(
         input_dir_proton, true_event_class=EVENT_CLASS_PROTON
     )
 
     # Configure the event classifier
-    logger.info("\nRF settings:")
-    for key, value in config_rf["settings"].items():
-        logger.info(f"\t{key}: {value}")
+    logger.info("\nRF classifiers:")
+    logger.info(format_object(config_rf["settings"]))
 
     logger.info("\nFeatures:")
-    for i_param, feature in enumerate(config_rf["features"], start=1):
-        logger.info(f"\t{i_param}: {feature}")
+    logger.info(format_object(config_rf["features"]))
 
-    logger.info(f"\n\nUse unsigned features: {use_unsigned_features}")
+    logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     event_classifier = EventClassifier(
         config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
-    # Loop over every telescope combination type
+    # Create the output directory
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    output_files = []
-
+    # Loop over every telescope combination type
     common_combinations = set(event_data_gamma.keys()) & set(event_data_proton.keys())
 
     for tel_combo in sorted(common_combinations):
@@ -279,47 +312,30 @@ def train_event_classifier(
         df_proton = event_data_proton[tel_combo]
 
         # Adjust the number of training samples
-        multi_indices_gamma = np.unique(df_gamma.index).tolist()
-        multi_indices_proton = np.unique(df_proton.index).tolist()
-
-        n_events_gamma = len(multi_indices_gamma)
-        n_events_proton = len(multi_indices_proton)
+        n_events_gamma = len(df_gamma.groupby(GROUP_INDEX_TRAIN).size())
+        n_events_proton = len(df_proton.groupby(GROUP_INDEX_TRAIN).size())
 
         if n_events_gamma > n_events_proton:
-            logger.info(
-                f"Extracting {n_events_proton} out of {n_events_gamma} gamma events..."
-            )
-            multi_indices_random = pd.MultiIndex.from_tuples(
-                tuples=random.sample(multi_indices_gamma, n_events_proton),
-                names=df_gamma.index.names,
-            )
-            df_gamma = df_gamma.loc[multi_indices_random]
-            df_gamma.sort_index(inplace=True)
+            logger.info(f"Extracting {n_events_proton} gamma MC events...")
+            df_gamma = get_events_at_random(df_gamma, n_events_proton)
 
         elif n_events_proton > n_events_gamma:
-            logger.info(
-                f"Extracting {n_events_gamma} out of {n_events_proton} proton events..."
-            )
-            multi_indices_random = pd.MultiIndex.from_tuples(
-                tuples=random.sample(multi_indices_proton, n_events_gamma),
-                names=df_proton.index.names,
-            )
-            df_proton = df_proton.loc[multi_indices_random]
-            df_proton.sort_index(inplace=True)
+            logger.info(f"Extracting {n_events_gamma} proton MC events...")
+            df_proton = get_events_at_random(df_proton, n_events_gamma)
 
-        df_train = df_gamma.append(df_proton)
+        df_train = pd.concat([df_gamma, df_proton])
 
-        # Train the RFS
+        # Train the RFs
         event_classifier.fit(df_train)
 
         # Check the feature importance
         for tel_id, telescope_rf in event_classifier.telescope_rfs.items():
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            importances = telescope_rf.feature_importances_
+            importances = telescope_rf.feature_importances_.round(5)
+            importances = dict(zip(event_classifier.features, importances))
 
-            for feature, importance in zip(event_classifier.features, importances):
-                logger.info(f"\t{feature}: {importance.round(5)}")
+            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+            logger.info(format_object(importances))
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
@@ -328,11 +344,8 @@ def train_event_classifier(
             output_file = f"{output_dir}/event_classifiers_{tel_combo}.joblib"
 
         event_classifier.save(output_file)
-        output_files.append(output_file)
 
-    logger.info("\nOutput file(s):")
-    for output_file in output_files:
-        logger.info(output_file)
+        logger.info(f"\nOutput file: {output_file}")
 
 
 def main():
@@ -431,7 +444,7 @@ def main():
 
     if not any([args.train_energy, args.train_disp, args.train_classifier]):
         raise ValueError(
-            "The RF type is not specified. Please see the usage with '--help' option."
+            "The RF type is not specified. Please see the usage with `--help`."
         )
 
     logger.info("\nDone.")

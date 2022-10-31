@@ -39,8 +39,8 @@ def calculate_disp(
     camera_frame,
 ):
     """
-    Calculates the DISP parameter, i.e., the angular distance between an
-    event arrival direction and the center of gravity (CoG) of the
+    Calculates the DISP parameter, i.e., the angular distance between
+    the event arrival direction and the Center of Gravity (CoG) of the
     shower image.
 
     Parameters
@@ -66,10 +66,10 @@ def calculate_disp(
         DISP parameter
     """
 
-    # Transform the image CoG position to the Alt/Az direction
     tel_pointing = AltAz(alt=pointing_alt, az=pointing_az)
     tel_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
+    # Transform the image CoG position to the Alt/Az direction
     cog_coord = SkyCoord(cog_x, cog_y, frame=camera_frame)
     cog_coord = cog_coord.transform_to(tel_frame).altaz
 
@@ -95,11 +95,11 @@ def calculate_impact(
     Calculates the impact parameter, i.e., the closest distance between
     a shower axis and a telescope position.
 
-    It uses equations derived from a hand calculation, but it is
-    confirmed that the result is consistent with what is done in MARS.
+    It uses the equations derived from a hand calculation, but the
+    result is consistent with what calculated by MARS.
 
-    In ctapipe v0.16.0 a function to calculate the impact parameter is
-    implemented, so we may replace it to the official one in future.
+    Since ctapipe v0.16.0 a function to calculate the impact parameter
+    is implemented, so we may replace it to the official one in future.
 
     Parameters
     ----------
@@ -146,8 +146,8 @@ def calculate_mean_direction(lon, lat, unit, weights=None):
     """
     Calculates the mean direction per shower event.
 
-    Please note that the input data is supposed to be the pandas Series
-    with the index (obs_id, event_id) to group telescope-wise events.
+    Please note that the input is supposed to be the pandas Series with
+    the multi index (`obs_id`, `event_id`) to group telescope events.
 
     Parameters
     ----------
@@ -201,13 +201,10 @@ def calculate_mean_direction(lon, lat, unit, weights=None):
         z_coord_mean = group_sum["weighted_z_coord"] / group_sum["weight"]
 
     coord_mean = SkyCoord(
-        x=x_coord_mean.to_numpy(),
-        y=y_coord_mean.to_numpy(),
-        z=z_coord_mean.to_numpy(),
-        representation_type="cartesian",
+        x=x_coord_mean, y=y_coord_mean, z=z_coord_mean, representation_type="cartesian"
     )
 
-    # Transform the cartesian to the spherical coordinate
+    # Transform to the spherical coordinate
     coord_mean = coord_mean.spherical
 
     lon_mean = pd.Series(data=coord_mean.lon.to_value(unit), index=x_coord_mean.index)
@@ -242,7 +239,7 @@ def calculate_off_coordinates(
     on_coord_dec: astropy.units.quantity.Quantity
         Declination of the center of the ON region
     n_off_regions: int
-        Number of OFF regions to be extracted
+        Number of OFF regions to be created
 
     Returns
     -------
@@ -265,24 +262,27 @@ def calculate_off_coordinates(
     denominator = np.cos(pointing_dec) * np.sin(ra_diff)
 
     wobble_rotation = np.arctan2(numerator, denominator)
-    wobble_rotation = Angle(wobble_rotation).wrap_at(360 * u.deg)
+    wobble_rotation = Angle(wobble_rotation).wrap_at("360 deg")
 
-    # Calculate the OFF coordinates
+    # Calculate the rotation angles for the OFF regions. Here we remove
+    # the angle 180 deg with which the OFF region will be created at the
+    # same coordinate as the ON region.
+
     rotation_step = 360 / (n_off_regions + 1)
     rotations_off = np.arange(0, 359, rotation_step) * u.deg
 
-    # Remove the angle 180 degree with which the OFF region is created
-    # at the same coordinate as the ON region
-    rotations_off = rotations_off[rotations_off.to_value(u.deg) != 180]
+    rotations_off = rotations_off[rotations_off.to_value("deg") != 180]
     rotations_off += wobble_rotation
 
     off_coords = {}
 
+    # Loop over every rotation angle
     for i_off, rotation in enumerate(rotations_off, start=1):
 
         skyoffset_frame = SkyOffsetFrame(origin=wobble_coord, rotation=-rotation)
 
-        off_coord = SkyCoord(wobble_offset, u.Quantity(0, u.deg), frame=skyoffset_frame)
+        # Calculate the OFF coordinate
+        off_coord = SkyCoord(wobble_offset, "0 deg", frame=skyoffset_frame)
         off_coord = off_coord.transform_to("icrs")
 
         off_coords[i_off] = off_coord
@@ -316,6 +316,7 @@ def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
     location = EarthLocation.from_geodetic(lon=LON_ORM, lat=LAT_ORM, height=HEIGHT_ORM)
     horizon_frames = AltAz(location=location, obstime=obs_time)
 
+    # Transform to the RA/Dec coordinate
     event_coord = SkyCoord(alt=alt, az=az, frame=horizon_frames)
     event_coord = event_coord.transform_to("icrs")
 

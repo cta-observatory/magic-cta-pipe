@@ -18,13 +18,14 @@ the same observation ID and stored in the same directory as the input
 subrun file. Then, it reads their drive reports and uses the information
 to reconstruct the telescope pointing direction. Since the accuracy of
 the reconstruction improves, it is recommended to store all the subrun
-files in the same directory. If the "--process-run" argument is given,
-it not only reads the drive reports but also processes all the events of
-the subrun files at once.
+files in the same directory.
+
+If the `--process-run` argument is given, it not only reads the drive
+reports but also processes all the events of the subrun files at once.
 
 Please note that it is also possible to process SUM trigger data with
 this script, but since the MaTaJu cleaning is not yet implemented in
-this pipeline, it applies the standard MARS-like cleaning instead.
+this pipeline, it applies the standard cleaning instead.
 
 Usage:
 $ python magic_calib_to_dl1.py
@@ -55,7 +56,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer
+from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -64,7 +65,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-# Ignore RuntimeWarnings appeared during the image cleaning
+# Ignore runtime warnings appeared during the image cleaning
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
 # The pedestal types to find bad RMS pixels
@@ -73,7 +74,8 @@ PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     """
-    Processes MAGIC calibrated events and computes the DL1 parameters.
+    Processes the events of MAGIC calibrated data and computes the DL1
+    parameters.
 
     Parameters
     ----------
@@ -90,7 +92,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     """
 
     # Load the input file
-    logger.info(f"\nInput file:\n{input_file}")
+    logger.info(f"\nInput file: {input_file}")
 
     event_source = MAGICEventSource(input_file, process_run=process_run)
 
@@ -112,11 +114,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     if is_sum_trigger:
         logger.warning(
             "\nWARNING: The MaTaJu cleaning is not yet implemented. "
-            "Will apply the standard MARS-like image cleaning."
+            "Will apply the standard image cleaning instead."
         )
 
     if not is_simulation:
-
         logger.info("\nThe following files are found to read drive reports:")
         for subrun_file in event_source.file_list_drive:
             logger.info(subrun_file)
@@ -133,8 +134,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     config_clean = config["MAGIC"]["magic_clean"]
 
     logger.info("\nMAGIC image cleaning:")
-    for key, value in config_clean.items():
-        logger.info(f"\t{key}: {value}")
+    logger.info(format_object(config_clean))
 
     magic_clean = MAGICClean(camera_geom, config_clean)
 
@@ -149,8 +149,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         regex = r"GA_M\d_(\S+)_\d_\d+_Y_*"
         input_file_name = Path(input_file).name
 
-        parser = re.findall(regex, input_file_name)[0]
-        output_file = f"{output_dir}/dl1_M{tel_id}_GA_{parser}.Run{obs_id}.h5"
+        zenith_range = re.findall(regex, input_file_name)[0]
+        output_file = f"{output_dir}/dl1_M{tel_id}_GA_{zenith_range}.Run{obs_id}.h5"
 
     else:
         if process_run:
@@ -169,8 +169,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
 
-            # Apply the image cleaning
             if config_clean["find_hotpixels"]:
+                # Find dead and bad RMS pixels
                 pixel_status = event.mon.tel[tel_id].pixel_status
                 dead_pixels = pixel_status.hardware_failing_pixels[0]
                 badrms_pixels = pixel_status.pedestal_failing_pixels[i_ped_type]
@@ -179,14 +179,15 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             else:
                 unsuitable_mask = None
 
+            # Apply the image cleaning
             signal_pixels, image, peak_time = magic_clean.clean_image(
                 event_image=event.dl1.tel[tel_id].image,
                 event_pulse_time=event.dl1.tel[tel_id].peak_time,
                 unsuitable_mask=unsuitable_mask,
             )
 
-            if not np.any(signal_pixels):
-                logger.warning(
+            if not any(signal_pixels):
+                logger.info(
                     f"--> {event.count} event (event ID: {event.index.event_id}) "
                     "could not survive the image cleaning. Skipping..."
                 )
@@ -199,10 +200,11 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             image_masked = image[signal_pixels]
             peak_time_masked = peak_time[signal_pixels]
 
-            if np.any(image_masked < 0):
-                logger.warning(
+            if any(image_masked < 0):
+                logger.info(
                     f"--> {event.count} event (event ID: {event.index.event_id}) "
-                    "cannot be parametrized due to negative charge pixels. Skipping..."
+                    "cannot be parametrized due to the pixels with negative charges. "
+                    "Skipping..."
                 )
                 continue
 
@@ -214,9 +216,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             )
 
             if np.isnan(timing_params.slope):
-                logger.warning(
+                logger.info(
                     f"--> {event.count} event (event ID: {event.index.event_id}) "
-                    "failed to get finite timing parameters. Skipping..."
+                    "failed to extract finite timing parameters. Skipping..."
                 )
                 continue
 
@@ -224,7 +226,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
             if is_simulation:
 
-                # Calculate the additional parameters
+                # Calculate additional parameters
                 true_disp = calculate_disp(
                     pointing_alt=event.pointing.tel[tel_id].altitude,
                     pointing_az=event.pointing.tel[tel_id].azimuth,
@@ -271,23 +273,20 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 )
 
             else:
-                # The UNIX format with the "long" sub-format can get the
+                # With the UNIX format and the "long" type, we can get a
                 # timestamp without being affected by the rounding issue
                 timestamp = event.trigger.tel[tel_id].time.to_value(
                     format="unix", subfmt="long"
                 )
 
-                # To keep the precision of the timestamp for the event
-                # coincidence with LST-1, here we save the integral and
-                # fractional parts separately
+                # To keep the precision for the coincidence with LST-1,
+                # we save the integral and fractional parts separately
                 fractional, integral = np.modf(timestamp)
 
-                time_sec = u.Quantity(integral, unit=u.s, dtype=int)
-                time_nanosec = u.Quantity(
-                    u.Quantity(fractional, u.s).to(u.ns).round(), dtype=int
-                )
+                time_sec = u.Quantity(integral, unit="s", dtype=int)
 
-                time_diff = time_diffs[event.count]
+                time_nanosec = u.Quantity(fractional, unit="s").to("ns")
+                time_nanosec = u.Quantity(time_nanosec.round(), dtype=int)
 
                 # Set the real event information to the container
                 event_info = RealEventInfoContainer(
@@ -297,7 +296,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     pointing_az=event.pointing.tel[tel_id].azimuth,
                     time_sec=time_sec,
                     time_nanosec=time_nanosec,
-                    time_diff=time_diff,
+                    time_diff=time_diffs[event.count],
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                 )
@@ -340,7 +339,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
             writer.write("config", event_source.simulation_config[obs_id])
 
-    logger.info(f"\nOutput file:\n{output_file}")
+    logger.info(f"\nOutput file: {output_file}")
 
 
 def main():

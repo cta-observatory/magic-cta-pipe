@@ -37,11 +37,11 @@ def create_dl3_index_files(input_dir):
     Raises
     ------
     FileNotFoundError
-        If any DL3 data files could not be found in the input directory
+        If any DL3 data files are not found in the input directory
     """
 
     # Find the input files
-    logger.info(f"\nInput directory:\n{input_dir}")
+    logger.info(f"\nInput directory: {input_dir}")
 
     file_mask = f"{input_dir}/dl3_*.fits.gz"
 
@@ -97,7 +97,7 @@ def main():
         dest="input_dir",
         type=str,
         required=True,
-        help="Path to a directory where input DL3 files are stored.",
+        help="Path to a directory where input DL3 files are stored",
     )
 
     args = parser.parse_args()
