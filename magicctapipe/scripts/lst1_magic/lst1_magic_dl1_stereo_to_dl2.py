@@ -236,7 +236,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
         reco_params = pd.concat([reco_params, df_events])
 
     reco_params.reset_index(level="flip", inplace=True)
-    reco_params.drop("flip", axis=1, inplace=True)
+    reco_params.drop(["flip", "combo_type"], axis=1, inplace=True)
     reco_params.sort_index(inplace=True)
 
     return reco_params
