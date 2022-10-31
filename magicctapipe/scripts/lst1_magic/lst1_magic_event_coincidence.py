@@ -196,7 +196,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         n_events_magic = np.count_nonzero(mask)
 
         if n_events_magic == 0:
-            logger.warning(f"--> No {tel_name} events are found. Skipping...")
+            logger.info(f"--> No {tel_name} events are found. Skipping...")
             continue
 
         logger.info(f"--> {n_events_magic} events are found.")
@@ -329,7 +329,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         profiles = profiles.merge(df_profile)
 
     if event_data.empty:
-        logger.warning("\nNo coincident events are found. Exiting...")
+        logger.info("\nNo coincident events are found. Exiting...")
         sys.exit()
 
     event_data.sort_index(inplace=True)

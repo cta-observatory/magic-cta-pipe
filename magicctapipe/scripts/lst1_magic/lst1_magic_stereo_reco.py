@@ -250,7 +250,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
 
         if not stereo_params.is_valid:
-            logger.warning(
+            logger.info(
                 f"--> event {i_evt} (event ID {event_id}) failed to reconstruct valid "
                 "stereo parameters, maybe due to the images of zero width. Skipping..."
             )

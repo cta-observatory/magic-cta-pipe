@@ -320,7 +320,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 peak_time_masked = peak_time[signal_pixels]
 
                 if any(image_masked < 0):
-                    logger.warning(
+                    logger.info(
                         f"--> {event.count} event (event ID: {event.index.event_id}, "
                         f"telescope {tel_id}) cannot be parametrized due to the pixels "
                         "with negative charges. Skipping..."
