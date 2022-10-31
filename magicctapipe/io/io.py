@@ -176,24 +176,24 @@ def get_stereo_events(
 
 def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event_id"]):
     """
-    Gets the mean DL2 parameters per shower event.
+    Gets mean DL2 parameters per shower event.
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
         Data frame of shower events
     weight_type: str
-        Type of the weights for the telescope-wise DL2 parameters -
+        Type of the weights for telescope-wise DL2 parameters -
         "simple" does not use any weights for calculations,
         "variance" uses the inverse of the RF variance, and
         "intensity" uses the linear-scale intensity parameter
     group_index: list
-        Index to group telescope-wise events
+        Index to group telescope events
 
     Returns
     -------
     event_data_mean: pandas.core.frame.DataFrame
-        Data frame of the shower events with the mean DL2 parameters
+        Data frame of the shower events with mean DL2 parameters
 
     Raises
     ------
@@ -239,7 +239,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     else:
         raise ValueError(f"Unknown weight type '{weight_type}'.")
 
-    # Calculate the mean DL2 parameters
+    # Calculate mean DL2 parameters
     df_events = pd.DataFrame(
         data={
             "energy_weight": energy_weights,
@@ -269,26 +269,24 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
     # Transform the Alt/Az directions to the RA/Dec coordinate
     if not is_simulation:
 
-        timestamps_mean = Time(
-            event_data_mean["timestamp"].to_numpy(), format="unix", scale="utc"
-        )
+        timestamps_mean = Time(event_data_mean["timestamp"], format="unix", scale="utc")
 
         pnt_ra_mean, pnt_dec_mean = transform_altaz_to_radec(
-            alt=u.Quantity(pnt_alt_mean.to_numpy(), u.rad),
-            az=u.Quantity(pnt_az_mean.to_numpy(), u.rad),
+            alt=u.Quantity(pnt_alt_mean, unit="rad"),
+            az=u.Quantity(pnt_az_mean, unit="rad"),
             obs_time=timestamps_mean,
         )
 
         reco_ra_mean, reco_dec_mean = transform_altaz_to_radec(
-            alt=u.Quantity(reco_alt_mean.to_numpy(), u.deg),
-            az=u.Quantity(reco_az_mean.to_numpy(), u.deg),
+            alt=u.Quantity(reco_alt_mean, unit="deg"),
+            az=u.Quantity(reco_az_mean, unit="deg"),
             obs_time=timestamps_mean,
         )
 
-        event_data_mean["pointing_ra"] = pnt_ra_mean.to_value(u.deg)
-        event_data_mean["pointing_dec"] = pnt_dec_mean.to_value(u.deg)
-        event_data_mean["reco_ra"] = reco_ra_mean.to_value(u.deg)
-        event_data_mean["reco_dec"] = reco_dec_mean.to_value(u.deg)
+        event_data_mean["pointing_ra"] = pnt_ra_mean.to_value("deg")
+        event_data_mean["pointing_dec"] = pnt_dec_mean.to_value("deg")
+        event_data_mean["reco_ra"] = reco_ra_mean.to_value("deg")
+        event_data_mean["reco_dec"] = reco_dec_mean.to_value("deg")
 
     return event_data_mean
 
@@ -397,7 +395,7 @@ def load_magic_dl1_data_files(input_dir):
     Raises
     ------
     FileNotFoundError
-        If any DL1 data files could not be found in the input directory
+        If any DL1 data files are not found in the input directory
     """
 
     # Find the input files
@@ -480,7 +478,7 @@ def load_train_data_files(
     Raises
     ------
     FileNotFoundError
-        If any DL1-stereo data files could not be found in the input
+        If any DL1-stereo data files are not found in the input
         directory
     """
 
@@ -698,10 +696,10 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
 
     event_data = get_stereo_events(event_data, quality_cuts)
 
-    # Extract the events of the specified event type
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     if event_type == "software":
+        # The events of the MAGIC-stereo combination are excluded
         event_data.query("combo_type > 0", inplace=True)
 
     elif event_type == "software_only_3tel":
@@ -742,16 +740,14 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     on_time = time_diffs[time_diffs < TIME_DIFF_UPLIM].sum()
 
     # Calculate the dead time correction factor. Here we use the
-    # following equations to get the correction factor "deadc", where
-    # <time_diff> is the mean of the trigger time differences of
-    # consecutive events:
+    # following equations to get the correction factor `deadc`:
 
     # rate = 1 / (<time_diff> - dead_time)
     # deadc = 1 / (1 + rate * dead_time) = 1 - dead_time / <time_diff>
 
     logger.info("\nCalculating the dead time correction factor...")
 
-    event_data.query(f"0 < time_diff < {TIME_DIFF_UPLIM.to_value(u.s)}", inplace=True)
+    event_data.query(f"0 < time_diff < {TIME_DIFF_UPLIM.to_value('s')}", inplace=True)
 
     deadc_list = []
 
@@ -759,7 +755,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     time_diffs_lst = event_data.query("tel_id == 1")["time_diff"]
 
     if len(time_diffs_lst) > 0:
-        deadc_lst = 1 - DEAD_TIME_LST.to_value(u.s) / time_diffs_lst.mean()
+        deadc_lst = 1 - DEAD_TIME_LST.to_value("s") / time_diffs_lst.mean()
         logger.info(f"LST-1: {deadc_lst.round(3)}")
 
         deadc_list.append(deadc_lst)
@@ -770,10 +766,10 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     time_diffs_m2 = event_data.query("tel_id == 3")["time_diff"]
 
     if len(time_diffs_m1) > len(time_diffs_m2):
-        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m1.mean()
+        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value("s") / time_diffs_m1.mean()
         logger.info(f"MAGIC(-I): {deadc_magic.round(3)}")
     else:
-        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value(u.s) / time_diffs_m2.mean()
+        deadc_magic = 1 - DEAD_TIME_MAGIC.to_value("s") / time_diffs_m2.mean()
         logger.info(f"MAGIC(-II): {deadc_magic.round(3)}")
 
     deadc_list.append(deadc_magic)
@@ -788,8 +784,8 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
 
 def load_irf_files(input_dir_irf):
     """
-    Loads input IRF data files and checks the consistency of their
-    configurations for the IRF interpolation.
+    Loads input IRF data files for the IRF interpolation and checks the
+    consistency of their configurations.
 
     Parameters
     ----------
@@ -799,14 +795,14 @@ def load_irf_files(input_dir_irf):
     Returns
     -------
     irf_data: dict
-        Combined IRF data
+        IRF data
     extra_header: dict
-        Extra header of input IRF data files
+        Extra header of the input IRF data
 
     Raises
     ------
     FileNotFoundError
-        If any IRF data files could not be found in the input directory
+        If any IRF data files are not found in the input directory
     RuntimeError
         If the configurations of the input IRFs are not consistent
     """
@@ -879,14 +875,13 @@ def load_irf_files(input_dir_irf):
 
         irf_data["grid_points"].append(grid_point)
 
-        # Read the essential IRF data
+        # Read the essential IRF data and bins
         aeff_data = irf_hdus["EFFECTIVE AREA"].data[0]
         edisp_data = irf_hdus["ENERGY DISPERSION"].data[0]
 
         irf_data["effective_area"].append(aeff_data["EFFAREA"])
         irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T)
 
-        # Read the essential bins
         energy_bins = join_bin_lo_hi(aeff_data["ENERG_LO"], aeff_data["ENERG_HI"])
         fov_offset_bins = join_bin_lo_hi(aeff_data["THETA_LO"], aeff_data["THETA_HI"])
         migration_bins = join_bin_lo_hi(edisp_data["MIGRA_LO"], edisp_data["MIGRA_HI"])
@@ -919,12 +914,13 @@ def load_irf_files(input_dir_irf):
             irf_data["rad_max"].append(radmax_data["RAD_MAX"].T)
 
     # Check the IRF data consistency
-    for key in irf_data.keys():
+    for key in list(irf_data.keys()):
 
         n_irf_data = len(irf_data[key])
 
         if n_irf_data == 0:
-            continue
+            # Remove the empty data
+            irf_data.pop(key)
 
         elif n_irf_data != n_input_files:
             raise RuntimeError(
@@ -967,19 +963,27 @@ def load_irf_files(input_dir_irf):
 
     # Set units to the IRF data
     irf_data["effective_area"] *= u.m**2
-    irf_data["psf_table"] *= u.Unit("sr-1")
-    irf_data["background"] *= u.Unit("MeV-1 s-1 sr-1")
-    irf_data["rad_max"] *= u.deg
     irf_data["energy_bins"] *= u.TeV
     irf_data["fov_offset_bins"] *= u.deg
-    irf_data["source_offset_bins"] *= u.deg
-    irf_data["bkg_fov_offset_bins"] *= u.deg
+
+    if "rad_max" in irf_data:
+        irf_data["rad_max"] *= u.deg
+
+    if "psf_table" in irf_data:
+        irf_data["psf_table"] *= u.Unit("sr-1")
+        irf_data["source_offset_bins"] *= u.deg
+
+    if "background" in irf_data:
+        irf_data["background"] *= u.Unit("MeV-1 s-1 sr-1")
+        irf_data["bkg_fov_offset_bins"] *= u.deg
 
     # Convert the list to the numpy ndarray
     irf_data["grid_points"] = np.array(irf_data["grid_points"])
     irf_data["energy_dispersion"] = np.array(irf_data["energy_dispersion"])
-    irf_data["gh_cuts"] = np.array(irf_data["gh_cuts"])
     irf_data["migration_bins"] = np.array(irf_data["migration_bins"])
+
+    if "gh_cuts" in irf_data:
+        irf_data["gh_cuts"] = np.array(irf_data["gh_cuts"])
 
     return irf_data, extra_header
 

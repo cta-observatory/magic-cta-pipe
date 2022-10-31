@@ -3,15 +3,14 @@
 
 """
 This script processes DL2 events and creates a DL3 data file with the
-IRFs. At first it reads the configurations of the IRFs and if they are
-consistent, it applies the same condition cuts to the input DL2 events.
+IRFs. At first it reads the configurations of the IRFs and checks the
+consistency, and then applies the same condition cuts to DL2 events.
 
 There are three methods for the interpolation of the IRFs, "nearest",
 "linear" and "cubic", which can be specified in the configuration file.
 The "nearest" method just selects the IRFs of the closest pointing
-direction in (cos(Zenith), Azimuth), which works even if there is only
-one input IRF file. The other methods work only when there are multiple
-IRFs available from different pointing directions.
+direction in (cos(Zd), Az), and the other methods work only when there
+are multiple IRFs available from different pointing directions.
 
 Usage:
 $ python lst1_magic_dl2_to_dl3.py
@@ -80,18 +79,18 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     config_dl3 = config["dl2_to_dl3"]
 
     # Load the input IRF data files
-    logger.info(f"\nInput IRF directory:\n{input_dir_irf}")
+    logger.info(f"\nInput IRF directory: {input_dir_irf}")
 
     irf_data, extra_header = load_irf_files(input_dir_irf)
 
-    logger.info("\nGrid points (cosZd, Az):")
+    logger.info("\nGrid points in (cos(Zd), Az):")
     logger.info(format_object(irf_data["grid_points"]))
 
     logger.info("\nExtra header:")
     logger.info(format_object(extra_header))
 
     # Load the input DL2 data file
-    logger.info(f"\nInput DL2 data file:\n{input_file_dl2}")
+    logger.info(f"\nInput DL2 data file: {input_file_dl2}")
 
     quality_cuts = extra_header.get("QUAL_CUT")
     event_type = extra_header["EVT_TYPE"]
@@ -103,23 +102,23 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     # Calculate the mean pointing direction for the target point of the
     # IRF interpolation. Please note that the azimuth could make a full
-    # 2 pi turn, whose mean angle could indicate an opposite direction.
+    # 2 pi turn, whose mean angle may indicate an opposite direction.
     # Thus, here we calculate the STDs of the azimuth angles with two
     # ranges, i.e., 0 <= az < 360 deg and -180 <= az < 180 deg, and then
     # calculate the mean with the range of smaller STD.
 
-    pnt_coszd_mean = np.sin(event_table["pointing_alt"].value).mean()
+    pnt_coszd_mean = np.sin(event_table["pointing_alt"]).mean().value
 
-    pnt_az_wrap_360deg = Angle(event_table["pointing_az"]).wrap_at(360 * u.deg)
-    pnt_az_wrap_180deg = Angle(event_table["pointing_az"]).wrap_at(180 * u.deg)
+    pnt_az_wrap_360deg = Angle(event_table["pointing_az"]).wrap_at("360 deg")
+    pnt_az_wrap_180deg = Angle(event_table["pointing_az"]).wrap_at("180 deg")
 
     if pnt_az_wrap_360deg.std() <= pnt_az_wrap_180deg.std():
-        pnt_az_mean = pnt_az_wrap_360deg.mean().value
+        pnt_az_mean = pnt_az_wrap_360deg.mean().to_value("rad")
     else:
-        pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at(360 * u.deg).value
+        pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at("360 deg").to_value("rad")
 
     target_point = np.array([pnt_coszd_mean, pnt_az_mean])
-    logger.info(f"\nTarget point (cosZd, Az): {target_point.round(5).tolist()}")
+    logger.info(f"\nTarget point in (cos(Zd), Az): {target_point.round(5).tolist()}")
 
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3.pop("interpolation_method")
@@ -183,7 +182,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus.append(edisp_hdu)
 
-    if len(irf_data["psf_table"]) > 1:
+    if "psf_table" in irf_data:
 
         # Interpolate the PSF table with a custom way, since there is a
         # bug in the function of pyirf v0.6.0 about the renormalization
@@ -221,7 +220,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(psf_hdu)
 
-    if len(irf_data["background"]) > 1:
+    if "background" in irf_data:
 
         # Interpolate the background model
         logger.info("Interpolating the background model...")
@@ -245,7 +244,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(bkg_hdu)
 
-    if len(irf_data["gh_cuts"]) > 0:
+    if "gh_cuts" in irf_data:
 
         # Interpolate the dynamic gammaness cuts
         logger.info("Interpolating the dynamic gammaness cuts...")
@@ -269,14 +268,14 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
         hdus.append(gh_cuts_hdu)
 
-    if len(irf_data["rad_max"]) > 0:
+    if "rad_max" in irf_data:
 
         # Interpolate the dynamic theta cuts
         logger.info("Interpolating the dynamic theta cuts...")
 
         rad_max_interp = griddata(
             points=irf_data["grid_points"],
-            values=irf_data["rad_max"].to_value(u.deg),
+            values=irf_data["rad_max"].to_value("deg"),
             xi=target_point,
             method=interpolation_method,
         )
@@ -296,13 +295,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         hdus.append(rad_max_hdu)
 
     if "GH_CUT" in extra_header:
-
         # Apply the global gammaness cut
-        logger.info("\nApplying the global gammaness cut...")
-
-        gh_cut_value = extra_header["GH_CUT"]
-
-        mask_gh = event_table["gammaness"] > gh_cut_value
+        mask_gh = event_table["gammaness"] > extra_header["GH_CUT"]
         event_table = event_table[mask_gh]
 
     else:
@@ -315,10 +309,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             }
         )
 
-        logger.info(
-            f"\nGammaness cut table:\n\n{gh_cut_table}"
-            "\n\nApplying the dynamic gammaness cuts..."
-        )
+        logger.info(f"\nGammaness cut table:\n\n{gh_cut_table}")
 
         mask_gh = evaluate_binned_cut(
             values=event_table["gammaness"],
@@ -360,7 +351,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     hdus.writeto(output_file, overwrite=True)
 
-    logger.info(f"\nOutput file:\n{output_file}")
+    logger.info(f"\nOutput file: {output_file}")
 
 
 def main():

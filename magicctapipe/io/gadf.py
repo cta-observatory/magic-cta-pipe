@@ -54,8 +54,8 @@ def create_gh_cuts_hdu(
         Gammaness-cut HDU
     """
 
-    energy_lo, energy_hi = split_bin_lo_hi(reco_energy_bins[np.newaxis, :].to(u.TeV))
-    theta_lo, theta_hi = split_bin_lo_hi(fov_offset_bins[np.newaxis, :].to(u.deg))
+    energy_lo, energy_hi = split_bin_lo_hi(reco_energy_bins[np.newaxis, :].to("TeV"))
+    theta_lo, theta_hi = split_bin_lo_hi(fov_offset_bins[np.newaxis, :].to("deg"))
 
     # Create a table
     qtable = QTable(
@@ -118,6 +118,12 @@ def create_event_hdu(
     -------
     event_hdu: astropy.io.fits.hdu.table.BinTableHDU
         Event HDU
+
+    Raises
+    ------
+    ValueError
+        If the source name cannot be resolved and also either or both of
+        source RA/Dec coordinate is set to None
     """
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
@@ -139,7 +145,7 @@ def create_event_hdu(
     tel_list = [tel_combo.split("_") for tel_combo in tel_combos]
     tel_list_unique = np.unique(sum(tel_list, []))
 
-    instrument = "_".join(tel_list_unique).upper()
+    instruments = "_".join(tel_list_unique).upper()
 
     # Transfer the RA/Dec directions to the galactic coordinate
     event_coords = SkyCoord(
@@ -153,18 +159,15 @@ def create_event_hdu(
         source_coord = SkyCoord.from_name(source_name, frame="icrs")
 
     except Exception:
-        # Use the input source coordinate instead
+        logger.warning(
+            f"WARNING: The source name '{source_name}' could not be resolved. "
+            f"Setting the input RA/Dec coordinate ({source_ra}, {source_dec})..."
+        )
+
         if (source_ra is None) or (source_dec is None):
-            raise ValueError(
-                f"The source name '{source_name}' could not be resolved, "
-                "but the input RA/Dec coordinate is also set to None."
-            )
-        else:
-            logger.warning(
-                f"WARNING: The source name '{source_name}' could not be resolved. "
-                f"Setting the input RA/Dec coordinate ({source_ra}, {source_dec})..."
-            )
-            source_coord = SkyCoord(ra=source_ra, dec=source_dec, frame="icrs")
+            raise ValueError("The input RA/Dec coordinate is set to `None`.")
+
+        source_coord = SkyCoord(ra=source_ra, dec=source_dec, frame="icrs")
 
     # Create a table
     qtable = QTable(
@@ -176,10 +179,10 @@ def create_event_hdu(
             "ENERGY": event_table["reco_energy"],
             "GAMMANESS": event_table["gammaness"],
             "MULTIP": event_table["multiplicity"],
-            "GLON": event_coords.l.to(u.deg),
-            "GLAT": event_coords.b.to(u.deg),
-            "ALT": event_table["reco_alt"].to(u.deg),
-            "AZ": event_table["reco_az"].to(u.deg),
+            "GLON": event_coords.l.to("deg"),
+            "GLAT": event_coords.b.to("deg"),
+            "ALT": event_table["reco_alt"].to("deg"),
+            "AZ": event_table["reco_az"].to("deg"),
         }
     )
 
@@ -201,20 +204,20 @@ def create_event_hdu(
             ("TIMESYS", "UTC"),
             ("TIMEREF", "TOPOCENTER"),
             ("ONTIME", on_time.value),
-            ("TELAPSE", elapsed_time.to_value(u.s)),
+            ("TELAPSE", elapsed_time.to_value("s")),
             ("DEADC", deadc),
             ("LIVETIME", effective_time.value),
             ("OBJECT", source_name),
             ("OBS_MODE", "WOBBLE"),
             ("N_TELS", np.max(event_table["multiplicity"])),
-            ("TELLIST", instrument),
-            ("INSTRUME", instrument),
+            ("TELLIST", instruments),
+            ("INSTRUME", instruments),
             ("RA_PNT", event_table["pointing_ra"][0].value, "deg"),
             ("DEC_PNT", event_table["pointing_dec"][0].value, "deg"),
-            ("ALT_PNT", event_table["pointing_alt"][0].to_value(u.deg), "deg"),
-            ("AZ_PNT", event_table["pointing_az"][0].to_value(u.deg), "deg"),
-            ("RA_OBJ", source_coord.ra.to_value(u.deg), "deg"),
-            ("DEC_OBJ", source_coord.dec.to_value(u.deg), "deg"),
+            ("ALT_PNT", event_table["pointing_alt"][0].to_value("deg"), "deg"),
+            ("AZ_PNT", event_table["pointing_az"][0].to_value("deg"), "deg"),
+            ("RA_OBJ", source_coord.ra.to_value("deg"), "deg"),
+            ("DEC_OBJ", source_coord.dec.to_value("deg"), "deg"),
             ("FOVALIGN", "RADEC"),
         ]
     )
@@ -293,8 +296,8 @@ def create_pointing_hdu(event_table):
             "TIME": u.Quantity(event_table["timestamp"][0], ndmin=1),
             "RA_PNT": u.Quantity(event_table["pointing_ra"][0], ndmin=1),
             "DEC_PNT": u.Quantity(event_table["pointing_dec"][0], ndmin=1),
-            "ALT_PNT": u.Quantity(event_table["pointing_alt"][0].to(u.deg), ndmin=1),
-            "AZ_PNT": u.Quantity(event_table["pointing_az"][0].to(u.deg), ndmin=1),
+            "ALT_PNT": u.Quantity(event_table["pointing_alt"][0].to("deg"), ndmin=1),
+            "AZ_PNT": u.Quantity(event_table["pointing_az"][0].to("deg"), ndmin=1),
         }
     )
 
@@ -309,9 +312,9 @@ def create_pointing_hdu(event_table):
             ("TIMEUNIT", "s"),
             ("TIMESYS", "UTC"),
             ("TIMEREF", "TOPOCENTER"),
-            ("OBSGEO-L", LON_ORM.to_value(u.deg), "Geographic longitude (deg)"),
-            ("OBSGEO-B", LAT_ORM.to_value(u.deg), "Geographic latitude (deg)"),
-            ("OBSGEO-H", HEIGHT_ORM.to_value(u.m), "Geographic height (m)"),
+            ("OBSGEO-L", LON_ORM.to_value("deg"), "Geographic longitude (deg)"),
+            ("OBSGEO-B", LAT_ORM.to_value("deg"), "Geographic latitude (deg)"),
+            ("OBSGEO-H", HEIGHT_ORM.to_value("m"), "Geographic height (m)"),
         ]
     )
 
