@@ -10,22 +10,23 @@ IRFs, and in addition the PSF table and background HDUs in case of the
 
 When the input gamma MC is point-like or ring-wobble data, it creates
 one FoV offset bin around the true offset, regardless of the settings in
-the configuration, and creates only the "POINT-LIKE" IRFs. In case of
-diffuse data, it creates FoV offset bins based on the configuration and
-creates the "POINT-LIKE" IRFs if the number of FoV offset bins is only
-one, or "FULL-ENCLOSURE" for the other cases. It allows us to create the
-"POINT-LIKE" IRFs in case we have only diffuse test MCs.
+the configuration file, and creates only the "POINT-LIKE" IRFs. In case
+of diffuse data, it creates FoV offset bins based on the configuration
+file and creates the "FULL-ENCLOSURE" if the number of FoV offset bins
+is more than one. In case the number is one, it creates the "POINT-LIKE"
+IRFs, which allows us to perform the 1D spectral analysis even if only
+diffuse data is available for test MCs.
 
 There are four different event types with which the IRFs are created.
 The "hardware" type is supposed for the hardware trigger between LST-1
 and MAGIC, allowing for the events of all the telescope combinations.
-The "software(_only_3tel)" types are supposed for the software
+The "software(_only_3tel)" types are supposed for the software event
 coincidence with LST-mono and MAGIC-stereo observations, allowing for
 only the events triggering both M1 and M2. The "software" type allows
-for the events of the any two-telescopes combinations except the
-MAGIC-stereo combination. The "software_only_3tel" type allows only for
-the events of the three telescopes combination. The "magic_only" type
-allows only for the events of the MAGIC-stereo combination.
+for the events of the any 2-tel combinations except the MAGIC-stereo
+combination at the moment. The "software_only_3tel" type allows for only
+the events of the 3-tel combination. The "magic_only" type allows for
+only the events of the MAGIC-stereo combination.
 
 There are two types of gammaness and theta cuts, "global" and "dynamic".
 In case of the dynamic cuts, the optimal cut satisfying a given
@@ -129,6 +130,7 @@ def create_irf(
     logger.info(f"\nIs diffuse MC: {is_diffuse_mc}")
 
     if is_diffuse_mc:
+        # Create FoV offset bins based on the configuration
         config_fov_bins = config_irf["fov_offset_bins"]
 
         logger.info("\nFov offset bins (linear scale):")
@@ -144,13 +146,14 @@ def create_irf(
         )
 
     else:
+        # Create one FoV offset bin around the true offset
         true_fov_offset = event_table_gamma["true_source_fov_offset"].to("deg")
         mean_true_fov_offset = true_fov_offset.mean().round(1)
 
         fov_offset_bins = mean_true_fov_offset + [-0.1, 0.1] * u.deg
 
         logger.info(f"\nMean true FoV offset: {mean_true_fov_offset}")
-        logger.info(f"--> FoV offset bins: {fov_offset_bins}")
+        logger.info(f"--> FoV offset bin: {fov_offset_bins}")
 
     # Here we decide the IRF type based on the number of FoV offset
     # bins - "POINT-LIKE" in case of 1 bin and "FULL-ENCLOSURE" in the
@@ -169,8 +172,10 @@ def create_irf(
     is_proton_mc = input_file_proton is not None
     is_electron_mc = input_file_electron is not None
 
+    logger.info(f"\nIs proton MC: {is_proton_mc}")
+    logger.info(f"Is electron MC: {is_electron_mc}")
+
     is_bkg_mc = all([is_proton_mc, is_electron_mc])
-    logger.info(f"\nIs full background MCs: {is_bkg_mc}")
 
     if is_point_like and is_bkg_mc:
         logger.warning(
@@ -465,7 +470,7 @@ def create_irf(
             theta_cuts = cut_table_theta["cut"][:, np.newaxis]
 
             # Create a rad-max HDU
-            logger.info("Creating a rad-max HDU...")
+            logger.info("\nCreating a rad-max HDU...")
 
             hdu_rad_max = create_rad_max_hdu(
                 rad_max=theta_cuts,

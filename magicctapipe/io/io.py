@@ -577,14 +577,12 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
-    # Apply the quality cuts and get the stereo events
     df_events = get_stereo_events(df_events, quality_cuts)
 
-    # Extract the events of the specified event type
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     if event_type == "software":
-        # Now the events of the MAGIC-stereo combination are excluded
+        # The events of the MAGIC-stereo combination are excluded
         df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
 
     elif event_type == "software_only_3tel":
@@ -615,6 +613,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     event_table["true_energy"] *= u.TeV
     event_table["reco_energy"] *= u.TeV
 
+    # Calculate some angular distances
     event_table["theta"] = calculate_theta(
         event_table, event_table["true_az"], event_table["true_alt"]
     )
