@@ -23,7 +23,7 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 
 - `magic_calib_to_dl1.py` on real MAGIC data, to convert them into DL1 format
 - `lst1_magic_mc_dl0_to_dl1.py` over SimTelArray MCs to convert them into DL1 format
-- optionally, but recommended, `merge_hdf_files.py` to merge subruns and/or runs together
+- optionally, but recommended, `merge_hdf_files.py` on MAGIC data to merge subruns and/or runs together
 - `lst1_magic_event_coincidence.py` to find coincident events between MAGIC and LST-1, starting from DL1 data
 - `lst1_magic_stereo_reco.py` to add stereo parameters to the DL1 data
 - `lst1_magic_train_rfs.py` to train the RFs (energy, direction, classification) on train gamma MCs and protons
@@ -33,4 +33,4 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 
 ## High level analysis
 
-The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs.
+The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs. Note that the notebooks run with gammapy v0.20 or higher, therefore another conda environment is needed to run them, since the MAGIC+LST-1 pipeline at the moment depends on v0.19.
