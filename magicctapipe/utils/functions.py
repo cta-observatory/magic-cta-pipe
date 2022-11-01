@@ -219,7 +219,7 @@ def calculate_off_coordinates(
     pointing_dec: u.deg,
     on_coord_ra: u.deg,
     on_coord_dec: u.deg,
-    n_off_regions,
+    n_regions,
 ):
     """
     Calculates the coordinates of the centers of OFF regions to estimate
@@ -238,7 +238,7 @@ def calculate_off_coordinates(
         Right ascension of the center of the ON region
     on_coord_dec: astropy.units.quantity.Quantity
         Declination of the center of the ON region
-    n_off_regions: int
+    n_regions: int
         Number of OFF regions to be created
 
     Returns
@@ -268,7 +268,7 @@ def calculate_off_coordinates(
     # the angle 180 deg with which the OFF region will be created at the
     # same coordinate as the ON region.
 
-    rotation_step = 360 / (n_off_regions + 1)
+    rotation_step = 360 / (n_regions + 1)
     rotations_off = np.arange(0, 359, rotation_step) * u.deg
 
     rotations_off = rotations_off[rotations_off.to_value("deg") != 180]
