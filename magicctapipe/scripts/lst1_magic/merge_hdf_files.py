@@ -6,14 +6,14 @@ This script merges the HDF files produced by the LST-1 + MAGIC combined
 analysis pipeline. It parses information from the file names, so they
 should follow the convention, i.e., *Run*.*.h5 or *run*.h5.
 
-If no output directory is specified with the "--output-dir" argument,
-it saves merged files in the "merged" directory which will be created
+If no output directory is specified with the `--output-dir` argument,
+it saves merged files in the `merged` directory which will be created
 under the input directory.
 
-If the "--run-wise" argument is given, it merges input files run-wise.
+If the `--run-wise` argument is given, it merges input files run-wise.
 It is applicable only to real data since MC data are already produced
-run-wise. The "--subrun-wise" argument can be also used to merge MAGIC
-real data files subrun-wise (for example, dl1_M1.Run05093711.001.h5
+run-wise. The `--subrun-wise` argument can be also used to merge MAGIC
+DL1 real data subrun-wise (for example, dl1_M1.Run05093711.001.h5
 + dl1_M2.Run05093711.001.h5 -> dl1_MAGIC.Run05093711.001.h5).
 
 Usage:
@@ -123,13 +123,13 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     Raises
     ------
     FileNotFoundError
-        If any HDF files could not be found in the input directory
+        If any HDF files are not found in the input directory
     RuntimeError
         If multiple types of files are found in the input directory
     """
 
     # Find the input files
-    logger.info(f"\nInput directory:\n{input_dir}")
+    logger.info(f"\nInput directory: {input_dir}")
 
     input_file_mask = f"{input_dir}/*.h5"
 
@@ -163,29 +163,25 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             subrun_ids.append(parser[2])
 
     file_names_unique = np.unique(file_names)
-    n_file_names = len(file_names_unique)
 
-    if n_file_names == 1:
+    if len(file_names_unique) == 1:
         output_file_name = file_names_unique[0]
 
+    elif file_names_unique.tolist() == ["dl1_M1.Run", "dl1_M2.Run"]:
+        # Assume that the input files are telescope-wise MAGIC DL1 data
+        output_file_name = "dl1_MAGIC.Run"
+
     else:
-        replaced_name = file_names_unique[0].replace("M1", "M2")
-        match_file_type = file_names_unique[1] == replaced_name
+        raise RuntimeError("Multiple types of files are found in the input directory.")
 
-        if (n_file_names == 2) and match_file_type:
-            # Assume that the input files are telescope-wise MAGIC data
-            output_file_name = file_names_unique[0].replace("M1", "MAGIC")
-
-        else:
-            RuntimeError("Multiple types of files are found in the input directory.")
-
-    # Merge the input files
-    run_ids_unique = np.unique(run_ids)
-
+    # Create an output directory
     if output_dir is None:
         output_dir = f"{input_dir}/merged"
 
     Path(output_dir).mkdir(parents=True, exist_ok=True)
+
+    # Merge the input files
+    run_ids_unique = np.unique(run_ids)
 
     if subrun_wise:
         logger.info("\nMerging the input files subrun-wise...")
@@ -194,7 +190,12 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         subrun_ids = np.array(subrun_ids)
 
         for run_id in run_ids_unique:
-            subrun_ids_unique = np.unique(subrun_ids[run_ids == run_id])
+
+            subrun_ids_unique, counts = np.unique(
+                subrun_ids[run_ids == run_id], return_counts=True
+            )
+
+            subrun_ids_unique = subrun_ids_unique[counts > 1]
 
             for subrun_id in subrun_ids_unique:
                 file_mask = f"{input_dir}/*Run{run_id}.{subrun_id}.h5"
@@ -222,7 +223,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         else:
             string_lengths_unique = np.unique([len(x) for x in run_ids_unique])
 
-            # Check the minimum and maximum run IDs with the "int" type
+            # Check the minimum and maximum run IDs with the int type
             run_ids_unique = run_ids_unique.astype(int)
 
             run_id_min = run_ids_unique.min()

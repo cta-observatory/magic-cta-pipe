@@ -2,27 +2,35 @@
 # coding: utf-8
 
 """
-This script processes MC DL2 events and creates the IRFs. Now it can
-create only point-like IRFs, i.e., the effective area, energy migration
-and background model. If the input data is only gamma MC, it also skips
-the creation of the background model.
+This script processes MC DL2 events and creates the IRFs. It can create
+two different IRF types, "POINT-LIKE" or "FULL-ENCLOSURE". The effective
+area and energy dispersion HDUs are created in case of the "POINT_LIKE"
+IRFs, and in addition the PSF table and background HDUs in case of the
+"FULL-ENCLOSURE" IRFs.
 
-There are 4 different IRF types which can be specified by the "irf_type"
-setting in the configuration file. The "hardware" type is supposed for
-the hardware trigger between LST-1 and MAGIC, allowing for the events of
-all the telescope combinations. The "software(_only_3tel)" types are
-supposed for the software coincidence with LST-mono and MAGIC-stereo,
-allowing for only the events triggering both M1 and M2. The "software"
-type allows for the events of the any 2 telescope combinations except
-the M1 and M2 combination, which are not coincident with LST-1 events.
-The "software_only_3tel" type allows only for the events of the three
-telescopes combination. The "magic_only" type allows only for the events
-of M1 and M2 telescopes combination.
+When the input gamma MC is point-like or ring-wobble data, it creates
+one FoV offset bin around the true offset, regardless of the settings in
+the configuration file, and creates only the "POINT-LIKE" IRFs. In case
+of diffuse data, it creates FoV offset bins based on the configuration
+file and creates the "FULL-ENCLOSURE" if the number of FoV offset bins
+is more than one. In case the number is one, it creates the "POINT-LIKE"
+IRFs, which allows us to perform the 1D spectral analysis even if only
+diffuse data is available for test MCs.
 
-There are 2 types for gammaness and theta cuts, which are "global" and
-"dynamic". In case of the dynamic cuts, the optimal cuts satisfying an
-efficiency will be calculated in each energy bin specified in the
-configuration file.
+There are four different event types with which the IRFs are created.
+The "hardware" type is supposed for the hardware trigger between LST-1
+and MAGIC, allowing for the events of all the telescope combinations.
+The "software(_only_3tel)" types are supposed for the software event
+coincidence with LST-mono and MAGIC-stereo observations, allowing for
+only the events triggering both M1 and M2. The "software" type allows
+for the events of the any 2-tel combinations except the MAGIC-stereo
+combination at the moment. The "software_only_3tel" type allows for only
+the events of the 3-tel combination. The "magic_only" type allows for
+only the events of the MAGIC-stereo combination.
+
+There are two types of gammaness and theta cuts, "global" and "dynamic".
+In case of the dynamic cuts, the optimal cut satisfying a given
+efficiency will be calculated for every energy bin.
 
 Usage:
 $ python lst1_magic_create_irf.py
@@ -44,15 +52,22 @@ import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, vstack
-from magicctapipe.io import create_gh_cuts_hdu, load_mc_dl2_data_file
+from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
     create_background_2d_hdu,
     create_energy_dispersion_hdu,
+    create_psf_table_hdu,
     create_rad_max_hdu,
 )
-from pyirf.irf import background_2d, effective_area_per_energy, energy_dispersion
+from pyirf.irf import (
+    background_2d,
+    effective_area_per_energy,
+    effective_area_per_energy_and_fov,
+    energy_dispersion,
+    psf_table,
+)
 from pyirf.spectral import (
     IRFDOC_ELECTRON_SPECTRUM,
     IRFDOC_PROTON_SPECTRUM,
@@ -97,219 +112,249 @@ def create_irf(
     config_irf = config["create_irf"]
 
     quality_cuts = config_irf["quality_cuts"]
-    irf_type = config_irf["irf_type"]
-    dl2_weight_type = config_irf["dl2_weight_type"]
+    event_type = config_irf["event_type"]
+    weight_type_dl2 = config_irf["weight_type_dl2"]
 
-    logger.info(
-        f"\nQuality cuts: {quality_cuts}"
-        f"\nIRF type: {irf_type}"
-        f"\nDL2 weight type: {dl2_weight_type}"
-    )
+    logger.info(f"\nQuality cuts: {quality_cuts}")
+    logger.info(f"Event type: {event_type}")
+    logger.info(f"DL2 weight type: {weight_type_dl2}")
 
     # Load the input gamma MC DL2 data file
-    logger.info(f"\nInput gamma MC DL2 data file:\n{input_file_gamma}")
+    logger.info(f"\nInput gamma MC DL2 data file: {input_file_gamma}")
 
     event_table_gamma, pnt_gamma, sim_info_gamma = load_mc_dl2_data_file(
-        input_file_gamma, quality_cuts, irf_type, dl2_weight_type
+        input_file_gamma, quality_cuts, event_type, weight_type_dl2
     )
 
-    mean_offset = event_table_gamma["true_source_fov_offset"].to(u.deg).mean().round(1)
-    fov_offset_bins = u.Quantity([mean_offset - 0.1 * u.deg, mean_offset + 0.1 * u.deg])
+    is_diffuse_mc = sim_info_gamma.viewcone.to_value("deg") > 0
+    logger.info(f"\nIs diffuse MC: {is_diffuse_mc}")
 
-    logger.info(
-        f"\nMean FoV offset: {mean_offset}" f"\n--> FoV offset bins: {fov_offset_bins}"
-    )
+    if is_diffuse_mc:
+        # Create FoV offset bins based on the configuration
+        config_fov_bins = config_irf["fov_offset_bins"]
 
-    # Load the background data files
-    event_table_bkg = QTable()
+        logger.info("\nFov offset bins (linear scale):")
+        logger.info(format_object(config_fov_bins))
 
+        fov_bins_start = u.Quantity(config_fov_bins["start"])
+        fov_bins_stop = u.Quantity(config_fov_bins["stop"])
+
+        fov_offset_bins = u.deg * np.linspace(
+            start=fov_bins_start.to_value("deg").round(1),
+            stop=fov_bins_stop.to_value("deg").round(1),
+            num=config_fov_bins["n_edges"],
+        )
+
+    else:
+        # Create one FoV offset bin around the true offset
+        true_fov_offset = event_table_gamma["true_source_fov_offset"].to("deg")
+        mean_true_fov_offset = true_fov_offset.mean().round(1)
+
+        fov_offset_bins = mean_true_fov_offset + [-0.1, 0.1] * u.deg
+
+        logger.info(f"\nMean true FoV offset: {mean_true_fov_offset}")
+        logger.info(f"--> FoV offset bin: {fov_offset_bins}")
+
+    # Here we decide the IRF type based on the number of FoV offset
+    # bins - "POINT-LIKE" in case of 1 bin and "FULL-ENCLOSURE" in the
+    # other cases. It allows for creating the "POINT-LIKE" IRFs with
+    # diffuse gamma MCs by selecting a given FoV offset region.
+
+    n_fov_offset_bins = len(fov_offset_bins) - 1
+    is_point_like = n_fov_offset_bins == 1
+
+    if is_point_like:
+        logger.info("\nIRF type: POINT-LIKE")
+    else:
+        logger.info("\nIRF type: FULL-ENCLOSURE")
+
+    # Check the existence of background MC data
     is_proton_mc = input_file_proton is not None
     is_electron_mc = input_file_electron is not None
 
-    if is_proton_mc and (not is_electron_mc):
-        logger.info(
-            "\nWARNING: Proton MC exists but electron MC does not. "
-            "Skipping the creation of the background model..."
+    logger.info(f"\nIs proton MC: {is_proton_mc}")
+    logger.info(f"Is electron MC: {is_electron_mc}")
+
+    is_bkg_mc = all([is_proton_mc, is_electron_mc])
+
+    if is_point_like and is_bkg_mc:
+        logger.warning(
+            "\nWARNING: Will skip the creation of a background model, "
+            "since it is not needed for the 'POINT-LIKE' IRFs."
         )
 
-    elif is_electron_mc and (not is_proton_mc):
-        logger.info(
-            "\nWARNING: Electron MC exists but proton MC does not. "
-            "Skipping the creation of the background model..."
+    if (not is_point_like) and (not is_bkg_mc):
+        logger.warning(
+            "\nWARNING: Will skip the creation of a background model, "
+            "since both or either of background MCs are missing."
         )
 
-    is_bkg_mc = np.all([is_proton_mc, is_electron_mc])
+    event_table_bkg = QTable()
 
-    if is_bkg_mc:
-
-        irf_obs_time = u.Quantity(config_irf["irf_obs_time"])
-        logger.info(f"\nIRF observation time: {irf_obs_time}")
+    if not is_point_like and is_bkg_mc:
 
         # Load the input proton MC DL2 data file
-        logger.info(f"\nInput proton MC DL2 data file:\n{input_file_proton}")
+        logger.info(f"\nInput proton MC DL2 data file: {input_file_proton}")
 
         event_table_proton, pnt_proton, sim_info_proton = load_mc_dl2_data_file(
-            input_file_proton, quality_cuts, irf_type, dl2_weight_type
+            input_file_proton, quality_cuts, event_type, weight_type_dl2
         )
 
-        if np.any(pnt_proton != pnt_gamma):
+        if any(pnt_proton != pnt_gamma):
             raise RuntimeError(
-                f"Pointing direction of the proton MC {pnt_proton} "
-                f"does not match with that of the gamma MC {pnt_gamma}."
+                f"Pointing direction of the proton MC {pnt_proton.tolist()} deg "
+                f"does not match with that of the gamma MC {pnt_gamma.tolist()} deg."
             )
 
-        simulated_spectrum_proton = PowerLaw.from_simulation(
-            sim_info_proton, irf_obs_time
+        # Load the input electron MC DL2 data file
+        logger.info(f"\nInput electron MC DL2 data file: {input_file_electron}")
+
+        event_table_electron, pnt_electron, sim_info_electron = load_mc_dl2_data_file(
+            input_file_electron, quality_cuts, event_type, weight_type_dl2
         )
+
+        if any(pnt_electron != pnt_gamma):
+            raise RuntimeError(
+                f"Pointing direction of the electron MC {pnt_electron.tolist()} deg "
+                f"does not match with that of the gamma MC {pnt_gamma.tolist()} deg."
+            )
+
+        # Calculate event weights
+        obs_time = config_irf["obs_time_irf"]
+        logger.info(f"\nIRF observation time: {obs_time}")
+
+        obs_time = u.Quantity(obs_time)
+
+        sim_spectrum_proton = PowerLaw.from_simulation(sim_info_proton, obs_time)
+        sim_spectrum_electron = PowerLaw.from_simulation(sim_info_electron, obs_time)
 
         event_table_proton["weight"] = calculate_event_weights(
             true_energy=event_table_proton["true_energy"],
             target_spectrum=IRFDOC_PROTON_SPECTRUM,
-            simulated_spectrum=simulated_spectrum_proton,
-        )
-
-        event_table_bkg = vstack([event_table_bkg, event_table_proton])
-
-        # Load the input electron MC DL2 data file
-        logger.info(f"\nInput electron MC DL2 data file:\n{input_file_electron}")
-
-        event_table_electron, pnt_electron, sim_info_electron = load_mc_dl2_data_file(
-            input_file_electron, quality_cuts, irf_type, dl2_weight_type
-        )
-
-        if np.any(pnt_electron != pnt_gamma):
-            raise RuntimeError(
-                f"Pointing direction of the electron MC {pnt_electron} "
-                f"does not match with that of the gamma MC {pnt_gamma}."
-            )
-
-        simulated_spectrum_electron = PowerLaw.from_simulation(
-            sim_info_electron, irf_obs_time
+            simulated_spectrum=sim_spectrum_proton,
         )
 
         event_table_electron["weight"] = calculate_event_weights(
             true_energy=event_table_electron["true_energy"],
             target_spectrum=IRFDOC_ELECTRON_SPECTRUM,
-            simulated_spectrum=simulated_spectrum_electron,
+            simulated_spectrum=sim_spectrum_electron,
         )
 
-        event_table_bkg = vstack([event_table_bkg, event_table_electron])
+        # Combine the background MCs
+        event_table_bkg = vstack([event_table_proton, event_table_electron])
 
     # Prepare for creating IRFs
-    eng_bins_start = u.Quantity(config_irf["energy_bins"]["start"])
-    eng_bins_stop = u.Quantity(config_irf["energy_bins"]["stop"])
-    eng_bins_n_edges = config_irf["energy_bins"]["n_edges"]
+    config_eng_bins = config_irf["energy_bins"]
+    config_mig_bins = config_irf["migration_bins"]
 
-    logger.info(
-        "\nEnergy bins (log space):"
-        f"\n\tstart: {eng_bins_start}"
-        f"\n\tstop: {eng_bins_stop}"
-        f"\n\tn_edges: {eng_bins_n_edges}"
+    logger.info("\nEnergy bins (log space):")
+    logger.info(format_object(config_eng_bins))
+
+    eng_bins_start = u.Quantity(config_eng_bins["start"])
+    eng_bins_stop = u.Quantity(config_eng_bins["stop"])
+
+    energy_bins = u.TeV * np.geomspace(
+        start=eng_bins_start.to_value("TeV").round(3),
+        stop=eng_bins_stop.to_value("TeV").round(3),
+        num=config_eng_bins["n_edges"],
     )
 
-    energy_bins = u.Quantity(
-        value=np.geomspace(
-            start=eng_bins_start.to_value(u.TeV).round(3),
-            stop=eng_bins_stop.to_value(u.TeV).round(3),
-            num=eng_bins_n_edges,
-        ),
-        unit=u.TeV,
+    logger.info("\nMigration bins (log space):")
+    logger.info(format_object(config_mig_bins))
+
+    migration_bins = np.geomspace(
+        config_mig_bins["start"], config_mig_bins["stop"], config_mig_bins["n_edges"]
     )
 
-    migra_bins_start = config_irf["migration_bins"]["start"]
-    migra_bins_stop = config_irf["migration_bins"]["stop"]
-    migra_bins_n_edges = config_irf["migration_bins"]["n_edges"]
+    if not is_point_like:
+        config_src_bins = config_irf["source_offset_bins"]
 
-    logger.info(
-        "\nMigration bins (log space):"
-        f"\n\tstart: {migra_bins_start}"
-        f"\n\tstop: {migra_bins_stop}"
-        f"\n\tn_edges: {migra_bins_n_edges}"
-    )
+        logger.info("\nSource offset bins (linear space):")
+        logger.info(format_object(config_src_bins))
 
-    migration_bins = np.geomspace(migra_bins_start, migra_bins_stop, migra_bins_n_edges)
+        src_bins_start = u.Quantity(config_src_bins["start"])
+        src_bins_stop = u.Quantity(config_src_bins["stop"])
 
-    if is_bkg_mc:
-
-        bkg_fov_bins_start = u.Quantity(config_irf["bkg_fov_offset_bins"]["start"])
-        bkg_fov_bins_stop = u.Quantity(config_irf["bkg_fov_offset_bins"]["stop"])
-        bkg_fov_bins_n_edges = config_irf["bkg_fov_offset_bins"]["n_edges"]
-
-        logger.info(
-            "\nBackground FoV offset bins (linear space):"
-            f"\n\tstart: {bkg_fov_bins_start}"
-            f"\n\tstop: {bkg_fov_bins_stop}"
-            f"\n\tn_edges: {bkg_fov_bins_n_edges}"
+        source_offset_bins = u.deg * np.linspace(
+            start=src_bins_start.to_value("deg").round(1),
+            stop=src_bins_stop.to_value("deg").round(1),
+            num=config_src_bins["n_edges"],
         )
 
-        bkg_fov_offset_bins = u.Quantity(
-            value=np.linspace(
-                start=bkg_fov_bins_start.to_value(u.deg).round(1),
-                stop=bkg_fov_bins_stop.to_value(u.deg).round(1),
-                num=bkg_fov_bins_n_edges,
-            ),
-            unit=u.deg,
-        )
+        if is_bkg_mc:
+            config_bkg_bins = config_irf["bkg_fov_offset_bins"]
+
+            logger.info("\nBackground FoV offset bins (linear space):")
+            logger.info(format_object(config_bkg_bins))
+
+            bkg_bins_start = u.Quantity(config_bkg_bins["start"])
+            bkg_bins_stop = u.Quantity(config_bkg_bins["stop"])
+
+            bkg_fov_offset_bins = u.deg * np.linspace(
+                start=bkg_bins_start.to_value("deg").round(1),
+                stop=bkg_bins_stop.to_value("deg").round(1),
+                num=config_bkg_bins["n_edges"],
+            )
 
     extra_header = {
         "TELESCOP": "CTA-N",
         "INSTRUME": "LST-1_MAGIC",
         "FOVALIGN": "RADEC",
-        "PNT_ZD": (pnt_gamma[0].to_value(u.deg), "deg"),
-        "PNT_AZ": (pnt_gamma[1].to_value(u.deg), "deg"),
-        "IRF_TYPE": irf_type,
-        "DL2_WEIG": dl2_weight_type,
+        "PNT_ZD": (pnt_gamma[0], "deg"),
+        "PNT_AZ": (pnt_gamma[1], "deg"),
+        "EVT_TYPE": event_type,
+        "DL2_WEIG": weight_type_dl2,
     }
 
     if quality_cuts is not None:
         extra_header["QUAL_CUT"] = quality_cuts
 
+    if is_bkg_mc:
+        extra_header["IRF_OBST"] = (obs_time.to_value("h"), "h")
+
     irf_hdus = fits.HDUList([fits.PrimaryHDU()])
 
     # Apply the gammaness cut
-    gh_cut_type = config_irf["gammaness"]["cut_type"]
+    config_gh_cuts = config_irf["gammaness"]
+    cut_type_gh = config_gh_cuts.pop("cut_type")
 
-    if gh_cut_type == "global":
+    if cut_type_gh == "global":
 
-        gh_cut_value = config_irf["gammaness"]["global_cut_value"]
-        logger.info("\nGlobal gammaness cut:" f"\n\tcut_value: {gh_cut_value}")
+        cut_value_gh = config_gh_cuts["global_cut_value"]
+        logger.info(f"\nGlobal gammaness cut: {cut_value_gh}")
 
-        gh_cut_config = f"gh_glob{gh_cut_value}"
-        extra_header["GH_CUT"] = gh_cut_value
+        extra_header["GH_CUT"] = cut_value_gh
+        output_suffix = f"gh_glob{cut_value_gh}"
 
         # Apply the global gammaness cut
-        logger.info("\nApplying the global gammaness cut...")
-
-        mask_gh_gamma = event_table_gamma["gammaness"] > gh_cut_value
-        event_table_gamma = event_table_gamma[mask_gh_gamma]
+        mask_gh = event_table_gamma["gammaness"] > cut_value_gh
+        event_table_gamma = event_table_gamma[mask_gh]
 
         if is_bkg_mc:
-            mask_gh_bkg = event_table_bkg["gammaness"] > gh_cut_value
-            event_table_bkg = event_table_bkg[mask_gh_bkg]
+            mask_gh = event_table_bkg["gammaness"] > cut_value_gh
+            event_table_bkg = event_table_bkg[mask_gh]
 
-    elif gh_cut_type == "dynamic":
+    elif cut_type_gh == "dynamic":
 
-        gh_efficiency = config_irf["gammaness"]["efficiency"]
-        gh_cut_min = config_irf["gammaness"]["min_cut"]
-        gh_cut_max = config_irf["gammaness"]["max_cut"]
+        config_gh_cuts.pop("global_cut_value", None)
 
-        logger.info(
-            "\nDynamic gammaness cuts:"
-            f"\n\tefficiency: {gh_efficiency}"
-            f"\n\tmin_cut: {gh_cut_min}"
-            f"\n\tmax_cut: {gh_cut_max}"
-        )
+        logger.info("\nDynamic gammaness cuts:")
+        logger.info(format_object(config_gh_cuts))
 
-        gh_cut_config = f"gh_dyn{gh_efficiency}"
+        gh_efficiency = config_gh_cuts["efficiency"]
+        gh_cut_min = config_gh_cuts["min_cut"]
+        gh_cut_max = config_gh_cuts["max_cut"]
 
         extra_header["GH_EFF"] = gh_efficiency
         extra_header["GH_MIN"] = gh_cut_min
         extra_header["GH_MAX"] = gh_cut_max
 
-        # Apply the gammaness cuts satisfying the efficiency
+        output_suffix = f"gh_dyn{gh_efficiency}"
+
+        # Calculate dynamic gammaness cuts
         gh_percentile = 100 * (1 - gh_efficiency)
 
-        gh_cut_table = calculate_percentile_cut(
+        cut_table_gh = calculate_percentile_cut(
             values=event_table_gamma["gammaness"],
             bin_values=event_table_gamma["reco_energy"],
             bins=energy_bins,
@@ -319,35 +364,36 @@ def create_irf(
             max_value=gh_cut_max,
         )
 
-        logger.info(
-            f"\nGammaness-cut table:\n\n{gh_cut_table}"
-            "\n\nApplying the dynamic gammaness cuts..."
-        )
+        logger.info(f"\nGammaness-cut table:\n\n{cut_table_gh}")
 
-        mask_gh_gamma = evaluate_binned_cut(
+        # Apply the dynamic gammaness cuts
+        mask_gh = evaluate_binned_cut(
             values=event_table_gamma["gammaness"],
             bin_values=event_table_gamma["reco_energy"],
-            cut_table=gh_cut_table,
+            cut_table=cut_table_gh,
             op=operator.ge,
         )
 
-        event_table_gamma = event_table_gamma[mask_gh_gamma]
+        event_table_gamma = event_table_gamma[mask_gh]
 
         if is_bkg_mc:
-            mask_gh_bkg = evaluate_binned_cut(
+            mask_gh = evaluate_binned_cut(
                 values=event_table_bkg["gammaness"],
                 bin_values=event_table_bkg["reco_energy"],
-                cut_table=gh_cut_table,
+                cut_table=cut_table_gh,
                 op=operator.ge,
             )
 
-            event_table_bkg = event_table_bkg[mask_gh_bkg]
+            event_table_bkg = event_table_bkg[mask_gh]
+
+        # Add one dimension for the FoV offset bin
+        gh_cuts = cut_table_gh["cut"][:, np.newaxis]
 
         # Create a gammaness-cut HDU
-        logger.info("Creating a gammaness-cut HDU...")
+        logger.info("\nCreating a gammaness-cut HDU...")
 
         hdu_gh_cuts = create_gh_cuts_hdu(
-            gh_cuts=gh_cut_table["cut"][:, np.newaxis],
+            gh_cuts=gh_cuts,
             reco_energy_bins=energy_bins,
             fov_offset_bins=fov_offset_bins,
             **extra_header,
@@ -356,104 +402,117 @@ def create_irf(
         irf_hdus.append(hdu_gh_cuts)
 
     else:
-        raise ValueError(f"Unknown gammaness-cut type '{gh_cut_type}'.")
+        raise ValueError(f"Unknown gammaness-cut type '{cut_type_gh}'.")
 
-    # Apply the theta cut
-    theta_cut_type = config_irf["theta"]["cut_type"]
+    if is_point_like:
 
-    if theta_cut_type == "global":
+        # Apply the theta cut
+        config_theta_cuts = config_irf["theta"]
+        cut_type_theta = config_theta_cuts.pop("cut_type")
 
-        theta_cut_value = u.Quantity(config_irf["theta"]["global_cut_value"])
-        logger.info("\nGlobal theta cut:" f"\n\tcut_value: {theta_cut_value}")
+        if cut_type_theta == "global":
 
-        theta_cut_config = f"theta_glob{theta_cut_value.to_value(u.deg)}deg"
-        extra_header["RAD_MAX"] = (theta_cut_value.to_value(u.deg), "deg")
+            cut_value_theta = config_theta_cuts["global_cut_value"]
+            logger.info(f"\nGlobal theta cut: {cut_value_theta}")
 
-        # Apply the global theta cut
-        logger.info("\nApplying the global theta cut...")
+            cut_value_theta = u.Quantity(cut_value_theta).to_value("deg")
 
-        mask_theta = event_table_gamma["theta"] < theta_cut_value
-        event_table_gamma = event_table_gamma[mask_theta]
+            extra_header["RAD_MAX"] = (cut_value_theta, "deg")
+            output_suffix += f"_theta_glob{cut_value_theta}deg"
 
-    elif theta_cut_type == "dynamic":
+            # Apply the global theta cut
+            mask_theta = event_table_gamma["theta"].to_value("deg") < cut_value_theta
+            event_table_gamma = event_table_gamma[mask_theta]
 
-        theta_efficiency = config_irf["theta"]["efficiency"]
-        theta_cut_min = u.Quantity(config_irf["theta"]["min_cut"])
-        theta_cut_max = u.Quantity(config_irf["theta"]["max_cut"])
+        elif cut_type_theta == "dynamic":
 
-        logger.info(
-            "\nDynamic theta cuts:"
-            f"\n\tefficiency: {theta_efficiency}"
-            f"\n\tmin_cut: {theta_cut_min}"
-            f"\n\tmax_cut: {theta_cut_max}"
-        )
+            config_theta_cuts.pop("global_cut_value", None)
 
-        theta_cut_config = f"theta_dyn{theta_efficiency}"
+            logger.info("\nDynamic theta cuts:")
+            logger.info(format_object(config_theta_cuts))
 
-        extra_header["TH_EFF"] = theta_efficiency
-        extra_header["TH_MIN"] = (theta_cut_min.to_value(u.deg), "deg")
-        extra_header["TH_MAX"] = (theta_cut_max.to_value(u.deg), "deg")
+            theta_efficiency = config_theta_cuts["efficiency"]
+            theta_cut_min = u.Quantity(config_theta_cuts["min_cut"])
+            theta_cut_max = u.Quantity(config_theta_cuts["max_cut"])
 
-        # Apply the theta cuts satisfying the efficiency
-        theta_percentile = 100 * theta_efficiency
+            extra_header["TH_EFF"] = theta_efficiency
+            extra_header["TH_MIN"] = (theta_cut_min.to_value("deg"), "deg")
+            extra_header["TH_MAX"] = (theta_cut_max.to_value("deg"), "deg")
 
-        theta_cut_table = calculate_percentile_cut(
-            values=event_table_gamma["theta"],
-            bin_values=event_table_gamma["reco_energy"],
-            bins=energy_bins,
-            fill_value=theta_cut_max,
-            percentile=theta_percentile,
-            min_value=theta_cut_min,
-            max_value=theta_cut_max,
-        )
+            output_suffix += f"_theta_dyn{theta_efficiency}"
 
-        logger.info(
-            f"\nTheta-cut table:\n\n{theta_cut_table}"
-            "\n\nApplying the dynamic theta cuts..."
-        )
+            # Calculate dynamic theta cuts
+            theta_percentile = 100 * theta_efficiency
 
-        mask_theta = evaluate_binned_cut(
-            values=event_table_gamma["theta"],
-            bin_values=event_table_gamma["reco_energy"],
-            cut_table=theta_cut_table,
-            op=operator.le,
-        )
+            cut_table_theta = calculate_percentile_cut(
+                values=event_table_gamma["theta"],
+                bin_values=event_table_gamma["reco_energy"],
+                bins=energy_bins,
+                fill_value=theta_cut_max,
+                percentile=theta_percentile,
+                min_value=theta_cut_min,
+                max_value=theta_cut_max,
+            )
 
-        event_table_gamma = event_table_gamma[mask_theta]
+            logger.info(f"\nTheta-cut table:\n\n{cut_table_theta}")
 
-        # Create a rad-max HDU
-        logger.info("Creating a rad-max HDU...")
+            # Apply the dynamic theta cuts
+            mask_theta = evaluate_binned_cut(
+                values=event_table_gamma["theta"],
+                bin_values=event_table_gamma["reco_energy"],
+                cut_table=cut_table_theta,
+                op=operator.le,
+            )
 
-        hdu_rad_max = create_rad_max_hdu(
-            rad_max=theta_cut_table["cut"][:, np.newaxis],
-            reco_energy_bins=energy_bins,
-            fov_offset_bins=fov_offset_bins,
-            point_like=True,
-            extname="RAD_MAX",
-            **extra_header,
-        )
+            event_table_gamma = event_table_gamma[mask_theta]
 
-        irf_hdus.append(hdu_rad_max)
+            # Add one dimension for the FoV offset bin
+            theta_cuts = cut_table_theta["cut"][:, np.newaxis]
 
-    else:
-        raise ValueError(f"Unknown theta-cut type '{theta_cut_type}'.")
+            # Create a rad-max HDU
+            logger.info("\nCreating a rad-max HDU...")
+
+            hdu_rad_max = create_rad_max_hdu(
+                rad_max=theta_cuts,
+                reco_energy_bins=energy_bins,
+                fov_offset_bins=fov_offset_bins,
+                extname="RAD_MAX",
+                **extra_header,
+            )
+
+            irf_hdus.append(hdu_rad_max)
+
+        else:
+            raise ValueError(f"Unknown theta-cut type '{cut_type_theta}'.")
 
     # Create an effective-area HDU
     logger.info("\nCreating an effective-area HDU...")
 
     with np.errstate(invalid="ignore", divide="ignore"):
 
-        aeff = effective_area_per_energy(
-            selected_events=event_table_gamma,
-            simulation_info=sim_info_gamma,
-            true_energy_bins=energy_bins,
-        )
+        if is_diffuse_mc:
+            aeff = effective_area_per_energy_and_fov(
+                selected_events=event_table_gamma,
+                simulation_info=sim_info_gamma,
+                true_energy_bins=energy_bins,
+                fov_offset_bins=fov_offset_bins,
+            )
+
+        else:
+            aeff = effective_area_per_energy(
+                selected_events=event_table_gamma,
+                simulation_info=sim_info_gamma,
+                true_energy_bins=energy_bins,
+            )
+
+            # Add one dimension for the FoV offset bin
+            aeff = aeff[:, np.newaxis]
 
         aeff_hdu = create_aeff2d_hdu(
-            effective_area=aeff[:, np.newaxis],
+            effective_area=aeff,
             true_energy_bins=energy_bins,
             fov_offset_bins=fov_offset_bins,
-            point_like=True,
+            point_like=is_point_like,
             extname="EFFECTIVE AREA",
             **extra_header,
         )
@@ -475,46 +534,69 @@ def create_irf(
         true_energy_bins=energy_bins,
         migration_bins=migration_bins,
         fov_offset_bins=fov_offset_bins,
-        point_like=True,
+        point_like=is_point_like,
         extname="ENERGY DISPERSION",
         **extra_header,
     )
 
     irf_hdus.append(edisp_hdu)
 
-    # Create a background HDU
-    if is_bkg_mc:
-        logger.info("Creating a background HDU...")
+    if not is_point_like:
 
-        bkg = background_2d(
-            events=event_table_bkg,
-            reco_energy_bins=energy_bins,
-            fov_offset_bins=bkg_fov_offset_bins,
-            t_obs=irf_obs_time,
+        # Create a PSF table HDU
+        logger.info("Creating a PSF table HDU...")
+
+        psf = psf_table(
+            events=event_table_gamma,
+            true_energy_bins=energy_bins,
+            source_offset_bins=source_offset_bins,
+            fov_offset_bins=fov_offset_bins,
         )
 
-        bkg_hdu = create_background_2d_hdu(
-            background_2d=bkg.T,
-            reco_energy_bins=energy_bins,
-            fov_offset_bins=bkg_fov_offset_bins,
-            extname="BACKGROUND",
+        psf_hdu = create_psf_table_hdu(
+            psf=psf,
+            true_energy_bins=energy_bins,
+            source_offset_bins=source_offset_bins,
+            fov_offset_bins=fov_offset_bins,
+            extname="PSF",
             **extra_header,
         )
 
-        irf_hdus.append(bkg_hdu)
+        irf_hdus.append(psf_hdu)
+
+        if is_bkg_mc:
+
+            # Create a background HDU
+            logger.info("Creating a background HDU...")
+
+            bkg = background_2d(
+                events=event_table_bkg,
+                reco_energy_bins=energy_bins,
+                fov_offset_bins=bkg_fov_offset_bins,
+                t_obs=obs_time,
+            )
+
+            bkg_hdu = create_background_2d_hdu(
+                background_2d=bkg,
+                reco_energy_bins=energy_bins,
+                fov_offset_bins=bkg_fov_offset_bins,
+                extname="BACKGROUND",
+                **extra_header,
+            )
+
+            irf_hdus.append(bkg_hdu)
 
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     output_file = (
-        f"{output_dir}/irf_zd_{pnt_gamma[0].to_value(u.deg)}deg_"
-        f"az_{pnt_gamma[1].to_value(u.deg)}deg_"
-        f"{irf_type}_{gh_cut_config}_{theta_cut_config}.fits.gz"
+        f"{output_dir}/irf_zd_{pnt_gamma[0]}deg_az_{pnt_gamma[1]}deg_"
+        f"{event_type}_{output_suffix}.fits.gz"
     )
 
     irf_hdus.writeto(output_file, overwrite=True)
 
-    logger.info(f"\nOutput file:\n{output_file}")
+    logger.info(f"\nOutput file: {output_file}")
 
 
 def main():
@@ -529,7 +611,7 @@ def main():
         dest="input_file_gamma",
         type=str,
         required=True,
-        help="Path to an input gamma MC DL2 data file.",
+        help="Path to an input gamma MC DL2 data file",
     )
 
     parser.add_argument(
@@ -537,7 +619,7 @@ def main():
         "-p",
         dest="input_file_proton",
         type=str,
-        help="Path to an input proton MC DL2 data file.",
+        help="Path to an input proton MC DL2 data file",
     )
 
     parser.add_argument(
@@ -545,7 +627,7 @@ def main():
         "-e",
         dest="input_file_electron",
         type=str,
-        help="Path to an input electron MC DL2 data file.",
+        help="Path to an input electron MC DL2 data file",
     )
 
     parser.add_argument(
@@ -554,7 +636,7 @@ def main():
         dest="output_dir",
         type=str,
         default="./data",
-        help="Path to a directory where to save an output IRF file.",
+        help="Path to a directory where to save an output IRF file",
     )
 
     parser.add_argument(
@@ -563,7 +645,7 @@ def main():
         dest="config_file",
         type=str,
         default="./config.yaml",
-        help="Path to a configuration file.",
+        help="Path to a configuration file",
     )
 
     args = parser.parse_args()

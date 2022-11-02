@@ -21,7 +21,7 @@ entry_points["console_scripts"] = [
 tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
 
 docs_require = [
-    "sphinx~=4.2",
+    "sphinx",
     "sphinx-automodapi",
     "sphinx_argparse",
     "sphinx_rtd_theme",

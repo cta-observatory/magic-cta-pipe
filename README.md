@@ -4,7 +4,7 @@ Repository for the analysis of MAGIC and MAGIC+LST1 data, based on [*ctapipe*](h
 
 * Code: https://github.com/cta-observatory/magic-cta-pipe
 
-### Note: This package is under heavy development. Usage at your own risk, it is recommended to contact one of the latest committers if you plan to use this package.
+v0.2.0 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder. See the [README](https://github.com/cta-observatory/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/README.md) for more details on how to run the analysis.
 
 # Installation for users
 
@@ -36,10 +36,6 @@ black filename.py       # reformats filename.py with black
 ```
 
 In general, if you want to add a new feature or fix a bug, please open a new issue, and then create a new branch to develop the new feature or code the bug fix. You can create an early pull request even if it is not complete yet, you can tag it as "Draft" so that it will not be merged, and other developers can already check it and provide comments. When the code is ready, remove the tag "Draft" and select two people to review the pull request (at the moment the merge is not blocked if no review is performed, but that may change in the future). When the review is complete, the branch will be merged into the main branch.
-
-# Available scripts
-
-*magic-cta-pipe* scripts to perform the analysis of MAGIC only and MAGIC+LST1 data. Both types of analysis can be performed using the scripts within the *lst1_magic* folder. See the [README](https://github.com/cta-observatory/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/README.md) for more details on how to run the analysis.
 
 <!--
 A brief description:
