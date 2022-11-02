@@ -111,7 +111,9 @@ def test_compare_hillas_stereo_params(
         config_params = {
             "magic-cta-pipe-input": {
                 "MCP-path": str(
-                    test_data / "simulated/dl1_stereo" / f"dl1_stereo_magic_only_MAGIC_GA_za35to50.Run{run_number}.h5"
+                    test_data
+                    / "simulated/dl1_stereo"
+                    / f"dl1_stereo_magic_only_MAGIC_GA_za35to50.Run{run_number}.h5"
                 )
             },
             "MARS-input": {"MARS-path": str(dataset_superstar)},
@@ -125,7 +127,9 @@ def test_compare_hillas_stereo_params(
         config_params = {
             "magic-cta-pipe-input": {
                 "MCP-path": str(
-                    test_data / "real/dl1_stereo" / f"dl1_stereo_magic_only_MAGIC.Run0{run_number}.h5"
+                    test_data
+                    / "real/dl1_stereo"
+                    / f"dl1_stereo_magic_only_MAGIC.Run0{run_number}.h5"
                 )
             },
             "MARS-input": {"MARS-path": str(dataset_superstar)},
@@ -167,8 +171,12 @@ def test_compare_hillas_stereo_params(
         config_mcp = yaml.safe_load(f)
 
     if is_mc:
-        magic_calib_to_dl1(dataset_calibrated_M1, test_data / "simulated/dl1", config_mcp, False)
-        magic_calib_to_dl1(dataset_calibrated_M2, test_data / "simulated/dl1", config_mcp, False)
+        magic_calib_to_dl1(
+            dataset_calibrated_M1, test_data / "simulated/dl1", config_mcp, False
+        )
+        magic_calib_to_dl1(
+            dataset_calibrated_M2, test_data / "simulated/dl1", config_mcp, False
+        )
         merge_hdf_files(
             test_data / "simulated/dl1",
             output_dir=test_data / "simulated/dl1_merged",
@@ -176,14 +184,20 @@ def test_compare_hillas_stereo_params(
             subrun_wise=False,
         )
         stereo_reconstruction(
-            test_data / "simulated/dl1_merged" / f"dl1_MAGIC_GA_za35to50.Run{run_number}.h5",
+            test_data
+            / "simulated/dl1_merged"
+            / f"dl1_MAGIC_GA_za35to50.Run{run_number}.h5",
             test_data / "simulated/dl1_stereo",
             config_mcp,
             magic_only_analysis=True,
         )
     else:
-        magic_calib_to_dl1(dataset_calibrated_M1, test_data / "real/dl1", config_mcp, True)
-        magic_calib_to_dl1(dataset_calibrated_M2, test_data / "real/dl1", config_mcp, True)
+        magic_calib_to_dl1(
+            dataset_calibrated_M1, test_data / "real/dl1", config_mcp, True
+        )
+        magic_calib_to_dl1(
+            dataset_calibrated_M2, test_data / "real/dl1", config_mcp, True
+        )
         merge_hdf_files(
             test_data / "real/dl1",
             output_dir=test_data / "real/dl1_merged",
@@ -199,8 +213,13 @@ def test_compare_hillas_stereo_params(
     list_compare_parameters, frac = compare_hillas_stereo_parameters(
         config_file=config_params_file, params_key="events/parameters", plot_image=True
     )
-    print("all = ", len(list_compare_parameters), " bad: ",sum(list_compare_parameters),
-          np.array(params_list)[list_compare_parameters])
+    print(
+        "all = ",
+        len(list_compare_parameters),
+        " bad: ",
+        sum(list_compare_parameters),
+        np.array(params_list)[list_compare_parameters],
+    )
     print(list_compare_parameters)
     print(frac)
     assert list_compare_parameters == [False] * len(list_compare_parameters)

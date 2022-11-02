@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
 import yaml
+
 # from astropy.coordinates import angular_separation, EarthLocation, AltAz, SkyCoord
 # from astropy.time import Time
 # from astropy import units as u
@@ -215,7 +216,9 @@ def compare_hillas_stereo_parameters(
         df_params["relative_error"] = (
             df_params[par + "_mars"] - df_params[par + "_mcp"]
         ) / df_params[par + "_mcp"]
-        error = df_params.loc[(np.abs(df_params["relative_error"]) > threshold[par])].to_numpy()
+        error = df_params.loc[
+            (np.abs(df_params["relative_error"]) > threshold[par])
+        ].to_numpy()
 
         Path(config["Output_paths"]["file_output_directory"]).mkdir(
             exist_ok=True, parents=True
@@ -229,12 +232,14 @@ def compare_hillas_stereo_parameters(
         ):  # percentage of the events, that is allowed to have errors bigger than the specified threshold
             errors_found = False
         else:
-            with pd.HDFStore(f'{config["Output_paths"]["file_output_directory"]}/{filename_no_ext}_hillas_comparison.h5') as store:
+            with pd.HDFStore(
+                f'{config["Output_paths"]["file_output_directory"]}/{filename_no_ext}_hillas_comparison.h5'
+            ) as store:
                 store.put(f"/{par}", df_params, format="table", data_columns=True)
             errors_found = True
-            
+
         comparison.append(errors_found)
-        comparison_fraction.append(len(error)/len(df_params))
+        comparison_fraction.append(len(error) / len(df_params))
 
         # ----------------------
         # plot image (optional)
