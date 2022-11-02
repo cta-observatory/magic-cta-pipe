@@ -30,6 +30,7 @@ def new_camera_geometry(camera_geom):
         cam_rotation=camera_geom.cam_rotation,
     )
 
+
 # set configurations for the cleaning
 cleaning_config = dict(
     picture_thresh=6.0,
@@ -44,6 +45,7 @@ cleaning_config = dict(
 bad_pixels_config = dict(
     pedestalLevel=400, pedestalLevelVariance=4.5, pedestalType="FromExtractorRndm"
 )
+
 
 # define the image comparison function
 def image_comparison(
@@ -77,10 +79,10 @@ def image_comparison(
             config["input_files"]["magic_cta_pipe"][f"M{tel_id}"]
         ) as mcp_file:
             ids_to_compare = mcp_file["Events"].arrays(
-                expressions = ["MRawEvtHeader.fStereoEvtNumber"],
-                cut = f"(MTriggerPattern.fPrescaled == {trigger_pattern})",
-                library = "np",
-                )
+                expressions=["MRawEvtHeader.fStereoEvtNumber"],
+                cut=f"(MTriggerPattern.fPrescaled == {trigger_pattern})",
+                library="np",
+            )
             ids_to_compare = ids_to_compare["MRawEvtHeader.fStereoEvtNumber"].tolist()
             ids_to_compare = [x for x in ids_to_compare if x != 0]
 
@@ -100,14 +102,14 @@ def image_comparison(
     telescope = []  # telescope id
     obs_id = []  # run number
     image = []  # pixel charges
-    times = [] # pixel times 
+    times = []  # pixel times
 
     for image_container in read_images(mars_input, read_calibrated=True):
         events.append(image_container.event_id)
         telescope.append(image_container.tel_id)
         obs_id.append(image_container.obs_id)
         image.append(image_container.image_charge_cleaned)
-        times.append(image_container.image_time_cleaned) 
+        times.append(image_container.image_time_cleaned)
 
     mars_data = pd.DataFrame(
         list(zip(events, telescope, obs_id, image, times)),
@@ -157,7 +159,9 @@ def image_comparison(
     with pd.HDFStore(f"{out_path}/{run_num}_image_comparison_test.h5") as store:
         for event in source:
             if event.index.event_id not in ids_to_compare:
-                print(f"Event with ID {event.index.event_id} not found in calibrated file. Skipping...")
+                print(
+                    f"Event with ID {event.index.event_id} not found in calibrated file. Skipping..."
+                )
                 skipped_count += 1
                 continue
 
@@ -170,7 +174,9 @@ def image_comparison(
             ]
 
             if mars_event.empty:
-                print(f"Event with ID {event.index.event_id} not found in MARS file. Skipping...")
+                print(
+                    f"Event with ID {event.index.event_id} not found in MARS file. Skipping..."
+                )
                 skipped_count += 1
                 continue
 
@@ -243,7 +249,9 @@ def image_comparison(
                     charge_differences >= 0.00000001 * vmax
                 ):  # threshold for differences allowed. The difference cannot be higher than x% of the highest pixel charge
                     print(np.where(clean_mask_pixels == True)[0])
-                    print(f"Charge differences: {charge_differences[clean_mask_pixels]}")
+                    print(
+                        f"Charge differences: {charge_differences[clean_mask_pixels]}"
+                    )
                     errors = True
 
             if errors:
@@ -260,11 +268,19 @@ def image_comparison(
             # print(time_diff)
             # print(np.amax(time_diff))
             time_mask_pixels = time_diff >= 0.01
-            print("Differences for pixel:", np.where(time_mask_pixels == True)[0], len(np.where(time_mask_pixels == True)[0]))
-            print(f"Number of pixels selected: {len(np.where(event_image_mcp != 0)[0])}")
+            print(
+                "Differences for pixel:",
+                np.where(time_mask_pixels == True)[0],
+                len(np.where(time_mask_pixels == True)[0]),
+            )
+            print(
+                f"Number of pixels selected: {len(np.where(event_image_mcp != 0)[0])}"
+            )
 
             time_errors = False
-            if len(np.where(time_mask_pixels == True)[0]) > 3: #number of pixels that are allowed to have a >1% difference in time
+            if (
+                len(np.where(time_mask_pixels == True)[0]) > 3
+            ):  # number of pixels that are allowed to have a >1% difference in time
                 time_errors = True
 
             if time_errors:
@@ -295,12 +311,22 @@ def image_comparison(
             if config["save_only_when_differences"] == True:
                 if any(charge_differences) == True:
                     # with pd.HDFStore(f"{out_path}/{run_num}_image_comparison.h5") as store:
-                    store.put(f"/{event.index.event_id}_M{tel_id}", df_pixel, format="table", data_columns=True)
+                    store.put(
+                        f"/{event.index.event_id}_M{tel_id}",
+                        df_pixel,
+                        format="table",
+                        data_columns=True,
+                    )
 
             # the file gets saved in any case
             elif config["save_only_when_differences"] == False:
                 # with pd.HDFStore(f"{out_path}/{run_num}_image_comparison.h5") as store:
-                store.put(f"/{event.index.event_id}_M{tel_id}", df_pixel, format="table", data_columns=True)
+                store.put(
+                    f"/{event.index.event_id}_M{tel_id}",
+                    df_pixel,
+                    format="table",
+                    data_columns=True,
+                )
 
             if config["save_plots"] == True:
                 # plotting ------------------------------------------------------------------------------------------------------
@@ -341,7 +367,7 @@ def image_comparison(
                 )
                 ax4.set_title("differences MARS-mcp")
 
-                # the white outline shows the pixels used for the image after cleaning, 
+                # the white outline shows the pixels used for the image after cleaning,
                 # the ones that are filled yellow show where differences are
 
                 # differences between MARS and the calibrated data
@@ -374,9 +400,17 @@ def image_comparison(
 
     print("Number of events compared:", len(ids_to_compare))
     print("Number of events skipped:", skipped_count)
-    print("Number of events with image time errors after cleaning:", len(time_comparison), \
-        "\nPercentage of events after cleaning:", len(time_comparison)/(len(ids_to_compare)))
-    print("Number of events with image charge errors after cleaning:", len(comparison), \
-        "\nPercentage of events after cleaning:", len(comparison)/(len(ids_to_compare)))
+    print(
+        "Number of events with image time errors after cleaning:",
+        len(time_comparison),
+        "\nPercentage of events after cleaning:",
+        len(time_comparison) / (len(ids_to_compare)),
+    )
+    print(
+        "Number of events with image charge errors after cleaning:",
+        len(comparison),
+        "\nPercentage of events after cleaning:",
+        len(comparison) / (len(ids_to_compare)),
+    )
 
     return (comparison, time_comparison, len(ids_to_compare))
