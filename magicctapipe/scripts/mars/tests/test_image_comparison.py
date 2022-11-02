@@ -74,8 +74,8 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
             "output_files": {"file_path": str(test_data / "simulated/test_images")},
             "event_list": [1961, 1962, 1964, 1965, 2001],
             "save_only_when_differences": True,
-            "save_plots": True,
-            "trigger_pattern": 1 #MC_STEREO_AND_MONO_TRIGGER_PATTERN
+            "save_plots": False,
+            "trigger_pattern": 1,  # MC_STEREO_AND_MONO_TRIGGER_PATTERN
         }
     else:
         config_image = {
@@ -89,8 +89,8 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
             "output_files": {"file_path": str(test_data / "real/test_images")},
             "event_list": [1961, 1962, 1964, 1965, 2001],
             "save_only_when_differences": True,
-            "save_plots": True,
-            "trigger_pattern": 128 #DATA_STEREO_TRIGGER_PATTERN
+            "save_plots": False,
+            "trigger_pattern": 128,  # DATA_STEREO_TRIGGER_PATTERN
         }
 
     config_image_file = str(tmp_path / "image_comparison_config.yaml")
@@ -106,9 +106,8 @@ def test_image_comparison(dataset_calibrated, dataset_images, tmp_path):
         comparison = image_comparison(
             config_file=config_image_file, mode="use_all", tel_id=2, max_events=20
         )
-    #image charge comparison
-    assert len(comparison[0]) <= 0.0003*comparison[2]
+    # image charge comparison
+    assert len(comparison[0]) <= 0.0003 * comparison[2]
 
-    #image time comparison
+    # image time comparison
     # assert len(comparison[1]) <= 0.0003*comparison[2]
-
