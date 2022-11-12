@@ -40,9 +40,10 @@ def parse_args(args):
     """
 
     parser = argparse.ArgumentParser(
-        description="Check evolution of survival fraction of pedestal events.",
+        description="Script to create and optionally submit jobs for magic_calib_to_dl1 script.",
         prefix_chars="-",
     )
+
     parser.add_argument(
         "--input-files",
         "-i",
