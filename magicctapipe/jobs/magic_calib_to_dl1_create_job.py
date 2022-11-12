@@ -3,6 +3,8 @@ import sys
 import argparse
 import glob
 
+import subprocess as sp
+
 from jinja2 import Template
 from pathlib import Path
 
@@ -72,6 +74,13 @@ def parse_args(args):
         help="Process the events of all the subrun files at once",
     )
 
+    parser.add_argument(
+        "--submit",
+        dest="submit",
+        action="store_true",
+        help="Submit the job via SLURM sbatch",
+    )
+
     return parser.parse_args(args)
 
 
@@ -83,6 +92,7 @@ def main(*args):
     output_dir = flags.output_dir
     config_file = flags.config_file
     process_run = flags.process_run
+    submit = flags.submit
 
     file_list = [
         f"{str(Path(filename).parent.resolve())}/{Path(filename).name}"
@@ -103,7 +113,12 @@ def main(*args):
 
     j2_template = Template(template)
     print(j2_template.render(job_dict))
-    j2_template.stream(job_dict).dump("magic_calib_to_dl1.slurm")
+    job_submit_filename = "magic_calib_to_dl1.slurm"
+    j2_template.stream(job_dict).dump(job_submit_filename)
+
+    if submit:
+        commandargs = ["sbatch", job_submit_filename]
+        sp.check_output(commandargs, shell=False)
 
 
 if __name__ == "__main__":
