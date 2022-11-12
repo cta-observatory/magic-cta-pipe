@@ -9,6 +9,9 @@ from jinja2 import Template
 from pathlib import Path
 
 
+__all__ = ["magic_calib_to_dl1_jobs"]
+
+
 template = """#!/bin/bash
 #SBATCH -A aswg
 #SBATCH -p short,long,xxl
@@ -84,15 +87,7 @@ def parse_args(args):
     return parser.parse_args(args)
 
 
-def main(*args):
-
-    flags = parse_args(args)
-
-    input_files = flags.input_files
-    output_dir = flags.output_dir
-    config_file = flags.config_file
-    process_run = flags.process_run
-    submit = flags.submit
+def magic_calib_to_dl1_jobs(input_files, output_dir, config_file, process_run, submit):
 
     file_list = [
         f"{str(Path(filename).parent.resolve())}/{Path(filename).name}"
@@ -119,6 +114,19 @@ def main(*args):
     if submit:
         commandargs = ["sbatch", job_submit_filename]
         sp.check_output(commandargs, shell=False)
+
+
+def main(*args):
+
+    flags = parse_args(args)
+
+    input_files = flags.input_files
+    output_dir = flags.output_dir
+    config_file = flags.config_file
+    process_run = flags.process_run
+    submit = flags.submit
+
+    magic_calib_to_dl1_jobs(input_files, output_dir, config_file, process_run, submit)
 
 
 if __name__ == "__main__":
