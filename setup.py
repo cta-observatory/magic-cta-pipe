@@ -16,6 +16,7 @@ entry_points["console_scripts"] = [
     "lst1_magic_train_rfs = magicctapipe.scripts.lst1_magic.lst1_magic_train_rfs:main",
     "magic_calib_to_dl1 = magicctapipe.scripts.lst1_magic.magic_calib_to_dl1:main",
     "merge_hdf_files = magicctapipe.scripts.lst1_magic.merge_hdf_files:main",
+    "magic_calib_to_dl1_jobs = magicctapipe.jobs.magic_calib_to_dl1_jobs:main",
 ]
 
 tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
