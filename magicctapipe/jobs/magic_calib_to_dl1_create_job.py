@@ -7,12 +7,12 @@ from jinja2 import Template
 from pathlib import Path
 
 
-template = """
-#!/bin/bash
+template = """#!/bin/bash
 #SBATCH -A aswg
 #SBATCH -p short,long,xxl
 #SBATCH -J {{ job_name }}
-#SBATCH -o {{ output_dir }}
+#SBATCH -o {{ output_dir }}/{{ job_name }}_%A_%a.out
+#SBATCH -e {{ output_dir }}/{{ job_name }}_%A_%a.err
 #SBATCH --array=0-{{ stop_job }}
 
 source {{ home }}/.bashrc
@@ -25,6 +25,7 @@ case $SLURM_ARRAY_TASK_ID in
 esac
 
 magic_calib_to_dl1 -i $INPUT_FILE -o {{ output_dir }} -c {{ config_file }} {% if process_run -%}--process-run{% endif %}
+
 """
 
 
