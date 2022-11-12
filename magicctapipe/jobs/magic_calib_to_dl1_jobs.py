@@ -1,5 +1,4 @@
 import os
-import sys
 import argparse
 import glob
 
@@ -34,60 +33,6 @@ magic_calib_to_dl1 -i $INPUT_FILE -o {{ output_dir }} -c {{ config_file }} {% if
 """
 
 
-def parse_args(args):
-    """
-    Parse command line options and arguments.
-    """
-
-    parser = argparse.ArgumentParser(
-        description="Script to create and optionally submit jobs for magic_calib_to_dl1 script.",
-        prefix_chars="-",
-    )
-
-    parser.add_argument(
-        "--input-files",
-        "-i",
-        dest="input_files",
-        type=str,
-        required=True,
-        help="Path to MAGIC calibrated files",
-    )
-
-    parser.add_argument(
-        "--output-dir",
-        "-o",
-        dest="output_dir",
-        type=str,
-        default="./data",
-        help="Path to a directory where to save the output data files and job log files",
-    )
-
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config.yaml",
-        help="Path to a configuration file",
-    )
-
-    parser.add_argument(
-        "--process-run",
-        dest="process_run",
-        action="store_true",
-        help="Process the events of all the subrun files at once",
-    )
-
-    parser.add_argument(
-        "--submit",
-        dest="submit",
-        action="store_true",
-        help="Submit the job via SLURM sbatch",
-    )
-
-    return parser.parse_args(args)
-
-
 def magic_calib_to_dl1_jobs(input_files, output_dir, config_file, process_run, submit):
 
     file_list = [
@@ -117,9 +62,55 @@ def magic_calib_to_dl1_jobs(input_files, output_dir, config_file, process_run, s
         sp.check_output(commandargs, shell=False)
 
 
-def main(*args):
+def main():
 
-    flags = parse_args(args)
+    parser = argparse.ArgumentParser(
+        description="Script to create and optionally submit jobs for magic_calib_to_dl1 script.",
+        prefix_chars="-",
+    )
+
+    parser.add_argument(
+        "--input-files",
+        "-i",
+        dest="input_files",
+        type=str,
+        required=True,
+        help="Path to MAGIC calibrated files",
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        "-o",
+        dest="output_dir",
+        type=str,
+        default="./",
+        help="Path to a directory where to save the output data files and job log files",
+    )
+
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config.yaml",
+        help="Path to a configuration file",
+    )
+
+    parser.add_argument(
+        "--process-run",
+        dest="process_run",
+        action="store_true",
+        help="Process the events of all the subrun files at once",
+    )
+
+    parser.add_argument(
+        "--submit",
+        dest="submit",
+        action="store_true",
+        help="Submit the job via SLURM sbatch",
+    )
+
+    flags = parser.parse_args()
 
     input_files = flags.input_files
     output_dir = flags.output_dir
@@ -131,4 +122,4 @@ def main(*args):
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    main()
