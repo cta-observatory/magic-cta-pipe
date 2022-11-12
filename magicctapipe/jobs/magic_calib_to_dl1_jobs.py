@@ -14,7 +14,7 @@ __all__ = ["magic_calib_to_dl1_jobs"]
 template = """#!/bin/bash
 #SBATCH -A aswg
 #SBATCH -p short,long,xxl
-#SBATCH -J {{ job_name }}
+#SBATCH -J {{ job_name }}_%A
 #SBATCH -o {{ output_dir }}/{{ job_name }}_%A_%a.out
 #SBATCH -e {{ output_dir }}/{{ job_name }}_%A_%a.err
 #SBATCH --array=0-{{ stop_job }}
