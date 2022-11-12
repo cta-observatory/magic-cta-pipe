@@ -103,6 +103,7 @@ def main(*args):
 
     j2_template = Template(template)
     print(j2_template.render(job_dict))
+    j2_template.stream(job_dict).dump("magic_calib_to_dl1.slurm")
 
 
 if __name__ == "__main__":
