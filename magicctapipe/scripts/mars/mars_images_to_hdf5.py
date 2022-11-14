@@ -171,7 +171,7 @@ class ImageContainerCleaned(Container):
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
     tel_id = Field(-1, "Telescope ID")
-    image_cleaned = Field(
+    image_charge_cleaned = Field(
         None,
         "Numpy array of pixel charges after cleaning." "Shape: (n_pixel)",
         dtype=">f8",
