@@ -40,7 +40,7 @@ def lst1_magic_event_coincidence_jobs(
     file_list_lst = [
         f"{str(Path(filename).parent.resolve())}/{Path(filename).name}"
         for filename in sorted(
-            glob.glob(f"{str(Path(input_dir_lst).parent.resolve())}/dl1_LST-1*.h5")
+            glob.glob(f"{str(Path(input_dir_lst).resolve())}/dl1_LST-1*.h5")
         )
     ]
 
