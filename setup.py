@@ -19,6 +19,7 @@ entry_points["console_scripts"] = [
     "magic_calib_to_dl1_jobs = magicctapipe.jobs.magic_calib_to_dl1_jobs:main",
     "lst1_magic_event_coincidence_jobs = magicctapipe.jobs.lst1_magic_event_coincidence_jobs:main",
     "merge_hdf_files_jobs = magicctapipe.jobs.merge_hdf_files_jobs:main",
+    "lst1_magic_stereo_reco_jobs = magicctapipe.jobs.lst1_magic_stereo_reco_jobs:main",
 ]
 
 tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
