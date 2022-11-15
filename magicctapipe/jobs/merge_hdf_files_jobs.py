@@ -103,6 +103,11 @@ def main():
     subrun_wise = flags.subrun_wise
     submit = flags.submit
 
+    if run_wise and subrun_wise:
+        print(
+            "run_wise and subrun_wise options are not compatible. If both are selected, files will be merged subrun-wise."
+        )
+
     merge_hdf_files_jobs(input_dir, output_dir, run_wise, subrun_wise, submit)
 
 
