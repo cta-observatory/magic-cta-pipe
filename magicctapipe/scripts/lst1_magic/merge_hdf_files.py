@@ -142,6 +142,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     # Parse information from the input file names
     regex_run = re.compile(r"(\S+run)(\d+)\.h5", re.IGNORECASE)
     regex_subrun = re.compile(r"(\S+run)(\d+)\.(\d+)\.h5", re.IGNORECASE)
+    regex_run_merged = re.compile(r"(\S+run)(\d+)_to_(\d+)\.h5", re.IGNORECASE)
 
     file_names = []
     run_ids = []
@@ -161,6 +162,12 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             file_names.append(parser[0])
             run_ids.append(parser[1])
             subrun_ids.append(parser[2])
+
+        elif re.fullmatch(regex_run_merged, input_file_name):
+            parser = re.findall(regex_run_merged, input_file_name)[0]
+            file_names.append(parser[0])
+            run_ids.append(parser[1])
+            run_ids.append(parser[2])
 
     file_names_unique = np.unique(file_names)
 
