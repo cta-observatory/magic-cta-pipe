@@ -454,6 +454,7 @@ def main():
             "Please run the script on LST-1 DL1 subrun files, otherwise you may "
             "run into memory issues. Exiting."
         )
+        sys.exit(1)
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
