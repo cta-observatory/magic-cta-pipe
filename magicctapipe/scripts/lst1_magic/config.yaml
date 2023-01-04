@@ -109,6 +109,8 @@ energy_regressor:
         "intensity_width_2",
         "h_max",
         "impact",
+        "pointing_alt",
+        "pointing_az",
     ]
 
     gamma_offaxis:
@@ -146,6 +148,8 @@ disp_regressor:
         "intensity_width_2",
         "h_max",
         "impact",
+        "pointing_alt",
+        "pointing_az",
     ]
 
     gamma_offaxis:
@@ -184,6 +188,8 @@ event_classifier:
         "intensity_width_2",
         "h_max",
         "impact",
+        "pointing_alt",
+        "pointing_az",
     ]
 
     gamma_offaxis:
