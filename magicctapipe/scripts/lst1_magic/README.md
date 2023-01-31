@@ -33,9 +33,9 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 
 ## MAGIC+LST-1 analysis: data reduction tutorial (PRELIMINARY)
 
-1) The very first step to reduce MAGIC-LST data is to have access to the IT Container.
-2) Install MAGIC-CTA-PIPE following the tutorial here: https://github.com/cta-observatory/magic-cta-pipe
-3) Now put the scripts `lst1_magic_mc_dl0_to_dl1.py` and `setting_up_config_and_dir.py` in your workspace (e.g. /fefs/aswg/workspace/yourname) in the IT Container . 
+1) The very first step to reduce MAGIC-LST data is to have access to the IT Container, so provide one.
+2) Install MAGIC-CTA-PIPE, e.g. in your home, following the tutorial here: https://github.com/cta-observatory/magic-cta-pipe
+3) Now put the scripts `lst1_magic_mc_dl0_to_dl1.py` and `setting_up_config_and_dir.py` in your workspace (e.g. /fefs/aswg/workspace/yourname) in the IT Container. 
 
 To convert the SimTelArray MCs data into DL1 format, you do the following:
 > $ python setting_up_config_and_dir.py
