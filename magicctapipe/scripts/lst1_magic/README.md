@@ -17,7 +17,7 @@ MAGIC-only analysis starts from MAGIC calibrated data (\_Y\_ files). The analysi
 - `lst1_magic_create_irf.py` to create the IRF (use `magic_stereo` as `irf_type` in the configuration file)
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
 
-## MAGIC+LST-1 analysis: overview
+## MAGIC+LST analysis: overview
 
 MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 data and SimTelArray DL0 data. The analysis flow is as following:
 
@@ -31,7 +31,7 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 - `lst1_magic_create_irf.py` to create the IRF
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
 
-## MAGIC+LST-1 analysis: data reduction tutorial (PRELIMINARY)
+## MAGIC+LST analysis: data reduction tutorial (PRELIMINARY)
 
 1) The very first step to reduce MAGIC-LST data is to have access to the IT Container, so provide one.
 2) Install MAGIC-CTA-PIPE, e.g. in your home, following the tutorial here: https://github.com/cta-observatory/magic-cta-pipe
