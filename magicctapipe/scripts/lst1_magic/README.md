@@ -54,14 +54,14 @@ What is the focal length? [default is "effective". The other option is "nominal"
 
 The script `setting_up_config_and_dir.py` does a series of things:
 - Generates a configuration file called config_step1.yaml with MAGIC, LST, and telescope ID information.
-- Creates a directory with your source name, in this case "CrabTeste", and several subdirectories in it necessary for the rest of the data reduction.
+- Creates a directory with your source name, in this case "CrabTeste", and several subdirectories inside it necessary for the rest of the data reduction.
 - Links the MC data addresses to their respective subdirectories defined in the previous step.
 - Runs the script `lst1_magic_mc_dl0_to_dl1.py` for each data file.
 
-The entries allowed in `setting_up_config_and_dir.py` are the telescope IDs, that can be modified when running the script, like this:
+The default telescopes IDs are set as LST-1 ID = 1, MAGIC-I = 2, and MAGIC-II = 3. To change it, the user can do:
 > $ python setting_up_config_and_dir.py --telescope_ids 1 2 0 0 3 4
 
-where the sequance of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this case, we have  
+where the sequence of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this case, we have  
 LST-1 ID = 1  
 LST-2 ID = 2  
 LST-3 ID = 0  
