@@ -68,7 +68,7 @@ LST-3 ID = 0
 LST-4 ID = 0  
 MAGIC-I ID = 3  
 MAGIC-II ID = 4  
-When the ID = 0, this means that the telescope is not used in the analysis.
+If the telescope ID is set to 0, this means that the telescope is not used in the analysis.
 
 
 
