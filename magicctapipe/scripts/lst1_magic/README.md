@@ -40,17 +40,37 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 To convert the SimTelArray MCs data into DL1 format, you do the following:
 > $ python setting_up_config_and_dir.py
 
+```
 The automatic list of telescope IDs is:
 Name: LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II
 ID  :   1     0     0     0      2       3
 To change it, do e.g. '$python config_file_generator.py --telescope_ids 1 2 3 4 5 6'
-Type the name of your working directory [don't need to put /fefs/aswg/workspace/]: raniere
-Type the name of your target [we will generate a directory with this name and several subdirectories] : teste
+Type the name of your working directory [don't need to put /fefs/aswg/workspace/]: your_workspace_name
+Type the name of your target [we will generate a directory with this name and several subdirectories] : CrabTeste
 Type the full path of the MC simtelarray data [e.g: /fefs/aswg/data/mc/DL0/some/path_to/sim_telarray/]: /fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/
-Type the simtel version [default: v1.4]: 
+Type the simtel version [default: v1.4]: v1.4
 What is the focal length? [default is "effective". The other option is "nominal".]: nominal
+```
 
-The script `setting_up_config_and_dir.py` will create a configuration file called config_step1.yaml 
+The script `setting_up_config_and_dir.py` does a series of things:
+- Generates a configuration file called config_step1.yaml with MAGIC, LST, and telescope ID information.
+- Creates a directory with your source name, in this case "CrabTeste", and several subdirectories in it necessary for the rest of the data reduction.
+- Links the MC data addresses to their respective subdirectories defined in the previous step.
+- Runs the script `lst1_magic_mc_dl0_to_dl1.py` for each data file.
+
+The entries allowed in `setting_up_config_and_dir.py` are the telescope IDs, that can be modified when running the script, like this:
+> $ python setting_up_config_and_dir.py --telescope_ids 1 2 0 0 3 4'
+
+where the sequance of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this case, we have  
+LST-1 ID = 1  
+LST-2 ID = 2  
+LST-3 ID = 0  
+LST-4 ID = 0  
+MAGIC-I ID = 3  
+MAGIC-II ID = 4  
+When the ID = 0, this means that the telescope is not used in the analysis.
+
+
 
 ## High level analysis
 
