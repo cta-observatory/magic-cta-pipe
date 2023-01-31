@@ -59,7 +59,7 @@ The script `setting_up_config_and_dir.py` does a series of things:
 - Runs the script `lst1_magic_mc_dl0_to_dl1.py` for each data file.
 
 The entries allowed in `setting_up_config_and_dir.py` are the telescope IDs, that can be modified when running the script, like this:
-> $ python setting_up_config_and_dir.py --telescope_ids 1 2 0 0 3 4'
+> $ python setting_up_config_and_dir.py --telescope_ids 1 2 0 0 3 4
 
 where the sequance of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this case, we have  
 LST-1 ID = 1  
