@@ -17,7 +17,7 @@ MAGIC-only analysis starts from MAGIC calibrated data (\_Y\_ files). The analysi
 - `lst1_magic_create_irf.py` to create the IRF (use `magic_stereo` as `irf_type` in the configuration file)
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
 
-## MAGIC+LST-1 analysis
+## MAGIC+LST-1 analysis: overview
 
 MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 data and SimTelArray DL0 data. The analysis flow is as following:
 
@@ -30,6 +30,27 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 - `lst1_magic_dl1_stereo_to_dl2.py` to apply the RFs to stereo DL1 data (real and test MCs) and produce DL2 data
 - `lst1_magic_create_irf.py` to create the IRF
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
+
+## MAGIC+LST-1 analysis: data reduction tutorial (PRELIMINARY)
+
+1) The very first step to reduce MAGIC-LST data is to have access to the IT Container.
+2) Install MAGIC-CTA-PIPE following the tutorial here: https://github.com/cta-observatory/magic-cta-pipe
+3) Now put the scripts `lst1_magic_mc_dl0_to_dl1.py` and `setting_up_config_and_dir.py` in your workspace (e.g. /fefs/aswg/workspace/yourname) in the IT Container . 
+
+To convert the SimTelArray MCs data into DL1 format, you do the following:
+> $ python setting_up_config_and_dir.py
+
+The automatic list of telescope IDs is:
+Name: LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II
+ID  :   1     0     0     0      2       3
+To change it, do e.g. '$python config_file_generator.py --telescope_ids 1 2 3 4 5 6'
+Type the name of your working directory [don't need to put /fefs/aswg/workspace/]: raniere
+Type the name of your target [we will generate a directory with this name and several subdirectories] : teste
+Type the full path of the MC simtelarray data [e.g: /fefs/aswg/data/mc/DL0/some/path_to/sim_telarray/]: /fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/
+Type the simtel version [default: v1.4]: 
+What is the focal length? [default is "effective". The other option is "nominal".]: nominal
+
+The script `setting_up_config_and_dir.py` will create a configuration file called config_step1.yaml 
 
 ## High level analysis
 
