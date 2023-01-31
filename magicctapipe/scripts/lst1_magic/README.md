@@ -69,7 +69,7 @@ LST-4 ID = 0
 MAGIC-I ID = 3  
 MAGIC-II ID = 4  
 If the telescope ID is set to 0, this means that the telescope is not used in the analysis.
-
+The full process can take several hours or a few days, depending on the size of your MC dataset.
 
 
 ## High level analysis
