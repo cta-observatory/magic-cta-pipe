@@ -35,7 +35,48 @@ MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 
 
 1) The very first step to reduce MAGIC-LST data is to have remote access/credentials to the IT Container, so provide one.
 2) Once connected to the IT Container, install MAGIC-CTA-PIPE (e.g. in your home directory in the IT Container) following the tutorial here: https://github.com/cta-observatory/magic-cta-pipe
-3) Now put the scripts `lst1_magic_mc_dl0_to_dl1.py` and `setting_up_config_and_dir.py` in your workspace (e.g. /fefs/aswg/workspace/yourname) in the IT Container.
+3) Now copy the scripts `lst1_magic_mc_dl0_to_dl1.py`, `magic_calib_to_dl1.py` and `setting_up_config_and_dir.py` to your workspace (e.g. /fefs/aswg/workspace/yourname) in the IT Container, as well as the files `config_general.yaml` and `MAGIC_runs.txt`.
+
+The file `config_general.yaml` must contain the telescope IDs and the directories with the MC data, as shown below:  
+```
+mc_tel_ids:
+    LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
+    MAGIC-I: 2
+    MAGIC-II: 3
+
+directories:
+    workspace_dir : "/fefs/aswg/workspace/yourname/MAYBE_ANOTHER_SUBDIRRECTORY"
+    target_name   : "CrabTeste"
+    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/"
+    MC_elec_helium: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/"
+    MC_prot_diff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/"
+    target_dec_dir: "dec_2276"
+    
+general:
+    SimTel_version: "v1.4"    
+    focal_length  : "nominal"
+    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
+```
+
+The file `MAGIC_runs.txt` looks like that:  
+```
+2020_11_19,5093174
+2020_11_19,5093175
+2020_12_08,5093491
+2020_12_08,5093492
+2020_12_08,5093495
+2020_12_08,5093496
+2020_12_08,5093497
+2020_12_16,5093711
+2020_12_16,5093712
+2020_12_16,5093713
+2020_12_16,5093714
+```
+The columns here represent the night and run in which you want to select data. Please do not add blanck spaces in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. These two files are the only ones you need to modify in order to convert DL0 into DL1 data.
+
 
 To convert the SimTelArray MCs data into DL1 format, you do the following:
 > $ python setting_up_config_and_dir.py
@@ -44,12 +85,6 @@ To convert the SimTelArray MCs data into DL1 format, you do the following:
 The automatic list of telescope IDs is:
 Name: LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II
 ID  :   1     0     0     0      2       3
-To change it, do e.g. '$python config_file_generator.py --telescope_ids 1 2 3 4 5 6'
-Type the name of your working directory [don't need to put /fefs/aswg/workspace/]: your_workspace_name
-Type the name of your target [we will generate a directory with this name and several subdirectories] : CrabTeste
-Type the full path of the MC simtelarray data [e.g: /fefs/aswg/data/mc/DL0/some/path_to/sim_telarray/]: /fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/
-Type the simtel version [default: v1.4]: v1.4
-What is the focal length? [default is "effective". The other option is "nominal".]: nominal
 ```
 
 The script `setting_up_config_and_dir.py` does a series of things:
