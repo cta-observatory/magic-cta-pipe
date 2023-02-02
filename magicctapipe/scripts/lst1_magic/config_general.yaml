@@ -1,0 +1,21 @@
+mc_tel_ids:
+    LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
+    MAGIC-I: 2
+    MAGIC-II: 3
+
+directories:
+    workspace_dir : "/fefs/aswg/workspace/raniere/"
+    target_name   : "CrabTeste"
+    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/"
+    MC_elec_helium: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/"
+    MC_prot_diff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/"
+    target_dec_dir: "dec_2276"
+    
+general:
+    SimTel_version: "v1.4"    
+    focal_length  : "nominal"
+    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
+    

@@ -303,10 +303,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
             # Reset the telescope IDs
             if tel_id == 1:
-                event_info.tel_id = 2  # MAGIC-I
+                event_info.tel_id = config["mc_tel_ids"]["MAGIC-I"]  # MAGIC-I
 
             elif tel_id == 2:
-                event_info.tel_id = 3  # MAGIC-II
+                event_info.tel_id = config["mc_tel_ids"]["MAGIC-II"]  # MAGIC-II
 
             # Save the parameters to the output file
             writer.write(
@@ -318,13 +318,13 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
     # Reset the telescope IDs of the subarray description
     tel_positions_magic = {
-        2: subarray.positions[1],  # MAGIC-I
-        3: subarray.positions[2],  # MAGIC-II
+        config["mc_tel_ids"]["MAGIC-I"]: subarray.positions[1],  # MAGIC-I
+        config["mc_tel_ids"]["MAGIC-II"]: subarray.positions[2],  # MAGIC-II
     }
 
     tel_descriptions_magic = {
-        2: subarray.tel[1],  # MAGIC-I
-        3: subarray.tel[2],  # MAGIC-II
+        config["mc_tel_ids"]["MAGIC-I"]: subarray.tel[1],  # MAGIC-I
+        config["mc_tel_ids"]["MAGIC-II"]: subarray.tel[2],  # MAGIC-II
     }
 
     subarray_magic = SubarrayDescription(
