@@ -90,10 +90,8 @@ ID  :   1     0     0     0      2       3
 The script `setting_up_config_and_dir.py` does a series of things:
 - Generates a configuration file called config_step1.yaml with MAGIC, LST, and telescope ID information.
 - Creates a directory with your source name, in this case "CrabTeste", and several subdirectories inside it necessary for the rest of the data reduction.
-- Links the MC data addresses to their respective subdirectories defined in the previous step.
-- Links the MAGIC data addresses to their respective subdirectories defined in the previous step.
-- Runs the script `lst1_magic_mc_dl0_to_dl1.py` for each data file.
-- Runs the script `magic_calib_to_dl1.py` for each data file.
+- Links the MAGIC and MC data addresses to their respective subdirectories defined in the previous step.
+- Runs the scripts `lst1_magic_mc_dl0_to_dl1.py` and `magic_calib_to_dl1.py` for each data file.
 
 The sequence of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this case, we have  
 LST-1 ID = 1  
