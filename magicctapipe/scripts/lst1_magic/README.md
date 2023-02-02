@@ -75,10 +75,10 @@ The file `MAGIC_runs.txt` looks like that:
 2020_12_16,5093713
 2020_12_16,5093714
 ```
-The columns here represent the night and run in which you want to select data. Please do not add blanck spaces in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. These two files are the only ones you need to modify in order to convert DL0 into DL1 data.
+The columns here represent the night and run in which you want to select data. Please do not add blanck spaces in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. If there is no MAGIC data, please fill this file with "0,0".These two files are the only ones you need to modify in order to convert DL0 into DL1 data.
 
 
-To convert the SimTelArray MCs data into DL1 format, you do the following:
+To convert the MAGIC and SimTelArray MCs data into DL1 format, you do the following:
 > $ python setting_up_config_and_dir.py
 
 ```
@@ -91,12 +91,11 @@ The script `setting_up_config_and_dir.py` does a series of things:
 - Generates a configuration file called config_step1.yaml with MAGIC, LST, and telescope ID information.
 - Creates a directory with your source name, in this case "CrabTeste", and several subdirectories inside it necessary for the rest of the data reduction.
 - Links the MC data addresses to their respective subdirectories defined in the previous step.
+- Links the MAGIC data addresses to their respective subdirectories defined in the previous step.
 - Runs the script `lst1_magic_mc_dl0_to_dl1.py` for each data file.
+- Runs the script `magic_calib_to_dl1.py` for each data file.
 
-The default telescopes IDs are set as LST-1 ID = 1, MAGIC-I = 2, and MAGIC-II = 3. To change it, the user can do:
-> $ python setting_up_config_and_dir.py --telescope_ids 1 2 0 0 3 4
-
-where the sequence of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this case, we have  
+The sequence of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this case, we have  
 LST-1 ID = 1  
 LST-2 ID = 2  
 LST-3 ID = 0  
