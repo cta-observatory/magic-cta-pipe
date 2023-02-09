@@ -108,10 +108,10 @@ if you want to convert only MAGIC or only MC DL0 data to DL1, respectively.
 
 
 The script `setting_up_config_and_dir.py` does a series of things:
-- Creates a directory with your source name within the directory `yourprojectname` and several subdirectories inside it necessary for the rest of the data reduction.
+- Creates a directory with your source name within the directory `yourprojectname` and several subdirectories inside it that are necessary for the rest of the data reduction.
 - Generates a configuration file called config_step1.yaml with MAGIC, LST, and telescope ID information, and puts it in the directory created in the previous step.
 - Links the MAGIC and MC data addresses to their respective subdirectories defined in the previous steps.
-- Runs the scripts `lst1_magic_mc_dl0_to_dl1.py` and `magic_calib_to_dl1.py` for each data file.
+- Runs the scripts `lst1_magic_mc_dl0_to_dl1.py` and `magic_calib_to_dl1.py` for each one of the linked data files.
 
 The sequence of telescopes is always LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II. So in this tutorial, we have  
 LST-1 ID = 1  
@@ -121,19 +121,23 @@ LST-4 ID = 0
 MAGIC-I ID = 2  
 MAGIC-II ID = 3  
 If the telescope ID is set to 0, this means that the telescope is not used in the analysis.
-The full process of converting DL0 to DL1 can take several hours or even a few days.
 
 You can check if this process is done by typing  
-$ squeue -n yourprojectnameCrabTeste  
+> $ squeue -n yourprojectnameCrabTeste  
 
-in the terminal. Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/CrabTeste/DL1/` will be filled with files of the type `dl1_gamma_zd_73.142deg_az_331.98deg_LST1_MAGIC1_MAGIC2_run189902.h5` for the MCs and `dl1_M2.Run05093712.001.h5  dl1_M2.Run05093712.006.h5` for the MAGIC runs. The next step of the conversion of DL0 to DL1 is to split the DL1 MC proton sample into "train" and "test" datasets (these will be used later in the Random Forest event classification), and to merge all the MAGIC data files such that in the end we have only one datafile per night. To do so, we run the following script:
+in the terminal. Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/CrabTeste/DL1/` will be filled with files of the type `dl1_[...]_LST1_MAGIC1_MAGIC2_runXXXXXX.h5` for the MCs and `dl1_MX.RunXXXXXX.0XX.h5` for the MAGIC runs. The next step of the conversion of DL0 to DL1 is to split the DL1 MC proton sample into "train" and "test" datasets (these will be used later in the Random Forest event classification), and to merge all the MAGIC data files such that in the end we have only one datafile per night. To do so, we run the following script:
 
 > $ python merging_runs_and_spliting_training_samples.py  
 
-Which will merge the files in the following order:
+This script will slice the proton MC sample according to the entry "proton_train" in the "config_general.yaml" file, and then it will merge the MAGIC data files in the following order:
 - MAGIC subruns are merged into single runs.  
 - MAGIC I and II runs are merged (only if both telescopes are used, of course).  
 - All runs in specific nights are merged, such that in the end we have only one datafile per night.  
+
+### Working on DL1
+
+TBD
+
 
 ## High level analysis
 
