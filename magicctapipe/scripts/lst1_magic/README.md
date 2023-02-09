@@ -104,7 +104,7 @@ or
 
 > $ python setting_up_config_and_dir.py --partial-analysis onlyMC  
 
-if you want to convert only MAGIC or only MC DL0 data to DL1, respectively.
+if you want to convert only MAGIC or only MC DL0 files to DL1, respectively.
 
 
 The script `setting_up_config_and_dir.py` does a series of things:
