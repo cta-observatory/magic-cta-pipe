@@ -1,3 +1,15 @@
+"""
+Standard usage:
+$ python magic_calib_to_dl1.py
+
+Optional:
+python magic_calib_to_dl1.py --partial-analysis onlyMAGIC
+
+or:
+python magic_calib_to_dl1.py --partial-analysis onlyMC
+
+"""
+
 import os
 import numpy as np
 import argparse
@@ -29,7 +41,7 @@ def config_file_gen(ids, target_dir):
     f.close()
 
 
-def lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff, target_dec_dir, SimTel_version, telescope_ids, MAGIC_runs, focal_length):
+def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version, telescope_ids, focal_length):
     """
     This function creates the lists list_nodes_gamma_complete.txt and list_folder_gamma.txt with the MC file paths.
     After that, it generates a few bash scripts to link the MC paths to each subdirectory. 
@@ -42,17 +54,16 @@ def lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff
     Below we create the bash scripts that link the MC paths to each subdirectory. 
     """
     
-    #gammas
-    list_of_nodes = glob.glob(MC_gammas+"*")
-    f = open(target_dir+"/list_nodes_gamma_complete.txt","w") # creating list_nodes_gamma_complete.txt
+    list_of_nodes = glob.glob(MC_path+"*")
+    f = open(target_dir+f"/list_nodes_{particle_type}_complete.txt","w") # creating list_nodes_gammas_complete.txt
     for i in list_of_nodes:
         f.write(i+"/output_"+SimTel_version+"\n")   
     
     f.close()
     
-    os.system("ls "+MC_gammas+" > "+target_dir+"/list_folder_gamma.txt") # creating list_folder_gamma.txt
+    os.system("ls "+MC_path+" > "+target_dir+f"/list_folder_{particle_type}.txt") # creating list_folder_gammas.txt
     
-    f = open("linking_MC_gammas_paths.sh","w")
+    f = open(f"linking_MC_{particle_type}_paths.sh","w")
     f.write("#!/bin/sh\n\n")
     f.write("#SBATCH -p short\n")
     f.write("#SBATCH -J "+process_name+"\n\n")
@@ -62,127 +73,27 @@ def lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff
     f.write("ulimit -a\n\n")
     f.write("while read -r -u 3 lineA && read -r -u 4 lineB\n")
     f.write("do\n")
-    f.write("    cd "+target_dir+"/DL1/MC/gammas\n")
+    f.write("    cd "+target_dir+f"/DL1/MC/{particle_type}\n")
     f.write("    mkdir $lineB\n")
     f.write("    cd $lineA\n")
     f.write("    ls -lR *.gz |wc -l\n")
-    f.write("    ls *.gz > "+target_dir+"/DL1/MC/gammas/$lineB/list_dl0.txt\n")
+    f.write("    ls *.gz > "+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n")
     f.write('    string=$lineA"/"\n')
-    f.write("    export file="+target_dir+"/DL1/MC/gammas/$lineB/list_dl0.txt\n\n")
-    f.write("    cat $file | while read line; do echo $string${line} >>"+target_dir+"/DL1/MC/gammas/$lineB/list_dl0_ok.txt; done\n\n")
+    f.write("    export file="+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n\n")
+    f.write("    cat $file | while read line; do echo $string${line} >>"+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0_ok.txt; done\n\n")
     f.write('    echo "folder $lineB  and node $lineA"\n')
-    f.write('done 3<"'+target_dir+'/list_nodes_gamma_complete.txt" 4<"'+target_dir+'/list_folder_gamma.txt"\n')
+    f.write('done 3<"'+target_dir+f'/list_nodes_{particle_type}_complete.txt" 4<"'+target_dir+f'/list_folder_{particle_type}.txt"\n')
     f.close()
-    
-    #electrons
-    list_of_nodes = glob.glob(MC_elec_helium+"Electrons/sim_telarray/*")
-    f = open(target_dir+"/list_nodes_electrons_complete.txt","w") # creating list_nodes_electrons_complete.txt
-    for i in list_of_nodes:
-        f.write(i+"/output_"+SimTel_version+"\n")   
-    
-    f.close()
-    
-    os.system("ls "+MC_elec_helium+"Electrons/sim_telarray/ > "+target_dir+"/list_folder_electrons.txt") # creating list_folder_electrons.txt
-    
-    f = open("linking_MC_electrons_paths.sh","w")
-    f.write("#!/bin/sh\n\n")
-    f.write("#SBATCH -p short\n")
-    f.write("#SBATCH -J "+process_name+"\n\n")
-    f.write("#SBATCH -N 1\n\n")
-    f.write("ulimit -l unlimited\n")
-    f.write("ulimit -s unlimited\n")
-    f.write("ulimit -a\n\n")
-    f.write("while read -r -u 3 lineA && read -r -u 4 lineB\n")
-    f.write("do\n")
-    f.write("    cd "+target_dir+"/DL1/MC/electrons\n")
-    f.write("    mkdir $lineB\n")
-    f.write("    cd $lineA\n")
-    f.write("    ls -lR *.gz |wc -l\n")
-    f.write("    ls *.gz > "+target_dir+"/DL1/MC/electrons/$lineB/list_dl0.txt\n")
-    f.write('    string=$lineA"/"\n')
-    f.write("    export file="+target_dir+"/DL1/MC/electrons/$lineB/list_dl0.txt\n\n")
-    f.write("    cat $file | while read line; do echo $string${line} >>"+target_dir+"/DL1/MC/electrons/$lineB/list_dl0_ok.txt; done\n\n")
-    f.write('    echo "folder $lineB  and node $lineA"\n')
-    f.write('done 3<"'+target_dir+'/list_nodes_electrons_complete.txt" 4<"'+target_dir+'/list_folder_electrons.txt"\n')
-    f.close()
-    
-    #helium
-    list_of_nodes = glob.glob(MC_elec_helium+"Helium/sim_telarray/*")
-    f = open(target_dir+"/list_nodes_helium_complete.txt","w") # creating list_nodes_helium_complete.txt
-    for i in list_of_nodes:
-        f.write(i+"/output_"+SimTel_version+"\n")   
-    
-    f.close()
-    
-    os.system("ls "+MC_elec_helium+"Helium/sim_telarray/ > "+target_dir+"/list_folder_helium.txt") # creating list_folder_helium.txt
-    
-    f = open("linking_MC_helium_paths.sh","w")
-    f.write("#!/bin/sh\n\n")
-    f.write("#SBATCH -p short\n")
-    f.write("#SBATCH -J "+process_name+"\n\n")
-    f.write("#SBATCH -N 1\n\n")
-    f.write("ulimit -l unlimited\n")
-    f.write("ulimit -s unlimited\n")
-    f.write("ulimit -a\n\n")
-    f.write("while read -r -u 3 lineA && read -r -u 4 lineB\n")
-    f.write("do\n")
-    f.write("    cd "+target_dir+"/DL1/MC/helium\n")
-    f.write("    mkdir $lineB\n")
-    f.write("    cd $lineA\n")
-    f.write("    ls -lR *.gz |wc -l\n")
-    f.write("    ls *.gz > "+target_dir+"/DL1/MC/helium/$lineB/list_dl0.txt\n")
-    f.write('    string=$lineA"/"\n')
-    f.write("    export file="+target_dir+"/DL1/MC/helium/$lineB/list_dl0.txt\n\n")
-    f.write("    cat $file | while read line; do echo $string${line} >>"+target_dir+"/DL1/MC/helium/$lineB/list_dl0_ok.txt; done\n\n")
-    f.write('    echo "folder $lineB  and node $lineA"\n')
-    f.write('done 3<"'+target_dir+'/list_nodes_helium_complete.txt" 4<"'+target_dir+'/list_folder_helium.txt"\n')
-    f.close()
-    
-    
-    
-    #gammadiffuse  
-    list_of_nodes = glob.glob(MC_prot_diff+"GammaDiffuse/"+target_dec_dir+"/sim_telarray/*")
-    f = open(target_dir+"/list_nodes_gammadiffuse_complete.txt","w") # creating list_nodes_gammadiffuse_complete.txt
-    for i in list_of_nodes:
-        f.write(i+"/output_"+SimTel_version+"\n")   
-    
-    f.close()
-    
-    os.system("ls "+MC_prot_diff+"GammaDiffuse/"+target_dec_dir+"/sim_telarray/ > "+target_dir+"/list_folder_gammadiffuse.txt") # creating list_folder_gammadiffuse.txt
-    
-    f = open("linking_MC_gammadiffuse_paths.sh","w")
-    f.write("#!/bin/sh\n\n")
-    f.write("#SBATCH -p short\n")
-    f.write("#SBATCH -J "+process_name+"\n\n")
-    f.write("#SBATCH -N 1\n\n")
-    f.write("ulimit -l unlimited\n")
-    f.write("ulimit -s unlimited\n")
-    f.write("ulimit -a\n\n")
-    f.write("while read -r -u 3 lineA && read -r -u 4 lineB\n")
-    f.write("do\n")
-    f.write("    cd "+target_dir+"/DL1/MC/gammadiffuse\n")
-    f.write("    mkdir $lineB\n")
-    f.write("    cd $lineA\n")
-    f.write("    ls -lR *.gz |wc -l\n")
-    f.write("    ls *.gz > "+target_dir+"/DL1/MC/gammadiffuse/$lineB/list_dl0.txt\n")
-    f.write('    string=$lineA"/"\n')
-    f.write("    export file="+target_dir+"/DL1/MC/gammadiffuse/$lineB/list_dl0.txt\n\n")
-    f.write("    cat $file | while read line; do echo $string${line} >>"+target_dir+"/DL1/MC/gammadiffuse/$lineB/list_dl0_ok.txt; done\n\n")
-    f.write('    echo "folder $lineB  and node $lineA"\n')
-    f.write('done 3<"'+target_dir+'/list_nodes_gammadiffuse_complete.txt" 4<"'+target_dir+'/list_folder_gammadiffuse.txt"\n')
-    f.close()
-    
     
     
     """
     Below we create a bash script that applies lst1_magic_mc_dl0_to_dl1.py to all MC data files. 
     """
     
-    #gammas
-    first_directory = os.listdir(target_dir+'/DL1/MC/gammas')[0]
-    number_of_nodes = len(np.genfromtxt(target_dir+'/DL1/MC/gammas/'+first_directory+'/list_dl0_ok.txt')) -1
+    number_of_nodes = os.listdir(MC_path)
+    number_of_nodes = len(number_of_nodes) -1
     
-    f = open("linking_MC_gammas_paths_r.sh","w")
+    f = open(f"linking_MC_{particle_type}_paths_r.sh","w")
     f.write('#!/bin/sh\n\n')
     f.write('#SBATCH -p xxl\n')
     f.write('#SBATCH -J '+process_name+'\n')
@@ -191,116 +102,28 @@ def lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff
     f.write('ulimit -l unlimited\n')
     f.write('ulimit -s unlimited\n')
     f.write('ulimit -a\n')
-    f.write('cd '+target_dir+'/DL1/MC/gammas\n\n')
+    f.write('cd '+target_dir+f'/DL1/MC/{particle_type}\n\n')
     f.write('export INF='+target_dir+'\n')
-    f.write('SAMPLE_LIST=($(<$INF/list_folder_gamma.txt))\n')
+    f.write(f'SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n')
     f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n')
-    f.write('cd $SAMPLE\n')
-    f.write('echo "folder $SAMPLE"\n')
-    f.write('echo $PWD\n\n')
-    f.write('export LOG='+target_dir+'/DL1/MC/gammas/simtel_{$SAMPLE}_all.log\n')
+    f.write('cd $SAMPLE\n\n')
+    f.write('export LOG='+target_dir+f'/DL1/MC/{particle_type}'+'/simtel_{$SAMPLE}_all.log\n')
     f.write('cat list_dl0_ok.txt | while read line\n')
     f.write('do\n')
     f.write('    cd '+target_dir+'/../\n')
-    f.write('    conda run -n magic-lst1 python lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+'/DL1/MC/gammas/$SAMPLE --config-file '+target_dir+'/config_step1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n')
+    f.write('    conda run -n magic-lst1 python lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_step1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n')
     f.write('done\n')
-      
-    f.close()
-    
-    #electrons
-    first_directory = os.listdir(target_dir+'/DL1/MC/electrons')[0]
-    number_of_nodes = len(np.genfromtxt(target_dir+'/DL1/MC/electrons/'+first_directory+'/list_dl0_ok.txt')) -1
-    
-    f = open("linking_MC_electrons_paths_r.sh","w")
-    f.write('#!/bin/sh\n\n')
-    f.write('#SBATCH -p xxl\n')
-    f.write('#SBATCH -J '+process_name+'\n')
-    f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')    
-    f.write('#SBATCH -N 1\n\n')
-    f.write('ulimit -l unlimited\n')
-    f.write('ulimit -s unlimited\n')
-    f.write('ulimit -a\n')
-    f.write('cd '+target_dir+'/DL1/MC/electrons\n\n')
-    f.write('export INF='+target_dir+'\n')
-    f.write('SAMPLE_LIST=($(<$INF/list_folder_electrons.txt))\n')
-    f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n')
-    f.write('cd $SAMPLE\n')
-    f.write('echo "folder $SAMPLE"\n')
-    f.write('echo $PWD\n\n')
-    f.write('export LOG='+target_dir+'/DL1/MC/electrons/simtel_{$SAMPLE}_all.log\n')
-    f.write('cat list_dl0_ok.txt | while read line\n')
-    f.write('do\n')
-    f.write('    cd '+target_dir+'/../\n')
-    f.write('    conda run -n magic-lst1 python lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+'/DL1/MC/electrons/$SAMPLE --config-file '+target_dir+'/config_step1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n')
-    f.write('done\n')
-      
-    f.close()
-    
-    #helium
-    first_directory = os.listdir(target_dir+'/DL1/MC/helium')[0]
-    number_of_nodes = len(np.genfromtxt(target_dir+'/DL1/MC/helium/'+first_directory+'/list_dl0_ok.txt')) -1
-    
-    f = open("linking_MC_helium_paths_r.sh","w")
-    f.write('#!/bin/sh\n\n')
-    f.write('#SBATCH -p xxl\n')
-    f.write('#SBATCH -J '+process_name+'\n')
-    f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')    
-    f.write('#SBATCH -N 1\n\n')
-    f.write('ulimit -l unlimited\n')
-    f.write('ulimit -s unlimited\n')
-    f.write('ulimit -a\n')
-    f.write('cd '+target_dir+'/DL1/MC/helium\n\n')
-    f.write('export INF='+target_dir+'\n')
-    f.write('SAMPLE_LIST=($(<$INF/list_folder_helium.txt))\n')
-    f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n')
-    f.write('cd $SAMPLE\n')
-    f.write('echo "folder $SAMPLE"\n')
-    f.write('echo $PWD\n\n')
-    f.write('export LOG='+target_dir+'/DL1/MC/helium/simtel_{$SAMPLE}_all.log\n')
-    f.write('cat list_dl0_ok.txt | while read line\n')
-    f.write('do\n')
-    f.write('    cd '+target_dir+'/../\n')
-    f.write('    conda run -n magic-lst1 python lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+'/DL1/MC/helium/$SAMPLE --config-file '+target_dir+'/config_step1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n')
-    f.write('done\n')
-      
-    f.close()
-
-    
-    #gammadiffuse
-    first_directory = os.listdir(target_dir+'/DL1/MC/gammadiffuse')[0]
-    number_of_nodes = len(np.genfromtxt(target_dir+'/DL1/MC/gammadiffuse/'+first_directory+'/list_dl0_ok.txt')) -1
-    
-    f = open("linking_MC_gammadiffuse_paths_r.sh","w")
-    f.write('#!/bin/sh\n\n')
-    f.write('#SBATCH -p xxl\n')
-    f.write('#SBATCH -J '+process_name+'\n')
-    f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')    
-    f.write('#SBATCH -N 1\n\n')
-    f.write('ulimit -l unlimited\n')
-    f.write('ulimit -s unlimited\n')
-    f.write('ulimit -a\n')
-    f.write('cd '+target_dir+'/DL1/MC/gammadiffuse\n\n')
-    f.write('export INF='+target_dir+'\n')
-    f.write('SAMPLE_LIST=($(<$INF/list_folder_gammadiffuse.txt))\n')
-    f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n')
-    f.write('cd $SAMPLE\n')
-    f.write('echo "folder $SAMPLE"\n')
-    f.write('echo $PWD\n\n')
-    f.write('export LOG='+target_dir+'/DL1/MC/gammadiffuse/simtel_{$SAMPLE}_all.log\n')
-    f.write('cat list_dl0_ok.txt | while read line\n')
-    f.write('do\n')
-    f.write('    cd '+target_dir+'/../\n')
-    f.write('    conda run -n magic-lst1 python lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+'/DL1/MC/gammadiffuse/$SAMPLE --config-file '+target_dir+'/config_step1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n')
-    f.write('done\n')
-      
     f.close()
     
     
     
+    
+def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
     """
     Below we create a bash script that links the the MAGIC data paths to each subdirectory. 
     """
     
+    process_name = target_dir.split("/")[-2:][0]+target_dir.split("/")[-2:][1]
     
     f = open("linking_MAGIC_data_paths.sh","w")
     f.write('#!/bin/sh\n\n')
@@ -315,14 +138,14 @@ def lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff
         for i in MAGIC_runs:
             f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
             f.write('export OUT1='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n')
-            f.write('ls $IN1/*'+i[1][-2:]+'.*.root > $OUT1/list_dl0.txt\n')
+            f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
     
     f.write('\n')
     if telescope_ids[-2] > 0:
         for i in MAGIC_runs:
             f.write('export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
             f.write('export OUT1='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n')
-            f.write('ls $IN1/*'+i[1][-2:]+'.*.root > $OUT1/list_dl0.txt\n')
+            f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
       
     f.close()
     
@@ -330,11 +153,12 @@ def lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff
         for i in MAGIC_runs:
             if telescope_ids[-1] > 0:
             
-                number_of_nodes = len(np.genfromtxt(target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'/list_dl0.txt')) -1
-                            
+                number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
+                number_of_nodes = len(number_of_nodes) - 1 
+                
                 f = open(f"MAGIC-II_dl0_to_dl1_run_{i[1]}.sh","w")
                 f.write('#!/bin/sh\n\n')
-                f.write('#SBATCH -p short\n')
+                f.write('#SBATCH -p long\n')
                 f.write('#SBATCH -J '+process_name+'\n')
                 f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')      
                 f.write('#SBATCH -N 1\n\n')
@@ -352,12 +176,10 @@ def lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff
                 f.close()
                 
             if telescope_ids[-2] > 0:
-            
-                number_of_nodes = len(np.genfromtxt(target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'/list_dl0.txt')) -1
                 
                 f = open(f"MAGIC-I_dl0_to_dl1_run_{i[1]}.sh","w")
                 f.write('#!/bin/sh\n\n')
-                f.write('#SBATCH -p short\n')
+                f.write('#SBATCH -p long\n')
                 f.write('#SBATCH -J '+process_name+'\n')
                 f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')    
                 f.write('#SBATCH -N 1\n\n')
@@ -397,7 +219,7 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
     else:
         overwrite = input("Directory "+target_dir.split("/")[-1]+" already exists. Would you like to overwrite it? [only 'y' or 'n']: ")
         if overwrite == "y":
-            os.system("rm -r "+target_dir.split("/")[-1])
+            os.system("rm -r "+target_dir)
             os.mkdir(target_dir)
             os.mkdir(target_dir+"/DL1")
             os.mkdir(target_dir+"/DL1/Observations")
@@ -437,18 +259,28 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
                     os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1])
     
 
-    
-def documentation():
-    print("The automatic list of telescope IDs is:\nName: LST1, LST2, LST3, LST4, MAGIC-I, MAGIC-II\nID  :   1     0     0     0      2       3")
-    print("To change it, modify the 'config_general.yaml' file.")
-    print("If there is no MAGIC data, please fill the 'MAGIC_runs.txt' file with '0,0'.")
+
 
 
 def main():
 
-    """ Here we collect the list of telescope IDs from the command line"""
+    """ Here we read the config_general.yaml file and call the functions to generate the necessary directories, bash scripts and launching the jobs."""
     
-    documentation()
+    parser = argparse.ArgumentParser()
+    
+    #Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file
+    parser.add_argument(
+        "--partial-analysis",
+        "-p",
+        dest="partial_analysis",
+        type=str,
+        default="doEverything",
+        help="You can type 'onlyMAGIC' or 'onlyMC' to run this script only on MAGIC or MC data, respectively.",
+    )
+    
+    args = parser.parse_args()
+    
+    
     
     with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
@@ -459,16 +291,11 @@ def main():
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',') #READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19, 5093174"
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
     MC_gammas  = config["directories"]["MC_gammas"]
-    MC_elec_helium = config["directories"]["MC_elec_helium"]
-    MC_prot_diff = config["directories"]["MC_prot_diff"]
-    target_dec_dir = config["directories"]["target_dec_dir"]
+    MC_electrons = config["directories"]["MC_electrons"]
+    MC_helium = config["directories"]["MC_helium"]
+    MC_protons = config["directories"]["MC_protons"]
+    MC_gammadiff = config["directories"]["MC_gammadiff"]
     focal_length = config["general"]["focal_length"]
-    
-    
-    directories_generator(target_dir, telescope_ids, MAGIC_runs) #Here we create all the necessary directories in the given workspace and collect the main directory of the target    
-    lists_and_bash_generator(target_dir, MC_gammas, MC_elec_helium, MC_prot_diff, target_dec_dir, SimTel_version, telescope_ids, MAGIC_runs, focal_length)
-    config_file_gen(telescope_ids,target_dir)
-    
     
     
     print("***** Linking MC paths - this may take a few minutes ******")
@@ -476,41 +303,45 @@ def main():
     print("Process name: ",target_dir.split('/')[-2:][0]+target_dir.split('/')[-2:][1])
     print("To check the jobs submited to the cluster, type: squeue -n",target_dir.split('/')[-2:][0]+target_dir.split('/')[-2:][1])
     
+    directories_generator(target_dir, telescope_ids, MAGIC_runs) #Here we create all the necessary directories in the given workspace and collect the main directory of the target   
+    config_file_gen(telescope_ids,target_dir)
     
-    #Here we do the MC DL0 to DL1 conversion:
-    
-    list_of_MC = glob.glob("linking_MC_*s.sh")
-    
-    #os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
-    
-    #linking_MC_electrons_paths.sh
-    #linking_MC_helium_paths.sh
-    #MC_electrons_dl0_to_dl1.sh
-    #MC_helium_dl0_to_dl1.sh
-    
-    for n,run in enumerate(list_of_MC):
-        if n == 0:
-            launch_jobs_MC =  f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterok:$linking{n} {run[0:-3]}_r.sh)"
-        else:
-            launch_jobs_MC = launch_jobs_MC + f" && linking{n}=$(sbatch --parsable --dependency=afterok:$running{n-1} {run}) && running{n}=$(sbatch --parsable --dependency=afterok:$linking{n} {run[0:-3]}_r.sh)"
-    
-    
-    os.system(launch_jobs_MC)
-    
-    
-    
-    #If there are MAGIC data, we convert them from DL0 to DL1 here:
-    if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
+    if not args.partial_analysis=='onlyMAGIC':       
+        lists_and_bash_generator("gammas", target_dir, MC_gammas, SimTel_version, telescope_ids, focal_length) #gammas
+        lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, telescope_ids, focal_length) #electrons
+        lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, telescope_ids, focal_length) #helium
+        lists_and_bash_generator("protons", target_dir, MC_protons, SimTel_version, telescope_ids, focal_length) #protons
+        lists_and_bash_generator("gammadiffuse", target_dir, MC_gammadiff, SimTel_version, telescope_ids, focal_length) #gammadiffuse
         
-        list_of_MAGIC_runs = glob.glob("MAGIC-*.sh")
+        #Here we do the MC DL0 to DL1 conversion:
+        list_of_MC = glob.glob("linking_MC_*s.sh")
         
-        for n,run in enumerate(list_of_MAGIC_runs):
+        #os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
+        
+        for n,run in enumerate(list_of_MC):
             if n == 0:
-                launch_jobs =  f"linking=$(sbatch --parsable linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterok:$linking {run})"
+                launch_jobs_MC =  f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
             else:
-                launch_jobs = launch_jobs + f" && RES{n}=$(sbatch --parsable --dependency=afterok:$RES{n-1} {run})"
-
-        os.system(launch_jobs)
+                launch_jobs_MC = launch_jobs_MC + f" && linking{n}=$(sbatch --parsable --dependency=afterany:$running{n-1} {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+        
+        
+        os.system(launch_jobs_MC)
+    
+    
+    if not args.partial_analysis=='onlyMC':
+        lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs) #MAGIC real data
+        #If there are MAGIC data, we convert them from DL0 to DL1 here:
+        if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
+            
+            list_of_MAGIC_runs = glob.glob("MAGIC-*.sh")
+            
+            for n,run in enumerate(list_of_MAGIC_runs):
+                if n == 0:
+                    launch_jobs =  f"linking=$(sbatch --parsable linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
+                else:
+                    launch_jobs = launch_jobs + f" && RES{n}=$(sbatch --parsable --dependency=afterany:$RES{n-1} {run})"
+            
+            os.system(launch_jobs)
         
 if __name__ == "__main__":
     main()
