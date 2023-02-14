@@ -134,8 +134,7 @@ in the terminal. Once it is done, all of the subdirectories in `/fefs/aswg/works
 ***** Generating merge bashscripts...  
 ***** Running merge_hdf_files.py in the MAGIC data files...  
 Process name: merging_CrabTeste  
-To check the jobs submited to the cluster, type: squeue -n merging_CrabTeste  
-
+To check the jobs submited to the cluster, type: squeue -n merging_CrabTeste
 ```
 
 This script will slice the proton MC sample according to the entry "proton_train" in the "config_general.yaml" file, and then it will merge the MAGIC data files in the following order:
