@@ -8,6 +8,12 @@ import os
 import numpy as np
 import glob
 import yaml
+import logging
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
+
 
 def split_train_test(target_dir, train_fraction):
     
@@ -39,14 +45,14 @@ def split_train_test(target_dir, train_fraction):
         if not os.path.exists(proton_dir+"/test/"+i.split("/")[-2]):
             os.mkdir(proton_dir+"/test/"+i.split("/")[-2])
         list_of_runs = np.sort(glob.glob(proton_dir+"/"+i.split("/")[-2]+"/*.h5"))
-        split_20 = int(len(list_of_runs)*train_fraction)
-        for j in list_of_runs[0:split_20]:
+        split_percent = int(len(list_of_runs)*train_fraction)
+        for j in list_of_runs[0:split_percent]:
             os.system(f"mv {j} {proton_dir}/train/"+i.split("/")[-2])
         
         os.system(f"cp {i}*.txt "+proton_dir+"/train/"+i.split("/")[-2])
         os.system(f"mv {i}*.txt "+proton_dir+"/test/"+i.split("/")[-2])
         os.system(f"mv {i}*.h5 "+proton_dir+"/test/"+i.split("/")[-2])
-        os.system(f"rm -r {i}")
+        #os.system(f"rm -r {i}")
 
 def merge(target_dir, identification, MAGIC_runs):
     
@@ -86,7 +92,7 @@ def merge(target_dir, identification, MAGIC_runs):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-file {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
                     
         if os.path.exists(MAGIC_DL1_dir+"/M2"):
             for i in MAGIC_runs:
@@ -94,19 +100,19 @@ def merge(target_dir, identification, MAGIC_runs):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-file {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
     
     elif identification == "1_M1M2":
         if os.path.exists(MAGIC_DL1_dir+"/M1") & os.path.exists(MAGIC_DL1_dir+"/M2"):
             for i in MAGIC_runs:
-                if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/Merged_{i[1]}"):
-                    os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged_{i[1]}") 
-                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-file {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged_{i[1]} --subrun-wise \n')        
+                if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/Merged"):
+                    os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged") 
+                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
     else:
         for i in MAGIC_runs:
             if not os.path.exists(MAGIC_DL1_dir+f"/Merged/Merged_{i[0]}"):
                 os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i[0]}")  #Creating a merged directory for each night
-            f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-file {MAGIC_DL1_dir}/Merged/{i[0]}/Merged_{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
+            f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
     
     
     f.close()
@@ -153,7 +159,7 @@ def main():
         else:
             launch_jobs = launch_jobs + f" && merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
     
-    print(launch_jobs)
+    #print(launch_jobs)
     os.system(launch_jobs)
 
 if __name__ == "__main__":
