@@ -68,7 +68,7 @@ general:
     SimTel_version: "v1.4"    #This is the version of the SimTel used in the MC simulations
     focal_length  : "nominal" 
     MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill the MAGIC_runs.txt file with "0, 0"
-    proton_train  : 0.2 # 0.2 means that 20% of the DL1 protons will be used for training the Random Forest
+    proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
 ```
 
 The file `MAGIC_runs.txt` looks like that:  
