@@ -148,7 +148,7 @@ def main():
     
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
     print("Process name: merging_"+target_dir.split("/")[-2:][1])
-    print("To check the jobs submited to the cluster, type: squeue -n merging_"+target_dir.split("/")[-2:][1])
+    print("To check the jobs submitted to the cluster, type: squeue -n merging_"+target_dir.split("/")[-2:][1])
     
     #Below we run the bash scripts to merge the MAGIC files
     list_of_merging_scripts = np.sort(glob.glob("Merge_*.sh"))

@@ -301,7 +301,7 @@ def main():
     print("***** Linking MC paths - this may take a few minutes ******")
     print("*** Reducing DL0 to DL1 data - this can take many hours ***")
     print("Process name: ",target_dir.split('/')[-2:][0]+target_dir.split('/')[-2:][1])
-    print("To check the jobs submited to the cluster, type: squeue -n",target_dir.split('/')[-2:][0]+target_dir.split('/')[-2:][1])
+    print("To check the jobs submitted to the cluster, type: squeue -n",target_dir.split('/')[-2:][0]+target_dir.split('/')[-2:][1])
     
     directories_generator(target_dir, telescope_ids, MAGIC_runs) #Here we create all the necessary directories in the given workspace and collect the main directory of the target   
     config_file_gen(telescope_ids,target_dir)
