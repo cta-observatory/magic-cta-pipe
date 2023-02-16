@@ -172,7 +172,7 @@ event_classifier:
         oob_score: false
         n_jobs: 5
         random_state: 42
-        verbose: 0.0
+        verbose: 0
         warm_start: false
         class_weight: null
         ccp_alpha: 0.0
@@ -240,7 +240,7 @@ create_irf:
         global_cut_value: "0.2 deg"  # used for the global cut
         efficiency: 0.75  # used for the dynamic cuts
         min_cut: "0.1 deg"  # used for the dynamic cuts
-        max_cut: "0.3 deg"  # used for the dynamic cuts
+        max_cut: "0.25 deg"  # used for the dynamic cuts
 
 
 dl2_to_dl3:
