@@ -278,7 +278,6 @@ def calculate_off_coordinates(
 
     # Loop over every rotation angle
     for i_off, rotation in enumerate(rotations_off, start=1):
-
         skyoffset_frame = SkyOffsetFrame(origin=wobble_coord, rotation=-rotation)
 
         # Calculate the OFF coordinate

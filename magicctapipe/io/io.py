@@ -136,7 +136,6 @@ def get_stereo_events(
 
     # Loop over every telescope combination type
     for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
-
         multiplicity = len(tel_ids)
 
         df_events = event_data_stereo.query(
@@ -267,7 +266,6 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
 
     # Transform the Alt/Az directions to the RA/Dec coordinate
     if not is_simulation:
-
         timestamps_mean = Time(event_data_mean["timestamp"], format="unix", scale="utc")
 
         pnt_ra_mean, pnt_dec_mean = transform_altaz_to_radec(
@@ -414,7 +412,6 @@ def load_magic_dl1_data_files(input_dir):
     data_list = []
 
     for input_file in input_files:
-
         logger.info(input_file)
 
         df_events = pd.read_hdf(input_file, key="events/parameters")
@@ -498,7 +495,6 @@ def load_train_data_files(
     data_list = []
 
     for input_file in input_files:
-
         logger.info(input_file)
 
         df_events = pd.read_hdf(input_file, key="events/parameters")
@@ -525,7 +521,6 @@ def load_train_data_files(
 
     # Loop over every telescope combination type
     for combo_type, tel_combo in enumerate(TEL_COMBINATIONS.keys()):
-
         df_events = event_data.query(f"combo_type == {combo_type}")
 
         if not df_events.empty:
@@ -856,7 +851,6 @@ def load_irf_files(input_dir_irf):
     logger.info("\nThe following IRF data files are found:")
 
     for input_file in input_files_irf:
-
         logger.info(input_file)
         irf_hdus = fits.open(input_file)
 
@@ -914,7 +908,6 @@ def load_irf_files(input_dir_irf):
 
     # Check the IRF data consistency
     for key in list(irf_data.keys()):
-
         n_irf_data = len(irf_data[key])
 
         if n_irf_data == 0:
@@ -928,7 +921,6 @@ def load_irf_files(input_dir_irf):
             )
 
         elif "bins" in key:
-
             n_edges_unique = np.unique([len(bins) for bins in irf_data[key]])
 
             if len(n_edges_unique) > 1:
@@ -945,7 +937,6 @@ def load_irf_files(input_dir_irf):
 
     # Check the header consistency
     for key in list(extra_header.keys()):
-
         n_values = len(extra_header[key])
         unique_values = np.unique(extra_header[key])
 

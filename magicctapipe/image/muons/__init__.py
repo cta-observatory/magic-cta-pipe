@@ -3,5 +3,5 @@ from .muon_analysis import (
 )
 
 __all__ = [
-    'perform_muon_analysis',
+    "perform_muon_analysis",
 ]

@@ -163,9 +163,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     logger.info("\nProcessing the events...")
 
     with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
-
         for event in event_source:
-
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
 
@@ -225,7 +223,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             leakage_params = leakage_parameters(camera_geom, image, signal_pixels)
 
             if is_simulation:
-
                 # Calculate additional parameters
                 true_disp = calculate_disp(
                     pointing_alt=event.pointing.tel[tel_id].altitude,
@@ -343,7 +340,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

@@ -7,6 +7,7 @@ __all__ = [
     "check_train_test_intersections",
 ]
 
+
 def compute_event_weights():
     """Compute event weights for train scripts
 
@@ -57,7 +58,7 @@ def check_train_test_intersections(train, test):
         train dataframe
     test : pd.DataFrame
         test dataframe
-    
+
      Returns
     -------
     bool
@@ -67,10 +68,10 @@ def check_train_test_intersections(train, test):
     cols = list(train.columns)
     df_merge = pd.merge(train, test, on=cols, how="inner")
     if df_merge.empty:
-        print(f"PASS: test and train are different")
+        print("PASS: test and train are different")
     else:
         print("********** WARNING **********")
-        print(f"Same entries for test and train")
+        print("Same entries for test and train")
         test_passed = False
         print(df_merge)
     return test_passed

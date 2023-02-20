@@ -1,21 +1,24 @@
 # coding: utf-8
 
-import datetime
-import yaml
 import time
 import argparse
+import glob
+import os
 import pandas as pd
-import scipy
-from astropy import units as u
 
-from magicctapipe.train.event_processing import (
+from magicctapipe.reco.event_processing import (
     EnergyEstimatorPandas,
     DirectionEstimatorPandas,
     EventClassifierPandas,
 )
-from magicctapipe.utils.tels import *
-from magicctapipe.utils.utils import *
-from magicctapipe.utils.filedir import *
+from magicctapipe.utils.tels import check_tel_ids, get_array_tel_descriptions
+from magicctapipe.utils.utils import print_title, info_message, print_elapsed_time
+from magicctapipe.utils.filedir import (
+    load_cfg_file,
+    out_file_h5_reco,
+    check_folder,
+    load_dl1_data_stereo,
+)
 
 PARSER = argparse.ArgumentParser(
     description="Apply random forests. For stereo data.",
@@ -110,7 +113,7 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
 
             # Added by Lea Heckmann 2020-05-15 for the moment to delete duplicate
             # events
-            info_message(f"Removing duplicate events", prefix="ApplyRF")
+            info_message("Removing duplicate events", prefix="ApplyRF")
             shower_data = shower_data[~shower_data.index.duplicated()]
 
             # --- Applying RFs ---
@@ -171,7 +174,7 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
                     mc_.to_hdf(out_file, key="dl2/mc_header")
             except Exception as e:
                 # No mc_header found in file, file is not a simulation
-                print(f"No dl1/mc_header found in file {file}, skipping")
+                print(f"No dl1/mc_header found in file {file}, skipping - %s", e)
 
         # --- END LOOP on file_list ---
 

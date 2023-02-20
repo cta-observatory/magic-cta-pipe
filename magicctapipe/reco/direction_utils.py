@@ -1,18 +1,11 @@
 import pandas as pd
-import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
-from astropy.coordinates.angle_utilities import position_angle
-from astropy.coordinates.angle_utilities import angular_separation
-from matplotlib import colors
-import matplotlib.pyplot as plt
 
-from magicctapipe.utils.utils import *
-from magicctapipe.utils.plot import *
-from magicctapipe.utils.tels import *
-from magicctapipe.utils.filedir import *
+from magicctapipe.utils.tels import get_tel_ids_dl1
 
 __all__ = ["compute_separation_angle_direction"]
+
 
 def compute_separation_angle_direction(shower_data_test):
     separation = dict()
@@ -75,4 +68,3 @@ def compute_separation_angle_direction(shower_data_test):
         print(f"  Tel {tel_id} scatter: ", f"{separation[tel_id].to(u.deg).std():.2f}")
 
     return separation_df
-

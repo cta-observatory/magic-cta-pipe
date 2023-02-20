@@ -59,12 +59,10 @@ def write_data_to_table(input_file_mask, output_file):
     input_files.sort()
 
     with tables.open_file(output_file, mode="w") as f_out:
-
         logger.info(f"\n{input_files[0]}")
 
         # Create a new table with the first input file
         with tables.open_file(input_files[0]) as f_input:
-
             event_data = f_input.root.events.parameters
 
             f_out.create_table(
@@ -88,7 +86,6 @@ def write_data_to_table(input_file_mask, output_file):
 
         # Write the rest of the input files
         for input_file in input_files[1:]:
-
             logger.info(input_file)
 
             with tables.open_file(input_file) as f_input:
@@ -149,7 +146,6 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     subrun_ids = []
 
     for input_file in input_files:
-
         input_file_name = Path(input_file).name
 
         if re.fullmatch(regex_run, input_file_name):
@@ -197,7 +193,6 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
         subrun_ids = np.array(subrun_ids)
 
         for run_id in run_ids_unique:
-
             subrun_ids_unique, counts = np.unique(
                 subrun_ids[run_ids == run_id], return_counts=True
             )
@@ -249,7 +244,6 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

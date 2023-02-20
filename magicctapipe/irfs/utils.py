@@ -1,11 +1,8 @@
 import os
 import glob
-import time
-import logging
-import operator
-import argparse
 
 import numpy as np
+import pandas as pd
 from astropy import table
 import astropy.units as u
 from astropy.io import fits
@@ -13,17 +10,27 @@ from astropy.table import QTable
 
 from pyirf.simulations import SimulatedEventsInfo
 
-from magicctapipe.utils.filedir import *
-from magicctapipe.utils.plot import *
-from magicctapipe.utils.utils import *
+from magicctapipe.utils.filedir import read_mc_header
+from magicctapipe.utils.plot import save_plt, load_default_plot_settings
+from magicctapipe.utils.utils import print_title
 
 import matplotlib.pylab as plt
 
-__all__ = ["read_simu_info_mcp_sum_num_showers", "convert_simu_info_mcp_to_pyirf",
-           "read_dl2_mcp_to_pyirf_MAGIC_LST_list", "plot_sensitivity", "plot_en_res_bias",
-           "plot_en_res_resolution", "plot_ang_res", "plot_effective_area",
-           "plot_gamma_eff_gh", "plot_irfs_MAGIC_LST", "plot_MARS_sensitivity",
-           "plot_MAGIC_reference_sensitivity"]
+__all__ = [
+    "read_simu_info_mcp_sum_num_showers",
+    "convert_simu_info_mcp_to_pyirf",
+    "read_dl2_mcp_to_pyirf_MAGIC_LST_list",
+    "plot_sensitivity",
+    "plot_en_res_bias",
+    "plot_en_res_resolution",
+    "plot_ang_res",
+    "plot_effective_area",
+    "plot_gamma_eff_gh",
+    "plot_irfs_MAGIC_LST",
+    "plot_MARS_sensitivity",
+    "plot_MAGIC_reference_sensitivity",
+]
+
 
 def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header"):
     """Function to read simulation information from DL2 files and sum the simultated
@@ -55,7 +62,7 @@ def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header")
 
 
 def convert_simu_info_mcp_to_pyirf(file_list, mc_header_key="dl2/mc_header"):
-    """Function to convert simulation information from magic-cta-pipe DL2 files to 
+    """Function to convert simulation information from magic-cta-pipe DL2 files to
     pyirf format
 
     Parameters
@@ -215,7 +222,7 @@ def plot_sensitivity(data, unit, label, ax=None, **kwargs):
     **kwargs : passed to plt.errorbar
     """
     e = data["reco_energy_center"]
-    s_mc = e ** 2 * data["flux_sensitivity"]
+    s_mc = e**2 * data["flux_sensitivity"]
     e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
     ax_ = ax if ax != None else plt
     plt_ = ax_.errorbar(
@@ -362,8 +369,6 @@ def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     """
     print_title("Plot IRFs")
 
-    cfg = load_cfg_file(config_file)
-
     load_default_plot_settings()
 
     # --- Open file ---
@@ -389,20 +394,22 @@ def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     plot_MAGIC_reference_sensitivity(ax)
 
     # Plot Crab SED
-    #plot_utils.plot_Crab_SED(
+    # plot_utils.plot_Crab_SED(
     #    ax, 100, 5 * u.GeV, 1e4 * u.GeV, label="100% Crab"
-    #)  # Energy in GeV
-    #plot_utils.plot_Crab_SED(
+    # )  # Energy in GeV
+    # plot_utils.plot_Crab_SED(
     #    ax, 10, 5 * u.GeV, 1e4 * u.GeV, linestyle="--", label="10% Crab"
-    #)  # Energy in GeV
-    #plot_utils.plot_Crab_SED(
+    # )  # Energy in GeV
+    # plot_utils.plot_Crab_SED(
     #    ax, 1, 5 * u.GeV, 1e4 * u.GeV, linestyle=":", label="1% Crab"
-    #)  # Energy in GeV
+    # )  # Energy in GeV
 
     plt.legend()
 
     save_plt(
-        n=f"Sensitivity", rdir=irfs_dir, vect="pdf",
+        n="Sensitivity",
+        rdir=irfs_dir,
+        vect="pdf",
     )
 
     # --- Plot Angular Resolution ---
@@ -414,7 +421,9 @@ def plot_irfs_MAGIC_LST(config_file, irfs_dir):
 
     plot_ang_res(data=ang_res, label="Angular Resolution")
     save_plt(
-        n=f"Angular_Resolution", rdir=irfs_dir, vect="pdf",
+        n="Angular_Resolution",
+        rdir=irfs_dir,
+        vect="pdf",
     )
 
     # --- Effective Area ---
@@ -426,7 +435,9 @@ def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     ax.set_ylabel(r"Effective Area ($\mathrm{m^2}$)")
     plot_effective_area(data=effective_area, label="Effective Area")
     save_plt(
-        n=f"Effective_Area", rdir=irfs_dir, vect="pdf",
+        n="Effective_Area",
+        rdir=irfs_dir,
+        vect="pdf",
     )
 
     # --- GH cuts and Gamma Efficiency ---
@@ -434,7 +445,9 @@ def plot_irfs_MAGIC_LST(config_file, irfs_dir):
     gamma_efficiency = QTable.read(hdu_open, hdu="GAMMA_EFFICIENCY")
     plot_gamma_eff_gh(gamma_efficiency, gh_cuts, sensitivity)
     save_plt(
-        n=f"Gamma_Efficiency", rdir=irfs_dir, vect="pdf",
+        n="Gamma_Efficiency",
+        rdir=irfs_dir,
+        vect="pdf",
     )
 
 
@@ -519,4 +532,3 @@ def plot_MAGIC_reference_sensitivity(ax, **kwargs):
     if "color" not in kwargs.keys():
         kwargs["color"] = "k"
     ax.errorbar(e, s, xerr=[(e - e_low), (e_high - e)], yerr=err_s, **kwargs)
-

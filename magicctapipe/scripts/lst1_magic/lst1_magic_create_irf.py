@@ -192,7 +192,6 @@ def create_irf(
     event_table_bkg = QTable()
 
     if not is_point_like and is_bkg_mc:
-
         # Load the input proton MC DL2 data file
         logger.info(f"\nInput proton MC DL2 data file: {input_file_proton}")
 
@@ -319,7 +318,6 @@ def create_irf(
     cut_type_gh = config_gh_cuts.pop("cut_type")
 
     if cut_type_gh == "global":
-
         cut_value_gh = config_gh_cuts["global_cut_value"]
         logger.info(f"\nGlobal gammaness cut: {cut_value_gh}")
 
@@ -335,7 +333,6 @@ def create_irf(
             event_table_bkg = event_table_bkg[mask_gh]
 
     elif cut_type_gh == "dynamic":
-
         config_gh_cuts.pop("global_cut_value", None)
 
         logger.info("\nDynamic gammaness cuts:")
@@ -405,13 +402,11 @@ def create_irf(
         raise ValueError(f"Unknown gammaness-cut type '{cut_type_gh}'.")
 
     if is_point_like:
-
         # Apply the theta cut
         config_theta_cuts = config_irf["theta"]
         cut_type_theta = config_theta_cuts.pop("cut_type")
 
         if cut_type_theta == "global":
-
             cut_value_theta = config_theta_cuts["global_cut_value"]
             logger.info(f"\nGlobal theta cut: {cut_value_theta}")
 
@@ -425,7 +420,6 @@ def create_irf(
             event_table_gamma = event_table_gamma[mask_theta]
 
         elif cut_type_theta == "dynamic":
-
             config_theta_cuts.pop("global_cut_value", None)
 
             logger.info("\nDynamic theta cuts:")
@@ -489,7 +483,6 @@ def create_irf(
     logger.info("\nCreating an effective-area HDU...")
 
     with np.errstate(invalid="ignore", divide="ignore"):
-
         if is_diffuse_mc:
             aeff = effective_area_per_energy_and_fov(
                 selected_events=event_table_gamma,
@@ -542,7 +535,6 @@ def create_irf(
     irf_hdus.append(edisp_hdu)
 
     if not is_point_like:
-
         # Create a PSF table HDU
         logger.info("Creating a PSF table HDU...")
 
@@ -565,7 +557,6 @@ def create_irf(
         irf_hdus.append(psf_hdu)
 
         if is_bkg_mc:
-
             # Create a background HDU
             logger.info("Creating a background HDU...")
 
@@ -600,7 +591,6 @@ def create_irf(
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

@@ -96,14 +96,13 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
         muon_config = config["MAGIC"]["muon_ring"]
     # Select the telescope name to be filed in muon_parameters['telescope_name']
     if tel_id == 1:
-        tel_name = f"MAGIC-I"
+        tel_name = "MAGIC-I"
     elif tel_id == 2:
-        tel_name = f"MAGIC-II"
+        tel_name = "MAGIC-II"
     else:
-        tel_name = f"MAGIC_?"
+        tel_name = "MAGIC_?"
 
     for event in event_source:
-
         # Apply the image cleaning:
         dead_pixels = event.mon.tel[tel_id].pixel_status.hardware_failing_pixels[0]
         try:
@@ -139,7 +138,6 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
 
 
 def main():
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

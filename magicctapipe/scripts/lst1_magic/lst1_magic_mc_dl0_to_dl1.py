@@ -217,9 +217,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     logger.info("\nProcessing the events...")
 
     with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
-
         for event in event_source:
-
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
 
@@ -232,9 +230,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
             magic_stereo = trigger_m1 and trigger_m2
 
             for tel_id in tels_with_trigger:
-
                 if tel_id == tel_id_lst1:
-
                     # Calibrate the LST-1 event
                     calibrator_lst._calibrate_dl0(event, tel_id)
                     calibrator_lst._calibrate_dl1(event, tel_id)
@@ -443,7 +439,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()
