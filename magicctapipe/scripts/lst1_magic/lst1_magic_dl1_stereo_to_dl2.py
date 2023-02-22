@@ -25,12 +25,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
 from traitlets.config import Config
-from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io import get_stereo_events, save_pandas_data_in_table, Dl1Extender
 from magicctapipe.io.io import TEL_COMBINATIONS
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
@@ -243,7 +244,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     return reco_params
 
 
-def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, add_param=lambda x:x):
+def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
     """
     Processes DL1-stereo events and reconstructs the DL2 parameters with
     trained RFs.
@@ -261,7 +262,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, add_param=lambd
     # Load the input DL1-stereo data file
     logger.info(f"\nInput DL1-stereo data file: {input_file_dl1}")
 
-    event_data = add_param(pd.read_hdf(input_file_dl1, key="events/parameters"))
+    dl1_loader = Dl1Extender(Config(config))
+    event_data = dl1_loader(input_file_dl1)
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
@@ -431,10 +433,25 @@ def main():
         help="Path to a directory where to save an output DL2 data file",
     )
 
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default=None,
+        help="Path to a configuration file",
+    )
+
     args = parser.parse_args()
 
+    if args.config_file is not None:
+        with open(args.config_file, "rb") as f:
+            config = yaml.safe_load(f)
+    else:
+        config = {}
+
     # Process the input data
-    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir)
+    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir, config=config)
 
     logger.info("\nDone.")
 
