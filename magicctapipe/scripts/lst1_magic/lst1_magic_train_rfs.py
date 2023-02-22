@@ -114,8 +114,8 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     """
 
     config_rf = config["energy_regressor"]
-    config_dl1loader = {"DL1Extender": config.get("DL1Extender", {})}
-    for key, item in config_rf.get("DL1Extender", {}).items():
+    config_dl1loader = {"Dl1Extender": config.get("Dl1Extender", {})}
+    for key, item in config_rf.get("Dl1Extender", {}).items():
         config_dl1loader[key] = item
 
     dl1_loader = Dl1Extender(Config(config_dl1loader))
@@ -193,8 +193,8 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     """
 
     config_rf = config["disp_regressor"]
-    config_dl1loader = {"DL1Extender": config.get("DL1Extender", {})}
-    for key, item in config_rf.get("DL1Extender", {}).items():
+    config_dl1loader = {"Dl1Extender": config.get("Dl1Extender", {})}
+    for key, item in config_rf.get("Dl1Extender", {}).items():
         config_dl1loader[key] = item
 
     dl1_loader = Dl1Extender(Config(config_dl1loader))
@@ -276,8 +276,8 @@ def train_event_classifier(
     """
 
     config_rf = config["event_classifier"]
-    config_dl1loader = {"DL1Extender": config.get("DL1Extender", {})}
-    for key, item in config_rf.get("DL1Extender", {}).items():
+    config_dl1loader = {"Dl1Extender": config.get("Dl1Extender", {})}
+    for key, item in config_rf.get("Dl1Extender", {}).items():
         config_dl1loader[key] = item
 
     dl1_loader = Dl1Extender(Config(config_dl1loader))
