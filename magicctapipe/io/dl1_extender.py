@@ -36,7 +36,7 @@ class Dl1Extender(Component):
                 df['log_intensity'] = log_intensity
         zd_indep_log_intensity = log_intensity - self.slope*(90 - np.rad2deg(df['pointing_alt']))
         if self.add_zd_indep_log_intensity:
-            df['zd_indep_logintensity'] = zd_indep_log_intensity
+            df['zd_indep_log_intensity'] = zd_indep_log_intensity
         if self.add_zd_indep_intensity:
             df['zd_indep_intensity'] = np.power(zd_indep_log_intensity, 10)
 
