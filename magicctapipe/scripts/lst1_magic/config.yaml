@@ -78,7 +78,7 @@ stereo_reco:
     quality_cuts: "(intensity > 50) & (width > 0)"
     theta_uplim: "6 arcmin"
 
-DL1Extender:
+Dl1Extender:
     add_zd_indep_log_intensity: true
 
 energy_regressor:
