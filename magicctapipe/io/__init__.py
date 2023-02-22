@@ -6,6 +6,7 @@ from .containers import (
     RealEventInfoContainer,
     SimEventInfoContainer,
 )
+from .dl1_extender import Dl1Extender
 from .gadf import (
     create_event_hdu,
     create_gh_cuts_hdu,
@@ -27,6 +28,7 @@ from .io import (
 
 __all__ = [
     "BaseEventInfoContainer",
+    "Dl1Extender",
     "RealEventInfoContainer",
     "SimEventInfoContainer",
     "create_event_hdu",

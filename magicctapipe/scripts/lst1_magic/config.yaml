@@ -78,6 +78,8 @@ stereo_reco:
     quality_cuts: "(intensity > 50) & (width > 0)"
     theta_uplim: "6 arcmin"
 
+DL1Extender:
+    add_zd_indep_log_intensity: true
 
 energy_regressor:
     settings:
@@ -100,7 +102,7 @@ energy_regressor:
         max_samples: null
 
     features: [
-        "intensity",
+        "zd_indep_log_intensity",
         "length",
         "width",
         "skewness",
@@ -109,8 +111,6 @@ energy_regressor:
         "intensity_width_2",
         "h_max",
         "impact",
-        "pointing_alt",
-        "pointing_az",
     ]
 
     gamma_offaxis:
@@ -139,7 +139,7 @@ disp_regressor:
         max_samples: null
 
     features: [
-        "intensity",
+        "zd_indep_log_intensity",
         "length",
         "width",
         "skewness",
@@ -148,8 +148,6 @@ disp_regressor:
         "intensity_width_2",
         "h_max",
         "impact",
-        "pointing_alt",
-        "pointing_az",
     ]
 
     gamma_offaxis:
@@ -179,7 +177,7 @@ event_classifier:
         max_samples: null
 
     features: [
-        "intensity",
+        "zd_indep_log_intensity",
         "length",
         "width",
         "skewness",
@@ -188,8 +186,6 @@ event_classifier:
         "intensity_width_2",
         "h_max",
         "impact",
-        "pointing_alt",
-        "pointing_az",
     ]
 
     gamma_offaxis:

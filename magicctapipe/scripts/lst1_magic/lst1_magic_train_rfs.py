@@ -40,7 +40,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
-from magicctapipe.io import format_object, load_train_data_files
+from traitlets.config import Config
+from magicctapipe.io import format_object, load_train_data_files, Dl1Extender
 from magicctapipe.io.io import GROUP_INDEX_TRAIN, TEL_NAMES
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
@@ -113,6 +114,11 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     """
 
     config_rf = config["energy_regressor"]
+    config_dl1loader = {"DL1Extender": config.get("DL1Extender", {})}
+    for key, item in config_rf.get("DL1Extender", {}).items():
+        config_dl1loader[key] = item
+
+    dl1_loader = Dl1Extender(Config(config_dl1loader))
 
     gamma_offaxis = config_rf["gamma_offaxis"]
 
@@ -123,7 +129,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     logger.info(f"\nInput directory: {input_dir}")
 
     event_data_train = load_train_data_files(
-        input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
+        input_dir, gamma_offaxis["min"], gamma_offaxis["max"], dl1_loader=dl1_loader
     )
 
     # Configure the energy regressor
@@ -187,6 +193,11 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     """
 
     config_rf = config["disp_regressor"]
+    config_dl1loader = {"DL1Extender": config.get("DL1Extender", {})}
+    for key, item in config_rf.get("DL1Extender", {}).items():
+        config_dl1loader[key] = item
+
+    dl1_loader = Dl1Extender(Config(config_dl1loader))
 
     gamma_offaxis = config_rf["gamma_offaxis"]
 
@@ -197,7 +208,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     logger.info(f"\nInput directory: {input_dir}")
 
     event_data_train = load_train_data_files(
-        input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
+        input_dir, gamma_offaxis["min"], gamma_offaxis["max"], dl1_loader
     )
 
     # Configure the DISP regressor
@@ -265,6 +276,11 @@ def train_event_classifier(
     """
 
     config_rf = config["event_classifier"]
+    config_dl1loader = {"DL1Extender": config.get("DL1Extender", {})}
+    for key, item in config_rf.get("DL1Extender", {}).items():
+        config_dl1loader[key] = item
+
+    dl1_loader = Dl1Extender(Config(config_dl1loader))
 
     gamma_offaxis = config_rf["gamma_offaxis"]
 
@@ -275,14 +291,14 @@ def train_event_classifier(
     logger.info(f"\nInput gamma MC directory: {input_dir_gamma}")
 
     event_data_gamma = load_train_data_files(
-        input_dir_gamma, gamma_offaxis["min"], gamma_offaxis["max"], EVENT_CLASS_GAMMA
+        input_dir_gamma, gamma_offaxis["min"], gamma_offaxis["max"], EVENT_CLASS_GAMMA, dl1_loader
     )
 
     # Load the input proton MC data files
     logger.info(f"\nInput proton MC directory: {input_dir_proton}")
 
     event_data_proton = load_train_data_files(
-        input_dir_proton, true_event_class=EVENT_CLASS_PROTON
+        input_dir_proton, true_event_class=EVENT_CLASS_PROTON, dl1_loader=dl1_loader
     )
 
     # Configure the event classifier

@@ -449,7 +449,8 @@ def load_magic_dl1_data_files(input_dir):
 
 
 def load_train_data_files(
-    input_dir, offaxis_min=None, offaxis_max=None, true_event_class=None
+    input_dir, offaxis_min=None, offaxis_max=None, true_event_class=None,
+    dl1_loader=lambda x:pd.read_hdf(x, key="events/parameters")
 ):
     """
     Loads DL1-stereo data files and separates the shower events per
@@ -501,7 +502,7 @@ def load_train_data_files(
 
         logger.info(input_file)
 
-        df_events = pd.read_hdf(input_file, key="events/parameters")
+        df_events = dl1_loader(input_file)
         data_list.append(df_events)
 
     event_data = pd.concat(data_list)

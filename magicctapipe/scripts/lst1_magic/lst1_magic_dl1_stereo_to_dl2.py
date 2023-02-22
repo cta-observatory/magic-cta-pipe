@@ -29,6 +29,7 @@ from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
+from traitlets.config import Config
 from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
 from magicctapipe.io.io import TEL_COMBINATIONS
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
@@ -242,7 +243,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     return reco_params
 
 
-def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
+def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, add_param=lambda x:x):
     """
     Processes DL1-stereo events and reconstructs the DL2 parameters with
     trained RFs.
@@ -260,7 +261,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     # Load the input DL1-stereo data file
     logger.info(f"\nInput DL1-stereo data file: {input_file_dl1}")
 
-    event_data = pd.read_hdf(input_file_dl1, key="events/parameters")
+    event_data = add_param(pd.read_hdf(input_file_dl1, key="events/parameters"))
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
