@@ -208,7 +208,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     logger.info(f"\nInput directory: {input_dir}")
 
     event_data_train = load_train_data_files(
-        input_dir, gamma_offaxis["min"], gamma_offaxis["max"], dl1_loader
+        input_dir, gamma_offaxis["min"], gamma_offaxis["max"], dl1_loader=dl1_loader
     )
 
     # Configure the DISP regressor
