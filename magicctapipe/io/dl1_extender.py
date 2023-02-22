@@ -70,6 +70,6 @@ class Dl1Extender(Component):
         df = base_reader(file)
         if self.add_altaz_cog:
             self.dl1_altaz_cog(df, full_subarray)
-        if self.add_zd_indep_intensity:
+        if self.add_zd_indep_intensity or self.add_zd_indep_log_intensity or self.add_log_intensity:
             self.dl1_zd_indep_intensity(df)
         return df
