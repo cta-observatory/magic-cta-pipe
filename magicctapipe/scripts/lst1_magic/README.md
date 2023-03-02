@@ -68,6 +68,7 @@ general:
     SimTel_version: "v1.4"    #This is the version of the SimTel used in the MC simulations
     focal_length  : "nominal" 
     MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill the MAGIC_runs.txt file with "0, 0"
+    LST_runs      : "LST_runs.txt"  
     proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
 ```
 
@@ -77,15 +78,28 @@ The file `MAGIC_runs.txt` looks like that:
 2020_11_19,5093175
 2020_12_08,5093491
 2020_12_08,5093492
-2020_12_08,5093495
-2020_12_08,5093496
-2020_12_08,5093497
 2020_12_16,5093711
 2020_12_16,5093712
 2020_12_16,5093713
 2020_12_16,5093714
 ```
-The columns here represent the night and run in which you want to select data. Please do not add blanck spaces in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. If there is no MAGIC data, please fill this file with "0,0".These two files are the only ones you need to modify in order to convert DL0 into DL1 data.
+
+
+The columns here represent the night and run in which you want to select data. Please do not add blanck spaces in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. If there is no MAGIC data, please fill this file with "0,0". Similarly, the `LST_runs.txt` file looks like:
+
+```
+2020_11_18,2923
+2020_11_18,2924
+2020_12_07,3093
+2020_12_07,3094
+2020_12_07,3095
+2020_12_07,3096
+2020_12_15,3265
+2020_12_15,3266
+2020_12_15,3267
+2020_12_15,3268
+```
+Note that the LST nights are appear as being one day before MAGIC's!!! This is because LST saves the date of the beggining of the night, while MAGIC saves the date of the end. These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
 
 To convert the MAGIC and SimTelArray MCs data into DL1 format, you first do the following:
