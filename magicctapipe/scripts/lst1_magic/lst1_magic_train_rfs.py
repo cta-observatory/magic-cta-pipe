@@ -144,7 +144,6 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
     # Loop over every telescope combination type
     for tel_combo, df_train in event_data_train.items():
-
         logger.info(f"\nEnergy regressors for the '{tel_combo}' type:")
 
         # Train the RFs
@@ -152,7 +151,6 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
         # Check the feature importance
         for tel_id, telescope_rf in energy_regressor.telescope_rfs.items():
-
             importances = telescope_rf.feature_importances_.round(5)
             importances = dict(zip(energy_regressor.features, importances))
 
@@ -218,7 +216,6 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
     # Loop over every telescope combination type
     for tel_combo, df_train in event_data_train.items():
-
         logger.info(f"\nDISP regressors for the '{tel_combo}' type:")
 
         # Train the RFs
@@ -226,7 +223,6 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
         # Check the feature importance
         for tel_id, telescope_rf in disp_regressor.telescope_rfs.items():
-
             importances = telescope_rf.feature_importances_.round(5)
             importances = dict(zip(disp_regressor.features, importances))
 
@@ -305,7 +301,6 @@ def train_event_classifier(
     common_combinations = set(event_data_gamma.keys()) & set(event_data_proton.keys())
 
     for tel_combo in sorted(common_combinations):
-
         logger.info(f"\nEvent classifiers for the '{tel_combo}' type:")
 
         df_gamma = event_data_gamma[tel_combo]
@@ -330,7 +325,6 @@ def train_event_classifier(
 
         # Check the feature importance
         for tel_id, telescope_rf in event_classifier.telescope_rfs.items():
-
             importances = telescope_rf.feature_importances_.round(5)
             importances = dict(zip(event_classifier.features, importances))
 
@@ -349,7 +343,6 @@ def train_event_classifier(
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

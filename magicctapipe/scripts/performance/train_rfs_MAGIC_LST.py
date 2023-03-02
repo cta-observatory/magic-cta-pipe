@@ -1,22 +1,49 @@
 # coding: utf-8
 
 import time
+import os
+import glob
 import argparse
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from astropy.coordinates.angle_utilities import angular_separation
 
-from magicctapipe.utils.plot import *
-from magicctapipe.utils.utils import *
-from magicctapipe.utils.tels import *
-from magicctapipe.utils.filedir import *
-from magicctapipe.train.global_utils import *
-from magicctapipe.train.classifier_utils import *
-from magicctapipe.train.direction_utils import *
-from magicctapipe.train.energy_utils import *
-from magicctapipe.train.event_processing import EventClassifierPandas
-from magicctapipe.train.event_processing import EnergyEstimatorPandas
-from magicctapipe.train.event_processing import DirectionEstimatorPandas
+from magicctapipe.utils.plot import (
+    save_plt,
+    load_default_plot_settings,
+    load_default_plot_settings_02,
+)
+from magicctapipe.utils.utils import print_title, info_message, print_elapsed_time
+from magicctapipe.reco.energy_utils import plot_migmatrix, evaluate_performance_energy
+from magicctapipe.reco.direction_utils import compute_separation_angle_direction
+from magicctapipe.reco.classifier_utils import (
+    get_weights_classifier,
+    check_train_test_intersections_classifier,
+    load_init_data_classifier,
+    print_par_imp_classifier,
+    evaluate_performance_classifier,
+)
+from magicctapipe.reco.global_utils import (
+    get_weights_mc_dir_class,
+    compute_event_weights,
+    check_train_test_intersections,
+)
+from magicctapipe.utils.tels import (
+    check_tel_ids,
+    get_tel_name,
+    get_array_tel_descriptions,
+)
+from magicctapipe.utils.filedir import (
+    load_cfg_file_check,
+    check_folder,
+    load_dl1_data_stereo_list_selected,
+    load_dl1_data_stereo_list,
+)
+
+from magicctapipe.reco.event_processing import EventClassifierPandas
+from magicctapipe.reco.event_processing import EnergyEstimatorPandas
+from magicctapipe.reco.event_processing import DirectionEstimatorPandas
 
 PARSER = argparse.ArgumentParser(
     description="Trains random forests for stereo data",
@@ -529,7 +556,7 @@ def train_direction_rf_stereo(config_file):
     for index, tel_id in enumerate([0] + tel_ids):
         plt.subplot2grid(grid_shape, (index, 0))
         if tel_id == 0:
-            plt.title(f"Total")
+            plt.title("Total")
         else:
             plt.title(get_tel_name(tel_id=tel_id, cfg=cfg))
         plt.xlabel(r"$\theta^2$, deg$^2$")
@@ -781,7 +808,9 @@ def train_energy_rf_stereo(config_file, only_plots=False):
 
     plt.tight_layout()
     save_plt(
-        n=cfg["energy_rf"]["fig_name"], rdir=cfg["energy_rf"]["save_dir"], vect="pdf",
+        n=cfg["energy_rf"]["fig_name"],
+        rdir=cfg["energy_rf"]["save_dir"],
+        vect="pdf",
     )
     plt.close()
 

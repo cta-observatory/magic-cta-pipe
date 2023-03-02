@@ -3,11 +3,9 @@ import astropy.units as u
 
 from ctapipe.core.container import Container, Field
 
-from magicctapipe.reco.stereo import *
-from magicctapipe.utils.tels import *
+from magicctapipe.utils.tels import tel_ids_2_num
 
-__all__ = ["write_hillas", "check_write_stereo",
-           "check_stereo", "write_stereo"]
+__all__ = ["write_hillas", "check_write_stereo", "check_stereo", "write_stereo"]
 
 
 def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p, impact_p):
@@ -121,7 +119,7 @@ def check_stereo(event, tel_id, hillas_p):
             "Event ID %d  (obs ID: %d) has an ellipse with width = %s: "
             "stereo parameters calculation skipped."
         )
-        stereo_params = None
+
         if any([hillas_p[tel_id]["width"].value == 0 for tel_id in hillas_p]):
             print(err_str % (event.index.event_id, event.index.obs_id, "0"))
         elif any([np.isnan(hillas_p[tel_id]["width"].value) for tel_id in hillas_p]):
@@ -132,7 +130,10 @@ def check_stereo(event, tel_id, hillas_p):
 
 
 def write_stereo(
-    stereo_params, stereo_id, event_info, writer,
+    stereo_params,
+    stereo_id,
+    event_info,
+    writer,
 ):
     """Check hillas parameters and write stero parameters
 

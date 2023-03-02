@@ -67,7 +67,6 @@ class EnergyRegressor:
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
-
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
@@ -110,7 +109,6 @@ class EnergyRegressor:
 
         # Loop over every telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
-
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
@@ -232,7 +230,6 @@ class DispRegressor:
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
-
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
@@ -274,7 +271,6 @@ class DispRegressor:
 
         # Loop over every telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
-
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
@@ -394,7 +390,6 @@ class EventClassifier:
         tel_ids = np.unique(event_data["tel_id"])
 
         for tel_id in tel_ids:
-
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 
@@ -436,7 +431,6 @@ class EventClassifier:
 
         # Loop over every telescope
         for tel_id, telescope_rf in self.telescope_rfs.items():
-
             df_events = event_data.query(f"tel_id == {tel_id}").copy()
             df_events.dropna(subset=self.features, inplace=True)
 

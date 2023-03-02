@@ -1,13 +1,16 @@
 import pandas as pd
 import numpy as np
+import glob
+import os
 import sklearn.metrics
-import matplotlib.pyplot as plt
 
-from magicctapipe.utils.utils import *
-from magicctapipe.utils.plot import *
-from magicctapipe.utils.tels import *
-from magicctapipe.utils.filedir import *
-from magicctapipe.reco.global_utils import *
+
+from magicctapipe.utils.utils import info_message
+from magicctapipe.utils.filedir import (
+    load_dl1_data_stereo_list,
+    load_dl1_data_stereo_list_selected,
+)
+from magicctapipe.reco.global_utils import check_train_test_intersections
 
 __all__ = [
     "GetHist_classifier",
@@ -17,6 +20,7 @@ __all__ = [
     "load_init_data_classifier",
     "check_train_test_intersections_classifier",
 ]
+
 
 def GetHist_classifier(data, bins=30, range=None, weights=None):
     hs, edges = np.histogram(data, bins=bins, range=range, weights=weights)
@@ -198,7 +202,7 @@ def load_init_data_classifier(cfg, mode="train"):
 def check_train_test_intersections_classifier(
     mc_data_train, bkg_data_train, mc_data_test, bkg_data_test
 ):
-    """Function to check if there are same events in train and test samples, for 
+    """Function to check if there are same events in train and test samples, for
     train rfs classifier
 
     Parameters
@@ -211,7 +215,7 @@ def check_train_test_intersections_classifier(
         mc_data_test
     bkg_data_test : pd.DataFrame
         bkg_data_test
-    
+
      Returns
     -------
     bool

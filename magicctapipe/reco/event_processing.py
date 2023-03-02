@@ -1,7 +1,6 @@
 import re
 import itertools
 import numpy as np
-import astropy.units as u
 from copy import deepcopy
 
 from abc import ABC, abstractmethod
@@ -15,13 +14,13 @@ import joblib
 
 from ctapipe.image import tailcuts_clean, hillas_parameters
 from ctapipe.io import EventSource
-from ctapipe.containers import ReconstructedContainer, ReconstructedEnergyContainer, ParticleClassificationContainer
+from ctapipe.containers import ReconstructedContainer, ReconstructedEnergyContainer
 from ctapipe.reco.reco_algorithms import TooFewTelescopesException
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
 
 from astropy.coordinates import AltAz, SkyCoord
 from astropy import units as u
-from astropy.coordinates.angle_utilities import angular_separation, position_angle
+from astropy.coordinates.angle_utilities import angular_separation
 
 __all__ = [
     "RegressorClassifierBase",
@@ -36,6 +35,7 @@ __all__ = [
     "EventClassifierPandas",
     "DirectionStereoEstimatorPandas",
 ]
+
 
 class RegressorClassifierBase:
     """This class collects one model for every camera type -- given by
@@ -91,7 +91,7 @@ class RegressorClassifierBase:
         return getattr(next(iter(self.model_dict.values())), attr)
 
     def __str__(self):
-        """ return the class name of the used model """
+        """return the class name of the used model"""
         return str(next(iter(self.model_dict.values()))).split("(")[0]
 
     def reshuffle_event_list(self, X, y):
@@ -623,7 +623,9 @@ class HillasFeatureSelector(ABC):
         self.hillas_reco_params_to_use = hillas_reco_params_to_use
         self.telescopes = telescopes
 
-        n_features_per_telescope = len(hillas_params_to_use) + len(hillas_reco_params_to_use)
+        n_features_per_telescope = len(hillas_params_to_use) + len(
+            hillas_reco_params_to_use
+        )
         self.n_features = n_features_per_telescope * len(telescopes)
 
     @staticmethod
@@ -694,7 +696,9 @@ class EventFeatureSelector(HillasFeatureSelector):
             List of telescope identifiers. Only events triggering these will be processed.
         """
 
-        super(EventFeatureSelector, self).__init__(hillas_params_to_use, hillas_reco_params_to_use, telescopes)
+        super(EventFeatureSelector, self).__init__(
+            hillas_params_to_use, hillas_reco_params_to_use, telescopes
+        )
 
         self.events = []
         self.event_targets = []
@@ -762,7 +766,9 @@ class EventFeatureTargetSelector(HillasFeatureSelector):
             List of telescope identifiers. Only events triggering these will be processed.
         """
 
-        super(EventFeatureTargetSelector, self).__init__(hillas_params_to_use, hillas_reco_params_to_use, telescopes)
+        super(EventFeatureTargetSelector, self).__init__(
+            hillas_params_to_use, hillas_reco_params_to_use, telescopes
+        )
 
         self.features = dict()
         self.targets = dict()
@@ -873,8 +879,9 @@ class EventProcessor:
 
             event_image = event.dl1.tel[tel_id].image[1]
 
-            mask = tailcuts_clean(camera, event_image,
-                                  picture_thresh=6, boundary_thresh=6)
+            mask = tailcuts_clean(
+                camera, event_image, picture_thresh=6, boundary_thresh=6
+            )
             event_image_cleaned = event_image.copy()
             event_image_cleaned[~mask] = 0
 
@@ -885,9 +892,11 @@ class EventProcessor:
             # of survived pixels
             if n_survived_pixels > self.min_survived_pixels:
                 try:
-                    event.dl1.tel[tel_id].hillas_params = hillas_parameters(camera, event_image_cleaned)
+                    event.dl1.tel[tel_id].hillas_params = hillas_parameters(
+                        camera, event_image_cleaned
+                    )
                 except:
-                    print('Failed')
+                    print("Failed")
                     pass
 
         return event
@@ -914,10 +923,12 @@ class EventProcessor:
 
         # Performing a geometrical direction reconstruction
         try:
-            reco_container.shower['hillas'] = self.hillas_reconstructor.predict_from_dl1(event)
+            reco_container.shower[
+                "hillas"
+            ] = self.hillas_reconstructor.predict_from_dl1(event)
         except TooFewTelescopesException:
             # No reconstruction possible. Resetting to defaults
-            reco_container.shower['hillas'].reset()
+            reco_container.shower["hillas"].reset()
 
         return reco_container
 
@@ -998,12 +1009,14 @@ class EventProcessor:
 
                 self.events.append(deepcopy(event))
 
-    def process_file(self, file_name,
-                     append_to_existing_events=True,
-                     do_direction_reconstruction=True,
-                     do_energy_reconstruction=True,
-                     do_classification=True):
-
+    def process_file(
+        self,
+        file_name,
+        append_to_existing_events=True,
+        do_direction_reconstruction=True,
+        do_energy_reconstruction=True,
+        do_classification=True,
+    ):
         """
         This method represents the file processing pipeline: data loading,
         DL0->DL1 processing and the subsequent direction/energy/classification.
@@ -1032,7 +1045,9 @@ class EventProcessor:
 
         """
 
-        self._load_events(file_name, append_to_existing_events=append_to_existing_events)
+        self._load_events(
+            file_name, append_to_existing_events=append_to_existing_events
+        )
 
         self.reconstruction_results = []
 
@@ -1074,7 +1089,9 @@ class EnergyEstimator:
         self.hillas_reco_params_to_use = hillas_reco_params_to_use
         self.telescopes = telescopes
 
-        n_features_per_telescope = len(hillas_params_to_use) + len(hillas_reco_params_to_use)
+        n_features_per_telescope = len(hillas_params_to_use) + len(
+            hillas_reco_params_to_use
+        )
         self.n_features = n_features_per_telescope * len(telescopes)
 
         self.train_features = dict()
@@ -1140,7 +1157,7 @@ class EnergyEstimator:
                 feature_entry.append(self._get_param_value(param))
 
             for param_name in self.hillas_reco_params_to_use:
-                param = reco_result.shower['hillas'][param_name]
+                param = reco_result.shower["hillas"][param_name]
 
                 feature_entry.append(self._get_param_value(param))
 
@@ -1164,7 +1181,7 @@ class EnergyEstimator:
                 feature_entry.append(self._get_param_value(param))
 
             for param_name in self.hillas_reco_params_to_use:
-                param = reco_result.shower['hillas'][param_name]
+                param = reco_result.shower["hillas"][param_name]
 
                 feature_entry.append(self._get_param_value(param))
 
@@ -1173,9 +1190,9 @@ class EnergyEstimator:
 
         predicted_energy_dict = self.regressor.predict_by_event([event_record])
 
-        reconstructed_energy = 10**predicted_energy_dict['mean'].value * u.TeV
-        std = predicted_energy_dict['std'].value
-        rel_uncert = 0.5 * (10 ** std - 1 / 10 ** std)
+        reconstructed_energy = 10 ** predicted_energy_dict["mean"].value * u.TeV
+        std = predicted_energy_dict["std"].value
+        rel_uncert = 0.5 * (10**std - 1 / 10**std)
 
         energy_container = ReconstructedEnergyContainer()
         energy_container.energy = reconstructed_energy
@@ -1269,22 +1286,22 @@ class EnergyEstimatorPandas:
         shower_data_with_energy = self.apply_per_telescope_rf(shower_data)
 
         # Selecting and log-scaling the reconstructed energies
-        energy_reco = shower_data_with_energy['energy_reco'].apply(np.log10)
+        energy_reco = shower_data_with_energy["energy_reco"].apply(np.log10)
 
         # Getting the weights
-        weights = shower_data_with_energy['energy_reco_err']
+        weights = shower_data_with_energy["energy_reco_err"]
 
         # Weighted energies
         weighted = energy_reco * weights
 
         # Grouping per-event data
-        weighted_group = weighted.groupby(level=['obs_id', 'event_id'])
-        weight_group = weights.groupby(level=['obs_id', 'event_id'])
+        weighted_group = weighted.groupby(level=["obs_id", "event_id"])
+        weight_group = weights.groupby(level=["obs_id", "event_id"])
 
         # Weighted mean log-energy
         log_energy = weighted_group.sum() / weight_group.sum()
 
-        shower_data_with_energy['energy_reco_mean'] = 10 ** log_energy
+        shower_data_with_energy["energy_reco_mean"] = 10**log_energy
 
         return shower_data_with_energy
 
@@ -1311,12 +1328,14 @@ class EnergyEstimatorPandas:
         self.telescope_regressors = dict()
 
         for tel_id in tel_ids:
-            input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'mc_energy']]
+            input_data = shower_data.loc[
+                idx[:, :, tel_id], self.feature_names + ["event_weight", "mc_energy"]
+            ]
             input_data.dropna(inplace=True)
 
             x_train = input_data[list(self.feature_names)].values
-            y_train = np.log10(input_data['mc_energy'].values)
-            weight = input_data['event_weight'].values
+            y_train = np.log10(input_data["mc_energy"].values)
+            weight = input_data["event_weight"].values
 
             regressor = sklearn.ensemble.RandomForestRegressor(**self.rf_settings)
             regressor.fit(x_train, y_train, sample_weight=weight)
@@ -1346,20 +1365,22 @@ class EnergyEstimatorPandas:
 
         for tel_id in tel_ids:
             # Selecting data
-            this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
+            this_telescope = shower_data.loc[
+                (slice(None), slice(None), tel_id), self.feature_names
+            ]
             this_telescope = this_telescope.dropna()
             features = this_telescope.values
 
             # Getting the RF response
-            response = 10**self.telescope_regressors[tel_id].predict(features)
+            response = 10 ** self.telescope_regressors[tel_id].predict(features)
 
             per_tree_responses = []
             for tree in self.telescope_regressors[tel_id].estimators_:
-                per_tree_responses.append(10**tree.predict(features))
+                per_tree_responses.append(10 ** tree.predict(features))
             response_err = np.std(per_tree_responses, axis=0)
 
             # Storing to a data frame
-            result = {'energy_reco': response, 'energy_reco_err': response_err}
+            result = {"energy_reco": response, "energy_reco_err": response_err}
             df = pd.DataFrame(data=result, index=this_telescope.index)
 
             energy_reco = energy_reco.append(df)
@@ -1384,9 +1405,9 @@ class EnergyEstimatorPandas:
         """
 
         output = dict()
-        output['feature_names'] = self.feature_names
-        output['telescope_regressors'] = self.telescope_regressors
-        output['consolidating_regressor'] = self.consolidating_regressor
+        output["feature_names"] = self.feature_names
+        output["telescope_regressors"] = self.telescope_regressors
+        output["consolidating_regressor"] = self.consolidating_regressor
 
         joblib.dump(output, file_name)
 
@@ -1407,9 +1428,9 @@ class EnergyEstimatorPandas:
 
         data = joblib.load(file_name)
 
-        self.feature_names = data['feature_names']
-        self.telescope_regressors = data['telescope_regressors']
-        self.consolidating_regressor = data['consolidating_regressor']
+        self.feature_names = data["feature_names"]
+        self.telescope_regressors = data["telescope_regressors"]
+        self.consolidating_regressor = data["consolidating_regressor"]
 
 
 class DirectionEstimatorPandas:
@@ -1474,41 +1495,53 @@ class DirectionEstimatorPandas:
             optics = self.telescope_descriptions[tel_id].optics
             camera = self.telescope_descriptions[tel_id].camera
 
-            values = {'disp_true': {}, 'pos_angle_shift_true': {}}
+            values = {"disp_true": {}, "pos_angle_shift_true": {}}
 
-            this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), shower_data.columns]
+            this_telescope = shower_data.loc[
+                (slice(None), slice(None), tel_id), shower_data.columns
+            ]
 
-            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
-                                 az=this_telescope['az_tel'].values * u.rad)
+            tel_pointing = AltAz(
+                alt=this_telescope["alt_tel"].values * u.rad,
+                az=this_telescope["az_tel"].values * u.rad,
+            )
 
-            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length, 
-                                       rotation=camera.geometry.cam_rotation)
+            camera_frame = CameraFrame(
+                focal_length=optics.equivalent_focal_length,
+                rotation=camera.geometry.cam_rotation,
+            )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-            camera_coord = SkyCoord(this_telescope['x'].values * u.m,
-                                    this_telescope['y'].values * u.m,
-                                    frame=camera_frame)
+            camera_coord = SkyCoord(
+                this_telescope["x"].values * u.m,
+                this_telescope["y"].values * u.m,
+                frame=camera_frame,
+            )
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            event_coord = SkyCoord(this_telescope['mc_az'].values * u.rad,
-                                   this_telescope['mc_alt'].values * u.rad,
-                                   frame=AltAz())
+            event_coord = SkyCoord(
+                this_telescope["mc_az"].values * u.rad,
+                this_telescope["mc_alt"].values * u.rad,
+                frame=AltAz(),
+            )
             event_coord_in_telescope = event_coord.transform_to(telescope_frame)
 
-            disp = angular_separation(shower_coord_in_telescope.altaz.az,
-                                      shower_coord_in_telescope.altaz.alt,
-                                      event_coord_in_telescope.altaz.az,
-                                      event_coord_in_telescope.altaz.alt)
+            disp = angular_separation(
+                shower_coord_in_telescope.altaz.az,
+                shower_coord_in_telescope.altaz.alt,
+                event_coord_in_telescope.altaz.az,
+                event_coord_in_telescope.altaz.alt,
+            )
 
             pos_angle = shower_coord_in_telescope.position_angle(event_coord)
-            psi = this_telescope['psi'].values * u.deg
+            psi = this_telescope["psi"].values * u.deg
 
             toshift_by_pi = abs(pos_angle.value - 3.14159 - psi.to(u.rad).value) < 1
             toshift_by_pi = np.int16(toshift_by_pi)
 
-            values['disp_true'] = disp.to(u.rad).value
-            values['pos_angle_shift_true'] = toshift_by_pi
+            values["disp_true"] = disp.to(u.rad).value
+            values["pos_angle_shift_true"] = toshift_by_pi
 
             df = pd.DataFrame.from_dict(values)
             df.index = this_telescope.index
@@ -1539,14 +1572,16 @@ class DirectionEstimatorPandas:
         shower_data = shower_data.join(disp_pos_angle)
 
         print('Training "disp" RFs...')
-        self.telescope_rfs['disp'] = self._train_per_telescope_rf(shower_data, 'disp')
+        self.telescope_rfs["disp"] = self._train_per_telescope_rf(shower_data, "disp")
 
         print('Training "PA" RFs...')
-        self.telescope_rfs['pos_angle_shift'] = self._train_per_telescope_rf(shower_data, 'pos_angle_shift')
+        self.telescope_rfs["pos_angle_shift"] = self._train_per_telescope_rf(
+            shower_data, "pos_angle_shift"
+        )
 
     @staticmethod
     def _set_flip(bit_mask, tel_id):
-        flip_code = 2 ** tel_id
+        flip_code = 2**tel_id
 
         out_mask = np.bitwise_or(bit_mask, flip_code)
 
@@ -1554,7 +1589,7 @@ class DirectionEstimatorPandas:
 
     @staticmethod
     def _get_flip(bit_mask, tel_id):
-        flip_code = 2 ** tel_id
+        flip_code = 2**tel_id
 
         out_mask = np.bitwise_and(bit_mask, flip_code)
         out_mask = np.int8(out_mask == flip_code)
@@ -1588,47 +1623,59 @@ class DirectionEstimatorPandas:
             camera = self.telescope_descriptions[tel_id].camera
 
             # Selecting events from this telescope
-            this_telescope = reco_df.loc[(slice(None), slice(None), tel_id), reco_df.columns]
+            this_telescope = reco_df.loc[
+                (slice(None), slice(None), tel_id), reco_df.columns
+            ]
 
             # Definining the coordinate systems
-            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
-                                 az=this_telescope['az_tel'].values * u.rad)
+            tel_pointing = AltAz(
+                alt=this_telescope["alt_tel"].values * u.rad,
+                az=this_telescope["az_tel"].values * u.rad,
+            )
 
-            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.geometry.cam_rotation)
+            camera_frame = CameraFrame(
+                focal_length=optics.equivalent_focal_length,
+                rotation=camera.geometry.cam_rotation,
+            )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-            camera_coord = SkyCoord(this_telescope['x'].values * u.m,
-                                    this_telescope['y'].values * u.m,
-                                    frame=camera_frame)
+            camera_coord = SkyCoord(
+                this_telescope["x"].values * u.m,
+                this_telescope["y"].values * u.m,
+                frame=camera_frame,
+            )
 
             # Shower image coordinates on the sky
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            disp_reco = this_telescope['disp_reco'].values * u.rad
-            position_angle_reco = this_telescope['psi'].values * u.deg
+            disp_reco = this_telescope["disp_reco"].values * u.rad
+            position_angle_reco = this_telescope["psi"].values * u.deg
 
             # Shower direction coordinates on the sky
             for flip in [0, 1]:
                 event_coord_reco = shower_coord_in_telescope.directional_offset_by(
-                    position_angle_reco + flip * u.rad * np.pi, disp_reco)
+                    position_angle_reco + flip * u.rad * np.pi, disp_reco
+                )
 
                 # Saving to a data frame
                 alt = event_coord_reco.altaz.alt.to(u.rad).value
                 az = event_coord_reco.altaz.az.to(u.rad).value
 
-                df = pd.DataFrame(data={'alt_reco': alt,
-                                        'az_reco': az,
-                                        'disp_reco': this_telescope['disp_reco'].values,
-                                        'psi': this_telescope['psi'].values,
-                                        },
-                                  index=this_telescope.index)
+                df = pd.DataFrame(
+                    data={
+                        "alt_reco": alt,
+                        "az_reco": az,
+                        "disp_reco": this_telescope["disp_reco"].values,
+                        "psi": this_telescope["psi"].values,
+                    },
+                    index=this_telescope.index,
+                )
 
                 # Adding the "flip" index
-                df = pd.concat([df], keys=[flip] * len(df), names=['flip'])
+                df = pd.concat([df], keys=[flip] * len(df), names=["flip"])
                 df = df.reset_index()
-                df = df.set_index(['obs_id', 'event_id', 'tel_id', 'flip'])
+                df = df.set_index(["obs_id", "event_id", "tel_id", "flip"])
 
                 direction_with_flips = direction_with_flips.append(df)
 
@@ -1644,7 +1691,6 @@ class DirectionEstimatorPandas:
         dist2 = pd.DataFrame()
 
         for flip_comb in flip_combinations:
-
             flip_code = 0
             for flip, tel_id in zip(flip_comb, tel_ids):
                 if flip:
@@ -1653,68 +1699,70 @@ class DirectionEstimatorPandas:
             for tel_comb in telescope_combinations:
                 tel_id1, tel_id2 = tel_comb
 
-                tel_df1 = df_with_flips.xs(tel_id1, level='tel_id')
-                tel_df2 = df_with_flips.xs(tel_id2, level='tel_id')
+                tel_df1 = df_with_flips.xs(tel_id1, level="tel_id")
+                tel_df2 = df_with_flips.xs(tel_id2, level="tel_id")
                 flip1 = self._get_flip(flip_code, tel_id1)
                 flip2 = self._get_flip(flip_code, tel_id2)
 
-                az1 = tel_df1.xs(flip1, level='flip')['az_reco']
-                az2 = tel_df2.xs(flip2, level='flip')['az_reco']
-                alt1 = tel_df1.xs(flip1, level='flip')['alt_reco']
-                alt2 = tel_df2.xs(flip2, level='flip')['alt_reco']
+                az1 = tel_df1.xs(flip1, level="flip")["az_reco"]
+                az2 = tel_df2.xs(flip2, level="flip")["az_reco"]
+                alt1 = tel_df1.xs(flip1, level="flip")["alt_reco"]
+                alt2 = tel_df2.xs(flip2, level="flip")["alt_reco"]
 
                 dist = angular_separation(az1, alt1, az2, alt2)
                 dist.fillna(0, inplace=True)
 
                 dist2_ = dist.apply(np.square)
 
-                dist2_ = pd.DataFrame(data={f'dist2': dist2_})
-                dist2_['tel_comb'] = [tel_comb] * len(dist2_)
-                dist2_['flip_code'] = [flip_code] * len(dist2_)
+                dist2_ = pd.DataFrame(data={"dist2": dist2_})
+                dist2_["tel_comb"] = [tel_comb] * len(dist2_)
+                dist2_["flip_code"] = [flip_code] * len(dist2_)
                 dist2_.reset_index(inplace=True)
-                dist2_.set_index(['obs_id', 'event_id', 'flip_code', 'tel_comb'], inplace=True)
+                dist2_.set_index(
+                    ["obs_id", "event_id", "flip_code", "tel_comb"], inplace=True
+                )
 
                 dist2 = dist2.append(dist2_)
 
-        _group = dist2.groupby(level=['obs_id', 'event_id', 'flip_code'])
+        _group = dist2.groupby(level=["obs_id", "event_id", "flip_code"])
         total_dist2 = _group.sum()
 
         return total_dist2
 
     def _get_flip_choice_from_pairwise_dist2(self, dist2_df, tel_ids):
-        _group = dist2_df.groupby(level=['obs_id', 'event_id'])
+        _group = dist2_df.groupby(level=["obs_id", "event_id"])
         min_dist2 = _group.min()
         min_dist2.head()
 
         min_dist2_ = min_dist2.reindex(dist2_df.index)
-        result = dist2_df.join(min_dist2_, rsuffix='_')
-        result = result.query('(dist2 == dist2_)')
+        result = dist2_df.join(min_dist2_, rsuffix="_")
+        result = result.query("(dist2 == dist2_)")
 
         result.reset_index(inplace=True)
 
         flip_choice = pd.DataFrame()
         for tel_id in tel_ids:
-            df_ = result[['obs_id', 'event_id', 'flip_code']]
-            df_['tel_id'] = tel_id
-            df_['flip'] = self._get_flip(df_['flip_code'], tel_id)
+            df_ = result[["obs_id", "event_id", "flip_code"]]
+            df_["tel_id"] = tel_id
+            df_["flip"] = self._get_flip(df_["flip_code"], tel_id)
             df_.head()
 
             flip_choice = flip_choice.append(df_)
 
-        flip_choice = flip_choice.drop('flip_code', axis=1, errors='raise')
-        flip_choice.set_index(['obs_id', 'event_id', 'tel_id', 'flip'], inplace=True)
+        flip_choice = flip_choice.drop("flip_code", axis=1, errors="raise")
+        flip_choice.set_index(["obs_id", "event_id", "tel_id", "flip"], inplace=True)
 
         return flip_choice
 
     def _get_average_direction(self, df):
         # Stereo estimate - arithmetical mean
         # First getting cartensian XYZ
-        _x = np.cos(df['az_reco']) * np.cos(df['alt_reco'])
-        _y = np.sin(df['az_reco']) * np.cos(df['alt_reco'])
-        _z = np.sin(df['alt_reco'])
+        _x = np.cos(df["az_reco"]) * np.cos(df["alt_reco"])
+        _y = np.sin(df["az_reco"]) * np.cos(df["alt_reco"])
+        _z = np.sin(df["alt_reco"])
 
         # Getting the weights
-        weights = df['weight']
+        weights = df["weight"]
 
         # Weighted XYZ
         _x = _x * weights
@@ -1722,9 +1770,9 @@ class DirectionEstimatorPandas:
         _z = _z * weights
 
         # Grouping per-event data
-        x_group = _x.groupby(level=['obs_id', 'event_id'])
-        y_group = _y.groupby(level=['obs_id', 'event_id'])
-        z_group = _z.groupby(level=['obs_id', 'event_id'])
+        x_group = _x.groupby(level=["obs_id", "event_id"])
+        y_group = _y.groupby(level=["obs_id", "event_id"])
+        z_group = _z.groupby(level=["obs_id", "event_id"])
 
         # Averaging: weighted mean
         x_mean = x_group.sum() / weights.sum()
@@ -1732,15 +1780,21 @@ class DirectionEstimatorPandas:
         z_mean = z_group.sum() / weights.sum()
 
         # Computing the averaged spherical coordinates
-        coord_mean = SkyCoord(representation_type='cartesian',
-                              x=x_mean.values,
-                              y=y_mean.values,
-                              z=z_mean.values)
+        coord_mean = SkyCoord(
+            representation_type="cartesian",
+            x=x_mean.values,
+            y=y_mean.values,
+            z=z_mean.values,
+        )
 
         # Converting to a data frame
-        coord_mean_df = pd.DataFrame(data={'az_reco_mean': coord_mean.spherical.lon.to(u.rad),
-                                           'alt_reco_mean': coord_mean.spherical.lat.to(u.rad)},
-                                     index=x_mean.index)
+        coord_mean_df = pd.DataFrame(
+            data={
+                "az_reco_mean": coord_mean.spherical.lon.to(u.rad),
+                "alt_reco_mean": coord_mean.spherical.lat.to(u.rad),
+            },
+            index=x_mean.index,
+        )
 
         return coord_mean_df
 
@@ -1766,12 +1820,14 @@ class DirectionEstimatorPandas:
         direction_reco = self._apply_per_telescope_rf(shower_data)
 
         shower_data_new = shower_data.join(direction_reco)
-        shower_data_new['multiplicity'] = shower_data_new['intensity'].groupby(level=['obs_id', 'event_id']).count()
+        shower_data_new["multiplicity"] = (
+            shower_data_new["intensity"].groupby(level=["obs_id", "event_id"]).count()
+        )
 
         tel_ids = shower_data_new.index.levels[2]
 
         # Selecting "stereo" (multi-telescope) events only
-        multi_events = shower_data_new.query('multiplicity > 1')
+        multi_events = shower_data_new.query("multiplicity > 1")
 
         # Computing direction of all possible head-tail flips
         direction_with_flips = self._get_directions_with_flips(multi_events)
@@ -1785,12 +1841,14 @@ class DirectionEstimatorPandas:
         direction_with_selected_flips = direction_with_flips.loc[common_idx]
 
         # Assigning weights to average out per-telescope estimates
-        direction_with_selected_flips['weight'] = multi_events['disp_reco_err']
+        direction_with_selected_flips["weight"] = multi_events["disp_reco_err"]
         # Getting the final direction prediction
         multi_events_reco = self._get_average_direction(direction_with_selected_flips)
 
         # Merging the "multi-telescope" and "mono" estimates
-        direction_reco = direction_reco.join(multi_events_reco.reindex(direction_reco.index))
+        direction_reco = direction_reco.join(
+            multi_events_reco.reindex(direction_reco.index)
+        )
 
         return direction_reco
 
@@ -1818,21 +1876,24 @@ class DirectionEstimatorPandas:
         tel_ids = shower_data.index.levels[2]
         print("Selected tels:", tel_ids)
 
-        target_name = kind + '_true'
+        target_name = kind + "_true"
 
         telescope_rfs = dict()
 
         for tel_id in tel_ids:
-            print(f'Training telescope {tel_id}...')
+            print(f"Training telescope {tel_id}...")
 
-            input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names[kind] + ['event_weight', target_name]]
+            input_data = shower_data.loc[
+                idx[:, :, tel_id],
+                self.feature_names[kind] + ["event_weight", target_name],
+            ]
             input_data.dropna(inplace=True)
 
             x_train = input_data[self.feature_names[kind]].values
             y_train = input_data[target_name].values
-            weight = input_data['event_weight'].values
+            weight = input_data["event_weight"].values
 
-            if kind == 'pos_angle_shift':
+            if kind == "pos_angle_shift":
                 # This is a binary classification problem - to shift or not to shift
                 rf = sklearn.ensemble.RandomForestClassifier(**self.rf_settings)
             else:
@@ -1872,22 +1933,24 @@ class DirectionEstimatorPandas:
 
         prediction_list = []
 
-        for kind in ['disp', 'pos_angle_shift']:
+        for kind in ["disp", "pos_angle_shift"]:
             pred_ = pd.DataFrame()
 
             for tel_id in tel_ids:
                 # Selecting data
-                this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), self.feature_names[kind]]
+                this_telescope = shower_data.loc[
+                    (slice(None), slice(None), tel_id), self.feature_names[kind]
+                ]
                 this_telescope = this_telescope.dropna()
                 features = this_telescope.values
 
                 # Getting the RF response
-                if kind == 'pos_angle_shift':
+                if kind == "pos_angle_shift":
                     response = self.telescope_rfs[kind][tel_id].predict_proba(features)
                     response = response[:, 1]
 
                     # Storing to a data frame
-                    name = f'{kind:s}_reco'
+                    name = f"{kind:s}_reco"
                     df = pd.DataFrame(data={name: response}, index=this_telescope.index)
                 else:
                     response = self.telescope_rfs[kind][tel_id].predict(features)
@@ -1898,8 +1961,8 @@ class DirectionEstimatorPandas:
                     response_err = np.std(per_tree_responses, axis=0)
 
                     # Storing to a data frame
-                    val_name = f'{kind:s}_reco'
-                    err_name = f'{kind:s}_reco_err'
+                    val_name = f"{kind:s}_reco"
+                    err_name = f"{kind:s}_reco_err"
                     data_ = {val_name: response, err_name: response_err}
                     df = pd.DataFrame(data=data_, index=this_telescope.index)
 
@@ -1931,37 +1994,51 @@ class DirectionEstimatorPandas:
             camera = self.telescope_descriptions[tel_id].camera
 
             # Selecting events from this telescope
-            this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), shower_data.columns]
+            this_telescope = shower_data.loc[
+                (slice(None), slice(None), tel_id), shower_data.columns
+            ]
 
             # Definining the coordinate systems
-            tel_pointing = AltAz(alt=this_telescope['alt_tel'].values * u.rad,
-                                 az=this_telescope['az_tel'].values * u.rad)
+            tel_pointing = AltAz(
+                alt=this_telescope["alt_tel"].values * u.rad,
+                az=this_telescope["az_tel"].values * u.rad,
+            )
 
-            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.geometry.cam_rotation)
+            camera_frame = CameraFrame(
+                focal_length=optics.equivalent_focal_length,
+                rotation=camera.geometry.cam_rotation,
+            )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-            camera_coord = SkyCoord(this_telescope['x'].values * u.m,
-                                    this_telescope['y'].values * u.m,
-                                    frame=camera_frame)
+            camera_coord = SkyCoord(
+                this_telescope["x"].values * u.m,
+                this_telescope["y"].values * u.m,
+                frame=camera_frame,
+            )
 
             # Shower image coordinates on the sky
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            disp_reco = this_telescope['disp_reco'].values * u.rad
-            position_angle_reco = this_telescope['psi'].values * u.deg
+            disp_reco = this_telescope["disp_reco"].values * u.rad
+            position_angle_reco = this_telescope["psi"].values * u.deg
             # In some cases the position angle should be flipped by pi
-            shift = u.rad * np.pi * np.round(this_telescope['pos_angle_shift_reco'].values)
+            shift = (
+                u.rad * np.pi * np.round(this_telescope["pos_angle_shift_reco"].values)
+            )
             position_angle_reco += shift
 
             # Shower direction coordinates on the sky
-            event_coord_reco = shower_coord_in_telescope.directional_offset_by(position_angle_reco, disp_reco)
+            event_coord_reco = shower_coord_in_telescope.directional_offset_by(
+                position_angle_reco, disp_reco
+            )
 
             # Saving to a data frame
             alt = event_coord_reco.altaz.alt.to(u.rad).value
             az = event_coord_reco.altaz.az.to(u.rad).value
-            df = pd.DataFrame(data={'alt_reco': alt, 'az_reco': az}, index=this_telescope.index)
+            df = pd.DataFrame(
+                data={"alt_reco": alt, "az_reco": az}, index=this_telescope.index
+            )
 
             direction_reco = direction_reco.append(df)
 
@@ -1987,10 +2064,10 @@ class DirectionEstimatorPandas:
         """
 
         output = dict()
-        output['rf_settings'] = self.rf_settings
-        output['feature_names'] = self.feature_names
-        output['telescope_regressors'] = self.telescope_rfs
-        output['telescope_descriptions'] = self.telescope_descriptions
+        output["rf_settings"] = self.rf_settings
+        output["feature_names"] = self.feature_names
+        output["telescope_regressors"] = self.telescope_rfs
+        output["telescope_descriptions"] = self.telescope_descriptions
 
         joblib.dump(output, file_name)
 
@@ -2011,10 +2088,10 @@ class DirectionEstimatorPandas:
 
         data = joblib.load(file_name)
 
-        self.rf_settings = data['rf_settings']
-        self.feature_names = data['feature_names']
-        self.telescope_rfs = data['telescope_regressors']
-        self.telescope_descriptions = data['telescope_descriptions']
+        self.rf_settings = data["rf_settings"]
+        self.feature_names = data["feature_names"]
+        self.telescope_rfs = data["telescope_regressors"]
+        self.telescope_descriptions = data["telescope_descriptions"]
 
 
 class EventClassifierPandas:
@@ -2090,13 +2167,13 @@ class EventClassifierPandas:
         shower_class = self.apply_per_telescope_rf(shower_data)
 
         # Grouping per-event data
-        class_group = shower_class.groupby(level=['obs_id', 'event_id'])
+        class_group = shower_class.groupby(level=["obs_id", "event_id"])
 
         # Averaging
         class_mean = class_group.mean()
 
         for class_name in class_mean.columns:
-            shower_class[class_name + '_mean'] = class_mean[class_name]
+            shower_class[class_name + "_mean"] = class_mean[class_name]
 
         return shower_class
 
@@ -2123,12 +2200,15 @@ class EventClassifierPandas:
         self.telescope_classifiers = dict()
 
         for tel_id in tel_ids:
-            input_data = shower_data.loc[idx[:, :, tel_id], self.feature_names + ['event_weight', 'true_event_class']]
+            input_data = shower_data.loc[
+                idx[:, :, tel_id],
+                self.feature_names + ["event_weight", "true_event_class"],
+            ]
             input_data.dropna(inplace=True)
 
             x_train = input_data[list(self.feature_names)].values
-            y_train = input_data['true_event_class'].values
-            weight = input_data['event_weight'].values
+            y_train = input_data["true_event_class"].values
+            weight = input_data["event_weight"].values
 
             classifier = sklearn.ensemble.RandomForestClassifier(**self.rf_settings)
             classifier.fit(x_train, y_train, sample_weight=weight)
@@ -2158,7 +2238,9 @@ class EventClassifierPandas:
 
         for tel_id in tel_ids:
             # Selecting data
-            this_telescope = shower_data.loc[(slice(None), slice(None), tel_id), self.feature_names]
+            this_telescope = shower_data.loc[
+                (slice(None), slice(None), tel_id), self.feature_names
+            ]
             this_telescope = this_telescope.dropna()
             features = this_telescope.values
 
@@ -2168,7 +2250,7 @@ class EventClassifierPandas:
             # Storing to a data frame
             response_data = dict()
             for class_i in range(response.shape[1]):
-                name = f'event_class_{class_i}'
+                name = f"event_class_{class_i}"
                 response_data[name] = response[:, class_i]
             df = pd.DataFrame(response_data, index=this_telescope.index)
 
@@ -2194,8 +2276,8 @@ class EventClassifierPandas:
         """
 
         output = dict()
-        output['feature_names'] = self.feature_names
-        output['telescope_classifiers'] = self.telescope_classifiers
+        output["feature_names"] = self.feature_names
+        output["telescope_classifiers"] = self.telescope_classifiers
 
         joblib.dump(output, file_name)
 
@@ -2216,8 +2298,8 @@ class EventClassifierPandas:
 
         data = joblib.load(file_name)
 
-        self.feature_names = data['feature_names']
-        self.telescope_classifiers = data['telescope_classifiers']
+        self.feature_names = data["feature_names"]
+        self.telescope_classifiers = data["telescope_classifiers"]
 
 
 class DirectionStereoEstimatorPandas:
@@ -2299,39 +2381,49 @@ class DirectionStereoEstimatorPandas:
 
         """
 
-        result = {'disp': {}, 'pos_angle': {}}
+        result = {"disp": {}, "pos_angle": {}}
 
         for tel_id in self._get_tel_ids(shower_data):
             optics = self.telescope_descriptions[tel_id].optics
             camera = self.telescope_descriptions[tel_id].camera
 
-            tel_pointing = AltAz(alt=shower_data[f'alt_tel_{tel_id:d}'].values * u.rad,
-                                 az=shower_data[f'az_tel_{tel_id:d}'].values * u.rad)
+            tel_pointing = AltAz(
+                alt=shower_data[f"alt_tel_{tel_id:d}"].values * u.rad,
+                az=shower_data[f"az_tel_{tel_id:d}"].values * u.rad,
+            )
 
-            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.geometry.cam_rotation)
+            camera_frame = CameraFrame(
+                focal_length=optics.equivalent_focal_length,
+                rotation=camera.geometry.cam_rotation,
+            )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-            camera_coord = SkyCoord(shower_data[f'x_{tel_id:d}'].values * u.m,
-                                    shower_data[f'y_{tel_id:d}'].values * u.m,
-                                    frame=camera_frame)
+            camera_coord = SkyCoord(
+                shower_data[f"x_{tel_id:d}"].values * u.m,
+                shower_data[f"y_{tel_id:d}"].values * u.m,
+                frame=camera_frame,
+            )
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            event_coord = SkyCoord(shower_data[f'mc_az_{tel_id:d}'].values * u.rad,
-                                   shower_data[f'mc_alt_{tel_id:d}'].values * u.rad,
-                                   frame=AltAz())
+            event_coord = SkyCoord(
+                shower_data[f"mc_az_{tel_id:d}"].values * u.rad,
+                shower_data[f"mc_alt_{tel_id:d}"].values * u.rad,
+                frame=AltAz(),
+            )
             event_coord_in_telescope = event_coord.transform_to(telescope_frame)
 
-            disp = angular_separation(shower_coord_in_telescope.altaz.az,
-                                      shower_coord_in_telescope.altaz.alt,
-                                      event_coord_in_telescope.altaz.az,
-                                      event_coord_in_telescope.altaz.alt)
+            disp = angular_separation(
+                shower_coord_in_telescope.altaz.az,
+                shower_coord_in_telescope.altaz.alt,
+                event_coord_in_telescope.altaz.az,
+                event_coord_in_telescope.altaz.alt,
+            )
 
             pos_angle = shower_coord_in_telescope.position_angle(event_coord)
 
-            result['disp'][tel_id] = disp.to(u.rad).value
-            result['pos_angle'][tel_id] = pos_angle.value
+            result["disp"][tel_id] = disp.to(u.rad).value
+            result["pos_angle"][tel_id] = pos_angle.value
 
         return result
 
@@ -2357,7 +2449,7 @@ class DirectionStereoEstimatorPandas:
         features = dict()
 
         for tel_id in tel_ids:
-            tel_feature_names = [name + f'_{tel_id:d}' for name in feature_names]
+            tel_feature_names = [name + f"_{tel_id:d}" for name in feature_names]
 
             this_telescope = shower_data[tel_feature_names]
             this_telescope = this_telescope.dropna()
@@ -2388,7 +2480,9 @@ class DirectionStereoEstimatorPandas:
 
         """
 
-        features = self._get_per_telescope_features(shower_data, self.feature_names[target_name])
+        features = self._get_per_telescope_features(
+            shower_data, self.feature_names[target_name]
+        )
         targets = disp_pa[target_name]
 
         tel_ids = features.keys()
@@ -2427,11 +2521,15 @@ class DirectionStereoEstimatorPandas:
         predictions = dict(disp={}, pos_angle={})
 
         for kind in predictions:
-            features = self._get_per_telescope_features(shower_data, self.feature_names[kind])
+            features = self._get_per_telescope_features(
+                shower_data, self.feature_names[kind]
+            )
             tel_ids = features.keys()
 
             for tel_id in tel_ids:
-                predictions[kind][tel_id] = self.telescope_regressors[kind][tel_id].predict(features[tel_id])
+                predictions[kind][tel_id] = self.telescope_regressors[kind][
+                    tel_id
+                ].predict(features[tel_id])
 
         return predictions
 
@@ -2453,11 +2551,15 @@ class DirectionStereoEstimatorPandas:
         disp_pa = self._get_disp_and_position_angle(shower_data)
 
         print('Training "disp" RFs...')
-        self.telescope_regressors['disp'] = self._train_per_telescope_rf(shower_data, disp_pa, 'disp')
+        self.telescope_regressors["disp"] = self._train_per_telescope_rf(
+            shower_data, disp_pa, "disp"
+        )
         print('Training "PA" RFs...')
-        self.telescope_regressors['pos_angle'] = self._train_per_telescope_rf(shower_data, disp_pa, 'pos_angle')
+        self.telescope_regressors["pos_angle"] = self._train_per_telescope_rf(
+            shower_data, disp_pa, "pos_angle"
+        )
 
-    def predict(self, shower_data, output_suffix='reco'):
+    def predict(self, shower_data, output_suffix="reco"):
         """
         Applies the trained regressor to the data.
 
@@ -2488,33 +2590,47 @@ class DirectionStereoEstimatorPandas:
             optics = self.telescope_descriptions[tel_id].optics
             camera = self.telescope_descriptions[tel_id].camera
 
-            tel_pointing = AltAz(alt=shower_data[f'alt_tel_{tel_id:d}'].values * u.rad,
-                                 az=shower_data[f'az_tel_{tel_id:d}'].values * u.rad)
+            tel_pointing = AltAz(
+                alt=shower_data[f"alt_tel_{tel_id:d}"].values * u.rad,
+                az=shower_data[f"az_tel_{tel_id:d}"].values * u.rad,
+            )
 
-            camera_frame = CameraFrame(focal_length=optics.equivalent_focal_length,
-                                       rotation=camera.geometry.cam_rotation)
+            camera_frame = CameraFrame(
+                focal_length=optics.equivalent_focal_length,
+                rotation=camera.geometry.cam_rotation,
+            )
 
             telescope_frame = TelescopeFrame(telescope_pointing=tel_pointing)
 
-            camera_coord = SkyCoord(shower_data[f'x_{tel_id:d}'].values * u.m,
-                                    shower_data[f'y_{tel_id:d}'].values * u.m,
-                                    frame=camera_frame)
+            camera_coord = SkyCoord(
+                shower_data[f"x_{tel_id:d}"].values * u.m,
+                shower_data[f"y_{tel_id:d}"].values * u.m,
+                frame=camera_frame,
+            )
             shower_coord_in_telescope = camera_coord.transform_to(telescope_frame)
 
-            disp_reco = disp_pa_reco['disp'][tel_id] * u.rad
-            position_angle_reco = disp_pa_reco['pos_angle'][tel_id] * u.rad
+            disp_reco = disp_pa_reco["disp"][tel_id] * u.rad
+            position_angle_reco = disp_pa_reco["pos_angle"][tel_id] * u.rad
 
-            event_coord_reco[tel_id] = shower_coord_in_telescope.directional_offset_by(position_angle_reco, disp_reco)
+            event_coord_reco[tel_id] = shower_coord_in_telescope.directional_offset_by(
+                position_angle_reco, disp_reco
+            )
 
-            coords_reco[f'alt_{tel_id:d}_{output_suffix:s}'] = event_coord_reco[tel_id].altaz.alt.to(u.rad).value
-            coords_reco[f'az_{tel_id:d}_{output_suffix:s}'] = event_coord_reco[tel_id].altaz.az.to(u.rad).value
+            coords_reco[f"alt_{tel_id:d}_{output_suffix:s}"] = (
+                event_coord_reco[tel_id].altaz.alt.to(u.rad).value
+            )
+            coords_reco[f"az_{tel_id:d}_{output_suffix:s}"] = (
+                event_coord_reco[tel_id].altaz.az.to(u.rad).value
+            )
 
         # ------------------------------
         # *** Computing the midpoint ***
         for tel_id in tel_ids:
-            event_coord_reco[tel_id] = SkyCoord(coords_reco[f'az_{tel_id:d}_{output_suffix:s}'] * u.rad,
-                                                coords_reco[f'alt_{tel_id:d}_{output_suffix:s}'] * u.rad,
-                                                frame=AltAz())
+            event_coord_reco[tel_id] = SkyCoord(
+                coords_reco[f"az_{tel_id:d}_{output_suffix:s}"] * u.rad,
+                coords_reco[f"alt_{tel_id:d}_{output_suffix:s}"] * u.rad,
+                frame=AltAz(),
+            )
 
         data = [event_coord_reco[tel_id].data for tel_id in tel_ids]
 
@@ -2523,10 +2639,16 @@ class DirectionStereoEstimatorPandas:
             midpoint_data += d
         midpoint_data /= len(data)
 
-        event_coord_reco[-1] = SkyCoord(midpoint_data, representation_type='unitspherical', frame=AltAz())
+        event_coord_reco[-1] = SkyCoord(
+            midpoint_data, representation_type="unitspherical", frame=AltAz()
+        )
 
-        coords_reco[f'alt_{output_suffix:s}'] = event_coord_reco[-1].altaz.alt.to(u.rad).value
-        coords_reco[f'az_{output_suffix:s}'] = event_coord_reco[-1].altaz.az.to(u.rad).value
+        coords_reco[f"alt_{output_suffix:s}"] = (
+            event_coord_reco[-1].altaz.alt.to(u.rad).value
+        )
+        coords_reco[f"az_{output_suffix:s}"] = (
+            event_coord_reco[-1].altaz.az.to(u.rad).value
+        )
         # ------------------------------
 
         coord_df = pd.DataFrame.from_dict(coords_reco)
@@ -2550,10 +2672,10 @@ class DirectionStereoEstimatorPandas:
         """
 
         output = dict()
-        output['rf_settings'] = self.rf_settings
-        output['feature_names'] = self.feature_names
-        output['telescope_descriptions'] = self.telescope_descriptions
-        output['telescope_regressors'] = self.telescope_regressors
+        output["rf_settings"] = self.rf_settings
+        output["feature_names"] = self.feature_names
+        output["telescope_descriptions"] = self.telescope_descriptions
+        output["telescope_regressors"] = self.telescope_regressors
 
         joblib.dump(output, file_name)
 
@@ -2574,7 +2696,7 @@ class DirectionStereoEstimatorPandas:
 
         data = joblib.load(file_name)
 
-        self.rf_settings = data['rf_settings']
-        self.feature_names = data['feature_names']
-        self.telescope_regressors = data['telescope_regressors']
-        self.telescope_descriptions = data['telescope_descriptions']
+        self.rf_settings = data["rf_settings"]
+        self.feature_names = data["feature_names"]
+        self.telescope_regressors = data["telescope_regressors"]
+        self.telescope_descriptions = data["telescope_descriptions"]

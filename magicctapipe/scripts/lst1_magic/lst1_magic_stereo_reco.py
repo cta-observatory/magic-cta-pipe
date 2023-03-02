@@ -152,7 +152,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     tel_ids = np.unique(event_data.index.get_level_values("tel_id")).tolist()
 
     if (not is_simulation) and (tel_ids != [2, 3]):
-
         logger.info(
             "\nChecking the angular distances of "
             "the LST-1 and MAGIC pointing directions..."
@@ -202,7 +201,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     multi_indices = event_data.groupby(["obs_id", "event_id"]).size().index
 
     for i_evt, (obs_id, event_id) in enumerate(multi_indices):
-
         if i_evt % 100 == 0:
             logger.info(f"{i_evt} events")
 
@@ -220,7 +218,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         tel_ids = df_evt.index.get_level_values("tel_id")
 
         for tel_id in tel_ids:
-
             df_tel = df_evt.loc[tel_id]
 
             # Assign the telescope information
@@ -259,7 +256,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         stereo_params.az.wrap_at("360 deg", inplace=True)
 
         for tel_id in tel_ids:
-
             # Calculate the impact parameter
             impact = calculate_impact(
                 shower_alt=stereo_params.alt,
@@ -325,7 +321,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

@@ -169,7 +169,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     tel_ids = np.unique(event_data_magic.index.get_level_values("tel_id"))
 
     for tel_id in tel_ids:
-
         tel_name = TEL_NAMES[tel_id]
         df_magic = event_data_magic.query(f"tel_id == {tel_id}").copy()
 
@@ -219,7 +218,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         logger.info("\nChecking the event coincidence...")
 
         for time_offset in time_offsets:
-
             times_lolim = timestamps_lst + time_offset - window_half_width
             times_uplim = timestamps_lst + time_offset + window_half_width
 
@@ -402,7 +400,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

@@ -183,7 +183,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     hdus.append(edisp_hdu)
 
     if "psf_table" in irf_data:
-
         # Interpolate the PSF table with a custom way, since there is a
         # bug in the function of pyirf v0.6.0 about the renormalization
         logger.info("Interpolating the PSF table...")
@@ -221,7 +220,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         hdus.append(psf_hdu)
 
     if "background" in irf_data:
-
         # Interpolate the background model
         logger.info("Interpolating the background model...")
 
@@ -245,7 +243,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         hdus.append(bkg_hdu)
 
     if "gh_cuts" in irf_data:
-
         # Interpolate the dynamic gammaness cuts
         logger.info("Interpolating the dynamic gammaness cuts...")
 
@@ -269,7 +266,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         hdus.append(gh_cuts_hdu)
 
     if "rad_max" in irf_data:
-
         # Interpolate the dynamic theta cuts
         logger.info("Interpolating the dynamic theta cuts...")
 
@@ -355,7 +351,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()
