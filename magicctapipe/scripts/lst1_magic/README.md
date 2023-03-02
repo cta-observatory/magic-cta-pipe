@@ -99,7 +99,7 @@ The columns here represent the night and run in which you want to select data. P
 2020_12_15,3267
 2020_12_15,3268
 ```
-Note that the LST nights are appear as being one day before MAGIC's!!! This is because LST saves the date of the beggining of the night, while MAGIC saves the date of the end. These files are the only ones we need to modify in order to convert DL0 into DL1 data.
+Note that the LST nights are appear as being one day before MAGIC's!!! This is because LST saves the date of the beggining of the night, while MAGIC saves the date of the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
 
 To convert the MAGIC and SimTelArray MCs data into DL1 format, you first do the following:
