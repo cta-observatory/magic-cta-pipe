@@ -17,6 +17,10 @@ class Dl1Extender(Component):
     add_zd_indep_intensity = Bool(False, help='If True, a new parameter representing the intensity corrected '
                                                'for the dependence on the telescope poining zenith is added.',
                                   allow_none=False).tag(config=True)
+    add_zd_indep_intlengthwidth_by_npix = Bool(False, help='If True, new parameters representing the intensity, '
+                                               'length and width corrected for zenith dependence at fixed energy by '
+                                               ' dividing by powers of npixels are created.',
+                                               allow_none=False).tag(config=True)
     add_altaz_cog = Bool(False, help='If True, a new parameter representing the AltAz position of the shower center'
                                      'of gravity is added.',
                          allow_none=False).tag(config=True)
@@ -39,6 +43,11 @@ class Dl1Extender(Component):
             df['zd_indep_log_intensity'] = zd_indep_log_intensity
         if self.add_zd_indep_intensity:
             df['zd_indep_intensity'] = np.power(zd_indep_log_intensity, 10)
+
+    def dl1_zd_indep_by_npixels(self, df):
+        df['intensity_over_npix'] = df['intensity'] / df['n_pixels']
+        df['length_over_23npix'] = df['intensity'] / np.power(df['n_pixels'], 0.66666)
+        df['width_over_13npix'] = df['intensity'] / np.power(df['n_pixels'], 0.33333)
 
     def dl1_altaz_cog(self, df, subarray):
         df['cog_alt'] = np.zeros(len(df))
@@ -72,4 +81,6 @@ class Dl1Extender(Component):
             self.dl1_altaz_cog(df, full_subarray)
         if self.add_zd_indep_intensity or self.add_zd_indep_log_intensity or self.add_log_intensity:
             self.dl1_zd_indep_intensity(df)
+        if self.add_zd_indep_intlengthwidth_by_npix:
+            self.dl1_zd_indep_by_npixels(df)
         return df
