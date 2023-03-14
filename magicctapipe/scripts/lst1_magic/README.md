@@ -155,11 +155,45 @@ This script will slice the proton MC sample according to the entry "proton_train
 - MAGIC subruns are merged into single runs.  
 - MAGIC I and II runs are merged (only if both telescopes are used, of course).  
 - All runs in specific nights are merged, such that in the end we have only one datafile per night.  
+- Proton MC training data is merged.
+- Diffuse MC gammas are merged.
+- MC gammas are merged.
 
-### Working on DL1
+### Coincident events and stereo parameters on DL1
 
-TBD
+To find coincident events between MAGIC and LST-1, starting from DL1 data, we ru nthe following script:
 
+> $ python coincident_events.py
+
+This script creates the file config_coincidence.yaml, links the real LST data files to the output directory [...]DL1/Observations/Coincident, and runs the script lst1_magic_event_coincidence.py in all of them.
+
+To add stereo parameters to the MAGIC+LST coincident DL1 data, we run:
+
+> $ python stereo_events.py
+
+This script creates the file config_stereo.yaml, creates the output directories for the DL1 with stereo parameters [...]DL1/Observations/Coincident_stereo/SEVERALNIGHTS and [...]/DL1/MC/GAMMAorPROTON/Merged/StereoMerged, and then runs the script lst1_magic_stereo_reco.py in all of the coincident DL1 files. The stereo DL1 files are then saved in these directories.
+
+### Random forest
+
+We now run 
+
+> $ python RF.py
+
+which creates the file config_RF.yaml and computes the RF (energy, disp, and classifier) based on the merged-stereo MC diffuse gammas and training proton samples, by calling the script lst1_magic_train_rfs.py. The results are saved in [...]/DL1/MC/RFs.
+
+Once it is done, we run 
+
+> $ python DL1_to_DL2.py
+
+which applies the RFs saved in [...]/DL1/MC/RFs to stereo DL1 data (real and test MCs) and produce DL2 real and MC data.
+
+### Instrument response function and DL3
+
+Once the previous step is done, we compute the IRF with
+
+> $ python IRF.py
+
+which creates the configuration file config_IRF.yaml and runs the script lst1_magic_create_irf.py over the DL2 MC gammas, generating the IRF and saving it at [...]/IRF.
 
 ## High level analysis
 
