@@ -58,7 +58,7 @@ from magicctapipe.io import SimEventInfoContainer, format_object
 from magicctapipe.utils import calculate_disp, calculate_impact
 from traitlets.config import Config
 
-__all__ = ["mc_dl0_to_dl1"]
+__all__ = ["Calibrate_LST", "Calibrate_MAGIC","mc_dl0_to_dl1"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -86,9 +86,7 @@ def Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, 
     
     if increase_nsb:
         # Add extra noise in pixels
-        image = add_noise_in_pixels(
-            rng, image, **config_lst["increase_nsb"]
-        )
+        image = add_noise_in_pixels(rng, image, **config_lst["increase_nsb"])
 
     if increase_psf:
         # Smear the image
@@ -118,9 +116,7 @@ def Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, 
         )
 
     if use_only_main_island:
-        _, island_labels = number_of_islands(
-            camera_geoms[tel_id], signal_pixels
-        )
+        _, island_labels = number_of_islands(camera_geoms[tel_id], signal_pixels)
         n_pixels_on_island = np.bincount(island_labels.astype(np.int64))
 
         # The first index means the pixels not surviving
@@ -181,12 +177,12 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     event_source = EventSource(
         input_file,
-        allowed_tels=list(filter(lambda check_id: check_id > 0,assigned_tel_ids.values())),  #Here we load the events for all telescopes with ID > 0.
+        allowed_tels=list(filter(lambda check_id: check_id > 0, assigned_tel_ids.values())),  #Here we load the events for all telescopes with ID > 0.
         focal_length_choice=focal_length,
     )
 
     obs_id = event_source.obs_ids[0]
-    subarray = event_source.subarray    #WHAT IS SUBARRAY?
+    subarray = event_source.subarray    
 
     tel_descriptions = subarray.tel    
     tel_positions = subarray.positions
@@ -261,8 +257,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     logger.info("\nMAGIC charge correction:")
     logger.info(format_object(config_magic["charge_correction"]))
 
-    use_charge_correction = config_magic["charge_correction"]["use"]
-
     if config_magic["magic_clean"]["find_hotpixels"]:
         logger.warning(
             "\nWARNING: Hot pixels do not exist in a simulation. "
@@ -319,9 +313,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     logger.info("\nProcessing the events...")
 
     with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
-
         for event in event_source:
-
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
 
@@ -345,8 +337,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     logger.info(
                         f"--> Telescope ID {tel_id} not in LST list or MAGIC list. Please check if the IDs are OK in the configuration file"
                     )
-
-                if not any(signal_pixels):                      #So: if there is no event, we skip it and go back to the loop in the next event
+                if not any(signal_pixels):   #So: if there is no event, we skip it and go back to the loop in the next event
                     logger.info(
                         f"--> {event.count} event (event ID: {event.index.event_id}, "
                         f"telescope {tel_id}) could not survive the image cleaning. "
@@ -435,21 +426,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     magic_stereo=magic_stereo,
                 )
                 
-                
                 # Reset the telescope IDs
                 event_info.tel_id = tel_id
-                
-                """
-                # Reset the telescope IDs
-                if tel_id == tel_id_lst1:
-                    event_info.tel_id = 1
-
-                elif tel_id == tel_id_m1:
-                    event_info.tel_id = 2
-
-                elif tel_id == tel_id_m2:
-                    event_info.tel_id = 3
-                """
                 
                 # Save the parameters to the output file
                 writer.write(
@@ -463,25 +441,27 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     # Convert the telescope coordinate to the one relative to the center
     # of the LST and MAGIC positions, and reset the telescope IDs
     position_mean = u.Quantity(list(tel_positions.values())).mean(axis=0)
-    ################################################################################# MODIFIED
 
     tel_positions_lst_magic = {}
     tel_descriptions_lst_magic = {}
     IDs_in_use = np.asarray(list(assigned_tel_ids.values()))
     IDs_in_use = IDs_in_use[IDs_in_use > 0]
     for k in IDs_in_use:
-        if k > 0:
-            tel_positions_lst_magic[k] = tel_positions[k] - position_mean
-            tel_descriptions_lst_magic[k] = tel_descriptions[k]
+        tel_positions_lst_magic[k] = tel_positions[k] - position_mean
+        tel_descriptions_lst_magic[k] = tel_descriptions[k]
     
 
     subarray_lst_magic = SubarrayDescription(
         "LST-MAGIC-Array", tel_positions_lst_magic, tel_descriptions_lst_magic
     )
+    tel_positions = subarray_lst_magic.positions
 
+    logger.info("\nTelescope positions:")
+    logger.info(format_object(tel_positions))
+    
     # Save the subarray description
     subarray_lst_magic.to_hdf(output_file)
-    ################################################################################# MODIFIED
+    
     # Save the simulation configuration
     with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
         writer.write("config", sim_config)
@@ -528,7 +508,7 @@ def main():
     
     parser.add_argument(
         "--focal_length_choice",
-        "-f",                                 ###############################################################################################
+        "-f",                                 
         dest="focal_length_choice",
         type=str,
         default="effective",
