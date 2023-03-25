@@ -1,211 +1,19 @@
-import os
 from magicctapipe.io.io import (
     format_object,
     get_dl2_mean,
     get_stereo_events,
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
+    load_train_data_files,
+    load_mc_dl2_data_file,
+    load_dl2_data_file,
+    load_irf_files,
+    save_pandas_data_in_table,
 )
+from magicctapipe.conftest import dl1_file_magic, irf_file
 import pytest
 import numpy as np
-from astropy.io.misc.hdf5 import write_table_hdf5
-from astropy.table import Table
 import pandas as pd
-from pathlib import Path
-import pexpect
-
-"""
-Local paths
-"""
-
-
-@pytest.fixture(scope="session")
-def base_path():
-    # TO BE CHANGED
-    return Path("/home/elisa/.cache/magicctapipe")
-
-
-@pytest.fixture(scope="session")
-def stereo_path(base_path):
-    p = base_path / "stereo"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl2_path(base_path):
-    p = base_path / "dl2"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl1_lst_path(base_path):
-    p = base_path / "dl1_lst"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl1_magic_path(base_path):
-    p = base_path / "dl1_magic"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl1_magic_exc_path(base_path):
-    p = base_path / "dl1_magic_exc"
-    return p
-
-
-"""
-Custom data
-"""
-
-
-@pytest.fixture(scope="session")
-def dl2_test(dl2_path):
-    """
-    Toy DL2
-    """
-    path = dl2_path / "dl2_test.h5"
-    data = Table()
-    data["obs_id"] = [1, 1, 2, 2, 2, 3, 3]
-    data["event_id"] = [7, 7, 8, 8, 8, 7, 7]
-    data["tel_id"] = [1, 2, 1, 2, 3, 1, 3]
-    data["combo_type"] = [1, 1, 3, 3, 3, 2, 2]
-    data["multiplicity"] = [2, 2, 3, 3, 3, 2, 2]
-    data["timestamp"] = [1, 1, 4, 4, 4, 10, 10]
-    data["pointing_alt"] = [0.6, 0.6, 0.7, 0.7, 0.7, 0.5, 0.5]
-    data["pointing_az"] = [1.5, 1.5, 1.5, 1.5, 1.5, 1.5, 1.5]
-    data["reco_energy"] = [1, 1, 1, 1, 1, 1, 1]
-    data["gammaness"] = [0.5, 0.5, 1, 0.3, 0.5, 1, 1]
-    data["reco_alt"] = [40, 40, 41, 41, 41, 42, 42]
-    data["reco_az"] = [85, 85, 85, 85, 85, 85, 85]
-    write_table_hdf5(
-        data, str(path), "/events/parameters", overwrite=True, serialize_meta=False
-    )
-    return path
-
-
-"""
-Remote paths (to download test files)
-"""
-
-
-@pytest.fixture(scope="session")
-def base_url():
-    # BETTER SOLUTION? CHANGED?
-    return Path("cp02:/fefs/aswg/workspace/elisa.visentin/git_test")
-
-
-@pytest.fixture(scope="session")
-def stereo_url(base_url):
-    q = base_url / "dl1_stereo_gamma_zd_37.661deg_az_270.641deg_LST-1_MAGIC_run101.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def dl2_mc_url(base_url):
-    q = base_url / "dl2_gamma_zd_35.904deg_az_17.46deg_LST-1_MAGIC_run9502.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def dl2_real_url(base_url):
-    q = base_url / "dl2_LST-1_MAGIC.Run04125.0035.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def dl1_lst_url(base_url):
-    q = base_url / "dl1_LST-1.Run02927.0118.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def dl1_magic_url(base_url):
-    q = base_url / "dl1_M1.Run05093174.001.h5"
-    return q
-
-
-"""
-Downloads: useful functions
-"""
-
-
-@pytest.fixture(scope="session")
-def env_prefix():
-    # ENVIRONMENT VARIABLES TO BE CREATED
-    return "MAGIC_CTA_DATA_"
-
-
-def scp_file(stereo_path, stereo_url, env_prefix):
-    """
-    Download of test files through scp
-    """
-    pwd = os.environ[env_prefix + "PASSWORD"]
-    if not (stereo_path / stereo_url.name).exists():
-        print("DOWNLOADING...")
-        cmd = f'''/bin/bash -c "rsync {str(stereo_url)} {str(stereo_path)} "'''
-        if "rm " in cmd:
-            print("files cannot be removed")
-            exit()
-        usr = os.environ[env_prefix + "USER"]
-        childP = pexpect.spawn(cmd, timeout=500)
-        childP.sendline(cmd)
-        childP.expect([f"{usr}@10.200.100.2's password:"])
-        childP.sendline(pwd)
-        childP.expect(pexpect.EOF)
-        childP.close()
-    else:
-        print("FILE ALREADY EXISTS")
-
-
-"""
-Downloads: files
-"""
-
-
-@pytest.fixture(scope="session")
-def stereo_file(stereo_path, stereo_url, env_prefix):
-    scp_file(stereo_path, stereo_url, env_prefix)
-    name1 = stereo_url.name
-    url1 = stereo_path / name1
-    return url1
-
-
-@pytest.fixture(scope="session")
-def dl2_file_mc(dl2_path, dl2_mc_url, env_prefix):
-    scp_file(dl2_path, dl2_mc_url, env_prefix)
-    name1 = dl2_mc_url.name
-    url1 = dl2_path / name1
-    return url1
-
-
-@pytest.fixture(scope="session")
-def dl2_file_real(dl2_path, dl2_real_url, env_prefix):
-    scp_file(dl2_path, dl2_real_url, env_prefix)
-    name1 = dl2_real_url.name
-    url1 = dl2_path / name1
-    return url1
-
-
-@pytest.fixture(scope="session")
-def dl1_file_lst(dl1_lst_path, dl1_lst_url, env_prefix):
-    scp_file(dl1_lst_path, dl1_lst_url, env_prefix)
-    name1 = dl1_lst_url.name
-    url1 = dl1_lst_path / name1
-    return url1
-
-
-def dl1_file_magic(dl1_magic_path, dl1_magic_url, env_prefix):
-    scp_file(dl1_magic_path, dl1_magic_url, env_prefix)
-    name1 = dl1_magic_url.name
-    url1 = dl1_magic_path / name1
-    return url1
-
-
-"""
-Tests
-"""
 
 
 def test_format_object():
@@ -323,3 +131,218 @@ def test_load_magic_dl1_data_files_exc(dl1_magic_exc_path):
         match="Could not find any DL1 data files in the input directory.",
     ):
         _, _ = load_magic_dl1_data_files(str(dl1_magic_exc_path))
+
+
+def test_load_train_data_files(stereo_path):
+    """
+    Check dictionary
+    """
+    events = load_train_data_files(str(stereo_path))
+    assert list(events.keys()) == ["M1_M2", "LST1_M1", "LST1_M2", "LST1_M1_M2"]
+    data = events["LST1_M1"]
+    assert np.all(data["combo_type"]) == 1
+    assert "off_axis" in data.columns
+    assert "true_event_class" not in data.columns
+
+
+def test_load_train_data_files_off(stereo_path):
+    """
+    Check off-axis cut
+    """
+    events = load_train_data_files(
+        str(stereo_path), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+    )
+    data = events["LST1_M1"]
+    assert np.all(data["off_axis"] >= 0.2)
+    assert np.all(data["off_axis"] <= 0.5)
+
+
+def test_load_train_data_files_exc(stereo_path_exc):
+    """
+    Check on exceptions
+    """
+    with pytest.raises(
+        FileNotFoundError,
+        match="Could not find any DL1-stereo data files in the input directory.",
+    ):
+        _ = load_train_data_files(str(stereo_path_exc))
+
+
+def test_load_mc_dl2_data_file(dl2_file_mc):
+    """
+    Checks on default loading
+    """
+    data, point, _ = load_mc_dl2_data_file(
+        str(dl2_file_mc), "width>0", "software", "simple"
+    )
+    assert "pointing_alt" in data.colnames
+    assert "theta" in data.colnames
+    assert "true_source_fov_offset" in data.colnames
+    assert data["true_energy"].unit == "TeV"
+    assert point[0] >= 0
+    assert point[0] <= 90
+
+
+def test_load_mc_dl2_data_file_cut(dl2_file_mc):
+    """
+    Check on quality cuts
+    """
+    data, _, _ = load_mc_dl2_data_file(
+        str(dl2_file_mc), "gammaness>0.9", "software", "simple"
+    )
+    assert np.all(data["gammaness"] > 0.9)
+
+
+def test_load_mc_dl2_data_file_opt(dl2_file_mc):
+    """
+    Check on event_type
+    """
+    data_s, _, _ = load_mc_dl2_data_file(
+        str(dl2_file_mc), "width>0", "software", "simple"
+    )
+    data_m, _, _ = load_mc_dl2_data_file(
+        str(dl2_file_mc), "width>0", "magic_only", "simple"
+    )
+    assert np.all(data_s["combo_type"] > 0)
+    assert np.all(data_m["combo_type"] == 0)
+
+
+def test_load_mc_dl2_data_file_exc(dl2_file_mc):
+    """
+    Check on event_type exceptions
+    """
+    event_type = "abc"
+    with pytest.raises(
+        ValueError,
+        match=f"Unknown event type '{event_type}'.",
+    ):
+        _, _, _ = load_mc_dl2_data_file(
+            str(dl2_file_mc), "width>0", event_type, "simple"
+        )
+
+
+def test_load_dl2_data_file(dl2_file_real):
+    """
+    Checks on default loading
+    """
+    data, on, dead = load_dl2_data_file(
+        str(dl2_file_real), "width>0", "software", "simple"
+    )
+    assert "pointing_alt" in data.colnames
+    assert "timestamp" in data.colnames
+    assert data["reco_energy"].unit == "TeV"
+    assert on.unit == "s"
+    assert on > 0
+    assert dead > 0
+
+
+def test_load_dl2_data_file_cut(dl2_file_real):
+    """
+    Check on quality cuts
+    """
+    data, _, _ = load_dl2_data_file(
+        str(dl2_file_real), "gammaness>0.9", "software", "simple"
+    )
+    assert np.all(data["gammaness"] > 0.9)
+
+
+def test_load_dl2_data_file_opt(dl2_file_real):
+    """
+    Check on event_type
+    """
+    data_s, _, _ = load_dl2_data_file(
+        str(dl2_file_real), "width>0", "software", "simple"
+    )
+    data_m, _, _ = load_dl2_data_file(
+        str(dl2_file_real), "width>0", "magic_only", "simple"
+    )
+    assert np.all(data_s["combo_type"] > 0)
+    assert np.all(data_m["combo_type"] == 0)
+
+
+""" def test_load_dl2_data_file_exc(dl2_file_real):
+    
+    Check on event_type exceptions
+    
+    event_type="abc"
+    with pytest.raises(
+        ValueError,
+        match=f"Unknown event type '{event_type}'.",
+    ):
+        _,_,_=load_dl2_data_file(str(dl2_file_real),"width>0",event_type,"simple")
+
+ """
+
+
+def test_load_irf_files(irf_path, irf_url, env_prefix):
+    """
+    Check on IRF dictionaries
+    """
+    irf_file(irf_path, irf_url, env_prefix)
+    irf, header = load_irf_files(str(irf_path))
+    assert set(list(irf.keys())).issubset(
+        set(
+            [
+                "grid_points",
+                "effective_area",
+                "energy_dispersion",
+                "psf_table",
+                "background",
+                "gh_cuts",
+                "rad_max",
+                "energy_bins",
+                "fov_offset_bins",
+                "migration_bins",
+                "source_offset_bins",
+                "bkg_fov_offset_bins",
+            ]
+        )
+    )
+    assert len(irf["effective_area"][0][0]) > 0
+    assert "psf_table" not in list(irf.keys())
+    assert "background" not in list(irf.keys())
+    assert set(list(header.keys())).issubset(
+        set(
+            [
+                "TELESCOP",
+                "INSTRUME",
+                "FOVALIGN",
+                "QUAL_CUT",
+                "EVT_TYPE",
+                "DL2_WEIG",
+                "IRF_OBST",
+                "GH_CUT",
+                "GH_EFF",
+                "GH_MIN",
+                "GH_MAX",
+                "RAD_MAX",
+                "TH_EFF",
+                "TH_MIN",
+                "TH_MAX",
+            ]
+        )
+    )
+    assert header["DL2_WEIG"] == "simple"
+    assert header["EVT_TYPE"] == "software"
+
+
+def test_load_irf_files_exc(irf_path_exc):
+    """
+    Check on exception (FileNotFound)
+    """
+    with pytest.raises(
+        FileNotFoundError,
+        match="Could not find any IRF data files in the input directory.",
+    ):
+        _, _ = load_irf_files(str(irf_path_exc))
+
+
+def test_save_pandas_data_in_table(pd_path, pd_test):
+    """
+    Check on pandas dataframe (before=after saving it)
+    """
+    out = pd_path / "pandas.h5"
+    save_pandas_data_in_table(pd_test, str(out), "abc", "event")
+    df1 = pd.DataFrame(np.array([[1, 2], [3, 4], [5, 6]]), columns=["a", "b"])
+    df = pd.read_hdf(str(out), key="event")
+    assert df.equals(df1)
