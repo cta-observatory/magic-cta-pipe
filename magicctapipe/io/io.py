@@ -93,7 +93,7 @@ def telescope_combinations(config):
         current_comb_list = current_comb[1] + [keys[current_tel]]                 #List of telescopes (including individual telescopes)
     
         if len(current_comb_list) > 1:                          #We save them in the new dictionary excluding the single-telescope values
-            TEL_COMBINATIONS[current_comb_name] = current_comb_list;
+            TEL_COMBINATIONS[current_comb_name[1:]] = current_comb_list;
       
         current_comb = [current_comb_name, current_comb_list]   #We save the current results in this varible to recal the function recursively ("for" loop below)
 
