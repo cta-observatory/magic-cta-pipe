@@ -155,7 +155,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         event_data.query(f"tel_id > {LSTs_IDs.max()}", inplace=True) # Here we select only the events with the MAGIC tel_ids, i.e. above the maximum tel_id of the LSTs
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
-    event_data = get_stereo_events(event_data, config_stereo["quality_cuts"])
+    event_data = get_stereo_events(event_data, config, config_stereo["quality_cuts"])
 
     # Check the angular distance of the LST and MAGIC pointing directions
     tel_ids = np.unique(event_data.index.get_level_values("tel_id")).tolist()
@@ -369,7 +369,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config.yaml",
+        default="./config_general.yaml",
         help="Path to a configuration file",
     )
 

@@ -61,8 +61,8 @@ from magicctapipe.io import (
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
     save_pandas_data_in_table,
+    telescope_combinations,
 )
-from magicctapipe.io.io import TEL_NAMES
 
 __all__ = ["event_coincidence"]
 
@@ -103,6 +103,9 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     config_coinc = config["event_coincidence"]
 
+    TEL_NAMES, _ = telescope_combinations(config)
+    
+    
     # Load the input LST-1 DL1 data file
     logger.info(f"\nInput LST-1 DL1 data file: {input_file_lst}")
 
@@ -111,7 +114,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     # Load the input MAGIC DL1 data files
     logger.info(f"\nInput MAGIC directory: {input_dir_magic}")
 
-    event_data_magic, subarray_magic = load_magic_dl1_data_files(input_dir_magic)
+    event_data_magic, subarray_magic = load_magic_dl1_data_files(input_dir_magic, config)
 
     # Exclude the parameters non-common to LST-1 and MAGIC data
     timestamp_type_lst = config_coinc["timestamp_type_lst"]
@@ -184,7 +187,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df_magic.drop(["time_sec", "time_nanosec"], axis=1, inplace=True)
 
         # Extract the MAGIC events taken when LST-1 observed
-        logger.info(f"\nExtracting the {tel_name} events taken when LST-1 observed...")
+        logger.info(f"\nExtracting the {tel_name} events taken when LST observed...")
 
         time_lolim = timestamps_lst[0] + time_offsets[0] - window_half_width
         time_uplim = timestamps_lst[-1] + time_offsets[-1] + window_half_width
@@ -358,7 +361,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
-    event_data = get_stereo_events(event_data)
+    event_data = get_stereo_events(event_data, config)
     event_data.reset_index(inplace=True)
 
     event_data = event_data.astype({"obs_id": int, "event_id": int})

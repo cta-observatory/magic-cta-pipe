@@ -1,12 +1,12 @@
 """
 Standard usage:
-$ python magic_calib_to_dl1.py
+$ python setting_up_config_and_dir.py
 
 Optional:
-python magic_calib_to_dl1.py --partial-analysis onlyMAGIC
+python setting_up_config_and_dir.py --partial-analysis onlyMAGIC
 
 or:
-python magic_calib_to_dl1.py --partial-analysis onlyMC
+python setting_up_config_and_dir.py --partial-analysis onlyMC
 
 """
 
@@ -54,14 +54,14 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     Below we create the bash scripts that link the MC paths to each subdirectory. 
     """
     
-    list_of_nodes = glob.glob(MC_path+"*")
+    list_of_nodes = glob.glob(MC_path+"node*")
     f = open(target_dir+f"/list_nodes_{particle_type}_complete.txt","w") # creating list_nodes_gammas_complete.txt
     for i in list_of_nodes:
         f.write(i+"/output_"+SimTel_version+"\n")   
     
     f.close()
     
-    os.system("ls "+MC_path+" > "+target_dir+f"/list_folder_{particle_type}.txt") # creating list_folder_gammas.txt
+    os.system("ls "+MC_path+"node* > "+target_dir+f"/list_folder_{particle_type}.txt") # creating list_folder_gammas.txt
     
     f = open(f"linking_MC_{particle_type}_paths.sh","w")
     f.write("#!/bin/sh\n\n")
@@ -97,7 +97,7 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     f.write('#!/bin/sh\n\n')
     f.write('#SBATCH -p xxl\n')
     f.write('#SBATCH -J '+process_name+'\n')
-    f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')    
+    f.write('#SBATCH --array=0-'+str(number_of_nodes)+'%50\n')   
     f.write('#SBATCH -N 1\n\n')
     f.write('ulimit -l unlimited\n')
     f.write('ulimit -s unlimited\n')
@@ -308,8 +308,8 @@ def main():
     
     if not args.partial_analysis=='onlyMAGIC':       
         lists_and_bash_generator("gammas", target_dir, MC_gammas, SimTel_version, telescope_ids, focal_length) #gammas
-        lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, telescope_ids, focal_length) #electrons
-        lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, telescope_ids, focal_length) #helium
+        #lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, telescope_ids, focal_length) #electrons
+        #lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, telescope_ids, focal_length) #helium
         lists_and_bash_generator("protons", target_dir, MC_protons, SimTel_version, telescope_ids, focal_length) #protons
         lists_and_bash_generator("gammadiffuse", target_dir, MC_gammadiff, SimTel_version, telescope_ids, focal_length) #gammadiffuse
         
@@ -346,9 +346,9 @@ def main():
 if __name__ == "__main__":
     main()
 
+#sbatch linking_MC_gammas_paths_r.sh && sbatch linking_MC_protons_paths_r.sh && sbatch linking_MC_gammadiffuse_paths_r.sh
+    
 
-    
-    
     
     
     

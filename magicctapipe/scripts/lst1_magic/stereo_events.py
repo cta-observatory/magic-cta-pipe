@@ -74,7 +74,7 @@ def bash_stereo(target_dir):
         f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n magic-lst1 python lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml")
+        f.write(f"conda run -n magic-lst1 python lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
         f.close()
 
 def bash_stereoMC(target_dir, identification):
@@ -116,7 +116,7 @@ def bash_stereoMC(target_dir, identification):
     f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
     f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
     f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-    f.write(f"conda run -n magic-lst1 python lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml")
+    f.write(f"conda run -n magic-lst1 python lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
     f.close()
 
 

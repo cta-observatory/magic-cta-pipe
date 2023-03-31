@@ -52,7 +52,7 @@ def split_train_test(target_dir, train_fraction):
         os.system(f"cp {i}*.txt "+proton_dir+"/train/"+i.split("/")[-2])
         os.system(f"mv {i}*.txt "+proton_dir+"/test/"+i.split("/")[-2])
         os.system(f"mv {i}*.h5 "+proton_dir+"/test/"+i.split("/")[-2])
-        #os.system(f"rm -r {i}")
+        os.system(f"rm -r {i}")
 
 def merge(target_dir, identification, MAGIC_runs):
     
@@ -118,6 +118,51 @@ def merge(target_dir, identification, MAGIC_runs):
     f.close()
     
 
+def mergeMC(target_dir, identification):
+    
+    """
+    This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
+    
+    Parameters
+    ----------
+    target_dir: str
+        Path to the working directory
+    identification: str
+        Tells which batch to create. Options: protons, gammadiffuse
+    """
+    
+    process_name = "merging_"+target_dir.split("/")[-2:][1]
+    
+    MC_DL1_dir = target_dir+"/DL1/MC"
+    if not os.path.exists(MC_DL1_dir+f"/{identification}/Merged"):
+        os.mkdir(MC_DL1_dir+f"/{identification}/Merged")
+    
+    if identification == "protons":
+        list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/train/node*"))
+    elif identification == "gammadiffuse":
+        list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/node*"))
+    elif identification == "gammas":
+        list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/node*"))
+        
+    process_size = len(list_of_nodes)
+        
+    f = open(f"Merge_{identification}.sh","w")
+    f.write('#!/bin/sh\n\n')
+    f.write('#SBATCH -p long\n')
+    f.write('#SBATCH -J '+process_name+'\n')
+    f.write(f"#SBATCH --array=0-{process_size}%50\n")
+    f.write('#SBATCH --mem=7g\n')
+    f.write('#SBATCH -N 1\n\n')
+    f.write('ulimit -l unlimited\n')
+    f.write('ulimit -s unlimited\n')
+    f.write('ulimit -a\n\n')
+    
+    for node in list_of_nodes:
+        f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {node} --output-dir {MC_DL1_dir}/{identification}/Merged\n')        
+    
+    f.close()
+    
+    
 def main():
 
     """
@@ -145,6 +190,11 @@ def main():
     merge(target_dir, "0_subruns", MAGIC_runs) #generating the bash script to merge the subruns
     merge(target_dir, "1_M1M2", MAGIC_runs) #generating the bash script to merge the M1 and M2 runs
     merge(target_dir, "2_nights", MAGIC_runs) #generating the bash script to merge all runs per night
+    
+    print("***** Generating mergeMC bashscripts...")
+    mergeMC(target_dir, "protons") #generating the bash script to merge the files
+    mergeMC(target_dir, "gammadiffuse") #generating the bash script to merge the files
+    mergeMC(target_dir, "gammas") #generating the bash script to merge the files 
     
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
     print("Process name: merging_"+target_dir.split("/")[-2:][1])
