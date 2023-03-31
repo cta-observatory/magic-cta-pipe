@@ -65,45 +65,48 @@ def telescope_combinations(config):
     Parameters
     ----------
     config: dict
-        yaml file with information about the telescope IDs. Typically called "config_general.yaml"
+        yaml file with information about the telescope IDs. Typically called evoked from "config_general.yaml" in the main scripts.
 
     Returns
     -------
     TEL_NAMES: dict
-        Dictionary with telescope names and IDs
+        Dictionary with telescope IDs and names.
     TEL_COMBINATIONS: dict
         Dictionary with all telescope combinations with no repetions.
     """
     
-    with open(config, "rb") as f:
-        configgeneral = yaml.safe_load(f)
-        
-    telescope_ids = list(configgeneral["mc_tel_ids"].values())
+    
     TEL_NAMES = {}
-    for k, v in telescope_ids.items():    #Here we swap the dictionary keys and values just for convenience.
+    for k, v in config["mc_tel_ids"].items():    #Here we swap the dictionary keys and values just for convenience.
         if v > 0:
             TEL_NAMES[v] =  k
-        
+    
     TEL_COMBINATIONS = {}
     keys = list(TEL_NAMES.keys())
-    Names = list(TEL_NAMES.values())
-    for current_tel in keys:         #This is a loop to generate all possible 2, 3, 4, 5, or 6 telescope combinations with no repetitions
-        if current_tel < len(keys):
-            for second_tel in keys[current_tel:]:    #this second loop is over all telescopes with tel_id greater than current_tel
-                TEL_COMBINATIONS[Names[current_tel-1]+"_"+Names[second_tel-1]] = [current_tel, second_tel] #Here we do the combinations of 2 telescopes, with no repetitions
-                if (len(keys) > 2) & (second_tel < len(keys)):
-                    for third_tel in keys[second_tel:]:    #this third loop is over all telescopes with tel_id greater than second_tel
-                        TEL_COMBINATIONS[Names[current_tel-1]+"_"+Names[second_tel-1]+"_"+Names[third_tel-1]] = [current_tel, second_tel, third_tel] #Here we do the combinations of 3 telescopes
-                        if (len(keys) > 3) & (third_tel < len(keys)):
-                            for fourth_tel in keys[third_tel:]: # And so on...
-                                TEL_COMBINATIONS[Names[current_tel-1]+"_"+Names[second_tel-1]+"_"+Names[third_tel-1]+"_"+Names[fourth_tel-1]] = [current_tel, second_tel, third_tel, fourth_tel]
-                                if (len(keys) > 4) & (fourth_tel < len(keys)):
-                                    for fifth_tel in keys[fourth_tel:]:
-                                        TEL_COMBINATIONS[Names[current_tel-1]+"_"+Names[second_tel-1]+"_"+Names[third_tel-1]+"_"+Names[fourth_tel-1]+"_"+Names[fifth_tel-1]] = [current_tel, second_tel, third_tel, fourth_tel, fifth_tel]
-                                        if (len(keys) > 5) & (fifth_tel < len(keys)):
-                                            for sixth_tel in keys[fifth_tel:]:
-                                                TEL_COMBINATIONS[Names[current_tel-1]+"_"+Names[second_tel-1]+"_"+Names[third_tel-1]+"_"+Names[fourth_tel-1]+"_"+Names[fifth_tel-1]+"_"+Names[sixth_tel-1]] = [current_tel, second_tel, third_tel, fourth_tel, fifth_tel, sixth_tel]
+    
+    def recursive_solution(current_tel, current_comb):
+    
+        if current_tel == len(keys):     #The function stops once we reach the last telescope
+            return 
+      
+        current_comb_name = current_comb[0] + '_' + TEL_NAMES[keys[current_tel]]  #Name of the combo (at this point it can even be a single telescope)
+        current_comb_list = current_comb[1] + [keys[current_tel]]                 #List of telescopes (including individual telescopes)
+    
+        if len(current_comb_list) > 1:                          #We save them in the new dictionary excluding the single-telescope values
+            TEL_COMBINATIONS[current_comb_name] = current_comb_list;
+      
+        current_comb = [current_comb_name, current_comb_list]   #We save the current results in this varible to recal the function recursively ("for" loop below)
+
+        for i in range(1, len(keys)-current_tel):               
+            recursive_solution(current_tel+i, current_comb)
+
+  
+    for key in range(len(keys)):
+        recursive_solution(key, ['',[]])
+
+  
     return TEL_NAMES, TEL_COMBINATIONS
+    
 
 def format_object(input_object):
     """
