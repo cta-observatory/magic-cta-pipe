@@ -6,6 +6,22 @@ from astropy.table import Table
 import pandas as pd
 from pathlib import Path
 import pexpect
+import subprocess
+
+
+"""
+Temporary paths
+"""
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_gamma(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gammas")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_gamma_stereo(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gamma_stereo")
 
 
 """
@@ -73,6 +89,18 @@ def pd_path(base_path):
     return p
 
 
+@pytest.fixture(scope="session")
+def g0_path(base_path):
+    p = base_path / "DL0_gamma"
+    return p
+
+
+@pytest.fixture(scope="session")
+def conf_path(base_path):
+    p = base_path / "config"
+    return p
+
+
 """
 Custom data
 """
@@ -104,7 +132,7 @@ def dl2_test(dl2_path):
 
 
 @pytest.fixture(scope="session")
-def pd_test(pd_path):
+def pd_test():
     """
     Toy dataframe
     """
@@ -159,6 +187,18 @@ def irf_url(base_url):
         base_url
         / "irf_zd_37.814deg_az_270.0deg_software_gh_dyn0.9_theta_glob0.2deg.fits.gz"
     )
+    return q
+
+
+@pytest.fixture(scope="session")
+def g0_url(base_url):
+    q = base_url / "simtel_corsika_theta_16.087_az_108.090_run3.simtel.gz"
+    return q
+
+
+@pytest.fixture(scope="session")
+def conf_url(base_url):
+    q = base_url / "config.yaml"
     return q
 
 
@@ -244,3 +284,61 @@ def irf_file(irf_path, irf_url, env_prefix):
     name1 = irf_url.name
     url1 = irf_path / name1
     return url1
+
+
+@pytest.fixture(scope="session")
+def mc_gamma_testfile(g0_path, g0_url, env_prefix):
+    scp_file(g0_path, g0_url, env_prefix)
+    name1 = g0_url.name
+    url1 = g0_path / name1
+    return url1
+
+
+@pytest.fixture(scope="session")
+def config(conf_path, conf_url, env_prefix):
+    scp_file(conf_path, conf_url, env_prefix)
+    name1 = conf_url.name
+    url1 = conf_path / name1
+    return url1
+
+
+"""
+Data processing
+"""
+
+
+@pytest.fixture(scope="session")
+def gamma_l1(temp_DL1_gamma, mc_gamma_testfile, config):
+    """
+    Produce a dl1 file
+    """
+
+    subprocess.run(
+        [
+            "lst1_magic_mc_dl0_to_dl1",
+            f"-i{str(mc_gamma_testfile)}",
+            f"-o{str(temp_DL1_gamma)}",
+            f"-c{str(config)}",
+        ]
+    )
+    return temp_DL1_gamma / "dl1_gamma_zd_16.087deg_az_108.0deg_LST-1_MAGIC_run301.h5"
+
+
+@pytest.fixture(scope="session")
+def gamma_stereo(temp_DL1_gamma_stereo, gamma_l1, config):
+    """
+    Produce a dl1 stereo file
+    """
+
+    subprocess.run(
+        [
+            "lst1_magic_stereo_reco",
+            f"-i{str(gamma_l1)}",
+            f"-o{str(temp_DL1_gamma_stereo)}",
+            f"-c{str(config)}",
+        ]
+    )
+    return (
+        temp_DL1_gamma_stereo
+        / "dl1_stereo_gamma_zd_16.087deg_az_108.0deg_LST-1_MAGIC_run301.h5"
+    )

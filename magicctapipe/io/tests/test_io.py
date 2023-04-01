@@ -25,11 +25,11 @@ def test_format_object():
     assert str_b == "a b  xzcde "
 
 
-def test_get_stereo_events(stereo_file):
+def test_get_stereo_events(gamma_stereo):
     """
     Check on stereo data reading
     """
-    event_data = pd.read_hdf(str(stereo_file), key="events/parameters")
+    event_data = pd.read_hdf(str(gamma_stereo), key="events/parameters")
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
     data = get_stereo_events(event_data)
