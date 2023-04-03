@@ -9,7 +9,6 @@ import re
 import numpy as np
 import pandas as pd
 import tables
-import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable
@@ -65,7 +64,7 @@ def telescope_combinations(config):
     Parameters
     ----------
     config: dict
-        yaml file with information about the telescope IDs. Typically called evoked from "config_general.yaml" in the main scripts.
+        yaml file with information about the telescope IDs. Typically evoked from "config_general.yaml" in the main scripts.
 
     Returns
     -------
@@ -427,7 +426,7 @@ def load_magic_dl1_data_files(input_dir, config):
     ----------
     input_dir: str
         Path to a directory where input MAGIC DL1 data files are stored
-    config: .yaml 
+    config: dict 
         yaml file with information about the telescope IDs. Typically called "config_general.yaml"
 
     Returns

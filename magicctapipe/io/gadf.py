@@ -10,7 +10,7 @@ from astropy.io import fits
 from astropy.table import QTable
 from astropy.time import Time
 from magicctapipe import __version__
-from magicctapipe.io.io import TEL_COMBINATIONS
+from magicctapipe.io import telescope_combinations
 from magicctapipe.utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
 from pyirf.binning import split_bin_lo_hi
 
@@ -20,6 +20,7 @@ __all__ = [
     "create_gti_hdu",
     "create_pointing_hdu",
 ]
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -90,7 +91,7 @@ def create_gh_cuts_hdu(
 
 
 def create_event_hdu(
-    event_table, on_time, deadc, source_name, source_ra=None, source_dec=None
+    event_table, config, on_time, deadc, source_name, source_ra=None, source_dec=None
 ):
     """
     Creates a fits binary table HDU for shower events.
@@ -99,6 +100,8 @@ def create_event_hdu(
     ----------
     event_table: astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
+    config: dict
+        yaml file with information about the telescope IDs. Typically called evoked from "config_DL3.yaml" in the main scripts.
     on_time: astropy.table.table.QTable
         ON time of the input data
     deadc: float
@@ -125,7 +128,8 @@ def create_event_hdu(
         If the source name cannot be resolved and also either or both of
         source RA/Dec coordinate is set to None
     """
-
+    _, TEL_COMBINATIONS = telescope_combinations(config)
+    
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
 
     time_start = Time(event_table["timestamp"][0], format="unix", scale="utc")
