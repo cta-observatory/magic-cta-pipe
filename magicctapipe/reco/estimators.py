@@ -7,7 +7,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn.ensemble
-from magicctapipe.io.io import TEL_NAMES
+from magicctapipe.io import telescope_combinations
 
 __all__ = ["EnergyRegressor", "DispRegressor", "EventClassifier"]
 
@@ -32,12 +32,14 @@ class EnergyRegressor:
         Telescope RFs
     """
 
-    def __init__(self, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, config, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
+        config: dict
+            yaml file with information about the telescope IDs. Typically evoked from "config_RF.yaml" in the main scripts.
         settings: dict
             Settings of RF regressors
         features: list
@@ -45,7 +47,7 @@ class EnergyRegressor:
         use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-
+        self.TEL_NAMES, _ = telescope_combinations(config)
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -83,7 +85,7 @@ class EnergyRegressor:
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {self.TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
@@ -197,12 +199,14 @@ class DispRegressor:
         Telescope RFs
     """
 
-    def __init__(self, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, config, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
+        config: dict
+            yaml file with information about the telescope IDs. Typically evoked from "config_RF.yaml" in the main scripts.
         settings: dict
             Settings of RF regressors
         features: list
@@ -210,7 +214,8 @@ class DispRegressor:
         use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-
+        
+        self.TEL_NAMES, _ = telescope_combinations(config)
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -247,7 +252,7 @@ class DispRegressor:
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {self.TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
@@ -359,12 +364,14 @@ class EventClassifier:
         Telescope RFs
     """
 
-    def __init__(self, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, config, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
+        config: dict
+            yaml file with information about the telescope IDs. Typically evoked from "config_RF.yaml" in the main scripts.
         settings: dict
             Settings of RF classifiers
         features: list
@@ -372,7 +379,8 @@ class EventClassifier:
         use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-
+        
+        self.TEL_NAMES, _ = telescope_combinations(config)
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -409,7 +417,7 @@ class EventClassifier:
             classifier = sklearn.ensemble.RandomForestClassifier(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {self.TEL_NAMES[tel_id]} RF...")
             classifier.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = classifier
