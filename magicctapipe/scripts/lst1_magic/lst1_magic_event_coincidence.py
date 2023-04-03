@@ -98,7 +98,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     output_dir: str
         Path to a directory where to save an output DL1 data file
     config: dict
-        Configuration for the LST-1 + MAGIC combined analysis
+        Configuration for the LST + MAGIC combined analysis
     """
 
     config_coinc = config["event_coincidence"]

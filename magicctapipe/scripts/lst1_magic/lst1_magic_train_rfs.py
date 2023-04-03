@@ -138,7 +138,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     energy_regressor = EnergyRegressor(
-        config_rf["settings"], config_rf["features"], use_unsigned_features
+        config, config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
     # Create the output directory
@@ -214,7 +214,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     disp_regressor = DispRegressor(
-        config_rf["settings"], config_rf["features"], use_unsigned_features
+        config, config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
     # Create the output directory
@@ -301,7 +301,7 @@ def train_event_classifier(
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     event_classifier = EventClassifier(
-        config_rf["settings"], config_rf["features"], use_unsigned_features
+        config, config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
     # Create the output directory
