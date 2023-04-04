@@ -7,13 +7,61 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn.ensemble
-from magicctapipe.io import telescope_combinations
 
 __all__ = ["EnergyRegressor", "DispRegressor", "EventClassifier"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+
+def telescope_combinations(config):
+    """
+    Generates all possible telescope combinations without repetition. E.g.: "LST1_M1", "LST2_LST4_M2", "LST1_LST2_LST3_M1" and so on.
+
+    Parameters
+    ----------
+    config: dict
+        yaml file with information about the telescope IDs. Typically evoked from "config_general.yaml" in the main scripts.
+
+    Returns
+    -------
+    TEL_NAMES: dict
+        Dictionary with telescope IDs and names.
+    TEL_COMBINATIONS: dict
+        Dictionary with all telescope combinations with no repetions.
+    """
+    
+    
+    TEL_NAMES = {}
+    for k, v in config["mc_tel_ids"].items():    #Here we swap the dictionary keys and values just for convenience.
+        if v > 0:
+            TEL_NAMES[v] =  k
+    
+    TEL_COMBINATIONS = {}
+    keys = list(TEL_NAMES.keys())
+    
+    def recursive_solution(current_tel, current_comb):
+    
+        if current_tel == len(keys):     #The function stops once we reach the last telescope
+            return 
+      
+        current_comb_name = current_comb[0] + '_' + TEL_NAMES[keys[current_tel]]  #Name of the combo (at this point it can even be a single telescope)
+        current_comb_list = current_comb[1] + [keys[current_tel]]                 #List of telescopes (including individual telescopes)
+    
+        if len(current_comb_list) > 1:                          #We save them in the new dictionary excluding the single-telescope values
+            TEL_COMBINATIONS[current_comb_name[1:]] = current_comb_list;
+      
+        current_comb = [current_comb_name, current_comb_list]   #We save the current results in this varible to recal the function recursively ("for" loop below)
+
+        for i in range(1, len(keys)-current_tel):               
+            recursive_solution(current_tel+i, current_comb)
+
+  
+    for key in range(len(keys)):
+        recursive_solution(key, ['',[]])
+
+  
+    return TEL_NAMES, TEL_COMBINATIONS
 
 
 class EnergyRegressor:
