@@ -61,7 +61,12 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     
     f.close()
     
-    os.system("ls "+MC_path+"node* > "+target_dir+f"/list_folder_{particle_type}.txt") # creating list_folder_gammas.txt
+    f = open(target_dir+f"/list_folder_{particle_type}.txt","w") # creating list_folder_gammas.txt
+    for i in list_of_nodes:
+        f.write(i.split("/")[-1]+"\n")   
+    
+    f.close()
+    
     
     f = open(f"linking_MC_{particle_type}_paths.sh","w")
     f.write("#!/bin/sh\n\n")
