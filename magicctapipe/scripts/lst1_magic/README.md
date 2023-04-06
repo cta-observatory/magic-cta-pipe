@@ -1,6 +1,6 @@
-# Script for MAGIC and MAGIC+LST-1 analysis
+# Script for MAGIC and MAGIC+LST analysis
 
-This folder contains scripts to perform MAGIC-only or MAGIC+LST-1 analysis.
+This folder contains scripts to perform MAGIC-only or MAGIC+LST analysis.
 
 Each script can be called from the command line from anywhere in your system (some console scripts are created during installation). Please run them with `-h` option for the first time to check what are the options available.
 
@@ -19,7 +19,7 @@ MAGIC-only analysis starts from MAGIC calibrated data (\_Y\_ files). The analysi
 
 ## MAGIC+LST analysis: overview
 
-MAGIC+LST-1 analysis starts from MAGIC calibrated data (\_Y\_ files), LST-1 DL1 data and SimTelArray DL0 data. The analysis flow is as following:
+MAGIC+LST analysis starts from MAGIC calibrated data (\_Y\_ files), LST DL1 data and SimTelArray DL0 data. The analysis flow is as following:
 
 - `magic_calib_to_dl1.py` on real MAGIC data, to convert them into DL1 format
 - `lst1_magic_mc_dl0_to_dl1.py` over SimTelArray MCs to convert them into DL1 format
