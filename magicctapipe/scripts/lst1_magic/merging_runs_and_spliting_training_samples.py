@@ -9,6 +9,7 @@ import numpy as np
 import glob
 import yaml
 import logging
+from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -39,20 +40,20 @@ def split_train_test(target_dir, train_fraction):
     
     list_of_dir = np.sort(glob.glob(proton_dir+'/node*' + os.path.sep))
     
-    for i in list_of_dir:
-        if not os.path.exists(proton_dir+"/train/"+i.split("/")[-2]):
-            os.mkdir(proton_dir+"/train/"+i.split("/")[-2])
-        if not os.path.exists(proton_dir+"/test/"+i.split("/")[-2]):
-            os.mkdir(proton_dir+"/test/"+i.split("/")[-2])
-        list_of_runs = np.sort(glob.glob(proton_dir+"/"+i.split("/")[-2]+"/*.h5"))
+    for directory in tqdm(range(len(list_of_dir))):   #tqdm allows us to print a progessbar in the terminal
+        if not os.path.exists(proton_dir+"/train/"+list_of_dir[directory].split("/")[-2]):
+            os.mkdir(proton_dir+"/train/"+list_of_dir[directory].split("/")[-2])
+        if not os.path.exists(proton_dir+"/test/"+list_of_dir[directory].split("/")[-2]):
+            os.mkdir(proton_dir+"/test/"+list_of_dir[directory].split("/")[-2])
+        list_of_runs = np.sort(glob.glob(proton_dir+"/"+list_of_dir[directory].split("/")[-2]+"/*.h5"))
         split_percent = int(len(list_of_runs)*train_fraction)
         for j in list_of_runs[0:split_percent]:
-            os.system(f"mv {j} {proton_dir}/train/"+i.split("/")[-2])
+            os.system(f"mv {j} {proton_dir}/train/"+list_of_dir[directory].split("/")[-2])
         
-        os.system(f"cp {i}*.txt "+proton_dir+"/train/"+i.split("/")[-2])
-        os.system(f"mv {i}*.txt "+proton_dir+"/test/"+i.split("/")[-2])
-        os.system(f"mv {i}*.h5 "+proton_dir+"/test/"+i.split("/")[-2])
-        os.system(f"rm -r {i}")
+        os.system(f"cp {list_of_dir[directory]}*.txt "+proton_dir+"/train/"+list_of_dir[directory].split("/")[-2])
+        os.system(f"mv {list_of_dir[directory]}*.txt "+proton_dir+"/test/"+list_of_dir[directory].split("/")[-2])
+        os.system(f"mv {list_of_dir[directory]}*.h5 "+proton_dir+"/test/"+list_of_dir[directory].split("/")[-2])
+        os.system(f"rm -r {list_of_dir[directory]}")
 
 def merge(target_dir, identification, MAGIC_runs):
     
