@@ -6,6 +6,8 @@ Repository for the analysis of MAGIC and MAGIC+LST1 data, based on [*ctapipe*](h
 
 v0.2.0 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder. See the [README](https://github.com/cta-observatory/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/README.md) for more details on how to run the analysis.
 
+Some of the functions (*create_muon_table*, *create_hdu_index_hdu*, *create_obs_index_hdu*, *apply_dynamic_cleaning*, *add_delta_t_key*, *add_noise_in_pixels*, *random_psf_smearer*, *set_numba_seed*, *create_muon_table*, *tag_pix_thr*, *fill_muon_event*, *analyze_muon_event*, *update_parameters*, *fit_muon*, *pixel_coords_to_telescope*, *radial_light_distribution*, *plot_muon_event*) have been developed by the *lstchain* team.
+
 # Installation for users
 
 *magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
