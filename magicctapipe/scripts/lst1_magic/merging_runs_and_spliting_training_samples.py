@@ -16,6 +16,18 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 def cleaning(list_of_nodes, target_dir):
+    
+    """
+    This function looks for failed runs in each node and remove them.
+    
+    Parameters
+    ----------
+    target_dir: str
+        Path to the target directory.
+    list_of_nodes: array of str
+        List of nodes where the function will look for failed runs.
+    """
+    
     for i in tqdm(range(len(list_of_nodes)), desc="Cleaning failed runs"):
         os.chdir(list_of_nodes[i])
         os.system('find . -type f -name "*.h5" -size -1k -delete')
