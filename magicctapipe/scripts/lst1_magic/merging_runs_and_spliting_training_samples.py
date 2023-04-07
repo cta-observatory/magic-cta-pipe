@@ -15,6 +15,13 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
+def cleaning(list_of_nodes, target_dir):
+    for i in tqdm(range(len(list_of_nodes)), desc="Cleaning failed runs"):
+        os.chdir(list_of_nodes[i])
+        os.system('find . -type f -name "*.h5" -size -1k -delete')
+    
+    os.chdir(target_dir+"/../")
+    print("Cleaning done.")
 
 def split_train_test(target_dir, train_fraction):
     
@@ -146,6 +153,8 @@ def mergeMC(target_dir, identification):
         list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/node*"))
         
     process_size = len(list_of_nodes)
+    
+    cleaning(list_of_nodes, target_dir) #This will delete the (possibly) failed runs.
         
     f = open(f"Merge_{identification}.sh","w")
     f.write('#!/bin/sh\n\n')
