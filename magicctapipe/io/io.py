@@ -569,7 +569,7 @@ def load_train_data_files(
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
 
-    event_data = get_stereo_events(event_data, group_index=GROUP_INDEX_TRAIN)
+    event_data = get_stereo_events(event_data, config, group_index=GROUP_INDEX_TRAIN)
 
     data_train = {}
 
@@ -656,7 +656,7 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
 
-    event_data = get_stereo_events(event_data, group_index=GROUP_INDEX_TRAIN)
+    event_data = get_stereo_events(event_data, config, group_index=GROUP_INDEX_TRAIN)
 
     data_train = {}
 
@@ -670,12 +670,14 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
     return data_train
 
 
-def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
+def load_mc_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type_dl2):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
     Parameters
     ----------
+    config: dict 
+        evoked from an yaml file with information about the telescope IDs. Typically called "config_RF.yaml"
     input_file: str
         Path to an input MC DL2 data file
     quality_cuts: str
@@ -710,7 +712,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
-    df_events = get_stereo_events(df_events, quality_cuts)
+    df_events = get_stereo_events(df_events, config, quality_cuts)
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
@@ -796,12 +798,14 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     return event_table, pointing, sim_info
 
 
-def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
+def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type_dl2):
     """
     Loads a DL2 data file for processing to DL3.
 
     Parameters
     ----------
+    config: dict 
+        evoked from an yaml file with information about the telescope IDs. Typically called "config_DL3.yaml"
     input_file: str
         Path to an input DL2 data file
     quality_cuts: str
@@ -831,7 +835,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
-    event_data = get_stereo_events(event_data, quality_cuts)
+    event_data = get_stereo_events(event_data, config, quality_cuts)
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
