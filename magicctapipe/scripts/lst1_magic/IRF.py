@@ -79,7 +79,7 @@ def IRF(target_dir):
 
     for DL2_MC_file in listOfDL2MCgammas:
         f.write(f'export LOG={output}/{DL2_MC_file.split("/")[-1][:-3]}_IRF.log\n')
-        f.write(f'conda run -n magic-lst1 python lst1_magic_create_irf.py --input-file-gamma {DL2_MC_file} --output-dir {output} --config-file {target_dir}/config_IRF.yaml >$LOG 2>&1\n\n')
+        f.write(f'conda run -n magic-lst python lst1_magic_create_irf.py --input-file-gamma {DL2_MC_file} --output-dir {output} --config-file {target_dir}/config_IRF.yaml >$LOG 2>&1\n\n')
 
     f.close()
     

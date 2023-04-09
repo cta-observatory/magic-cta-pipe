@@ -15,7 +15,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configuration_RFs(target_dir):
+def configuration_RFs(ids, target_dir):
     
     """
     This function creates the configuration file needed for the RF step
@@ -73,7 +73,7 @@ def RandomForest(target_dir):
     
     f.write(f'export LOG={MC_DL1_dir}/RFs/RF_Train.log\n\n')
     
-    f.write(f'conda run -n magic-lst1 python lst1_magic_train_rfs.py --input-dir-gamma {MC_DL1_dir}/gammadiffuse/Merged/StereoMerged --input-dir-proton {MC_DL1_dir}/protons/Merged/StereoMerged --output-dir {MC_DL1_dir}/RFs --config-file {target_dir}/config_RF.yaml --train-energy --train-disp --train-classifier --use-unsigned >$LOG 2>&1\n')
+    f.write(f'conda run -n magic-lst python lst1_magic_train_rfs.py --input-dir-gamma {MC_DL1_dir}/gammadiffuse/Merged/StereoMerged --input-dir-proton {MC_DL1_dir}/protons/Merged/StereoMerged --output-dir {MC_DL1_dir}/RFs --config-file {target_dir}/config_RF.yaml --train-energy --train-disp --train-classifier --use-unsigned >$LOG 2>&1\n')
     
     f.close()
     
@@ -89,13 +89,13 @@ def main():
     with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
-    
+    telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
     
     
     print("***** Generating file config_RF.yaml...")
     print("***** This file can be found in ",target_dir)
-    configuration_RFs(target_dir)
+    configuration_RFs(telescope_ids,target_dir)
     
     
     print("***** Generating RF bashscript...")

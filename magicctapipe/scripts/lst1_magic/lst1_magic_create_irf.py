@@ -123,7 +123,7 @@ def create_irf(
     logger.info(f"\nInput gamma MC DL2 data file: {input_file_gamma}")
 
     event_table_gamma, pnt_gamma, sim_info_gamma = load_mc_dl2_data_file(
-        input_file_gamma, quality_cuts, event_type, weight_type_dl2
+        config, input_file_gamma, quality_cuts, event_type, weight_type_dl2
     )
 
     is_diffuse_mc = sim_info_gamma.viewcone.to_value("deg") > 0
@@ -197,7 +197,7 @@ def create_irf(
         logger.info(f"\nInput proton MC DL2 data file: {input_file_proton}")
 
         event_table_proton, pnt_proton, sim_info_proton = load_mc_dl2_data_file(
-            input_file_proton, quality_cuts, event_type, weight_type_dl2
+            config, input_file_proton, quality_cuts, event_type, weight_type_dl2
         )
 
         if any(pnt_proton != pnt_gamma):
@@ -210,7 +210,7 @@ def create_irf(
         logger.info(f"\nInput electron MC DL2 data file: {input_file_electron}")
 
         event_table_electron, pnt_electron, sim_info_electron = load_mc_dl2_data_file(
-            input_file_electron, quality_cuts, event_type, weight_type_dl2
+            config, input_file_electron, quality_cuts, event_type, weight_type_dl2
         )
 
         if any(pnt_electron != pnt_gamma):
