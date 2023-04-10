@@ -16,6 +16,7 @@ $ python lst1_magic_dl1_stereo_to_dl2.py
 (--output-dir dl2)
 """
 
+import yaml
 import argparse
 import glob
 import itertools
@@ -51,7 +52,7 @@ def apply_rfs(event_data, estimator, config):
     estimator: magicctapipe.reco.estimator
         Trained regressor or classifier
     config: dict
-        yaml file with information about the telescope IDs. Typically called "config_general.yaml"
+        evoked from an yaml file with information about the telescope IDs. Typically called "config_general.yaml"
 
     Returns
     -------
@@ -84,7 +85,8 @@ def reconstruct_arrival_direction(event_data, tel_descriptions, config):
         Data frame of shower events
     tel_descriptions: dict
         Telescope descriptions
-
+    config: dict
+        dictionary with telescope IDs information
     Returns
     -------
     reco_params: pandas.core.frame.DataFrame
@@ -260,8 +262,12 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
         Path to a directory where trained RFs are stored
     output_dir: str
         Path to a directory where to save an output DL2 data file
+    config: dict
+        dictionary with telescope IDs information
     """
-
+    
+    TEL_NAMES, _ = telescope_combinations(config)
+    
     # Load the input DL1-stereo data file
     logger.info(f"\nInput DL1-stereo data file: {input_file_dl1}")
 
@@ -297,7 +303,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
 
             logger.info(f"Applying {input_file_energy}...")
 
-            energy_regressor = EnergyRegressor()
+            energy_regressor = EnergyRegressor(TEL_NAMES)
             energy_regressor.load(input_file_energy)
 
             # Apply the RFs
@@ -320,7 +326,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
 
             logger.info(f"Applying {input_file_disp}...")
 
-            disp_regressor = DispRegressor()
+            disp_regressor = DispRegressor(TEL_NAMES)
             disp_regressor.load(input_file_disp)
 
             # Apply the RFs
@@ -349,7 +355,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
 
             logger.info(f"Applying {input_file_class}...")
 
-            event_classifier = EventClassifier()
+            event_classifier = EventClassifier(TEL_NAMES)
             event_classifier.load(input_file_class)
 
             # Apply the RFs

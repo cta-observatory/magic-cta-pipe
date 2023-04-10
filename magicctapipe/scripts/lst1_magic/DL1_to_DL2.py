@@ -63,7 +63,7 @@ def DL1_to_2(target_dir):
             outputMC = target_dir+'/DL2/MC'
             for gamma in listOfMCgammas:
                 f.write(f'export LOG={outputMC}/{gamma.split("/")[-1][:-3]}_DL1_to_DL2.log\n')
-                f.write(f'conda run -n magic-lst1 python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 {gamma} --input-dir-rfs {RFs_dir} --output-dir {outputMC} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
+                f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 {gamma} --input-dir-rfs {RFs_dir} --output-dir {outputMC} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
             
         
         for DL1_stereo_file in listOfDL1Files:
