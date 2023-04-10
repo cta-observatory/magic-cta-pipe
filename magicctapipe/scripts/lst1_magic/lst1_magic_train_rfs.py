@@ -107,7 +107,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     output_dir: str
         Path to a directory where to save trained RFs
     config: dict
-        Configuration for the LST-1 + MAGIC analysis
+        Configuration for the LST + MAGIC analysis
     use_unsigned_features: bool
         If `True`, it uses unsigned features for training RFs
     """
@@ -136,9 +136,11 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     logger.info(format_object(config_rf["features"]))
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
-
+    
+    logger.info(f"\nconfiguration file: {config}")
+    logger.info(f'\nmc_tel_ids: {config["mc_tel_ids"]}')
     energy_regressor = EnergyRegressor(
-        config, config_rf["settings"], config_rf["features"], use_unsigned_features
+        TEL_NAMES, config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
     # Create the output directory
@@ -214,7 +216,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     disp_regressor = DispRegressor(
-        config, config_rf["settings"], config_rf["features"], use_unsigned_features
+        TEL_NAMES, config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
     # Create the output directory
@@ -301,7 +303,7 @@ def train_event_classifier(
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
 
     event_classifier = EventClassifier(
-        config, config_rf["settings"], config_rf["features"], use_unsigned_features
+        TEL_NAMES, config_rf["settings"], config_rf["features"], use_unsigned_features
     )
 
     # Create the output directory
