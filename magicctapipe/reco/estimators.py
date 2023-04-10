@@ -14,23 +14,6 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def telescope_names(self):
-    """
-    Generates a dictionary with telescope IDs and names.
-
-    Returns
-    -------
-    TEL_NAMES: dict
-        Dictionary with telescope IDs and names.
-    """
-    
-    TEL_NAMES = {}
-    for k, v in self.config["mc_tel_ids"].items():    #Here we swap the dictionary keys and values just for convenience.
-        if v > 0:
-            TEL_NAMES[v] =  k
-  
-    return TEL_NAMES
-
 
 class EnergyRegressor:
     """
@@ -48,14 +31,14 @@ class EnergyRegressor:
         Telescope RFs
     """
 
-    def __init__(self, config, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, TEL_NAMES, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        config: dict
-            yaml file with information about the telescope IDs. Typically evoked from "config_RF.yaml" in the main scripts.
+        TEL_NAMES: dict
+            dictionary with telescope IDs and names.
         settings: dict
             Settings of RF regressors
         features: list
@@ -63,8 +46,7 @@ class EnergyRegressor:
         use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-        self.config = config
-        self.TEL_NAMES = telescope_names(self)
+        self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -216,14 +198,14 @@ class DispRegressor:
         Telescope RFs
     """
 
-    def __init__(self, config, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, TEL_NAMES, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        config: dict
-            yaml file with information about the telescope IDs. Typically evoked from "config_RF.yaml" in the main scripts.
+        TEL_NAMES: dict
+            dictionary with telescope IDs and names.
         settings: dict
             Settings of RF regressors
         features: list
@@ -232,8 +214,7 @@ class DispRegressor:
             If `True`, it trains RFs with unsigned features
         """
         
-        self.config = config
-        self.TEL_NAMES = telescope_names(self)
+        self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -382,14 +363,14 @@ class EventClassifier:
         Telescope RFs
     """
 
-    def __init__(self, config, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, TEL_NAMES, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        config: dict
-            yaml file with information about the telescope IDs. Typically evoked from "config_RF.yaml" in the main scripts.
+        TEL_NAMES: dict
+            dictionary with telescope IDs and names
         settings: dict
             Settings of RF classifiers
         features: list
@@ -398,8 +379,7 @@ class EventClassifier:
             If `True`, it trains RFs with unsigned features
         """
         
-        self.config = config
-        self.TEL_NAMES = telescope_names(self)
+        self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
