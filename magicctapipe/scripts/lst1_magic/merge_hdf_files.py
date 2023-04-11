@@ -57,40 +57,58 @@ def write_data_to_table(input_file_mask, output_file):
     # Find the input files
     input_files = glob.glob(input_file_mask)
     input_files.sort()
-
+    sim_read = True
+    index = 0
     with tables.open_file(output_file, mode="w") as f_out:
-        logger.info(f"\n{input_files[0]}")
+        while sim_read:
+            logger.info(f"\n{input_files[index]}")
+            try:
+                # Create a new table with the first input file
+                with tables.open_file(input_files[index]) as f_input:
+                    event_data = f_input.root.events.parameters
 
-        # Create a new table with the first input file
-        with tables.open_file(input_files[0]) as f_input:
-            event_data = f_input.root.events.parameters
+                    f_out.create_table(
+                        "/events",
+                        "parameters",
+                        createparents=True,
+                        obj=event_data.read(),
+                    )
 
-            f_out.create_table(
-                "/events", "parameters", createparents=True, obj=event_data.read()
-            )
+                    for attr in event_data.attrs._f_list():
+                        f_out.root.events.parameters.attrs[attr] = event_data.attrs[
+                            attr
+                        ]
 
-            for attr in event_data.attrs._f_list():
-                f_out.root.events.parameters.attrs[attr] = event_data.attrs[attr]
+                    if "simulation" in f_input.root:
+                        # Write the simulation configuration of the first input
+                        # file, assuming that it is consistent with the others
+                        sim_config = f_input.root.simulation.config
 
-            if "simulation" in f_input.root:
-                # Write the simulation configuration of the first input
-                # file, assuming that it is consistent with the others
-                sim_config = f_input.root.simulation.config
+                        f_out.create_table(
+                            "/simulation",
+                            "config",
+                            createparents=True,
+                            obj=sim_config.read(),
+                        )
 
-                f_out.create_table(
-                    "/simulation", "config", createparents=True, obj=sim_config.read()
-                )
-
-                for attr in sim_config.attrs._f_list():
-                    f_out.root.simulation.config.attrs[attr] = sim_config.attrs[attr]
+                        for attr in sim_config.attrs._f_list():
+                            f_out.root.simulation.config.attrs[attr] = sim_config.attrs[
+                                attr
+                            ]
+                sim_read = False
+            except tables.exceptions.HDF5ExtError:
+                index += 1
 
         # Write the rest of the input files
         for input_file in input_files[1:]:
             logger.info(input_file)
 
-            with tables.open_file(input_file) as f_input:
-                event_data = f_input.root.events.parameters
-                f_out.root.events.parameters.append(event_data.read())
+            try:
+                with tables.open_file(input_file) as f_input:
+                    event_data = f_input.root.events.parameters
+                    f_out.root.events.parameters.append(event_data.read())
+            except tables.exceptions.HDF5ExtError:
+                continue
 
     # Save the subarray description of the first input file, assuming
     # that it is consistent with the others
