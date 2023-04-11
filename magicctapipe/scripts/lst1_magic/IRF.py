@@ -14,23 +14,26 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def configuration_IRF(target_dir):
+def configuration_IRF(ids, target_dir):
     
     """
     This function creates the configuration file needed for the IRF step
     
     Parameters
     ----------
+    ids: list
+        list of telescope IDs
     target_dir: str
         Path to the working directory
     """
     
     f = open(target_dir+'/config_IRF.yaml','w')
-    f.write('create_irf:\n    quality_cuts: "disp_diff_mean < 0.22"\n    event_type: "software"  # select "software", "software_only_3tel", "magic_only" or "hardware"\n    weight_type_dl2: "intensity"  # select "simple", "variance" or "intensity"\n    obs_time_irf: "50 h"  # used when creating a background HDU\n\n')
+    f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
+    f.write('create_irf:\n    quality_cuts: "disp_diff_mean < 0.22"\n    event_type: "hardware"  # select "software", "software_only_3tel", "magic_only" or "hardware"\n    weight_type_dl2: "intensity"  # select "simple", "variance" or "intensity"\n    obs_time_irf: "50 h"  # used when creating a background HDU\n\n')
     
     f.write('    energy_bins:  # log space\n        start: "0.01 TeV"\n        stop: "1000 TeV"\n        n_edges: 26\n    migration_bins:  # log space\n        start: 0.2\n        stop: 5\n        n_edges: 31\n\n')
 
-    f.write('    fov_offset_bins:  # linear space, used for diffuse MCs\n        start: "0 deg"\n        stop: "1 deg"\n        n_edges: 6\n\n')
+    f.write('    fov_offset_bins:  # linear space, used for diffuse MCs\n        start: "0 deg"\n        stop: "1 deg"\n        n_edges: 2\n\n')
     
     f.write('    source_offset_bins:  # linear space, used when creating PSF HDU\n        start: "0 deg"\n        stop: "1 deg"\n        n_edges: 101\n\n')
     
@@ -65,7 +68,7 @@ def IRF(target_dir):
     listOfDL2MCgammas = np.sort(glob.glob(data_files_dir+"/*.h5"))
     
     output = target_dir+"/IRF"
-    process_size = len(listOfDL2MCgammas)
+    process_size = len(listOfDL2MCgammas) - 1
     
     f = open('IRF.sh','w')
     f.write('#!/bin/sh\n\n')
@@ -94,12 +97,13 @@ def main():
     with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
+    telescope_ids = list(config["mc_tel_ids"].values())
     
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
     
     print("***** Generating file config_IRF.yaml...")
     print("***** This file can be found in ",target_dir)
-    configuration_IRF(target_dir)
+    configuration_IRF(telescope_ids, target_dir)
     
     
     print("***** Generating bashscripts for IRF...")

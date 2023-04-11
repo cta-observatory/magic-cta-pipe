@@ -14,13 +14,15 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def configfile_coincidence(target_dir):
+def configfile_coincidence(ids, target_dir):
     
     """
     This function creates the configuration file needed for the event coincidence step
     
     Parameters
     ----------
+    ids: list
+        list of telescope IDs
     target_dir: str
         Path to the working directory
     """
@@ -116,7 +118,7 @@ def main():
     with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
-    
+    telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
     
     LST_runs_and_dates = config["general"]["LST_runs"]
@@ -124,7 +126,7 @@ def main():
     
     print("***** Generating file config_coincidence.yaml...")
     print("***** This file can be found in ",target_dir)
-    configfile_coincidence(target_dir)
+    configfile_coincidence(telescope_ids,target_dir)
     
         
     print("***** Linking the paths to LST data files...")

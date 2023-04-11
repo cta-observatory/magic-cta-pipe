@@ -21,7 +21,7 @@ def configfile_stereo(ids, target_dir):
     
     Parameters
     ----------
-    ids: str
+    ids: list
         list of telescope IDs
     target_dir: str
         Path to the working directory
@@ -105,7 +105,7 @@ def bash_stereoMC(target_dir, identification):
     f.write("#SBATCH -p xxl\n")
     f.write("#SBATCH -J "+process_name+"_stereo\n")
     f.write(f"#SBATCH --array=0-{process_size}%50\n")
-    f.write('#SBATCH --mem=10g\n')
+    f.write('#SBATCH --mem=20g\n')
     f.write("#SBATCH -N 1\n\n")
     f.write("ulimit -l unlimited\n")
     f.write("ulimit -s unlimited\n")

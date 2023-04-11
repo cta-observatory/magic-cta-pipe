@@ -22,6 +22,8 @@ def configuration_RFs(ids, target_dir):
     
     Parameters
     ----------
+    ids: list
+        list of telescope IDs
     target_dir: str
         Path to the working directory
     """
