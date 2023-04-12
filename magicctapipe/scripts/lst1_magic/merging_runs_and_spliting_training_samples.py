@@ -172,7 +172,6 @@ def mergeMC(target_dir, identification):
     f.write('#!/bin/sh\n\n')
     f.write('#SBATCH -p long\n')
     f.write('#SBATCH -J '+process_name+'\n')
-    f.write(f"#SBATCH --array=0-{process_size}%50\n")
     f.write('#SBATCH --mem=7g\n')
     f.write('#SBATCH -N 1\n\n')
     f.write('ulimit -l unlimited\n')
@@ -180,7 +179,8 @@ def mergeMC(target_dir, identification):
     f.write('ulimit -a\n\n')
     
     for node in list_of_nodes:
-        f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {node} --output-dir {MC_DL1_dir}/{identification}/Merged\n')        
+        f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged/log_{node.split("/")[-1]}.log\n')
+        f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {node} --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
     
     f.close()
     
