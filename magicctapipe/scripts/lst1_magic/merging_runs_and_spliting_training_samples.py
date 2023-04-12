@@ -112,7 +112,7 @@ def merge(target_dir, identification, MAGIC_runs):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
                     
         if os.path.exists(MAGIC_DL1_dir+"/M2"):
             for i in MAGIC_runs:
@@ -120,19 +120,19 @@ def merge(target_dir, identification, MAGIC_runs):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
     
     elif identification == "1_M1M2":
         if os.path.exists(MAGIC_DL1_dir+"/M1") & os.path.exists(MAGIC_DL1_dir+"/M2"):
             for i in MAGIC_runs:
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/Merged"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged") 
-                f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
+                f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
     else:
         for i in MAGIC_runs:
             if not os.path.exists(MAGIC_DL1_dir+f"/Merged/Merged_{i[0]}"):
                 os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i[0]}")  #Creating a merged directory for each night
-            f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
+            f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
     
     
     f.close()
@@ -159,28 +159,31 @@ def mergeMC(target_dir, identification):
     
     if identification == "protons":
         list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/train/node*"))
-    elif identification == "gammadiffuse":
+    else: 
         list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/node*"))
-    elif identification == "gammas":
-        list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/node*"))
-        
-    process_size = len(list_of_nodes)
     
+    np.savetxt(MC_DL1_dir+f"/{identification}/list_of_nodes.txt",list_of_nodes, fmt='%s')
+    
+        
+    process_size = len(list_of_nodes) - 1
+       
     cleaning(list_of_nodes, target_dir) #This will delete the (possibly) failed runs.
         
     f = open(f"Merge_{identification}.sh","w")
     f.write('#!/bin/sh\n\n')
-    f.write('#SBATCH -p long\n')
+    f.write('#SBATCH -p short\n')
     f.write('#SBATCH -J '+process_name+'\n')
+    f.write(f"#SBATCH --array=0-{process_size}%50\n")
     f.write('#SBATCH --mem=7g\n')
     f.write('#SBATCH -N 1\n\n')
     f.write('ulimit -l unlimited\n')
     f.write('ulimit -s unlimited\n')
     f.write('ulimit -a\n\n')
     
-    for node in list_of_nodes:
-        f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged/log_{node.split("/")[-1]}.log\n')
-        f.write(f'conda run -n magic-lst1 python merge_hdf_files.py --input-dir {node} --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
+    f.write(f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n")
+    f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+    f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n')
+    f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
     
     f.close()
     

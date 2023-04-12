@@ -42,14 +42,40 @@ def DL1_to_2(target_dir):
     
     for n,night in enumerate(listOfDL1nights):
         output = target_dir+f'/DL2/Observations/{night.split("/")[-1]}'
+        outputMC = target_dir+'/DL2/MC'
         if not os.path.exists(output):
             os.mkdir(output)
         
+        if n == 0:
+            listOfMCgammas = np.sort(glob.glob(target_dir+"/DL1/MC/gammas/Merged/StereoMerged/*.h5"))
+            np.savetxt(target_dir+"/DL1/MC/gammas/Merged/StereoMerged/list_of_DL1_stereo_files.txt",listOfMCgammas, fmt='%s')
+            process_size = len(listOfMCgammas) - 1
+        
+            f = open(f'DL1_to_DL2_MC.sh','w')
+            f.write('#!/bin/sh\n\n')
+            f.write('#SBATCH -p long\n')
+            f.write('#SBATCH -J '+process_name+'\n')
+            f.write(f"#SBATCH --array=0-{process_size}%50\n")
+            f.write('#SBATCH --mem=40g\n')
+            f.write('#SBATCH -N 1\n\n')
+            f.write('ulimit -l unlimited\n')
+            f.write('ulimit -s unlimited\n')
+            f.write('ulimit -a\n\n')
+            
+            f.write(f"SAMPLE_LIST=($(<{target_dir}/DL1/MC/gammas/Merged/StereoMerged/list_of_DL1_stereo_files.txt))\n")
+            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+            f.write(f'export LOG={outputMC}/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n')
+            f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {outputMC} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
+            f.close()
+        
+        
         listOfDL1Files = np.sort(glob.glob(night+"/*.h5"))
-        process_size = len(listOfDL1Files)
+        np.savetxt(night+"/list_of_DL1_stereo_files.txt",listOfDL1Files, fmt='%s')
+        process_size = len(listOfDL1Files) - 1
+        
         f = open(f'DL1_to_DL2_{night.split("/")[-1]}.sh','w')
         f.write('#!/bin/sh\n\n')
-        f.write('#SBATCH -p xxl\n')
+        f.write('#SBATCH -p long\n')
         f.write('#SBATCH -J '+process_name+'\n')
         f.write(f"#SBATCH --array=0-{process_size}%50\n")
         f.write('#SBATCH --mem=40g\n')
@@ -57,21 +83,12 @@ def DL1_to_2(target_dir):
         f.write('ulimit -l unlimited\n')
         f.write('ulimit -s unlimited\n')
         f.write('ulimit -a\n\n')
-               
-        if n == 0: # In the first bashscript we also include the MC test gammas
-            listOfMCgammas = np.sort(glob.glob(target_dir+"/DL1/MC/gammas/Merged/StereoMerged/*.h5"))
-            outputMC = target_dir+'/DL2/MC'
-            for gamma in listOfMCgammas:
-                f.write(f'export LOG={outputMC}/{gamma.split("/")[-1][:-3]}_DL1_to_DL2.log\n')
-                f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 {gamma} --input-dir-rfs {RFs_dir} --output-dir {outputMC} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
             
-        
-        for DL1_stereo_file in listOfDL1Files:
-            f.write(f'export LOG={output}/{DL1_stereo_file.split("/")[-1][:-3]}_DL1_to_DL2.log\n')
-            f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 {DL1_stereo_file} --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
-    
+        f.write(f"SAMPLE_LIST=($(<{night}/list_of_DL1_stereo_files.txt))\n")
+        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+        f.write(f'export LOG={output}'+'/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n')
+        f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
         f.close()
-    
 
 def main():
 

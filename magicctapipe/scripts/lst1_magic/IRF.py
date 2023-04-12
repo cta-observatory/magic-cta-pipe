@@ -66,6 +66,7 @@ def IRF(target_dir):
     process_name = "IRF_"+target_dir.split("/")[-2:][1]
     data_files_dir = target_dir+"/DL2/MC"
     listOfDL2MCgammas = np.sort(glob.glob(data_files_dir+"/*.h5"))
+    np.savetxt(data_files_dir+"/DL2_MC_files.txt",listOfDL2MCgammas, fmt='%s')
     
     output = target_dir+"/IRF"
     process_size = len(listOfDL2MCgammas) - 1
@@ -80,9 +81,10 @@ def IRF(target_dir):
     f.write('ulimit -s unlimited\n')
     f.write('ulimit -a\n\n')
 
-    for DL2_MC_file in listOfDL2MCgammas:
-        f.write(f'export LOG={output}/{DL2_MC_file.split("/")[-1][:-3]}_IRF.log\n')
-        f.write(f'conda run -n magic-lst python lst1_magic_create_irf.py --input-file-gamma {DL2_MC_file} --output-dir {output} --config-file {target_dir}/config_IRF.yaml >$LOG 2>&1\n\n')
+    f.write(f"SAMPLE_LIST=($(<{data_files_dir}/DL2_MC_files.txt))\n")
+    f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+    f.write(f'export LOG={output}'+'/IRF_${SLURM_ARRAY_TASK_ID}.log\n')
+    f.write(f'conda run -n magic-lst python lst1_magic_create_irf.py --input-file-gamma $SAMPLE --output-dir {output} --config-file {target_dir}/config_IRF.yaml >$LOG 2>&1\n\n')
 
     f.close()
     

@@ -56,6 +56,7 @@ def DL2_to_3(target_dir):
     
     for night in nights:
         listOfDL2files = np.sort(glob.glob(night+"/*.h5"))
+        np.savetxt(night+"/DL2_Obs_files.txt",listOfDL2files, fmt='%s')
         
         process_size = len(listOfDL2files) - 1
         
@@ -68,10 +69,11 @@ def DL2_to_3(target_dir):
         f.write('ulimit -l unlimited\n')
         f.write('ulimit -s unlimited\n')
         f.write('ulimit -a\n\n')
-
-        for DL2_file in listOfDL2files:
-            f.write(f'export LOG={output}/{DL2_file.split("/")[-1][:-3]}_DL3.log\n')
-            f.write(f'conda run -n magic-lst python lst1_magic_dl2_to_dl3.py --input-file-dl2 {DL2_file} --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
+        
+        f.write(f"SAMPLE_LIST=($(<{night}/DL2_Obs_files.txt))\n")
+        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+        f.write(f'export LOG={output}'+'/DL3_${SLURM_ARRAY_TASK_ID}.log\n')
+        f.write(f'conda run -n magic-lst python lst1_magic_dl2_to_dl3.py --input-file-dl2 $SAMPLE --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
 
         f.close()
     
