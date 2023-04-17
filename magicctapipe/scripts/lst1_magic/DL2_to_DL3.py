@@ -29,10 +29,43 @@ def configuration_DL3(ids, target_dir):
     
     f = open(target_dir+'/config_DL3.yaml','w')
     f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
-    f.write('dl2_to_dl3:\n    interpolation_method: "linear"  # select "nearest", "linear" or "cubic"\n    source_name: "Crab"\n    source_ra: null  #"83.633083 deg"  used when the source name cannot be resolved\n    source_dec: null  #"22.0145 deg" used when the source name cannot be resolved\n\n')
+    f.write('dl2_to_dl3:\n    interpolation_method: "linear"  # select "nearest", "linear" or "cubic"\n    source_name: "Crab"\n    source_ra: "83.633083 deg" # used when the source name cannot be resolved\n    source_dec: "22.0145 deg" # used when the source name cannot be resolved\n\n')
     
     f.close()
     
+def MergeDL2(target_dir):
+
+    """
+    This function creates the bash scripts to run merge_hdf_files.py in all DL2 subruns.
+    
+    Parameters
+    ----------
+    target_dir: str
+        Path to the working directory
+    """
+    
+    process_name = "DL3_"+target_dir.split("/")[-2:][1]
+    
+    DL2_dir = target_dir+"/DL2/Observations"
+    
+    list_of_nights = np.sort(glob.glob(DL2_dir+"/20*"))
+    
+    f = open("DL3_0_merging.sh","w")
+    f.write('#!/bin/sh\n\n')
+    f.write('#SBATCH -p short\n')
+    f.write('#SBATCH -J '+process_name+'\n')
+    f.write('#SBATCH -N 1\n\n')
+    f.write('ulimit -l unlimited\n')
+    f.write('ulimit -s unlimited\n')
+    f.write('ulimit -a\n\n')
+    
+    for night in list_of_nights:
+        if not os.path.exists(night+"/Merged"):
+            os.mkdir(night+"/Merged")
+        f.write(f'export LOG={night}/Merged/merge.log\n')
+        f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n')        
+    
+    f.close()
         
 
 def DL2_to_3(target_dir):
@@ -55,8 +88,8 @@ def DL2_to_3(target_dir):
     IRF_dir = target_dir+"/IRF"
     
     for night in nights:
-        listOfDL2files = np.sort(glob.glob(night+"/*.h5"))
-        np.savetxt(night+"/DL2_Obs_files.txt",listOfDL2files, fmt='%s')
+        listOfDL2files = np.sort(glob.glob(night+"/Merged/*.h5"))
+        #np.savetxt(night+"/Merged/DL2_Obs_files.txt",listOfDL2files, fmt='%s')
         
         process_size = len(listOfDL2files) - 1
         
@@ -64,20 +97,25 @@ def DL2_to_3(target_dir):
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p short\n')
         f.write('#SBATCH -J '+process_name+'\n')
-        f.write(f"#SBATCH --array=0-{process_size}%50\n")
+        #f.write(f"#SBATCH --array=0-{process_size}%50\n")
+        f.write('#SBATCH --mem=10g\n')
         f.write('#SBATCH -N 1\n\n')
         f.write('ulimit -l unlimited\n')
         f.write('ulimit -s unlimited\n')
         f.write('ulimit -a\n\n')
         
-        f.write(f"SAMPLE_LIST=($(<{night}/DL2_Obs_files.txt))\n")
-        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        f.write(f'export LOG={output}'+'/DL3_${SLURM_ARRAY_TASK_ID}.log\n')
-        f.write(f'conda run -n magic-lst python lst1_magic_dl2_to_dl3.py --input-file-dl2 $SAMPLE --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
+        #f.write(f"SAMPLE_LIST=($(<{night}/Merged/DL2_Obs_files.txt))\n")
+        #f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+        #f.write(f'export LOG={output}'+'/DL3_${SLURM_ARRAY_TASK_ID}.log\n')
+        #f.write(f'conda run -n magic-lst python lst1_magic_dl2_to_dl3.py --input-file-dl2 $SAMPLE --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
+        
+        for DL2_file in listOfDL2files:
+            f.write(f'export LOG={output}/DL3_{DL2_file.split("/")[-1]}.log\n')
+            f.write(f'conda run -n magic-lst python lst1_magic_dl2_to_dl3.py --input-file-dl2 {DL2_file} --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
 
         f.close()
     
-
+    
 def main():
 
     """
@@ -95,6 +133,8 @@ def main():
     print("***** This file can be found in ",target_dir)
     configuration_DL3(telescope_ids, target_dir)
     
+    print("***** Merging DL2 files run-wise...")
+    MergeDL2(target_dir)
     
     print("***** Generating bashscripts for DL2-DL3 conversion...")
     DL2_to_3(target_dir)

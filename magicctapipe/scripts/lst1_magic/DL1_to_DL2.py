@@ -64,7 +64,7 @@ def DL1_to_2(target_dir):
             
             f.write(f"SAMPLE_LIST=($(<{target_dir}/DL1/MC/gammas/Merged/StereoMerged/list_of_DL1_stereo_files.txt))\n")
             f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-            f.write(f'export LOG={outputMC}/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n')
+            f.write(f'export LOG={outputMC}'+'/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n')
             f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {outputMC} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
             f.close()
         

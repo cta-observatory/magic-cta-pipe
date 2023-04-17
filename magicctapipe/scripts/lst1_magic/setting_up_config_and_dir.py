@@ -102,7 +102,8 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     f.write('#!/bin/sh\n\n')
     f.write('#SBATCH -p xxl\n')
     f.write('#SBATCH -J '+process_name+'\n')
-    f.write('#SBATCH --array=0-'+str(number_of_nodes)+'%50\n')   
+    f.write('#SBATCH --array=0-'+str(number_of_nodes)+'%50\n')
+    f.write('#SBATCH --mem=10g\n')   
     f.write('#SBATCH -N 1\n\n')
     f.write('ulimit -l unlimited\n')
     f.write('ulimit -s unlimited\n')
@@ -116,7 +117,7 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     f.write('cat list_dl0_ok.txt | while read line\n')
     f.write('do\n')
     f.write('    cd '+target_dir+'/../\n')
-    f.write('    conda run -n magic-lst1 python lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_step1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n')
+    f.write('    conda run -n magic-lst python lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_step1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n')
     f.write('done\n')
     f.close()
     
@@ -177,7 +178,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
                 f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
                 
                 f.write('export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
-                f.write('conda run -n magic-lst1 python magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
+                f.write('conda run -n magic-lst python magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
                 f.close()
                 
             if telescope_ids[-2] > 0:
@@ -198,7 +199,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
                 f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
                 
                 f.write('export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
-                f.write('conda run -n magic-lst1 python magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
+                f.write('conda run -n magic-lst python magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
                 f.close()
     
     
