@@ -99,9 +99,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     is_simulation = event_source.is_simulation
     logger.info(f"\nIs simulation: {is_simulation}")
 
-    obs_id = event_source.obs_ids[0]
+    obs_id = event_source.obs_ids
     tel_id = event_source.telescope
-
     logger.info(f"\nObservation ID: {obs_id}")
     logger.info(f"Telescope ID: {tel_id}")
 

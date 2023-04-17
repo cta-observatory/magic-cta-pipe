@@ -6,11 +6,11 @@ channels:
 dependencies:
   - python
   - numpy=1.21
-  - astropy~=4.2
+  - astropy
   - pip
   - black
   - nbsphinx
-  - ctapipe=0.12
+  - ctapipe~=0.19.0
   - gammapy=0.19.0
   - h5py
   - ipython
@@ -43,9 +43,9 @@ dependencies:
   - corsikaio
   - pymongo
   - seaborn
-  - jinja2=3.0 # pinned for bokeh 1.0 compatibility
+  - jinja2 # pinned for bokeh 1.0 compatibility
   - pip:
-      - ctapipe_io_lst~=0.18.2
-      - ctapipe_io_magic~=0.4.7
+      - git+https://github.com/Elisa-Visentin/ctapipe_io_lst#egg=ctapipe_io_lst
+      - git+https://github.com/Elisa-Visentin/ctapipe_io_magic#egg=ctapipe_io_magic
       - ctaplot~=0.5.5
-      - pyirf~=0.6.0
+      - pyirf

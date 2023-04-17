@@ -15,7 +15,7 @@ import joblib
 from ctapipe.image import tailcuts_clean, hillas_parameters
 from ctapipe.io import EventSource
 from ctapipe.containers import ReconstructedContainer, ReconstructedEnergyContainer
-from ctapipe.reco.reco_algorithms import TooFewTelescopesException
+from ctapipe.reco.reconstructor import TooFewTelescopesException
 from ctapipe.coordinates import CameraFrame, TelescopeFrame
 
 from astropy.coordinates import AltAz, SkyCoord
