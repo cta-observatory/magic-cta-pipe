@@ -29,7 +29,7 @@ def configuration_IRF(ids, target_dir):
     
     f = open(target_dir+'/config_IRF.yaml','w')
     f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
-    f.write('create_irf:\n    quality_cuts: "disp_diff_mean < 0.22"\n    event_type: "hardware"  # select "software", "software_only_3tel", "magic_only" or "hardware"\n    weight_type_dl2: "intensity"  # select "simple", "variance" or "intensity"\n    obs_time_irf: "50 h"  # used when creating a background HDU\n\n')
+    f.write('create_irf:\n    quality_cuts: "disp_diff_mean < 0.22"\n    event_type: "software"  # select "software", "software_3tels_or_more", "magic_only" or "hardware"\n    weight_type_dl2: "intensity"  # select "simple", "variance" or "intensity"\n    obs_time_irf: "50 h"  # used when creating a background HDU\n\n')
     
     f.write('    energy_bins:  # log space\n        start: "0.01 TeV"\n        stop: "1000 TeV"\n        n_edges: 26\n    migration_bins:  # log space\n        start: 0.2\n        stop: 5\n        n_edges: 31\n\n')
 
@@ -41,7 +41,7 @@ def configuration_IRF(ids, target_dir):
     
     f.write('    gammaness:\n        cut_type: "dynamic"  # select "global" or "dynamic"\n        global_cut_value: 0.8  # used for the global cut\n        efficiency: 0.9  # used for the dynamic cuts\n        min_cut: 0.05  # used for the dynamic cuts\n        max_cut: 0.85  # used for the dynamic cuts\n\n')
     
-    f.write('    theta:\n        cut_type: "dynamic"  # select "global" or "dynamic"\n        global_cut_value: "0.2 deg"  # used for the global cut\n        efficiency: 0.75  # used for the dynamic cuts\n        min_cut: "0.1 deg"  # used for the dynamic cuts\n        max_cut: "0.3 deg"  # used for the dynamic cuts\n\n')
+    f.write('    theta:\n        cut_type: "global"  # select "global" or "dynamic"\n        global_cut_value: "0.2 deg"  # used for the global cut\n        efficiency: 0.75  # used for the dynamic cuts\n        min_cut: "0.1 deg"  # used for the dynamic cuts\n        max_cut: "0.3 deg"  # used for the dynamic cuts\n\n')
     
     
     f.close()
