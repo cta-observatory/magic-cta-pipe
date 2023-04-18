@@ -195,6 +195,16 @@ Once the previous step is done, we compute the IRF with
 
 which creates the configuration file config_IRF.yaml and runs the script lst1_magic_create_irf.py over the DL2 MC gammas, generating the IRF and saving it at [...]/IRF.
 
+After the IRF, we run the DL2-to-DL3 conversion doing:
+
+> $ python IRF.py DL2_to_DL3.py
+
+which will save the DL3 files in the directory [...]/DL3. Finally, the last script to run is create_dl3_index_files.py. Since it is very fast, we can simply run it directly in the interactive mode by doing:
+
+> $ conda run -n magic-lst python create_dl3_index_files.py --input-dir ./CrabTeste/DL3
+
+That's it. Now you can play with the DL3 data using the high-level notebooks.
+
 ## High level analysis
 
 The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs. Note that the notebooks run with gammapy v0.20 or higher, therefore another conda environment is needed to run them, since the MAGIC+LST-1 pipeline at the moment depends on v0.19.
