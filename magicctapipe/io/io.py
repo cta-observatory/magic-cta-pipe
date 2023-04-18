@@ -707,6 +707,14 @@ def load_mc_dl2_data_file(config, input_file, quality_cuts, event_type, weight_t
         If the input event type is not known
     """
 
+    TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
+    combo_types = np.asarray(range(len(TEL_COMBINATIONS)))
+    three_or_more = []
+    for n,combination in enumerate(TEL_COMBINATIONS.values()):
+        if len(combination) >= 3:
+            three_or_more.append(n)
+    
+        
     # Load the input file
     df_events = pd.read_hdf(input_file, key="events/parameters")
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
@@ -718,16 +726,16 @@ def load_mc_dl2_data_file(config, input_file, quality_cuts, event_type, weight_t
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
+        df_events.query(f"(combo_type < {combo_types[-1]}) & (magic_stereo == True)", inplace=True)
 
-    elif event_type == "software_only_3tel":
-        df_events.query("combo_type == 3", inplace=True)
+    elif event_type == "software_3tels_or_more":
+        df_events.query(f"combo_type == {three_or_more}", inplace=True)
 
     elif event_type == "software_6_tel":
-        df_events.query("combo_type > 0", inplace=True)
+        df_events.query(f"combo_type < {combo_types[-1]}", inplace=True)
 
     elif event_type == "magic_only":
-        df_events.query("combo_type == 0", inplace=True)
+        df_events.query(f"combo_type == {combo_types[-1]}", inplace=True)
 
     elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
@@ -829,7 +837,15 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
     deadc: float
         Dead time correction factor
     """
-
+    
+    TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
+    combo_types = np.asarray(range(len(TEL_COMBINATIONS)))
+    three_or_more = []
+    for n,combination in enumerate(TEL_COMBINATIONS.values()):
+        if len(combination) >= 3:
+            three_or_more.append(n)
+            
+            
     # Load the input file
     event_data = pd.read_hdf(input_file, key="events/parameters")
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
@@ -841,16 +857,16 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        event_data.query("combo_type > 0", inplace=True)
+        event_data.query(f"combo_type < {combo_types[-1]}", inplace=True)
 
-    elif event_type == "software_only_3tel":
-        event_data.query("combo_type == 3", inplace=True)
+    elif event_type == "software_3tels_or_more":
+        event_data.query(f"combo_type == {three_or_more}", inplace=True)
 
     elif event_type == "software_6_tel":
-        df_events.query("combo_type > 0", inplace=True)
+        df_events.query(f"combo_type < {combo_types[-1]}", inplace=True)
         
     elif event_type == "magic_only":
-        event_data.query("combo_type == 0", inplace=True)
+        event_data.query(f"combo_type == {combo_types[-1]}", inplace=True)
 
     elif event_type == "hardware":
         logger.warning(
