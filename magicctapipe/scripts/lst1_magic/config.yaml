@@ -48,7 +48,7 @@ MAGIC:
 
     charge_correction:
         use: true
-        correction_factor: 1.143
+        factor: 1.143
 
     magic_clean:
         use_time: true

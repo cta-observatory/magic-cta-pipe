@@ -64,13 +64,47 @@ def write_data_to_table(input_file_mask, output_file):
         # Create a new table with the first input file
         with tables.open_file(input_files[0]) as f_input:
             event_data = f_input.root.events.parameters
+            event_morph = f_input.root.events.morphology
+            event_conc = f_input.root.events.concentration
+            event_t_stat = f_input.root.events.peak_time_statistics
+            event_i_stat = f_input.root.events.intensity_statistics
 
             f_out.create_table(
                 "/events", "parameters", createparents=True, obj=event_data.read()
             )
+            f_out.create_table(
+                "/events", "morphology", createparents=True, obj=event_morph.read()
+            )
+            f_out.create_table(
+                "/events", "concentration", createparents=True, obj=event_conc.read()
+            )
+            f_out.create_table(
+                "/events",
+                "peak_time_statistics",
+                createparents=True,
+                obj=event_t_stat.read(),
+            )
+            f_out.create_table(
+                "/events",
+                "intensity_statistics",
+                createparents=True,
+                obj=event_i_stat.read(),
+            )
 
             for attr in event_data.attrs._f_list():
                 f_out.root.events.parameters.attrs[attr] = event_data.attrs[attr]
+            for attr in event_morph.attrs._f_list():
+                f_out.root.events.morphology.attrs[attr] = event_morph.attrs[attr]
+            for attr in event_conc.attrs._f_list():
+                f_out.root.events.concentration.attrs[attr] = event_conc.attrs[attr]
+            for attr in event_t_stat.attrs._f_list():
+                f_out.root.events.peak_time_statistics.attrs[attr] = event_t_stat.attrs[
+                    attr
+                ]
+            for attr in event_i_stat.attrs._f_list():
+                f_out.root.events.intensity_statistics.attrs[attr] = event_i_stat.attrs[
+                    attr
+                ]
 
             if "simulation" in f_input.root:
                 # Write the simulation configuration of the first input
@@ -91,6 +125,14 @@ def write_data_to_table(input_file_mask, output_file):
             with tables.open_file(input_file) as f_input:
                 event_data = f_input.root.events.parameters
                 f_out.root.events.parameters.append(event_data.read())
+                event_morph = f_input.root.events.morphology
+                f_out.root.events.morphology.append(event_morph.read())
+                event_conc = f_input.root.events.concentration
+                f_out.root.events.concentration.append(event_conc.read())
+                event_t_stat = f_input.root.events.peak_time_statistics
+                f_out.root.events.peak_time_statistics.append(event_t_stat.read())
+                event_i_stat = f_input.root.events.intensity_statistics
+                f_out.root.events.intensity_statistics.append(event_i_stat.read())
 
     # Save the subarray description of the first input file, assuming
     # that it is consistent with the others

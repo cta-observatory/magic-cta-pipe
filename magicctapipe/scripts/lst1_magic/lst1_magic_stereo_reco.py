@@ -41,6 +41,12 @@ from ctapipe.containers import (
     ArrayEventContainer,
     CameraHillasParametersContainer,
     ImageParametersContainer,
+    LeakageContainer,
+    TimingParametersContainer,
+    ConcentrationContainer,
+    IntensityStatisticsContainer,
+    PeakTimeStatisticsContainer,
+    MorphologyContainer,
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
@@ -120,16 +126,37 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     logger.info(f"\nInput file: {input_file}")
 
     event_data = pd.read_hdf(input_file, key="events/parameters")
-
+    event_morph = pd.read_hdf(input_file, key="events/morphology")
+    event_conc = pd.read_hdf(input_file, key="events/concentration")
+    event_t_stat = pd.read_hdf(input_file, key="events/peak_time_statistics")
+    event_i_stat = pd.read_hdf(input_file, key="events/intensity_statistics")
     # It sometimes happens that there are MAGIC events whose event and
     # telescope IDs are duplicated, so here we exclude those events
     event_data.drop_duplicates(
         subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
     )
-
+    event_morph.drop_duplicates(
+        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
+    )
+    event_conc.drop_duplicates(
+        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
+    )
+    event_t_stat.drop_duplicates(
+        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
+    )
+    event_i_stat.drop_duplicates(
+        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
+    )
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
-
+    event_morph.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+    event_morph.sort_index(inplace=True)
+    event_conc.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+    event_conc.sort_index(inplace=True)
+    event_t_stat.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+    event_t_stat.sort_index(inplace=True)
+    event_i_stat.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+    event_i_stat.sort_index(inplace=True)
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
@@ -144,10 +171,13 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
     if magic_only_analysis:
         event_data.query("tel_id > 1", inplace=True)
+        event_morph.query("tel_id > 1", inplace=True)
+        event_conc.query("tel_id > 1", inplace=True)
+        event_t_stat.query("tel_id > 1", inplace=True)
+        event_i_stat.query("tel_id > 1", inplace=True)
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
     event_data = get_stereo_events(event_data, config_stereo["quality_cuts"])
-
     # Check the angular distance of the LST-1 and MAGIC pointing directions
     tel_ids = np.unique(event_data.index.get_level_values("tel_id")).tolist()
 
@@ -213,12 +243,21 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
         # Extract the data frame of the shower event
         df_evt = event_data.loc[(obs_id, event_id, slice(None))]
-
+        df_morph = event_morph.loc[(obs_id, event_id, slice(None))]
+        df_conc = event_conc.loc[(obs_id, event_id, slice(None))]
+        df_t_stat = event_t_stat.loc[(obs_id, event_id, slice(None))]
+        df_i_stat = event_i_stat.loc[(obs_id, event_id, slice(None))]
         # Loop over every telescope
-        tel_ids = df_evt.index.get_level_values("tel_id")
+        tel_ids = df_evt.index.get_level_values("tel_id").values
+
+        event.trigger.tels_with_trigger = tel_ids
 
         for tel_id in tel_ids:
             df_tel = df_evt.loc[tel_id]
+            df_morph_tel = df_morph.loc[tel_id]
+            df_conc_tel = df_conc.loc[tel_id]
+            df_t_stat_tel = df_t_stat.loc[tel_id]
+            df_i_stat_tel = df_i_stat.loc[tel_id]
 
             # Assign the telescope information
             event.pointing.tel[tel_id].altitude = df_tel["pointing_alt"] * u.rad
@@ -230,17 +269,68 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 y=u.Quantity(df_tel["y"], unit="m"),
                 r=u.Quantity(df_tel["r"], unit="m"),
                 phi=Angle(df_tel["phi"], unit="deg"),
-                length=u.Quantity(df_tel["length"], unit="m"),
-                width=u.Quantity(df_tel["width"], unit="m"),
                 psi=Angle(df_tel["psi"], unit="deg"),
+                length=u.Quantity(df_tel["length"], unit="m"),
+                length_uncertainty=u.Quantity(df_tel["length_uncertainty"], unit="m"),
+                width=u.Quantity(df_tel["width"], unit="m"),
+                width_uncertainty=u.Quantity(df_tel["width_uncertainty"], unit="m"),
                 skewness=float(df_tel["skewness"]),
                 kurtosis=float(df_tel["kurtosis"]),
             )
-
-            event.dl1.tel[tel_id].parameters = ImageParametersContainer(
-                hillas=hillas_params
+            time_par = TimingParametersContainer(
+                slope=u.Quantity(df_tel["slope"], unit="1/deg"),
+                intercept=float(df_tel["intercept"]),
+                deviation=float(df_tel["deviation"]),
+            )
+            leak_par = LeakageContainer(
+                intensity_width_1=float(df_tel["intensity_width_1"]),
+                intensity_width_2=float(df_tel["intensity_width_2"]),
+                pixels_width_1=float(df_tel["pixels_width_1"]),
+                pixels_width_2=float(df_tel["pixels_width_2"]),
             )
 
+            morph_par = MorphologyContainer(
+                n_islands=int(df_morph_tel["n_islands"]),
+                n_large_islands=int(df_morph_tel["n_large_islands"]),
+                n_medium_islands=int(df_morph_tel["n_medium_islands"]),
+                n_small_islands=int(df_morph_tel["n_small_islands"]),
+                n_pixels=int(df_morph_tel["n_pixels"]),
+            )
+
+            conc_par = ConcentrationContainer(
+                cog=float(df_conc_tel["cog"]),
+                core=float(df_conc_tel["core"]),
+                pixel=float(df_conc_tel["pixel"]),
+            )
+
+            intens_stat = IntensityStatisticsContainer(
+                kurtosis=float(df_i_stat_tel["kurtosis"]),
+                max=float(df_i_stat_tel["max"]),
+                mean=float(df_i_stat_tel["mean"]),
+                min=float(df_i_stat_tel["min"]),
+                std=float(df_i_stat_tel["std"]),
+                skewness=float(df_i_stat_tel["skewness"]),
+            )
+
+            time_stat = PeakTimeStatisticsContainer(
+                kurtosis=float(df_t_stat_tel["kurtosis"]),
+                max=float(df_t_stat_tel["max"]),
+                mean=float(df_t_stat_tel["mean"]),
+                min=float(df_t_stat_tel["min"]),
+                std=float(df_t_stat_tel["std"]),
+                skewness=float(df_t_stat_tel["skewness"]),
+            )
+
+            event.dl1.tel[tel_id].parameters = ImageParametersContainer(
+                hillas=hillas_params,
+                timing=time_par,
+                leakage=leak_par,
+                morphology=morph_par,
+                concentration=conc_par,
+                peak_time_statistics=time_stat,
+                intensity_statistics=intens_stat,
+            )
+            # event.dl1.tel[tel_id].is_valid=True
         # Reconstruct the stereo parameters
         hillas_reconstructor(event)
 
