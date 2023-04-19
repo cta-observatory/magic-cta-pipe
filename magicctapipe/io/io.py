@@ -625,7 +625,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     sim_config = pd.read_hdf(input_file, key="simulation/config")
 
     n_total_showers = (
-        sim_config["num_showers"][0]
+        sim_config["n_showers"][0]
         * sim_config["shower_reuse"][0]
         * len(np.unique(event_table["obs_id"]))
     )
