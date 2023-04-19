@@ -285,7 +285,7 @@ def fit_muon(x, y, image, geom, tailcuts):
     # The goal is to improve fit for good rings
     # with very few additional non-ring bright pixels.
     for _ in (0, 0):  # just to iterate the fit twice more
-        dist = np.sqrt((x - ring.center_x) ** 2 + (y - ring.center_y) ** 2)
+        dist = np.sqrt((x - ring.center_fov_lon) ** 2 + (y - ring.center_fov_lat) ** 2)
         ring_dist = np.abs(dist - ring.radius)
 
         clean_mask *= ring_dist < ring.radius * max_allowed_outliers_distance
@@ -376,12 +376,15 @@ def analyze_muon_event(
 
     muonparameters = MuonParametersContainer()
     muonparameters.containment = ring_containment(
-        muonringparam.radius, muonringparam.center_x, muonringparam.center_y, cam_rad
+        muonringparam.radius,
+        muonringparam.center_fov_lon,
+        muonringparam.center_fov_lat,
+        cam_rad,
     )
 
     radial_distribution = radial_light_distribution(
-        muonringparam.center_x,
-        muonringparam.center_y,
+        muonringparam.center_fov_lon,
+        muonringparam.center_fov_lat,
         x[clean_mask],
         y[clean_mask],
         image[clean_mask],
@@ -410,8 +413,8 @@ def analyze_muon_event(
 
         muonintensityoutput = intensity_fitter(
             tel_id,
-            muonringparam.center_x,
-            muonringparam.center_y,
+            muonringparam.center_fov_lon,
+            muonringparam.center_fov_lat,
             muonringparam.radius,
             image,
             pedestal_stddev,
@@ -429,8 +432,8 @@ def analyze_muon_event(
             y[dist_ringwidth_mask],
             image[dist_ringwidth_mask],
             muonringparam.radius,
-            muonringparam.center_x,
-            muonringparam.center_y,
+            muonringparam.center_fov_lon,
+            muonringparam.center_fov_lat,
             threshold=params["ring_completeness_threshold"],
             bins=30,
         )
@@ -489,7 +492,7 @@ def analyze_muon_event(
     if plot_rings and plots_path and good_ring:
         focal_length = equivalent_focal_length
         ring_telescope = SkyCoord(
-            muonringparam.center_x, muonringparam.center_y, TelescopeFrame()
+            muonringparam.center_fov_lon, muonringparam.center_fov_lat, TelescopeFrame()
         )
 
         ring_camcoord = ring_telescope.transform_to(
@@ -733,8 +736,8 @@ def fill_muon_event(
 
     output_parameters["ring_size"].append(size)
     output_parameters["size_outside"].append(size_outside_ring)
-    output_parameters["ring_center_x"].append(muonringparam.center_x.value)
-    output_parameters["ring_center_y"].append(muonringparam.center_y.value)
+    output_parameters["ring_center_x"].append(muonringparam.center_fov_lon.value)
+    output_parameters["ring_center_y"].append(muonringparam.center_fov_lat.value)
     output_parameters["ring_radius"].append(muonringparam.radius.value)
     output_parameters["ring_width"].append(muonintensityparam.width.value)
     output_parameters["good_ring"].append(good_ring)
