@@ -131,14 +131,18 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
 
-    aeff_interp = interpolate_effective_area_per_energy_and_fov(
-        effective_area=irf_data["effective_area"],
-        grid_points=irf_data["grid_points"],
-        target_point=target_point,
-        method=interpolation_method,
-    )
+    if len(irf_data["grid_points"]) > 2:
+        aeff_interp = interpolate_effective_area_per_energy_and_fov(
+            effective_area=irf_data["effective_area"],
+            grid_points=irf_data["grid_points"],
+            target_point=target_point,
+            method=interpolation_method,
+        )
+        aeff_interp = aeff_interp[:, :, 0]  # Remove the dimension of the grid points
 
-    aeff_interp = aeff_interp[:, :, 0]  # Remove the dimension of the grid points
+    else:
+        aeff_interp = irf_data["effective_area"][0]
+        print(aeff_interp)
 
     aeff_hdu = create_aeff2d_hdu(
         effective_area=aeff_interp,
@@ -148,7 +152,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         extname="EFFECTIVE AREA",
         **extra_header,
     )
-
     hdus.append(aeff_hdu)
 
     # Interpolate the energy dispersion with a custom way, since there
