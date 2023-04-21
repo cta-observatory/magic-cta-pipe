@@ -195,9 +195,15 @@ Once the previous step is done, we compute the IRF with
 
 which creates the configuration file config_IRF.yaml and runs the script lst1_magic_create_irf.py over the DL2 MC gammas, generating the IRF and saving it at [...]/IRF.
 
-After the IRF, we run the DL2-to-DL3 conversion doing:
+Optionally, but recommended, we can run the "diagnostic.py" script with:
 
-> $ python IRF.py DL2_to_DL3.py
+> $ conda run -n magic-lst python diagnostic.py
+
+This will create several diagnostic plots (gammaness, angular resolution, energy resolution, migration matrix, energy bias and gamma-hadron classification comparisons. All of these plots will be saved on the directory defined on "target_name" in the config_general.yaml file.
+
+After the IRF, we run the DL2-to-DL3 conversion by doing:
+
+> $ python DL2_to_DL3.py
 
 which will save the DL3 files in the directory [...]/DL3. Finally, the last script to run is create_dl3_index_files.py. Since it is very fast, we can simply run it directly in the interactive mode by doing:
 
