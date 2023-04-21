@@ -48,8 +48,11 @@ def DL1_to_2(target_dir):
         
         if n == 0:
             listOfMCgammas = np.sort(glob.glob(target_dir+"/DL1/MC/gammas/Merged/StereoMerged/*.h5"))
-            np.savetxt(target_dir+"/DL1/MC/gammas/Merged/StereoMerged/list_of_DL1_stereo_files.txt",listOfMCgammas, fmt='%s')
-            process_size = len(listOfMCgammas) - 1
+            listOfMCprotons = np.sort(glob.glob(target_dir+"/DL1/MC/protons/Merged/StereoMerged/*.h5"))
+            listMC = np.concatenate([listOfMCgammas,listOfMCprotons])
+            
+            np.savetxt(target_dir+"/DL1/MC/gammas/Merged/StereoMerged/list_of_DL1_stereo_files.txt",listMC, fmt='%s')
+            process_size = len(listMC) - 1
         
             f = open(f'DL1_to_DL2_MC.sh','w')
             f.write('#!/bin/sh\n\n')
