@@ -148,6 +148,7 @@ def main():
     bash_stereoMC(target_dir,"gammadiffuse")
     bash_stereoMC(target_dir,"gammas")
     bash_stereoMC(target_dir,"protons")
+    bash_stereoMC(target_dir,"protons_test")
     
     print("***** Submitting processess to the cluster...")
     print("Process name: "+target_dir.split("/")[-2:][1]+"_stereo")

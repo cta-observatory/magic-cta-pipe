@@ -35,12 +35,12 @@ def diagnostic_plots(config_IRF,target_dir):
     dl2_weight_type="intensity"
     energy_bins=np.logspace(-2,3,15)[2:]
     
-    input_file_gamma = glob.glob(target_dir+'/DL2/MC/*gamma*.h5')
+    input_file_gamma = glob.glob(target_dir+'/DL2/MC/gammas/*gamma*.h5')
     input_file_gamma.sort()
     
     print(f"{len(input_file_gamma)} gamma files are found")
 
-    input_file_proton = glob.glob(target_dir+'/DL2/MC/*proton*.h5')
+    input_file_proton = glob.glob(target_dir+'/DL2/MC/protons_test/*proton*.h5')
     input_file_proton.sort()
     
     print(f"{len(input_file_proton)} proton files are found")

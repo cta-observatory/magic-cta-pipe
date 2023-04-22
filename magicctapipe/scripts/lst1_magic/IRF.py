@@ -64,7 +64,7 @@ def IRF(target_dir):
         
         
     process_name = "IRF_"+target_dir.split("/")[-2:][1]
-    data_files_dir = target_dir+"/DL2/MC"
+    data_files_dir = target_dir+"/DL2/MC/gammas"
     listOfDL2MCgammas = np.sort(glob.glob(data_files_dir+"/*gamma*.h5"))
     np.savetxt(data_files_dir+"/DL2_MC_files.txt",listOfDL2MCgammas, fmt='%s')
     
