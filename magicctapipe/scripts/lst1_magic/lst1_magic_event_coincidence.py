@@ -133,23 +133,29 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     window_half_width = u.Quantity(window_half_width).to("ns")
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
 
-    logger.info("\nTime offsets:")
-    logger.info(format_object(config_coinc["time_offset"]))
+    if search_method =='scan':
+        logger.info("\nTime offsets:")
+        logger.info(format_object(config_coinc["time_offset"]))
+        
+        offset_start = u.Quantity(config_coinc["time_offset"]["start"])
+        offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
+        
+        
+        time_offsets = np.arange(
+            start=offset_start.to_value("ns").round(),
+            stop=offset_stop.to_value("ns").round(),
+            step=TIME_ACCURACY.to_value("ns").round(),
+        )
+        
+        time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
 
-    offset_start = u.Quantity(config_coinc["time_offset"]["start"])
-    offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
-
-    time_offsets = np.arange(
-        start=offset_start.to_value("ns").round(),
-        stop=offset_stop.to_value("ns").round(),
-        step=TIME_ACCURACY.to_value("ns").round(),
-    )
-
-    time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
+    elif search_method =='all_combination':
+        n_large_shower_events = config_coinc["n_large_shower_events"]
 
     event_data = pd.DataFrame()
     features = pd.DataFrame()
-    profiles = pd.DataFrame(data={"time_offset": time_offsets.to_value("us").round(1)})
+    if search_method =='scan':
+        profiles = pd.DataFrame(data={"time_offset": time_offsets.to_value("us").round(1)})
 
     # Arrange the LST timestamps. They are stored in the UNIX format in
     # units of seconds with 17 digits, 10 digits for the integral part
@@ -185,8 +191,12 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         # Extract the MAGIC events taken when LST-1 observed
         logger.info(f"\nExtracting the {tel_name} events taken when LST-1 observed...")
 
-        time_lolim = timestamps_lst[0] + time_offsets[0] - window_half_width
-        time_uplim = timestamps_lst[-1] + time_offsets[-1] + window_half_width
+        if search_method =='scan':
+            time_lolim = timestamps_lst[0] + time_offsets[0] - window_half_width
+            time_uplim = timestamps_lst[-1] + time_offsets[-1] + window_half_width
+        elif search_method =='all_combination':
+            time_lolim = timestamps_lst[0] + window_half_width
+            time_uplim = timestamps_lst[-1] + window_half_width
 
         cond_lolim = timestamps_magic >= time_lolim
         cond_uplim = timestamps_magic <= time_uplim
@@ -213,32 +223,53 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         # maximizing offset. Finally, we again check the coincidence at
         # the average offset and then keep the coincident events.
 
-        n_coincidences = []
-
         logger.info("\nChecking the event coincidence...")
 
-        for time_offset in time_offsets:
-            times_lolim = timestamps_lst + time_offset - window_half_width
-            times_uplim = timestamps_lst + time_offset + window_half_width
+        if search_method =='scan':
+            n_coincidences = []
 
-            cond_lolim = timestamps_magic.value >= times_lolim[:, np.newaxis].value
-            cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
+            for time_offset in time_offsets:
+                times_lolim = timestamps_lst + time_offset - window_half_width
+                times_uplim = timestamps_lst + time_offset + window_half_width
+                
+                cond_lolim = timestamps_magic.value >= times_lolim[:, np.newaxis].value
+                cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
+                
+                mask = np.logical_and(cond_lolim, cond_uplim)
+                n_coincidence = np.count_nonzero(mask)
+                
+                logger.info(
+                    f"time offset: {time_offset.to('us'):.1f} --> {n_coincidence} events"
+                )
+                
+                n_coincidences.append(n_coincidence)
 
-            mask = np.logical_and(cond_lolim, cond_uplim)
-            n_coincidence = np.count_nonzero(mask)
+            if not any(n_coincidences):
+                logger.info("\nNo coincident events are found. Skipping...")
+                continue
+            
+            n_coincidences = np.array(n_coincidences)
 
-            logger.info(
-                f"time offset: {time_offset.to('us'):.1f} --> {n_coincidence} events"
+        elif search_method =='all_combination':
+            mask_large_intensity_lst = np.argsort(event_data_lst['intensity'])[::-1][:n_large_shower_events]
+            mask_large_intensity_magic = np.argsort(df_magic['intensity'])[::-1][:n_large_shower_events]
+            
+            timestamps_magic_lst_combination = np.array(
+                np.meshgrid(timestamps_magic[mask_large_intensity_magic].value,
+                            timestamps_lst[mask_large_intensity_lst])
+            ).reshape(2, -1)
+            
+            time_offsets = timestamps_magic_lst_combination[0] - timestamps_magic_lst_combination[1]
+            time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
+            
+            profiles = pd.DataFrame(data={"time_offset": time_offsets.to_value("us").round(1)})
+            
+            n_coincidences = np.array(
+                [np.sum(
+                    np.abs(time_offsets - time_offset).value < window_half_width.value
+                ) for time_offset in time_offsets]
             )
-
-            n_coincidences.append(n_coincidence)
-
-        if not any(n_coincidences):
-            logger.info("\nNo coincident events are found. Skipping...")
-            continue
-
-        n_coincidences = np.array(n_coincidences)
-
+            
         # Sometimes there are more than one time offset maximizing the
         # number of coincidences, so here we calculate the mean of them
         offset_at_max = time_offsets[n_coincidences == n_coincidences.max()].mean()
