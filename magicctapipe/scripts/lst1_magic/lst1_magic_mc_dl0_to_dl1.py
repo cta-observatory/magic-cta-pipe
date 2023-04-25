@@ -50,8 +50,7 @@ from ctapipe.image import (
 from ctapipe.containers import (
     PeakTimeStatisticsContainer,
     IntensityStatisticsContainer,
-    TelEventIndexContainer,
-    MorphologyContainer,
+    TelEventIndexContainer,    
 )
 from ctapipe.image.statistics import descriptive_statistics
 from ctapipe.instrument import SubarrayDescription
