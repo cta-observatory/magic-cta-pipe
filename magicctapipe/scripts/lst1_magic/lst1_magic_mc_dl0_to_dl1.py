@@ -340,17 +340,11 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 concentration_params = concentration_parameters(
                     camera_geom_masked, image_masked, hillas_params
                 )
-                morphology_params = MorphologyContainer()
-                try:
-                    morphology_params = morphology_parameters(
-                        camera_geom_masked, signal_pixels
-                    )
-                except AttributeError:
-                    logger.info(
-                        f"--> {event.count} event (event ID: {event.index.event_id}, "
-                        f"telescope {tel_id}) failed to compute morphology parameters. Skipping"
-                    )
-                    continue
+                
+                morphology_params = morphology_parameters(
+                    camera_geoms[tel_id], signal_pixels
+                )                
+                    
                 peak_time_statistics = descriptive_statistics(
                     peak_time[signal_pixels],
                     container_class=PeakTimeStatisticsContainer,
