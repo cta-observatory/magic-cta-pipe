@@ -37,9 +37,8 @@ def DL1_to_2(target_dir):
     RFs_dir = target_dir+"/DL1/MC/RFs"
     listOfDL1nights = np.sort(glob.glob(data_files_dir+"/*"))
     
-    for n,night in enumerate(listOfDL1nights):
+    for night in listOfDL1nights:
         output = target_dir+f'/DL2/Observations/{night.split("/")[-1]}'
-        outputMC = target_dir+'/DL2/MC'
         if not os.path.exists(output):
             os.mkdir(output)        
         
@@ -51,8 +50,8 @@ def DL1_to_2(target_dir):
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p long\n')
         f.write('#SBATCH -J '+process_name+'\n')
-        f.write(f"#SBATCH --array=0-{process_size}%50\n")
-        f.write('#SBATCH --mem=40g\n')
+        f.write(f"#SBATCH --array=0-{process_size}%100\n")
+        f.write('#SBATCH --mem=30g\n')
         f.write('#SBATCH -N 1\n\n')
         f.write('ulimit -l unlimited\n')
         f.write('ulimit -s unlimited\n')
@@ -136,9 +135,9 @@ def main():
     
     for n,run in enumerate(list_of_DL1_to_2_scripts):
         if n == 0:
-            launch_jobs =  f"sbatch {run}"
+            launch_jobs =  f"dl2{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = launch_jobs + f" && sbatch {run}"
+            launch_jobs = launch_jobs + f" && dl2{n}=$(sbatch --parsable --dependency=afterany:$dl2{n-1} {run})"
     
     #print(launch_jobs)
     os.system(launch_jobs)
@@ -146,7 +145,13 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-    
+            
+            
+            
+            
+            
+            
+            
+            
     
     
