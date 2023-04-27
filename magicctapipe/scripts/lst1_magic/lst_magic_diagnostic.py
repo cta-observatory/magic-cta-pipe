@@ -311,7 +311,7 @@ def diagnostic_plots(config_IRF,target_dir):
     input_file_gamma = np.asarray([])
     if len(list_of_nights) > 0:
         for night in list_of_nights:
-            input_file_gamma = np.concatenate(input_file_gamma, np.sort(glob.glob(night+'/*gamma*.h5')))
+            input_file_gamma = np.concatenate([input_file_gamma, np.sort(glob.glob(night+'/*.h5'))])
     
     if len(input_file_gamma) > 0:
         _, TEL_COMBINATIONS = telescope_combinations(config_IRF)
