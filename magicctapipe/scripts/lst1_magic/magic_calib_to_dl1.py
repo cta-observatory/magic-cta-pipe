@@ -231,7 +231,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             concentration_params = concentration_parameters(
                 camera_geom_masked, image_masked, hillas_params
             )
-            morphology_params = morphology_parameters(camera_geom_masked, signal_pixels)
+            morphology_params = morphology_parameters(camera_geom, signal_pixels)
             peak_time_statistics = descriptive_statistics(
                 peak_time[signal_pixels],
                 container_class=PeakTimeStatisticsContainer,
