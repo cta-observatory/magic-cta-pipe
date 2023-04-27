@@ -73,6 +73,9 @@ def DL1_to_2_MC(target_dir, identification):
         Path to the working directory
     """
     
+    process_name = "DL2_"+target_dir.split("/")[-2:][1]
+    RFs_dir = target_dir+"/DL1/MC/RFs"
+    
     if not os.path.exists(target_dir+"/DL2"):
         os.mkdir(target_dir+"/DL2")
         

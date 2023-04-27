@@ -6,8 +6,7 @@ This script creates DL3 index files, i.e., the HDU and observation index
 files. They will be saved in the same directory as the input DL3 files.
 
 Usage:
-$ python create_dl3_index_files.py
---input-dir dl3
+$ conda run -n magic-lst python create_dl3_index_files.py --input-dir ./CrabTeste/DL3
 """
 
 import argparse

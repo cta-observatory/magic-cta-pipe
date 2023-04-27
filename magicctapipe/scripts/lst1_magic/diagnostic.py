@@ -19,7 +19,7 @@ import yaml
 import numpy as np
 from astropy import units as u
 from astropy.table import Table, QTable, vstack
-from magicctapipe.io import load_mc_dl2_data_file
+from magicctapipe.io import load_mc_dl2_data_file, get_stereo_events, telescope_combinations
 from matplotlib import gridspec
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -81,7 +81,7 @@ def diagnostic_plots(config_IRF,target_dir):
     #gammaness:
     x=np.array(signal_hist['true_energy'].value)
     y=np.array(signal_hist['gammaness'].value)
-    plt.figure()
+    plt.figure(figsize=(10,8))
     plt.xlabel("True energy of the simulated gamma rays [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50, norm=mpl.colors.LogNorm())
@@ -92,7 +92,7 @@ def diagnostic_plots(config_IRF,target_dir):
 
     x=np.array(background_hist['true_energy'].value)
     y=np.array(background_hist['gammaness'].value)
-    plt.figure()
+    plt.figure(figsize=(10,8))
     plt.xlabel("True energy of the simulated protons [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50,  norm=mpl.colors.LogNorm())
@@ -103,9 +103,9 @@ def diagnostic_plots(config_IRF,target_dir):
     #Migration matrix
     x=np.array(np.log10(signal_hist['reco_energy'].value))
     y=np.array(np.log10(signal_hist['true_energy'].value))
-    plt.figure()
-    plt.xlabel("Reconstructed energy (TeV)")
-    plt.ylabel("True energy of the simulated photon (TeV)")
+    plt.figure(figsize=(10,8))
+    plt.xlabel("Log Reconstructed energy (TeV)")
+    plt.ylabel("Log True energy of the simulated photon (TeV)")
     plt.hist2d(x,y, bins=100,  norm=mpl.colors.LogNorm())
     plt.plot([-2,2],[-2,2],color="red")
     plt.ylim(y.min(),y.max())
@@ -115,7 +115,7 @@ def diagnostic_plots(config_IRF,target_dir):
     
     #g-h separation
     gh_bins = np.linspace(0, 1, 51)
-    plt.figure(dpi=70)
+    plt.figure(figsize=(10,8))
     plt.xlabel("Gammaness")
     plt.ylabel("Number of events")
     plt.yscale("log")
@@ -159,7 +159,23 @@ def diagnostic_plots(config_IRF,target_dir):
         cut_table=gh_table_eff,
         op=operator.ge,
     )
+    
     data_eff_gcut = signal_hist[mask_gh_eff]
+    
+    
+    
+    mask_gh_eff_26 = evaluate_binned_cut(
+        values=signal_hist_6_26["gammaness"],
+        bin_values=signal_hist_6_26["reco_energy"],
+        cut_table=gh_table_eff,
+        op=operator.ge,
+    )
+
+    data_eff_gcut_26 = signal_hist_6_26[mask_gh_eff_26]
+
+
+    
+
 
     angres_table_eff = angular_resolution(
         data_eff_gcut, u.Quantity(energy_bins, u.TeV), energy_type="reco"
@@ -173,7 +189,7 @@ def diagnostic_plots(config_IRF,target_dir):
         energy_bins_center - energy_bins[:-1],
     ]
 
-    plt.figure(dpi=70)
+    plt.figure(figsize=(10,8))
     gs = gridspec.GridSpec(4, 1)
 
     plt.title(f"angular resolution(g/h efficiency = {100*gh_efficiency}%)")
@@ -194,7 +210,8 @@ def diagnostic_plots(config_IRF,target_dir):
 
     plt.legend()
     plt.savefig(target_dir+"/ang_resolution.png",bbox_inches='tight')
-
+    
+    
     #Energy resolution
     theta_efficiency = 0.8
     theta_percentile = 100 * theta_efficiency
@@ -220,7 +237,7 @@ def diagnostic_plots(config_IRF,target_dir):
     engbias_eff = engres_table_eff["bias"].value
     engres_eff = engres_table_eff["resolution"].value
 
-    plt.figure()
+    plt.figure(figsize=(10,8))
     gs = gridspec.GridSpec(4, 1)
 
     plt.title(f"Energy bias and energy resolution(g/h eff. = {100*gh_efficiency}%, theta eff. = {100*theta_efficiency}%)")
@@ -250,6 +267,123 @@ def diagnostic_plots(config_IRF,target_dir):
 
     plt.legend()
     plt.savefig(target_dir+"/energy_resolution.png",bbox_inches='tight')
+    
+    
+    #Effective area
+    
+    mask_theta_eff_26 = evaluate_binned_cut(
+        values=data_eff_gcut_26["theta"],
+        bin_values=data_eff_gcut_26["reco_energy"],
+        cut_table=theta_table_eff,
+        op=operator.le,
+    )
+
+    data_eff_gtcuts_26 = data_eff_gcut_26[mask_theta_eff_26]
+    
+    aeff_eff_26 = effective_area_per_energy(
+        selected_events=data_eff_gtcuts_26,
+        simulation_info=sim_isto_signal,
+        true_energy_bins=u.Quantity(energy_bins, u.TeV),
+    )
+
+    plt.figure(figsize=(10,8))
+    plt.title(f"g/h eff. = {100*gh_efficiency}%, theta eff. = {100*theta_efficiency}%")
+    plt.xlabel("Reconstructed energy [TeV]")
+    plt.ylabel("Effective area [m$^2$]")
+    plt.loglog()
+    plt.grid()
+
+
+    # Plot the effective area
+    plt.errorbar(
+        x=energy_bins_center,
+        y=aeff_eff_26.value,
+        xerr=energy_bins_width,
+        label="zenith < 26$^{\circ}$",
+        marker="o",
+    )
+
+    plt.legend(loc="lower right")
+    plt.savefig(target_dir+"/effective_area.png",bbox_inches='tight')
+    
+    #Cmap (only if you have real data)
+    list_of_nights = np.sort(glob.glob(target_dir+'/CrabTeste/DL2/Observations/*'))
+    input_file_gamma = np.asarray([])
+    if len(list_of_nights) > 0:
+        for night in list_of_nights:
+            input_file_gamma = np.concatenate(input_file_gamma, np.sort(glob.glob(night+'/*gamma*.h5')))
+    
+    if len(input_file_gamma) > 0:
+        _, TEL_COMBINATIONS = telescope_combinations(config_IRF)
+        data_list = []
+        for input_file in input_file_gamma:
+
+            # Load the input file
+            df_events = pd.read_hdf(input_file, key="events/parameters")
+            data_list.append(df_events)
+
+        event_data = pd.concat(data_list)
+        event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+        event_data.sort_index(inplace=True)
+        
+        # Apply the quality cuts
+        print(f"\nQuality cuts cmap: {quality_cuts}")
+        event_data = get_stereo_events(event_data, quality_cuts)
+        
+        combo_type_Stereo_MAGIC = np.arange(len(TEL_COMBINATIONS))[-1]
+        print("Excluding the MAGIC-stereo combination events...")
+        event_data.query(f"combo_type != {combo_type_Stereo_MAGIC}", inplace=True)
+        
+        print("Calculating mean DL2 parameters...")
+        event_data_mean = get_dl2_mean(event_data)
+        
+        # Only events observed with all 3 telescopes:
+        
+        combo_types = list(np.arange(len(TEL_COMBINATIONS))[0:-1]) # Here we use everything but MAGIC Stereo. We can actually use any combination, e.g.: [0,1,2], [1,2], [2] etc 
+        # Only events observed with high prob of being gamma rays:
+        cut_value_gh = 0.8
+
+        print(f"Cmap combination types: {combo_types}")
+        print(f"Global gammaness cut: {cut_value_gh}")
+
+        # Get the photon list
+        event_list = event_data_mean.query(
+            f"(combo_type == {combo_types}) & (gammaness > {cut_value_gh})"
+        ).copy()
+
+        print(f"\nNumber of events: {len(event_list)}")
+        
+        plt.figure(dpi=250)
+        plt.title(f"gammaness > {cut_value_gh}, combo_type = {combo_types}")
+        plt.xlabel("RA [deg]")
+        plt.ylabel("Dec [deg]")
+        plt.xlim(xlim)
+        plt.ylim(ylim)
+
+        # Plot the counts map
+        plt.hist2d(
+            event_list["reco_ra"],
+            event_list["reco_dec"],
+            bins=[np.linspace(xlim[1], xlim[0], 101), np.linspace(ylim[0], ylim[1], 101)],
+        )
+
+        plt.colorbar(label="Number of events")
+        plt.axis(xlim.tolist() + ylim.tolist())
+        plt.grid()
+
+        # Plot the ON coordinate
+        plt.scatter(
+            on_coord.ra.to("deg"),
+            on_coord.dec.to("deg"),
+            marker="x",
+            s=100,
+            color="red",
+            label="ON",
+        )
+
+        plt.legend()
+    
+    
     
 def main():
 
