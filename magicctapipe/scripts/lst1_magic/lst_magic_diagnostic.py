@@ -19,7 +19,7 @@ import yaml
 import numpy as np
 from astropy import units as u
 from astropy.table import Table, QTable, vstack
-from magicctapipe.io import load_mc_dl2_data_file, get_stereo_events, telescope_combinations
+from magicctapipe.io import load_mc_dl2_data_file, get_stereo_events, telescope_combinations, get_dl2_mean
 from matplotlib import gridspec
 import matplotlib as mpl
 from matplotlib import pyplot as plt
@@ -27,6 +27,12 @@ from pyirf.benchmarks import angular_resolution, energy_bias_resolution
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.irf import effective_area_per_energy
 import pandas as pd
+
+
+gh_efficiency = 0.9
+theta_efficiency = 0.8
+
+
 
 def diagnostic_plots(config_IRF,target_dir):
     
@@ -141,18 +147,64 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.savefig(target_dir+"/h-g_classification.png",bbox_inches='tight')
     
     
-    # Calculate the angular resolution
-    gh_efficiency = 0.9
-    gh_percentile = 100 * (1 - gh_efficiency)
+    #g-h separation per energy
+    
+    n_columns = 3
+    n_rows = int(np.ceil(len(energy_bins[:-1]) / n_columns))
 
-    gh_table_eff = calculate_percentile_cut(
-        values=signal_hist["gammaness"],
-        bin_values=signal_hist["reco_energy"],
-        bins=u.Quantity(energy_bins, u.TeV),
-        fill_value=0.0,
-        percentile=gh_percentile,
-    )
+    grid = (n_rows, n_columns)
+    locs = list(itertools.product(range(n_rows), range(n_columns)))
 
+    plt.figure(figsize=(20, n_rows * 8))
+
+    for i_bin, (eng_lolim, eng_uplim) in enumerate(zip(energy_bins[:-1], energy_bins[1:])):
+
+        plt.subplot2grid(grid, locs[i_bin])
+        plt.title(f"{eng_lolim:.3f} < energy < {eng_uplim:.3f} [TeV]", fontsize=20)
+        plt.xlabel("Gammaness", fontsize=22)
+        plt.yscale("log")
+        plt.grid()
+
+        # Apply the energy cuts
+        cond_back_lolim = background_hist["reco_energy"].value > eng_lolim
+        cond_back_uplim = background_hist["reco_energy"].value < eng_uplim
+
+        cond_signal_lolim = signal_hist["reco_energy"].value > eng_lolim
+        cond_signal_uplim = signal_hist["reco_energy"].value < eng_uplim
+
+        condition_back = np.logical_and(cond_back_lolim, cond_back_uplim)
+        condition_signal = np.logical_and(cond_signal_lolim, cond_signal_uplim)
+
+        dt_back = background_hist[condition_back]
+        dt_signal = signal_hist[condition_signal]
+
+        # Plot the background gammaness distribution
+        if len(dt_back) > 0:
+            plt.hist(
+                 dt_back["gammaness"].value,
+                 bins=gh_bins,
+                 label="background",
+                 histtype="step",
+                 linewidth=2,
+           )
+
+        # Plot the signal gammaness distribution
+        if len(dt_signal) > 0:
+            plt.hist(
+                dt_signal["gammaness"].value,
+                bins=gh_bins,
+                label="signal",
+                histtype="step",
+                linewidth=2,
+            )
+
+        plt.legend(loc="lower left")
+    
+    plt.savefig(target_dir+"/h-g_classification_per_energy.png",bbox_inches='tight')
+    
+    
+    
+    #Calculate the angular resolution
     mask_gh_eff = evaluate_binned_cut(
         values=signal_hist["gammaness"],
         bin_values=signal_hist["reco_energy"],
@@ -198,7 +250,6 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.semilogx()
     plt.grid()
 
-    # Plot the angular resolution
     plt.errorbar(
         x=energy_bins_center,
         y=angres_eff,
@@ -212,8 +263,37 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.savefig(target_dir+"/ang_resolution.png",bbox_inches='tight')
     
     
+    # Dynamic gammaness cuts
+    gh_percentile = 100 * (1 - gh_efficiency)
+
+    gh_table_eff = calculate_percentile_cut(
+        values=signal_hist["gammaness"],
+        bin_values=signal_hist["reco_energy"],
+        bins=u.Quantity(energy_bins, u.TeV),
+        fill_value=0.0,
+        percentile=gh_percentile,
+    )
+    
+    gh_cuts_eff = gh_table_eff["cut"].value
+    print(f"Energy bins: {energy_bins}")
+    print(f"Efficiency gammaness cuts:\n{gh_cuts_eff}")
+    
+    plt.figure(figsize=(10,8))
+    plt.xlabel("Reconstructed energy [TeV]")
+    plt.ylabel("Gammaness cut that saves 90% of the gamma rays")
+    plt.semilogx()
+    plt.grid()
+
+    plt.errorbar(
+        x=energy_bins_center,
+        y=gh_cuts_eff,
+        xerr=energy_bins_width,
+        label="gamma efficiency",
+        marker="o",
+    )
+    
+    
     #Energy resolution
-    theta_efficiency = 0.8
     theta_percentile = 100 * theta_efficiency
     theta_table_eff = calculate_percentile_cut(
         values=data_eff_gcut["theta"],
@@ -247,7 +327,6 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.semilogx()
     plt.grid()
 
-    # Plot the signal energy bias and resolution
     plt.errorbar(
         x=energy_bins_center,
         y=engres_eff,
@@ -270,7 +349,6 @@ def diagnostic_plots(config_IRF,target_dir):
     
     
     #Effective area
-    
     mask_theta_eff_26 = evaluate_binned_cut(
         values=data_eff_gcut_26["theta"],
         bin_values=data_eff_gcut_26["reco_energy"],
@@ -293,8 +371,6 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.loglog()
     plt.grid()
 
-
-    # Plot the effective area
     plt.errorbar(
         x=energy_bins_center,
         y=aeff_eff_26.value,
@@ -306,7 +382,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.legend(loc="lower right")
     plt.savefig(target_dir+"/effective_area.png",bbox_inches='tight')
     
-    #Cmap (only if you have real data)
+    #Cmap (this will first check if you have real data)
     list_of_nights = np.sort(glob.glob(target_dir+'/DL2/Observations/*'))
     input_file_gamma = np.asarray([])
     if len(list_of_nights) > 0:
