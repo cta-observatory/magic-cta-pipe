@@ -27,7 +27,7 @@ def diagnostic_plots(target_dir):
     
     process_name = "diagnostic_"+target_dir.split("/")[-2:][1]
     
-    f = open("diagnostic_merging.sh","w")
+    f = open("diagnostic_plots.sh","w")
     f.write('#!/bin/sh\n\n')
     f.write('#SBATCH -p long\n')
     f.write('#SBATCH -J '+process_name+'\n')

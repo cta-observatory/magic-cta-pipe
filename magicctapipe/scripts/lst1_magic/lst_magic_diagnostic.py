@@ -26,7 +26,7 @@ from matplotlib import pyplot as plt
 from pyirf.benchmarks import angular_resolution, energy_bias_resolution
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.irf import effective_area_per_energy
-
+import pandas as pd
 
 def diagnostic_plots(config_IRF,target_dir):
     
@@ -328,7 +328,7 @@ def diagnostic_plots(config_IRF,target_dir):
         
         # Apply the quality cuts
         print(f"\nQuality cuts cmap: {quality_cuts}")
-        event_data = get_stereo_events(event_data, quality_cuts)
+        event_data = get_stereo_events(event_data, config_IRF, quality_cuts)
         
         combo_type_Stereo_MAGIC = np.arange(len(TEL_COMBINATIONS))[-1]
         print("Excluding the MAGIC-stereo combination events...")
