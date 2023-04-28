@@ -39,7 +39,7 @@ dependencies:
   - sphinx-automodapi
   - sphinx_rtd_theme
   - numba
-  - uproot~=4.1
+  - uproot
   - corsikaio
   - pymongo
   - seaborn

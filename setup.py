@@ -36,7 +36,7 @@ setup(
         "ctapipe~=0.19.0",
         "ctaplot~=0.5.5",
         "gammapy~=0.19.0",
-        "uproot~=4.1",
+        "uproot",
         "pandas",
         "pyirf",
         "seaborn",
