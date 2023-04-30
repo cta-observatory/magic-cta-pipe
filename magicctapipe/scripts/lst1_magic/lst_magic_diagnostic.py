@@ -205,6 +205,17 @@ def diagnostic_plots(config_IRF,target_dir):
     
     
     #Calculate the angular resolution
+    
+    gh_percentile = 100 * (1 - gh_efficiency)
+
+    gh_table_eff = calculate_percentile_cut(
+        values=signal_hist["gammaness"],
+        bin_values=signal_hist["reco_energy"],
+        bins=u.Quantity(energy_bins, u.TeV),
+        fill_value=0.0,
+        percentile=gh_percentile,
+    )
+    
     mask_gh_eff = evaluate_binned_cut(
         values=signal_hist["gammaness"],
         bin_values=signal_hist["reco_energy"],
@@ -224,9 +235,6 @@ def diagnostic_plots(config_IRF,target_dir):
     )
 
     data_eff_gcut_26 = signal_hist_6_26[mask_gh_eff_26]
-
-
-    
 
 
     angres_table_eff = angular_resolution(
@@ -264,16 +272,6 @@ def diagnostic_plots(config_IRF,target_dir):
     
     
     # Dynamic gammaness cuts
-    gh_percentile = 100 * (1 - gh_efficiency)
-
-    gh_table_eff = calculate_percentile_cut(
-        values=signal_hist["gammaness"],
-        bin_values=signal_hist["reco_energy"],
-        bins=u.Quantity(energy_bins, u.TeV),
-        fill_value=0.0,
-        percentile=gh_percentile,
-    )
-    
     gh_cuts_eff = gh_table_eff["cut"].value
     print(f"Energy bins: {energy_bins}")
     print(f"Efficiency gammaness cuts:\n{gh_cuts_eff}")
@@ -433,31 +431,20 @@ def diagnostic_plots(config_IRF,target_dir):
         plt.title(f"gammaness > {cut_value_gh}, combo_type = {combo_types}")
         plt.xlabel("RA [deg]")
         plt.ylabel("Dec [deg]")
-        plt.xlim(xlim)
-        plt.ylim(ylim)
+        #plt.xlim(xlim)
+        #plt.ylim(ylim)
 
         # Plot the counts map
         plt.hist2d(
             event_list["reco_ra"],
             event_list["reco_dec"],
-            bins=[np.linspace(xlim[1], xlim[0], 101), np.linspace(ylim[0], ylim[1], 101)],
+            bins=[100,100], #np.linspace(xlim[1], xlim[0], 101), np.linspace(ylim[0], ylim[1], 101)],
         )
 
         plt.colorbar(label="Number of events")
-        plt.axis(xlim.tolist() + ylim.tolist())
+        #plt.axis(xlim.tolist() + ylim.tolist())
         plt.grid()
 
-        # Plot the ON coordinate
-        plt.scatter(
-            on_coord.ra.to("deg"),
-            on_coord.dec.to("deg"),
-            marker="x",
-            s=100,
-            color="red",
-            label="ON",
-        )
-
-        plt.legend()
         plt.savefig(target_dir+"/counts_map.png",bbox_inches='tight')
     
 def main():
