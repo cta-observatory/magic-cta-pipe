@@ -60,13 +60,20 @@ def apply_rfs(event_data, estimator, config):
         Data frame of the shower events with reconstructed parameters
     """
     
-    _, TEL_COMBINATIONS = telescope_combinations(config)
+    #The commented lines below were used in the combo_type RF training
+    #_, TEL_COMBINATIONS = telescope_combinations(config)
     
-    tel_ids = list(estimator.telescope_rfs.keys())
+    #tel_ids = list(estimator.telescope_rfs.keys())
 
     # Extract the events of the same telescope combination type
-    combo_type = list(TEL_COMBINATIONS.values()).index(tel_ids)
-    df_events = event_data.query(f"combo_type == {combo_type}")
+    #combo_type = list(TEL_COMBINATIONS.values()).index(tel_ids)
+    #df_events = event_data.query(f"combo_type == {combo_type}")
+
+    #This list below actually has only one entry, i.e., the telescope ID.
+    tel_ids = list(estimator.telescope_rfs.keys())
+    
+    # Extract the events with the same telescope ID
+    df_events = event_data.query(f"tel_id == {tel_ids[0]}")
 
     # Apply the RFs
     reco_params = estimator.predict(df_events)
