@@ -8,7 +8,15 @@ from pathlib import Path
 import pexpect
 import subprocess
 
-
+ntrain = 1  # number of MC train runs
+DL0_gamma_data = [
+    "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",
+    "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
+]
+DL0_gamma_p = [
+    "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",
+    "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
+]
 """
 Temporary paths
 """
@@ -20,8 +28,68 @@ def temp_DL1_gamma(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
-def temp_DL1_gamma_stereo(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL1_gamma_stereo")
+def temp_DL1_gamma_train(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gamma_train")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_gamma_test(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gamma_test")
+
+
+@pytest.fixture(scope="session")
+def temp_rf(tmp_path_factory):
+    return tmp_path_factory.mktemp("RF")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_gamma(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_gammas")
+
+
+@pytest.fixture(scope="session")
+def temp_irf(tmp_path_factory):
+    return tmp_path_factory.mktemp("IRF")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_p(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_protons")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_p_train(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_proton_train")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_p_test(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_proton_test")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_p(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_protons")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_test(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_test")
+
+
+@pytest.fixture(scope="session")
+def temp_train_exc(tmp_path_factory):
+    return tmp_path_factory.mktemp("train_exc")
+
+
+@pytest.fixture(scope="session")
+def temp_irf_exc(tmp_path_factory):
+    return tmp_path_factory.mktemp("irf_exc")
+
+
+@pytest.fixture(scope="session")
+def temp_pandas(tmp_path_factory):
+    return tmp_path_factory.mktemp("pandas")
 
 
 """
@@ -36,63 +104,13 @@ def base_path():
 
 
 @pytest.fixture(scope="session")
-def stereo_path(base_path):
-    p = base_path / "stereo"
-    return p
+def dl0_gamma_path(base_path):
+    return base_path / "DL0gamma"
 
 
 @pytest.fixture(scope="session")
-def stereo_path_exc(base_path):
-    p = base_path / "stereo_exc"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl2_path(base_path):
-    p = base_path / "dl2"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl1_lst_path(base_path):
-    p = base_path / "dl1_lst"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl1_magic_path(base_path):
-    p = base_path / "dl1_magic"
-    return p
-
-
-@pytest.fixture(scope="session")
-def dl1_magic_exc_path(base_path):
-    p = base_path / "dl1_magic_exc"
-    return p
-
-
-@pytest.fixture(scope="session")
-def irf_path(base_path):
-    p = base_path / "irf"
-    return p
-
-
-@pytest.fixture(scope="session")
-def irf_path_exc(base_path):
-    p = base_path / "irf_exc"
-    return p
-
-
-@pytest.fixture(scope="session")
-def pd_path(base_path):
-    p = base_path / "pandas"
-    return p
-
-
-@pytest.fixture(scope="session")
-def g0_path(base_path):
-    p = base_path / "DL0_gamma"
-    return p
+def dl0_p_path(base_path):
+    return base_path / "DL0p"
 
 
 @pytest.fixture(scope="session")
@@ -107,11 +125,11 @@ Custom data
 
 
 @pytest.fixture(scope="session")
-def dl2_test(dl2_path):
+def dl2_test(temp_DL2_test):
     """
     Toy DL2
     """
-    path = dl2_path / "dl2_test.h5"
+    path = temp_DL2_test / "dl2_test.h5"
     data = Table()
     data["obs_id"] = [1, 1, 2, 2, 2, 3, 3]
     data["event_id"] = [7, 7, 8, 8, 8, 7, 7]
@@ -147,53 +165,18 @@ Remote paths (to download test files)
 
 @pytest.fixture(scope="session")
 def base_url():
-    # BETTER SOLUTION? CHANGED?
     return Path("cp02:/fefs/aswg/workspace/elisa.visentin/git_test")
 
 
 @pytest.fixture(scope="session")
-def stereo_url(base_url):
-    q = base_url / "dl1_stereo_gamma_zd_37.661deg_az_270.641deg_LST-1_MAGIC_run101.h5"
-    return q
+def dl0_gamma_url(base_url):
+    return base_url / "DL0gamma"
 
 
 @pytest.fixture(scope="session")
-def dl2_mc_url(base_url):
-    q = base_url / "dl2_gamma_zd_35.904deg_az_17.46deg_LST-1_MAGIC_run9502.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def dl2_real_url(base_url):
-    q = base_url / "dl2_LST-1_MAGIC.Run04125.0035.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def dl1_lst_url(base_url):
-    q = base_url / "dl1_LST-1.Run02927.0118.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def dl1_magic_url(base_url):
-    q = base_url / "dl1_M1.Run05093174.001.h5"
-    return q
-
-
-@pytest.fixture(scope="session")
-def irf_url(base_url):
-    q = (
-        base_url
-        / "irf_zd_37.814deg_az_270.0deg_software_gh_dyn0.9_theta_glob0.2deg.fits.gz"
-    )
-    return q
-
-
-@pytest.fixture(scope="session")
-def g0_url(base_url):
-    q = base_url / "simtel_corsika_theta_16.087_az_108.090_run3.simtel.gz"
-    return q
+def dl0_p_url(base_url):
+    # BETTER SOLUTION? CHANGED?
+    return base_url / "DL0p"
 
 
 @pytest.fixture(scope="session")
@@ -241,57 +224,22 @@ Downloads: files
 
 
 @pytest.fixture(scope="session")
-def stereo_file(stereo_path, stereo_url, env_prefix):
-    scp_file(stereo_path, stereo_url, env_prefix)
-    name1 = stereo_url.name
-    url1 = stereo_path / name1
-    return url1
+def dl0_gamma(dl0_gamma_url, dl0_gamma_path, env_prefix):
+    gamma_dl0 = []
+    for file in DL0_gamma_data:
+        scp_file(dl0_gamma_path, dl0_gamma_url / f"{file}", env_prefix)
+        gamma_dl0.append(dl0_gamma_path / f"{file}")
+    return gamma_dl0
 
 
 @pytest.fixture(scope="session")
-def dl2_file_mc(dl2_path, dl2_mc_url, env_prefix):
-    scp_file(dl2_path, dl2_mc_url, env_prefix)
-    name1 = dl2_mc_url.name
-    url1 = dl2_path / name1
-    return url1
+def dl0_p(dl0_p_url, dl0_p_path, env_prefix):
+    p_dl0 = []
+    for file in DL0_gamma_p:
+        scp_file(dl0_p_path, dl0_p_url / f"{file}", env_prefix)
+        p_dl0.append(dl0_p_path / f"{file}")
 
-
-@pytest.fixture(scope="session")
-def dl2_file_real(dl2_path, dl2_real_url, env_prefix):
-    scp_file(dl2_path, dl2_real_url, env_prefix)
-    name1 = dl2_real_url.name
-    url1 = dl2_path / name1
-    return url1
-
-
-@pytest.fixture(scope="session")
-def dl1_file_lst(dl1_lst_path, dl1_lst_url, env_prefix):
-    scp_file(dl1_lst_path, dl1_lst_url, env_prefix)
-    name1 = dl1_lst_url.name
-    url1 = dl1_lst_path / name1
-    return url1
-
-
-def dl1_file_magic(dl1_magic_path, dl1_magic_url, env_prefix):
-    scp_file(dl1_magic_path, dl1_magic_url, env_prefix)
-    name1 = dl1_magic_url.name
-    url1 = dl1_magic_path / name1
-    return url1
-
-
-def irf_file(irf_path, irf_url, env_prefix):
-    scp_file(irf_path, irf_url, env_prefix)
-    name1 = irf_url.name
-    url1 = irf_path / name1
-    return url1
-
-
-@pytest.fixture(scope="session")
-def mc_gamma_testfile(g0_path, g0_url, env_prefix):
-    scp_file(g0_path, g0_url, env_prefix)
-    name1 = g0_url.name
-    url1 = g0_path / name1
-    return url1
+    return p_dl0
 
 
 @pytest.fixture(scope="session")
@@ -308,37 +256,157 @@ Data processing
 
 
 @pytest.fixture(scope="session")
-def gamma_l1(temp_DL1_gamma, mc_gamma_testfile, config):
+def gamma_l1(temp_DL1_gamma, dl0_gamma, config):
     """
     Produce a dl1 file
     """
 
-    subprocess.run(
-        [
-            "lst1_magic_mc_dl0_to_dl1",
-            f"-i{str(mc_gamma_testfile)}",
-            f"-o{str(temp_DL1_gamma)}",
-            f"-c{str(config)}",
-        ]
-    )
-    return temp_DL1_gamma / "dl1_gamma_zd_16.087deg_az_108.0deg_LST-1_MAGIC_run301.h5"
+    for file in dl0_gamma:
+        subprocess.run(
+            [
+                "lst1_magic_mc_dl0_to_dl1",
+                f"-i{str(file)}",
+                f"-o{str(temp_DL1_gamma)}",
+                f"-c{str(config)}",
+            ]
+        )
+
+    return temp_DL1_gamma.glob("*")
 
 
 @pytest.fixture(scope="session")
-def gamma_stereo(temp_DL1_gamma_stereo, gamma_l1, config):
+def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
+    """
+    Produce a dl1 stereo file
+    """
+
+    for i, file in enumerate(gamma_l1):
+        if i < ntrain:
+            out = temp_DL1_gamma_train
+        else:
+            out = temp_DL1_gamma_test
+        subprocess.run(
+            [
+                "lst1_magic_stereo_reco",
+                f"-i{str(file)}",
+                f"-o{str(out)}",
+                f"-c{str(config)}",
+            ]
+        )
+
+    return (temp_DL1_gamma_train, temp_DL1_gamma_test)
+
+
+@pytest.fixture(scope="session")
+def p_l1(temp_DL1_p, dl0_p, config):
+    """
+    Produce a dl1 file
+    """
+    for file in dl0_p:
+        subprocess.run(
+            [
+                "lst1_magic_mc_dl0_to_dl1",
+                f"-i{str(file)}",
+                f"-o{str(temp_DL1_p)}",
+                f"-c{str(config)}",
+            ]
+        )
+    return temp_DL1_p.glob("*")
+
+
+@pytest.fixture(scope="session")
+def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
+    """
+    Produce a dl1 stereo file
+    """
+
+    for i, file in enumerate(p_l1):
+        if i < ntrain:
+            out = temp_DL1_p_train
+        else:
+            out = temp_DL1_p_test
+        subprocess.run(
+            [
+                "lst1_magic_stereo_reco",
+                f"-i{str(file)}",
+                f"-o{str(out)}",
+                f"-c{str(config)}",
+            ]
+        )
+    return (temp_DL1_p_train, temp_DL1_p_test)
+
+
+@pytest.fixture(scope="session")
+def RF(gamma_stereo, p_stereo, temp_rf, config):
     """
     Produce a dl1 stereo file
     """
 
     subprocess.run(
         [
-            "lst1_magic_stereo_reco",
-            f"-i{str(gamma_l1)}",
-            f"-o{str(temp_DL1_gamma_stereo)}",
+            "lst1_magic_train_rfs",
+            f"-g{str(gamma_stereo[0])}",
+            f"-p{str(p_stereo[0])}",
+            f"-o{str(temp_rf)}",
             f"-c{str(config)}",
+            "--train-energy",
+            "--train-disp",
+            "--train-classifier",
+            "--use-unsigned",
         ]
     )
-    return (
-        temp_DL1_gamma_stereo
-        / "dl1_stereo_gamma_zd_16.087deg_az_108.0deg_LST-1_MAGIC_run301.h5"
-    )
+    return temp_rf
+
+
+@pytest.fixture(scope="session")
+def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
+    """
+    Produce a dl1 stereo file
+    """
+
+    for file in temp_DL1_gamma_test.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl1_stereo_to_dl2",
+                f"-d{str(file)}",
+                f"-r{str(RF)}",
+                f"-o{str(temp_DL2_gamma)}",
+            ]
+        )
+    return temp_DL2_gamma.glob("*")
+
+
+@pytest.fixture(scope="session")
+def IRF(gamma_dl2, config, temp_irf):
+    """
+    Produce a dl1 stereo file
+    """
+
+    for file in gamma_dl2:
+        subprocess.run(
+            [
+                "lst1_magic_create_irf",
+                f"-g{str(file)}",
+                f"-o{str(temp_irf)}",
+                f"-c{str(config)}",
+            ]
+        )
+    return temp_irf.glob("*")
+
+
+@pytest.fixture(scope="session")
+def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
+    """
+    Produce a dl1 stereo file
+    """
+
+    for file in temp_DL1_p_test.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl1_stereo_to_dl2",
+                f"-d{str(file)}",
+                f"-r{str(RF)}",
+                f"-o{str(temp_DL2_p)}",
+            ]
+        )
+    return temp_DL2_p.glob("*")
