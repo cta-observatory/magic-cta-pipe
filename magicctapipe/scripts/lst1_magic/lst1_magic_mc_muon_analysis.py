@@ -140,6 +140,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
     # Configure the muon analysis:
     muon_parameters = create_muon_table()
     muon_parameters["telescope_name"] = []
+    muon_parameters["time_rms"] = []
     r1_dl1_calibrator_for_muon_rings = {}
 
     extractor_muon_name_lst = "GlobalPeakWindowSum"
@@ -149,7 +150,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
     r1_dl1_calibrator_for_muon_rings["LST"] = CameraCalibrator(
         subarray, image_extractor=extractor_lst_muons
     )
-    # Use the standard MAGIC calibration and charextraction to be comparable with MAGIC data
+    # Use the standard MAGIC calibration and charge extraction to be comparable with MAGIC data
     extractor_magic_muons = ImageExtractor.from_name(
         extractor_type_magic, config=config_extractor_magic, subarray=subarray
     )
@@ -242,9 +243,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
                 if use_charge_correction:
                     # Scale the charges of the DL1 image by the correction factor:
-                    event.dl1.tel[tel_id].image *= config_magic["charge_correction"][
-                        "correction_factor"
-                    ]
+                    event.dl1.tel[tel_id].image *= config_magic["charge_correction"]["factor"]
 
                 # Apply the image cleaning:
                 signal_pixels, image, peak_time = magic_clean.clean_image(
@@ -274,6 +273,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                 telescope_id=tel_id,
                 telescope_name=subarray.tel[tel_id].name,
                 image=image,
+                peak_time=peak_time[signal_pixels],
                 subarray=subarray,
                 r1_dl1_calibrator_for_muon_rings=r1_dl1_calibrator_for_muon_rings[name],
                 good_ring_config=muon_config[name],
