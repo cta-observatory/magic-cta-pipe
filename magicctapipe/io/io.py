@@ -681,6 +681,11 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
         ON time of the input data
     deadc: float
         Dead time correction factor
+
+    Raises
+    ------
+    ValueError
+        If the input event type is not known
     """
 
     # Load the input file
@@ -707,6 +712,9 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
             "WARNING: Please confirm that this type is correct for the input data, "
             "since the hardware trigger between LST-1 and MAGIC may NOT be used."
         )
+
+    else:
+        raise ValueError(f"Unknown event type '{event_type}'.")
 
     n_events = len(event_data.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
