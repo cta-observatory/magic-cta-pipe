@@ -13,10 +13,25 @@ DL0_gamma_data = [
     "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",
     "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
 ]
-DL0_gamma_p = [
+DL0_p_data = [
     "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",
     "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
 ]
+DL0_M1_data = [
+    "20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root",
+    "20201216_M1_05093711.002_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M1_05093711.003_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M1_05093711.004_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M1_05093711.005_Y_CrabNebula-W0.40+035.root",
+]
+DL0_M2_data = [
+    "20201216_M2_05093711.001_Y_CrabNebula-W0.40+035.root",
+    "20201216_M2_05093711.002_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M2_05093711.003_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M2_05093711.004_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M2_05093711.005_Y_CrabNebula-W0.40+035.root",
+]
+DL1_LST_data = ["dl1_LST-1.Run03265.0004.h5"]
 """
 Temporary paths
 """
@@ -88,6 +103,41 @@ def temp_irf_exc(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
+def temp_DL1_M(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_MAGIC")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_M_merge(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_MAGIC_merge")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_M_exc(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_MAGIC_exc")
+
+
+@pytest.fixture(scope="session")
+def temp_coinc(tmp_path_factory):
+    return tmp_path_factory.mktemp("coincidence")
+
+
+@pytest.fixture(scope="session")
+def temp_coinc_stereo(tmp_path_factory):
+    return tmp_path_factory.mktemp("coincidence_stereo")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_real(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_real")
+
+
+@pytest.fixture(scope="session")
+def temp_DL3(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL3")
+
+
+@pytest.fixture(scope="session")
 def temp_pandas(tmp_path_factory):
     return tmp_path_factory.mktemp("pandas")
 
@@ -111,6 +161,21 @@ def dl0_gamma_path(base_path):
 @pytest.fixture(scope="session")
 def dl0_p_path(base_path):
     return base_path / "DL0p"
+
+
+@pytest.fixture(scope="session")
+def dl0_M1_path(base_path):
+    return base_path / "DL0M1"
+
+
+@pytest.fixture(scope="session")
+def dl0_M2_path(base_path):
+    return base_path / "DL0M2"
+
+
+@pytest.fixture(scope="session")
+def dl1_lst_path(base_path):
+    return base_path / "DL1LST"
 
 
 @pytest.fixture(scope="session")
@@ -175,8 +240,18 @@ def dl0_gamma_url(base_url):
 
 @pytest.fixture(scope="session")
 def dl0_p_url(base_url):
-    # BETTER SOLUTION? CHANGED?
     return base_url / "DL0p"
+
+
+@pytest.fixture(scope="session")
+def dl0_M_url(base_url):
+    return base_url / "MAGIC"
+
+
+@pytest.fixture(scope="session")
+def dl1_LST_url(base_url):
+    # BETTER SOLUTION? CHANGED?
+    return base_url / "LST"
 
 
 @pytest.fixture(scope="session")
@@ -198,17 +273,17 @@ def env_prefix():
 
 def scp_file(path, url, env_prefix):
     """
-    Download of test files through scp
+    Download of test files through rsync
     """
     pwd = os.environ[env_prefix + "PASSWORD"]
     if not (path / url.name).exists():
         print("DOWNLOADING...")
-        cmd = f'''/bin/bash -c "rsync {str(url)} {str(path)} "'''
+        cmd = f'''/bin/bash -c "rsync {str(url)} {str(path)}"'''
         if "rm " in cmd:
             print("files cannot be removed")
             exit()
         usr = os.environ[env_prefix + "USER"]
-        childP = pexpect.spawn(cmd, timeout=500)
+        childP = pexpect.spawn(cmd, timeout=5000)
         childP.sendline(cmd)
         childP.expect([f"{usr}@10.200.100.2's password:"])
         childP.sendline(pwd)
@@ -235,11 +310,38 @@ def dl0_gamma(dl0_gamma_url, dl0_gamma_path, env_prefix):
 @pytest.fixture(scope="session")
 def dl0_p(dl0_p_url, dl0_p_path, env_prefix):
     p_dl0 = []
-    for file in DL0_gamma_p:
+    for file in DL0_p_data:
         scp_file(dl0_p_path, dl0_p_url / f"{file}", env_prefix)
         p_dl0.append(dl0_p_path / f"{file}")
 
     return p_dl0
+
+
+@pytest.fixture(scope="session")
+def dl0_m1(dl0_M_url, dl0_M1_path, env_prefix):
+    MI_dl0 = []
+    for file in DL0_M1_data:
+        scp_file(dl0_M1_path, dl0_M_url / f"{file}", env_prefix)
+        MI_dl0.append(dl0_M1_path / f"{file}")
+    return MI_dl0
+
+
+@pytest.fixture(scope="session")
+def dl0_m2(dl0_M_url, dl0_M2_path, env_prefix):
+    MII_dl0 = []
+    for file in DL0_M2_data:
+        scp_file(dl0_M2_path, dl0_M_url / f"{file}", env_prefix)
+        MII_dl0.append(dl0_M2_path / f"{file}")
+    return MII_dl0
+
+
+@pytest.fixture(scope="session")
+def dl1_lst(dl1_LST_url, dl1_lst_path, env_prefix):
+    LST_dl1 = []
+    for file in DL1_LST_data:
+        scp_file(dl1_lst_path, dl1_LST_url / f"{file}", env_prefix)
+        LST_dl1.append(dl1_lst_path / f"{file}")
+    return LST_dl1
 
 
 @pytest.fixture(scope="session")
@@ -258,7 +360,7 @@ Data processing
 @pytest.fixture(scope="session")
 def gamma_l1(temp_DL1_gamma, dl0_gamma, config):
     """
-    Produce a dl1 file
+    Produce a DL1 file
     """
 
     for file in dl0_gamma:
@@ -271,16 +373,16 @@ def gamma_l1(temp_DL1_gamma, dl0_gamma, config):
             ]
         )
 
-    return temp_DL1_gamma.glob("*")
+    return temp_DL1_gamma
 
 
 @pytest.fixture(scope="session")
 def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
     """
-    Produce a dl1 stereo file
+    Produce a DL1 stereo file
     """
 
-    for i, file in enumerate(gamma_l1):
+    for i, file in enumerate(gamma_l1.glob("*")):
         if i < ntrain:
             out = temp_DL1_gamma_train
         else:
@@ -300,7 +402,7 @@ def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
 @pytest.fixture(scope="session")
 def p_l1(temp_DL1_p, dl0_p, config):
     """
-    Produce a dl1 file
+    Produce a DL1 file
     """
     for file in dl0_p:
         subprocess.run(
@@ -311,16 +413,16 @@ def p_l1(temp_DL1_p, dl0_p, config):
                 f"-c{str(config)}",
             ]
         )
-    return temp_DL1_p.glob("*")
+    return temp_DL1_p
 
 
 @pytest.fixture(scope="session")
 def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
     """
-    Produce a dl1 stereo file
+    Produce a DL1 stereo file
     """
 
-    for i, file in enumerate(p_l1):
+    for i, file in enumerate(p_l1.glob("*")):
         if i < ntrain:
             out = temp_DL1_p_train
         else:
@@ -339,7 +441,7 @@ def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
 @pytest.fixture(scope="session")
 def RF(gamma_stereo, p_stereo, temp_rf, config):
     """
-    Produce a dl1 stereo file
+    Produce RFs
     """
 
     subprocess.run(
@@ -361,7 +463,7 @@ def RF(gamma_stereo, p_stereo, temp_rf, config):
 @pytest.fixture(scope="session")
 def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
     """
-    Produce a dl1 stereo file
+    Produce a DL2 file
     """
 
     for file in temp_DL1_gamma_test.glob("*"):
@@ -373,16 +475,16 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
                 f"-o{str(temp_DL2_gamma)}",
             ]
         )
-    return temp_DL2_gamma.glob("*")
+    return temp_DL2_gamma
 
 
 @pytest.fixture(scope="session")
 def IRF(gamma_dl2, config, temp_irf):
     """
-    Produce a dl1 stereo file
+    Produce IRFs
     """
 
-    for file in gamma_dl2:
+    for file in gamma_dl2.glob("*"):
         subprocess.run(
             [
                 "lst1_magic_create_irf",
@@ -391,13 +493,13 @@ def IRF(gamma_dl2, config, temp_irf):
                 f"-c{str(config)}",
             ]
         )
-    return temp_irf.glob("*")
+    return temp_irf
 
 
 @pytest.fixture(scope="session")
 def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
     """
-    Produce a dl1 stereo file
+    Produce a DL2 file
     """
 
     for file in temp_DL1_p_test.glob("*"):
@@ -409,4 +511,150 @@ def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
                 f"-o{str(temp_DL2_p)}",
             ]
         )
-    return temp_DL2_p.glob("*")
+    return temp_DL2_p
+
+
+@pytest.fixture(scope="session")
+def M1_l1(temp_DL1_M, dl0_m1, config):
+    """
+    Produce a DL1 file
+    """
+
+    subprocess.run(
+        [
+            "magic_calib_to_dl1",
+            f"-i{str(dl0_m1[0])}",
+            f"-o{str(temp_DL1_M)}",
+            f"-c{str(config)}",
+            "--process-run",
+        ]
+    )
+
+    return temp_DL1_M
+
+
+@pytest.fixture(scope="session")
+def M2_l1(temp_DL1_M, dl0_m2, config):
+    """
+    Produce a DL1 file
+    """
+
+    subprocess.run(
+        [
+            "magic_calib_to_dl1",
+            f"-i{str(dl0_m2[0])}",
+            f"-o{str(temp_DL1_M)}",
+            f"-c{str(config)}",
+            "--process-run",
+        ]
+    )
+
+    return temp_DL1_M
+
+
+@pytest.fixture(scope="session")
+def merge_magic(M2_l1, M1_l1, temp_DL1_M_merge):
+    """
+    Merge MAGIC runs
+    """
+
+    subprocess.run(
+        [
+            "merge_hdf_files",
+            f"-i{str(M2_l1)}",
+            f"-o{str(temp_DL1_M_merge)}",
+        ]
+    )
+
+    return temp_DL1_M_merge
+
+
+@pytest.fixture(scope="session")
+def coincidence(dl1_lst, merge_magic, temp_coinc, config):
+    """
+    Coincidence
+    """
+
+    for file in dl1_lst:
+        subprocess.run(
+            [
+                "lst1_magic_event_coincidence",
+                f"-l{str(file)}",
+                f"-m{str(merge_magic)}",
+                f"-o{str(temp_coinc)}",
+                f"-c{str(config)}",
+            ]
+        )
+
+    return temp_coinc
+
+
+@pytest.fixture(scope="session")
+def coincidence_stereo(coincidence, temp_coinc_stereo, config):
+    """
+    Produce stereo coincident events
+    """
+
+    for file in coincidence.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_stereo_reco",
+                f"-i{str(file)}",
+                f"-o{str(temp_coinc_stereo)}",
+                f"-c{str(config)}",
+            ]
+        )
+
+    return temp_coinc_stereo
+
+
+@pytest.fixture(scope="session")
+def real_dl2(coincidence_stereo, RF, temp_DL2_real):
+    """
+    Produce a DL2 file
+    """
+
+    for file in coincidence_stereo.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl1_stereo_to_dl2",
+                f"-d{str(file)}",
+                f"-r{str(RF)}",
+                f"-o{str(temp_DL2_real)}",
+            ]
+        )
+    return temp_DL2_real
+
+
+@pytest.fixture(scope="session")
+def real_dl3(real_dl2, IRF, temp_DL3, config):
+    """
+    Produce a DL3 file
+    """
+
+    for file in real_dl2.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl2_to_dl3",
+                f"-d{str(file)}",
+                f"-i{str(IRF)}",
+                f"-o{str(temp_DL3)}",
+                f"-c{str(config)}",
+            ]
+        )
+    return temp_DL3
+
+
+@pytest.fixture(scope="session")
+def real_index(real_dl3):
+    """
+    Produce indexes
+    """
+
+    subprocess.run(
+        [
+            "create_dl3_index_files",
+            f"-i{str(real_dl3)}",
+        ]
+    )
+    return temp_DL3
