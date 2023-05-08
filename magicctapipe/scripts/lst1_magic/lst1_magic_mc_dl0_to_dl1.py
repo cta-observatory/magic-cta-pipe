@@ -362,6 +362,15 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                 # Parametrize the image
                 hillas_params = hillas_parameters(camera_geom_masked, image_masked)
 
+                # 
+                if any(np.isnan(value) for value in hillas_params.values()):
+                    logger.info(
+                        f"--> {event.count} event (event ID: {event.index.event_id}, "
+                        f"telescope {tel_id}): non-valid Hillas parameters. Skipping..."
+                    )
+                    continue
+
+
                 timing_params = timing_parameters(
                     camera_geom_masked, image_masked, peak_time_masked, hillas_params
                 )
