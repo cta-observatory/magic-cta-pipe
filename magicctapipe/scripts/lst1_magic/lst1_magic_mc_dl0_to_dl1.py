@@ -44,15 +44,8 @@ from ctapipe.image import (
     number_of_islands,
     tailcuts_clean,
     timing_parameters,
-    concentration_parameters,
-    morphology_parameters,
 )
-from ctapipe.containers import (
-    PeakTimeStatisticsContainer,
-    IntensityStatisticsContainer,
-    TelEventIndexContainer,    
-)
-from ctapipe.image.statistics import descriptive_statistics
+
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
 from magicctapipe.image.cleaning import apply_dynamic_cleaning
@@ -336,21 +329,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                 timing_params = timing_parameters(
                     camera_geom_masked, image_masked, peak_time_masked, hillas_params
                 )
-                concentration_params = concentration_parameters(
-                    camera_geom_masked, image_masked, hillas_params
-                )
-                
-                morphology_params = morphology_parameters(
-                    camera_geoms[tel_id], signal_pixels
-                )                
-                    
-                peak_time_statistics = descriptive_statistics(
-                    peak_time[signal_pixels],
-                    container_class=PeakTimeStatisticsContainer,
-                )
-                intensity_statistics = descriptive_statistics(
-                    image_masked, container_class=IntensityStatisticsContainer
-                )
 
                 if np.isnan(timing_params.slope):
                     logger.info(
@@ -410,34 +388,19 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
                     n_islands=n_islands,
                     magic_stereo=magic_stereo,
                 )
-                event_id_info = TelEventIndexContainer(
-                    obs_id=event.index.obs_id,
-                    event_id=event.index.event_id,
-                )
+
                 # Reset the telescope IDs
                 if tel_id == tel_id_lst1:
                     event_info.tel_id = 1
-                    event_id_info.tel_id = 1
                 elif tel_id == tel_id_m1:
                     event_info.tel_id = 2
-                    event_id_info.tel_id = 2
-
                 elif tel_id == tel_id_m2:
                     event_info.tel_id = 3
-                    event_id_info.tel_id = 3
 
                 # Save the parameters to the output file
                 writer.write(
                     "parameters",
                     (event_info, hillas_params, timing_params, leakage_params),
-                )
-                writer.write("morphology", (event_id_info, morphology_params))
-                writer.write(
-                    "peak_time_statistics", (event_id_info, peak_time_statistics)
-                )
-                writer.write("concentration", (event_id_info, concentration_params))
-                writer.write(
-                    "intensity_statistics", (event_id_info, intensity_statistics)
                 )
 
         n_events_processed = event.count + 1

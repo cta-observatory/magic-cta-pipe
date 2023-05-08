@@ -22,7 +22,6 @@ $ python merge_hdf_files.py
 (--output-dir dl1_merged)
 (--run-wise)
 (--subrun-wise)
-(--dl1)
 """
 
 import argparse
@@ -43,7 +42,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def write_data_to_table(input_file_mask, output_file, dl1):
+def write_data_to_table(input_file_mask, output_file):
     """
     Writes data to a new table.
 
@@ -73,45 +72,6 @@ def write_data_to_table(input_file_mask, output_file, dl1):
             for attr in event_data.attrs._f_list():
                 f_out.root.events.parameters.attrs[attr] = event_data.attrs[attr]
 
-            if dl1:
-                event_morph = f_input.root.events.morphology
-                event_conc = f_input.root.events.concentration
-                event_t_stat = f_input.root.events.peak_time_statistics
-                event_i_stat = f_input.root.events.intensity_statistics
-                f_out.create_table(
-                    "/events", "morphology", createparents=True, obj=event_morph.read()
-                )
-                f_out.create_table(
-                    "/events",
-                    "concentration",
-                    createparents=True,
-                    obj=event_conc.read(),
-                )
-                f_out.create_table(
-                    "/events",
-                    "peak_time_statistics",
-                    createparents=True,
-                    obj=event_t_stat.read(),
-                )
-                f_out.create_table(
-                    "/events",
-                    "intensity_statistics",
-                    createparents=True,
-                    obj=event_i_stat.read(),
-                )
-                for attr in event_morph.attrs._f_list():
-                    f_out.root.events.morphology.attrs[attr] = event_morph.attrs[attr]
-                for attr in event_conc.attrs._f_list():
-                    f_out.root.events.concentration.attrs[attr] = event_conc.attrs[attr]
-                for attr in event_t_stat.attrs._f_list():
-                    f_out.root.events.peak_time_statistics.attrs[
-                        attr
-                    ] = event_t_stat.attrs[attr]
-                for attr in event_i_stat.attrs._f_list():
-                    f_out.root.events.intensity_statistics.attrs[
-                        attr
-                    ] = event_i_stat.attrs[attr]
-
             if "simulation" in f_input.root:
                 # Write the simulation configuration of the first input
                 # file, assuming that it is consistent with the others
@@ -131,15 +91,6 @@ def write_data_to_table(input_file_mask, output_file, dl1):
             with tables.open_file(input_file) as f_input:
                 event_data = f_input.root.events.parameters
                 f_out.root.events.parameters.append(event_data.read())
-                if dl1:
-                    event_morph = f_input.root.events.morphology
-                    f_out.root.events.morphology.append(event_morph.read())
-                    event_conc = f_input.root.events.concentration
-                    f_out.root.events.concentration.append(event_conc.read())
-                    event_t_stat = f_input.root.events.peak_time_statistics
-                    f_out.root.events.peak_time_statistics.append(event_t_stat.read())
-                    event_i_stat = f_input.root.events.intensity_statistics
-                    f_out.root.events.intensity_statistics.append(event_i_stat.read())
 
     # Save the subarray description of the first input file, assuming
     # that it is consistent with the others
@@ -149,9 +100,7 @@ def write_data_to_table(input_file_mask, output_file, dl1):
     logger.info(f"--> Output file: {output_file}")
 
 
-def merge_hdf_files(
-    input_dir, output_dir=None, run_wise=False, subrun_wise=False, dl1=False
-):
+def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=False):
     """
     Merges the HDF files produced by the combined analysis pipeline.
 
@@ -254,7 +203,7 @@ def merge_hdf_files(
                 file_mask = f"{input_dir}/*Run{run_id}.{subrun_id}.h5"
                 output_file = f"{output_dir}/{output_file_name}{run_id}.{subrun_id}.h5"
 
-                write_data_to_table(file_mask, output_file, dl1)
+                write_data_to_table(file_mask, output_file)
 
     elif run_wise:
         logger.info("\nMerging the input files run-wise...")
@@ -263,7 +212,7 @@ def merge_hdf_files(
             file_mask = f"{input_dir}/*Run{run_id}.*h5"
             output_file = f"{output_dir}/{output_file_name}{run_id}.h5"
 
-            write_data_to_table(file_mask, output_file, dl1)
+            write_data_to_table(file_mask, output_file)
 
     else:
         logger.info("\nMerging the input files...")
@@ -291,7 +240,7 @@ def merge_hdf_files(
                 f"{output_dir}/{output_file_name}{run_id_min}_to_{run_id_max}.h5"
             )
 
-        write_data_to_table(file_mask, output_file, dl1)
+        write_data_to_table(file_mask, output_file)
 
 
 def main():
@@ -329,19 +278,11 @@ def main():
         action="store_true",
         help="Merge input files subrun-wise (applicable only to MAGIC real data)",
     )
-    parser.add_argument(
-        "--dl1",
-        dest="dl1",
-        action="store_true",
-        help="Merge input dl1 files",
-    )
 
     args = parser.parse_args()
 
     # Merge the input files
-    merge_hdf_files(
-        args.input_dir, args.output_dir, args.run_wise, args.subrun_wise, args.dl1
-    )
+    merge_hdf_files(args.input_dir, args.output_dir, args.run_wise, args.subrun_wise)
 
     logger.info("\nDone.")
 

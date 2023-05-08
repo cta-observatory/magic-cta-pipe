@@ -43,9 +43,6 @@ from ctapipe.containers import (
     ImageParametersContainer,
     LeakageContainer,
     TimingParametersContainer,
-    ConcentrationContainer,
-    IntensityStatisticsContainer,
-    PeakTimeStatisticsContainer,
     MorphologyContainer,
 )
 from ctapipe.instrument import SubarrayDescription
@@ -126,37 +123,15 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     logger.info(f"\nInput file: {input_file}")
 
     event_data = pd.read_hdf(input_file, key="events/parameters")
-    event_morph = pd.read_hdf(input_file, key="events/morphology")
-    event_conc = pd.read_hdf(input_file, key="events/concentration")
-    event_t_stat = pd.read_hdf(input_file, key="events/peak_time_statistics")
-    event_i_stat = pd.read_hdf(input_file, key="events/intensity_statistics")
     # It sometimes happens that there are MAGIC events whose event and
     # telescope IDs are duplicated, so here we exclude those events
     event_data.drop_duplicates(
         subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
     )
-    event_morph.drop_duplicates(
-        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
-    )
-    event_conc.drop_duplicates(
-        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
-    )
-    event_t_stat.drop_duplicates(
-        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
-    )
-    event_i_stat.drop_duplicates(
-        subset=["obs_id", "event_id", "tel_id"], keep=False, inplace=True
-    )
+
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
-    event_morph.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    event_morph.sort_index(inplace=True)
-    event_conc.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    event_conc.sort_index(inplace=True)
-    event_t_stat.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    event_t_stat.sort_index(inplace=True)
-    event_i_stat.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    event_i_stat.sort_index(inplace=True)
+
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
@@ -171,10 +146,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
     if magic_only_analysis:
         event_data.query("tel_id > 1", inplace=True)
-        event_morph.query("tel_id > 1", inplace=True)
-        event_conc.query("tel_id > 1", inplace=True)
-        event_t_stat.query("tel_id > 1", inplace=True)
-        event_i_stat.query("tel_id > 1", inplace=True)
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
     event_data = get_stereo_events(event_data, config_stereo["quality_cuts"])
@@ -243,10 +214,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
         # Extract the data frame of the shower event
         df_evt = event_data.loc[(obs_id, event_id, slice(None))]
-        df_morph = event_morph.loc[(obs_id, event_id, slice(None))]
-        df_conc = event_conc.loc[(obs_id, event_id, slice(None))]
-        df_t_stat = event_t_stat.loc[(obs_id, event_id, slice(None))]
-        df_i_stat = event_i_stat.loc[(obs_id, event_id, slice(None))]
+
         # Loop over every telescope
         tel_ids = df_evt.index.get_level_values("tel_id").values
 
@@ -254,10 +222,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
         for tel_id in tel_ids:
             df_tel = df_evt.loc[tel_id]
-            df_morph_tel = df_morph.loc[tel_id]
-            df_conc_tel = df_conc.loc[tel_id]
-            df_t_stat_tel = df_t_stat.loc[tel_id]
-            df_i_stat_tel = df_i_stat.loc[tel_id]
 
             # Assign the telescope information
             event.pointing.tel[tel_id].altitude = df_tel["pointing_alt"] * u.rad
@@ -290,35 +254,14 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             )
 
             morph_par = MorphologyContainer(
-                n_islands=int(df_morph_tel["n_islands"]),
-                n_large_islands=int(df_morph_tel["n_large_islands"]),
-                n_medium_islands=int(df_morph_tel["n_medium_islands"]),
-                n_small_islands=int(df_morph_tel["n_small_islands"]),
-                n_pixels=int(df_morph_tel["n_pixels"]),
-            )
-
-            conc_par = ConcentrationContainer(
-                cog=float(df_conc_tel["cog"]),
-                core=float(df_conc_tel["core"]),
-                pixel=float(df_conc_tel["pixel"]),
-            )
-
-            intens_stat = IntensityStatisticsContainer(
-                kurtosis=float(df_i_stat_tel["kurtosis"]),
-                max=float(df_i_stat_tel["max"]),
-                mean=float(df_i_stat_tel["mean"]),
-                min=float(df_i_stat_tel["min"]),
-                std=float(df_i_stat_tel["std"]),
-                skewness=float(df_i_stat_tel["skewness"]),
-            )
-
-            time_stat = PeakTimeStatisticsContainer(
-                kurtosis=float(df_t_stat_tel["kurtosis"]),
-                max=float(df_t_stat_tel["max"]),
-                mean=float(df_t_stat_tel["mean"]),
-                min=float(df_t_stat_tel["min"]),
-                std=float(df_t_stat_tel["std"]),
-                skewness=float(df_t_stat_tel["skewness"]),
+                n_islands=int(df_tel["n_islands"]),
+                # n_large_islands=int(df_morph_tel["n_large_islands"]),
+                # n_medium_islands=int(df_morph_tel["n_medium_islands"]),
+                # n_small_islands=int(df_morph_tel["n_small_islands"]),
+                n_large_islands=np.nan,
+                n_medium_islands=np.nan,
+                n_small_islands=np.nan,
+                n_pixels=int(df_tel["n_pixels"]),
             )
 
             event.dl1.tel[tel_id].parameters = ImageParametersContainer(
@@ -326,9 +269,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 timing=time_par,
                 leakage=leak_par,
                 morphology=morph_par,
-                concentration=conc_par,
-                peak_time_statistics=time_stat,
-                intensity_statistics=intens_stat,
             )
             # event.dl1.tel[tel_id].is_valid=True
         # Reconstruct the stereo parameters
