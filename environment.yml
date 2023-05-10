@@ -45,6 +45,6 @@ dependencies:
   - seaborn
   - jinja2 # pinned for bokeh 1.0 compatibility
   - pip:      
-      - git+https://github.com/Elisa-Visentin/ctapipe_io_magic#egg=ctapipe_io_magic
+      - ctapipe_io_magic~=0.5.1
       - ctaplot~=0.5.5
       - pyirf
