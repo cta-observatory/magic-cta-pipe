@@ -35,6 +35,7 @@ setup(
     install_requires=[
         "ctapipe~=0.19.0",
         "ctaplot~=0.5.5",
+        'ctapipe_io_magic~=0.5.1',
         "gammapy~=0.19.0",
         "uproot",
         "pandas",
