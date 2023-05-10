@@ -1,4 +1,8 @@
 """
+This script simply submit the job created by "lst_magic_diagnostic.py"
+to the cluster. The results are several diagnostic plots saved at your
+working directory.
+
 Usage:
 $ python diagnostic.py
 

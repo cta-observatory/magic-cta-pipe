@@ -18,6 +18,10 @@ $ python lst1_magic_dl2_to_dl3.py
 --input-dir-irf irf
 (--output-dir dl3)
 (--config-file config.yaml)
+
+Broader usage:
+This script is called automatically from the script "DL2_to_DL3.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse

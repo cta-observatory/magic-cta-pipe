@@ -1,12 +1,27 @@
 """
+This script facilitates the usage of other two scripts
+of the MCP, i.e. "lst1_magic_mc_dl0_to_dl1.py" and
+"magic_calib_to_dl1.py". This script is more like a
+"maneger" that organizes the analysis process by:
+1) Creating the necessary directories and subdirectories.
+2) Generatign all the bash script files that convert the
+MAGIC and MC files from DL0 to DL1.
+3) Launching these jobs in the IT container.
+
+Notice that in this stage we only use MAGIC + MC data.
+No LST data is used here.
+
 Standard usage:
 $ python setting_up_config_and_dir.py
 
-Optional:
-python setting_up_config_and_dir.py --partial-analysis onlyMAGIC
+If you want only to tun the MAGIC or only the MC conversion,
+you can do as follows:
 
-or:
-python setting_up_config_and_dir.py --partial-analysis onlyMC
+Only MAGIC:
+$ python setting_up_config_and_dir.py --partial-analysis onlyMAGIC
+
+Only MC:
+$ python setting_up_config_and_dir.py --partial-analysis onlyMC
 
 """
 
@@ -294,7 +309,7 @@ def main():
     telescope_ids = list(config["mc_tel_ids"].values())
     SimTel_version = config["general"]["SimTel_version"]
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
-    MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',') #READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19, 5093174"
+    MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',') #READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
     MC_gammas  = config["directories"]["MC_gammas"]
     MC_electrons = config["directories"]["MC_electrons"]

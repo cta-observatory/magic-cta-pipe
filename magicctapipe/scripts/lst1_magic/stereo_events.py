@@ -1,4 +1,8 @@
 """
+This scripts generates and runs the bashscripts
+to compute the stereo parameters of DL1 MC and 
+Coincident MAGIC+LST data files. 
+
 Usage:
 $ python stereo_events.py
 
@@ -56,7 +60,7 @@ def bash_stereo(target_dir):
         if not os.path.exists(stereoDir):
             os.mkdir(stereoDir)
         
-        os.system(f"ls {nightLST}/dl1_LST*.h5 >  {nightLST}/list_coin.txt")  #generating a list with the DL1 coincident data files.
+        os.system(f"ls {nightLST}/*LST*.h5 >  {nightLST}/list_coin.txt")  #generating a list with the DL1 coincident data files.
         process_size = len(np.genfromtxt(nightLST+"/list_coin.txt",dtype="str")) - 1
         
         f = open(f"StereoEvents_{nightLST.split('/')[-1]}.sh","w")

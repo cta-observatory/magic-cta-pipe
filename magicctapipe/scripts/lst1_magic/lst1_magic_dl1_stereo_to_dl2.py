@@ -14,6 +14,11 @@ $ python lst1_magic_dl1_stereo_to_dl2.py
 --input-file-dl1 dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
 --input-dir-rfs rfs
 (--output-dir dl2)
+
+Broader usage:
+This script is called automatically from the script "DL1_to_DL2.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
+
 """
 
 import yaml
@@ -60,16 +65,6 @@ def apply_rfs(event_data, estimator, config):
         Data frame of the shower events with reconstructed parameters
     """
     
-    #The commented lines below were used in the combo_type RF training
-    #_, TEL_COMBINATIONS = telescope_combinations(config)
-    
-    #tel_ids = list(estimator.telescope_rfs.keys())
-
-    # Extract the events of the same telescope combination type
-    #combo_type = list(TEL_COMBINATIONS.values()).index(tel_ids)
-    #df_events = event_data.query(f"combo_type == {combo_type}")
-
-    #This list below actually has only one entry, i.e., the telescope ID.
     tel_ids = list(estimator.telescope_rfs.keys())
     
     # Extract the events with the same telescope ID

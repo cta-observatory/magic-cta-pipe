@@ -2,28 +2,27 @@
 # coding: utf-8
 
 """
-This script processes LST-1 and MAGIC events of simtel MC DL0 data
+This script processes LST and MAGIC events of simtel MC DL0 data
 (*.simtel.gz) and computes the DL1 parameters, i.e., Hillas, timing and
-leakage parameters. It saves only the events that all the DL1 parameters
+leakage parameters. It saves only the events where all the DL1 parameters
 are successfully reconstructed.
 
-Since it cannot identify the telescopes of the input file, please assign
+Since it cannot identify the telescopes from the input file, please assign
 the correct telescope ID to each telescope in the configuration file.
 
-When saving data to an output file, the telescope IDs will be reset to
-the following ones to match with those of real data:
-
-LST-1: tel_id = 1,  MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
-
-In addition, the telescope coordinate will be converted to the one
-relative to the center of the LST-1 and MAGIC positions (including the
+The telescope coordinates will be converted to those
+relative to the center of the LST and MAGIC positions (including the
 altitude) for the convenience of the geometrical stereo reconstruction.
 
-Usage:
+Usage per single data file (indicated if you want to do tests):
 $ python lst1_magic_mc_dl0_to_dl1.py
 --input-file dl0/gamma_40deg_90deg_run1.simtel.gz
 (--output-dir dl1)
 (--config-file config_step1.yaml)
+
+Broader usage:
+This script is called automatically from the script "setting_up_config_and_dir.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse #Parser for command-line options, arguments etc

@@ -15,7 +15,7 @@ The MAGIC standard stereo analysis discards the events when one of the
 telescope images cannot survive the cleaning or fail to compute the DL1
 parameters. However, it's possible to perform the stereo analysis if
 LST sees these events. Thus, it checks the coincidence for each
-telescope combination (i.e., LST1 + M1 and LST1 + M2) and keeps the
+telescope combination (e.g., LST1 + M1 and LST1 + M2) and keeps the
 MAGIC events even if they do not have their MAGIC-stereo counterparts.
 
 The MAGIC-stereo events, observed during the LST observation time
@@ -35,12 +35,16 @@ and then the peak is shifted to the time offset of -6.5 us. Thus, it
 would be needed to tune the offset scan region depending on the date
 when data were taken. The reason of the shift is under investigation.
 
-Usage:
+Usage per single LST data file (indicated if you want to do tests):
 $ python lst1_magic_event_coincidence.py
 --input-file-lst dl1/LST/dl1_LST.Run03265.0040.h5
 --input-dir-magic dl1/MAGIC
 (--output-dir dl1_coincidence)
 (--config-file config.yaml)
+
+Broader usage:
+This script is called automatically from the script "coincident_events.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse

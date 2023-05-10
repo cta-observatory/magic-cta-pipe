@@ -1,6 +1,6 @@
 """
 Usage:
-After producing the gammas and protons DL2 files,
+After producing the MC gammas and protons DL2 files,
 you can run this script on your workspace directory
 (i.e., the one given in the "workspace_dir" entry in
 the "config_general.yaml" file), by doing:
@@ -92,6 +92,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50, norm=mpl.colors.LogNorm())
     plt.colorbar(label="Number of events")
+    plt.grid(linestyle=':')
     plt.title("Simulated gamma rays")
     plt.savefig(target_dir+"/gammaness_photons.png",bbox_inches='tight')
 
@@ -103,6 +104,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50,  norm=mpl.colors.LogNorm())
     plt.colorbar(label="Number of events")
+    plt.grid(linestyle=':')
     plt.title("Simulated protons")
     plt.savefig(target_dir+"/gammaness_protons.png",bbox_inches='tight')
     
@@ -116,7 +118,8 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.plot([-2,2],[-2,2],color="red")
     plt.ylim(y.min(),y.max())
     plt.xlim(x.min(),x.max())
-    plt.colorbar(label="Number of events");
+    plt.colorbar(label="Number of events")
+    plt.grid(linestyle=':')
     plt.savefig(target_dir+"/migration_matrix.png",bbox_inches='tight')
     
     #g-h separation
@@ -125,7 +128,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.xlabel("Gammaness")
     plt.ylabel("Number of events")
     plt.yscale("log")
-    plt.grid()
+    plt.grid(linestyle=':')
     g_back=np.array(background_hist["gammaness"].value)
     g_sig=np.array(signal_hist["gammaness"].value)
     plt.hist(
@@ -163,7 +166,7 @@ def diagnostic_plots(config_IRF,target_dir):
         plt.title(f"{eng_lolim:.3f} < energy < {eng_uplim:.3f} [TeV]", fontsize=20)
         plt.xlabel("Gammaness", fontsize=22)
         plt.yscale("log")
-        plt.grid()
+        plt.grid(linestyle=':')
 
         # Apply the energy cuts
         cond_back_lolim = background_hist["reco_energy"].value > eng_lolim
@@ -256,7 +259,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.ylabel("Angular resolution (68% cont.) [deg]")
     plt.xlabel("Energy [TeV]")
     plt.semilogx()
-    plt.grid()
+    plt.grid(linestyle=':')
 
     plt.errorbar(
         x=energy_bins_center,
@@ -280,7 +283,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.xlabel("Reconstructed energy [TeV]")
     plt.ylabel("Gammaness cut that saves 90% of the gamma rays")
     plt.semilogx()
-    plt.grid()
+    plt.grid(linestyle=':')
 
     plt.errorbar(
         x=energy_bins_center,
@@ -323,7 +326,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.xlabel("Reconstructed energy [TeV]")
 
     plt.semilogx()
-    plt.grid()
+    plt.grid(linestyle=':')
 
     plt.errorbar(
         x=energy_bins_center,
@@ -367,7 +370,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.xlabel("Reconstructed energy [TeV]")
     plt.ylabel("Effective area [m$^2$]")
     plt.loglog()
-    plt.grid()
+    plt.grid(linestyle=':')
 
     plt.errorbar(
         x=energy_bins_center,
@@ -443,7 +446,7 @@ def diagnostic_plots(config_IRF,target_dir):
 
         plt.colorbar(label="Number of events")
         #plt.axis(xlim.tolist() + ylim.tolist())
-        plt.grid()
+        plt.grid(linestyle=':')
 
         plt.savefig(target_dir+"/counts_map.png",bbox_inches='tight')
     

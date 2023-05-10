@@ -18,14 +18,14 @@ IRFs, which allows us to perform the 1D spectral analysis even if only
 diffuse data is available for test MCs.
 
 There are four different event types with which the IRFs are created.
-The "hardware" type is supposed for the hardware trigger between LST-1
+The "hardware" type stands for the hardware trigger between LST
 and MAGIC, allowing for the events of all the telescope combinations.
-The "software(_only_3tel)" types are supposed for the software event
-coincidence with LST-mono and MAGIC-stereo observations, allowing for
-only the events triggering both M1 and M2. The "software" type allows
-for the events of the any 2-tel combinations except the MAGIC-stereo
-combination at the moment. The "software_only_3tel" type allows for only
-the events of the 3-tel combination. The "magic_only" type allows for
+The "software_3tels_or_more" type stands for the software event
+coincidence with any combination of 3 or more telescopes (e.g. LST2, LST3, and
+MAGIC-I observations). The "software_6_tel" type allows for the events of any 
+2,3,4,5 or 6 telescope combinations (except the combination MAGIC-I + MAGIC-II).
+The "software" type is similar to "software_6_tel", but requires that
+we the events are tagged as "stereo_magic". The "magic_only" type allows for
 only the events of the MAGIC-stereo combination.
 
 There are two types of gammaness and theta cuts, "global" and "dynamic".
@@ -39,6 +39,10 @@ $ python lst1_magic_create_irf.py
 (--input-file-electron dl2/dl2_electron_40deg_90deg.h5)
 (--output-dir irf)
 (--config-file config.yaml)
+
+Broader usage:
+This script is called automatically from the script "IRF.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse

@@ -1,4 +1,10 @@
 """
+This script creates the bashscripts necessary to apply "lst1_magic_dl1_stereo_to_dl2.py"
+to the DL1 stereo data (real and MC). It also creates new subdirectories associated with
+the data level 2. The DL2 files are saved at:
+WorkingDirectory/DL2/
+and in the subdirectories therein.
+
 Usage:
 $ python DL1_to_DL2.py
 

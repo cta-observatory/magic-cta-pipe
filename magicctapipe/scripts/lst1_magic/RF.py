@@ -1,4 +1,8 @@
 """
+This script generates a bashscript to apply the RF in stereo
+DL1 data files. The training types are disp, energy, and classifier. The output is saved at:
+WorkingDirectory/DL1/MC/RFs
+
 Usage:
 $ python RF.py
 

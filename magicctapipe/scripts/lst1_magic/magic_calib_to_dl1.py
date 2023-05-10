@@ -7,11 +7,6 @@ with the MARS-like image cleaning and computes the DL1 parameters, i.e.,
 Hillas, timing and leakage parameters. It saves only the events that all
 the DL1 parameters are successfully reconstructed.
 
-When saving data to an output file, the telescope IDs will be reset to
-the following ones for the convenience of the combined analysis with
-LST-1, whose telescope ID is 1:
-
-MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 When the input is real data, it searches for all the subrun files with
 the same observation ID and stored in the same directory as the input
@@ -27,12 +22,16 @@ Please note that it is also possible to process SUM trigger data with
 this script, but since the MaTaJu cleaning is not yet implemented in
 this pipeline, it applies the standard cleaning instead.
 
-Usage:
+Usage per single data file (indicated if you want to do tests):
 $ python magic_calib_to_dl1.py
 --input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 (--output-dir dl1)
 (--config-file config.yaml)
 (--process-run)
+
+Broader usage:
+This script is called automatically from the script "setting_up_config_and_dir.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse

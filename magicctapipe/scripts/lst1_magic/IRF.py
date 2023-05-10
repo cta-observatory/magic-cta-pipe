@@ -1,4 +1,8 @@
 """
+This script apply the "lst1_magic_create_irf.py"
+to the DL2 MC gamma files and saves the results at:
+WorkingDirectory/IRF
+
 Usage:
 $ python IRF.py
 

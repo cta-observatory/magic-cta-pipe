@@ -1,4 +1,14 @@
 """
+This scripts facilitates the usage of the script
+"lst1_magic_dl2_to_dl3.py". This script is
+more like a "maneger" that organizes the analysis
+process by:
+1) Creating the bash scripts for looking for
+applying "lst1_magic_dl2_to_dl3.py"
+2) Creating the subdirectories for the DL3
+data files.
+
+
 Usage:
 $ python DL2_to_DL3.py
 

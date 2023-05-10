@@ -1,4 +1,15 @@
 """
+This scripts facilitates the usage of the script
+"lst1_magic_event_coincidence.py". This script is
+more like a "maneger" that organizes the analysis
+process by:
+1) Creating the bash scripts for looking for
+coincidence events between MAGIC and LST in each
+night.
+2) Creating the subdirectories for the coincident
+event files.
+
+
 Usage:
 $ python coincident_events.py
 
@@ -86,7 +97,7 @@ def bash_coincident(target_dir):
     listOfNightsMAGIC = np.sort(glob.glob(target_dir+"/DL1/Observations/Merged/Merged*"))
     
     for nightMAGIC,nightLST in zip(listOfNightsMAGIC,listOfNightsLST):
-        process_size = len(np.genfromtxt(nightLST+"/list_LST.txt",dtype="str"))
+        process_size = len(np.genfromtxt(nightLST+"/list_LST.txt",dtype="str")) - 1
         
         f = open(f"LST_coincident_{nightLST.split('/')[-1]}.sh","w")
         f.write("#!/bin/sh\n\n")
@@ -103,7 +114,7 @@ def bash_coincident(target_dir):
         f.write("SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write("export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n magic-lst1 python lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
+        f.write(f"conda run -n magic-lst python lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
         f.close()
         
 

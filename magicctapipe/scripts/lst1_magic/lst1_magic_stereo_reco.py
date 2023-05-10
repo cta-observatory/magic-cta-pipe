@@ -7,7 +7,7 @@ parameters with more than one telescope information. The quality cuts
 specified in the configuration file are applied to the events before the
 reconstruction.
 
-When the input is real data containing LST-1 and MAGIC events, it checks
+When the input is real data containing LST and MAGIC events, it checks
 the angular distances of their pointing directions and excludes the
 events taken with larger distances than the limit specified in the
 configuration file. This is in principle to avoid the reconstruction of
