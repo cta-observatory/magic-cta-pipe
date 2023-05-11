@@ -152,21 +152,21 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     # Loop over every telescope combination type
-    for tel_combo, df_train in event_data_train.items():
+    for tel_id, df_train in event_data_train.items():
 
-        logger.info(f"\nEnergy regressors for the '{tel_combo}' type:")
+        logger.info(f"\nEnergy regressors for the telescope ID '{tel_id}' :")
 
         # Train the RFs
         energy_regressor.fit(df_train)
 
         # Check the feature importance
-        for tel_id, telescope_rf in energy_regressor.telescope_rfs.items():
+        telescope_rf = energy_regressor.telescope_rfs[tel_id]
 
-            importances = telescope_rf.feature_importances_.round(5)
-            importances = dict(zip(energy_regressor.features, importances))
+        importances = telescope_rf.feature_importances_.round(5)
+        importances = dict(zip(energy_regressor.features, importances))
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            logger.info(format_object(importances))
+        logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+        logger.info(format_object(importances))
 
         # Save the trained RFs
         if use_unsigned_features:
@@ -228,21 +228,21 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
     # Loop over every telescope combination type
-    for tel_combo, df_train in event_data_train.items():
+    for tel_id, df_train in event_data_train.items():
 
-        logger.info(f"\nDISP regressors for the '{tel_combo}' type:")
+        logger.info(f"\nDISP regressors for the telescope ID '{tel_id}':")
 
         # Train the RFs
         disp_regressor.fit(df_train)
 
         # Check the feature importance
-        for tel_id, telescope_rf in disp_regressor.telescope_rfs.items():
+        telescope_rf = disp_regressor.telescope_rfs[tel_id]
 
-            importances = telescope_rf.feature_importances_.round(5)
-            importances = dict(zip(disp_regressor.features, importances))
+        importances = telescope_rf.feature_importances_.round(5)
+        importances = dict(zip(disp_regressor.features, importances))
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            logger.info(format_object(importances))
+        logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+        logger.info(format_object(importances))
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
@@ -317,12 +317,12 @@ def train_event_classifier(
     # Loop over every telescope combination type
     common_combinations = set(event_data_gamma.keys()) & set(event_data_proton.keys())
 
-    for tel_combo in sorted(common_combinations):
+    for tel_id in sorted(common_combinations):
 
-        logger.info(f"\nEvent classifiers for the '{tel_combo}' type:")
+        logger.info(f"\nEvent classifiers for the telescope ID '{tel_id}':")
 
-        df_gamma = event_data_gamma[tel_combo]
-        df_proton = event_data_proton[tel_combo]
+        df_gamma = event_data_gamma[tel_id]
+        df_proton = event_data_proton[tel_id]
 
         # Adjust the number of training samples
         n_events_gamma = len(df_gamma.groupby(GROUP_INDEX_TRAIN).size())
@@ -342,13 +342,13 @@ def train_event_classifier(
         event_classifier.fit(df_train)
 
         # Check the feature importance
-        for tel_id, telescope_rf in event_classifier.telescope_rfs.items():
+        telescope_rf = event_classifier.telescope_rfs[tel_id]
 
-            importances = telescope_rf.feature_importances_.round(5)
-            importances = dict(zip(event_classifier.features, importances))
+        importances = telescope_rf.feature_importances_.round(5)
+        importances = dict(zip(event_classifier.features, importances))
 
-            logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
-            logger.info(format_object(importances))
+        logger.info(f"\n{TEL_NAMES[tel_id]} feature importance:")
+        logger.info(format_object(importances))
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
