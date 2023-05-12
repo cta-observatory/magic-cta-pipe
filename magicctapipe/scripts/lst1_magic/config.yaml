@@ -73,7 +73,7 @@ event_coincidence:
     time_offset:
         start: "-10 us"
         stop: "0 us"
-    n_large_shower_events: 50	      	     
+    n_search_coincident_events: 50
 
 stereo_reco:
     quality_cuts: "(intensity > 50) & (width > 0)"
