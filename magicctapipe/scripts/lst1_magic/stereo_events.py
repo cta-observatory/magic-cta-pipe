@@ -109,7 +109,7 @@ def bash_stereoMC(target_dir, identification):
     f.write("#SBATCH -p xxl\n")
     f.write("#SBATCH -J "+process_name+"_stereo\n")
     f.write(f"#SBATCH --array=0-{process_size}%100\n")
-    f.write('#SBATCH --mem=20g\n')
+    f.write('#SBATCH --mem=30g\n')
     f.write("#SBATCH -N 1\n\n")
     f.write("ulimit -l unlimited\n")
     f.write("ulimit -s unlimited\n")
