@@ -666,7 +666,7 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
         df_events = event_data.query(f"tel_id == {tel_id}")
 
         if not df_events.empty:
-            data_train[TEL_NAMES[tel_id]] = df_events
+            data_train[tel_id] = df_events
 
     return data_train
 
