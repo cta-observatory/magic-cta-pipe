@@ -170,9 +170,9 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
         # Save the trained RFs
         if use_unsigned_features:
-            output_file = f"{output_dir}/energy_regressors_{tel_combo}_unsigned.joblib"
+            output_file = f"{output_dir}/energy_regressors_{tel_id}_unsigned.joblib"
         else:
-            output_file = f"{output_dir}/energy_regressors_{tel_combo}.joblib"
+            output_file = f"{output_dir}/energy_regressors_{tel_id}.joblib"
 
         energy_regressor.save(output_file)
 
@@ -246,9 +246,9 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
-            output_file = f"{output_dir}/disp_regressors_{tel_combo}_unsigned.joblib"
+            output_file = f"{output_dir}/disp_regressors_{tel_id}_unsigned.joblib"
         else:
-            output_file = f"{output_dir}/disp_regressors_{tel_combo}.joblib"
+            output_file = f"{output_dir}/disp_regressors_{tel_id}.joblib"
 
         disp_regressor.save(output_file)
 
@@ -352,9 +352,9 @@ def train_event_classifier(
 
         # Save the trained RFs to an output file
         if use_unsigned_features:
-            output_file = f"{output_dir}/event_classifiers_{tel_combo}_unsigned.joblib"
+            output_file = f"{output_dir}/event_classifiers_{tel_id}_unsigned.joblib"
         else:
-            output_file = f"{output_dir}/event_classifiers_{tel_combo}.joblib"
+            output_file = f"{output_dir}/event_classifiers_{tel_id}.joblib"
 
         event_classifier.save(output_file)
 
