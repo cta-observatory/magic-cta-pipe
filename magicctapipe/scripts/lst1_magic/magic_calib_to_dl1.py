@@ -159,6 +159,38 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             subrun_id = event_source.metadata["subrun_number"][0]
             output_file = f"{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5"
 
+    # Reset the telescope IDs of the subarray description
+    if event_source.is_hast:
+        tel_positions_magic_lst = {
+            1: [-8.09, 77.13, 0.78] * u.m,  # LST-1
+            2: [39.3, -62.55, -0.97] * u.m,  # MAGIC-I
+            3: [-31.21, -14.57, 0.2] * u.m,  # MAGIC-II
+        }
+
+        tel_descriptions_magic_lst = {
+            1: subarray.tel[1],  # dummy telescope description for LST-1
+            2: subarray.tel[1],  # MAGIC-I
+            3: subarray.tel[2],  # MAGIC-II
+        }
+
+        subarray_magic = SubarrayDescription(
+            "MAGIC-LST-Array", tel_positions_magic_lst, tel_descriptions_magic_lst
+        )
+    else:
+        tel_positions_magic = {
+            2: subarray.positions[1],  # MAGIC-I
+            3: subarray.positions[2],  # MAGIC-II
+        }
+
+        tel_descriptions_magic = {
+            2: subarray.tel[1],  # MAGIC-I
+            3: subarray.tel[2],  # MAGIC-II
+        }
+
+        subarray_magic = SubarrayDescription(
+            "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
+        )
+
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 
@@ -304,6 +336,19 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             elif tel_id == 2:
                 event_info.tel_id = 3  # MAGIC-II
 
+            if event.trigger.tels_with_trigger.tolist() == [1, 2]:
+                tels_with_trigger_magic_lst = [2, 3]
+            elif event.trigger.tels_with_trigger.tolist() == [2, 3]:
+                tels_with_trigger_magic_lst = [1, 3]
+            elif event.trigger.tels_with_trigger.tolist() == [1, 3]:
+                tels_with_trigger_magic_lst = [1, 2]
+            elif event.trigger.tels_with_trigger.tolist() == [1, 2, 3]:
+                tels_with_trigger_magic_lst = [1, 2, 3]
+
+            tels_with_trigger_mask = subarray_magic.tel_ids_to_mask(tels_with_trigger_magic_lst)
+
+            event_info.tels_with_trigger = tels_with_trigger_mask
+
             # Save the parameters to the output file
             writer.write(
                 "parameters", (event_info, hillas_params, timing_params, leakage_params)
@@ -311,21 +356,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
-
-    # Reset the telescope IDs of the subarray description
-    tel_positions_magic = {
-        2: subarray.positions[1],  # MAGIC-I
-        3: subarray.positions[2],  # MAGIC-II
-    }
-
-    tel_descriptions_magic = {
-        2: subarray.tel[1],  # MAGIC-I
-        3: subarray.tel[2],  # MAGIC-II
-    }
-
-    subarray_magic = SubarrayDescription(
-        "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
-    )
 
     # Save the subarray description
     subarray_magic.to_hdf(output_file)
