@@ -35,7 +35,7 @@ setup(
     install_requires=[
         "ctapipe~=0.19.0",
         "ctaplot~=0.5.5",
-        'ctapipe_io_magic~=0.5.1',
+        'ctapipe_io_magic~=0.5',
         "gammapy~=0.19.0",
         "uproot",
         "pandas",
@@ -50,7 +50,7 @@ setup(
         "joblib~=1.2.0",
         "matplotlib~=3.5",
         "numba",
-        "numpy<1.22.0a0",
+        "numpy",
         "protobuf~=3.20.0",
         "scipy",
         "scikit-learn~=1.0",
