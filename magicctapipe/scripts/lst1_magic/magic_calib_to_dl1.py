@@ -336,13 +336,13 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
             elif tel_id == 2:
                 event_info.tel_id = 3  # MAGIC-II
 
-            if event.trigger.tels_with_trigger.tolist() == [1, 2]:
+            if event.trigger.tels_with_trigger == [1, 2]:
                 tels_with_trigger_magic_lst = [2, 3]
-            elif event.trigger.tels_with_trigger.tolist() == [2, 3]:
+            elif event.trigger.tels_with_trigger == [2, 3]:
                 tels_with_trigger_magic_lst = [1, 3]
-            elif event.trigger.tels_with_trigger.tolist() == [1, 3]:
+            elif event.trigger.tels_with_trigger == [1, 3]:
                 tels_with_trigger_magic_lst = [1, 2]
-            elif event.trigger.tels_with_trigger.tolist() == [1, 2, 3]:
+            elif event.trigger.tels_with_trigger == [1, 2, 3]:
                 tels_with_trigger_magic_lst = [1, 2, 3]
 
             tels_with_trigger_mask = subarray_magic.tel_ids_to_mask(tels_with_trigger_magic_lst)
