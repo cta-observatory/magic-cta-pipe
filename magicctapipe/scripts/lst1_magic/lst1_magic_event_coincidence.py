@@ -164,6 +164,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         profiles = pd.DataFrame(
             data={"time_offset": time_offsets.to_value("us").round(1)}
         )
+    elif search_method == "all_combination":
+        profiles = pd.DataFrame(data={"time_offset": []})
 
     # Arrange the LST timestamps. They are stored in the UNIX format in
     # units of seconds with 17 digits, 10 digits for the integral part
@@ -286,10 +288,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             )
             time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
 
-            profiles = pd.DataFrame(
-                data={"time_offset": time_offsets.to_value("us").round(1)}
-            )
-
             n_coincidences = np.array(
                 [
                     np.sum(
@@ -385,7 +383,15 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
         event_data = pd.concat([event_data, df_lst, df_magic])
         features = pd.concat([features, df_feature])
-        profiles = profiles.merge(df_profile)
+
+        if search_method == "scan":
+            profiles = profiles.merge(df_profile)
+
+        elif search_method == "all_combination":
+            df_profile = df_profile.query(f"n_coincidence_tel{coincidence_id} >  1")
+            df_profile = df_profile.drop_duplicates()
+            profiles = profiles.merge(df_profile, on="time_offset", how="outer")
+            profiles = profiles.sort_values("time_offset", ascending=False)
 
     if event_data.empty:
         logger.info("\nNo coincident events are found. Exiting...")
