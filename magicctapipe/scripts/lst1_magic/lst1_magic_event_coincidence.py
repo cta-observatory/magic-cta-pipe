@@ -254,12 +254,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
                 n_coincidences.append(n_coincidence)
 
-            if not any(n_coincidences):
-                logger.info("\nNo coincident events are found. Skipping...")
-                continue
-
-            n_coincidences = np.array(n_coincidences)
-
         # Instead of the scan method, "all combination" method  will find
         # the best time offset among all possible combinations of time offset
         # using a small fraction of datasets. First, N events are extracted from
@@ -274,10 +268,16 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             # If LST/MAGIC observations are not completely overlapped, only small
             # numbers of MAGIC events are left for the coincidence search.
             # To find large-intensity showers within the same time window,
-            # time cut between MAGIC observations is applied to the LST data set.
-            cond_lolim = timestamps_lst >= timestamps_magic[0]
-            cond_uplim = timestamps_lst <= timestamps_magic[-1]
+            # time cut around MAGIC observations is applied to the LST data set.
+            cond_lolim = timestamps_lst >= timestamps_magic[0] - window_half_width
+            cond_uplim = timestamps_lst <= timestamps_magic[-1] + window_half_width
             mask_magic_obs_window = np.logical_and(cond_lolim, cond_uplim)
+
+            if np.count_nonzero(mask_magic_obs_window) == 0:
+                logger.info(
+                    f"\nNo LST events are found around {tel_name} events. Skipping..."
+                )
+                continue
 
             index_large_intensity_lst = np.argsort(
                 event_data_lst["intensity"][mask_magic_obs_window]
@@ -297,15 +297,18 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             )
             time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
 
-            n_coincidences = np.array(
-                [
-                    np.sum(
-                        np.abs(time_offsets - time_offset).value
-                        < window_half_width.value
-                    )
-                    for time_offset in time_offsets
-                ]
-            )
+            n_coincidences = [
+                np.sum(
+                    np.abs(time_offsets - time_offset).value < window_half_width.value
+                )
+                for time_offset in time_offsets
+            ]
+
+        if not any(n_coincidences):
+            logger.info("\nNo coincident events are found. Skipping...")
+            continue
+
+        n_coincidences = np.array(n_coincidences)
 
         # Sometimes there are more than one time offset maximizing the
         # number of coincidences, so here we calculate the mean of them
