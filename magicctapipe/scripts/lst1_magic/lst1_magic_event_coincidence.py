@@ -267,18 +267,27 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         # of coincident events within a defined window after shifting all possible
         # combination (N x N) of time offsets.
         elif search_method == "all_combination":
-            mask_large_intensity_lst = np.argsort(event_data_lst["intensity"])[::-1][
+            index_large_intensity_magic = np.argsort(df_magic["intensity"])[::-1][
                 :n_search_coincident_events
             ]
 
-            mask_large_intensity_magic = np.argsort(df_magic["intensity"])[::-1][
-                :n_search_coincident_events
-            ]
+            # If LST/MAGIC observations are not completely overlapped, only small
+            # numbers of MAGIC events are left for the coincidence search.
+            # To find large-intensity showers within the same time window,
+            # time cut between MAGIC observations is applied to the LST data set.
+            cond_lolim = timestamps_lst >= timestamps_magic[0]
+            cond_uplim = timestamps_lst <= timestamps_magic[-1]
+            mask_magic_obs_window = np.logical_and(cond_lolim, cond_uplim)
 
+            index_large_intensity_lst = np.argsort(
+                event_data_lst["intensity"][mask_magic_obs_window]
+            )[::-1][:n_search_coincident_events]
+
+            # crate an array of all combinations of (MAGIC timestamp, LST timestamp)
             timestamps_magic_lst_combination = np.array(
                 np.meshgrid(
-                    timestamps_magic[mask_large_intensity_magic].value,
-                    timestamps_lst[mask_large_intensity_lst],
+                    timestamps_magic[index_large_intensity_magic].value,
+                    timestamps_lst[mask_magic_obs_window][index_large_intensity_lst],
                 )
             ).reshape(2, -1)
 
