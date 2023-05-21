@@ -60,7 +60,6 @@ import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
 from magicctapipe.io import (
-    format_object,
     get_stereo_events,
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
@@ -142,10 +141,10 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         pre_offset_search = config_coinc["pre_offset_search"]
 
     if pre_offset_search:
-        logger.info(f"\nPre offset search will be performed.")
+        logger.info("\nPre offset search will be performed.")
         n_pre_offset_search_events = config_coinc["n_pre_offset_search_events"]
     else:
-        logger.info(f"\noffset scan range defined in the config file will be used.")
+        logger.info("\noffset scan range defined in the config file will be used.")
         offset_start = u.Quantity(config_coinc["time_offset"]["start"])
         offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
 
