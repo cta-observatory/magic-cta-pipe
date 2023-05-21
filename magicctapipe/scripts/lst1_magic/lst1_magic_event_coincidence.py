@@ -202,9 +202,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
             logger.info(f"--> {n_events_magic} events are found.")
 
-            # df_magic = df_magic.iloc[mask]
-            # timestamps_magic = timestamps_magic[mask]
-
             index_large_intensity_magic = np.argsort(df_magic["intensity"][mask])[::-1][
                 :n_search_coincident_events
             ]
