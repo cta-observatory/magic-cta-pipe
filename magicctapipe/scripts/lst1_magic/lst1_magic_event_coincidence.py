@@ -184,12 +184,10 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df_magic["timestamp"] = timestamps_magic.to_value("s")
         df_magic.drop(["time_sec", "time_nanosec"], axis=1, inplace=True)
 
-        # Instead of the scan method, "all combination" method  will find
-        # the best time offset among all possible combinations of time offset
-        # using a small fraction of datasets. First, N events are extracted from
-        # largerst intensity events for LST and MAGIC. Then, it will count a number
-        # of coincident events within a defined window after shifting all possible
-        # combination (N x N) of time offsets.
+        # Pre offset search is performed to define the offset scan region.
+        # First, N events are extracted from largerst intensity events for LST and
+        # MAGIC. Then, it counts a number of coincident events within a defined
+        # window after shifting all possible combination (N x N) of time offsets.
         if pre_offset_search:
             logger.info(
                 "\nPre offset search using large-intensity shower events is ongoing..."
@@ -250,37 +248,44 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
                     timestamps_magic[mask_lst_obs_window][
                         index_large_intensity_magic
                     ].value,
-                    timestamps_lst[mask_magic_obs_window][index_large_intensity_lst],
+                    timestamps_lst[mask_magic_obs_window][
+                        index_large_intensity_lst
+                    ].value,
                 )
             ).reshape(2, -1)
 
             # Compute all combinations of time offset between MAGIC and LST
-            time_offsets = (
+            time_offsets_pre_search = (
                 timestamps_magic_lst_combination[0]
                 - timestamps_magic_lst_combination[1]
             )
-            time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
 
-            n_coincidences = [
-                np.sum(
-                    np.abs(time_offsets - time_offset).value < window_half_width.value
-                )
-                for time_offset in time_offsets
-            ]
-
-            n_coincidences = np.array(n_coincidences)
-
-            offset_at_max = time_offsets[n_coincidences == n_coincidences.max()].mean()
-            offset_at_max = offset_at_max.to("us").round(1)
-
-            logger.info(
-                f"\nPre offset search finds {offset_at_max} as a possible offset"
+            time_offsets_pre_search = u.Quantity(
+                time_offsets_pre_search.round(), unit="ns", dtype=int
             )
 
-            # offset scan region is defined as between (offset_at_max - full window width)
-            # and {offset_at_max + full window width}
-            offset_start = offset_at_max - 2 * window_half_width
-            offset_stop = offset_at_max + 2 * window_half_width
+            n_coincidences_pre_search = [
+                np.sum(
+                    np.abs(time_offsets_pre_search - time_offset).value
+                    < window_half_width.value
+                )
+                for time_offset in time_offsets_pre_search
+            ]
+
+            n_coincidences_pre_search = np.array(n_coincidences_pre_search)
+
+            offset_at_max_pre_search = time_offsets_pre_search[
+                n_coincidences_pre_search == n_coincidences_pre_search.max()
+            ].mean()
+            offset_at_max_pre_search = offset_at_max_pre_search.to("us").round(1)
+
+            logger.info(
+                f"\nPre offset search finds {offset_at_max_pre_search} as a possible offset"
+            )
+
+            # offset scan region is defined as between +/- full window width around the offset_at_max
+            offset_start = offset_at_max_pre_search - 2 * window_half_width
+            offset_stop = offset_at_max_pre_search + 2 * window_half_width
 
         logger.info("\nTime offsets scan region:")
         logger.info(f"  start: {offset_start.to('us').round(1)}")
@@ -437,6 +442,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         event_data = pd.concat([event_data, df_lst, df_magic])
         features = pd.concat([features, df_feature])
         profiles = profiles.merge(df_profile, on="time_offset", how="outer")
+        profiles = profiles.sort_values("time_offset")
 
     if event_data.empty:
         logger.info("\nNo coincident events are found. Exiting...")
