@@ -220,14 +220,12 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             # numbers of MAGIC events are left for the pre offset search.
             # To find large-intensity showers within the same time window,
             # time cut around MAGIC observations is applied to the LST data set.
-            cond_lolim = (
-                timestamps_lst
-                >= timestamps_magic[mask_lst_obs_window][0] - window_half_width
-            )
-            cond_uplim = (
-                timestamps_lst
-                <= timestamps_magic[mask_lst_obs_window][-1] + window_half_width
-            )
+            time_lolim = timestamps_magic[mask_lst_obs_window][0] - window_half_width
+            time_uplim = timestamps_magic[mask_lst_obs_window][-1] + window_half_width
+
+            cond_lolim = timestamps_lst >= time_lolim
+            cond_uplim = timestamps_lst <= time_uplim
+
             mask_magic_obs_window = np.logical_and(cond_lolim, cond_uplim)
 
             if np.count_nonzero(mask_magic_obs_window) == 0:
