@@ -34,7 +34,7 @@ as summarized below:
 * March 10 2023 to March 30 2023: -76039.3 us
 * after April 13 2023: -25.1 us
 By default, pre offset search is performed using large shower events.
-The possible time offset is found among all possible combination of 
+The possible time offset is found among all possible combinations of 
 time offsets using those events. Finally, the time offset scan is performed
 around the possible offset found by the pre offset search. Instead of that,
 you can also define the offset scan range in the configuration file.
@@ -184,9 +184,9 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df_magic.drop(["time_sec", "time_nanosec"], axis=1, inplace=True)
 
         # Pre offset search is performed to define the offset scan region.
-        # First, N events are extracted from largerst intensity events for LST and
-        # MAGIC. Then, it counts a number of coincident events within a defined
-        # window after shifting all possible combination (N x N) of time offsets.
+        # First, N events are extracted from largest intensity events for LST and
+        # MAGIC. Then, it counts the number of coincident events within a defined
+        # window after shifting all possible combinations (N x N) of time offsets.
         if pre_offset_search:
             logger.info(
                 "\nPre offset search using large-intensity shower events is ongoing..."
