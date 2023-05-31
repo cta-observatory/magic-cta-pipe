@@ -280,9 +280,11 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
                 f"\nPre offset search finds {offset_at_max_pre_search} as a possible offset"
             )
 
-            # offset scan region is defined as between +/- full window width around the offset_at_max
-            offset_start = offset_at_max_pre_search - 2 * window_half_width
-            offset_stop = offset_at_max_pre_search + 2 * window_half_width
+            # offset scan region is defined as 3 x half window width
+            # around the offset_at_max to cover "full window width" which will
+            # be used to compute weighted average of the time offset
+            offset_start = offset_at_max_pre_search - 3 * window_half_width
+            offset_stop = offset_at_max_pre_search + 3 * window_half_width
 
         logger.info("\nTime offsets scan region:")
         logger.info(f"  start: {offset_start.to('us').round(1)}")
