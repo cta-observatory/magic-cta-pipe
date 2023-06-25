@@ -69,6 +69,8 @@ MAGIC:
 event_coincidence:
     timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"
     window_half_width: "300 ns"
+    pre_offset_search: true
+    n_pre_offset_search_events: 100
     time_offset:
         start: "-10 us"
         stop: "0 us"
