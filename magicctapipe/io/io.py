@@ -25,6 +25,7 @@ from pyirf.utils import calculate_source_fov_offset, calculate_theta
 __all__ = [
     "telescope_combinations",
     "format_object",
+    "get_stereo",
     "get_stereo_events",
     "get_dl2_mean",
     "load_lst_dl1_data_file",
@@ -132,7 +133,48 @@ def format_object(input_object):
     string = string.replace("'", "").replace(",", "")
 
     return string
+    
+def get_stereo(
+    event_data, config, quality_cuts=None, group_index=["obs_id", "event_id"]
+):
 
+    """
+    Gets the stereo events surviving specified quality cuts without overwriting the
+    multiplicity and combo type. This function is useful when loading the DL2 data
+    when we apply one RF per telescope (and not per combo type).
+
+    Parameters
+    ----------
+    event_data: pandas.core.frame.DataFrame
+        Data frame of shower events
+    config: dict 
+        Read from the yaml file with information about the telescope IDs. Typically called "config_general.yaml"
+    quality_cuts: str
+        Quality cuts applied to the input data
+    group_index: list
+        Index to group telescope events
+    
+
+    Returns
+    -------
+    event_data_stereo: pandas.core.frame.DataFrame
+        Data frame of the stereo events surviving the quality cuts
+    """
+    
+    TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
+
+    event_data_stereo = event_data.copy()
+
+    # Apply the quality cuts                                                                                                                                          
+    if quality_cuts is not None:
+        event_data_stereo.query(quality_cuts, inplace=True)
+
+    max_multiplicity=len(TEL_NAMES.keys())
+    # Extract stereo events                                                                                                                                           
+    event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
+    event_data_stereo.query(f"multiplicity >1 & multiplicity <= {max_multiplicity}", inplace=True)
+    
+    return event_data_stereo
 
 def get_stereo_events(
     event_data, config, quality_cuts=None, group_index=["obs_id", "event_id"]
@@ -148,7 +190,7 @@ def get_stereo_events(
     event_data: pandas.core.frame.DataFrame
         Data frame of shower events
     config: dict 
-        yaml file with information about the telescope IDs. Typically called "config_general.yaml"
+        Read from the yaml file with information about the telescope IDs. Typically called "config_general.yaml"
     quality_cuts: str
         Quality cuts applied to the input data
     group_index: list
@@ -721,7 +763,7 @@ def load_mc_dl2_data_file(config, input_file, quality_cuts, event_type, weight_t
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
-    df_events = get_stereo_events(df_events, config, quality_cuts)
+    df_events = get_stereo(df_events, config, quality_cuts)
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
@@ -852,7 +894,7 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
-    event_data = get_stereo_events(event_data, config, quality_cuts)
+    event_data = get_stereo(event_data, config, quality_cuts)
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
