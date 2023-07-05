@@ -92,12 +92,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     tel_id_m1 = assigned_tel_ids["MAGIC-I"]
     tel_id_m2 = assigned_tel_ids["MAGIC-II"]
 
+    allowed_tels = [v for v in assigned_tel_ids.values() if v >= 0]
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
     event_source = EventSource(
         input_file,
-        allowed_tels=list(assigned_tel_ids.values()),
+        allowed_tels=allowed_tels,
         focal_length_choice="effective",
     )
 
@@ -189,10 +190,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     logger.info("\nMAGIC image cleaning:")
     logger.info(format_object(config_magic["magic_clean"]))
 
-    magic_clean = {
-        tel_id_m1: MAGICClean(camera_geoms[tel_id_m1], config_magic["magic_clean"]),
-        tel_id_m2: MAGICClean(camera_geoms[tel_id_m2], config_magic["magic_clean"]),
-    }
+    magic_clean = {}
+    for tel_id_m in [tel_id_m1, tel_id_m2]:
+        if tel_id_m >= 0:
+            magic_clean[tel_id_m]=(MAGICClean(camera_geoms[tel_id_m], config_magic["magic_clean"]))
 
     # Prepare for saving data to an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
@@ -416,17 +417,18 @@ def mc_dl0_to_dl1(input_file, output_dir, config):
     # of the LST-1 and MAGIC positions, and reset the telescope IDs
     position_mean = u.Quantity(list(tel_positions.values())).mean(axis=0)
 
-    tel_positions_lst1_magic = {
-        1: tel_positions[tel_id_lst1] - position_mean,  # LST-1
-        2: tel_positions[tel_id_m1] - position_mean,  # MAGIC-I
-        3: tel_positions[tel_id_m2] - position_mean,  # MAGIC-II
-    }
+    tel_positions_lst1_magic = {}
+    tel_descriptions_lst1_magic = {}
 
-    tel_descriptions_lst1_magic = {
-        1: tel_descriptions[tel_id_lst1],  # LST-1
-        2: tel_descriptions[tel_id_m1],  # MAGIC-I
-        3: tel_descriptions[tel_id_m2],  # MAGIC-II
-    }
+    if tel_id_lst1 >= 0:
+        tel_positions_lst1_magic[1] = tel_positions[tel_id_lst1] - position_mean  # LST-1
+        tel_descriptions_lst1_magic[1] = tel_descriptions[tel_id_lst1]  # LST-1
+    if tel_id_m1 >= 0:
+        tel_positions_lst1_magic[2] = tel_positions[tel_id_m1] - position_mean  # MAGIC-I
+        tel_descriptions_lst1_magic[2] = tel_descriptions[tel_id_m1]  # MAGIC-I
+    if tel_id_m2 >= 0:
+        tel_positions_lst1_magic[3] = tel_positions[tel_id_m2] - position_mean  # MAGIC-II
+        tel_descriptions_lst1_magic[3] = tel_descriptions[tel_id_m2]  # MAGIC-II
 
     subarray_lst1_magic = SubarrayDescription(
         "LST1-MAGIC-Array", tel_positions_lst1_magic, tel_descriptions_lst1_magic
