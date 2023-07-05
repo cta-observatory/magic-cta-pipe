@@ -19,6 +19,7 @@ import numpy as np
 import glob
 import yaml
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -78,7 +79,7 @@ def MergeDL2(target_dir):
     f.close()
         
 
-def DL2_to_3(target_dir):
+def DL2_to_DL3(target_dir):
     
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
@@ -137,7 +138,7 @@ def main():
     
     telescope_ids = list(config["mc_tel_ids"].values())
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
     print("***** Generating file config_DL3.yaml...")
     print("***** This file can be found in ",target_dir)
@@ -147,16 +148,16 @@ def main():
     MergeDL2(target_dir)
     
     print("***** Generating bashscripts for DL2-DL3 conversion...")
-    DL2_to_3(target_dir)
+    DL2_to_DL3(target_dir)
     
     print("***** Running lst1_magic_dl2_to_dl3.py in the DL2 real data files...")
     print("Process name: DL3_"+target_dir.split("/")[-2:][1])
     print("To check the jobs submitted to the cluster, type: squeue -n DL3_"+target_dir.split("/")[-2:][1])
     
     #Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-    list_of_DL2_to_3_scripts = np.sort(glob.glob("DL3_*.sh"))
+    list_of_DL2_to_DL3_scripts = np.sort(glob.glob("DL3_*.sh"))
     
-    for n,run in enumerate(list_of_DL2_to_3_scripts):
+    for n,run in enumerate(list_of_DL2_to_DL3_scripts):
         if n == 0:
             launch_jobs =  f"dl3{n}=$(sbatch --parsable {run})"
         else:
@@ -167,7 +168,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-
-    
-    
-    

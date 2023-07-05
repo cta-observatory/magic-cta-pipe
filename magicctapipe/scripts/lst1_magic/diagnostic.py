@@ -13,6 +13,7 @@ import numpy as np
 import glob
 import yaml
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -56,7 +57,7 @@ def main():
     with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
    
     print("***** Running lst_magic_diagnostic.py in the DL2 MC and real data files...")

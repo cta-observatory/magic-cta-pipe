@@ -27,6 +27,7 @@ import glob
 import yaml
 import logging
 from tqdm import tqdm
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -216,7 +217,7 @@ def main():
         config = yaml.safe_load(f)
     
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',')

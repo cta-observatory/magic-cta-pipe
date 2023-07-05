@@ -15,12 +15,13 @@ import numpy as np
 import glob
 import yaml
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def DL1_to_2(target_dir):
+def DL1_to_DL2(target_dir):
     
     """
     This function creates the bash scripts to run lst1_magic_dl1_stereo_to_dl2.py.
@@ -69,7 +70,7 @@ def DL1_to_2(target_dir):
         f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
         f.close()
 
-def DL1_to_2_MC(target_dir, identification): 
+def DL1_to_DL2_MC(target_dir, identification): 
     """
     This function creates the bash scripts to run lst1_magic_dl1_stereo_to_dl2.py on the MC files.
     
@@ -126,13 +127,13 @@ def main():
         config = yaml.safe_load(f)
     
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
     print("***** Generating bashscripts for DL2...")
-    DL1_to_2(target_dir)
-    DL1_to_2_MC(target_dir, "gammas")
-    DL1_to_2_MC(target_dir, "protons")
-    DL1_to_2_MC(target_dir, "protons_test")
+    DL1_to_DL2(target_dir)
+    DL1_to_DL2_MC(target_dir, "gammas")
+    DL1_to_DL2_MC(target_dir, "protons")
+    DL1_to_DL2_MC(target_dir, "protons_test")
     
     
     print("***** Running lst1_magic_dl1_stereo_to_dl2.py in the DL1 data files...")
@@ -140,9 +141,9 @@ def main():
     print("To check the jobs submitted to the cluster, type: squeue -n DL2_"+target_dir.split("/")[-2:][1])
     
     #Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-    list_of_DL1_to_2_scripts = np.sort(glob.glob("DL1_to_DL2_*.sh"))
+    list_of_DL1_to_DL2_scripts = np.sort(glob.glob("DL1_to_DL2_*.sh"))
     
-    for n,run in enumerate(list_of_DL1_to_2_scripts):
+    for n,run in enumerate(list_of_DL1_to_DL2_scripts):
         if n == 0:
             launch_jobs =  f"dl2{n}=$(sbatch --parsable {run})"
         else:
@@ -154,13 +155,3 @@ def main():
 if __name__ == "__main__":
     main()
 
-            
-            
-            
-            
-            
-            
-            
-            
-    
-    

@@ -13,6 +13,7 @@ import numpy as np
 import glob
 import yaml
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -33,19 +34,87 @@ def configuration_RFs(ids, target_dir):
     """
     
     f = open(target_dir+'/config_RF.yaml','w')
-    f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
-    f.write('energy_regressor:\n    settings:\n        n_estimators: 150\n        criterion: "squared_error"\n        max_depth: 50\n        min_samples_split: 2\n        min_samples_leaf: 2\n        min_weight_fraction_leaf: 0.0\n        max_features: 1.0\n        max_leaf_nodes: null\n        min_impurity_decrease: 0.0\n        bootstrap: true\n        oob_score: false\n        n_jobs: 5\n        random_state: 42\n        verbose: 0\n        warm_start: false\n        ccp_alpha: 0.0\n        max_samples: null\n\n')
-    f.write('    features: ["intensity", "length", "width", "skewness", "kurtosis", "slope", "intensity_width_2", "h_max", "impact", "pointing_alt", "pointing_az",\n ]\n\n')
-    f.write('    gamma_offaxis:\n        min: 0.2 deg\n        max: 0.5 deg\n\n')
-
-    f.write('disp_regressor:\n    settings:\n        n_estimators: 150\n        criterion: "squared_error"\n        max_depth: 50\n        min_samples_split: 2\n        min_samples_leaf: 2\n        min_weight_fraction_leaf: 0.0\n        max_features: 1.0\n        max_leaf_nodes: null\n        min_impurity_decrease: 0.0\n        bootstrap: true\n        oob_score: false\n        n_jobs: 5\n        random_state: 42\n        verbose: 0\n        warm_start: false\n        ccp_alpha: 0.0\n        max_samples: null\n\n')
-    f.write('    features: ["intensity", "length", "width", "skewness", "kurtosis", "slope", "intensity_width_2", "h_max", "impact", "pointing_alt", "pointing_az",\n ]\n\n')
-    f.write('    gamma_offaxis:\n        min: 0.2 deg\n        max: 0.5 deg\n\n')
-
-    f.write('event_classifier:\n    settings:\n        n_estimators: 100\n        criterion: "gini"\n        max_depth: 100\n        min_samples_split: 2\n        min_samples_leaf: 2\n        min_weight_fraction_leaf: 0.0\n        max_features: "sqrt"\n        max_leaf_nodes: null\n        min_impurity_decrease: 0.0\n        bootstrap: true\n        oob_score: false\n        n_jobs: 5\n        random_state: 42\n        verbose: 0\n        warm_start: false\n        class_weight: null\n        ccp_alpha: 0.0\n        max_samples: null\n\n')
-    f.write('    features: ["intensity", "length", "width", "skewness", "kurtosis", "slope", "intensity_width_2", "h_max", "impact", "pointing_alt", "pointing_az",\n ]\n\n')
-    f.write('    gamma_offaxis:\n        min: 0.2 deg\n        max: 0.5 deg\n\n')
-
+    lines_of_config_file = [
+    "mc_tel_ids:",
+    "\n    LST-1: "+str(ids[0]),
+    "\n    LST-2: "+str(ids[1]),
+    "\n    LST-3: "+str(ids[2]),
+    "\n    LST-4: "+str(ids[3]),
+    "\n    MAGIC-I: "+str(ids[4]),
+    "\n    MAGIC-II: "+str(ids[5])+"\n\n",
+    "energy_regressor:",
+    "\n    settings:",
+    "\n        n_estimators: 150",
+    '\n        criterion: "squared_error"',
+    "\n        max_depth: 50",
+    "\n        min_samples_split: 2",
+    "\n        min_samples_leaf: 2",
+    "\n        min_weight_fraction_leaf: 0.0",
+    "\n        max_features: 1.0",
+    "\n        max_leaf_nodes: null",
+    "\n        min_impurity_decrease: 0.0",
+    "\n        bootstrap: true",
+    "\n        oob_score: false",
+    "\n        n_jobs: 5",
+    "\n        random_state: 42",
+    "\n        verbose: 0",
+    "\n        warm_start: false",
+    "\n        ccp_alpha: 0.0",
+    "\n        max_samples: null\n\n",
+    '    features: ["intensity", "length", "width", "skewness", "kurtosis", "slope", "intensity_width_2", "h_max", "impact", "pointing_alt", "pointing_az"]\n\n',
+    "    gamma_offaxis:",
+    "\n        min: 0.2 deg",
+    "\n        max: 0.5 deg\n\n",
+    "disp_regressor:",
+    "\n    settings:",
+    "\n        n_estimators: 150",
+    '\n        criterion: "squared_error"',
+    "\n        max_depth: 50",
+    "\n        min_samples_split: 2",
+    "\n        min_samples_leaf: 2",
+    "\n        min_weight_fraction_leaf: 0.0",
+    "\n        max_features: 1.0",
+    "\n        max_leaf_nodes: null",
+    "\n        min_impurity_decrease: 0.0",
+    "\n        bootstrap: true",
+    "\n        oob_score: false",
+    "\n        n_jobs: 5",
+    "\n        random_state: 42",
+    "\n        verbose: 0",
+    "\n        warm_start: false",
+    "\n        ccp_alpha: 0.0",
+    "\n        max_samples: null\n\n",
+    '    features: ["intensity", "length", "width", "skewness", "kurtosis", "slope", "intensity_width_2", "h_max", "impact", "pointing_alt", "pointing_az"]\n\n',
+    "    gamma_offaxis:",
+    "\n        min: 0.2 deg",
+    "\n        max: 0.5 deg\n\n",
+    "event_classifier:",
+    "\n    settings:",
+    "\n        n_estimators: 100",
+    '\n        criterion: "gini"',
+    "\n        max_depth: 100",
+    "\n        min_samples_split: 2",
+    "\n        min_samples_leaf: 2",
+    "\n        min_weight_fraction_leaf: 0.0",
+    '\n        max_features: "sqrt"',
+    "\n        max_leaf_nodes: null",
+    "\n        min_impurity_decrease: 0.0",
+    "\n        bootstrap: true",
+    "\n        oob_score: false",
+    "\n        n_jobs: 5",
+    "\n        random_state: 42",
+    "\n        verbose: 0",
+    "\n        warm_start: false",
+    "\n        class_weight: null",
+    "\n        ccp_alpha: 0.0",
+    "\n        max_samples: null\n\n",
+    '    features: ["intensity", "length", "width", "skewness", "kurtosis", "slope", "intensity_width_2", "h_max", "impact", "pointing_alt", "pointing_az"]\n\n',
+    "    gamma_offaxis:",
+    "\n        min: 0.2 deg",
+    "\n        max: 0.5 deg\n\n",
+    "\n"]
+    
+    f.writelines(lines_of_config_file)
     f.close()
 
     
@@ -96,7 +165,7 @@ def main():
         config = yaml.safe_load(f)
     
     telescope_ids = list(config["mc_tel_ids"].values())
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
     
     print("***** Generating file config_RF.yaml...")

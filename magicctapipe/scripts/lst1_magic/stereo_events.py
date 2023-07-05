@@ -13,6 +13,7 @@ import numpy as np
 import glob
 import yaml
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -138,7 +139,7 @@ def main():
         config = yaml.safe_load(f)
     
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     telescope_ids = list(config["mc_tel_ids"].values())
     
     print("***** Generating file config_stereo.yaml...")
@@ -154,7 +155,7 @@ def main():
     bash_stereoMC(target_dir,"protons")
     bash_stereoMC(target_dir,"protons_test")
     
-    print("***** Submitting processess to the cluster...")
+    print("***** Submitting processes to the cluster...")
     print("Process name: "+target_dir.split("/")[-2:][1]+"_stereo")
     print("To check the jobs submitted to the cluster, type: squeue -n "+target_dir.split("/")[-2:][1]+"_stereo")
     

@@ -13,6 +13,7 @@ import numpy as np
 import glob
 import yaml
 import logging
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -105,7 +106,7 @@ def main():
     
     telescope_ids = list(config["mc_tel_ids"].values())
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
     print("***** Generating file config_IRF.yaml...")
     print("***** This file can be found in ",target_dir)

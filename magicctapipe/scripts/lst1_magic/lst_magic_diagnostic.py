@@ -23,6 +23,7 @@ from magicctapipe.io import load_mc_dl2_data_file, get_stereo_events, telescope_
 from matplotlib import gridspec
 import matplotlib as mpl
 from matplotlib import pyplot as plt
+plt.rcParams.update({'font.size': 14})
 from pyirf.benchmarks import angular_resolution, energy_bias_resolution
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.irf import effective_area_per_energy
@@ -87,7 +88,7 @@ def diagnostic_plots(config_IRF,target_dir):
     #gammaness:
     x=np.array(signal_hist['true_energy'].value)
     y=np.array(signal_hist['gammaness'].value)
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     plt.xlabel("True energy of the simulated gamma rays [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50, norm=mpl.colors.LogNorm())
@@ -99,7 +100,7 @@ def diagnostic_plots(config_IRF,target_dir):
 
     x=np.array(background_hist['true_energy'].value)
     y=np.array(background_hist['gammaness'].value)
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     plt.xlabel("True energy of the simulated protons [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50,  norm=mpl.colors.LogNorm())
@@ -111,7 +112,7 @@ def diagnostic_plots(config_IRF,target_dir):
     #Migration matrix
     x=np.array(np.log10(signal_hist['reco_energy'].value))
     y=np.array(np.log10(signal_hist['true_energy'].value))
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     plt.xlabel("Log Reconstructed energy (TeV)")
     plt.ylabel("Log True energy of the simulated photon (TeV)")
     plt.hist2d(x,y, bins=100,  norm=mpl.colors.LogNorm())
@@ -124,7 +125,7 @@ def diagnostic_plots(config_IRF,target_dir):
     
     #g-h separation
     gh_bins = np.linspace(0, 1, 51)
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     plt.xlabel("Gammaness")
     plt.ylabel("Number of events")
     plt.yscale("log")
@@ -158,7 +159,7 @@ def diagnostic_plots(config_IRF,target_dir):
     grid = (n_rows, n_columns)
     locs = list(itertools.product(range(n_rows), range(n_columns)))
 
-    plt.figure(figsize=(20, n_rows * 8))
+    plt.figure(figsize=(20, n_rows * 8),dpi=200)
 
     for i_bin, (eng_lolim, eng_uplim) in enumerate(zip(energy_bins[:-1], energy_bins[1:])):
 
@@ -252,13 +253,14 @@ def diagnostic_plots(config_IRF,target_dir):
         energy_bins_center - energy_bins[:-1],
     ]
 
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     gs = gridspec.GridSpec(4, 1)
 
     plt.title(f"angular resolution(g/h efficiency = {100*gh_efficiency}%)")
     plt.ylabel("Angular resolution (68% cont.) [deg]")
     plt.xlabel("Energy [TeV]")
     plt.semilogx()
+    plt.ylim(0.07,0.165)
     plt.grid(linestyle=':')
 
     plt.errorbar(
@@ -273,13 +275,19 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.legend()
     plt.savefig(target_dir+"/ang_resolution.png",bbox_inches='tight')
     
+    print("Type and values: ",type(energy_bins_center),energy_bins_center)
+    print("Type and values: ",type(angres_eff),angres_eff)
+    print("Type and values: ",type(energy_bins_width),energy_bins_width)
     
+    np.savetxt("angular_resolution_data.txt",[energy_bins_center, angres_eff, energy_bins_width[0]],header="Energy_bin_center, ang_resolution, bin_x_width",delimiter=",")
+    
+    """
     # Dynamic gammaness cuts
     gh_cuts_eff = gh_table_eff["cut"].value
     print(f"Energy bins: {energy_bins}")
     print(f"Efficiency gammaness cuts:\n{gh_cuts_eff}")
     
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     plt.xlabel("Reconstructed energy [TeV]")
     plt.ylabel("Gammaness cut that saves 90% of the gamma rays")
     plt.semilogx()
@@ -292,7 +300,7 @@ def diagnostic_plots(config_IRF,target_dir):
         label="gamma efficiency",
         marker="o",
     )
-    
+    """
     
     #Energy resolution
     theta_percentile = 100 * theta_efficiency
@@ -318,7 +326,7 @@ def diagnostic_plots(config_IRF,target_dir):
     engbias_eff = engres_table_eff["bias"].value
     engres_eff = engres_table_eff["resolution"].value
 
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     gs = gridspec.GridSpec(4, 1)
 
     plt.title(f"Energy bias and energy resolution(g/h eff. = {100*gh_efficiency}%, theta eff. = {100*theta_efficiency}%)")
@@ -335,6 +343,7 @@ def diagnostic_plots(config_IRF,target_dir):
         label="Energy resolution",
         marker="o",
     )
+    plt.ylim(-0.15,0.25)
 
     plt.errorbar(
         x=energy_bins_center,
@@ -347,6 +356,8 @@ def diagnostic_plots(config_IRF,target_dir):
 
     plt.legend()
     plt.savefig(target_dir+"/energy_resolution.png",bbox_inches='tight')
+    
+    np.savetxt("energy_resolution_data.txt",[energy_bins_center, engres_eff, engbias_eff, energy_bins_width[0]],header="Energy_bin_center, ener_resolution, ener_bias, bin_x_width",delimiter=",")
     
     
     #Effective area
@@ -365,12 +376,13 @@ def diagnostic_plots(config_IRF,target_dir):
         true_energy_bins=u.Quantity(energy_bins, u.TeV),
     )
 
-    plt.figure(figsize=(10,8))
+    plt.figure(figsize=(10,8),dpi=200)
     plt.title(f"g/h eff. = {100*gh_efficiency}%, theta eff. = {100*theta_efficiency}%")
     plt.xlabel("Reconstructed energy [TeV]")
     plt.ylabel("Effective area [m$^2$]")
     plt.loglog()
-    plt.grid(linestyle=':')
+    plt.grid(which="both",linestyle=':')
+    plt.ylim(0.6e5,4e5)
 
     plt.errorbar(
         x=energy_bins_center,
@@ -382,6 +394,8 @@ def diagnostic_plots(config_IRF,target_dir):
 
     plt.legend(loc="lower right")
     plt.savefig(target_dir+"/effective_area.png",bbox_inches='tight')
+    
+    np.savetxt("effective_area.txt",[energy_bins_center, aeff_eff_26.value, energy_bins_width[0]],header="Energy_bin_center, effec_area, bin_x_width",delimiter=",")
     
     #Cmap (this will first check if you have real data)
     list_of_nights = np.sort(glob.glob(target_dir+'/DL2/Observations/*'))
@@ -430,7 +444,7 @@ def diagnostic_plots(config_IRF,target_dir):
 
         print(f"\nNumber of events: {len(event_list)}")
         
-        plt.figure(dpi=250)
+        plt.figure(dpi=200)
         plt.title(f"gammaness > {cut_value_gh}, combo_type = {combo_types}")
         plt.xlabel("RA [deg]")
         plt.ylabel("Dec [deg]")

@@ -7,17 +7,17 @@ mc_tel_ids:
     MAGIC-II: 3
 
 directories:
-    workspace_dir : "/fefs/aswg/workspace/raniere/" #Pay attention to put the last "/"!!!
+    workspace_dir : "/fefs/aswg/workspace/raniere/" 
     target_name   : "CrabTeste"
-    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/" #Pay attention to put the last "/"!!!
-    MC_electrons  : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Electrons/sim_telarray/" #Pay attention to put the last "/"!!!
-    MC_helium     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Helium/sim_telarray/" #Pay attention to put the last "/"!!!
-    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray/" #Pay attention to put the last "/"!!!
-    MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/" #Pay attention to put the last "/"!!!
+    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"
+    MC_electrons  : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Electrons/sim_telarray/" 
+    MC_helium     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Helium/sim_telarray/" 
+    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray"
+    MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
     
 general:
     SimTel_version: "v1.4"    
-    focal_length  : "nominal"
+    focal_length  : "effective" #effective #nominal
     MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
     LST_runs      : "LST_runs.txt"  
     proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
