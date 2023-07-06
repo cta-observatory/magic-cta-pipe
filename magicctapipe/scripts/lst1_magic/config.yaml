@@ -200,7 +200,7 @@ event_classifier:
 create_irf:
     quality_cuts: "disp_diff_mean < 0.22"
     event_type: "software"  # select "software", "software_only_3tel", "magic_only" or "hardware"
-    weight_type_dl2: "simple"  # select "simple", "variance" or "intensity"
+    weight_type_dl2: "intensity"  # select "simple", "variance" or "intensity"
     obs_time_irf: "50 h"  # used when creating a background HDU
 
     energy_bins:  # log space
@@ -216,7 +216,7 @@ create_irf:
     fov_offset_bins:  # linear space, used for diffuse MCs
         start: "0 deg"
         stop: "1 deg"
-        n_edges: 2
+        n_edges: 6
 
     source_offset_bins:  # linear space, used when creating PSF HDU
         start: "0 deg"
@@ -240,7 +240,7 @@ create_irf:
         global_cut_value: "0.2 deg"  # used for the global cut
         efficiency: 0.75  # used for the dynamic cuts
         min_cut: "0.1 deg"  # used for the dynamic cuts
-        max_cut: "0.3 deg"  # used for the dynamic cuts
+        max_cut: "0.25 deg"  # used for the dynamic cuts
 
 
 dl2_to_dl3:
