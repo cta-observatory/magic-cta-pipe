@@ -276,6 +276,8 @@ def scp_file(path, url, env_prefix):
     Download of test files through rsync
     """
     pwd = os.environ[env_prefix + "PASSWORD"]
+    if not path.exists():
+        subprocess.run(["mkdir", "-p", str(path)])
     if not (path / url.name).exists():
         print("DOWNLOADING...")
         cmd = f'''/bin/bash -c "rsync {str(url)} {str(path)}"'''
