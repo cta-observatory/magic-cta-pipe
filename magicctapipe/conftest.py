@@ -18,20 +18,20 @@ DL0_p_data = [
     "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
 ]
 DL0_M1_data = [
-    "20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root",
-    "20201216_M1_05093711.002_Y_CrabNebula-W0.40+035.root",
+    #20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root",
+    #"20201216_M1_05093711.002_Y_CrabNebula-W0.40+035.root",
     # "20201216_M1_05093711.003_Y_CrabNebula-W0.40+035.root",
     # "20201216_M1_05093711.004_Y_CrabNebula-W0.40+035.root",
-    # "20201216_M1_05093711.005_Y_CrabNebula-W0.40+035.root",
+    "20201216_M1_05093711.014_Y_CrabNebula-W0.40+035.root",
 ]
 DL0_M2_data = [
-    "20201216_M2_05093711.001_Y_CrabNebula-W0.40+035.root",
-    "20201216_M2_05093711.002_Y_CrabNebula-W0.40+035.root",
+    #"20201216_M2_05093711.001_Y_CrabNebula-W0.40+035.root",
+    #"20201216_M2_05093711.002_Y_CrabNebula-W0.40+035.root",
     # "20201216_M2_05093711.003_Y_CrabNebula-W0.40+035.root",
     # "20201216_M2_05093711.004_Y_CrabNebula-W0.40+035.root",
-    # "20201216_M2_05093711.005_Y_CrabNebula-W0.40+035.root",
+    "20201216_M2_05093711.014_Y_CrabNebula-W0.40+035.root",
 ]
-DL1_LST_data = ["dl1_LST-1.Run03265.0004.h5"]
+DL1_LST_data = ["dl1_LST-1.Run03265.0094.h5"]
 """
 Temporary paths
 """
