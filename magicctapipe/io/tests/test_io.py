@@ -108,7 +108,7 @@ def test_load_train_data_files_off(gamma_stereo):
     events = load_train_data_files(
         str(gamma_stereo[0]), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
     )
-    data = events["LST1_M1"]
+    data = events["LST1_M2"]
     assert np.all(data["off_axis"] >= 0.2)
     assert np.all(data["off_axis"] <= 0.5)
 
@@ -148,9 +148,9 @@ def test_load_mc_dl2_data_file_cut(p_dl2, gamma_dl2):
     dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
     for file in dl2_mc:
         data, _, _ = load_mc_dl2_data_file(
-            str(file), "gammaness>0.9", "software", "simple"
+            str(file), "gammaness>0.1", "software", "simple"
         )
-        assert np.all(data["gammaness"] > 0.9)
+        assert np.all(data["gammaness"] > 0.1)
 
 
 def test_load_mc_dl2_data_file_opt(p_dl2, gamma_dl2):
