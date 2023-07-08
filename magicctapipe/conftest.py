@@ -149,8 +149,7 @@ Local paths
 
 @pytest.fixture(scope="session")
 def base_path():
-    # TO BE CHANGED
-    return Path("/home/elisa/.cache/magicctapipe")
+    return Path(str(os.environ["HOME"])+"/.cache/magicctapipe")
 
 
 @pytest.fixture(scope="session")
