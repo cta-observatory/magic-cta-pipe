@@ -75,6 +75,36 @@ def temp_DL2_gamma(tmp_path_factory):
 def temp_irf(tmp_path_factory):
     return tmp_path_factory.mktemp("IRF")
 
+@pytest.fixture(scope="session")
+def temp_DL1_gamma_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gammas_monly")
+
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_gamma_train_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gamma_train_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_gamma_test_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gamma_test_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_rf_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("RF_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_gamma_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_gammas_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_irf_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("IRF_monly")
+
 
 @pytest.fixture(scope="session")
 def temp_DL1_p(tmp_path_factory):
@@ -99,6 +129,30 @@ def temp_DL2_p(tmp_path_factory):
 @pytest.fixture(scope="session")
 def temp_DL2_test(tmp_path_factory):
     return tmp_path_factory.mktemp("DL2_test")
+
+@pytest.fixture(scope="session")
+def temp_DL1_p_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_protons_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_p_train_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_proton_train_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_p_test_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_proton_test_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_p_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_protons_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_test_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_test_monly")
 
 
 @pytest.fixture(scope="session")
@@ -150,6 +204,28 @@ def temp_DL3(tmp_path_factory):
 def temp_pandas(tmp_path_factory):
     return tmp_path_factory.mktemp("pandas")
 
+@pytest.fixture(scope="session")
+def temp_DL1_M_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_MAGIC_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL1_M_merge_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_MAGIC_merge_monly")
+
+@pytest.fixture(scope="session")
+def temp_stereo_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("stereo_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL2_real_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_real_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_DL3_monly(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL3_monly")
 
 """
 Local paths
@@ -266,6 +342,10 @@ def dl1_LST_url(base_url):
 def conf_url(base_url):
     q = base_url / "config.yaml"
     return q
+@pytest.fixture(scope="session")
+def conf_monly_url(base_url):
+    q = base_url / "config_monly.yaml"
+    return q
 
 
 """
@@ -361,6 +441,12 @@ def config(conf_path, conf_url, env_prefix):
     url1 = conf_path / name1
     return url1
 
+@pytest.fixture(scope="session")
+def config_monly(conf_path, conf_monly_url, env_prefix):
+    scp_file(conf_path, conf_monly_url, env_prefix)
+    name1 = conf_monly_url.name
+    url1 = conf_path / name1
+    return url1
 
 """
 Data processing
@@ -385,6 +471,24 @@ def gamma_l1(temp_DL1_gamma, dl0_gamma, config):
 
     return temp_DL1_gamma
 
+@pytest.fixture(scope="session")
+def gamma_l1_monly(temp_DL1_gamma_monly, dl0_gamma, config_monly):
+    """
+    Produce a DL1 file
+    """
+
+    for file in dl0_gamma:
+        subprocess.run(
+            [
+                "lst1_magic_mc_dl0_to_dl1",
+                f"-i{str(file)}",
+                f"-o{str(temp_DL1_gamma_monly)}",
+                f"-c{str(config_monly)}",
+            ]
+        )
+
+    return temp_DL1_gamma_monly
+
 
 @pytest.fixture(scope="session")
 def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
@@ -408,6 +512,29 @@ def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
 
     return (temp_DL1_gamma_train, temp_DL1_gamma_test)
 
+@pytest.fixture(scope="session")
+def gamma_stereo_monly(temp_DL1_gamma_train_monly, temp_DL1_gamma_test_monly, gamma_l1_monly, config_monly):
+    """
+    Produce a DL1 stereo file
+    """
+
+    for i, file in enumerate(gamma_l1_monly.glob("*")):
+        if i < ntraingamma:
+            out = temp_DL1_gamma_train_monly
+        else:
+            out = temp_DL1_gamma_test_monly
+        subprocess.run(
+            [
+                "lst1_magic_stereo_reco",
+                f"-i{str(file)}",
+                f"-o{str(out)}",
+                f"-c{str(config_monly)}", 
+                "--magic-only"
+            ]
+        )
+
+    return (temp_DL1_gamma_train_monly, temp_DL1_gamma_test_monly)
+
 
 @pytest.fixture(scope="session")
 def p_l1(temp_DL1_p, dl0_p, config):
@@ -424,6 +551,22 @@ def p_l1(temp_DL1_p, dl0_p, config):
             ]
         )
     return temp_DL1_p
+
+@pytest.fixture(scope="session")
+def p_l1_monly(temp_DL1_p_monly, dl0_p, config_monly):
+    """
+    Produce a DL1 file
+    """
+    for file in dl0_p:
+        subprocess.run(
+            [
+                "lst1_magic_mc_dl0_to_dl1",
+                f"-i{str(file)}",
+                f"-o{str(temp_DL1_p_monly)}",
+                f"-c{str(config_monly)}",
+            ]
+        )
+    return temp_DL1_p_monly
 
 
 @pytest.fixture(scope="session")
@@ -446,7 +589,27 @@ def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
             ]
         )
     return (temp_DL1_p_train, temp_DL1_p_test)
+@pytest.fixture(scope="session")
+def p_stereo_monly(temp_DL1_p_train_monly, temp_DL1_p_test_monly, p_l1_monly, config_monly):
+    """
+    Produce a DL1 stereo file
+    """
 
+    for i, file in enumerate(p_l1_monly.glob("*")):
+        if i < ntrainp:
+            out = temp_DL1_p_train_monly
+        else:
+            out = temp_DL1_p_test_monly
+        subprocess.run(
+            [
+                "lst1_magic_stereo_reco",
+                f"-i{str(file)}",
+                f"-o{str(out)}",
+                f"-c{str(config_monly)}", 
+                "--magic-only"
+            ]
+        )
+    return (temp_DL1_p_train_monly, temp_DL1_p_test_monly)
 
 @pytest.fixture(scope="session")
 def RF(gamma_stereo, p_stereo, temp_rf, config):
@@ -471,6 +634,28 @@ def RF(gamma_stereo, p_stereo, temp_rf, config):
 
 
 @pytest.fixture(scope="session")
+def RF_monly(gamma_stereo_monly, p_stereo_monly, temp_rf_monly, config_monly):
+    """
+    Produce RFs
+    """
+
+    subprocess.run(
+        [
+            "lst1_magic_train_rfs",
+            f"-g{str(gamma_stereo_monly[0])}",
+            f"-p{str(p_stereo_monly[0])}",
+            f"-o{str(temp_rf_monly)}",
+            f"-c{str(config_monly)}",
+            "--train-energy",
+            "--train-disp",
+            "--train-classifier",
+            "--use-unsigned",
+        ]
+    )
+    return temp_rf_monly
+
+
+@pytest.fixture(scope="session")
 def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
     """
     Produce a DL2 file
@@ -485,8 +670,58 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
                 f"-o{str(temp_DL2_gamma)}",
             ]
         )
+    
+    subprocess.run(
+        [
+            "merge_hdf_files",
+            f"-i{str(temp_DL2_gamma)}",
+            f"-o{str(temp_DL2_gamma)}",
+        ]
+    )
+    for file in temp_DL2_gamma.glob("dl2*run???.h5"):
+        subprocess.run(
+            [
+                "rm",
+                f"{file}",
+                
+            ]
+        )
+
+   
     return temp_DL2_gamma
 
+@pytest.fixture(scope="session")
+def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
+    """
+    Produce a DL2 file
+    """
+
+    for file in temp_DL1_gamma_test_monly.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl1_stereo_to_dl2",
+                f"-d{str(file)}",
+                f"-r{str(RF_monly)}",
+                f"-o{str(temp_DL2_gamma_monly)}",
+            ]
+        )
+    
+    subprocess.run(
+        [
+            "merge_hdf_files",
+            f"-i{str(temp_DL2_gamma_monly)}",
+            f"-o{str(temp_DL2_gamma_monly)}",
+        ]
+    )
+    for file in temp_DL2_gamma_monly.glob("dl2*run???.h5"):
+        subprocess.run(
+            [
+                "rm",
+                f"{file}",
+                
+            ]
+        )
+    return temp_DL2_gamma_monly
 
 @pytest.fixture(scope="session")
 def IRF(gamma_dl2, config, temp_irf):
@@ -505,6 +740,22 @@ def IRF(gamma_dl2, config, temp_irf):
         )
     return temp_irf
 
+@pytest.fixture(scope="session")
+def IRF_monly(gamma_dl2_monly, config_monly, temp_irf_monly):
+    """
+    Produce IRFs
+    """
+
+    for file in gamma_dl2_monly.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_create_irf",
+                f"-g{str(file)}",
+                f"-o{str(temp_irf_monly)}",
+                f"-c{str(config_monly)}",
+            ]
+        )
+    return temp_irf_monly
 
 @pytest.fixture(scope="session")
 def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
@@ -523,6 +774,22 @@ def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
         )
     return temp_DL2_p
 
+@pytest.fixture(scope="session")
+def p_dl2_monly(temp_DL1_p_test_monly, RF_monly, temp_DL2_p_monly):
+    """
+    Produce a DL2 file
+    """
+
+    for file in temp_DL1_p_test_monly.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl1_stereo_to_dl2",
+                f"-d{str(file)}",
+                f"-r{str(RF_monly)}",
+                f"-o{str(temp_DL2_p_monly)}",
+            ]
+        )
+    return temp_DL2_p_monly
 
 @pytest.fixture(scope="session")
 def M1_l1(temp_DL1_M, dl0_m1, config):
@@ -542,6 +809,23 @@ def M1_l1(temp_DL1_M, dl0_m1, config):
 
     return temp_DL1_M
 
+@pytest.fixture(scope="session")
+def M1_l1_monly(temp_DL1_M_monly, dl0_m1, config_monly):
+    """
+    Produce a DL1 file
+    """
+
+    subprocess.run(
+        [
+            "magic_calib_to_dl1",
+            f"-i{str(dl0_m1[0])}",
+            f"-o{str(temp_DL1_M_monly)}",
+            f"-c{str(config_monly)}",
+            "--process-run",
+        ]
+    )
+
+    return temp_DL1_M_monly
 
 @pytest.fixture(scope="session")
 def M2_l1(temp_DL1_M, dl0_m2, config):
@@ -560,6 +844,24 @@ def M2_l1(temp_DL1_M, dl0_m2, config):
     )
 
     return temp_DL1_M
+@pytest.fixture(scope="session")
+def M2_l1_monly(temp_DL1_M_monly, dl0_m2, config_monly):
+    """
+    Produce a DL1 file
+    """
+
+    subprocess.run(
+        [
+            "magic_calib_to_dl1",
+            f"-i{str(dl0_m2[0])}",
+            f"-o{str(temp_DL1_M_monly)}",
+            f"-c{str(config_monly)}",
+            "--process-run",
+        ]
+    )
+
+    return temp_DL1_M_monly
+
 
 
 @pytest.fixture(scope="session")
@@ -577,6 +879,22 @@ def merge_magic(M2_l1, M1_l1, temp_DL1_M_merge):
     )
 
     return temp_DL1_M_merge
+
+@pytest.fixture(scope="session")
+def merge_magic_monly(M2_l1_monly, M1_l1_monly, temp_DL1_M_merge_monly):
+    """
+    Merge MAGIC runs
+    """
+
+    subprocess.run(
+        [
+            "merge_hdf_files",
+            f"-i{str(M2_l1_monly)}",
+            f"-o{str(temp_DL1_M_merge_monly)}",
+        ]
+    )
+
+    return temp_DL1_M_merge_monly
 
 
 @pytest.fixture(scope="session")
@@ -616,7 +934,24 @@ def coincidence_stereo(coincidence, temp_coinc_stereo, config):
         )
 
     return temp_coinc_stereo
+@pytest.fixture(scope="session")
+def stereo_monly(merge_magic_monly, temp_stereo_monly, config_monly):
+    """
+    Produce stereo coincident events
+    """
 
+    for file in merge_magic_monly.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_stereo_reco",
+                f"-i{str(file)}",
+                f"-o{str(temp_stereo_monly)}",
+                f"-c{str(config_monly)}",
+                "--magic-only"
+            ]
+        )
+
+    return temp_stereo_monly
 
 @pytest.fixture(scope="session")
 def real_dl2(coincidence_stereo, RF, temp_DL2_real):
@@ -634,6 +969,22 @@ def real_dl2(coincidence_stereo, RF, temp_DL2_real):
             ]
         )
     return temp_DL2_real
+@pytest.fixture(scope="session")
+def real_dl2_monly(stereo_monly, RF_monly, temp_DL2_real_monly):
+    """
+    Produce a DL2 file
+    """
+
+    for file in stereo_monly.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl1_stereo_to_dl2",
+                f"-d{str(file)}",
+                f"-r{str(RF_monly)}",
+                f"-o{str(temp_DL2_real_monly)}",
+            ]
+        )
+    return temp_DL2_real_monly
 
 
 @pytest.fixture(scope="session")
@@ -656,6 +1007,24 @@ def real_dl3(real_dl2, IRF, temp_DL3, config):
 
 
 @pytest.fixture(scope="session")
+def real_dl3_monly(real_dl2_monly, IRF_monly, temp_DL3_monly, config_monly):
+    """
+    Produce a DL3 file
+    """
+
+    for file in real_dl2_monly.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl2_to_dl3",
+                f"-d{str(file)}",
+                f"-i{str(IRF_monly)}",
+                f"-o{str(temp_DL3_monly)}",
+                f"-c{str(config_monly)}",
+            ]
+        )
+    return temp_DL3_monly
+
+@pytest.fixture(scope="session")
 def real_index(real_dl3):
     """
     Produce indexes
@@ -668,3 +1037,18 @@ def real_index(real_dl3):
         ]
     )
     return temp_DL3
+
+@pytest.fixture(scope="session")
+def real_index_monly(real_dl3_monly):
+    """
+    Produce indexes
+    """
+
+    subprocess.run(
+        [
+            "create_dl3_index_files",
+            f"-i{str(real_dl3_monly)}",
+        ]
+    )
+    return temp_DL3_monly
+

@@ -36,16 +36,16 @@ def test_save_pandas_data_in_table(temp_pandas, pd_test):
     assert df.equals(df1)
 
 
-def test_get_stereo_events_mc(gamma_stereo, p_stereo):
+def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly):
     """
     Check on stereo data reading
     """
 
     stereo_mc = (
-        [p for p in gamma_stereo[0].glob("*")]
-        + [p for p in gamma_stereo[1].glob("*")]
-        + [p for p in p_stereo[0].glob("*")]
-        + [p for p in p_stereo[1].glob("*")]
+        [p for p in gamma_stereo_monly[0].glob("*")]
+        + [p for p in gamma_stereo_monly[1].glob("*")]
+        + [p for p in p_stereo_monly[0].glob("*")]
+        + [p for p in p_stereo_monly[1].glob("*")]
     )
 
     for file in stereo_mc:
@@ -53,19 +53,19 @@ def test_get_stereo_events_mc(gamma_stereo, p_stereo):
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data)
-        assert np.all(data["multiplicity"] > 1)
-        assert np.all(data["combo_type"] >= 0)
+        assert np.all(data["multiplicity"] == 2)
+        assert np.all(data["combo_type"] == 0)
 
 
-def test_get_stereo_events_mc_cut(gamma_stereo, p_stereo):
+def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly):
     """
     Check on quality cuts
     """
     stereo_mc = (
-        [p for p in gamma_stereo[0].glob("*")]
-        + [p for p in gamma_stereo[1].glob("*")]
-        + [p for p in p_stereo[0].glob("*")]
-        + [p for p in p_stereo[1].glob("*")]
+        [p for p in gamma_stereo_monly[0].glob("*")]
+        + [p for p in gamma_stereo_monly[1].glob("*")]
+        + [p for p in p_stereo_monly[0].glob("*")]
+        + [p for p in p_stereo_monly[1].glob("*")]
     )
     for file in stereo_mc:
         event_data = pd.read_hdf(str(file), key="events/parameters")
@@ -75,40 +75,40 @@ def test_get_stereo_events_mc_cut(gamma_stereo, p_stereo):
         assert np.all(data["intensity"] > 50)
 
 
-def test_load_train_data_files_p(p_stereo):
+def test_load_train_data_files_p(p_stereo_monly):
     """
     Check dictionary
     """
 
-    events = load_train_data_files(str(p_stereo[0]))
-    assert list(events.keys()) == ["M1_M2", "LST1_M1", "LST1_M2", "LST1_M1_M2"]
-    data = events["LST1_M1"]
-    assert np.all(data["combo_type"]) == 1
+    events = load_train_data_files(str(p_stereo_monly[0]))
+    assert list(events.keys()) == ["M1_M2"]
+    data = events["M1_M2"]
+    assert np.all(data["combo_type"]) == 0
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
 
-def test_load_train_data_files_g(gamma_stereo):
+def test_load_train_data_files_g(gamma_stereo_monly):
     """
     Check dictionary
     """
 
-    events = load_train_data_files(str(gamma_stereo[0]))
-    assert list(events.keys()) == ["M1_M2", "LST1_M1", "LST1_M2", "LST1_M1_M2"]
-    data = events["LST1_M1"]
-    assert np.all(data["combo_type"]) == 1
+    events = load_train_data_files(str(gamma_stereo_monly[0]))
+    assert list(events.keys()) == ["M1_M2"]
+    data = events["M1_M2"]
+    assert np.all(data["combo_type"]) == 0
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
 
-def test_load_train_data_files_off(gamma_stereo):
+def test_load_train_data_files_off(gamma_stereo_monly):
     """
     Check off-axis cut
     """
     events = load_train_data_files(
-        str(gamma_stereo[0]), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+        str(gamma_stereo_monly[0]), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
     )
-    data = events["LST1_M2"]
+    data = events["M1_M2"]
     assert np.all(data["off_axis"] >= 0.2)
     assert np.all(data["off_axis"] <= 0.5)
 
@@ -124,14 +124,14 @@ def test_load_train_data_files_exc(temp_train_exc):
         _ = load_train_data_files(str(temp_train_exc))
 
 
-def test_load_mc_dl2_data_file(p_dl2, gamma_dl2):
+def test_load_mc_dl2_data_file(p_dl2_monly, gamma_dl2_monly):
     """
     Checks on default loading
     """
-    dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
+    dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
         data, point, _ = load_mc_dl2_data_file(
-            str(file), "width>0", "software", "simple"
+            str(file), "width>0", "magic_only", "simple"
         )
         assert "pointing_alt" in data.colnames
         assert "theta" in data.colnames
@@ -141,34 +141,37 @@ def test_load_mc_dl2_data_file(p_dl2, gamma_dl2):
         assert point[0] <= 90
 
 
-def test_load_mc_dl2_data_file_cut(p_dl2, gamma_dl2):
+def test_load_mc_dl2_data_file_cut(p_dl2_monly, gamma_dl2_monly):
     """
     Check on quality cuts
     """
-    dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
+    dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
         data, _, _ = load_mc_dl2_data_file(
-            str(file), "gammaness>0.1", "software", "simple"
+            str(file), "gammaness>0.1", "magic_only", "simple"
         )
         assert np.all(data["gammaness"] > 0.1)
 
 
-def test_load_mc_dl2_data_file_opt(p_dl2, gamma_dl2):
+def test_load_mc_dl2_data_file_opt(p_dl2_monly, gamma_dl2_monly):
     """
     Check on event_type
     """
-    dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
+    dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
-        data_s, _, _ = load_mc_dl2_data_file(str(file), "width>0", "software", "simple")
-        assert np.all(data_s["combo_type"] > 0)
         
+        data_m, _, _ = load_mc_dl2_data_file(
+            str(file), "width>0", "magic_only", "simple"
+        )
+        
+        assert np.all(data_m["combo_type"] == 0)
 
 
-def test_load_mc_dl2_data_file_exc(p_dl2, gamma_dl2):
+def test_load_mc_dl2_data_file_exc(p_dl2_monly, gamma_dl2_monly):
     """
     Check on event_type exceptions
     """
-    dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
+    dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
         event_type = "abc"
         with pytest.raises(
@@ -178,11 +181,11 @@ def test_load_mc_dl2_data_file_exc(p_dl2, gamma_dl2):
             _, _, _ = load_mc_dl2_data_file(str(file), "width>0", event_type, "simple")
 
 
-def test_get_dl2_mean_mc(p_dl2, gamma_dl2):
+def test_get_dl2_mean_mc(p_dl2_monly, gamma_dl2_monly):
     """
     Check on MC DL2
     """
-    dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
+    dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
@@ -203,11 +206,11 @@ def test_get_dl2_mean_avg(dl2_test):
     assert np.allclose(np.array(events["gammaness"]), np.array([0.5, 0.6, 1]))
 
 
-def test_get_dl2_mean_exc(p_dl2, gamma_dl2):
+def test_get_dl2_mean_exc(p_dl2_monly, gamma_dl2_monly):
     """
     Check on exceptions (weight type)
     """
-    dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
+    dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
         weight = "abc"
         event_data = pd.read_hdf(str(file), key="events/parameters")
@@ -217,12 +220,12 @@ def test_get_dl2_mean_exc(p_dl2, gamma_dl2):
             _ = get_dl2_mean(event_data, weight_type=weight)
 
 
-def test_load_irf_files(IRF):
+def test_load_irf_files(IRF_monly):
     """
     Check on IRF dictionaries
     """
 
-    irf, header = load_irf_files(str(IRF))
+    irf, header = load_irf_files(str(IRF_monly))
     assert set(list(irf.keys())).issubset(
         set(
             [
@@ -266,7 +269,7 @@ def test_load_irf_files(IRF):
         )
     )
     assert header["DL2_WEIG"] == "simple"
-    assert header["EVT_TYPE"] == "software"
+    assert header["EVT_TYPE"] == "magic_only"
 
 
 def test_load_irf_files_exc(temp_irf_exc):
@@ -295,12 +298,12 @@ def test_load_lst_dl1_data_file(dl1_lst):
         assert s1.all()
 
 
-def test_load_magic_dl1_data_files(merge_magic):
+def test_load_magic_dl1_data_files(merge_magic_monly):
     """
     Check on MAGIC DL1
     """
 
-    events, _ = load_magic_dl1_data_files(str(merge_magic))
+    events, _ = load_magic_dl1_data_files(str(merge_magic_monly))
     assert list(events.index.names) == ["obs_id_magic", "event_id_magic", "tel_id"]
     assert "event_id" not in events.columns
     events = events.reset_index()
@@ -320,26 +323,26 @@ def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc):
         _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc))
 
 
-def test_get_stereo_events_data(coincidence_stereo):
+def test_get_stereo_events_data(stereo_monly):
     """
     Check on stereo data reading
     """
 
-    for file in coincidence_stereo.glob("*"):
+    for file in stereo_monly.glob("*"):
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data)
-        assert np.all(data["multiplicity"] > 1)
-        assert np.all(data["combo_type"] >= 0)
+        assert np.all(data["multiplicity"] == 2)
+        assert np.all(data["combo_type"] == 0)
 
 
-def test_get_stereo_events_data_cut(coincidence_stereo):
+def test_get_stereo_events_data_cut(stereo_monly):
     """
     Check on quality cuts
     """
 
-    for file in coincidence_stereo.glob("*"):
+    for file in stereo_monly.glob("*"):
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
@@ -347,12 +350,12 @@ def test_get_stereo_events_data_cut(coincidence_stereo):
         assert np.all(data["intensity"] > 50)
 
 
-def test_load_dl2_data_file(real_dl2):
+def test_load_dl2_data_file(real_dl2_monly):
     """
     Checks on default loading
     """
-    for file in real_dl2.glob("*"):
-        data, on, dead = load_dl2_data_file(str(file), "width>0", "software", "simple")
+    for file in real_dl2_monly.glob("*"):
+        data, on, dead = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
         assert "pointing_alt" in data.colnames
         assert "timestamp" in data.colnames
         assert data["reco_energy"].unit == "TeV"
@@ -361,32 +364,33 @@ def test_load_dl2_data_file(real_dl2):
         assert dead > 0
 
 
-def test_load_dl2_data_file_cut(real_dl2):
+def test_load_dl2_data_file_cut(real_dl2_monly):
     """
     Check on quality cuts
     """
-    for file in real_dl2.glob("*"):
+    for file in real_dl2_monly.glob("*"):
         data, _, _ = load_dl2_data_file(
-            str(file), "gammaness<0.9", "software", "simple"
+            str(file), "gammaness<0.9", "magic_only", "simple"
         )
         assert np.all(data["gammaness"] < 0.9)
 
 
-def test_load_dl2_data_file_opt(real_dl2):
+def test_load_dl2_data_file_opt(real_dl2_monly):
     """
     Check on event_type
     """
-    for file in real_dl2.glob("*"):
-        data_s, _, _ = load_dl2_data_file(str(file), "width>0", "software", "simple")        
-        assert np.all(data_s["combo_type"] > 0)
+    for file in real_dl2_monly.glob("*"):
         
+        data_m, _, _ = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
+        
+        assert np.all(data_m["combo_type"] == 0)
 
 
-def test_load_dl2_data_file_exc(real_dl2):
+def test_load_dl2_data_file_exc(real_dl2_monly):
     """
     Check on event_type exceptions
     """
-    for file in real_dl2.glob("*"):
+    for file in real_dl2_monly.glob("*"):
         event_type = "abc"
         with pytest.raises(
             ValueError,
@@ -395,11 +399,11 @@ def test_load_dl2_data_file_exc(real_dl2):
             _, _, _ = load_dl2_data_file(str(file), "width>0", event_type, "simple")
 
 
-def test_get_dl2_mean_real(real_dl2):
+def test_get_dl2_mean_real(real_dl2_monly):
     """
     Check on real data DL2
     """
-    for file in real_dl2.glob("*"):
+    for file in real_dl2_monly.glob("*"):
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
@@ -407,7 +411,7 @@ def test_get_dl2_mean_real(real_dl2):
         assert "timestamp" in events.columns
 
 
-def test_index(real_index):
+def test_index(real_index_monly):
     """
     Check on DL3 creation (up to indexes)
     """
