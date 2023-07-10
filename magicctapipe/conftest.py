@@ -7,16 +7,25 @@ import pandas as pd
 from pathlib import Path
 import pexpect
 import subprocess
+from math import trunc
 
-ntrain = 1  # number of MC train runs
+
 DL0_gamma_data = [
-    "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",
-    "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
+    "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz", #smaller
+    "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz", #smaller
+    "simtel_corsika_theta_16.087_az_108.090_run3.simtel.gz", #smaller
+    "simtel_corsika_theta_16.087_az_108.090_run4.simtel.gz", #smaller
+    #"simtel_corsika_theta_16.087_az_108.090_run1_all.simtel.gz", #standard
+    #"simtel_corsika_theta_16.087_az_108.090_run2_all.simtel.gz", #standard
+    #"simtel_corsika_theta_16.087_az_108.090_run1_cut.simtel.gz", #cut
+    #"simtel_corsika_theta_16.087_az_108.090_run2_cut.simtel.gz", #cut
 ]
 DL0_p_data = [
     "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",
     "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
 ]
+ntraingamma = trunc(len(DL0_gamma_data)/2)  # number of MC train runs
+ntrainp = trunc(len(DL0_p_data)/2)  # number of MC train runs
 DL0_M1_data = [
     #20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root",
     #"20201216_M1_05093711.002_Y_CrabNebula-W0.40+035.root",
@@ -384,7 +393,7 @@ def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
     """
 
     for i, file in enumerate(gamma_l1.glob("*")):
-        if i < ntrain:
+        if i < ntraingamma:
             out = temp_DL1_gamma_train
         else:
             out = temp_DL1_gamma_test
@@ -424,7 +433,7 @@ def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
     """
 
     for i, file in enumerate(p_l1.glob("*")):
-        if i < ntrain:
+        if i < ntrainp:
             out = temp_DL1_p_train
         else:
             out = temp_DL1_p_test
