@@ -72,7 +72,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
-def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
+def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=False):
     """
     Processes the events of MAGIC calibrated data and computes the DL1
     parameters.
@@ -94,7 +94,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
-    event_source = MAGICEventSource(input_file, process_run=process_run)
+    event_source = MAGICEventSource(input_file, process_run=process_run, max_events=max_events)
 
     is_simulation = event_source.is_simulation
     logger.info(f"\nIs simulation: {is_simulation}")
@@ -372,6 +372,15 @@ def main():
     )
 
     parser.add_argument(
+        "--max-evt",
+        "-m",
+        dest="max_events",
+        type=int,
+        default=None,
+        help="Max. number of processed showers",
+    )
+
+    parser.add_argument(
         "--process-run",
         dest="process_run",
         action="store_true",
@@ -384,7 +393,7 @@ def main():
         config = yaml.safe_load(f)
 
     # Process the input data
-    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
+    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.max_events, args.process_run)
 
     logger.info("\nDone.")
 

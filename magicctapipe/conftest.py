@@ -9,6 +9,8 @@ import pexpect
 import subprocess
 from math import trunc
 
+maxjoint=13000
+maxmonly=500
 
 DL0_gamma_data = [
     "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz", #smaller
@@ -803,6 +805,7 @@ def M1_l1(temp_DL1_M, dl0_m1, config):
             f"-i{str(dl0_m1[0])}",
             f"-o{str(temp_DL1_M)}",
             f"-c{str(config)}",
+            f"-m{int(maxjoint)}",
             "--process-run",
         ]
     )
@@ -821,6 +824,7 @@ def M1_l1_monly(temp_DL1_M_monly, dl0_m1, config_monly):
             f"-i{str(dl0_m1[0])}",
             f"-o{str(temp_DL1_M_monly)}",
             f"-c{str(config_monly)}",
+            f"-m{int(maxmonly)}",
             "--process-run",
         ]
     )
@@ -839,6 +843,7 @@ def M2_l1(temp_DL1_M, dl0_m2, config):
             f"-i{str(dl0_m2[0])}",
             f"-o{str(temp_DL1_M)}",
             f"-c{str(config)}",
+            f"-m{int(maxjoint)}",
             "--process-run",
         ]
     )
@@ -856,6 +861,7 @@ def M2_l1_monly(temp_DL1_M_monly, dl0_m2, config_monly):
             f"-i{str(dl0_m2[0])}",
             f"-o{str(temp_DL1_M_monly)}",
             f"-c{str(config_monly)}",
+            f"-m{int(maxmonly)}",
             "--process-run",
         ]
     )
