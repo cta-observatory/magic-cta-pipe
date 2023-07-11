@@ -54,42 +54,42 @@ def diagnostic_plots(config_IRF,target_dir):
     
     print("Loading the input files...")
 
+    
     signal_hist=[]
     background_hist=[]
     signal_hist_6_26=[]
-    signal_hist_26_46=[]
-    signal_hist_46_67=[]
-
+    
+    
     #First we do for the gammas:
     for i_file, input_file in enumerate(input_file_gamma):
         # Load the input file
-        sig_hist, point_sig, sim_isto_signal =load_mc_dl2_data_file(
+        sig_hist, point_sig, sim_isto_signal = load_mc_dl2_data_file(
             config_IRF, input_file, quality_cuts, irf_type, dl2_weight_type
         )
         
-        if point_sig[0]<=26:
+        if (point_sig[0]<=26) & (point_sig[1]<=110) & (point_sig[1]>=90):  # Selecting a small range of zenith and azimuth (the effective area computed below depends on both)
             signal_hist_6_26=vstack([signal_hist_6_26,sig_hist])
-        elif point_sig[0]<=46:
-            signal_hist_26_46=vstack([signal_hist_26_46,sig_hist])
-        elif point_sig[0]<=67:
-            signal_hist_46_67=vstack([signal_hist_46_67,sig_hist])
-        signal_hist=vstack([signal_hist,sig_hist])
+
+        if point_sig[0]<=60:                            #Selecting only photons simulated at relatively low zenith angles.
+            signal_hist=vstack([signal_hist,sig_hist])
+        
 
     #And then for the protons:
     for i_file, input_file in enumerate(input_file_proton):
         # Load the input file
-        back_hist, point_back, sim_isto_back = load_mc_dl2_data_file(
-            config_IRF, input_file, quality_cuts, irf_type, dl2_weight_type
-       
+        back_hist, point_back, sim_isto_back = load_mc_dl2_data_file(   
+            config_IRF, input_file, quality_cuts, irf_type, dl2_weight_type        
         )
         
-        background_hist=vstack([background_hist,back_hist])
-    
+        if point_back[0]<=60:                         #Selecting only protons simulated at relatively low zenith angles.
+            background_hist=vstack([background_hist,back_hist])
+        
+        
     #gammaness:
-    x=np.array(signal_hist['true_energy'].value)
+    x=np.array(np.log10(signal_hist['true_energy'].value))
     y=np.array(signal_hist['gammaness'].value)
     plt.figure(figsize=(10,8),dpi=200)
-    plt.xlabel("True energy of the simulated gamma rays [TeV]")
+    plt.xlabel("Log true energy of the simulated gamma rays [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50, norm=mpl.colors.LogNorm())
     plt.colorbar(label="Number of events")
@@ -98,10 +98,10 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.savefig(target_dir+"/gammaness_photons.png",bbox_inches='tight')
 
 
-    x=np.array(background_hist['true_energy'].value)
+    x=np.array(np.log10(background_hist['true_energy'].value))
     y=np.array(background_hist['gammaness'].value)
     plt.figure(figsize=(10,8),dpi=200)
-    plt.xlabel("True energy of the simulated protons [TeV]")
+    plt.xlabel("Log true energy of the simulated protons [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50,  norm=mpl.colors.LogNorm())
     plt.colorbar(label="Number of events")
@@ -260,7 +260,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.ylabel("Angular resolution (68% cont.) [deg]")
     plt.xlabel("Energy [TeV]")
     plt.semilogx()
-    plt.ylim(0.07,0.165)
+    plt.ylim(0.04,0.175)
     plt.grid(linestyle=':')
 
     plt.errorbar(
@@ -329,7 +329,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.figure(figsize=(10,8),dpi=200)
     gs = gridspec.GridSpec(4, 1)
 
-    plt.title(f"Energy bias and energy resolution(g/h eff. = {100*gh_efficiency}%, theta eff. = {100*theta_efficiency}%)")
+    plt.title(f"Energy bias and resolution(g/h eff. = {100*gh_efficiency}%, theta eff. = {100*theta_efficiency}%)")
     plt.ylabel("Energy bias and resolution")
     plt.xlabel("Reconstructed energy [TeV]")
 
@@ -343,7 +343,7 @@ def diagnostic_plots(config_IRF,target_dir):
         label="Energy resolution",
         marker="o",
     )
-    plt.ylim(-0.15,0.25)
+    plt.ylim(-0.12,0.30)
 
     plt.errorbar(
         x=energy_bins_center,

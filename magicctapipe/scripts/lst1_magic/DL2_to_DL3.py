@@ -43,41 +43,7 @@ def configuration_DL3(ids, target_dir):
     f.write('dl2_to_dl3:\n    interpolation_method: "linear"  # select "nearest", "linear" or "cubic"\n    source_name: "Crab"\n    source_ra: "83.633083 deg" # used when the source name cannot be resolved\n    source_dec: "22.0145 deg" # used when the source name cannot be resolved\n\n')
     
     f.close()
-    
-def MergeDL2(target_dir):
-
-    """
-    This function creates the bash scripts to run merge_hdf_files.py in all DL2 subruns.
-    
-    Parameters
-    ----------
-    target_dir: str
-        Path to the working directory
-    """
-    
-    process_name = "DL3_"+target_dir.split("/")[-2:][1]
-    
-    DL2_dir = target_dir+"/DL2/Observations"
-    
-    list_of_nights = np.sort(glob.glob(DL2_dir+"/20*"))
-    
-    f = open("DL3_0_merging.sh","w")
-    f.write('#!/bin/sh\n\n')
-    f.write('#SBATCH -p short\n')
-    f.write('#SBATCH -J '+process_name+'\n')
-    f.write('#SBATCH -N 1\n\n')
-    f.write('ulimit -l unlimited\n')
-    f.write('ulimit -s unlimited\n')
-    f.write('ulimit -a\n\n')
-    
-    for night in list_of_nights:
-        if not os.path.exists(night+"/Merged"):
-            os.mkdir(night+"/Merged")
-        f.write(f'export LOG={night}/Merged/merge.log\n')
-        f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n')        
-    
-    f.close()
-        
+            
 
 def DL2_to_DL3(target_dir):
     
@@ -100,25 +66,17 @@ def DL2_to_DL3(target_dir):
     
     for night in nights:
         listOfDL2files = np.sort(glob.glob(night+"/Merged/*.h5"))
-        #np.savetxt(night+"/Merged/DL2_Obs_files.txt",listOfDL2files, fmt='%s')
-        
-        process_size = len(listOfDL2files) - 1
         
         f = open(f'DL3_{night.split("/")[-1]}.sh','w')
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p short\n')
         f.write('#SBATCH -J '+process_name+'\n')
-        #f.write(f"#SBATCH --array=0-{process_size}%50\n")
         f.write('#SBATCH --mem=10g\n')
         f.write('#SBATCH -N 1\n\n')
         f.write('ulimit -l unlimited\n')
         f.write('ulimit -s unlimited\n')
         f.write('ulimit -a\n\n')
         
-        #f.write(f"SAMPLE_LIST=($(<{night}/Merged/DL2_Obs_files.txt))\n")
-        #f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        #f.write(f'export LOG={output}'+'/DL3_${SLURM_ARRAY_TASK_ID}.log\n')
-        #f.write(f'conda run -n magic-lst python lst1_magic_dl2_to_dl3.py --input-file-dl2 $SAMPLE --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
         
         for DL2_file in listOfDL2files:
             f.write(f'export LOG={output}/DL3_{DL2_file.split("/")[-1]}.log\n')
@@ -144,9 +102,7 @@ def main():
     print("***** This file can be found in ",target_dir)
     configuration_DL3(telescope_ids, target_dir)
     
-    print("***** Merging DL2 files run-wise...")
-    MergeDL2(target_dir)
-    
+        
     print("***** Generating bashscripts for DL2-DL3 conversion...")
     DL2_to_DL3(target_dir)
     
@@ -155,7 +111,7 @@ def main():
     print("To check the jobs submitted to the cluster, type: squeue -n DL3_"+target_dir.split("/")[-2:][1])
     
     #Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-    list_of_DL2_to_DL3_scripts = np.sort(glob.glob("DL3_*.sh"))
+    list_of_DL2_to_DL3_scripts = np.sort(glob.glob("DL3_2*.sh"))
     
     for n,run in enumerate(list_of_DL2_to_DL3_scripts):
         if n == 0:
