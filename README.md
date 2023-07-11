@@ -13,7 +13,7 @@ first, to isolate the installed version and dependencies from your master enviro
 
 The following command will set up a conda virtual environment, add the necessary package channels, and install *magic-cta-pipe* and its dependencies::
 
-    git clone https://github.com/ranieremenezes/magic-cta-pipe.git
+    git clone https://github.com/cta-observatory/magic-cta-pipe.git
     cd magic-cta-pipe
     conda env create -n magic-lst -f environment.yml
     conda activate magic-lst
