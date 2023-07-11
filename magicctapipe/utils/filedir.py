@@ -67,11 +67,7 @@ def load_cfg_file_check(config_file, label):
     dict
         loaded configurations
     """
-    e_ = (
-        "ERROR: can not load the configuration file %s\n"
-        "Please check that the file exists and is of YAML format\n"
-        "Exiting"
-    )
+
     l_ = "ERROR: the configuration file is missing the %s section.\n" "Exiting"
     cfg = load_cfg_file(config_file)
     if label not in cfg:
@@ -99,8 +95,8 @@ def check_folder(folder):
 def load_dl1_data_stereo_list_selected(
     file_list, sub_dict, file_n_key="file_n", drop=False, mono_mode=False
 ):
-    """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`. 
-    If in `sub_dict` it finds the `file_n_key` key, and if the given number is > 0, it 
+    """Loads dl1 data hillas and stereo and merge them togheter, from `file_list`.
+    If in `sub_dict` it finds the `file_n_key` key, and if the given number is > 0, it
     limits the `file_list` lenght to the given number. Useful to make random forests
     plot on a smaller test sample
 
@@ -205,9 +201,9 @@ def load_dl1_data_stereo(file, drop=False, slope_abs=False):
     common_keys = ["obs_id", "event_id", "true_energy", "true_alt", "true_az"]
     try:
         # Hillas
-        data_hillas = pd.read_hdf(file, key=f"dl1/hillas_params")
+        data_hillas = pd.read_hdf(file, key="dl1/hillas_params")
         # Stereo
-        data_stereo = pd.read_hdf(file, key=f"dl1/stereo_params")
+        data_stereo = pd.read_hdf(file, key="dl1/stereo_params")
         # Drop extra stereo keys
         data_stereo = drop_keys(data_stereo, extra_stereo_keys)
         # Drop extra keys
@@ -221,7 +217,7 @@ def load_dl1_data_stereo(file, drop=False, slope_abs=False):
         # Index
         data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     except:
-        data = pd.read_hdf(file, key=f"dl2/reco")
+        data = pd.read_hdf(file, key="dl2/reco")
     data.sort_index(inplace=True)
     # Get absolute value of slope, if needed
     if slope_abs:
@@ -278,7 +274,7 @@ def drop_keys(df, extra_keys):
 
 
 def check_common_keys(df1, df2, common_keys):
-    """Check if `common_keys` exist both in `df1` and in `df2`, and return sub-list 
+    """Check if `common_keys` exist both in `df1` and in `df2`, and return sub-list
     of `common_keys` which really exist in both dataframe
 
     Parameters

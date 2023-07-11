@@ -24,6 +24,10 @@ $ python lst1_magic_stereo_reco.py
 (--output-dir dl1_stereo)
 (--config-file config.yaml)
 (--magic-only)
+
+Broader usage:
+This script is called automatically from the script "stereo_events.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse

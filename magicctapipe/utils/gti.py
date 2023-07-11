@@ -43,22 +43,22 @@ def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
     if len(wh[0]) == 0:
         print("No time intervals excluded!")
 
-        return [[0,0]]
+        return [[0, 0]]
 
     # The above function will result in indicies of non-zero bins.
     # But we want indicies of their _edges_.
     non_zero_bin_edges = []
 
     for i in wh[0]:
-        if i-1 >= 0:
-            if abs(times[i]-times[i-1]) < max_time_diff:
-                non_zero_bin_edges.append(i-1)
+        if i - 1 >= 0:
+            if abs(times[i] - times[i - 1]) < max_time_diff:
+                non_zero_bin_edges.append(i - 1)
 
         non_zero_bin_edges.append(i)
 
-        if i+1 < len(times):
-            if abs(times[i]-times[i+1]) < max_time_diff:
-                non_zero_bin_edges.append(i+1)
+        if i + 1 < len(times):
+            if abs(times[i] - times[i + 1]) < max_time_diff:
+                non_zero_bin_edges.append(i + 1)
 
     non_zero_bin_edges = scipy.unique(non_zero_bin_edges)
 
@@ -66,8 +66,8 @@ def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
         # Finding the elements, that separate the observational time intervals
         # During one time interval diff should return 1 (current bin has index i, the index of the next time bin is i+1).
         # Here we're looking for diffs that are not equal to 1.
-        #division_indicies = (scipy.diff(non_zero_bin_edges[1:-1])-1).nonzero()
-        #division_indicies = division_indicies[0]
+        # division_indicies = (scipy.diff(non_zero_bin_edges[1:-1])-1).nonzero()
+        # division_indicies = division_indicies[0]
         cond_id = scipy.diff(non_zero_bin_edges[1:-1]) > 1
         cond_time = scipy.diff(times[non_zero_bin_edges[1:-1]]) > max_time_diff
         division_indicies = scipy.where(cond_id | cond_time)
@@ -76,20 +76,20 @@ def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
         # Concatenating to the found elements the beginning and the end of the observational time.
         # Also adding i+1 elements, to correctly switch to the next observational time interval.
         parts_edges_idx = scipy.concatenate(
-                (
-                    [non_zero_bin_edges[0]],
-                    non_zero_bin_edges[1:-1][division_indicies],
-                    non_zero_bin_edges[1:-1][division_indicies+1],
-                    [non_zero_bin_edges[-1]]
-                )
+            (
+                [non_zero_bin_edges[0]],
+                non_zero_bin_edges[1:-1][division_indicies],
+                non_zero_bin_edges[1:-1][division_indicies + 1],
+                [non_zero_bin_edges[-1]],
             )
+        )
     else:
         parts_edges_idx = scipy.array(non_zero_bin_edges)
     parts_edges_idx.sort()
 
     # Transorming edges indicies to the real values and transforming them to the [start, stop] list.
     parts_edges = times[parts_edges_idx]
-    parts_edges = parts_edges.reshape(-1,2)
+    parts_edges = parts_edges.reshape(-1, 2)
 
     return parts_edges
 
@@ -149,9 +149,11 @@ class GTIGenerator:
 
     @config.setter
     def config(self, new_config):
-        if 'event_list' not in new_config:
-            raise ValueError('GTI generator error: the configuration dict is missing the "event_list" section.')
-        
+        if "event_list" not in new_config:
+            raise ValueError(
+                'GTI generator error: the configuration dict is missing the "event_list" section.'
+            )
+
         self._config = new_config.copy()
 
     def _identify_data_taking_time_edges(self, file_list, max_tdiff=1):
@@ -162,18 +164,24 @@ class GTIGenerator:
         tdiff = scipy.zeros(0)
 
         if self.verbose:
-            info_message(f"identifying data taking time edges", "GTI generator")
+            info_message("identifying data taking time edges", "GTI generator")
 
         for fnum, fname in enumerate(file_list):
             with uproot.open(fname) as input_stream:
                 if self.verbose:
-                    info_message(f"processing file {fnum+1} / {len(file_list)}", "GTI generator")
+                    info_message(
+                        f"processing file {fnum+1} / {len(file_list)}", "GTI generator"
+                    )
 
-                _tdiff = input_stream['Events']['MRawEvtHeader.fTimeDiff'].array(library="np")
+                _tdiff = input_stream["Events"]["MRawEvtHeader.fTimeDiff"].array(
+                    library="np"
+                )
 
-                _mjd = input_stream['Events']['MTime.fMjd'].array(library="np")
-                _millisec = input_stream['Events']['MTime.fTime.fMilliSec'].array(library="np")
-                _nanosec = input_stream['Events']['MTime.fNanoSec'].array(library="np")
+                _mjd = input_stream["Events"]["MTime.fMjd"].array(library="np")
+                _millisec = input_stream["Events"]["MTime.fTime.fMilliSec"].array(
+                    library="np"
+                )
+                _nanosec = input_stream["Events"]["MTime.fNanoSec"].array(library="np")
 
                 _mjd = _mjd + (_millisec / 1e3 + _nanosec / 1e9) / 86400.0
 
@@ -185,9 +193,7 @@ class GTIGenerator:
         not_edge = tdiff < max_tdiff
 
         time_intervals = identify_time_edges(
-            mjd[sort_args],
-            not_edge[sort_args],
-            max_time_diff=max_tdiff / 86400.0
+            mjd[sort_args], not_edge[sort_args], max_time_diff=max_tdiff / 86400.0
         )
 
         return time_intervals
@@ -196,34 +202,42 @@ class GTIGenerator:
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
-        if "dc" not in self.config['event_list']['cuts']['quality']:
+        if "dc" not in self.config["event_list"]["cuts"]["quality"]:
             raise ValueError("GTI generator: no DC cuts given")
 
         if self.verbose:
-            info_message(f"identifying DC time edges", "GTI generator")
+            info_message("identifying DC time edges", "GTI generator")
 
         df = pandas.DataFrame()
 
         # Looping over the data files
         for fnum, file_name in enumerate(file_list):
             if self.verbose:
-                info_message(f"processing file {fnum+1} / {len(file_list)}", "GTI generator")
+                info_message(
+                    f"processing file {fnum+1} / {len(file_list)}", "GTI generator"
+                )
 
             with uproot.open(file_name) as input_stream:
                 mjd = input_stream["Camera"]["MTimeCamera.fMjd"].array(library="np")
-                millisec = input_stream["Camera"]["MTimeCamera.fTime.fMilliSec"].array(library="np")
-                nanosec = input_stream["Camera"]["MTimeCamera.fNanoSec"].array(library="np")
+                millisec = input_stream["Camera"]["MTimeCamera.fTime.fMilliSec"].array(
+                    library="np"
+                )
+                nanosec = input_stream["Camera"]["MTimeCamera.fNanoSec"].array(
+                    library="np"
+                )
 
                 df_ = pandas.DataFrame()
 
-                df_['mjd'] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
-                df_['value'] = input_stream["Camera"]["MReportCamera.fMedianDC"].array(library="np")
+                df_["mjd"] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
+                df_["value"] = input_stream["Camera"]["MReportCamera.fMedianDC"].array(
+                    library="np"
+                )
 
                 df = df.append(df_)
 
-        df = df.sort_values(by=['mjd'])
+        df = df.sort_values(by=["mjd"])
 
-        cut = self.config['event_list']['cuts']['quality']['dc']
+        cut = self.config["event_list"]["cuts"]["quality"]["dc"]
 
         selection = df.query(cut)
 
@@ -235,7 +249,7 @@ class GTIGenerator:
         time_intervals = identify_time_edges(
             df["mjd"],
             criterion,
-            max_time_diff=self.config['event_list']['max_time_diff']
+            max_time_diff=self.config["event_list"]["max_time_diff"],
         )
 
         return time_intervals
@@ -244,33 +258,41 @@ class GTIGenerator:
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
-        if "l3rate" not in self.config['event_list']['cuts']['quality']:
+        if "l3rate" not in self.config["event_list"]["cuts"]["quality"]:
             raise ValueError("GTI generator: no L3 rate cuts given")
 
         if self.verbose:
-            info_message(f"identifying L3 rate time edges", "GTI generator")
+            info_message("identifying L3 rate time edges", "GTI generator")
 
         df = pandas.DataFrame()
 
         # Looping over the data files
         for fnum, file_name in enumerate(file_list):
-            info_message(f"processing file {fnum+1} / {len(file_list)}", "GTI generator")
+            info_message(
+                f"processing file {fnum+1} / {len(file_list)}", "GTI generator"
+            )
 
             with uproot.open(file_name) as input_stream:
                 mjd = input_stream["Trigger"]["MTimeTrigger.fMjd"].array(library="np")
-                millisec = input_stream["Trigger"]["MTimeTrigger.fTime.fMilliSec"].array(library="np")
-                nanosec = input_stream["Trigger"]["MTimeTrigger.fNanoSec"].array(library="np")
+                millisec = input_stream["Trigger"][
+                    "MTimeTrigger.fTime.fMilliSec"
+                ].array(library="np")
+                nanosec = input_stream["Trigger"]["MTimeTrigger.fNanoSec"].array(
+                    library="np"
+                )
 
                 df_ = pandas.DataFrame()
 
-                df_['mjd'] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
-                df_['value'] = input_stream["Trigger"]["MReportTrigger.fL3Rate"].array(library="np")
+                df_["mjd"] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
+                df_["value"] = input_stream["Trigger"]["MReportTrigger.fL3Rate"].array(
+                    library="np"
+                )
 
                 df = df.append(df_)
 
-        df = df.sort_values(by=['mjd'])
+        df = df.sort_values(by=["mjd"])
 
-        cut = self.config['event_list']['cuts']['quality']['l3rate']
+        cut = self.config["event_list"]["cuts"]["quality"]["l3rate"]
 
         selection = df.query(cut)
 
@@ -282,7 +304,7 @@ class GTIGenerator:
         time_intervals = identify_time_edges(
             df["mjd"],
             criterion,
-            max_time_diff=self.config['event_list']['max_time_diff']
+            max_time_diff=self.config["event_list"]["max_time_diff"],
         )
 
         return time_intervals
@@ -331,7 +353,7 @@ class GTIGenerator:
         #     info_message(f"processing file {fnum+1} / {len(file_list)}", "GTI generator")
 
         #     with uproot.open(file_name) as input_stream:
-                
+
         #         # --- DC ---
         #         if "dc" in dfs:
         #             mjd = input_stream["Camera"]["MTimeCamera.fMjd"].array()
@@ -339,12 +361,12 @@ class GTIGenerator:
         #             nanosec = input_stream["Camera"]["MTimeCamera.fNanoSec"].array()
 
         #             df_ = pandas.DataFrame()
-                    
+
         #             df_['mjd'] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
         #             df_['value'] = input_stream["Camera"]["MReportCamera.fMedianDC"].array()
-                    
+
         #             dfs['dc'] = dfs['dc'].append(df_)
-                
+
         #         # --- L3 rate ---
         #         if "l3rate" in dfs:
         #             mjd = input_stream["Trigger"]["MTimeTrigger.fMjd"].array()
@@ -352,11 +374,10 @@ class GTIGenerator:
         #             nanosec = input_stream["Trigger"]["MTimeTrigger.fNanoSec"].array()
 
         #             df_ = pandas.DataFrame()
-                    
+
         #             df_['mjd'] = mjd + (millisec / 1e3 + nanosec / 1e9) / 86400
         #             df_['value'] = input_stream["Trigger"]["MReportTrigger.fL3Rate"].array()
-                    
-                    
+
         #             dfs['l3rate'] = dfs['l3rate'].append(df_)
 
         # # Sorting data points by date is needed for the time intervals identification
@@ -370,7 +391,7 @@ class GTIGenerator:
         # # Identifying DC-related GTIs
         # if "dc" in dfs:
         #     cut = config['event_list']['cuts']['dc']
-            
+
         #     selection = dfs['dc'].query(cut)
 
         #     _, idx, _ = scipy.intersect1d(dfs['dc']["mjd"], selection["mjd"], return_indices=True)
@@ -385,7 +406,7 @@ class GTIGenerator:
         # # Identifying L3-related GTIs
         # if "l3rate" in dfs:
         #     cut = config['event_list']['cuts']['l3rate']
-            
+
         #     selection = dfs['l3rate'].query(cut)
 
         #     _, idx, _ = scipy.intersect1d(dfs['l3rate']["mjd"], selection["mjd"], return_indices=True)
@@ -400,13 +421,15 @@ class GTIGenerator:
         time_intervals_list = [
             self._identify_data_taking_time_edges(file_list),
             self._identify_dc_time_edges(file_list),
-            self._identify_l3rate_time_edges(file_list)
+            self._identify_l3rate_time_edges(file_list),
         ]
 
         joint_intervals = time_intervals_list[0]
 
         # Joining all found GTIs
         for i in range(1, len(time_intervals_list)):
-            joint_intervals = intersect_time_intervals(joint_intervals, time_intervals_list[i])
+            joint_intervals = intersect_time_intervals(
+                joint_intervals, time_intervals_list[i]
+            )
 
         return joint_intervals

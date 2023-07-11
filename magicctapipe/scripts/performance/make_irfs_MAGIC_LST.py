@@ -1,5 +1,4 @@
 import os
-import glob
 import time
 import shutil
 import logging
@@ -11,7 +10,6 @@ from astropy import table
 import astropy.units as u
 from astropy.io import fits
 
-from pyirf.io.eventdisplay import read_eventdisplay_fits
 from pyirf.binning import (
     create_bins_per_decade,
     add_overflow_bins,
@@ -46,14 +44,12 @@ from pyirf.io import (
     create_background_2d_hdu,
 )
 
-from magicctapipe.utils.filedir import *
-from magicctapipe.utils.utils import *
-from magicctapipe.irfs.utils import *
-from magicctapipe.utils.plot import *
-from magicctapipe.utils.utils import *
-from magicctapipe.utils.tels import *
-
-import matplotlib.pylab as plt
+from magicctapipe.utils.filedir import check_folder, load_cfg_file
+from magicctapipe.irfs.utils import (
+    plot_irfs_MAGIC_LST,
+    read_dl2_mcp_to_pyirf_MAGIC_LST_list,
+)
+from magicctapipe.utils.utils import print_elapsed_time, print_title
 
 PARSER = argparse.ArgumentParser(
     description="Apply random forests. For stereo data.",
@@ -107,7 +103,9 @@ def make_irfs_MAGIC_LST(config_file):
     MAX_GH_CUT_EFFICIENCY = cfg["irfs"]["MAX_GH_CUT_EFFICIENCY"]
     GH_CUT_EFFICIENCY_STEP = cfg["irfs"]["GH_CUT_EFFICIENCY_STEP"]
 
-    MIN_GH_CUT_EFFICIENCY = cfg["irfs"].get("MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP)
+    MIN_GH_CUT_EFFICIENCY = cfg["irfs"].get(
+        "MIN_GH_CUT_EFFICIENCY", GH_CUT_EFFICIENCY_STEP
+    )
     cuts = cfg["irfs"].get("cuts", "")
     # if "cuts" not in cfg["irfs"]:
     #     INTENSITY_CUT = cfg["irfs"]["INTENSITY_CUT"]
@@ -305,10 +303,10 @@ def make_irfs_MAGIC_LST(config_file):
 
     # binnings for the irfs
     true_energy_bins = add_overflow_bins(
-        create_bins_per_decade(10 ** -1.9 * u.TeV, 10 ** 2.31 * u.TeV, 10)
+        create_bins_per_decade(10**-1.9 * u.TeV, 10**2.31 * u.TeV, 10)
     )
     reco_energy_bins = add_overflow_bins(
-        create_bins_per_decade(10 ** -1.9 * u.TeV, 10 ** 2.31 * u.TeV, 5)
+        create_bins_per_decade(10**-1.9 * u.TeV, 10**2.31 * u.TeV, 5)
     )
     fov_offset_bins = [0, 0.5] * u.deg
     source_offset_bins = np.arange(0, 1 + 1e-4, 1e-3) * u.deg
@@ -350,7 +348,7 @@ def make_irfs_MAGIC_LST(config_file):
     ang_res = angular_resolution(
         gammas[gammas["selected_gh"]], reco_energy_bins, energy_type="reco"
     )
-    ang_res = QTable(ang_res)
+    ang_res = table.QTable(ang_res)
     psf = psf_table(
         gammas[gammas["selected_gh"]],
         true_energy_bins,
@@ -367,12 +365,17 @@ def make_irfs_MAGIC_LST(config_file):
 
     hdus.append(
         create_background_2d_hdu(
-            background_rate, reco_energy_bins, fov_offset_bins=np.arange(0, 11) * u.deg,
+            background_rate,
+            reco_energy_bins,
+            fov_offset_bins=np.arange(0, 11) * u.deg,
         )
     )
     hdus.append(
         create_psf_table_hdu(
-            psf, true_energy_bins, source_offset_bins, fov_offset_bins,
+            psf,
+            true_energy_bins,
+            source_offset_bins,
+            fov_offset_bins,
         )
     )
     hdus.append(
@@ -384,7 +387,7 @@ def make_irfs_MAGIC_LST(config_file):
     hdus.append(fits.BinTableHDU(bias_resolution, name="ENERGY_BIAS_RESOLUTION"))
 
     # --- Evaluate gamma efficiency ---
-    gamma_efficiency = QTable()
+    gamma_efficiency = table.QTable()
     for l_ in ["low", "center", "high"]:
         gamma_efficiency[l_] = gh_cuts[l_]
     for l_ in ["eff_gh", "eff"]:
@@ -436,7 +439,8 @@ def make_irfs_MAGIC_LST(config_file):
     log.info(f"Output directory: {irfs_dir}")
 
     fits.HDUList(hdus).writeto(
-        os.path.join(irfs_dir, "pyirf.fits.gz"), overwrite=True,
+        os.path.join(irfs_dir, "pyirf.fits.gz"),
+        overwrite=True,
     )
 
     shutil.copyfile(

@@ -1,11 +1,7 @@
 from astropy import units as u
 import numpy as np
 
-from ctapipe.instrument import (
-    CameraGeometry,
-    TelescopeDescription,
-    OpticsDescription
-)
+from ctapipe.instrument import CameraGeometry, TelescopeDescription, OpticsDescription
 
 __all__ = [
     "tel_ids_2_num",
@@ -22,15 +18,15 @@ __all__ = [
 
 def tel_ids_2_num(tel_ids):
     """Function to convert a list of tel_ids into a decimal number wich can be
-    stored in a h5 file. 
-    The number is computed on a binary basis, assigning 1 to a triggered 
-    telescope, 0 to a non-triggered one.  
-    For example, if in the array the triggered telescopes are 2, 3 and 5:  
-    - [6 5 4 3 2 1] all telescope ids of the array  
-    - [  5   3 2  ] triggered telescopes (tel_ids)   
+    stored in a h5 file.
+    The number is computed on a binary basis, assigning 1 to a triggered
+    telescope, 0 to a non-triggered one.
+    For example, if in the array the triggered telescopes are 2, 3 and 5:
+    - [6 5 4 3 2 1] all telescope ids of the array
+    - [  5   3 2  ] triggered telescopes (tel_ids)
     - [0 1 0 1 1 0] triggered telescopes (binary)
-    - the number is saved as decimal, therefore: 2**5 + 2**3 + 2**2 = 44  
-    Please note that the number does not depend on the presence or absence 
+    - the number is saved as decimal, therefore: 2**5 + 2**3 + 2**2 = 44
+    Please note that the number does not depend on the presence or absence
     of non-triggered telescopes in the array
 
     Parameters
@@ -43,7 +39,7 @@ def tel_ids_2_num(tel_ids):
     int
         decimal number computed as follow
     """
-    return sum([2 ** a_ for a_ in tel_ids])
+    return sum([2**a_ for a_ in tel_ids])
 
 
 def num_2_tel_ids(num):
@@ -64,7 +60,7 @@ def num_2_tel_ids(num):
 
 def get_tel_descriptions(name, cam, tel_ids):
     """Get telescope descriptions from ctapipe, for the same telescope type.
-    Returns a dictionary with repeated description of the selected telescope, 
+    Returns a dictionary with repeated description of the selected telescope,
     depending on the number of telescopes in the telescope array under study
 
     Parameters
@@ -138,7 +134,7 @@ def get_tel_ids_dl1(df):
 
 
 def convert_positions_dict(positions_dict):
-    """Convert telescope positions loaded from config.yaml file from 
+    """Convert telescope positions loaded from config.yaml file from
     adimensional numbers to u.m (astropy units)
 
     Parameters
@@ -167,11 +163,11 @@ def check_tel_ids(cfg):
             - cfg['all_tels']['tel_n']: list with all telescope names
             - cfg[<tel_label>]['tel_ids']: list with telescope <tel_label> ids, where
             <tel_label> is MAGIC and LST, but not necessarily both
-    
+
     Returns
     -------
     tuple
-        - tel_ids: intersection with tel_ids_sel and the sum between 
+        - tel_ids: intersection with tel_ids_sel and the sum between
             all_tel_ids_LST and all_tel_ids_MAGIC
         - tel_ids_LST: LST telescope ids in tel_ids
         - tel_ids_MAGIC: MAGIC telescope ids in tel_ids
@@ -210,7 +206,7 @@ def intersec_tel_ids(
     Returns
     -------
     tuple
-        - tel_ids: intersection with tel_ids_sel and the sum between 
+        - tel_ids: intersection with tel_ids_sel and the sum between
             all_tel_ids_LST and all_tel_ids_MAGIC
         - tel_ids_LST: LST telescope ids in tel_ids
         - tel_ids_MAGIC: MAGIC telescope ids in tel_ids

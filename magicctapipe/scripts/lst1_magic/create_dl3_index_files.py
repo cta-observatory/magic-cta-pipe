@@ -57,7 +57,6 @@ def create_dl3_index_files(input_dir):
     file_names = []
 
     for input_file in input_files:
-
         logger.info(input_file)
 
         input_file_name = Path(input_file).name
@@ -85,7 +84,6 @@ def create_dl3_index_files(input_dir):
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

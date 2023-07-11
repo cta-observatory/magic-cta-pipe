@@ -186,14 +186,12 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
     logger.info("\nProcessing the events...")
 
     for event in event_source:
-
         if event.count % 100 == 0:
             logger.info(f"{event.count} events")
 
         tels_with_trigger = event.trigger.tels_with_trigger
 
         for tel_id in tels_with_trigger:
-
             if "LST" == subarray.tel[tel_id].name:
                 name = "LST"
                 # Calibrate the event:
@@ -290,7 +288,6 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
 
 def main():
-
     start_time = time.time()
     parser = argparse.ArgumentParser()
 

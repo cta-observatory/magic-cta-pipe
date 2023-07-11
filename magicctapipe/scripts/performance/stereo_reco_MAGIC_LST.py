@@ -6,11 +6,13 @@ import copy
 import glob
 import scipy
 import select
+import sys
 import argparse
 import matplotlib.pyplot as plt
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, AltAz, EarthLocation
+from astropy.time import Time
 
 from ctapipe.io import SimTelEventSource
 from ctapipe.io import HDF5TableWriter
@@ -23,13 +25,17 @@ from ctapipe.reco import HillasReconstructor
 from ctapipe.containers import ImageParametersContainer
 from ctapipe.visualization import ArrayDisplay
 
-from magicctapipe.image import MAGICClean
-from magicctapipe.utils import calculate_impact
-from magicctapipe.utils.filedir import *
-from magicctapipe.utils.utils import *
-from magicctapipe.utils.tels import *
-from magicctapipe.reco.stereo import *
-from magicctapipe.reco.image import *
+from magicctapipe.image import MAGICClean, clean_image_params, get_num_islands_MAGIC
+from magicctapipe.utils import calculate_impact, check_folder
+from magicctapipe.utils.filedir import load_cfg_file, out_file_h5
+from magicctapipe.utils.utils import print_title, print_elapsed_time
+from magicctapipe.utils.tels import check_tel_ids
+from magicctapipe.reco.stereo import (
+    check_stereo,
+    write_hillas,
+    write_stereo,
+    StereoInfoContainer,
+)
 
 
 PARSER = argparse.ArgumentParser(
@@ -134,7 +140,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         print("Select at least two telescopes in the MAGIC + LST array")
         return
 
-    consider_LST = len(tel_ids_LST) > 0
     consider_MAGIC = len(tel_ids_MAGIC) > 0
 
     if consider_MAGIC:
@@ -178,7 +183,7 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
         if consider_MAGIC and use_MARS_cleaning:
             magic_clean = MAGICClean(
                 camera=source.subarray.tel[tel_ids_MAGIC[0]].camera.geometry,
-                configuration=cfg["MAGIC"]["cleaning_config"]
+                configuration=cfg["MAGIC"]["cleaning_config"],
             )
 
         # --- Write MC HEADER ---
@@ -212,7 +217,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             # Inits
             hillas_p, leakage_p, timing_p = {}, {}, {}
             telescope_pointings, time_grad, event_info = {}, {}, {}
-            failed = False
 
             # --- Calibrate ---
             # Call the calibrator, both for MAGIC and LST
@@ -303,7 +307,12 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                             leakage_p.pop(tel_id, None)
                             timing_p.pop(tel_id, None)
                             continue
-
+                    # position of the LST1
+                    location = EarthLocation.from_geodetic(
+                        -17.89139 * u.deg, 28.76139 * u.deg, 2184 * u.m
+                    )
+                    obstime = Time("2018-11-01T02:00")
+                    horizon_frame = AltAz(location=location, obstime=obstime)
                     # Evaluate telescope pointings
                     telescope_pointings[tel_id] = SkyCoord(
                         alt=event.pointing.tel[tel_id].altitude,
@@ -325,7 +334,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
                     )
                 except Exception as e:
                     print(f"Image not reconstructed (tel_id={tel_id}):", e)
-                    failed = True
                     break
             # --- END LOOP on tel_ids ---
 
@@ -343,12 +351,13 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
             tel_ids_written = list(event_info.keys())
 
             for tel_id in tel_ids_written:
-
-                event.dl1.tel[tel_id].parameters = ImageParametersContainer(hillas=hillas_p[tel_id])
+                event.dl1.tel[tel_id].parameters = ImageParametersContainer(
+                    hillas=hillas_p[tel_id]
+                )
 
                 hillas_reconstructor(event)
 
-                stereo_params = event.dl2.stereo.geometry['HillasReconstructor']
+                stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
 
                 if stereo_params.az < 0:
                     stereo_params.az += u.Quantity(360, u.deg)
@@ -413,7 +422,6 @@ def stereo_reco_MAGIC_LST(k1, k2, cfg, display=False):
 def _display_plots(
     source, event, hillas_p, time_grad, stereo_params, first, cont, fig, ax
 ):
-
     ax.set_xlabel("Distance (m)")
     ax.set_ylabel("Distance (m)")
     # Display the top-town view of the MAGIC-LST telescope array
@@ -421,12 +429,12 @@ def _display_plots(
         subarray=source.subarray, axes=ax, tel_scale=1, title="MAGIC-LST Monte Carlo"
     )
     # # Set the vector angle and length from Hillas parameters
-    # disp.set_vector_hillas(
-    #     hillas_dict=hillas_p,
-    #     time_gradient=time_grad,
-    #     angle_offset=event.pointing.array_azimuth,
-    #     length=500,
-    # )
+    disp.set_vector_hillas(
+        hillas_dict=hillas_p,
+        time_gradient=time_grad,
+        angle_offset=event.pointing.array_azimuth,
+        length=500,
+    )
     # Estimated and true impact
     plt.scatter(
         event.mc.core_x, event.mc.core_y, s=20, c="k", marker="x", label="True Impact"
