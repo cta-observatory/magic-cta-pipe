@@ -17,7 +17,7 @@ Workingdir/DL1/MC/PARTICLE/Merged
 
 
 Usage:
-$ python merging_runs_and_spliting_training_samples.py
+$ python merging_runs_and_splitting_training_samples.py
 
 """
 
@@ -226,7 +226,7 @@ def main():
     
     
     #Here we slice the proton MC data into "train" and "test":
-    print("***** Spliting protons into 'train' and 'test' datasets...")
+    print("***** Splitting protons into 'train' and 'test' datasets...")
     split_train_test(target_dir, train_fraction)
     
     print("***** Generating merge bashscripts...")
