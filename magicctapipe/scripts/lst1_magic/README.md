@@ -6,7 +6,7 @@ Each script can be called from the command line from anywhere in your system (so
 
 ## MAGIC-only analysis
 
-MAGIC-only analysis starts from MAGIC calibrated data (\_Y\_ files). The analysis flow is as following:
+MAGIC-only analysis starts from MAGIC-calibrated data (\_Y\_ files). The analysis flow is as follows:
 
 - `magic_calib_to_dl1.py` on real and MC data (if you use MCs produced with MMCS), to convert them into DL1 format
 - if you use SimTelArray MCs, run `lst1_magic_mc_dl0_to_dl1.py` over them to convert them into DL1 format
@@ -39,11 +39,13 @@ Authorized institute server (Client) &rarr;  ssh connection to CTALaPalma &rarr;
 
 2) Once connected to the IT Container, install MAGIC-CTA-PIPE (e.g. in your home directory in the IT Container) following the tutorial here: https://github.com/ranieremenezes/magic-cta-pipe
 
-### DL0 to DL1 step
+3) Do not forget to open the magic-lst environment with the command `conda activate magic-lst` before starting the analysis
 
-In this step we will convert the MAGIC and Monte Carlo (MC) Data Level (DL) 0 to DL1 (our goal is to reach DL3).
+### DL0 to DL1
 
-3) Now copy all the python scripts available here to your preferred directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname) in the IT Container, as well as the files `config_general.yaml`, `MAGIC_runs.txt` and `LST_runs.txt`.
+In this step, we will convert the MAGIC and Monte Carlo (MC) Data Level (DL) 0 to DL1 (our goal is to reach DL3).
+
+Now copy all the python scripts available here to your preferred directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname) in the IT Container, as well as the files `config_general.yaml`, `MAGIC_runs.txt` and `LST_runs.txt`.
 
 The file `config_general.yaml` must contain the telescope IDs and the directories with the MC data, as shown below:  
 ```
@@ -56,20 +58,21 @@ mc_tel_ids:
     MAGIC-II: 3
 
 directories:
-    workspace_dir : "/fefs/aswg/workspace/yourname/yourprojectname/" #Always put the last "/"!!!
+    workspace_dir : "/fefs/aswg/workspace/yourname/yourprojectname/" 
     target_name   : "CrabTeste"
-    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/" #Always put the last "/"!!!
-    MC_electrons  : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Electrons/sim_telarray/" #Always put the last "/"!!!
-    MC_helium     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Helium/sim_telarray/" #Always put the last "/"!!!
-    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray/" #Always put the last "/"!!!
-    MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/" #Always put the last "/"!!!
+    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"
+    MC_electrons  : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Electrons/sim_telarray/" 
+    MC_helium     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Helium/sim_telarray/" 
+    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray"
+    MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
     
 general:
-    SimTel_version: "v1.4"    #This is the version of the SimTel used in the MC simulations
-    focal_length  : "nominal" 
-    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill the MAGIC_runs.txt file with "0, 0"
+    SimTel_version: "v1.4"    
+    focal_length  : "effective" #effective #nominal
+    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
     LST_runs      : "LST_runs.txt"  
-    proton_train  : 0.8 # 0.8 means that 80% of the DL1 proton files will be used for training the Random Forest
+    proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
+    
 ```
 
 The file `MAGIC_runs.txt` looks like that:  
@@ -77,6 +80,7 @@ The file `MAGIC_runs.txt` looks like that:
 2020_11_19,5093174
 2020_11_19,5093175
 2020_12_08,5093491
+2020_12_08,5093492
 2020_12_16,5093711
 2020_12_16,5093712
 2020_12_16,5093713
@@ -86,14 +90,27 @@ The file `MAGIC_runs.txt` looks like that:
 2021_02_14,5094485
 2021_02_14,5094486
 2021_02_14,5094487
+2021_02_14,5094488
 2021_03_16,5095265
 2021_03_16,5095266
 2021_03_16,5095267
+2021_03_16,5095268
+2021_03_16,5095271
+2021_03_16,5095272
+2021_03_16,5095273
+2021_03_16,5095277
+2021_03_16,5095278
+2021_03_16,5095281
 2021_03_18,5095376
+2021_03_18,5095377
+2021_03_18,5095380
+2021_03_18,5095381
+2021_03_18,5095382
+2021_03_18,5095383
 ```
 
 
-The columns here represent the night and run in which you want to select data. Please do not add blanck spaces in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. If there is no MAGIC data, please fill this file with "0,0". Similarly, the `LST_runs.txt` file looks like:
+The columns here represent the night and run in which you want to select data. Please do not add blank spaces in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. If there is no MAGIC data, please fill this file with "0,0". Similarly, the `LST_runs.txt` file looks like this:
 
 ```
 2020_11_18,2923
@@ -113,9 +130,9 @@ The columns here represent the night and run in which you want to select data. P
 2021_03_15,4071
 2021_03_17,4125
 ```
-Note that the LST nights are appear as being one day before MAGIC's!!! This is because LST saves the date at the beggining of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
+Note that the LST nights appear as being one day before MAGIC's!!! This is because LST saves the date at the beginning of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
-In this analysis, we use a wobble of 0.4$^{\circ}$!
+In this analysis, we use a wobble of 0.4°.
 
 To convert the MAGIC and SimTelArray MCs data into DL1 format, you first do the following:
 > $ python setting_up_config_and_dir.py
@@ -152,14 +169,16 @@ MAGIC-II ID = 3
 If the telescope ID is set to 0, this means that the telescope is not used in the analysis.
 
 You can check if this process is done by typing  
-> $ squeue -n yourprojectnameCrabTeste  
+> $ squeue -n yourprojectnameCrabTeste
+or
+> $ squeue -u your_user_name
 
-in the terminal. Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/CrabTeste/DL1/` will be filled with files of the type `dl1_[...]_LST1_MAGIC1_MAGIC2_runXXXXXX.h5` for the MCs and `dl1_MX.RunXXXXXX.0XX.h5` for the MAGIC runs. The next step of the conversion of DL0 to DL1 is to split the DL1 MC proton sample into "train" and "test" datasets (these will be used later in the Random Forest event classification and to do some diagnostic plots), and to merge all the MAGIC data files such that in the end we have only one datafile per night. To do so, we run the following script:
+in the terminal. Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/CrabTeste/DL1/` will be filled with files of the type `dl1_[...]_LST1_MAGIC1_MAGIC2_runXXXXXX.h5` for the MCs and `dl1_MX.RunXXXXXX.0XX.h5` for the MAGIC runs. The next step of the conversion of DL0 to DL1 is to split the DL1 MC proton sample into "train" and "test" datasets (these will be used later in the Random Forest event classification and to do some diagnostic plots) and to merge all the MAGIC data files such that in the end, we have only one datafile per night. To do so, we run the following script:
 
-> $ python merging_runs_and_spliting_training_samples.py  
+> $ python merging_runs_and_splitting_training_samples.py  
 
 ```
-***** Spliting protons into 'train' and 'test' datasets...  
+***** Splitting protons into 'train' and 'test' datasets...  
 ***** Generating merge bashscripts...  
 ***** Running merge_hdf_files.py in the MAGIC data files...  
 Process name: merging_CrabTeste  
@@ -212,13 +231,13 @@ Once we have the DL1 stereo parameters for all real and MC data, we can train th
 
 > $ python RF.py
 
-This script creates the file config_RF.yaml with several parameters related to the energy regressor, disp regressor and event classifier, and then computes the RF (energy, disp, and classifier) based on the merged-stereo MC diffuse gammas and training proton samples by calling the script lst1_magic_train_rfs.py. The results are saved in [...]/DL1/MC/RFs.
+This script creates the file config_RF.yaml with several parameters related to the energy regressor, disp regressor, and event classifier, and then computes the RF (energy, disp, and classifier) based on the merged-stereo MC diffuse gammas and training proton samples by calling the script lst1_magic_train_rfs.py. The results are saved in [...]/DL1/MC/RFs.
 
 Once it is done, we can finally convert our DL1 stereo data files into DL2 by running:
 
 > $ python DL1_to_DL2.py
 
-This script runs `lst1_magic_dl1_stereo_to_dl2.py` on all DL1 stereo files, which applies the RFs saved in [...]/DL1/MC/RFs to stereo DL1 data (real and test MCs) and produce DL2 real and MC data. The results are saved in [...]/DL2/Observations and [...]/DL2/MC.
+This script runs `lst1_magic_dl1_stereo_to_dl2.py` on all DL1 stereo files, which applies the RFs saved in [...]/DL1/MC/RFs to stereo DL1 data (real and test MCs) and produces DL2 real and MC data. The results are saved in [...]/DL2/Observations and [...]/DL2/MC.
 
 ### Instrument response function and DL3
 
@@ -250,18 +269,22 @@ Optionally, but recommended, we can run the "diagnostic.py" script with:
 
 > $ python diagnostic.py
 
-This will create several diagnostic plots (gammaness, effective area, angular resolution, energy resolution, migration matrix, energy bias and gamma-hadron classification comparisons. All of these plots will be saved on the directory defined on "target_name" in the config_general.yaml file.
+This will create several diagnostic plots (gammaness, effective area, angular resolution, energy resolution, migration matrix, energy bias, and gamma-hadron classification comparisons. All of these plots will be saved in the directory defined on "target_name" in the config_general.yaml file.
 
 After the IRF, we run the DL2-to-DL3 conversion by doing:
 
 > $ python DL2_to_DL3.py
 
-which will save the DL3 files in the directory [...]/DL3. Finally, the last script to run is `create_dl3_index_files.py`. Since it is very fast, we can simply run it directly in the interactive mode by doing:
+which will save the DL3 files in the directory [...]/DL3. Finally, the last script to run is `create_dl3_index_files.py`. Since it is very fast, we can simply run it directly in the interactive mode by doing (remember that we must be in the magic-lst environment):
 
-> $ conda run -n magic-lst python create_dl3_index_files.py --input-dir ./CrabTeste/DL3
+> $ python create_dl3_index_files.py --input-dir ./CrabTeste/DL3
 
 That's it. Now you can play with the DL3 data using the high-level notebooks.
 
-## High level analysis
+## High-level analysis
 
-The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs. Note that the notebooks run with gammapy v0.20 or higher, therefore another conda environment is needed to run them, since the MAGIC+LST-1 pipeline at the moment depends on v0.19.
+Since the DL3 may have only a few MBs, it is typically convenient to download it to your own machine at this point. It will be necessary to have astropy and gammapy (version > 0.20) installed before proceeding. 
+
+We prepared a [Jupyter Notebook](https://github.com/ranieremenezes/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/SED_and_LC_from_DL3.ipynb) that quickly creates a counts map, a significance curve, an SED, and a light curve. You can give it a try. 
+
+The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs. Note that the notebooks run with gammapy v0.20 or higher, while the gammapy version adopted in the MAGIC+LST-1 pipeline is v0.19.
