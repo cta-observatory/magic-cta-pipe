@@ -8,6 +8,7 @@ from pathlib import Path
 import pexpect
 import subprocess
 from math import trunc
+#from ctapipe.utils.download import download_file
 
 maxjoint=13000
 maxmonly=500
@@ -230,6 +231,40 @@ def temp_DL3_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL3_monly")
 
 """
+@pytest.fixture(scope="session")
+def dl0_gamma_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL0gamma")
+
+
+@pytest.fixture(scope="session")
+def dl0_p_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL0p")
+
+
+@pytest.fixture(scope="session")
+def dl0_M1_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL0M1")
+
+
+@pytest.fixture(scope="session")
+def dl0_M2_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL0M2")
+
+
+@pytest.fixture(scope="session")
+def dl1_lst_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1LST")
+
+@pytest.fixture(scope="session")
+def conf_path(tmp_path_factory):
+    return tmp_path_factory.mktemp("config")
+
+
+
+"""
+
+
+"""
 Local paths
 """
 
@@ -312,7 +347,13 @@ def pd_test():
 """
 Remote paths (to download test files)
 """
+"""
+@pytest.fixture(scope="session")
+def base_url_magic():
+    return Path("https://www.magic.iac.es/mcp-testdata")
 
+
+"""
 
 @pytest.fixture(scope="session")
 def base_url():
@@ -328,7 +369,13 @@ def dl0_gamma_url(base_url):
 def dl0_p_url(base_url):
     return base_url / "DL0p"
 
+"""
+@pytest.fixture(scope="session")
+def dl0_M_url(base_url):
+    return base_url / "test_data/real/calibrated/"
 
+
+"""
 @pytest.fixture(scope="session")
 def dl0_M_url(base_url):
     return base_url / "MAGIC"
@@ -353,13 +400,28 @@ def conf_monly_url(base_url):
 """
 Downloads: useful functions
 """
+"""
+@pytest.fixture(scope="session")
+def env_prefix_magic():
+    # ENVIRONMENT VARIABLES TO BE CREATED
+    return "MAGIC_TEST_DATA_"   # to be adapted to CI implementation
 
-
+"""
 @pytest.fixture(scope="session")
 def env_prefix():
     # ENVIRONMENT VARIABLES TO BE CREATED
     return "MAGIC_CTA_DATA_"
 
+"""
+def download(path, url, env_prefix):
+    
+    pwd = os.environ[env_prefix + "PASSWORD"] # to be adapted to CI implementation
+    usr = os.environ[env_prefix + "USER"]   # to be adapted to CI implementation
+    key = (usr, pwd)
+    if not (path / url.name).exists():
+       download_file(url, path, key) 
+       
+"""
 
 def scp_file(path, url, env_prefix):
     """
@@ -408,6 +470,25 @@ def dl0_p(dl0_p_url, dl0_p_path, env_prefix):
 
     return p_dl0
 
+"""
+@pytest.fixture(scope="session")
+def dl0_m1(dl0_M_url, dl0_M1_path, env_prefix_magic):
+    MI_dl0 = []
+    for file in DL0_M1_data:
+        download(dl0_M1_path, dl0_M_url / f"{file}", env_prefix_magic)
+        MI_dl0.append(dl0_M1_path / f"{file}")
+    return MI_dl0
+
+
+@pytest.fixture(scope="session")
+def dl0_m2(dl0_M_url, dl0_M2_path, env_prefix_magic):
+    MII_dl0 = []
+    for file in DL0_M2_data:
+        download(dl0_M2_path, dl0_M_url / f"{file}", env_prefix_magic)
+        MII_dl0.append(dl0_M2_path / f"{file}")
+    return MII_dl0
+
+"""
 
 @pytest.fixture(scope="session")
 def dl0_m1(dl0_M_url, dl0_M1_path, env_prefix):
