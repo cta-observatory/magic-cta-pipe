@@ -229,12 +229,18 @@ def diagnostic_plots(config_IRF,target_dir):
     
     data_eff_gcut = signal_hist[mask_gh_eff]
     
-    
+    gh_table_eff_26 = calculate_percentile_cut(
+        values=signal_hist_6_26["gammaness"],
+        bin_values=signal_hist_6_26["reco_energy"],
+        bins=u.Quantity(energy_bins, u.TeV),
+        fill_value=0.0,
+        percentile=gh_percentile,
+    )
     
     mask_gh_eff_26 = evaluate_binned_cut(
         values=signal_hist_6_26["gammaness"],
         bin_values=signal_hist_6_26["reco_energy"],
-        cut_table=gh_table_eff,
+        cut_table=gh_table_eff_26,
         op=operator.ge,
     )
 
@@ -382,7 +388,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.ylabel("Effective area [m$^2$]")
     plt.loglog()
     plt.grid(which="both",linestyle=':')
-    plt.ylim(0.6e5,4e5)
+    #plt.ylim(0.6e5,4e5)
 
     plt.errorbar(
         x=energy_bins_center,
