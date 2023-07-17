@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def configuration_DL3(ids, target_dir):
+def configuration_DL3(ids, target_dir,target_coords):
     
     """
     This function creates the configuration file needed for the DL2 to DL3 conversion
@@ -38,9 +38,11 @@ def configuration_DL3(ids, target_dir):
         Path to the working directory
     """
     
+    target_name = target_dir.split("/")[-1]
+    
     f = open(target_dir+'/config_DL3.yaml','w')
     f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
-    f.write('dl2_to_dl3:\n    interpolation_method: "linear"  # select "nearest", "linear" or "cubic"\n    source_name: "Crab"\n    source_ra: "83.633083 deg" # used when the source name cannot be resolved\n    source_dec: "22.0145 deg" # used when the source name cannot be resolved\n\n')
+    f.write(f'dl2_to_dl3:\n    interpolation_method: "linear"  # select "nearest", "linear" or "cubic"\n    source_name: "{target_name}"\n    source_ra: "{target_coords[0]} deg" # used when the source name cannot be resolved\n    source_dec: "{target_coords[1]} deg" # used when the source name cannot be resolved\n\n')
     
     f.close()
             
@@ -98,9 +100,11 @@ def main():
     
     target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
+    target_coords = [config["general"]["target_RA_deg"],config["general"]["target_Dec_deg"]]
+
     print("***** Generating file config_DL3.yaml...")
     print("***** This file can be found in ",target_dir)
-    configuration_DL3(telescope_ids, target_dir)
+    configuration_DL3(telescope_ids, target_dir, target_coords)
     
         
     print("***** Generating bashscripts for DL2-DL3 conversion...")
