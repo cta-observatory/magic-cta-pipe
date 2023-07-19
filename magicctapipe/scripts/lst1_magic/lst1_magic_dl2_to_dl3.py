@@ -154,7 +154,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3.pop("interpolation_method")
-
     logger.info(f"\nInterpolation method: {interpolation_method}")
 
     extra_header["IRF_INTP"] = interpolation_method
