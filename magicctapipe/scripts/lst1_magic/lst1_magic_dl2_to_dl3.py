@@ -30,6 +30,7 @@ import numpy as np
 import yaml
 from astropy import units as u
 from astropy.coordinates import Angle
+from astropy.coordinates.angle_utilities import angular_separation
 from astropy.io import fits
 from astropy.table import QTable
 from magicctapipe.io import (
@@ -117,11 +118,43 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     else:
         pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at("360 deg").to_value("rad")
 
-    target_point = np.array([pnt_coszd_mean, pnt_az_mean])
-    logger.info(f"\nTarget point in (cos(Zd), Az): {target_point.round(5).tolist()}")
+    distances = np.degrees(
+        angular_separation(
+            pnt_az_mean,
+            np.pi / 2 - np.arccos(pnt_coszd_mean),
+            irf_data["grid_points"][:, 1],
+            np.pi / 2 - np.arccos(irf_data["grid_points"][:, 0]),
+        )
+    )
+
+    scheme = config_dl3.pop("interpolation_scheme")
+    if scheme == "cosZdAz":
+        target_point = np.array([pnt_coszd_mean, pnt_az_mean])
+    elif scheme == "cosZd":
+        target_point = np.array([pnt_coszd_mean])
+        irf_data["grid_points"] = irf_data["grid_points"][:, 0]
+    else:
+        logger.error(f"Not recognized interpolation scheme: {scheme}, exiting")
+        exit(1)
+
+    logger.info(
+        f"\nTarget point: {target_point.round(5).tolist()} with scheme: {scheme}"
+    )
+
+    max_distance = config_dl3.pop("max_distance")
+    if max_distance:
+        logger.info(f"selecting only nodes up to {max_distance} degree from the data")
+
+        idx = np.where(distances < max_distance)
+        keys = [s for s in irf_data.keys() if "_bins" not in s]
+        for key in keys:
+            irf_data[key] = irf_data[key][idx]
+        for i in range(len(idx[0])):
+            logger.info(f"{irf_data['file_names'][i]}:{distances[idx][i]} deg")
 
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3.pop("interpolation_method")
+
     logger.info(f"\nInterpolation method: {interpolation_method}")
 
     extra_header["IRF_INTP"] = interpolation_method

@@ -840,6 +840,7 @@ def load_irf_files(input_dir_irf):
         "migration_bins": [],
         "source_offset_bins": [],
         "bkg_fov_offset_bins": [],
+        "file_names": [],
     }
 
     # Find the input files
@@ -861,7 +862,7 @@ def load_irf_files(input_dir_irf):
     for input_file in input_files_irf:
         logger.info(input_file)
         irf_hdus = fits.open(input_file)
-
+        irf_data["file_names"].append(input_file)
         # Read the header
         header = irf_hdus["EFFECTIVE AREA"].header
 
@@ -979,6 +980,7 @@ def load_irf_files(input_dir_irf):
     irf_data["grid_points"] = np.array(irf_data["grid_points"])
     irf_data["energy_dispersion"] = np.array(irf_data["energy_dispersion"])
     irf_data["migration_bins"] = np.array(irf_data["migration_bins"])
+    irf_data["file_names"] = np.array(irf_data["file_names"])
 
     if "gh_cuts" in irf_data:
         irf_data["gh_cuts"] = np.array(irf_data["gh_cuts"])
