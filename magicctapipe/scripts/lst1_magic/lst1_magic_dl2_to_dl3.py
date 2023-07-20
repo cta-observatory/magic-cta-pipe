@@ -118,14 +118,15 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     else:
         pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at("360 deg").to_value("rad")
 
-    distances = np.degrees(
+    distances = (
         angular_separation(
             pnt_az_mean,
             np.pi / 2 - np.arccos(pnt_coszd_mean),
             irf_data["grid_points"][:, 1],
             np.pi / 2 - np.arccos(irf_data["grid_points"][:, 0]),
         )
-    )
+        * u.rad
+    ).to("deg")
 
     scheme = config_dl3.pop("interpolation_scheme")
     if scheme == "cosZdAz":
@@ -141,16 +142,16 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         f"\nTarget point: {target_point.round(5).tolist()} with scheme: {scheme}"
     )
 
-    max_distance = config_dl3.pop("max_distance")
-    if max_distance:
-        logger.info(f"selecting only nodes up to {max_distance} degree from the data")
+    if 'max_distance' in config_dl3:
+        max_distance = u.Quantity(config_dl3.pop("max_distance"))
+        logger.info(f"selecting only nodes up to {max_distance} from the data")
 
         idx = np.where(distances < max_distance)
         keys = [s for s in irf_data.keys() if "_bins" not in s]
         for key in keys:
             irf_data[key] = irf_data[key][idx]
         for i in range(len(idx[0])):
-            logger.info(f"{irf_data['file_names'][i]}:{distances[idx][i]} deg")
+            logger.info(f"{irf_data['file_names'][i]}: {distances[idx][i]:.2f}")
 
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3.pop("interpolation_method")

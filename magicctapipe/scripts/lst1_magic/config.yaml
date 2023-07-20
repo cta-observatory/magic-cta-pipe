@@ -248,7 +248,7 @@ create_irf:
 dl2_to_dl3:
     interpolation_method: "linear"  # select "nearest", "linear" or "cubic"
     interpolation_scheme: "cosZd" # select "cosZdAz" or "cosZd"
-    max_distance: 45 # in degrees or null
+    max_distance: "45. deg"  # angle type Quantity, or comment out to remove the cut
     source_name: "Crab"
     source_ra: null  # used when the source name cannot be resolved
     source_dec: null  # used when the source name cannot be resolved
