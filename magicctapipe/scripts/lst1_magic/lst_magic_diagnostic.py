@@ -40,7 +40,7 @@ def diagnostic_plots(config_IRF,target_dir):
     quality_cuts= f"(disp_diff_mean < {np.sqrt(0.05)})"
     irf_type= config_IRF["create_irf"]["event_type"]
     dl2_weight_type="intensity"
-    energy_bins=np.logspace(-2,3,15)[2:]
+    energy_bins=np.logspace(-2,3,15)#[2:]
     
     input_file_gamma = glob.glob(target_dir+'/DL2/MC/gammas/*gamma*.h5')
     input_file_gamma.sort()
@@ -86,10 +86,10 @@ def diagnostic_plots(config_IRF,target_dir):
         
         
     #gammaness:
-    x=np.array(np.log10(signal_hist['true_energy'].value))
+    x=np.array(np.log10(signal_hist['reco_energy'].value))
     y=np.array(signal_hist['gammaness'].value)
     plt.figure(figsize=(10,8),dpi=200)
-    plt.xlabel("Log true energy of the simulated gamma rays [TeV]")
+    plt.xlabel("Log reco energy of the simulated gamma rays [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50, norm=mpl.colors.LogNorm())
     plt.colorbar(label="Number of events")
@@ -98,10 +98,10 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.savefig(target_dir+"/gammaness_photons.png",bbox_inches='tight')
 
 
-    x=np.array(np.log10(background_hist['true_energy'].value))
+    x=np.array(np.log10(background_hist['reco_energy'].value))
     y=np.array(background_hist['gammaness'].value)
     plt.figure(figsize=(10,8),dpi=200)
-    plt.xlabel("Log true energy of the simulated protons [TeV]")
+    plt.xlabel("Log reco energy of the simulated protons [TeV]")
     plt.ylabel("Gammaness")
     plt.hist2d(x,y, bins=50,  norm=mpl.colors.LogNorm())
     plt.colorbar(label="Number of events")
@@ -266,7 +266,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.ylabel("Angular resolution (68% cont.) [deg]")
     plt.xlabel("Energy [TeV]")
     plt.semilogx()
-    plt.ylim(0.04,0.175)
+    plt.ylim(0.04,0.35)
     plt.grid(linestyle=':')
 
     plt.errorbar(
@@ -349,7 +349,7 @@ def diagnostic_plots(config_IRF,target_dir):
         label="Energy resolution",
         marker="o",
     )
-    plt.ylim(-0.12,0.30)
+    plt.ylim(-0.12,0.7)
 
     plt.errorbar(
         x=energy_bins_center,
@@ -388,7 +388,7 @@ def diagnostic_plots(config_IRF,target_dir):
     plt.ylabel("Effective area [m$^2$]")
     plt.loglog()
     plt.grid(which="both",linestyle=':')
-    #plt.ylim(0.6e5,4e5)
+    #plt.ylim(5e3,5e5)
 
     plt.errorbar(
         x=energy_bins_center,
