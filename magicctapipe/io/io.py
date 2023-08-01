@@ -60,7 +60,7 @@ EFFECTIVE_FOCLEN_LST = 29.30565 * u.m
 
 # The upper limit of the trigger time differences of consecutive events,
 # used when calculating the ON time and dead time correction factor
-TIME_DIFF_UPLIM = 0.1 * u.s
+TIME_DIFF_UPLIM = 1.0 * u.s
 
 # The LST-1 and MAGIC readout dead times
 DEAD_TIME_LST = 7.6 * u.us
