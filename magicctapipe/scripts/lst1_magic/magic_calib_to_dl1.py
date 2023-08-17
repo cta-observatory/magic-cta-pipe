@@ -49,6 +49,7 @@ from astropy.coordinates import angular_separation
 from ctapipe.image import (
     hillas_parameters,
     leakage_parameters,
+    concentration_parameters,
     number_of_islands,
     timing_parameters,
 )
@@ -162,7 +163,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 
-    with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
+    with HDF5TableWriter(
+        output_file, group_name="events", mode="w", add_prefix=True
+    ) as writer:
         for event in event_source:
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
@@ -221,6 +224,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 continue
 
             leakage_params = leakage_parameters(camera_geom, image, signal_pixels)
+            conc_params = concentration_parameters(camera_geom, image, hillas_params)
 
             if is_simulation:
                 # Calculate additional parameters
@@ -306,8 +310,14 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 event_info.tel_id = 3  # MAGIC-II
 
             # Save the parameters to the output file
+            # Setting all the prefixes except of concentration to empty string
+            event_info.prefix = ""
+            hillas_params.prefix = ""
+            timing_params.prefix = ""
+            leakage_params.prefix = ""
             writer.write(
-                "parameters", (event_info, hillas_params, timing_params, leakage_params)
+                "parameters",
+                (event_info, hillas_params, timing_params, leakage_params, conc_params),
             )
 
         n_events_processed = event.count + 1
