@@ -30,10 +30,10 @@ def main():
         noise=[]
         if len(run)==0:
           continue
-        if len(run)<10:
+        if len(run)<25:
             mod=1
         else:
-            mod=int(len(run)/10)
+            mod=int(len(run)/25)
         for ii in range (0, len(run)):
           if ii%mod==0:
 
