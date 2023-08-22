@@ -223,7 +223,6 @@ def test_load_irf_files(IRF):
     """
 
     irf, header = load_irf_files(str(IRF))
-    print(set(list(irf.keys())))
     assert set(list(irf.keys())).issubset(
         set(
             [
@@ -239,6 +238,7 @@ def test_load_irf_files(IRF):
                 "migration_bins",
                 "source_offset_bins",
                 "bkg_fov_offset_bins",
+                "file_names",
             ]
         )
     )

@@ -226,7 +226,6 @@ def test_load_irf_files(IRF_monly):
     """
 
     irf, header = load_irf_files(str(IRF_monly))
-    print(set(list(irf.keys())))
     assert set(list(irf.keys())).issubset(
         set(
             [
@@ -242,6 +241,7 @@ def test_load_irf_files(IRF_monly):
                 "migration_bins",
                 "source_offset_bins",
                 "bkg_fov_offset_bins",
+                "file_names",
             ]
         )
     )
