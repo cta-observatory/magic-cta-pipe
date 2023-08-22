@@ -159,11 +159,11 @@ def test_load_mc_dl2_data_file_opt(p_dl2_monly, gamma_dl2_monly):
     """
     dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
-        
+
         data_m, _, _ = load_mc_dl2_data_file(
             str(file), "width>0", "magic_only", "simple"
         )
-        
+
         assert np.all(data_m["combo_type"] == 0)
 
 
@@ -226,6 +226,7 @@ def test_load_irf_files(IRF_monly):
     """
 
     irf, header = load_irf_files(str(IRF_monly))
+    print(set(list(irf.keys())))
     assert set(list(irf.keys())).issubset(
         set(
             [
@@ -380,9 +381,9 @@ def test_load_dl2_data_file_opt(real_dl2_monly):
     Check on event_type
     """
     for file in real_dl2_monly.glob("*"):
-        
+
         data_m, _, _ = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
-        
+
         assert np.all(data_m["combo_type"] == 0)
 
 
