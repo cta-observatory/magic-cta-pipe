@@ -1,14 +1,11 @@
-import os
 import pytest
 import numpy as np
 from astropy.io.misc.hdf5 import write_table_hdf5
 from astropy.table import Table
 import pandas as pd
-from pathlib import Path
-import pexpect
 import subprocess
 from math import trunc
-#from ctapipe.utils.download import download_file
+from ctapipe.utils.download import download_file_cached
 
 maxjoint=13000
 maxmonly=500
@@ -230,80 +227,6 @@ def temp_DL2_real_monly(tmp_path_factory):
 def temp_DL3_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL3_monly")
 
-"""
-@pytest.fixture(scope="session")
-def dl0_gamma_path(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL0gamma")
-
-
-@pytest.fixture(scope="session")
-def dl0_p_path(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL0p")
-
-
-@pytest.fixture(scope="session")
-def dl0_M1_path(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL0M1")
-
-
-@pytest.fixture(scope="session")
-def dl0_M2_path(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL0M2")
-
-
-@pytest.fixture(scope="session")
-def dl1_lst_path(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL1LST")
-
-@pytest.fixture(scope="session")
-def conf_path(tmp_path_factory):
-    return tmp_path_factory.mktemp("config")
-
-
-
-"""
-
-
-"""
-Local paths
-"""
-
-
-@pytest.fixture(scope="session")
-def base_path():
-    return Path(str(os.environ["HOME"])+"/.cache/magicctapipe")
-
-
-@pytest.fixture(scope="session")
-def dl0_gamma_path(base_path):
-    return base_path / "DL0gamma"
-
-
-@pytest.fixture(scope="session")
-def dl0_p_path(base_path):
-    return base_path / "DL0p"
-
-
-@pytest.fixture(scope="session")
-def dl0_M1_path(base_path):
-    return base_path / "DL0M1"
-
-
-@pytest.fixture(scope="session")
-def dl0_M2_path(base_path):
-    return base_path / "DL0M2"
-
-
-@pytest.fixture(scope="session")
-def dl1_lst_path(base_path):
-    return base_path / "DL1LST"
-
-
-@pytest.fixture(scope="session")
-def conf_path(base_path):
-    p = base_path / "config"
-    return p
-
 
 """
 Custom data
@@ -347,189 +270,75 @@ def pd_test():
 """
 Remote paths (to download test files)
 """
-"""
-@pytest.fixture(scope="session")
-def base_url_magic():
-    return Path("https://www.magic.iac.es/mcp-testdata")
-
-
-"""
 
 @pytest.fixture(scope="session")
 def base_url():
-    return Path("cp02:/fefs/aswg/workspace/elisa.visentin/git_test")
+    return "http://www.magic.iac.es/mcp-testdata"
 
 
-@pytest.fixture(scope="session")
-def dl0_gamma_url(base_url):
-    return base_url / "DL0gamma"
-
-
-@pytest.fixture(scope="session")
-def dl0_p_url(base_url):
-    return base_url / "DL0p"
-
-"""
-@pytest.fixture(scope="session")
-def dl0_M_url(base_url):
-    return base_url / "test_data/real/calibrated/"
-
-
-"""
-@pytest.fixture(scope="session")
-def dl0_M_url(base_url):
-    return base_url / "MAGIC"
-
-
-@pytest.fixture(scope="session")
-def dl1_LST_url(base_url):
-    # BETTER SOLUTION? CHANGED?
-    return base_url / "LST"
-
-
-@pytest.fixture(scope="session")
-def conf_url(base_url):
-    q = base_url / "config.yaml"
-    return q
-@pytest.fixture(scope="session")
-def conf_monly_url(base_url):
-    q = base_url / "config_monly.yaml"
-    return q
-
-
-"""
-Downloads: useful functions
-"""
-"""
-@pytest.fixture(scope="session")
-def env_prefix_magic():
-    # ENVIRONMENT VARIABLES TO BE CREATED
-    return "MAGIC_TEST_DATA_"   # to be adapted to CI implementation
-
-"""
 @pytest.fixture(scope="session")
 def env_prefix():
     # ENVIRONMENT VARIABLES TO BE CREATED
     return "MAGIC_CTA_DATA_"
 
 """
-def download(path, url, env_prefix):
-    
-    pwd = os.environ[env_prefix + "PASSWORD"] # to be adapted to CI implementation
-    usr = os.environ[env_prefix + "USER"]   # to be adapted to CI implementation
-    key = (usr, pwd)
-    if not (path / url.name).exists():
-       download_file(url, path, key) 
-       
-"""
-
-def scp_file(path, url, env_prefix):
-    """
-    Download of test files through rsync
-    """
-    pwd = os.environ[env_prefix + "PASSWORD"]
-    if not path.exists():
-        subprocess.run(["mkdir", "-p", str(path)])
-    if not (path / url.name).exists():
-        print("DOWNLOADING...")
-        cmd = f'''/bin/bash -c "rsync {str(url)} {str(path)}"'''
-        if "rm " in cmd:
-            print("files cannot be removed")
-            exit()
-        usr = os.environ[env_prefix + "USER"]
-        childP = pexpect.spawn(cmd, timeout=5000)
-        childP.sendline(cmd)
-        childP.expect([f"{usr}@10.200.100.2's password:"])
-        childP.sendline(pwd)
-        childP.expect(pexpect.EOF)
-        childP.close()
-    else:
-        print("FILE ALREADY EXISTS")
-
-
-"""
 Downloads: files
 """
 
-
 @pytest.fixture(scope="session")
-def dl0_gamma(dl0_gamma_url, dl0_gamma_path, env_prefix):
+def dl0_gamma(base_url, env_prefix):
     gamma_dl0 = []
     for file in DL0_gamma_data:
-        scp_file(dl0_gamma_path, dl0_gamma_url / f"{file}", env_prefix)
-        gamma_dl0.append(dl0_gamma_path / f"{file}")
+        download_path = download_file_cached(name=f"DL0gamma/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        gamma_dl0.append(download_path)
     return gamma_dl0
 
 
 @pytest.fixture(scope="session")
-def dl0_p(dl0_p_url, dl0_p_path, env_prefix):
+def dl0_p(base_url, env_prefix):
     p_dl0 = []
     for file in DL0_p_data:
-        scp_file(dl0_p_path, dl0_p_url / f"{file}", env_prefix)
-        p_dl0.append(dl0_p_path / f"{file}")
+        download_path = download_file_cached(name=f"DL0p/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        p_dl0.append(download_path)
 
     return p_dl0
 
-"""
 @pytest.fixture(scope="session")
-def dl0_m1(dl0_M_url, dl0_M1_path, env_prefix_magic):
+def dl0_m1(base_url, env_prefix):
     MI_dl0 = []
     for file in DL0_M1_data:
-        download(dl0_M1_path, dl0_M_url / f"{file}", env_prefix_magic)
-        MI_dl0.append(dl0_M1_path / f"{file}")
+        download_path = download_file_cached(name=f"MAGIC/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        MI_dl0.append(download_path)
     return MI_dl0
 
 
 @pytest.fixture(scope="session")
-def dl0_m2(dl0_M_url, dl0_M2_path, env_prefix_magic):
+def dl0_m2(base_url, env_prefix):
     MII_dl0 = []
     for file in DL0_M2_data:
-        download(dl0_M2_path, dl0_M_url / f"{file}", env_prefix_magic)
-        MII_dl0.append(dl0_M2_path / f"{file}")
-    return MII_dl0
-
-"""
-
-@pytest.fixture(scope="session")
-def dl0_m1(dl0_M_url, dl0_M1_path, env_prefix):
-    MI_dl0 = []
-    for file in DL0_M1_data:
-        scp_file(dl0_M1_path, dl0_M_url / f"{file}", env_prefix)
-        MI_dl0.append(dl0_M1_path / f"{file}")
-    return MI_dl0
-
-
-@pytest.fixture(scope="session")
-def dl0_m2(dl0_M_url, dl0_M2_path, env_prefix):
-    MII_dl0 = []
-    for file in DL0_M2_data:
-        scp_file(dl0_M2_path, dl0_M_url / f"{file}", env_prefix)
-        MII_dl0.append(dl0_M2_path / f"{file}")
+        download_path = download_file_cached(name=f"MAGIC/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        MII_dl0.append(download_path)
     return MII_dl0
 
 
 @pytest.fixture(scope="session")
-def dl1_lst(dl1_LST_url, dl1_lst_path, env_prefix):
+def dl1_lst(base_url, env_prefix):
     LST_dl1 = []
     for file in DL1_LST_data:
-        scp_file(dl1_lst_path, dl1_LST_url / f"{file}", env_prefix)
-        LST_dl1.append(dl1_lst_path / f"{file}")
+        download_path = download_file_cached(name=f"LST/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        LST_dl1.append(download_path)
     return LST_dl1
 
 
 @pytest.fixture(scope="session")
-def config(conf_path, conf_url, env_prefix):
-    scp_file(conf_path, conf_url, env_prefix)
-    name1 = conf_url.name
-    url1 = conf_path / name1
-    return url1
+def config(base_url, env_prefix):
+    download_path = download_file_cached(name="config.yaml", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+    return download_path
 
 @pytest.fixture(scope="session")
-def config_monly(conf_path, conf_monly_url, env_prefix):
-    scp_file(conf_path, conf_monly_url, env_prefix)
-    name1 = conf_monly_url.name
-    url1 = conf_path / name1
-    return url1
+def config_monly(base_url, env_prefix):
+    download_path = download_file_cached(name="config_monly.yaml", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+    return download_path
 
 """
 Data processing
@@ -611,7 +420,7 @@ def gamma_stereo_monly(temp_DL1_gamma_train_monly, temp_DL1_gamma_test_monly, ga
                 "lst1_magic_stereo_reco",
                 f"-i{str(file)}",
                 f"-o{str(out)}",
-                f"-c{str(config_monly)}", 
+                f"-c{str(config_monly)}",
                 "--magic-only"
             ]
         )
@@ -688,7 +497,7 @@ def p_stereo_monly(temp_DL1_p_train_monly, temp_DL1_p_test_monly, p_l1_monly, co
                 "lst1_magic_stereo_reco",
                 f"-i{str(file)}",
                 f"-o{str(out)}",
-                f"-c{str(config_monly)}", 
+                f"-c{str(config_monly)}",
                 "--magic-only"
             ]
         )
@@ -753,7 +562,7 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
                 f"-o{str(temp_DL2_gamma)}",
             ]
         )
-    
+
     subprocess.run(
         [
             "merge_hdf_files",
@@ -766,11 +575,11 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
             [
                 "rm",
                 f"{file}",
-                
+
             ]
         )
 
-   
+
     return temp_DL2_gamma
 
 @pytest.fixture(scope="session")
@@ -788,7 +597,7 @@ def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
                 f"-o{str(temp_DL2_gamma_monly)}",
             ]
         )
-    
+
     subprocess.run(
         [
             "merge_hdf_files",
@@ -801,7 +610,7 @@ def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
             [
                 "rm",
                 f"{file}",
-                
+
             ]
         )
     return temp_DL2_gamma_monly
