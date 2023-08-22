@@ -6,6 +6,7 @@ import pandas as pd
 import subprocess
 from math import trunc
 from ctapipe.utils.download import download_file_cached
+from magicctapipe.utils import resource_file
 
 maxjoint = 13000
 maxmonly = 500
@@ -374,28 +375,14 @@ def dl1_lst(base_url, env_prefix):
 
 @pytest.fixture(scope="session")
 def config(base_url, env_prefix):
-    download_path = download_file_cached(
-        name="config.yaml",
-        cache_name="magicctapipe",
-        env_prefix=env_prefix,
-        auth=True,
-        default_url=base_url,
-        progress=True,
-    )
-    return download_path
+    config_path = resource_file("config.yaml")
+    return config_path
 
 
 @pytest.fixture(scope="session")
 def config_monly(base_url, env_prefix):
-    download_path = download_file_cached(
-        name="config_monly.yaml",
-        cache_name="magicctapipe",
-        env_prefix=env_prefix,
-        auth=True,
-        default_url=base_url,
-        progress=True,
-    )
-    return download_path
+    config_path = resource_file("config_monly.yaml")
+    return config_path
 
 
 """
