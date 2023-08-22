@@ -1,12 +1,18 @@
 import datetime
 import numpy as np
 
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
+
 __all__ = [
     "info_message",
     "print_elapsed_time",
     "make_elapsed_time_str",
     "print_title",
     "make_title_str",
+    "resource_file",
 ]
 
 
@@ -133,3 +139,7 @@ def make_title_str(title, style_char="=", in_space=3, width_char=80):
     s3 = f"{style_char*width_char}"
     s = f"{s1}{s2}{s3}"
     return s
+
+def resource_file(filename):
+    """Get the absoulte path of magicctapipe resource files."""
+    return files("magicctapipe").joinpath("resources", filename)
