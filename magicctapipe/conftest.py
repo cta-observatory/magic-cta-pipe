@@ -7,35 +7,35 @@ import subprocess
 from math import trunc
 from ctapipe.utils.download import download_file_cached
 
-maxjoint=13000
-maxmonly=500
+maxjoint = 13000
+maxmonly = 500
 
 DL0_gamma_data = [
-    "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz", #smaller
-    "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz", #smaller
-    "simtel_corsika_theta_16.087_az_108.090_run3.simtel.gz", #smaller
-    "simtel_corsika_theta_16.087_az_108.090_run4.simtel.gz", #smaller
-    #"simtel_corsika_theta_16.087_az_108.090_run1_all.simtel.gz", #standard
-    #"simtel_corsika_theta_16.087_az_108.090_run2_all.simtel.gz", #standard
-    #"simtel_corsika_theta_16.087_az_108.090_run1_cut.simtel.gz", #cut
-    #"simtel_corsika_theta_16.087_az_108.090_run2_cut.simtel.gz", #cut
+    "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",  # smaller
+    "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",  # smaller
+    "simtel_corsika_theta_16.087_az_108.090_run3.simtel.gz",  # smaller
+    "simtel_corsika_theta_16.087_az_108.090_run4.simtel.gz",  # smaller
+    # "simtel_corsika_theta_16.087_az_108.090_run1_all.simtel.gz", #standard
+    # "simtel_corsika_theta_16.087_az_108.090_run2_all.simtel.gz", #standard
+    # "simtel_corsika_theta_16.087_az_108.090_run1_cut.simtel.gz", #cut
+    # "simtel_corsika_theta_16.087_az_108.090_run2_cut.simtel.gz", #cut
 ]
 DL0_p_data = [
     "simtel_corsika_theta_16.087_az_108.090_run1.simtel.gz",
     "simtel_corsika_theta_16.087_az_108.090_run2.simtel.gz",
 ]
-ntraingamma = trunc(len(DL0_gamma_data)/2)  # number of MC train runs
-ntrainp = trunc(len(DL0_p_data)/2)  # number of MC train runs
+ntraingamma = trunc(len(DL0_gamma_data) / 2)  # number of MC train runs
+ntrainp = trunc(len(DL0_p_data) / 2)  # number of MC train runs
 DL0_M1_data = [
-    #20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root",
-    #"20201216_M1_05093711.002_Y_CrabNebula-W0.40+035.root",
+    # 20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M1_05093711.002_Y_CrabNebula-W0.40+035.root",
     # "20201216_M1_05093711.003_Y_CrabNebula-W0.40+035.root",
     # "20201216_M1_05093711.004_Y_CrabNebula-W0.40+035.root",
     "20201216_M1_05093711.014_Y_CrabNebula-W0.40+035.root",
 ]
 DL0_M2_data = [
-    #"20201216_M2_05093711.001_Y_CrabNebula-W0.40+035.root",
-    #"20201216_M2_05093711.002_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M2_05093711.001_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M2_05093711.002_Y_CrabNebula-W0.40+035.root",
     # "20201216_M2_05093711.003_Y_CrabNebula-W0.40+035.root",
     # "20201216_M2_05093711.004_Y_CrabNebula-W0.40+035.root",
     "20201216_M2_05093711.014_Y_CrabNebula-W0.40+035.root",
@@ -75,10 +75,10 @@ def temp_DL2_gamma(tmp_path_factory):
 def temp_irf(tmp_path_factory):
     return tmp_path_factory.mktemp("IRF")
 
+
 @pytest.fixture(scope="session")
 def temp_DL1_gamma_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL1_gammas_monly")
-
 
 
 @pytest.fixture(scope="session")
@@ -129,6 +129,7 @@ def temp_DL2_p(tmp_path_factory):
 @pytest.fixture(scope="session")
 def temp_DL2_test(tmp_path_factory):
     return tmp_path_factory.mktemp("DL2_test")
+
 
 @pytest.fixture(scope="session")
 def temp_DL1_p_monly(tmp_path_factory):
@@ -204,6 +205,7 @@ def temp_DL3(tmp_path_factory):
 def temp_pandas(tmp_path_factory):
     return tmp_path_factory.mktemp("pandas")
 
+
 @pytest.fixture(scope="session")
 def temp_DL1_M_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL1_MAGIC_monly")
@@ -212,6 +214,7 @@ def temp_DL1_M_monly(tmp_path_factory):
 @pytest.fixture(scope="session")
 def temp_DL1_M_merge_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL1_MAGIC_merge_monly")
+
 
 @pytest.fixture(scope="session")
 def temp_stereo_monly(tmp_path_factory):
@@ -271,6 +274,7 @@ def pd_test():
 Remote paths (to download test files)
 """
 
+
 @pytest.fixture(scope="session")
 def base_url():
     return "http://www.magic.iac.es/mcp-testdata"
@@ -281,15 +285,24 @@ def env_prefix():
     # ENVIRONMENT VARIABLES TO BE CREATED
     return "MAGIC_CTA_DATA_"
 
+
 """
 Downloads: files
 """
+
 
 @pytest.fixture(scope="session")
 def dl0_gamma(base_url, env_prefix):
     gamma_dl0 = []
     for file in DL0_gamma_data:
-        download_path = download_file_cached(name=f"DL0gamma/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        download_path = download_file_cached(
+            name=f"DL0gamma/{file}",
+            cache_name="magicctapipe",
+            env_prefix=env_prefix,
+            auth=True,
+            default_url=base_url,
+            progress=True,
+        )
         gamma_dl0.append(download_path)
     return gamma_dl0
 
@@ -298,16 +311,31 @@ def dl0_gamma(base_url, env_prefix):
 def dl0_p(base_url, env_prefix):
     p_dl0 = []
     for file in DL0_p_data:
-        download_path = download_file_cached(name=f"DL0p/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        download_path = download_file_cached(
+            name=f"DL0p/{file}",
+            cache_name="magicctapipe",
+            env_prefix=env_prefix,
+            auth=True,
+            default_url=base_url,
+            progress=True,
+        )
         p_dl0.append(download_path)
 
     return p_dl0
+
 
 @pytest.fixture(scope="session")
 def dl0_m1(base_url, env_prefix):
     MI_dl0 = []
     for file in DL0_M1_data:
-        download_path = download_file_cached(name=f"MAGIC/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        download_path = download_file_cached(
+            name=f"MAGIC/{file}",
+            cache_name="magicctapipe",
+            env_prefix=env_prefix,
+            auth=True,
+            default_url=base_url,
+            progress=True,
+        )
         MI_dl0.append(download_path)
     return MI_dl0
 
@@ -316,7 +344,14 @@ def dl0_m1(base_url, env_prefix):
 def dl0_m2(base_url, env_prefix):
     MII_dl0 = []
     for file in DL0_M2_data:
-        download_path = download_file_cached(name=f"MAGIC/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        download_path = download_file_cached(
+            name=f"MAGIC/{file}",
+            cache_name="magicctapipe",
+            env_prefix=env_prefix,
+            auth=True,
+            default_url=base_url,
+            progress=True,
+        )
         MII_dl0.append(download_path)
     return MII_dl0
 
@@ -325,20 +360,43 @@ def dl0_m2(base_url, env_prefix):
 def dl1_lst(base_url, env_prefix):
     LST_dl1 = []
     for file in DL1_LST_data:
-        download_path = download_file_cached(name=f"LST/{file}", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+        download_path = download_file_cached(
+            name=f"LST/{file}",
+            cache_name="magicctapipe",
+            env_prefix=env_prefix,
+            auth=True,
+            default_url=base_url,
+            progress=True,
+        )
         LST_dl1.append(download_path)
     return LST_dl1
 
 
 @pytest.fixture(scope="session")
 def config(base_url, env_prefix):
-    download_path = download_file_cached(name="config.yaml", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+    download_path = download_file_cached(
+        name="config.yaml",
+        cache_name="magicctapipe",
+        env_prefix=env_prefix,
+        auth=True,
+        default_url=base_url,
+        progress=True,
+    )
     return download_path
+
 
 @pytest.fixture(scope="session")
 def config_monly(base_url, env_prefix):
-    download_path = download_file_cached(name="config_monly.yaml", cache_name="magicctapipe", env_prefix=env_prefix, auth=True, default_url=base_url, progress=True)
+    download_path = download_file_cached(
+        name="config_monly.yaml",
+        cache_name="magicctapipe",
+        env_prefix=env_prefix,
+        auth=True,
+        default_url=base_url,
+        progress=True,
+    )
     return download_path
+
 
 """
 Data processing
@@ -362,6 +420,7 @@ def gamma_l1(temp_DL1_gamma, dl0_gamma, config):
         )
 
     return temp_DL1_gamma
+
 
 @pytest.fixture(scope="session")
 def gamma_l1_monly(temp_DL1_gamma_monly, dl0_gamma, config_monly):
@@ -404,8 +463,11 @@ def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
 
     return (temp_DL1_gamma_train, temp_DL1_gamma_test)
 
+
 @pytest.fixture(scope="session")
-def gamma_stereo_monly(temp_DL1_gamma_train_monly, temp_DL1_gamma_test_monly, gamma_l1_monly, config_monly):
+def gamma_stereo_monly(
+    temp_DL1_gamma_train_monly, temp_DL1_gamma_test_monly, gamma_l1_monly, config_monly
+):
     """
     Produce a DL1 stereo file
     """
@@ -421,7 +483,7 @@ def gamma_stereo_monly(temp_DL1_gamma_train_monly, temp_DL1_gamma_test_monly, ga
                 f"-i{str(file)}",
                 f"-o{str(out)}",
                 f"-c{str(config_monly)}",
-                "--magic-only"
+                "--magic-only",
             ]
         )
 
@@ -443,6 +505,7 @@ def p_l1(temp_DL1_p, dl0_p, config):
             ]
         )
     return temp_DL1_p
+
 
 @pytest.fixture(scope="session")
 def p_l1_monly(temp_DL1_p_monly, dl0_p, config_monly):
@@ -481,8 +544,12 @@ def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
             ]
         )
     return (temp_DL1_p_train, temp_DL1_p_test)
+
+
 @pytest.fixture(scope="session")
-def p_stereo_monly(temp_DL1_p_train_monly, temp_DL1_p_test_monly, p_l1_monly, config_monly):
+def p_stereo_monly(
+    temp_DL1_p_train_monly, temp_DL1_p_test_monly, p_l1_monly, config_monly
+):
     """
     Produce a DL1 stereo file
     """
@@ -498,10 +565,11 @@ def p_stereo_monly(temp_DL1_p_train_monly, temp_DL1_p_test_monly, p_l1_monly, co
                 f"-i{str(file)}",
                 f"-o{str(out)}",
                 f"-c{str(config_monly)}",
-                "--magic-only"
+                "--magic-only",
             ]
         )
     return (temp_DL1_p_train_monly, temp_DL1_p_test_monly)
+
 
 @pytest.fixture(scope="session")
 def RF(gamma_stereo, p_stereo, temp_rf, config):
@@ -575,12 +643,11 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
             [
                 "rm",
                 f"{file}",
-
             ]
         )
 
-
     return temp_DL2_gamma
+
 
 @pytest.fixture(scope="session")
 def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
@@ -610,10 +677,10 @@ def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
             [
                 "rm",
                 f"{file}",
-
             ]
         )
     return temp_DL2_gamma_monly
+
 
 @pytest.fixture(scope="session")
 def IRF(gamma_dl2, config, temp_irf):
@@ -632,6 +699,7 @@ def IRF(gamma_dl2, config, temp_irf):
         )
     return temp_irf
 
+
 @pytest.fixture(scope="session")
 def IRF_monly(gamma_dl2_monly, config_monly, temp_irf_monly):
     """
@@ -648,6 +716,7 @@ def IRF_monly(gamma_dl2_monly, config_monly, temp_irf_monly):
             ]
         )
     return temp_irf_monly
+
 
 @pytest.fixture(scope="session")
 def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
@@ -666,6 +735,7 @@ def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
         )
     return temp_DL2_p
 
+
 @pytest.fixture(scope="session")
 def p_dl2_monly(temp_DL1_p_test_monly, RF_monly, temp_DL2_p_monly):
     """
@@ -682,6 +752,7 @@ def p_dl2_monly(temp_DL1_p_test_monly, RF_monly, temp_DL2_p_monly):
             ]
         )
     return temp_DL2_p_monly
+
 
 @pytest.fixture(scope="session")
 def M1_l1(temp_DL1_M, dl0_m1, config):
@@ -702,6 +773,7 @@ def M1_l1(temp_DL1_M, dl0_m1, config):
 
     return temp_DL1_M
 
+
 @pytest.fixture(scope="session")
 def M1_l1_monly(temp_DL1_M_monly, dl0_m1, config_monly):
     """
@@ -721,6 +793,7 @@ def M1_l1_monly(temp_DL1_M_monly, dl0_m1, config_monly):
 
     return temp_DL1_M_monly
 
+
 @pytest.fixture(scope="session")
 def M2_l1(temp_DL1_M, dl0_m2, config):
     """
@@ -739,6 +812,8 @@ def M2_l1(temp_DL1_M, dl0_m2, config):
     )
 
     return temp_DL1_M
+
+
 @pytest.fixture(scope="session")
 def M2_l1_monly(temp_DL1_M_monly, dl0_m2, config_monly):
     """
@@ -759,7 +834,6 @@ def M2_l1_monly(temp_DL1_M_monly, dl0_m2, config_monly):
     return temp_DL1_M_monly
 
 
-
 @pytest.fixture(scope="session")
 def merge_magic(M2_l1, M1_l1, temp_DL1_M_merge):
     """
@@ -775,6 +849,7 @@ def merge_magic(M2_l1, M1_l1, temp_DL1_M_merge):
     )
 
     return temp_DL1_M_merge
+
 
 @pytest.fixture(scope="session")
 def merge_magic_monly(M2_l1_monly, M1_l1_monly, temp_DL1_M_merge_monly):
@@ -830,6 +905,8 @@ def coincidence_stereo(coincidence, temp_coinc_stereo, config):
         )
 
     return temp_coinc_stereo
+
+
 @pytest.fixture(scope="session")
 def stereo_monly(merge_magic_monly, temp_stereo_monly, config_monly):
     """
@@ -843,11 +920,12 @@ def stereo_monly(merge_magic_monly, temp_stereo_monly, config_monly):
                 f"-i{str(file)}",
                 f"-o{str(temp_stereo_monly)}",
                 f"-c{str(config_monly)}",
-                "--magic-only"
+                "--magic-only",
             ]
         )
 
     return temp_stereo_monly
+
 
 @pytest.fixture(scope="session")
 def real_dl2(coincidence_stereo, RF, temp_DL2_real):
@@ -865,6 +943,8 @@ def real_dl2(coincidence_stereo, RF, temp_DL2_real):
             ]
         )
     return temp_DL2_real
+
+
 @pytest.fixture(scope="session")
 def real_dl2_monly(stereo_monly, RF_monly, temp_DL2_real_monly):
     """
@@ -920,6 +1000,7 @@ def real_dl3_monly(real_dl2_monly, IRF_monly, temp_DL3_monly, config_monly):
         )
     return temp_DL3_monly
 
+
 @pytest.fixture(scope="session")
 def real_index(real_dl3):
     """
@@ -934,6 +1015,7 @@ def real_index(real_dl3):
     )
     return temp_DL3
 
+
 @pytest.fixture(scope="session")
 def real_index_monly(real_dl3_monly):
     """
@@ -947,4 +1029,3 @@ def real_index_monly(real_dl3_monly):
         ]
     )
     return temp_DL3_monly
-
