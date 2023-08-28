@@ -11,5 +11,7 @@ nsb.sh to be launched (bash script) at the beginning of the analysis, to classif
 1. Fix an issue with the lists of LST-MAGIC runs (in case of only one run in the .txt files, lists must be properly read): now 'rough' solution, a better solution is needed
 2. Directory structure (more consistent with the MC one)
 3. Matching of the observation period
-4. Fix pyflakes errors and run black
-5. Final checks (CI...)
+4. RF/IRF paths (config?)
+5. LSTnsb.py: check if string (run/night) already in the file before writing it (no duplicates)
+6. Fix pyflakes errors and run black
+7. Final checks (CI...)
