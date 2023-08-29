@@ -11,8 +11,6 @@ from .gadf import (
     create_gh_cuts_hdu,
     create_gti_hdu,
     create_pointing_hdu,
-    create_hdu_index_hdu,
-    create_obs_index_hdu,
 )
 from .io import (
     format_object,
@@ -45,6 +43,4 @@ __all__ = [
     "load_mc_dl2_data_file",
     "load_train_data_files",
     "save_pandas_data_in_table",
-    "create_hdu_index_hdu",
-    "create_obs_index_hdu",
 ]

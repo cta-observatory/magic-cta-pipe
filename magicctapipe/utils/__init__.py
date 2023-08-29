@@ -32,7 +32,6 @@ from .gti import (
 )
 
 from .functions import (
-    add_delta_t_key,
     calculate_disp,
     calculate_impact,
     calculate_mean_direction,
@@ -111,5 +110,4 @@ __all__ = [
     "print_title",
     "make_title_str",
     "get_key_if_exists",
-    "add_delta_t_key",
 ]
