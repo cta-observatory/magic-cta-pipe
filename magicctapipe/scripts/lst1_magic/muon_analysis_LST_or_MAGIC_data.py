@@ -21,7 +21,7 @@ from pathlib import Path
 
 from astropy.table import Table
 from ctapipe.io import EventSource
-from magicctapipe.image.muons import create_muon_table
+from lstchain.image.muon import create_muon_table
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.muons import perform_muon_analysis
 

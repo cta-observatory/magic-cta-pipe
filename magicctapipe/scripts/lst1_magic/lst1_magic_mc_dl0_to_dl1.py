@@ -48,8 +48,8 @@ from ctapipe.image import (
 
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
-from magicctapipe.image.cleaning import apply_dynamic_cleaning
-from magicctapipe.image.modifier import (
+from lstchain.image.cleaning import apply_dynamic_cleaning
+from lstchain.image.modifier import (
     add_noise_in_pixels,
     random_psf_smearer,
     set_numba_seed,

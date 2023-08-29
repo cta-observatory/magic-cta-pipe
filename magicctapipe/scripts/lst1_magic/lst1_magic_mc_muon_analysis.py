@@ -27,8 +27,8 @@ from ctapipe.image import (
     apply_time_delta_cleaning,
     number_of_islands,
 )
-from magicctapipe.image.cleaning import apply_dynamic_cleaning
-from magicctapipe.image.muons import create_muon_table
+from lstchain.image.cleaning import apply_dynamic_cleaning
+from lstchain.image.muon import create_muon_table
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.muons import perform_muon_analysis
 
