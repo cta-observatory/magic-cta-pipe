@@ -16,7 +16,7 @@ import logging
 import time
 from pathlib import Path
 
-from lstchain.high_level import create_hdu_index_hdu, create_obs_index_hdu
+from magicctapipe.lstchain.high_level import create_hdu_index_hdu, create_obs_index_hdu
 
 __all__ = ["create_dl3_index_files"]
 
