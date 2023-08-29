@@ -1,32 +1,30 @@
 # A conda environment with all useful package for ctapipe developers
 name: magic-lst1
 channels:
-  - default
   - conda-forge
 dependencies:
-  - python
-  - numpy=1.21
-  - astropy
+  - python=3.11
   - pip
+  - numpy
+  - astropy=5
   - black
   - nbsphinx
-  - ctapipe~=0.19.0
-  - gammapy=0.19.0
+  - ctapipe=0.19.2
+  - gammapy=1.1
+  - ctaplot~=0.6.2
   - h5py
   - ipython
   - jupyter
-  - matplotlib=3.5
+  - matplotlib=3.7
   - notebook
-  - cython
   - graphviz
   - iminuit>=2
   - joblib~=1.2.0
   - numpydoc
   - jupyterlab=3.5.0
-  - pandas
+  - pandas>=2
   - pre-commit
   - toml
-  - protozfits=2.0
   - protobuf=3.20
   - pyparsing
   - psutil
@@ -34,17 +32,15 @@ dependencies:
   - pytest-cov
   - pytest-runner
   - pyyaml
-  - scikit-learn=1.0
-  - sphinx~=4.2
+  - scikit-learn=1.2
+  - sphinx=4
   - sphinx-automodapi
   - sphinx_rtd_theme
-  - numba
+  - numba>=0.56
   - uproot
-  - corsikaio
   - pymongo
-  - seaborn
   - jinja2 # pinned for bokeh 1.0 compatibility
-  - pip:      
-      - ctapipe_io_magic~=0.5.1
-      - ctaplot~=0.5.5
-      - pyirf
+  - pyirf=0.8
+  - lstchain~=0.10
+  - pip:
+      - ctapipe_io_magic~=0.5.3
