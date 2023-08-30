@@ -58,6 +58,7 @@ from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
 from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object
+from magicctapipe.io.io import TEL_COMBINATIONS
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -337,17 +338,15 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                 event_info.tel_id = 3  # MAGIC-II
 
             if event.trigger.tels_with_trigger == [1, 2]:
-                tels_with_trigger_magic_lst = [2, 3]
+                tels_with_trigger_magic_lst = list(TEL_COMBINATIONS.values()).index([2, 3]) # M1+M2
             elif event.trigger.tels_with_trigger == [2, 3]:
-                tels_with_trigger_magic_lst = [1, 3]
+                tels_with_trigger_magic_lst = list(TEL_COMBINATIONS.values()).index([1, 3]) # M2+LST
             elif event.trigger.tels_with_trigger == [1, 3]:
-                tels_with_trigger_magic_lst = [1, 2]
+                tels_with_trigger_magic_lst = list(TEL_COMBINATIONS.values()).index([1, 2]) # M1+LST
             elif event.trigger.tels_with_trigger == [1, 2, 3]:
-                tels_with_trigger_magic_lst = [1, 2, 3]
+                tels_with_trigger_magic_lst = list(TEL_COMBINATIONS.values()).index([1, 2, 3]) # M1+M2+LST
 
-            tels_with_trigger_mask = subarray_magic.tel_ids_to_mask(tels_with_trigger_magic_lst)
-
-            event_info.tels_with_trigger = tels_with_trigger_mask
+            event_info.tels_with_trigger = tels_with_trigger_magic_lst
 
             # Save the parameters to the output file
             writer.write(
