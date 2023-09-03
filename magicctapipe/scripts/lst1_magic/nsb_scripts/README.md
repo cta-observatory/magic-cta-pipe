@@ -13,5 +13,8 @@ nsb.sh to be launched (bash script) at the beginning of the analysis, to classif
 3. Matching of the observation period
 4. RF/IRF paths (config?)
 5. LSTnsb.py: check if string (run/night) already in the file before writing it (no duplicates)
-6. Fix pyflakes errors and run black
-7. Final checks (CI...)
+6. Adding new data (runs) to a source folder/analysis 
+7. Multi-source
+8. Database (joint observations)
+9. Fix pyflakes errors and run black
+10. Final checks (CI...)
