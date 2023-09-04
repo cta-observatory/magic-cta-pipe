@@ -74,7 +74,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
     f.write('ulimit -l unlimited\n')
     f.write('ulimit -s unlimited\n')
     f.write('ulimit -a\n')
-    if len(MAGIC_runs)==2:
+    if (len(MAGIC_runs)==2) and (len(MAGIC_runs[0])==1):
 
         MAGIC=MAGIC_runs
         
@@ -179,7 +179,7 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
     ###########################################
     ##################### MAGIC
     ###########################################
-    if len(MAGIC_runs)==2:
+    if (len(MAGIC_runs)==2) and (len(MAGIC_runs[0])==1):
 
         MAGIC=MAGIC_runs
 
