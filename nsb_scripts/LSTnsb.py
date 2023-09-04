@@ -1,3 +1,4 @@
+import argparse
 from lstchain.image.modifier import calculate_noise_parameters
 import numpy as np
 import yaml
@@ -7,7 +8,18 @@ def main():
     """
     create list of LST runs with nsb
     """   
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
    
@@ -21,14 +33,15 @@ def main():
     nsb_limit.insert(0,0)      
     print(nsb_limit)
     lst_config='lstchain_standard_config.json'
-    LST_files=np.sort(glob.glob(f'LST_[1-4]*.txt'))
+    LST_files=np.sort(glob.glob('LST_[1-4]*.txt'))
     with open(runs) as LSTfile:
       LST_runs = np.genfromtxt(LSTfile,dtype=str,delimiter=',')
-      if (len(LST_runs)==2) and (len(LST_runs[0])==1):
+      if (len(LST_runs)==2) and (len(LST_runs[0])==10):
 
         LST=LST_runs
         
         LST_runs=[]
+        LST_runs.append(LST)
         
       print(LST_runs)
 

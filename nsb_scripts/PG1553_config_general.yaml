@@ -1,0 +1,25 @@
+mc_tel_ids:
+    LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
+    MAGIC-I: 2
+    MAGIC-II: 3
+
+directories:
+    workspace_dir : "/fefs/aswg/workspace/elisa.visentin/" #Pay attention to put the last "/"!!!
+    scripts_dir : "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/NSB_WIP/"
+    target_name   : PG1553
+
+
+general:
+    
+
+
+    target_RA_deg : 238.929 #RA in degrees
+    target_Dec_deg: 11.1900   #Dec in degrees  RA: 238.929. Dec: 11.1900
+    focal_length  : "effective"
+    MAGIC_runs    : PG1553_MAGIC_runs.txt  #If there is no MAGIC data, please fill this file with "0, 0"
+    LST_runs      : PG1553_LST_runs.txt  #Target name!!!  
+    nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    

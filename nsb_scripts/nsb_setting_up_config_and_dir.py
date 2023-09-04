@@ -25,12 +25,12 @@ Only MC:
 $ python setting_up_config_and_dir.py --partial-analysis onlyMC
 
 """
-
+import argparse
 import os
 import numpy as np
-import argparse
+
 import glob
-import time
+
 import yaml
 
 def config_file_gen(ids, target_dir):
@@ -59,7 +59,7 @@ def config_file_gen(ids, target_dir):
 
 
     
-def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
+def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs):
     """
     Below we create a bash script that links the the MAGIC data paths to each subdirectory. 
     """
@@ -74,16 +74,18 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
     f.write('ulimit -l unlimited\n')
     f.write('ulimit -s unlimited\n')
     f.write('ulimit -a\n')
-    if (len(MAGIC_runs)==2) and (len(MAGIC_runs[0])==1):
-
+    print(len(MAGIC_runs[0]))
+    if (len(MAGIC_runs)==2) and (len(MAGIC_runs[0])==10):
+        print('=====')   
         MAGIC=MAGIC_runs
         
         MAGIC_runs=[]
         MAGIC_runs.append(MAGIC)
         
-
+    print(MAGIC_runs)
     if telescope_ids[-1] > 0:
         for i in MAGIC_runs:
+            print(i)
             f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
             f.write('export OUT1='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n')
             f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
@@ -119,9 +121,10 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
                 f.write('cd '+target_dir+'/../\n')
                 f.write('SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n')
                 f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
-                
+
+
                 f.write('export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
-                f.write('conda run -n magic-lst python magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
+                f.write(f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
                 f.close()
                 
             if telescope_ids[-2] > 0:
@@ -143,9 +146,9 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
                 f.write('cd '+target_dir+'/../\n')
                 f.write('SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n')
                 f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
-                
+
                 f.write('export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
-                f.write('conda run -n magic-lst python magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
+                f.write(f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
                 f.close()
     
     
@@ -179,7 +182,7 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
     ###########################################
     ##################### MAGIC
     ###########################################
-    if (len(MAGIC_runs)==2) and (len(MAGIC_runs[0])==1):
+    if (len(MAGIC_runs)==2) and (len(MAGIC_runs[0])==10):
 
         MAGIC=MAGIC_runs
 
@@ -219,8 +222,18 @@ def main():
 
     
     
-    
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
         
     telescope_ids = list(config["mc_tel_ids"].values())
@@ -228,8 +241,8 @@ def main():
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',') #READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
-    
-    focal_length = config["general"]["focal_length"]
+    scripts_dir=config["directories"]["scripts_dir"]
+
     
     
     
@@ -241,7 +254,7 @@ def main():
     config_file_gen(telescope_ids,target_dir)
     
    
-    lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs) #MAGIC real data
+    lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs) #MAGIC real data
       #If there are MAGIC data, we convert them from DL0 to DL1 here:
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
           
