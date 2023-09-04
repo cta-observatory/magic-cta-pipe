@@ -23,6 +23,13 @@ def main():
     lst_config='lstchain_standard_config.json'
     with open(runs) as LSTfile:
       LST_runs = np.genfromtxt(LSTfile,dtype=str,delimiter=',')
+      if len(LST_runs)==2:
+
+        LST=LST_runs
+
+        LST_runs=[]
+        LST_runs.append(LST)
+
       for i in LST_runs:  
         lstObsDir = i[0].split("_")[0]+i[0].split("_")[1]+i[0].split("_")[2]
         inputdir = f'/fefs/aswg/data/real/DL1/{lstObsDir}/v0.9/tailcut84'

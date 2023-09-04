@@ -65,16 +65,23 @@ def linking_lst(target_dir, LST_runs, nsb, date):
     if not os.path.exists(coincidence_DL1_dir+"/Coincident/"+str(nsb)):
         os.mkdir(f"{coincidence_DL1_dir}/Coincident/{nsb}")
 
-    if len(LST_runs)==2:   ####TODO: BETTER SOLUTION
-        LST=[]
-        LST.append(LST_runs)
-        LST.append([0,0])
-        LST_runs=LST
+    if len(LST_runs)==2:  
+        
+        LST=LST_runs
+
+        LST_runs=[]
+        LST_runs.append(LST)
+
+        dt=date
+        date=[]
+        date.append(dt)
+        
 
     for i in LST_runs:
-        if int(i[0]) >0:
+        
 
             lstObsDir = i[0].split("_")[0]+i[0].split("_")[1]+i[0].split("_")[2]
+
             inputdir = f'/fefs/aswg/data/real/DL1/{lstObsDir}/v0.9/tailcut84'
             outputdir = f'{coincidence_DL1_dir}/Coincident/{nsb}/{lstObsDir}'
             list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
@@ -88,7 +95,7 @@ def linking_lst(target_dir, LST_runs, nsb, date):
                 for subrun in list_of_subruns:
                     f.write(subrun+"\n")
                 f.close()
-        
+
     for i in date:
         
         LSTdir = i[0].split("_")[0]+i[0].split("_")[1]+i[0].split("_")[2]

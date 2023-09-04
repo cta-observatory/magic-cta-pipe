@@ -74,7 +74,14 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs):
     f.write('ulimit -l unlimited\n')
     f.write('ulimit -s unlimited\n')
     f.write('ulimit -a\n')
-    
+    if len(MAGIC_runs)==2:
+
+        MAGIC=MAGIC_runs
+        
+        MAGIC_runs=[]
+        MAGIC_runs.append(MAGIC)
+        
+
     if telescope_ids[-1] > 0:
         for i in MAGIC_runs:
             f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
@@ -172,7 +179,12 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
     ###########################################
     ##################### MAGIC
     ###########################################
-    
+    if len(MAGIC_runs)==2:
+
+        MAGIC=MAGIC_runs
+
+        MAGIC_runs=[]
+        MAGIC_runs.append(MAGIC)
     if telescope_ids[-1] > 0:    
         if not os.path.exists(target_dir+"/DL1/Observations/M2"):
             os.mkdir(target_dir+"/DL1/Observations/M2")
