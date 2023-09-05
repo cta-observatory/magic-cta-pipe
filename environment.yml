@@ -1,7 +1,6 @@
 # A conda environment with all useful package for ctapipe developers
 name: magic-lst1
 channels:
-  - default
   - conda-forge
 dependencies:
   - python=3.8
