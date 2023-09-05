@@ -14,7 +14,7 @@ Usage:
 $ python coincident_events.py
 
 """
-
+import argparse
 import os
 import numpy as np
 import glob
@@ -65,7 +65,7 @@ def linking_lst(target_dir, LST_runs, nsb, date):
     if not os.path.exists(coincidence_DL1_dir+"/Coincident/"+str(nsb)):
         os.mkdir(f"{coincidence_DL1_dir}/Coincident/{nsb}")
 
-    if (len(LST_runs)==2) and (len(LST_runs[0])==1):
+    if (len(LST_runs)==2) and (len(LST_runs[0])==10):
         
         LST=LST_runs
         print(LST)
@@ -103,7 +103,7 @@ def linking_lst(target_dir, LST_runs, nsb, date):
         
         if not os.path.exists(f"{outputdir}"):
             os.mkdir(outputdir) 
-def bash_coincident(target_dir, nsb):
+def bash_coincident(scripts_dir, target_dir, nsb):
 
     """
     This function generates the bashscript for running the coincidence analysis.
@@ -140,7 +140,7 @@ def bash_coincident(target_dir, nsb):
         f.write("SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write("export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n magic-lst python lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
+        f.write(f"conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
         f.close()
         
 
@@ -152,11 +152,24 @@ def main():
     """
     
     
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
     telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    scripts_dir=config["directories"]["scripts_dir"]
     print("***** Generating file config_coincidence.yaml...")
     print("***** This file can be found in ",target_dir)
     configfile_coincidence(telescope_ids,target_dir)
@@ -171,7 +184,7 @@ def main():
       
     
         print("***** Generating the bashscript...")
-        bash_coincident(target_dir, nsblvl)
+        bash_coincident(scripts_dir, target_dir, nsblvl)
       
     
         print("***** Submitting processess to the cluster...")

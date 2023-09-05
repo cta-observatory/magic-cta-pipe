@@ -20,20 +20,20 @@ Usage:
 $ python merging_runs_and_spliting_training_samples.py
 
 """
-
+import argparse
 import os
 import numpy as np
 import glob
 import yaml
 import logging
-from tqdm import tqdm
+
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, identification, MAGIC_runs):
+def merge(scripts_dir, target_dir, identification, MAGIC_runs):
     
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MAGIC subruns.
@@ -71,7 +71,7 @@ def merge(target_dir, identification, MAGIC_runs):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                f.write(f'conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
                     
         if os.path.exists(MAGIC_DL1_dir+"/M2"):
             for i in MAGIC_runs:
@@ -79,19 +79,19 @@ def merge(target_dir, identification, MAGIC_runs):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                f.write(f'conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
     
     elif identification == "1_M1M2":
         if os.path.exists(MAGIC_DL1_dir+"/M1") & os.path.exists(MAGIC_DL1_dir+"/M2"):
             for i in MAGIC_runs:
                 if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/Merged"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged") 
-                f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
+                f.write(f'conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
     else:
         for i in MAGIC_runs:
             if not os.path.exists(MAGIC_DL1_dir+f"/Merged/Merged_{i[0]}"):
                 os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i[0]}")  #Creating a merged directory for each night
-            f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
+            f.write(f'conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
     
     
     f.close()
@@ -103,11 +103,24 @@ def main():
     """
     
     
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
     
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    scripts_dir=config["directories"]["scripts_dir"]
     
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',')
@@ -115,9 +128,9 @@ def main():
     
    
     print("***** Generating merge bashscripts...")
-    merge(target_dir, "0_subruns", MAGIC_runs) #generating the bash script to merge the subruns
-    merge(target_dir, "1_M1M2", MAGIC_runs) #generating the bash script to merge the M1 and M2 runs
-    merge(target_dir, "2_nights", MAGIC_runs) #generating the bash script to merge all runs per night
+    merge(scripts_dir,target_dir, "0_subruns", MAGIC_runs) #generating the bash script to merge the subruns
+    merge(scripts_dir,target_dir, "1_M1M2", MAGIC_runs) #generating the bash script to merge the M1 and M2 runs
+    merge(scripts_dir,target_dir, "2_nights", MAGIC_runs) #generating the bash script to merge all runs per night
     
 
     
