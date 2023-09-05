@@ -48,8 +48,8 @@ jobs:
           pip install pytest-cov
           pip install pyflakes
           pip install "git+https://github.com/cta-observatory/ctapipe@$CTAPIPE_VERSION"
-          ctapipe-info --version | grep "$CTAPIPE_VERSION"
-          git describe --tags
+          ctapipe-info --all
+          pip freeze
 
       - name: Static codechecks
         run: |
