@@ -13,7 +13,7 @@ Usage:
 $ python DL2_to_DL3.py
 
 """
-
+import argparse
 import os
 import numpy as np
 import glob
@@ -47,7 +47,7 @@ def configuration_DL3(ids, target_dir,target_coords):
     f.close()
             
 
-def DL2_to_DL3(target_dir, nsb):
+def DL2_to_DL3(scripts_dir, target_dir, nsb):
     
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
@@ -82,7 +82,7 @@ def DL2_to_DL3(target_dir, nsb):
         
         for DL2_file in listOfDL2files:
             f.write(f'export LOG={output}/DL3_{DL2_file.split("/")[-1]}.log\n')
-            f.write(f'conda run -n magic-lst python lst1_magic_dl2_to_dl3.py --input-file-dl2 {DL2_file} --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
+            f.write(f'conda run -n magic-lst python {scripts_dir}/lst1_magic_dl2_to_dl3.py --input-file-dl2 {DL2_file} --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n')
 
         f.close()
     
@@ -93,19 +93,33 @@ def main():
     Here we read the config_general.yaml file and call the functions defined above.
     """
     
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+    
     
     telescope_ids = list(config["mc_tel_ids"].values())
     
     target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
-    
+    scripts_dir=config["directories"]["scripts_dir"]
+
+
     target_coords = [config["general"]["target_RA_deg"],config["general"]["target_Dec_deg"]]
 
     print("***** Generating file config_DL3.yaml...")
     print("***** This file can be found in ",target_dir)
     configuration_DL3(telescope_ids, target_dir, target_coords)
-    listnsb = np.sort(glob.glob(f"LST_*_.txt"))
+    listnsb = np.sort(glob.glob("LST_*_.txt"))
     nsb=[]
     for f in listnsb:
         nsb.append(f.split('_')[1])
@@ -114,7 +128,7 @@ def main():
     for nsblvl in nsb:
         
       print("***** Generating bashscripts for DL2-DL3 conversion...")
-      DL2_to_DL3(target_dir, nsblvl)
+      DL2_to_DL3(scripts_dir,target_dir, nsblvl)
     
       print("***** Running lst1_magic_dl2_to_dl3.py in the DL2 real data files...")
       print("Process name: DL3_"+target_dir.split("/")[-2:][1]+str(nsblvl))

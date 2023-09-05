@@ -7,7 +7,7 @@ Usage:
 $ python IRF.py
 
 """
-
+import argparse
 import os
 import numpy as np
 import glob
@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 
     
-def MergeDL2(target_dir, nsb):
+def MergeDL2(scripts_dir, target_dir, nsb):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py in all DL2 subruns.
@@ -54,7 +54,7 @@ def MergeDL2(target_dir, nsb):
         if not os.path.exists(night+"/Merged"):
             os.mkdir(night+"/Merged")
         f.write(f'export LOG={night}/Merged/merge.log\n')
-        f.write(f'conda run -n magic-lst python merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n')        
+        f.write(f'conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n')        
     
     f.close()
 
@@ -65,15 +65,29 @@ def main():
     """
     
     
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
-    telescope_ids = list(config["mc_tel_ids"].values())
+    
+
     
     target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
-    
-    listnsb = np.sort(glob.glob(f"LST_*_.txt"))
+    scripts_dir=config["directories"]["scripts_dir"]
+
+
+    listnsb = np.sort(glob.glob("LST_*_.txt"))
     nsb=[]
     for f in listnsb:
         nsb.append(f.split('_')[1])
@@ -81,7 +95,7 @@ def main():
     print('nsb', nsb)
     for nsblvl in nsb:
       print("***** Merging DL2 files run-wise...")
-      MergeDL2(target_dir, nsblvl)
+      MergeDL2(scripts_dir, target_dir, nsblvl)
     
     #Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
     list_of_DL1_to_2_scripts = np.sort(glob.glob("DL3_*.sh"))

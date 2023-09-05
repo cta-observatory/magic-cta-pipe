@@ -9,7 +9,7 @@ Usage:
 $ python DL1_to_DL2.py
 
 """
-
+import argparse
 import os
 import numpy as np
 import glob
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def DL1_to_2(target_dir, nsb):
+def DL1_to_2(scripts_dir,target_dir, nsb):
     
     """
     This function creates the bash scripts to run lst1_magic_dl1_stereo_to_dl2.py.
@@ -40,7 +40,7 @@ def DL1_to_2(target_dir, nsb):
         os.mkdir(target_dir+"/DL2/Observations/"+str(nsb))
 
         
-    process_name = f"DL2_"+target_dir.split("/")[-2:][1]+str(nsb)
+    process_name = "DL2_"+target_dir.split("/")[-2:][1]+str(nsb)
     data_files_dir = target_dir+"/DL1/Observations/Coincident_stereo/"+str(nsb)
     RFs_dir = "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/PG1553_nsb/RF/"+str(nsb)   #then, RFs saved somewhere (as Julian's ones)
     listOfDL1nights = np.sort(glob.glob(data_files_dir+"/*"))
@@ -68,7 +68,7 @@ def DL1_to_2(target_dir, nsb):
         f.write(f"SAMPLE_LIST=($(<{night}/list_of_DL1_stereo_files.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write(f'export LOG={output}'+'/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n')
-        f.write(f'conda run -n magic-lst python lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
+        f.write(f'conda run -n magic-lst python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {target_dir}/../config_general.yaml >$LOG 2>&1\n\n')
         f.close()
 
 
@@ -80,12 +80,27 @@ def main():
     """
     
     
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+
+
+    
     
     
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
-    listnsb = np.sort(glob.glob(f"LST_*_.txt"))
+    scripts_dir=config["directories"]["scripts_dir"]
+    listnsb = np.sort(glob.glob("LST_*_.txt"))
     nsb=[]
     for f in listnsb:
         nsb.append(f.split('_')[1])
@@ -94,7 +109,7 @@ def main():
     for nsblvl in nsb:
       
       print("***** Generating bashscripts for DL2...")
-      DL1_to_2(target_dir, nsblvl)
+      DL1_to_2(scripts_dir,target_dir, nsblvl)
   
     
     

@@ -7,7 +7,7 @@ Usage:
 $ python stereo_events.py
 
 """
-
+import argparse
 import os
 import numpy as np
 import glob
@@ -37,7 +37,7 @@ def configfile_stereo(ids, target_dir):
     f.close()
     
      
-def bash_stereo(target_dir, nsb):
+def bash_stereo(scripts_dir, target_dir, nsb):
 
     """
     This function generates the bashscript for running the stereo analysis.
@@ -85,7 +85,7 @@ def bash_stereo(target_dir, nsb):
         f.write(f"SAMPLE_LIST=($(<$INPUTDIR/list_coin_{nsb}.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n magic-lst python lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
+        f.write(f"conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
         f.close()
 
 
@@ -97,17 +97,31 @@ def main():
     """
     
     
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+
+        
     
     
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
+    scripts_dir=config["directories"]["scripts_dir"]
     telescope_ids = list(config["mc_tel_ids"].values())
     
     print("***** Generating file config_stereo.yaml...")
     print("***** This file can be found in ",target_dir)
     configfile_stereo(telescope_ids, target_dir)
-    listnsb = np.sort(glob.glob(f"LST_*_.txt"))
+    listnsb = np.sort(glob.glob("LST_*_.txt"))
     nsb=[]
     for f in listnsb:
         nsb.append(f.split('_')[1])
@@ -116,7 +130,7 @@ def main():
     for nsblvl in nsb:
       
         print("***** Generating the bashscript...")
-        bash_stereo(target_dir, nsblvl)
+        bash_stereo(scripts_dir, target_dir, nsblvl)
     
 
     
