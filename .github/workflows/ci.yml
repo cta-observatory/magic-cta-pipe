@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: [3.8]
         ctapipe-version: [v0.12.0]
 
     steps:
@@ -59,13 +59,16 @@ jobs:
       #    chmod +x ./download_test_data.sh
       #    ./download_test_data.sh
 
-      #- name: Tests
-      #  run: |
-      #    # github actions starts a new shell for each "step", so we need to
-      #    # activate our env again
-      #    source $CONDA/etc/profile.d/conda.sh
-      #    conda activate ci
-      #    coverage run -m pytest -v
-      #    coverage xml
+      - name: Tests
+        env:
+          MAGIC_CTA_DATA_USER: ${{ secrets.magic_cta_data_user }}
+          MAGIC_CTA_DATA_PASSWORD: ${{ secrets.magic_cta_data_password }}
+        run: |
+          # github actions starts a new shell for each "step", so we need to
+          # activate our env again
+          source $CONDA/etc/profile.d/conda.sh
+          conda activate ci
+          coverage run -m pytest -v
+          coverage xml
 
-      #- uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v1

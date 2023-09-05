@@ -1,0 +1,245 @@
+mc_tel_ids:
+    LST-1: 1
+    MAGIC-I: 2
+    MAGIC-II: 3
+
+
+LST:
+    image_extractor:
+        type: "LocalPeakWindowSum"
+        window_shift: 4
+        window_width: 8
+
+    increase_nsb:
+        use: true
+        extra_noise_in_dim_pixels: 1.27
+        extra_bias_in_dim_pixels: 0.665
+        transition_charge: 8
+        extra_noise_in_bright_pixels: 2.08
+
+    increase_psf:
+        use: false
+        fraction: null
+
+    tailcuts_clean:
+        picture_thresh: 8
+        boundary_thresh: 4
+        keep_isolated_pixels: false
+        min_number_picture_neighbors: 2
+
+    time_delta_cleaning:
+        use: true
+        min_number_neighbors: 1
+        time_limit: 2
+
+    dynamic_cleaning:
+        use: true
+        threshold: 267
+        fraction: 0.03
+
+    use_only_main_island: false
+
+
+MAGIC:
+    image_extractor:
+        type: "SlidingWindowMaxSum"
+        window_width: 5
+        apply_integration_correction: false
+
+    charge_correction:
+        use: true
+        factor: 1.143
+
+    magic_clean:
+        use_time: true
+        use_sum: true
+        picture_thresh: 6
+        boundary_thresh: 3.5
+        max_time_off: 4.5
+        max_time_diff: 1.5
+        find_hotpixels: true
+        pedestal_type: "from_extractor_rndm"
+
+    muon_ring:
+        thr_low: 25
+        tailcut: [12, 8]
+        ring_completeness_threshold: 25
+
+
+event_coincidence:
+    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"
+    window_half_width: "300 ns"
+    pre_offset_search: false
+    n_pre_offset_search_events: 100
+    time_offset:
+        start: "-10 us"
+        stop: "0 us"
+
+
+stereo_reco:
+    quality_cuts: "(intensity > 50) & (width > 0)"
+    theta_uplim: "6 arcmin"
+
+
+energy_regressor:
+    settings:
+        n_estimators: 150
+        criterion: "squared_error"
+        max_depth: 50
+        min_samples_split: 2
+        min_samples_leaf: 2
+        min_weight_fraction_leaf: 0.0
+        max_features: 1.0
+        max_leaf_nodes: null
+        min_impurity_decrease: 0.0
+        bootstrap: true
+        oob_score: false
+        n_jobs: 5
+        random_state: 42
+        verbose: 0
+        warm_start: false
+        ccp_alpha: 0.0
+        max_samples: null
+
+    features: [
+        "intensity",
+        "length",
+        "width",
+        "skewness",
+        "kurtosis",
+        "slope",
+        "intensity_width_2",
+        "h_max",
+        "impact",
+    ]
+
+    gamma_offaxis:
+        min: null
+        max: null
+
+
+disp_regressor:
+    settings:
+        n_estimators: 150
+        criterion: "squared_error"
+        max_depth: 50
+        min_samples_split: 2
+        min_samples_leaf: 2
+        min_weight_fraction_leaf: 0.0
+        max_features: 1.0
+        max_leaf_nodes: null
+        min_impurity_decrease: 0.0
+        bootstrap: true
+        oob_score: false
+        n_jobs: 5
+        random_state: 42
+        verbose: 0
+        warm_start: false
+        ccp_alpha: 0.0
+        max_samples: null
+
+    features: [
+        "intensity",
+        "length",
+        "width",
+        "skewness",
+        "kurtosis",
+        "slope",
+        "intensity_width_2",
+        "h_max",
+        "impact",
+    ]
+
+    gamma_offaxis:
+        min: null
+        max: null
+
+
+event_classifier:
+    settings:
+        n_estimators: 100
+        criterion: "gini"
+        max_depth: 100
+        min_samples_split: 2
+        min_samples_leaf: 2
+        min_weight_fraction_leaf: 0.0
+        max_features: "sqrt"
+        max_leaf_nodes: null
+        min_impurity_decrease: 0.0
+        bootstrap: true
+        oob_score: false
+        n_jobs: 5
+        random_state: 42
+        verbose: 0
+        warm_start: false
+        class_weight: null
+        ccp_alpha: 0.0
+        max_samples: null
+
+    features: [
+        "intensity",
+        "length",
+        "width",
+        "skewness",
+        "kurtosis",
+        "slope",
+        "intensity_width_2",
+        "h_max",
+        "impact",
+    ]
+
+    gamma_offaxis:
+        min: null
+        max: null
+
+create_irf:
+    quality_cuts: "disp_diff_mean < 0.22"
+    event_type: "software"  # select "software", "software_only_3tel", "magic_only" or "hardware"
+    weight_type_dl2: "simple"  # select "simple", "variance" or "intensity"
+    obs_time_irf: "50 h"  # used when creating a background HDU
+
+    energy_bins:  # log space
+        start: "0.01 TeV"
+        stop: "1000 TeV"
+        n_edges: 26
+
+    migration_bins:  # log space
+        start: 0.2
+        stop: 5
+        n_edges: 31
+
+    fov_offset_bins:  # linear space, used for diffuse MCs
+        start: "0 deg"
+        stop: "1 deg"
+        n_edges: 2
+
+    source_offset_bins:  # linear space, used when creating PSF HDU
+        start: "0 deg"
+        stop: "1 deg"
+        n_edges: 101
+
+    bkg_fov_offset_bins:  # linear space, used when creating background HDU
+        start: "0 deg"
+        stop: "10 deg"
+        n_edges: 21
+
+    gammaness:
+        cut_type: "dynamic"  # select "global" or "dynamic"
+        global_cut_value: 0.8  # used for the global cut
+        efficiency: 0.9  # used for the dynamic cuts
+        min_cut: 0.05  # used for the dynamic cuts
+        max_cut: 0.85  # used for the dynamic cuts
+
+    theta:
+        cut_type: "dynamic"  # select "global" or "dynamic"
+        global_cut_value: "0.2 deg"  # used for the global cut
+        efficiency: 0.75  # used for the dynamic cuts
+        min_cut: "0.1 deg"  # used for the dynamic cuts
+        max_cut: "0.3 deg"  # used for the dynamic cuts
+
+
+dl2_to_dl3:
+    interpolation_method: "nearest"  # select "nearest", "linear" or "cubic"
+    source_name: "Crab"
+    source_ra: null  # used when the source name cannot be resolved
+    source_dec: null  # used when the source name cannot be resolved
