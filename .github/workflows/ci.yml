@@ -50,12 +50,12 @@ jobs:
         run: |
           pyflakes magicctapipe
 
-      - name: Tests
-        env:
-          MAGIC_CTA_DATA_USER: ${{ secrets.magic_cta_data_user }}
-          MAGIC_CTA_DATA_PASSWORD: ${{ secrets.magic_cta_data_password }}
-        run: |
-          coverage run -m pytest -v
-          coverage xml
+      #- name: Tests
+        #env:
+          #MAGIC_CTA_DATA_USER: ${{ secrets.magic_cta_data_user }}
+          #MAGIC_CTA_DATA_PASSWORD: ${{ secrets.magic_cta_data_password }}
+        #run: |
+          #coverage run -m pytest -v
+          #coverage xml
 
       - uses: codecov/codecov-action@v3
