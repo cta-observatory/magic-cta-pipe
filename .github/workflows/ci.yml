@@ -15,6 +15,11 @@ jobs:
         python-version: [3.11]
         ctapipe-version: [v0.19.2]
 
+    defaults:
+      run:
+        # We need login shells (-l) for micromamba to work.
+        shell: bash -leo pipefail {0}
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,7 +44,7 @@ jobs:
           CTAPIPE_VERSION: ${{ matrix.ctapipe-version }}
         run: |
           python --version
-          pip install -e .
+          pip install .[all]
           pip install pytest-cov
           pip install pyflakes
           pip install "git+https://github.com/cta-observatory/ctapipe@$CTAPIPE_VERSION"
