@@ -9,10 +9,12 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import QTable
 from astropy.time import Time
-from magicctapipe import __version__
-from magicctapipe.io.io import TEL_COMBINATIONS
-from magicctapipe.utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
 from pyirf.binning import split_bin_lo_hi
+
+from .. import __version__ as MCP_VERSION
+from ..utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
+from .io import TEL_COMBINATIONS
+
 
 __all__ = [
     "create_gh_cuts_hdu",
@@ -71,7 +73,7 @@ def create_gh_cuts_hdu(
     # Create a header
     header = fits.Header(
         cards=[
-            ("CREATOR", f"magicctapipe v{__version__}"),
+            ("CREATOR", f"magicctapipe v{MCP_VERSION}"),
             ("HDUCLAS1", "RESPONSE"),
             ("HDUCLAS2", "GH_CUTS"),
             ("HDUCLAS3", "POINT-LIKE"),
@@ -322,4 +324,3 @@ def create_pointing_hdu(event_table):
     pointing_hdu = fits.BinTableHDU(qtable, header=header, name="POINTING")
 
     return pointing_hdu
-

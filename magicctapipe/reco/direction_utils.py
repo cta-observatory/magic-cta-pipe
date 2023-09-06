@@ -2,7 +2,7 @@ import pandas as pd
 from astropy import units as u
 from astropy.coordinates import SkyCoord, AltAz
 
-from magicctapipe.utils.tels import get_tel_ids_dl1
+from ..utils import get_tel_ids_dl1
 
 __all__ = ["compute_separation_angle_direction"]
 

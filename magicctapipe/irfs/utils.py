@@ -3,18 +3,15 @@ import glob
 
 import numpy as np
 import pandas as pd
-from astropy import table
+import matplotlib.pylab as plt
 import astropy.units as u
+
+from astropy import table
 from astropy.io import fits
 from astropy.table import QTable
-
 from pyirf.simulations import SimulatedEventsInfo
 
-from magicctapipe.utils.filedir import read_mc_header
-from magicctapipe.utils.plot import save_plt, load_default_plot_settings
-from magicctapipe.utils.utils import print_title
-
-import matplotlib.pylab as plt
+from ..utils import read_mc_header, save_plt, load_default_plot_settings, print_title
 
 __all__ = [
     "read_simu_info_mcp_sum_num_showers",

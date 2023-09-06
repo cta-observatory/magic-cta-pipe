@@ -7,7 +7,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn.ensemble
-from magicctapipe.io.io import TEL_NAMES
+from ..io.io import TEL_NAMES
 
 __all__ = ["EnergyRegressor", "DispRegressor", "EventClassifier"]
 
