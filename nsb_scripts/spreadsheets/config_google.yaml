@@ -1,0 +1,13 @@
+google:
+    json_key: ""        #personal access key (json file)
+    worksheet_url: ""    #Google Sheet URL (the link used to share the file)
+
+    sheet : 0  #sheet in which the table is located	
+    first_column : A
+    last_column : K
+    min_read_line : 9
+    max_read_line : 600    #TO BE UPDATED WHEN DATABASE UPDATED
+
+data_selection_and_lists:
+    source_name_database: 'CrabNebula'  #MUST BE THE SAME AS IN THE DATABASE
+    source_name_output: 'Crab'  #Name to be used in the analysis (will be used in the name of the txt output files), best idea: the same as in the analysis config_general.yaml, WARNING: ONLY ALPHANUMERIC, NO SPECIAL CHARACTERS (special characters can interfere with the analysis scripts)
