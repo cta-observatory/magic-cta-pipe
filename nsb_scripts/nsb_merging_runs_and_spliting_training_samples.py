@@ -54,7 +54,7 @@ def merge(scripts_dir, target_dir, identification, MAGIC_runs):
     if os.path.exists(MAGIC_DL1_dir+"/M1") & os.path.exists(MAGIC_DL1_dir+"/M2"):
         if not os.path.exists(MAGIC_DL1_dir+"/Merged"):
             os.mkdir(MAGIC_DL1_dir+"/Merged")
-    
+    print('directory',MAGIC_DL1_dir)    
     f = open(f"Merge_{identification}.sh","w")
     f.write('#!/bin/sh\n\n')
     f.write('#SBATCH -p short\n')
@@ -125,7 +125,14 @@ def main():
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',')
     
-    
+    if (len(MAGIC_runs)==2) and (len(MAGIC_runs[0])==10):
+        
+        MAGIC=MAGIC_runs
+
+        MAGIC_runs=[]
+        MAGIC_runs.append(MAGIC)
+
+
    
     print("***** Generating merge bashscripts...")
     merge(scripts_dir,target_dir, "0_subruns", MAGIC_runs) #generating the bash script to merge the subruns

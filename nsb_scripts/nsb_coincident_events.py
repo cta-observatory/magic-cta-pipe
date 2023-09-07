@@ -64,7 +64,7 @@ def linking_lst(target_dir, LST_runs, nsb, date):
 
     if not os.path.exists(coincidence_DL1_dir+"/Coincident/"+str(nsb)):
         os.mkdir(f"{coincidence_DL1_dir}/Coincident/{nsb}")
-
+    print('date', date)
     if (len(LST_runs)==2) and (len(LST_runs[0])==10):
         
         LST=LST_runs
@@ -72,10 +72,20 @@ def linking_lst(target_dir, LST_runs, nsb, date):
         LST_runs=[]
         LST_runs.append(LST)
         print(LST_runs)
+        
+        
+        
+    if (len(date)==2) and (len(date[0])==10):
+
+        
+        
+        
+        
+        
         dt=date
         date=[]
         date.append(dt)
-        
+
 
     for i in LST_runs:
         
@@ -95,9 +105,9 @@ def linking_lst(target_dir, LST_runs, nsb, date):
                 for subrun in list_of_subruns:
                     f.write(subrun+"\n")
                 f.close()
-
+    print('date',date)
     for i in date:
-        
+        print(i)
         LSTdir = i[0].split("_")[0]+i[0].split("_")[1]+i[0].split("_")[2]
         outputdir = f'{coincidence_DL1_dir}/Coincident/{nsb}/{LSTdir}'
         
@@ -170,14 +180,16 @@ def main():
     telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
     scripts_dir=config["directories"]["scripts_dir"]
+    source=config['directories']['target_name']
     print("***** Generating file config_coincidence.yaml...")
     print("***** This file can be found in ",target_dir)
     configfile_coincidence(telescope_ids,target_dir)
     nsb= config["general"]["nsb"]
-    date = np.genfromtxt('LST_runs.txt', dtype=str, delimiter=',')
+    runs_all = config["general"]["LST_runs"]
+    date = np.genfromtxt(runs_all, dtype=str, delimiter=',')
     for nsblvl in nsb:
       try:
-        LST_runs = np.genfromtxt(f'LST_{nsblvl}_.txt',dtype=str,delimiter=',')
+        LST_runs = np.genfromtxt(f'{source}_LST_{nsblvl}_.txt',dtype=str,delimiter=',')
      
         print("***** Linking the paths to LST data files...")
         linking_lst(target_dir, LST_runs, nsblvl, date) #linking the data paths to current working directory

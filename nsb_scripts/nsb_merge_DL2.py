@@ -85,12 +85,12 @@ def main():
     target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     
     scripts_dir=config["directories"]["scripts_dir"]
+    source=config['directories']['target_name']
 
-
-    listnsb = np.sort(glob.glob("LST_*_.txt"))
+    listnsb = np.sort(glob.glob(f"{source}_LST_*_.txt"))
     nsb=[]
     for f in listnsb:
-        nsb.append(f.split('_')[1])
+        nsb.append(f.split('_')[2])
     
     print('nsb', nsb)
     for nsblvl in nsb:

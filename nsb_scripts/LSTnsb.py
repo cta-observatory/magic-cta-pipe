@@ -27,13 +27,13 @@ def main():
     runs = config["general"]["LST_runs"] 
     nsb = config["general"]["nsb"]  
     width=[a/2 - b/2 for a, b in zip(nsb[1:], nsb[:-1])]
-    
+    source= config["directories"]['target_name']    
     width.append(0.25)
     nsb_limit=[a + b for a, b in zip(nsb[:], width[:])]
     nsb_limit.insert(0,0)      
     print(nsb_limit)
     lst_config='lstchain_standard_config.json'
-    LST_files=np.sort(glob.glob('LST_[1-4]*.txt'))
+    LST_files=np.sort(glob.glob(f'{source}_LST_[0-9]*.txt'))
     with open(runs) as LSTfile:
       LST_runs = np.genfromtxt(LSTfile,dtype=str,delimiter=',')
       if (len(LST_runs)==2) and (len(LST_runs[0])==10):
@@ -82,7 +82,7 @@ def main():
         print('nsb average', a)
         for j in range (0,len(nsb)):
           if (a<nsb_limit[j+1])&(a>nsb_limit[j]):
-            with open(f"LST_{nsb[j]}_.txt", "a+") as f:
+            with open(f"{source}_LST_{nsb[j]}_.txt", "a+") as f:
                 
               f.write(str(i[0])+","+str(i[1])+"\n")  
         

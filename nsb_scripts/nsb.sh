@@ -12,7 +12,7 @@ ulimit -s unlimited
 ulimit -a
 
 start_time=`date +%s`
-conda run -n  magic-lst python LSTnsb.py > nsblog.log 2>&1
+conda run -n  magic-lst python LSTnsb.py -c PG1553_config_general.yaml > nsblog.log 2>&1
 end_time=`date +%s`
 echo execution time was `expr $end_time - $start_time` s.
 

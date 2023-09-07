@@ -119,10 +119,11 @@ def main():
     print("***** Generating file config_DL3.yaml...")
     print("***** This file can be found in ",target_dir)
     configuration_DL3(telescope_ids, target_dir, target_coords)
-    listnsb = np.sort(glob.glob("LST_*_.txt"))
+    source=config['directories']['target_name']
+    listnsb = np.sort(glob.glob(f"{source}_LST_*_.txt"))
     nsb=[]
     for f in listnsb:
-        nsb.append(f.split('_')[1])
+        nsb.append(f.split('_')[2])
     
     print('nsb', nsb)
     for nsblvl in nsb:
