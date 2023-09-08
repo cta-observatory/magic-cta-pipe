@@ -141,7 +141,8 @@ def main():
     
         #Below we run the bash scripts to find the stereo events
         list_of_stereo_scripts = np.sort(glob.glob(f"StereoEvents_{nsblvl}*.sh"))
-    
+        if len(list_of_stereo_scripts)<1:
+            continue
         for n,run in enumerate(list_of_stereo_scripts):
           if n == 0:
             launch_jobs =  f"stereo{n}=$(sbatch --parsable {run})"

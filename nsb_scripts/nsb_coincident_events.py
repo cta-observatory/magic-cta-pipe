@@ -209,7 +209,8 @@ def main():
     
         #Below we run the bash scripts to find the coincident events
         list_of_coincidence_scripts = np.sort(glob.glob(f"LST_coincident_{nsblvl}*.sh"))
-    
+        if len(list_of_coincidence_scripts)<1:
+            continue
         for n,run in enumerate(list_of_coincidence_scripts):
           if n == 0:
             launch_jobs =  f"coincidence{n}=$(sbatch --parsable {run})"

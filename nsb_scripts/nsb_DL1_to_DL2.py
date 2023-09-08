@@ -121,6 +121,8 @@ def main():
     
       #Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
       list_of_DL1_to_2_scripts = np.sort(glob.glob(f"DL1_to_DL2_{nsblvl}*.sh"))
+      if len(list_of_DL1_to_2_scripts)<1:
+          continue
       print(list_of_DL1_to_2_scripts)   
       for n,run in enumerate(list_of_DL1_to_2_scripts):
         if n == 0:

@@ -99,7 +99,8 @@ def main():
     
     #Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
     list_of_DL1_to_2_scripts = np.sort(glob.glob("DL3_*_0_*.sh"))
-    print(list_of_DL1_to_2_scripts)
+    if len(list_of_DL1_to_2_scripts)<1:
+        return
     for n,run in enumerate(list_of_DL1_to_2_scripts):
         if n == 0:
             launch_jobs =  f"conversion{n}=$(sbatch --parsable {run})"

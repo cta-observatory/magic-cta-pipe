@@ -260,7 +260,8 @@ def main():
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
           
         list_of_MAGIC_runs = glob.glob("MAGIC-*.sh")
-          
+        if len(list_of_MAGIC_runs):
+            return
         for n,run in enumerate(list_of_MAGIC_runs):
             if n == 0:
                 launch_jobs =  f"linking=$(sbatch --parsable linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"

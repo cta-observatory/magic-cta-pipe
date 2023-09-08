@@ -51,7 +51,9 @@ def main():
         i=i.rstrip()
         bash_scripts(i,args.config_file)
     list_of_bash_scripts = np.sort(glob.glob("run_*.sh"))
-    print(list_of_bash_scripts)   
+    print(list_of_bash_scripts)
+    if len(list_of_bash_scripts)<1:
+        return
     for n,run in enumerate(list_of_bash_scripts):
         if n == 0:
             launch_jobs =  f"nsb{n}=$(sbatch --parsable {run})"
