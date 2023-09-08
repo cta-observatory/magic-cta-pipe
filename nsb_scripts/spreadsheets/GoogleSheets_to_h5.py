@@ -1,6 +1,6 @@
 import pandas as pd
-import os
-import pickle
+
+
 import json
 from google.oauth2 import service_account
 import gspread

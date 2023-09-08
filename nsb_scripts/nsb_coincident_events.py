@@ -13,7 +13,9 @@ event files.
 Usage:
 $ python coincident_events.py
 
+
 """
+from pathlib import Path
 import argparse
 import os
 import numpy as np
@@ -178,8 +180,8 @@ def main():
         config = yaml.safe_load(f)
     
     telescope_ids = list(config["mc_tel_ids"].values())
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
-    scripts_dir=config["directories"]["scripts_dir"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]) / config["directories"]["target_name"])
+    scripts_dir=str(Path(config["directories"]["scripts_dir"]))
     source=config['directories']['target_name']
     print("***** Generating file config_coincidence.yaml...")
     print("***** This file can be found in ",target_dir)

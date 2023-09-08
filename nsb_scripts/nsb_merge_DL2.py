@@ -82,9 +82,9 @@ def main():
     
 
     
-    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]) / config["directories"]["target_name"])
     
-    scripts_dir=config["directories"]["scripts_dir"]
+    scripts_dir=str(Path(config["directories"]["scripts_dir"]))
     source=config['directories']['target_name']
 
     listnsb = np.sort(glob.glob(f"{source}_LST_*_.txt"))
@@ -98,7 +98,7 @@ def main():
       MergeDL2(scripts_dir, target_dir, nsblvl)
     
     #Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-    list_of_DL1_to_2_scripts = np.sort(glob.glob("DL3_*.sh"))
+    list_of_DL1_to_2_scripts = np.sort(glob.glob("DL3_*_0_*.sh"))
     print(list_of_DL1_to_2_scripts)
     for n,run in enumerate(list_of_DL1_to_2_scripts):
         if n == 0:

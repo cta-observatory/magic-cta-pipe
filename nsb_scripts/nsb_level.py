@@ -50,7 +50,7 @@ def main():
         print(i)
         i=i.rstrip()
         bash_scripts(i,args.config_file)
-    list_of_bash_scripts = np.sort(glob.glob(f"run_*.sh"))
+    list_of_bash_scripts = np.sort(glob.glob("run_*.sh"))
     print(list_of_bash_scripts)   
     for n,run in enumerate(list_of_bash_scripts):
         if n == 0:

@@ -26,7 +26,7 @@ import numpy as np
 import glob
 import yaml
 import logging
-
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -119,8 +119,8 @@ def main():
         config = yaml.safe_load(f)
     
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
-    scripts_dir=config["directories"]["scripts_dir"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]) / config["directories"]["target_name"])
+    scripts_dir=str(Path(config["directories"]["scripts_dir"]))
     
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',')

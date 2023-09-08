@@ -15,7 +15,7 @@ import numpy as np
 import glob
 import yaml
 import logging
-
+from pathlib import Path
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
@@ -98,8 +98,8 @@ def main():
     
     
     
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
-    scripts_dir=config["directories"]["scripts_dir"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]) / config["directories"]["target_name"])
+    scripts_dir=str(Path(config["directories"]["scripts_dir"]))
     source=config['directories']['target_name']
     listnsb = np.sort(glob.glob(f"{source}_LST_*_.txt"))
     nsb=[]

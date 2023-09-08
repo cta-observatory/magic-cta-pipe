@@ -110,8 +110,8 @@ def main():
     
     telescope_ids = list(config["mc_tel_ids"].values())
     
-    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
-    scripts_dir=config["directories"]["scripts_dir"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]) / config["directories"]["target_name"])
+    scripts_dir=str(Path(config["directories"]["scripts_dir"]))
 
 
     target_coords = [config["general"]["target_RA_deg"],config["general"]["target_Dec_deg"]]

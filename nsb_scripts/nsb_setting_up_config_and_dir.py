@@ -32,7 +32,7 @@ import numpy as np
 import glob
 
 import yaml
-
+from pathlib import Path
 def config_file_gen(ids, target_dir):
     
     """
@@ -163,19 +163,12 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
         
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
+    if not os.path.exists(target_dir+"/DL1"):
         os.mkdir(target_dir+"/DL1")
+    if not os.path.exists(target_dir+"/DL1/Observations"):
         os.mkdir(target_dir+"/DL1/Observations")
         
-    else:
-        overwrite = input("Directory "+target_dir.split("/")[-1]+" already exists. Would you like to overwrite it? [only 'y' or 'n']: ")
-        if overwrite == "y":
-            os.system("rm -r "+target_dir)
-            os.mkdir(target_dir)
-            os.mkdir(target_dir+"/DL1")
-            os.mkdir(target_dir+"/DL1/Observations")
-            
-        else:
-            print("Directory not modified.")
+    
     
     
     
@@ -188,25 +181,33 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
 
         MAGIC_runs=[]
         MAGIC_runs.append(MAGIC)
-    if telescope_ids[-1] > 0:    
+    print(MAGIC_runs)
+    if telescope_ids[-1] > 0:
+        print('M2')
         if not os.path.exists(target_dir+"/DL1/Observations/M2"):
             os.mkdir(target_dir+"/DL1/Observations/M2")
-            for i in MAGIC_runs:
-                if not os.path.exists(target_dir+"/DL1/Observations/M2/"+i[0]):
-                    os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0])
-                    os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1])
-                else:
-                    os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1])
+        for i in MAGIC_runs:
+            print('date',i[0])
+
+            if not os.path.exists(target_dir+"/DL1/Observations/M2/"+i[0]):
+                os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0])
+                print('directory created')
+            if not os.path.exists(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1]):
+
+                os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1])
+                
+                
     
     if telescope_ids[-2] > 0:
         if not os.path.exists(target_dir+"/DL1/Observations/M1"):
             os.mkdir(target_dir+"/DL1/Observations/M1")
-            for i in MAGIC_runs:
-                if not os.path.exists(target_dir+"/DL1/Observations/M1/"+i[0]):
-                    os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0])
-                    os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1])
-                else:
-                    os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1])
+        for i in MAGIC_runs:
+            if not os.path.exists(target_dir+"/DL1/Observations/M1/"+i[0]):
+                os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0])
+            if not os.path.exists(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1]):
+                os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1])
+                
+                
     
 
 
@@ -240,8 +241,8 @@ def main():
    
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',') #READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
-    target_dir = config["directories"]["workspace_dir"]+config["directories"]["target_name"]
-    scripts_dir=config["directories"]["scripts_dir"]
+    target_dir = str(Path(config["directories"]["workspace_dir"]) / config["directories"]["target_name"])
+    scripts_dir=str(Path(config["directories"]["scripts_dir"]))
 
     
     
