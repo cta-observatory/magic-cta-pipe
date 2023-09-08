@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import yaml
-
+from  datetime import datetime
 def list_run(source_out, df, skip_LST, skip_MAGIC):
     file_list=[f'{source_out}_LST_runs.txt',f'{source_out}_MAGIC_runs.txt']  #### LST, MAGIC!!!!
     for j in file_list:
@@ -11,6 +11,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
             print(f"{j} deleted.")
     print(skip_LST)
     print(type(skip_LST))
+    print(len(df))
     for k in range(len(df)):
    
     
@@ -22,8 +23,10 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
             skip=False
             for jkz in range(len(skip_LST)):
                 if int(LST[j])==skip_LST[jkz]: 
-                    skip=True 
+                    skip=True
+                    print('skipped') 
             if skip==False:
+                print('ok')
                 with open(file_list[0], 'a+') as f:
                     f.write(str(df['date_LST'][k])+','+str(LST[j])+'\n')
         MAGIC_min=int(df['first_MAGIC'][k])   
@@ -60,15 +63,19 @@ def main():
     df['HV']=df['HV'].str.lstrip("['")
     df['stereo']=df['stereo'].str.rstrip("]")
     df['stereo']=df['stereo'].str.lstrip("[")
+    print(len(df))
     df.query(f'source=="{source_in}" & trigger=="L3T" & HV=="Nominal" & stereo == "True"', inplace=True)
+    print(len(df))
     if range==True:
-        Y_min=int(config['data_selection_and_lists']['YY_min'])
-        M_min=int(config['data_selection_and_lists']['MM_min'])
-        D_min=int(config['data_selection_and_lists']['DD_min'])
-        Y_max=int(config['data_selection_and_lists']['YY_max'])
-        M_max=int(config['data_selection_and_lists']['MM_max'])
-        D_max=int(config['data_selection_and_lists']['DD_max'])
-        df.query(f'YY_LST>={Y_min} & MM_LST>={M_min} & DD_LST>={D_min} & YY_LST<={Y_max} & MM_LST<={M_max} & DD_LST<={D_max}', inplace=True)
+        min=str(config['data_selection_and_lists']['min'])
+        max=str(config['data_selection_and_lists']['max'])
+        min=datetime.strptime(min,"%Y_%m_%d")
+        max=datetime.strptime(max,"%Y_%m_%d")
+        lst=pd.to_datetime(df['YY_LST'].astype(str)+'/'+df["MM_LST"].astype(str)+'/'+df["DD_LST"].astype(str))
+        df['date']=lst
+        df=df[df['date']>min]
+        df=df[df['date']<max]
+        #df.query(f'date>{min} & date<{max}', inplace=True)
     if range==False:
         dates=config['data_selection_and_lists']['date_list']
         print(dates)
@@ -77,6 +84,7 @@ def main():
 
     df=df.reset_index()
     df=df.drop('index',axis=1)
+    print(len(df))
     df.to_hdf('observations_query.h5',key='joint_obs', mode='w')
     list_run(source_out, df,skip_LST,skip_MAGIC)
 

@@ -9,14 +9,10 @@ google:
     max_read_line : 600    #TO BE UPDATED WHEN DATABASE UPDATED
 
 data_selection_and_lists:
-    time_range : True  #Search for all runs in a LST range (e.g., 2020_01_01 -> 2022_01_01), set in the next 6 parameters (YY, MM, DD start and stop)
-    YY_min : 2020 # 4 digits
-    MM_min : 11  # 2 digits
-
-    DD_min : 17 #2 digits
-    YY_max : 2020
-    MM_max : 11
-    DD_max : 19
+    time_range : True  #Search for all runs in a LST range (e.g., 2020_01_01 -> 2022_01_01)
+    min : "2020_11_17"
+    max : "2020_11_19"
+   
     date_list : ['2020_12_15','2021_03_11']
                        #LST list of days to be processed (time_range=False), format: YYYY_MM_DD
  
