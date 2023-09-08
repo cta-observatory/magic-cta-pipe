@@ -53,7 +53,8 @@ def DL1_to_2(scripts_dir,target_dir, nsb, config):
         listOfDL1Files = np.sort(glob.glob(night+"/*.h5"))
         np.savetxt(night+"/list_of_DL1_stereo_files.txt",listOfDL1Files, fmt='%s')
         process_size = len(listOfDL1Files) - 1
-        
+        if process_size<0:
+            continue
         f = open(f'DL1_to_DL2_{nsb}_{night.split("/")[-1]}.sh','w')
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p long\n')

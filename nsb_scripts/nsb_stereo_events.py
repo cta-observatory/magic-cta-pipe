@@ -66,7 +66,8 @@ def bash_stereo(scripts_dir, target_dir, nsb):
           continue
         os.system(f"ls {nightLST}/*LST*.h5 >  {nightLST}/list_coin_{nsb}.txt")  #generating a list with the DL1 coincident data files.
         process_size = len(np.genfromtxt(nightLST+f"/list_coin_{nsb}.txt",dtype="str")) - 1
-
+        if process_size<0:
+            continue
         if not os.path.exists(stereoDir):
             os.mkdir(stereoDir)
         

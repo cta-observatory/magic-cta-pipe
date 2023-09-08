@@ -136,6 +136,8 @@ def bash_coincident(scripts_dir, target_dir, nsb):
           continue
         process_size = len(np.genfromtxt(nightLST+"/list_LST.txt",dtype="str")) - 1
         
+        if process_size<0:
+            continue
         f = open(f"LST_coincident_{nsb}_{nightLST.split('/')[-1]}.sh","w")
         f.write("#!/bin/sh\n\n")
         f.write("#SBATCH -p short\n")
