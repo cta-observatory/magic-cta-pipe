@@ -9,5 +9,18 @@ google:
     max_read_line : 600    #TO BE UPDATED WHEN DATABASE UPDATED
 
 data_selection_and_lists:
+    time_range : True  #Search for all runs in a LST range (e.g., 2020_01_01 -> 2022_01_01), set in the next 6 parameters (YY, MM, DD start and stop)
+    YY_min : 2020 # 4 digits
+    MM_min : 11  # 2 digits
+
+    DD_min : 17 #2 digits
+    YY_max : 2020
+    MM_max : 11
+    DD_max : 19
+    date_list : ['2020_12_15','2021_03_11']
+                       #LST list of days to be processed (time_range=False), format: YYYY_MM_DD
+ 
+    skipped_LST_runs: [2919,2923]
+    skipped_MAGIC_runs: [5093174,5093231]   #MAGIC and LST runs not to be processed (why?)
     source_name_database: 'CrabNebula'  #MUST BE THE SAME AS IN THE DATABASE
     source_name_output: 'Crab'  #Name to be used in the analysis (will be used in the name of the txt output files), best idea: the same as in the analysis config_general.yaml, WARNING: ONLY ALPHANUMERIC, NO SPECIAL CHARACTERS (special characters can interfere with the analysis scripts)
