@@ -28,11 +28,27 @@ $ python setting_up_config_and_dir.py --partial-analysis onlyMC
 import argparse
 import os
 import numpy as np
-
+from magicctapipe import __version__
 import glob
-
+import time
 import yaml
 from pathlib import Path
+
+ST0316_b='2020_10_24'
+ST0316_e='2021_09_29'
+ST0317_b='2021_12_30'
+ST0317_e='2022_06_09'
+ST0318_b='2022_06_10'
+ST0318_e='2022_08_31'
+ST0319_b='2022_12_15'
+ST0319_e='2023_03_01'   #????
+ST0320_b='2023_03_02'    #???????
+ST_list=['ST0320','ST0319','ST0318','ST0317', 'ST0316']
+ST_begin=['2023_03_02','2022_12_15','2022_06_10','2021_12_30','2020_10_24']
+ST_end=['2024_01_01','2023_03_01','2022_08_31','2022_06_09','2021_09_29']              #ST0320 ongoing -> 'service' end date
+
+
+
 def config_file_gen(ids, target_dir):
     
     """
@@ -83,73 +99,81 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
         MAGIC_runs.append(MAGIC)
         
     print(MAGIC_runs)
-    if telescope_ids[-1] > 0:
-        for i in MAGIC_runs:
-            print(i)
-            f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
-            f.write('export OUT1='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n')
-            f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
     
-    f.write('\n')
-    if telescope_ids[-2] > 0:
-        for i in MAGIC_runs:
-            f.write('export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
-            f.write('export OUT1='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n')
-            f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
-      
+    for i in MAGIC_runs:
+        for p in range(len(ST_begin)):
+            
+            if (time.strptime(i[0],'%Y_%m_%d')>=time.strptime(ST_begin[p],'%Y_%m_%d')) and (time.strptime(i[0],'%Y_%m_%d')<=time.strptime(ST_end[p],'%Y_%m_%d')):
+                if telescope_ids[-1] > 0:    
+                    print(i)
+                    f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
+                    f.write('export OUT1='+target_dir+f'/v_{__version__}'+"/DL1/"+ST_list[p]+'/M2/'+i[0]+'/'+i[1]+'/log \n')
+                    f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
+        
+                f.write('\n')
+                if telescope_ids[-2] > 0:
+            
+                    f.write('export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
+                    f.write('export OUT1='+target_dir+f'/v_{__version__}'+"/DL1/"+ST_list[p]+'/M1/'+i[0]+'/'+i[1]+'/log \n')
+                    f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
+            
     f.close()
     
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
+        
         for i in MAGIC_runs:
-            if telescope_ids[-1] > 0:
             
-                number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
-                number_of_nodes = len(number_of_nodes) - 1 
-                if number_of_nodes<0:
-                  continue
-                f = open(f"MAGIC-II_dl0_to_dl1_run_{i[1]}.sh","w")
-                f.write('#!/bin/sh\n\n')
-                f.write('#SBATCH -p long\n')
-                f.write('#SBATCH -J '+process_name+'\n')
-                f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')      
-                f.write('#SBATCH -N 1\n\n')
-                f.write('ulimit -l unlimited\n')
-                f.write('ulimit -s unlimited\n')
-                f.write('ulimit -a\n\n')
+            for p in range(len(ST_begin)):
+                if (time.strptime(i[0],'%Y_%m_%d')>=time.strptime(ST_begin[p],'%Y_%m_%d')) and (time.strptime(i[0],'%Y_%m_%d')<=time.strptime(ST_end[p],'%Y_%m_%d')):
+                    if telescope_ids[-1] > 0:
+            
+                        number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
+                        number_of_nodes = len(number_of_nodes) - 1 
+                        if number_of_nodes<0:
+                            continue
+                        f = open(f"MAGIC-II_dl0_to_dl1_run_{i[1]}.sh","w")
+                        f.write('#!/bin/sh\n\n')
+                        f.write('#SBATCH -p long\n')
+                        f.write('#SBATCH -J '+process_name+'\n')
+                        f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')      
+                        f.write('#SBATCH -N 1\n\n')
+                        f.write('ulimit -l unlimited\n')
+                        f.write('ulimit -s unlimited\n')
+                        f.write('ulimit -a\n\n')
 
-                f.write('export OUTPUTDIR='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n')
-                f.write('cd '+target_dir+'/../\n')
-                f.write('SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n')
-                f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
+                        f.write('export OUTPUTDIR='+target_dir+f'/v_{__version__}'+"/DL1/"+ST_list[p]+'/M2/'+i[0]+'/'+i[1]+'\n')
+                        
+                        f.write('SAMPLE_LIST=($(<$OUTPUTDIR/log/list_dl0.txt))\n')
+                        f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
 
 
-                f.write('export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
-                f.write(f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
-                f.close()
+                        f.write('export LOG=$OUTPUTDIR/log/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
+                        f.write(f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
+                        f.close()
                 
-            if telescope_ids[-2] > 0:
-                number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
-                number_of_nodes = len(number_of_nodes) - 1 
-                if number_of_nodes<0:
-                  continue
-                f = open(f"MAGIC-I_dl0_to_dl1_run_{i[1]}.sh","w")
-                f.write('#!/bin/sh\n\n')
-                f.write('#SBATCH -p long\n')
-                f.write('#SBATCH -J '+process_name+'\n')
-                f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')    
-                f.write('#SBATCH -N 1\n\n')
-                f.write('ulimit -l unlimited\n')
-                f.write('ulimit -s unlimited\n')
-                f.write('ulimit -a\n\n')
+                    if telescope_ids[-2] > 0:
+                        number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
+                        number_of_nodes = len(number_of_nodes) - 1 
+                        if number_of_nodes<0:
+                            continue
+                        f = open(f"MAGIC-I_dl0_to_dl1_run_{i[1]}.sh","w")
+                        f.write('#!/bin/sh\n\n')
+                        f.write('#SBATCH -p long\n')
+                        f.write('#SBATCH -J '+process_name+'\n')
+                        f.write('#SBATCH --array=0-'+str(number_of_nodes)+'\n')    
+                        f.write('#SBATCH -N 1\n\n')
+                        f.write('ulimit -l unlimited\n')
+                        f.write('ulimit -s unlimited\n')
+                        f.write('ulimit -a\n\n')
 
-                f.write('export OUTPUTDIR='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n')
-                f.write('cd '+target_dir+'/../\n')
-                f.write('SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n')
-                f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
+                        f.write('export OUTPUTDIR='+target_dir+f'/v_{__version__}'+"/DL1/"+ST_list[p]+'/M1/'+i[0]+'/'+i[1]+'\n')
+                        f.write('cd '+target_dir+'/../\n')
+                        f.write('SAMPLE_LIST=($(<$OUTPUTDIR/log/list_dl0.txt))\n')
+                        f.write('SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n')
 
-                f.write('export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
-                f.write(f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
-                f.close()
+                        f.write('export LOG=$OUTPUTDIR/log/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n')
+                        f.write(f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_step1.yaml >$LOG 2>&1\n')
+                        f.close()
     
     
 def directories_generator(target_dir, telescope_ids,MAGIC_runs):
@@ -163,11 +187,11 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
         
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
-    if not os.path.exists(target_dir+"/DL1"):
-        os.mkdir(target_dir+"/DL1")
-    if not os.path.exists(target_dir+"/DL1/Observations"):
-        os.mkdir(target_dir+"/DL1/Observations")
-        
+    if not os.path.exists(target_dir+f'/v_{__version__}'):
+        os.mkdir(target_dir+f'/v_{__version__}')    
+    if not os.path.exists(target_dir+f'/v_{__version__}'+"/DL1"):
+        os.mkdir(target_dir+f'/v_{__version__}'+"/DL1")
+    dl1_dir=str(target_dir+f'/v_{__version__}'+"/DL1")
     
     
     
@@ -182,34 +206,41 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
         MAGIC_runs=[]
         MAGIC_runs.append(MAGIC)
     print(MAGIC_runs)
-    if telescope_ids[-1] > 0:
-        print('M2')
-        if not os.path.exists(target_dir+"/DL1/Observations/M2"):
-            os.mkdir(target_dir+"/DL1/Observations/M2")
-        for i in MAGIC_runs:
-            print('date',i[0])
 
-            if not os.path.exists(target_dir+"/DL1/Observations/M2/"+i[0]):
-                os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0])
-                print('directory created')
-            if not os.path.exists(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1]):
-
-                os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1])
-                
-                
+    print('M2')
     
-    if telescope_ids[-2] > 0:
-        if not os.path.exists(target_dir+"/DL1/Observations/M1"):
-            os.mkdir(target_dir+"/DL1/Observations/M1")
-        for i in MAGIC_runs:
-            if not os.path.exists(target_dir+"/DL1/Observations/M1/"+i[0]):
-                os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0])
-            if not os.path.exists(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1]):
-                os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1])
-                
-                
-    
+    for i in MAGIC_runs:
+        for p in range(len(ST_begin)):
+            if (time.strptime(i[0],'%Y_%m_%d')>=time.strptime(ST_begin[p],'%Y_%m_%d')) and (time.strptime(i[0],'%Y_%m_%d')<=time.strptime(ST_end[p],'%Y_%m_%d')):
+                if telescope_ids[-1] > 0:
+        
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}"):
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}")
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M2"):
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M2")
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M2/"+i[0]):
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M2/"+i[0])
+                        print('directory created')
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M2/"+i[0]+"/"+i[1]):
 
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M2/"+i[0]+"/"+i[1])
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M2/"+i[0]+"/"+i[1]+'/log'):
+
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M2/"+i[0]+"/"+i[1]+'/log')
+                if telescope_ids[-2] > 0:
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}"):
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}")
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M1"):
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M1")
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M1/"+i[0]):
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M1/"+i[0])
+                        print('directory created')
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M1/"+i[0]+"/"+i[1]):
+
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M1/"+i[0]+"/"+i[1])
+                    if not os.path.exists(dl1_dir+f"/{ST_list[p]}/M1/"+i[0]+"/"+i[1]+'/log'):
+
+                        os.mkdir(dl1_dir+f"/{ST_list[p]}/M1/"+i[0]+"/"+i[1]+'/log')
 
 
 
@@ -260,7 +291,7 @@ def main():
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
           
         list_of_MAGIC_runs = glob.glob("MAGIC-*.sh")
-        if len(list_of_MAGIC_runs):
+        if len(list_of_MAGIC_runs)<1:
             return
         for n,run in enumerate(list_of_MAGIC_runs):
             if n == 0:
