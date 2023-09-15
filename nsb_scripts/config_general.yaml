@@ -7,7 +7,8 @@ mc_tel_ids:
     MAGIC-II: 3
 
 directories:
-    workspace_dir : "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/PG1553_nsb/" #Pay attention to put the last "/"!!!
+    workspace_dir : "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/PG1553_nsb" 
+    scripts_dir : "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/NSB_WIP"
     target_name   : "PG1553"
 
 general:

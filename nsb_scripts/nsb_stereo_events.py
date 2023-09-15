@@ -1,6 +1,6 @@
 """
 This scripts generates and runs the bashscripts
-to compute the stereo parameters of DL1 MC and 
+to compute the stereo parameters of 
 Coincident MAGIC+LST data files. 
 
 Usage:
@@ -61,77 +61,79 @@ def bash_stereo(scripts_dir, target_dir, nsb):
 
     Parameters
     ----------
+    scripts_dir: str
+        Path to the scripts directory
     target_dir: str
         Path to the working directory
     """
 
     process_name = target_dir.split("/")[-2:][1]
 
-    if not os.path.exists(target_dir + f"/v_{__version__}/DL1_Coincident_Stereo"):
-        os.mkdir(target_dir + f"/v_{__version__}/DL1_Coincident_Stereo")
+    if not os.path.exists(target_dir + f"/v{__version__}/DL1CoincidentStereo"):
+        os.mkdir(target_dir + f"/v{__version__}/DL1CoincidentStereo")
 
     ST_list = [
         os.path.basename(x)
-        for x in glob.glob(f"{target_dir}/v_{__version__}/DL1_Coincident/*")
+        for x in glob.glob(f"{target_dir}/v{__version__}/DL1Coincident/*")
     ]
 
     for p in ST_list:
         if not os.path.exists(
-            f"{target_dir}/v_{__version__}/DL1_Coincident_Stereo/" + str(p)
+            f"{target_dir}/v{__version__}/DL1CoincidentStereo/" + str(p)
         ):
-            os.mkdir(f"{target_dir}/v_{__version__}/DL1_Coincident_Stereo/" + str(p))
+            os.mkdir(f"{target_dir}/v{__version__}/DL1CoincidentStereo/" + str(p))
 
         if (
             not os.path.exists(
-                f"{target_dir}/v_{__version__}/DL1_Coincident_Stereo/"
+                f"{target_dir}/v{__version__}/DL1CoincidentStereo/"
                 + str(p)
-                + "/"
+                + "/NSB"
                 + str(nsb)
             )
         ) and (
             os.path.exists(
-                f"{target_dir}/v_{__version__}/DL1_Coincident/"
+                f"{target_dir}/v{__version__}/DL1Coincident/"
                 + str(p)
-                + "/"
+                + "/NSB"
                 + str(nsb)
             )
         ):
             os.mkdir(
-                f"{target_dir}/v_{__version__}/DL1_Coincident_Stereo/"
+                f"{target_dir}/v{__version__}/DL1CoincidentStereo/"
                 + str(p)
-                + "/"
+                + "/NSB"
                 + str(nsb)
             )
         listOfNightsLST = np.sort(
             glob.glob(
-                f"{target_dir}/v_{__version__}/DL1_Coincident/"
+                f"{target_dir}/v{__version__}/DL1Coincident/"
                 + str(p)
-                + "/"
+                + "/NSB"
                 + str(nsb)
                 + "/*"
             )
         )
         for nightLST in listOfNightsLST:
             stereoDir = (
-                f"{target_dir}/v_{__version__}/DL1_Coincident_Stereo/"
+                f"{target_dir}/v{__version__}/DL1CoincidentStereo/"
                 + str(p)
-                + "/"
+                + "/NSB"
                 + str(nsb)
                 + "/"
                 + nightLST.split("/")[-1]
             )
             if not os.path.exists(stereoDir):
                 os.mkdir(stereoDir)
-            if not os.path.exists(stereoDir + "/log"):
-                os.mkdir(stereoDir + "/log")
+            if not os.path.exists(stereoDir + "/logs"):
+                os.mkdir(stereoDir + "/logs")
             if not os.listdir(f"{nightLST}"):
                 continue
 
             os.system(
-                f"ls {nightLST}/*LST*.h5 >  {stereoDir}/log/list_coin_{nsb}.txt"
+                f"ls {nightLST}/*LST*.h5 >  {stereoDir}/logs/list_coin_{nsb}.txt"
             )  # generating a list with the DL1 coincident data files.
             process_size = (
-                len(np.genfromtxt(stereoDir + f"/log/list_coin_{nsb}.txt", dtype="str")) - 1
+                len(np.genfromtxt(stereoDir + f"/logs/list_coin_{nsb}.txt", dtype="str")) - 1
             )
             if process_size < 0:
                 continue
@@ -148,9 +150,9 @@ def bash_stereo(scripts_dir, target_dir, nsb):
 
             f.write(f"export INPUTDIR={nightLST}\n")
             f.write(f"export OUTPUTDIR={stereoDir}\n")
-            f.write(f"SAMPLE_LIST=($(<$OUTPUTDIR/log/list_coin_{nsb}.txt))\n")
+            f.write(f"SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin_{nsb}.txt))\n")
             f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-            f.write("export LOG=$OUTPUTDIR/log/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
+            f.write("export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
             f.write(
                 f"conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
             )
@@ -159,7 +161,7 @@ def bash_stereo(scripts_dir, target_dir, nsb):
 
 def main():
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Here we read the config file and call the functions defined above.
     """
 
     parser = argparse.ArgumentParser()

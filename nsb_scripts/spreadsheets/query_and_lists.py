@@ -1,3 +1,6 @@
+"""
+Query on the desired parameters and runs
+"""
 import pandas as pd
 import numpy as np
 import os
@@ -81,7 +84,7 @@ def main():
         df["date"] = lst
         df = df[df["date"] > min]
         df = df[df["date"] < max]
-        # df.query(f'date>{min} & date<{max}', inplace=True)
+        
     if range == False:
         dates = config["data_selection_and_lists"]["date_list"]
 

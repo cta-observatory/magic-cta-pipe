@@ -1,28 +1,20 @@
 ####TODO: DIRECTORY STRUCTURE, ST match
 """
-This script facilitates the usage of other two scripts
-of the MCP, i.e. "lst1_magic_mc_dl0_to_dl1.py" and
+This script facilitates the usage of 
 "magic_calib_to_dl1.py". This script is more like a
-"maneger" that organizes the analysis process by:
+"manager" that organizes the analysis process by:
 1) Creating the necessary directories and subdirectories.
 2) Generatign all the bash script files that convert the
-MAGIC and MC files from DL0 to DL1.
+MAGIC files from DL0 to DL1.
 3) Launching these jobs in the IT container.
 
-Notice that in this stage we only use MAGIC + MC data.
+Notice that in this stage we only use MAGIC data.
 No LST data is used here.
 
 Standard usage:
-$ python setting_up_config_and_dir.py
+$ python setting_up_config_and_dir.py (-c config_file.yaml)
 
-If you want only to tun the MAGIC or only the MC conversion,
-you can do as follows:
 
-Only MAGIC:
-$ python setting_up_config_and_dir.py --partial-analysis onlyMAGIC
-
-Only MC:
-$ python setting_up_config_and_dir.py --partial-analysis onlyMC
 
 """
 import argparse
@@ -35,7 +27,7 @@ import yaml
 from pathlib import Path
 
 
-ST_list = ["ST0320", "ST0319", "ST0318", "ST0317", "ST0316"]
+ST_list = ["ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
 ST_begin = ["2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
 ST_end = [
     "2024_01_01",
@@ -101,7 +93,7 @@ def config_file_gen(ids, target_dir):
 
 def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs):
     """
-    Below we create a bash script that links the the MAGIC data paths to each subdirectory.
+    Below we create a bash script that links the MAGIC data paths to each subdirectory.
     """
 
     process_name = target_dir.split("/")[-2:][0] + target_dir.split("/")[-2:][1]
@@ -142,14 +134,14 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                     f.write(
                         "export OUT1="
                         + target_dir
-                        + f"/v_{__version__}"
+                        + f"/v{__version__}"
                         + "/DL1/"
                         + ST_list[p]
                         + "/M2/"
                         + i[0]
                         + "/"
                         + i[1]
-                        + "/log \n"
+                        + "/logs \n"
                     )
                     f.write(
                         "ls $IN1/*" + i[1][-2:] + ".*_Y_*.root > $OUT1/list_dl0.txt\n"
@@ -169,14 +161,14 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                     f.write(
                         "export OUT1="
                         + target_dir
-                        + f"/v_{__version__}"
+                        + f"/v{__version__}"
                         + "/DL1/"
                         + ST_list[p]
                         + "/M1/"
                         + i[0]
                         + "/"
                         + i[1]
-                        + "/log \n"
+                        + "/logs \n"
                     )
                     f.write(
                         "ls $IN1/*" + i[1][-2:] + ".*_Y_*.root > $OUT1/list_dl0.txt\n"
@@ -220,7 +212,7 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                         f.write(
                             "export OUTPUTDIR="
                             + target_dir
-                            + f"/v_{__version__}"
+                            + f"/v{__version__}"
                             + "/DL1/"
                             + ST_list[p]
                             + "/M2/"
@@ -230,11 +222,11 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                             + "\n"
                         )
 
-                        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/log/list_dl0.txt))\n")
+                        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n")
                         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n")
 
                         f.write(
-                            "export LOG=$OUTPUTDIR/log/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
+                            "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
                         )
                         f.write(
                             f"conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
@@ -269,7 +261,7 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                         f.write(
                             "export OUTPUTDIR="
                             + target_dir
-                            + f"/v_{__version__}"
+                            + f"/v{__version__}"
                             + "/DL1/"
                             + ST_list[p]
                             + "/M1/"
@@ -279,11 +271,11 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                             + "\n"
                         )
                         f.write("cd " + target_dir + "/../\n")
-                        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/log/list_dl0.txt))\n")
+                        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n")
                         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n")
 
                         f.write(
-                            "export LOG=$OUTPUTDIR/log/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
+                            "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
                         )
                         f.write(
                             f"conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
@@ -298,21 +290,16 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
     Here we create all subdirectories for a given workspace and target name.
     """
 
-    ###########################################
-    ##################### MC
-    ###########################################
+
 
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
-    if not os.path.exists(target_dir + f"/v_{__version__}"):
-        os.mkdir(target_dir + f"/v_{__version__}")
-    if not os.path.exists(target_dir + f"/v_{__version__}" + "/DL1"):
-        os.mkdir(target_dir + f"/v_{__version__}" + "/DL1")
-    dl1_dir = str(target_dir + f"/v_{__version__}" + "/DL1")
+    if not os.path.exists(target_dir + f"/v{__version__}"):
+        os.mkdir(target_dir + f"/v{__version__}")
+    if not os.path.exists(target_dir + f"/v{__version__}" + "/DL1"):
+        os.mkdir(target_dir + f"/v{__version__}" + "/DL1")
+    dl1_dir = str(target_dir + f"/v{__version__}" + "/DL1")
 
-    ###########################################
-    ##################### MAGIC
-    ###########################################
     if (len(MAGIC_runs) == 2) and (len(MAGIC_runs[0]) == 10):
         MAGIC = MAGIC_runs
 
@@ -340,10 +327,10 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
                     ):
                         os.mkdir(dl1_dir + f"/{ST_list[p]}/M2/" + i[0] + "/" + i[1])
                     if not os.path.exists(
-                        dl1_dir + f"/{ST_list[p]}/M2/" + i[0] + "/" + i[1] + "/log"
+                        dl1_dir + f"/{ST_list[p]}/M2/" + i[0] + "/" + i[1] + "/logs"
                     ):
                         os.mkdir(
-                            dl1_dir + f"/{ST_list[p]}/M2/" + i[0] + "/" + i[1] + "/log"
+                            dl1_dir + f"/{ST_list[p]}/M2/" + i[0] + "/" + i[1] + "/logs"
                         )
                 if telescope_ids[-2] > 0:
                     if not os.path.exists(dl1_dir + f"/{ST_list[p]}"):
@@ -358,15 +345,15 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
                     ):
                         os.mkdir(dl1_dir + f"/{ST_list[p]}/M1/" + i[0] + "/" + i[1])
                     if not os.path.exists(
-                        dl1_dir + f"/{ST_list[p]}/M1/" + i[0] + "/" + i[1] + "/log"
+                        dl1_dir + f"/{ST_list[p]}/M1/" + i[0] + "/" + i[1] + "/logs"
                     ):
                         os.mkdir(
-                            dl1_dir + f"/{ST_list[p]}/M1/" + i[0] + "/" + i[1] + "/log"
+                            dl1_dir + f"/{ST_list[p]}/M1/" + i[0] + "/" + i[1] + "/logs"
                         )
 
 
 def main():
-    """Here we read the config_general.yaml file and call the functions to generate the necessary directories, bash scripts and launching the jobs."""
+    """Here we read the config file and call the functions to generate the necessary directories, bash scripts and launching the jobs."""
 
     # Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file
 
@@ -398,7 +385,7 @@ def main():
     )
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
-    print("*** Reducing DL0 to DL1 data - this can take many hours ***")
+    print("*** Reducing DL0 to DL1 data***")
     print(
         "Process name: ", target_dir.split("/")[-2:][0] + target_dir.split("/")[-2:][1]
     )

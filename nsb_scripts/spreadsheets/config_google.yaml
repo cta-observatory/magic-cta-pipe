@@ -1,5 +1,5 @@
 google:
-    json_key: ""        #personal access key (json file)
+    json_key: ""        #access key (json file)
     worksheet_url: ""    #Google Sheet URL (the link used to share the file)
 
     sheet : 0  #sheet in which the table is located	

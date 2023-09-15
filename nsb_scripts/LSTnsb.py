@@ -1,3 +1,6 @@
+"""
+Evaluates NSB level for a LST run
+"""
 import os
 import argparse
 from lstchain.image.modifier import calculate_noise_parameters
@@ -13,9 +16,7 @@ logger.setLevel(logging.INFO)
 
 
 def main():
-    """
-    create list of LST runs with nsb
-    """
+    
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",

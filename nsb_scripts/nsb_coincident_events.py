@@ -1,7 +1,7 @@
 """
 This scripts facilitates the usage of the script
 "lst1_magic_event_coincidence.py". This script is
-more like a "maneger" that organizes the analysis
+more like a "manager" that organizes the analysis
 process by:
 1) Creating the bash scripts for looking for
 coincidence events between MAGIC and LST in each
@@ -11,7 +11,7 @@ event files.
 
 
 Usage:
-$ python coincident_events.py
+$ python coincident_events.py (-c config_file.yaml)
 
 
 """
@@ -68,21 +68,26 @@ def configfile_coincidence(ids, target_dir):
 
 def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
     """
-    This function links the LST data paths to the working directory. This is a preparation step required for running lst1_magic_event_coincidence.py
-
+    This function links the LST data paths to the working directory and creates bash scripts. 
     Parameters
     ----------
+    scripts_dir: str
+        Path to the scripts directory
     target_dir: str
         Path to the working directory
     LST_runs: matrix of strings
         This matrix is imported from config_general.yaml and tells the function where to find the LST data and link them to our working directory
+    nsb: int
+        NSB level
+    date:
+        Array of lists [date run] for all the LST runs (no NSB splitting) 
     """
 
-    coincidence_DL1_dir = target_dir + f"/v_{__version__}"
-    if not os.path.exists(coincidence_DL1_dir + "/DL1_Coincident/"):
-        os.mkdir(f"{coincidence_DL1_dir}/DL1_Coincident")
+    coincidence_DL1_dir = target_dir + f"/v{__version__}"
+    if not os.path.exists(coincidence_DL1_dir + "/DL1Coincident/"):
+        os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident")
     ST_list = [
-        os.path.basename(x) for x in glob.glob(f"{target_dir}/v_{__version__}/DL1/*")
+        os.path.basename(x) for x in glob.glob(f"{target_dir}/v{__version__}/DL1/*")
     ]
 
     if (len(LST_runs) == 2) and (len(LST_runs[0]) == 10):
@@ -97,9 +102,9 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
         date.append(dt)
 
     for p in ST_list:
-        MAGIC_DL1_dir = target_dir + f"/v_{__version__}" + "/DL1/" + p
-        if not os.path.exists(coincidence_DL1_dir + "/DL1_Coincident/" + str(p)):
-            os.mkdir(f"{coincidence_DL1_dir}/DL1_Coincident/{p}")
+        MAGIC_DL1_dir = target_dir + f"/v{__version__}" + "/DL1/" + p
+        if not os.path.exists(coincidence_DL1_dir + "/DL1Coincident/" + str(p)):
+            os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident/{p}")
         dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")]
         for d in dates:
             Y_M = int(d.split("_")[0])
@@ -117,13 +122,13 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
                 if day_MAGIC == day_LST + delta:
                     if not os.path.exists(
                         coincidence_DL1_dir
-                        + "/DL1_Coincident/"
+                        + "/DL1Coincident/"
                         + str(p)
-                        + "/"
+                        + "/NSB"
                         + str(nsb)
                     ):
                         os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1_Coincident/{p}" + "/" + str(nsb)
+                            f"{coincidence_DL1_dir}/DL1Coincident/{p}" + "/NSB" + str(nsb)
                         )
 
                     lstObsDir = (
@@ -133,42 +138,42 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
                     inputdir = f"/fefs/aswg/data/real/DL1/{lstObsDir}/v0.9/tailcut84"
                     if not os.path.exists(
                         coincidence_DL1_dir
-                        + "/DL1_Coincident/"
+                        + "/DL1Coincident/"
                         + str(p)
-                        + "/"
+                        + "/NSB"
                         + str(nsb)
                         + "/"
                         + lstObsDir
                     ):
                         os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1_Coincident/{p}"
-                            + "/"
+                            f"{coincidence_DL1_dir}/DL1Coincident/{p}"
+                            + "/NSB"
                             + str(nsb)
                             + "/"
                             + lstObsDir
                         )
                     if not os.path.exists(
                         coincidence_DL1_dir
-                        + "/DL1_Coincident/"
+                        + "/DL1Coincident/"
                         + str(p)
-                        + "/"
+                        + "/NSB"
                         + str(nsb)
                         + "/"
                         + lstObsDir
-                        + "/log"
+                        + "/logs"
                     ):
                         os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1_Coincident/{p}"
-                            + "/"
+                            f"{coincidence_DL1_dir}/DL1Coincident/{p}"
+                            + "/NSB"
                             + str(nsb)
                             + "/"
                             + lstObsDir
-                            + "/log"
+                            + "/logs"
                         )
 
                     outputdir = (
-                        f"{coincidence_DL1_dir}/DL1_Coincident/{p}"
-                        + "/"
+                        f"{coincidence_DL1_dir}/DL1Coincident/{p}"
+                        + "/NSB"
                         + str(nsb)
                         + "/"
                         + lstObsDir
@@ -176,24 +181,24 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
                     list_of_subruns = np.sort(
                         glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5")
                     )
-                    if os.path.exists(f"{outputdir}/log/list_LST.txt"):
-                        with open(f"{outputdir}/log/list_LST.txt", "a") as LSTdataPathFile:
+                    if os.path.exists(f"{outputdir}/logs/list_LST.txt"):
+                        with open(f"{outputdir}/logs/list_LST.txt", "a") as LSTdataPathFile:
                             for subrun in list_of_subruns:
                                 LSTdataPathFile.write(
                                     subrun + "\n"
                                 )  # If this files already exists, simply append the new information
                     else:
                         f = open(
-                            f"{outputdir}/log/list_LST.txt", "w"
+                            f"{outputdir}/logs/list_LST.txt", "w"
                         )  # If the file list_LST.txt does not exist, it will be created here
                         for subrun in list_of_subruns:
                             f.write(subrun + "\n")
                         f.close()
 
-                    if not os.path.exists(outputdir + "/log/list_LST.txt"):
+                    if not os.path.exists(outputdir + "/logs/list_LST.txt"):
                         continue
                     process_size = (
-                        len(np.genfromtxt(outputdir + "/log/list_LST.txt", dtype="str")) - 1
+                        len(np.genfromtxt(outputdir + "/logs/list_LST.txt", dtype="str")) - 1
                     )
 
                     if process_size < 0:
@@ -219,10 +224,10 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
                         f"export INM={MAGIC_DL1_dir}/Merged/Merged_{str(Y_M).zfill(4)}_{str(M_M).zfill(2)}_{str(D_M).zfill(2)}\n"
                     )
                     f.write(f"export OUTPUTDIR={outputdir}\n")
-                    f.write("SAMPLE_LIST=($(<$OUTPUTDIR/log/list_LST.txt))\n")
+                    f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n")
                     f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
                     f.write(
-                        "export LOG=$OUTPUTDIR/log/coincidence_${SLURM_ARRAY_TASK_ID}.log\n"
+                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n"
                     )
                     f.write(
                         f"conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1"
@@ -232,7 +237,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
 
 def main():
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Here we read the config file and call the functions defined above.
     """
 
     parser = argparse.ArgumentParser()

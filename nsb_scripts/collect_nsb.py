@@ -1,3 +1,6 @@
+"""
+Loop on the files produced by the parallel jobs to create a list of LST runs for each NSB level
+"""
 import yaml
 import argparse
 import glob

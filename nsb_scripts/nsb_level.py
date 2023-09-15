@@ -1,3 +1,7 @@
+"""
+Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
+"""
+
 import argparse
 import os
 import numpy as np
