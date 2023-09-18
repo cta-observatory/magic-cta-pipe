@@ -82,13 +82,13 @@ def main():
             noise.append(a)
     a = sum(noise) / len(noise)
     std = np.std(noise)
-    logger.info("run", run_number, "nsb average (all)", a, "std", std)
+    logger.info(f"Run n. {run_number}", "nsb average (all)", a, "std", std)
     subrun_ok = []
     for sr in range(0, len(noise)):
         if np.abs(noise[sr] - a) < 3 * std:
             subrun_ok.append(noise[sr])
     a = sum(subrun_ok) / len(subrun_ok)
-    logger.info("run", run_number, "nsb average (w/o outliers)", a)
+    logger.info(f"Run n. {run_number}", "nsb average (w/o outliers)", a)
     for j in range(0, len(nsb)):
         if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):
             with open(f"{source}_LST_{nsb[j]}_{run_number}.txt", "a+") as f:

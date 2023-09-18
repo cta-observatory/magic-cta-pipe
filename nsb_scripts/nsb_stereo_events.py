@@ -128,7 +128,8 @@ def bash_stereo(scripts_dir, target_dir, nsb):
                 os.mkdir(stereoDir + "/logs")
             if not os.listdir(f"{nightLST}"):
                 continue
-
+            if len(os.listdir(nightLST ))<2:
+                continue
             os.system(
                 f"ls {nightLST}/*LST*.h5 >  {stereoDir}/logs/list_coin_{nsb}.txt"
             )  # generating a list with the DL1 coincident data files.
@@ -142,7 +143,7 @@ def bash_stereo(scripts_dir, target_dir, nsb):
             f.write("#!/bin/sh\n\n")
             f.write("#SBATCH -p short\n")
             f.write("#SBATCH -J " + process_name + "_stereo" + str(nsb) + "\n")
-            f.write(f"#SBATCH --array=0-{process_size}%100\n")
+            f.write(f"#SBATCH --array=0-{process_size}\n")
             f.write("#SBATCH -N 1\n\n")
             f.write("ulimit -l unlimited\n")
             f.write("ulimit -s unlimited\n")

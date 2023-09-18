@@ -60,7 +60,7 @@ def configfile_coincidence(ids, target_dir):
         + "\n\n"
     )
     f.write(
-        'event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    window_half_width: "300 ns"\n'
+        'event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    pre_offset_search: true\n    n_pre_offset_search_events: 100\n    window_half_width: "300 ns"\n'
     )
     f.write('    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n')
     f.close()
@@ -213,7 +213,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
                         + str(nsb)
                         + "\n"
                     )
-                    f.write(f"#SBATCH --array=0-{process_size}%50\n")
+                    f.write(f"#SBATCH --array=0-{process_size}\n")
                     f.write("#SBATCH --mem=30g\n")
                     f.write("#SBATCH -N 1\n\n")
                     f.write("ulimit -l unlimited\n")

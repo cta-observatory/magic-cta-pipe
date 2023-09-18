@@ -41,11 +41,7 @@ def merge(scripts_dir, target_dir):
         process_name = "merging_" + target_dir.split("/")[-2:][1]
 
         MAGIC_DL1_dir = target_dir + f"/v{__version__}" + "/DL1/" + p
-        if os.path.exists(MAGIC_DL1_dir + "/M1") & os.path.exists(
-            MAGIC_DL1_dir + "/M2"
-        ):
-            if not os.path.exists(MAGIC_DL1_dir + "/Merged"):
-                os.mkdir(MAGIC_DL1_dir + "/Merged")
+        
 
         f = open(f"Merge_1_{p}.sh", "w")
         f.write("#!/bin/sh\n\n")
@@ -69,15 +65,18 @@ def merge(scripts_dir, target_dir):
                     for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
                 ]
                 for r in runs:
-                    if not os.path.exists(MAGIC_DL1_dir + f"/Merged/{i}/Merged"):
-                        os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged")
-                    if not os.path.exists(
-                        MAGIC_DL1_dir + f"/Merged/{i}/Merged/logs"
-                    ):
-                        os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs")
-                    f.write(
-                        f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
-                    )
+                    
+                    if (len(os.listdir(MAGIC_DL1_dir + f"/M1/{i}/{r}"))>1) and (len(os.listdir(MAGIC_DL1_dir + f"/M2/{i}/{r}")))>1:
+                        
+                        if not os.path.exists(MAGIC_DL1_dir + f"/Merged/{i}/Merged"):
+                            os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged")
+                        if not os.path.exists(
+                            MAGIC_DL1_dir + f"/Merged/{i}/Merged/logs"
+                        ):
+                            os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs")
+                        f.write(
+                            f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
+                        )
     
 
         f.close()

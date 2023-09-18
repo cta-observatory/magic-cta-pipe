@@ -41,11 +41,7 @@ def merge(scripts_dir, target_dir):
         process_name = "merging_" + target_dir.split("/")[-2:][1]
 
         MAGIC_DL1_dir = target_dir + f"/v{__version__}" + "/DL1/" + p
-        if os.path.exists(MAGIC_DL1_dir + "/M1") & os.path.exists(
-            MAGIC_DL1_dir + "/M2"
-        ):
-            if not os.path.exists(MAGIC_DL1_dir + "/Merged"):
-                os.mkdir(MAGIC_DL1_dir + "/Merged")
+        
 
         f = open(f"Merge_2_{p}.sh", "w")
         f.write("#!/bin/sh\n\n")
