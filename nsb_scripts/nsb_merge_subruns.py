@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 def merge(scripts_dir, target_dir, source):
     """
-    This function creates the bash scripts to run merge_hdf_files.py 
+    This function creates the bash scripts to run merge_hdf_files.py
 
     Parameters
     ----------
@@ -41,7 +41,7 @@ def merge(scripts_dir, target_dir, source):
         process_name = "merging_" + target_dir.split("/")[-2:][1]
 
         MAGIC_DL1_dir = target_dir + f"/v{__version__}" + "/DL1/" + p
-        
+
         if os.path.exists(MAGIC_DL1_dir + "/M1") & os.path.exists(
             MAGIC_DL1_dir + "/M2"
         ):
@@ -56,16 +56,12 @@ def merge(scripts_dir, target_dir, source):
         f.write("ulimit -s unlimited\n")
         f.write("ulimit -a\n\n")
 
-        
         if os.path.exists(MAGIC_DL1_dir + "/M1"):
-            dates = [
-                os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
-            ]
+            dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")]
 
             for i in dates:
                 runs = [
-                    os.path.basename(x)
-                    for x in glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/*")
+                    os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/*")
                 ]
                 if not os.path.exists(MAGIC_DL1_dir + f"/Merged/{i}"):
                     os.mkdir(
@@ -86,14 +82,11 @@ def merge(scripts_dir, target_dir, source):
                     )
 
         if os.path.exists(MAGIC_DL1_dir + "/M2"):
-            dates = [
-                os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M2/*")
-            ]
+            dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M2/*")]
 
             for i in dates:
                 runs = [
-                    os.path.basename(x)
-                    for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
+                    os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
                 ]
                 if not os.path.exists(MAGIC_DL1_dir + f"/Merged/{i}"):
                     os.mkdir(
@@ -112,8 +105,6 @@ def merge(scripts_dir, target_dir, source):
                     f.write(
                         f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M2_{i}_{r}.log \n"
                     )
-
-    
 
         f.close()
 
@@ -143,14 +134,14 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
-    source=config["directories"]["target_name"]
+    source = config["directories"]["target_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     print("***** Generating merge bashscripts...")
     merge(
         scripts_dir, target_dir, source
     )  # generating the bash script to merge the subruns
-   
+
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
     print("Process name: merging_" + target_dir.split("/")[-2:][1])
     print(
@@ -166,10 +157,7 @@ def main():
         if n == 0:
             launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = (
-                launch_jobs
-                + f" && merging{n}=$(sbatch --parsable {run})"
-            )
+            launch_jobs = launch_jobs + f" && merging{n}=$(sbatch --parsable {run})"
 
     # print(launch_jobs)
     os.system(launch_jobs)

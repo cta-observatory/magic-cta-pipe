@@ -16,7 +16,6 @@ logger.setLevel(logging.INFO)
 
 
 def main():
-    
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",

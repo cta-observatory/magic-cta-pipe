@@ -91,7 +91,9 @@ def config_file_gen(ids, target_dir):
     f.close()
 
 
-def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs, source):
+def lists_and_bash_gen_MAGIC(
+    scripts_dir, target_dir, telescope_ids, MAGIC_runs, source
+):
     """
     Below we create a bash script that links the MAGIC data paths to each subdirectory.
     """
@@ -290,8 +292,6 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
     Here we create all subdirectories for a given workspace and target name.
     """
 
-
-
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
     if not os.path.exists(target_dir + f"/v{__version__}"):
@@ -383,7 +383,7 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
-    source=config["directories"]["target_name"]
+    source = config["directories"]["target_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     print("*** Reducing DL0 to DL1 data***")

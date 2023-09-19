@@ -15,7 +15,6 @@ logger.setLevel(logging.INFO)
 
 
 def bash_scripts(run, config, source):
-    
     f = open(f"{source}_run_{run}.sh", "w")
     f.write("#!/bin/sh\n\n")
     f.write("#SBATCH -p long\n")
@@ -48,7 +47,7 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    source=config["directories"]["target_name"]
+    source = config["directories"]["target_name"]
     runs = config["general"]["LST_runs"]
 
     with open(str(runs), "r") as LSTfile:
@@ -58,9 +57,7 @@ def main():
         i = i.rstrip()
         bash_scripts(i, args.config_file, source)
     print("Process name: nsb")
-    print(
-        "To check the jobs submitted to the cluster, type: squeue -n nsb"        
-    )
+    print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob(f"{source}_run_*.sh"))
 
     if len(list_of_bash_scripts) < 1:

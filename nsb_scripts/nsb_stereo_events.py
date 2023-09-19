@@ -128,17 +128,20 @@ def bash_stereo(scripts_dir, target_dir, nsb, source):
                 os.mkdir(stereoDir + "/logs")
             if not os.listdir(f"{nightLST}"):
                 continue
-            if len(os.listdir(nightLST ))<2:
+            if len(os.listdir(nightLST)) < 2:
                 continue
             os.system(
                 f"ls {nightLST}/*LST*.h5 >  {stereoDir}/logs/list_coin_{nsb}.txt"
             )  # generating a list with the DL1 coincident data files.
             process_size = (
-                len(np.genfromtxt(stereoDir + f"/logs/list_coin_{nsb}.txt", dtype="str")) - 1
+                len(
+                    np.genfromtxt(stereoDir + f"/logs/list_coin_{nsb}.txt", dtype="str")
+                )
+                - 1
             )
             if process_size < 0:
                 continue
-            
+
             f = open(f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w")
             f.write("#!/bin/sh\n\n")
             f.write("#SBATCH -p short\n")
@@ -212,7 +215,9 @@ def main():
         )
 
         # Below we run the bash scripts to find the stereo events
-        list_of_stereo_scripts = np.sort(glob.glob(f"{source}_StereoEvents_{nsblvl}*.sh"))
+        list_of_stereo_scripts = np.sort(
+            glob.glob(f"{source}_StereoEvents_{nsblvl}*.sh")
+        )
         if len(list_of_stereo_scripts) < 1:
             continue
         for n, run in enumerate(list_of_stereo_scripts):

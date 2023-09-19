@@ -84,7 +84,7 @@ def main():
         df["date"] = lst
         df = df[df["date"] > min]
         df = df[df["date"] < max]
-        
+
     if range == False:
         dates = config["data_selection_and_lists"]["date_list"]
 

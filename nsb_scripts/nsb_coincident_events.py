@@ -68,7 +68,7 @@ def configfile_coincidence(ids, target_dir):
 
 def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
     """
-    This function links the LST data paths to the working directory and creates bash scripts. 
+    This function links the LST data paths to the working directory and creates bash scripts.
     Parameters
     ----------
     scripts_dir: str
@@ -80,7 +80,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
     nsb: int
         NSB level
     date:
-        Array of lists [date run] for all the LST runs (no NSB splitting) 
+        Array of lists [date run] for all the LST runs (no NSB splitting)
     """
 
     coincidence_DL1_dir = target_dir + f"/v{__version__}"
@@ -128,7 +128,9 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                         + str(nsb)
                     ):
                         os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1Coincident/{p}" + "/NSB" + str(nsb)
+                            f"{coincidence_DL1_dir}/DL1Coincident/{p}"
+                            + "/NSB"
+                            + str(nsb)
                         )
 
                     lstObsDir = (
@@ -182,7 +184,9 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                         glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5")
                     )
                     if os.path.exists(f"{outputdir}/logs/list_LST.txt"):
-                        with open(f"{outputdir}/logs/list_LST.txt", "a") as LSTdataPathFile:
+                        with open(
+                            f"{outputdir}/logs/list_LST.txt", "a"
+                        ) as LSTdataPathFile:
                             for subrun in list_of_subruns:
                                 LSTdataPathFile.write(
                                     subrun + "\n"
@@ -198,12 +202,18 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                     if not os.path.exists(outputdir + "/logs/list_LST.txt"):
                         continue
                     process_size = (
-                        len(np.genfromtxt(outputdir + "/logs/list_LST.txt", dtype="str")) - 1
+                        len(
+                            np.genfromtxt(outputdir + "/logs/list_LST.txt", dtype="str")
+                        )
+                        - 1
                     )
 
                     if process_size < 0:
                         continue
-                    f = open(f"{source}_LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh", "w")
+                    f = open(
+                        f"{source}_LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh",
+                        "w",
+                    )
                     f.write("#!/bin/sh\n\n")
                     f.write("#SBATCH -p short\n")
                     f.write(

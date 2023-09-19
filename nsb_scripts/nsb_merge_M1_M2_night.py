@@ -24,7 +24,7 @@ logger.setLevel(logging.INFO)
 
 def merge(scripts_dir, target_dir, source):
     """
-    This function creates the bash scripts to run merge_hdf_files.py 
+    This function creates the bash scripts to run merge_hdf_files.py
 
     Parameters
     ----------
@@ -32,7 +32,7 @@ def merge(scripts_dir, target_dir, source):
         Path to the scripts directory
     target_dir: str
         Path to the working directory
-     """
+    """
     ST_list = [
         os.path.basename(x) for x in glob.glob(f"{target_dir}/v{__version__}/DL1/*")
     ]
@@ -41,7 +41,6 @@ def merge(scripts_dir, target_dir, source):
         process_name = "merging_" + target_dir.split("/")[-2:][1]
 
         MAGIC_DL1_dir = target_dir + f"/v{__version__}" + "/DL1/" + p
-        
 
         f = open(f"{source}_Merge_2_{p}.sh", "w")
         f.write("#!/bin/sh\n\n")
@@ -52,7 +51,6 @@ def merge(scripts_dir, target_dir, source):
         f.write("ulimit -s unlimited\n")
         f.write("ulimit -a\n\n")
 
-        
         dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")]
         for i in dates:
             if not os.path.exists(MAGIC_DL1_dir + f"/Merged/Merged_{i}"):
@@ -93,14 +91,12 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
-    source=config["directories"]["target_name"]
+    source = config["directories"]["target_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     print("***** Generating merge bashscripts...")
-    merge(
-        scripts_dir, target_dir, source
-    ) 
-   
+    merge(scripts_dir, target_dir, source)
+
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
     print("Process name: merging_" + target_dir.split("/")[-2:][1])
     print(
@@ -116,10 +112,7 @@ def main():
         if n == 0:
             launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = (
-                launch_jobs
-                + f" && merging{n}=$(sbatch --parsable {run})"
-            )
+            launch_jobs = launch_jobs + f" && merging{n}=$(sbatch --parsable {run})"
 
     # print(launch_jobs)
     os.system(launch_jobs)
