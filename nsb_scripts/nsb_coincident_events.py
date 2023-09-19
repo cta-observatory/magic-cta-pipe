@@ -66,7 +66,7 @@ def configfile_coincidence(ids, target_dir):
     f.close()
 
 
-def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
+def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
     """
     This function links the LST data paths to the working directory and creates bash scripts. 
     Parameters
@@ -203,7 +203,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date):
 
                     if process_size < 0:
                         continue
-                    f = open(f"LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh", "w")
+                    f = open(f"{source}_LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh", "w")
                     f.write("#!/bin/sh\n\n")
                     f.write("#SBATCH -p short\n")
                     f.write(
@@ -280,7 +280,7 @@ def main():
             print("***** Generating the bashscript...")
             # bash_coincident(scripts_dir, target_dir, nsblvl)
             linking_bash_lst(
-                scripts_dir, target_dir, LST_runs, nsblvl, date
+                scripts_dir, target_dir, LST_runs, nsblvl, date, source
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")
@@ -299,7 +299,7 @@ def main():
 
             # Below we run the bash scripts to find the coincident events
             list_of_coincidence_scripts = np.sort(
-                glob.glob(f"LST_coincident_{nsblvl}*.sh")
+                glob.glob(f"{source}_LST_coincident_{nsblvl}*.sh")
             )
             if len(list_of_coincidence_scripts) < 1:
                 continue

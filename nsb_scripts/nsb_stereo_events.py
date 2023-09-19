@@ -55,7 +55,7 @@ def configfile_stereo(ids, target_dir):
     f.close()
 
 
-def bash_stereo(scripts_dir, target_dir, nsb):
+def bash_stereo(scripts_dir, target_dir, nsb, source):
     """
     This function generates the bashscript for running the stereo analysis.
 
@@ -139,7 +139,7 @@ def bash_stereo(scripts_dir, target_dir, nsb):
             if process_size < 0:
                 continue
             
-            f = open(f"StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w")
+            f = open(f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w")
             f.write("#!/bin/sh\n\n")
             f.write("#SBATCH -p short\n")
             f.write("#SBATCH -J " + process_name + "_stereo" + str(nsb) + "\n")
@@ -198,7 +198,7 @@ def main():
 
     for nsblvl in nsb:
         print("***** Generating the bashscript...")
-        bash_stereo(scripts_dir, target_dir, nsblvl)
+        bash_stereo(scripts_dir, target_dir, nsblvl, source)
 
         print("***** Submitting processess to the cluster...")
         print(
@@ -212,7 +212,7 @@ def main():
         )
 
         # Below we run the bash scripts to find the stereo events
-        list_of_stereo_scripts = np.sort(glob.glob(f"StereoEvents_{nsblvl}*.sh"))
+        list_of_stereo_scripts = np.sort(glob.glob(f"{source}_StereoEvents_{nsblvl}*.sh"))
         if len(list_of_stereo_scripts) < 1:
             continue
         for n, run in enumerate(list_of_stereo_scripts):

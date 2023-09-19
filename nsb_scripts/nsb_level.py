@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 
 def bash_scripts(run, config, source):
     
-    f = open(f"run_{run}.sh", "w")
+    f = open(f"{source}_run_{run}.sh", "w")
     f.write("#!/bin/sh\n\n")
     f.write("#SBATCH -p long\n")
     f.write("#SBATCH -J " + "nsb" + "\n")
@@ -61,7 +61,7 @@ def main():
     print(
         "To check the jobs submitted to the cluster, type: squeue -n nsb"        
     )
-    list_of_bash_scripts = np.sort(glob.glob("run_*.sh"))
+    list_of_bash_scripts = np.sort(glob.glob(f"{source}_run_*.sh"))
 
     if len(list_of_bash_scripts) < 1:
         return

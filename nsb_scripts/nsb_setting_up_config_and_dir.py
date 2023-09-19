@@ -91,14 +91,14 @@ def config_file_gen(ids, target_dir):
     f.close()
 
 
-def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs):
+def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs, source):
     """
     Below we create a bash script that links the MAGIC data paths to each subdirectory.
     """
 
     process_name = target_dir.split("/")[-2:][0] + target_dir.split("/")[-2:][1]
 
-    f = open("linking_MAGIC_data_paths.sh", "w")
+    f = open(f"{source}_linking_MAGIC_data_paths.sh", "w")
     f.write("#!/bin/sh\n\n")
     f.write("#SBATCH -p short\n")
     f.write("#SBATCH -J " + process_name + "\n")
@@ -199,7 +199,7 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                         number_of_nodes = len(number_of_nodes) - 1
                         if number_of_nodes < 0:
                             continue
-                        f = open(f"MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w")
+                        f = open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w")
                         f.write("#!/bin/sh\n\n")
                         f.write("#SBATCH -p long\n")
                         f.write("#SBATCH -J " + process_name + "\n")
@@ -248,7 +248,7 @@ def lists_and_bash_gen_MAGIC(scripts_dir, target_dir, telescope_ids, MAGIC_runs)
                         number_of_nodes = len(number_of_nodes) - 1
                         if number_of_nodes < 0:
                             continue
-                        f = open(f"MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w")
+                        f = open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w")
                         f.write("#!/bin/sh\n\n")
                         f.write("#SBATCH -p long\n")
                         f.write("#SBATCH -J " + process_name + "\n")
@@ -383,6 +383,7 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
+    source=config["directories"]["target_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     print("*** Reducing DL0 to DL1 data***")
@@ -400,16 +401,16 @@ def main():
     config_file_gen(telescope_ids, target_dir)
 
     lists_and_bash_gen_MAGIC(
-        scripts_dir, target_dir, telescope_ids, MAGIC_runs
+        scripts_dir, target_dir, telescope_ids, MAGIC_runs, source
     )  # MAGIC real data
     # If there are MAGIC data, we convert them from DL0 to DL1 here:
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
-        list_of_MAGIC_runs = glob.glob("MAGIC-*.sh")
+        list_of_MAGIC_runs = glob.glob(f"{source}_MAGIC-*.sh")
         if len(list_of_MAGIC_runs) < 1:
             return
         for n, run in enumerate(list_of_MAGIC_runs):
             if n == 0:
-                launch_jobs = f"linking=$(sbatch --parsable linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
+                launch_jobs = f"linking=$(sbatch --parsable {source}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
             else:
                 launch_jobs = launch_jobs + f" && RES{n}=$(sbatch --parsable {run})"
 

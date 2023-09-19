@@ -22,7 +22,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(scripts_dir, target_dir):
+def merge(scripts_dir, target_dir, source):
     """
     This function creates the bash scripts to run merge_hdf_files.py 
 
@@ -47,7 +47,7 @@ def merge(scripts_dir, target_dir):
         ):
             if not os.path.exists(MAGIC_DL1_dir + "/Merged"):
                 os.mkdir(MAGIC_DL1_dir + "/Merged")
-        f = open(f"Merge_0_{p}.sh", "w")
+        f = open(f"{source}_Merge_0_{p}.sh", "w")
         f.write("#!/bin/sh\n\n")
         f.write("#SBATCH -p short\n")
         f.write("#SBATCH -J " + process_name + "\n")
@@ -143,11 +143,12 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
+    source=config["directories"]["target_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     print("***** Generating merge bashscripts...")
     merge(
-        scripts_dir, target_dir
+        scripts_dir, target_dir, source
     )  # generating the bash script to merge the subruns
    
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
@@ -158,7 +159,7 @@ def main():
     )
 
     # Below we run the bash scripts to merge the MAGIC files
-    list_of_merging_scripts = np.sort(glob.glob("Merge_0_*.sh"))
+    list_of_merging_scripts = np.sort(glob.glob(f"{source}_Merge_0_*.sh"))
     if len(list_of_merging_scripts) < 1:
         return
     for n, run in enumerate(list_of_merging_scripts):
