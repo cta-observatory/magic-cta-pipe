@@ -53,6 +53,8 @@ def merge(scripts_dir, target_dir, source):
 
         dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")]
         for i in dates:
+            if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
+                continue
             if not os.path.exists(MAGIC_DL1_dir + f"/Merged/Merged_{i}"):
                 os.mkdir(
                     f"{MAGIC_DL1_dir}/Merged/Merged_{i}"

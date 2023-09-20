@@ -105,21 +105,22 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
         MAGIC_DL1_dir = target_dir + f"/v{__version__}" + "/DL1/" + p
         if not os.path.exists(coincidence_DL1_dir + "/DL1Coincident/" + str(p)):
             os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident/{p}")
-        dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")]
+        dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
         for d in dates:
-            Y_M = int(d.split("_")[0])
-            M_M = int(d.split("_")[1])
-            D_M = int(d.split("_")[2])
-
+            Y_M = int(d.split("_")[1])
+            M_M = int(d.split("_")[2])
+            D_M = int(d.split("_")[3])                    
+                        
+            
             day_MAGIC = dtdt(Y_M, M_M, D_M)
 
             delta = timedelta(days=1)
             for i in LST_runs:
                 Y_L = i[0].split("_")[0]
                 M_L = i[0].split("_")[1]
-                D_L = i[0].split("_")[2]
+                D_L = i[0].split("_")[2]                
                 day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
-                if day_MAGIC == day_LST + delta:
+                if day_MAGIC == day_LST + delta:                    
                     if not os.path.exists(
                         coincidence_DL1_dir
                         + "/DL1Coincident/"
@@ -200,7 +201,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                         f.close()
 
                     if not os.path.exists(outputdir + "/logs/list_LST.txt"):
-                        continue
+                        continue                    
                     process_size = (
                         len(
                             np.genfromtxt(outputdir + "/logs/list_LST.txt", dtype="str")
