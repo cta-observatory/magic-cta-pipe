@@ -26,7 +26,7 @@ def bash_scripts(run, config, source):
     f.write("ulimit -a\n\n")
 
     f.write(
-        f"conda run -n  magic-lst python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n"
+        f"time conda run -n  magic-lst python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n"
     )
     f.close()
 

@@ -62,7 +62,7 @@ def merge(scripts_dir, target_dir, source):
             if not os.path.exists(MAGIC_DL1_dir + f"/Merged/Merged_{i}/logs"):
                 os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs")
             f.write(
-                f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
+                f"time conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
             )
 
         f.close()

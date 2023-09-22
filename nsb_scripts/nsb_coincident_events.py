@@ -220,7 +220,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                     f.write(
                         "#SBATCH -J "
                         + target_dir.split("/")[-2:][1]
-                        + "_coincidence"
+                        + "_coincidence_"
                         + str(nsb)
                         + "\n"
                     )
@@ -241,7 +241,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                         "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n"
                     )
                     f.write(
-                        f"conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1"
+                        f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1"
                     )
                     f.close()
 
@@ -298,13 +298,13 @@ def main():
             print(
                 "Process name: "
                 + target_dir.split("/")[-2:][1]
-                + "_coincidence"
+                + "_coincidence_"
                 + str(nsblvl)
             )
             print(
                 "To check the jobs submitted to the cluster, type: squeue -n "
                 + target_dir.split("/")[-2:][1]
-                + "_coincidence"
+                + "_coincidence_"
                 + str(nsblvl)
             )
 

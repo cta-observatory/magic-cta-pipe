@@ -98,7 +98,7 @@ def lists_and_bash_gen_MAGIC(
     Below we create a bash script that links the MAGIC data paths to each subdirectory.
     """
 
-    process_name = target_dir.split("/")[-2:][0] + target_dir.split("/")[-2:][1]
+    process_name = target_dir.split("/")[-2:][0] +"_"+ target_dir.split("/")[-2:][1]
 
     f = open(f"{source}_linking_MAGIC_data_paths.sh", "w")
     f.write("#!/bin/sh\n\n")
@@ -231,7 +231,7 @@ def lists_and_bash_gen_MAGIC(
                             "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
                         )
                         f.write(
-                            f"conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
+                            f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
                             + target_dir
                             + "/config_step1.yaml >$LOG 2>&1\n"
                         )
@@ -280,7 +280,7 @@ def lists_and_bash_gen_MAGIC(
                             "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
                         )
                         f.write(
-                            f"conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
+                            f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
                             + target_dir
                             + "/config_step1.yaml >$LOG 2>&1\n"
                         )
@@ -388,11 +388,11 @@ def main():
 
     print("*** Reducing DL0 to DL1 data***")
     print(
-        "Process name: ", target_dir.split("/")[-2:][0] + target_dir.split("/")[-2:][1]
+        "Process name: ", target_dir.split("/")[-2:][0] +"_"+ target_dir.split("/")[-2:][1]
     )
     print(
         "To check the jobs submitted to the cluster, type: squeue -n",
-        target_dir.split("/")[-2:][0] + target_dir.split("/")[-2:][1],
+        target_dir.split("/")[-2:][0] +"_"+ target_dir.split("/")[-2:][1],
     )
 
     directories_generator(

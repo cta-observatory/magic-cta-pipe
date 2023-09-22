@@ -145,7 +145,7 @@ def bash_stereo(scripts_dir, target_dir, nsb, source):
             f = open(f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w")
             f.write("#!/bin/sh\n\n")
             f.write("#SBATCH -p short\n")
-            f.write("#SBATCH -J " + process_name + "_stereo" + str(nsb) + "\n")
+            f.write("#SBATCH -J " + process_name + "_stereo_" + str(nsb) + "\n")
             f.write(f"#SBATCH --array=0-{process_size}\n")
             f.write("#SBATCH -N 1\n\n")
             f.write("ulimit -l unlimited\n")
@@ -158,7 +158,7 @@ def bash_stereo(scripts_dir, target_dir, nsb, source):
             f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
             f.write("export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
             f.write(
-                f"conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
+                f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
             )
             f.close()
 
@@ -205,12 +205,12 @@ def main():
 
         print("***** Submitting processess to the cluster...")
         print(
-            "Process name: " + target_dir.split("/")[-2:][1] + "_stereo" + str(nsblvl)
+            "Process name: " + target_dir.split("/")[-2:][1] + "_stereo_" + str(nsblvl)
         )
         print(
             "To check the jobs submitted to the cluster, type: squeue -n "
             + target_dir.split("/")[-2:][1]
-            + "_stereo"
+            + "_stereo_"
             + str(nsblvl)
         )
 

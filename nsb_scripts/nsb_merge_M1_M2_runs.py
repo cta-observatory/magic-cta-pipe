@@ -70,7 +70,7 @@ def merge(scripts_dir, target_dir, source):
                         ):
                             os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs")
                         f.write(
-                            f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
+                            f"time conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
                         )
 
         f.close()
