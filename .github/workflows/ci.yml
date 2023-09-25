@@ -8,6 +8,19 @@ env:
   PYTEST_ADDOPTS: --color=yes
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+      - uses: pre-commit/action@v3.0.0
+        with:
+          extra_args: --files $(git diff origin/main --name-only)
+
   pyflakes:
     runs-on: ubuntu-latest
     steps:
