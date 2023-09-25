@@ -412,7 +412,7 @@ def main():
             if n == 0:
                 launch_jobs = f"linking=$(sbatch --parsable {source}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
             else:
-                launch_jobs = launch_jobs + f" && RES{n}=$(sbatch --parsable {run})"
+                launch_jobs = launch_jobs + f" && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
 
         os.system(launch_jobs)
 
