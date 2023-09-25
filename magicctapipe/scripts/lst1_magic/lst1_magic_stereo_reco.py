@@ -44,6 +44,7 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
+
 from magicctapipe.io import format_object, get_stereo_events, save_pandas_data_in_table
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 

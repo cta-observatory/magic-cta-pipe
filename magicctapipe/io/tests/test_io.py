@@ -1,19 +1,19 @@
+import numpy as np
+import pandas as pd
+import pytest
+
 from magicctapipe.io.io import (
     format_object,
     get_dl2_mean,
     get_stereo_events,
-    load_train_data_files,
-    load_mc_dl2_data_file,
-    load_irf_files,
-    save_pandas_data_in_table,
-    load_magic_dl1_data_files,
-    load_lst_dl1_data_file,
     load_dl2_data_file,
+    load_irf_files,
+    load_lst_dl1_data_file,
+    load_magic_dl1_data_files,
+    load_mc_dl2_data_file,
+    load_train_data_files,
+    save_pandas_data_in_table,
 )
-
-import pytest
-import numpy as np
-import pandas as pd
 
 
 def test_format_object():
@@ -161,7 +161,6 @@ def test_load_mc_dl2_data_file_opt(p_dl2, gamma_dl2):
     for file in dl2_mc:
         data_s, _, _ = load_mc_dl2_data_file(str(file), "width>0", "software", "simple")
         assert np.all(data_s["combo_type"] > 0)
-
 
 
 def test_load_mc_dl2_data_file_exc(p_dl2, gamma_dl2):
@@ -380,7 +379,6 @@ def test_load_dl2_data_file_opt(real_dl2):
     for file in real_dl2.glob("*"):
         data_s, _, _ = load_dl2_data_file(str(file), "width>0", "software", "simple")
         assert np.all(data_s["combo_type"] > 0)
-
 
 
 def test_load_dl2_data_file_exc(real_dl2):

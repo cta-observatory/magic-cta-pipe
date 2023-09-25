@@ -1,49 +1,51 @@
 # coding: utf-8
 
-import time
-import os
-import glob
 import argparse
-import pandas as pd
-import numpy as np
+import glob
+import os
+import time
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from astropy.coordinates.angle_utilities import angular_separation
 
-from magicctapipe.utils.plot import (
-    save_plt,
-    load_default_plot_settings,
-    load_default_plot_settings_02,
-)
-from magicctapipe.utils.utils import print_title, info_message, print_elapsed_time
-from magicctapipe.reco.energy_utils import plot_migmatrix, evaluate_performance_energy
-from magicctapipe.reco.direction_utils import compute_separation_angle_direction
 from magicctapipe.reco.classifier_utils import (
-    get_weights_classifier,
     check_train_test_intersections_classifier,
+    evaluate_performance_classifier,
+    get_weights_classifier,
     load_init_data_classifier,
     print_par_imp_classifier,
-    evaluate_performance_classifier,
+)
+from magicctapipe.reco.direction_utils import compute_separation_angle_direction
+from magicctapipe.reco.energy_utils import evaluate_performance_energy, plot_migmatrix
+from magicctapipe.reco.event_processing import (
+    DirectionEstimatorPandas,
+    EnergyEstimatorPandas,
+    EventClassifierPandas,
 )
 from magicctapipe.reco.global_utils import (
-    get_weights_mc_dir_class,
-    compute_event_weights,
     check_train_test_intersections,
+    compute_event_weights,
+    get_weights_mc_dir_class,
+)
+from magicctapipe.utils.filedir import (
+    check_folder,
+    load_cfg_file_check,
+    load_dl1_data_stereo_list,
+    load_dl1_data_stereo_list_selected,
+)
+from magicctapipe.utils.plot import (
+    load_default_plot_settings,
+    load_default_plot_settings_02,
+    save_plt,
 )
 from magicctapipe.utils.tels import (
     check_tel_ids,
-    get_tel_name,
     get_array_tel_descriptions,
+    get_tel_name,
 )
-from magicctapipe.utils.filedir import (
-    load_cfg_file_check,
-    check_folder,
-    load_dl1_data_stereo_list_selected,
-    load_dl1_data_stereo_list,
-)
-
-from magicctapipe.reco.event_processing import EventClassifierPandas
-from magicctapipe.reco.event_processing import EnergyEstimatorPandas
-from magicctapipe.reco.event_processing import DirectionEstimatorPandas
+from magicctapipe.utils.utils import info_message, print_elapsed_time, print_title
 
 PARSER = argparse.ArgumentParser(
     description="Trains random forests for stereo data",

@@ -1,6 +1,6 @@
 import pandas as pd
 from astropy import units as u
-from astropy.coordinates import SkyCoord, AltAz
+from astropy.coordinates import AltAz, SkyCoord
 
 from magicctapipe.utils.tels import get_tel_ids_dl1
 

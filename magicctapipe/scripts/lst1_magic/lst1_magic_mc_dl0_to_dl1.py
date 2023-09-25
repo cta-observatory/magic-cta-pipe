@@ -53,10 +53,11 @@ from lstchain.image.modifier import (
     random_psf_smearer,
     set_numba_seed,
 )
+from traitlets.config import Config
+
 from magicctapipe.image import MAGICClean
 from magicctapipe.io import SimEventInfoContainer, format_object
 from magicctapipe.utils import calculate_disp, calculate_impact
-from traitlets.config import Config
 
 __all__ = ["mc_dl0_to_dl1"]
 

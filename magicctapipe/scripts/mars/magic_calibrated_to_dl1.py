@@ -2,27 +2,20 @@
 # coding: utf-8
 
 import argparse
+import copy
 import glob
 import re
-import yaml
-import copy
 from pathlib import Path
 
 import numpy as np
-
-from ctapipe_io_magic import MAGICEventSource
-
+import yaml
 from ctapipe.containers import (
-    IntensityStatisticsContainer,
     ImageParametersContainer,
-    TimingParametersContainer,
+    IntensityStatisticsContainer,
     PeakTimeStatisticsContainer,
+    TimingParametersContainer,
 )
-
 from ctapipe.coordinates import TelescopeFrame
-
-from ctapipe.io import DataWriter
-
 from ctapipe.image import (
     concentration_parameters,
     descriptive_statistics,
@@ -30,16 +23,11 @@ from ctapipe.image import (
     morphology_parameters,
     timing_parameters,
 )
+from ctapipe.io import DataWriter
+from ctapipe_io_magic import MAGICEventSource
 
-from magicctapipe.image import (
-    MAGICClean,
-    get_leakage,
-)
-
-from magicctapipe.utils import (
-    info_message,
-)
-
+from magicctapipe.image import MAGICClean, get_leakage
+from magicctapipe.utils import info_message
 
 DEFAULT_IMAGE_PARAMETERS = ImageParametersContainer()
 DEFAULT_TRUE_IMAGE_PARAMETERS = ImageParametersContainer()
@@ -318,8 +306,8 @@ for data_type in data_type_to_process:
             )
 
             try:
-                telescope_type = re.findall("(.*)[_\d]+", telescope)[0]
-            except:
+                telescope_type = re.findall("(.*)[_\\d]+", telescope)[0]
+            except Exception:
                 ValueError(
                     f'Can not recognize the telescope type from name "{telescope}"'
                 )

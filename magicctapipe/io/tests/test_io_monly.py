@@ -1,19 +1,19 @@
+import numpy as np
+import pandas as pd
+import pytest
+
 from magicctapipe.io.io import (
     format_object,
     get_dl2_mean,
     get_stereo_events,
-    load_train_data_files,
-    load_mc_dl2_data_file,
-    load_irf_files,
-    save_pandas_data_in_table,
-    load_magic_dl1_data_files,
-    load_lst_dl1_data_file,
     load_dl2_data_file,
+    load_irf_files,
+    load_lst_dl1_data_file,
+    load_magic_dl1_data_files,
+    load_mc_dl2_data_file,
+    load_train_data_files,
+    save_pandas_data_in_table,
 )
-
-import pytest
-import numpy as np
-import pandas as pd
 
 
 def test_format_object():
@@ -356,7 +356,9 @@ def test_load_dl2_data_file(real_dl2_monly):
     Checks on default loading
     """
     for file in real_dl2_monly.glob("*"):
-        data, on, dead = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
+        data, on, dead = load_dl2_data_file(
+            str(file), "width>0", "magic_only", "simple"
+        )
         assert "pointing_alt" in data.colnames
         assert "timestamp" in data.colnames
         assert data["reco_energy"].unit == "TeV"

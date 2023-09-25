@@ -9,10 +9,11 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import QTable
 from astropy.time import Time
+from pyirf.binning import split_bin_lo_hi
+
 from magicctapipe import __version__
 from magicctapipe.io.io import TEL_COMBINATIONS
 from magicctapipe.utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
-from pyirf.binning import split_bin_lo_hi
 
 __all__ = [
     "create_gh_cuts_hdu",

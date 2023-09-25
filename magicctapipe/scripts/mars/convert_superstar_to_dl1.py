@@ -1,32 +1,30 @@
 #!/usr/bin/env python
 
+import argparse
 import re
 import sys
-import argparse
 from pathlib import Path
 
-import uproot
-import numpy as np
-
-from astropy.table import QTable, vstack
 import astropy.units as u
-
+import numpy as np
+import uproot
+from astropy.table import QTable, vstack
 from ctapipe.containers import (
     CameraHillasParametersContainer,
-    LeakageContainer,
     CameraTimingParametersContainer,
+    LeakageContainer,
     ReconstructedGeometryContainer,
 )
-from ctapipe.io import HDF5TableWriter
-from ctapipe.core.container import Container, Field
 from ctapipe.coordinates import CameraFrame
+from ctapipe.core.container import Container, Field
 from ctapipe.instrument import (
-    TelescopeDescription,
-    SubarrayDescription,
-    OpticsDescription,
     CameraDescription,
     CameraReadout,
+    OpticsDescription,
+    SubarrayDescription,
+    TelescopeDescription,
 )
+from ctapipe.io import HDF5TableWriter
 
 magic_optics = OpticsDescription(
     "MAGIC",

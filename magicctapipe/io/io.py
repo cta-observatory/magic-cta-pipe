@@ -17,10 +17,11 @@ from ctapipe.containers import EventType
 from ctapipe.coordinates import CameraFrame
 from ctapipe.instrument import SubarrayDescription
 from lstchain.reco.utils import add_delta_t_key
-from magicctapipe.utils import calculate_mean_direction, transform_altaz_to_radec
 from pyirf.binning import join_bin_lo_hi
 from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
+
+from magicctapipe.utils import calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
     "format_object",

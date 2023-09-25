@@ -1,7 +1,6 @@
-from astropy import units as u
 import numpy as np
-
-from ctapipe.instrument import CameraGeometry, TelescopeDescription, OpticsDescription
+from astropy import units as u
+from ctapipe.instrument import CameraGeometry, OpticsDescription, TelescopeDescription
 
 __all__ = [
     "tel_ids_2_num",

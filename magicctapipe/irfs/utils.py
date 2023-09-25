@@ -1,20 +1,18 @@
-import os
 import glob
+import os
 
+import astropy.units as u
+import matplotlib.pylab as plt
 import numpy as np
 import pandas as pd
 from astropy import table
-import astropy.units as u
 from astropy.io import fits
 from astropy.table import QTable
-
 from pyirf.simulations import SimulatedEventsInfo
 
 from magicctapipe.utils.filedir import read_mc_header
-from magicctapipe.utils.plot import save_plt, load_default_plot_settings
+from magicctapipe.utils.plot import load_default_plot_settings, save_plt
 from magicctapipe.utils.utils import print_title
-
-import matplotlib.pylab as plt
 
 __all__ = [
     "read_simu_info_mcp_sum_num_showers",
@@ -224,7 +222,7 @@ def plot_sensitivity(data, unit, label, ax=None, **kwargs):
     e = data["reco_energy_center"]
     s_mc = e**2 * data["flux_sensitivity"]
     e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
-    ax_ = ax if ax != None else plt
+    ax_ = ax if ax is not None else plt
     plt_ = ax_.errorbar(
         e.to_value(u.GeV),
         s_mc.to_value(unit),
