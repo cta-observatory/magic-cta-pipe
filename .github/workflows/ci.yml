@@ -8,6 +8,21 @@ env:
   PYTEST_ADDOPTS: --color=yes
 
 jobs:
+  pyflakes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.8
+
+      - name: pyflakes
+        run: |
+          pip install pyflakes
+          pyflakes magicctapipe
+
   tests:
     runs-on: ubuntu-latest
     strategy:
@@ -16,12 +31,12 @@ jobs:
         ctapipe-version: [v0.12.0]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
 
@@ -43,14 +58,6 @@ jobs:
           pip install -e .
           git describe --tags
 
-      - name: Static codechecks
-        # need to use a login shell for the conda setup to work
-        shell: bash -leo pipefail {0}
-        run: |
-          source $CONDA/etc/profile.d/conda.sh
-          conda activate ci
-          pyflakes magicctapipe
-
       #- name: Download test data
       #  env:
       #    TEST_DATA_USER: ${{ secrets.test_data_user }}
@@ -71,4 +78,4 @@ jobs:
           coverage run -m pytest -v
           coverage xml
 
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v3

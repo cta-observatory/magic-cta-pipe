@@ -39,6 +39,7 @@ setup(
         'ctaplot~=0.5.5',
         'gammapy~=0.19.0',
         'uproot~=4.1',
+        'numpy<1.22.0a0',
         'joblib',
         'pandas',
         'pyirf~=0.6.0',
