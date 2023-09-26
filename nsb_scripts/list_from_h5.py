@@ -55,7 +55,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
 
         if skip == False:
             with open(file_list[0], "a+") as f:
-                f.write(str(df["date_LST"][k]) + "," + str(LST[k]) + "\n")
+                f.write(str(df["date_LST"][k]) + "," + str(LST[k]).lstrip('0') + "\n")
             LST_listed.append(int(LST[k]))
         MAGIC_min = int(df["MAGIC_first_run"][k])
         MAGIC_max = int(df["MAGIC_last_run"][k])
