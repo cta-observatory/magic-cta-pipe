@@ -7,11 +7,6 @@ with the MARS-like image cleaning and computes the DL1 parameters, i.e.,
 Hillas, timing and leakage parameters. It saves only the events that all
 the DL1 parameters are successfully reconstructed.
 
-When saving data to an output file, the telescope IDs will be reset to
-the following ones for the convenience of the combined analysis with
-LST-1, whose telescope ID is 1:
-
-MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 When the input is real data, it searches for all the subrun files with
 the same observation ID and stored in the same directory as the input
@@ -27,12 +22,16 @@ Please note that it is also possible to process SUM trigger data with
 this script, but since the MaTaJu cleaning is not yet implemented in
 this pipeline, it applies the standard cleaning instead.
 
-Usage:
+Usage per single data file (indicated if you want to do tests):
 $ python magic_calib_to_dl1.py
 --input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 (--output-dir dl1)
 (--config-file config.yaml)
 (--process-run)
+
+Broader usage:
+This script is called automatically from the script "setting_up_config_and_dir.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse
@@ -72,7 +71,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 
-def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=False):
+def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     """
     Processes the events of MAGIC calibrated data and computes the DL1
     parameters.
@@ -94,7 +93,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
-    event_source = MAGICEventSource(input_file, process_run=process_run, max_events=max_events)
+    event_source = MAGICEventSource(input_file, process_run=process_run)
 
     is_simulation = event_source.is_simulation
     logger.info(f"\nIs simulation: {is_simulation}")
@@ -300,10 +299,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
 
             # Reset the telescope IDs
             if tel_id == 1:
-                event_info.tel_id = 2  # MAGIC-I
+                event_info.tel_id = config["mc_tel_ids"]["MAGIC-I"]  # MAGIC-I
 
             elif tel_id == 2:
-                event_info.tel_id = 3  # MAGIC-II
+                event_info.tel_id = config["mc_tel_ids"]["MAGIC-II"]  # MAGIC-II
 
             # Save the parameters to the output file
             writer.write(
@@ -315,13 +314,13 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
 
     # Reset the telescope IDs of the subarray description
     tel_positions_magic = {
-        2: subarray.positions[1],  # MAGIC-I
-        3: subarray.positions[2],  # MAGIC-II
+        config["mc_tel_ids"]["MAGIC-I"]: subarray.positions[1],  # MAGIC-I
+        config["mc_tel_ids"]["MAGIC-II"]: subarray.positions[2],  # MAGIC-II
     }
 
     tel_descriptions_magic = {
-        2: subarray.tel[1],  # MAGIC-I
-        3: subarray.tel[2],  # MAGIC-II
+        config["mc_tel_ids"]["MAGIC-I"]: subarray.tel[1],  # MAGIC-I
+        config["mc_tel_ids"]["MAGIC-II"]: subarray.tel[2],  # MAGIC-II
     }
 
     subarray_magic = SubarrayDescription(
@@ -372,15 +371,6 @@ def main():
     )
 
     parser.add_argument(
-        "--max-evt",
-        "-m",
-        dest="max_events",
-        type=int,
-        default=None,
-        help="Max. number of processed showers",
-    )
-
-    parser.add_argument(
         "--process-run",
         dest="process_run",
         action="store_true",
@@ -393,7 +383,7 @@ def main():
         config = yaml.safe_load(f)
 
     # Process the input data
-    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.max_events, args.process_run)
+    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
 
     logger.info("\nDone.")
 
