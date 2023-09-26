@@ -20,6 +20,9 @@ __all__ = [
     "calculate_mean_direction",
     "calculate_off_coordinates",
     "transform_altaz_to_radec",
+    "LON_ORM",
+    "LAT_ORM",
+    "HEIGHT_ORM",
 ]
 
 # The geographic coordinate of ORM

@@ -5,12 +5,12 @@ import numpy as np
 import pandas as pd
 import sklearn.metrics
 
-from magicctapipe.reco.global_utils import check_train_test_intersections
-from magicctapipe.utils.filedir import (
+from ..utils import (
+    info_message,
     load_dl1_data_stereo_list,
     load_dl1_data_stereo_list_selected,
 )
-from magicctapipe.utils.utils import info_message
+from .global_utils import check_train_test_intersections
 
 __all__ = [
     "GetHist_classifier",

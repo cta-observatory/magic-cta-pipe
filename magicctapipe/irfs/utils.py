@@ -10,9 +10,7 @@ from astropy.io import fits
 from astropy.table import QTable
 from pyirf.simulations import SimulatedEventsInfo
 
-from magicctapipe.utils.filedir import read_mc_header
-from magicctapipe.utils.plot import load_default_plot_settings, save_plt
-from magicctapipe.utils.utils import print_title
+from ..utils import load_default_plot_settings, print_title, read_mc_header, save_plt
 
 __all__ = [
     "read_simu_info_mcp_sum_num_showers",

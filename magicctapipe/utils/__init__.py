@@ -18,6 +18,9 @@ from .filedir import (
     save_yaml_np,
 )
 from .functions import (
+    HEIGHT_ORM,
+    LAT_ORM,
+    LON_ORM,
     calculate_disp,
     calculate_impact,
     calculate_mean_direction,
@@ -92,4 +95,7 @@ __all__ = [
     "make_title_str",
     "resource_file",
     "get_key_if_exists",
+    "LON_ORM",
+    "LAT_ORM",
+    "HEIGHT_ORM",
 ]

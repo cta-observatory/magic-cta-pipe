@@ -21,7 +21,7 @@ from pyirf.binning import join_bin_lo_hi
 from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
 
-from magicctapipe.utils import calculate_mean_direction, transform_altaz_to_radec
+from ..utils import calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
     "format_object",
@@ -34,6 +34,8 @@ __all__ = [
     "load_dl2_data_file",
     "load_irf_files",
     "save_pandas_data_in_table",
+    "TEL_COMBINATIONS",
+    "TEL_NAMES",
 ]
 
 logger = logging.getLogger(__name__)
