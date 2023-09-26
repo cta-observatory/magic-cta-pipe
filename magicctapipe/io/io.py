@@ -52,7 +52,7 @@ EFFECTIVE_FOCLEN_LST = 29.30565 * u.m
 
 # The upper limit of the trigger time differences of consecutive events,
 # used when calculating the ON time and dead time correction factor
-TIME_DIFF_UPLIM = 0.1 * u.s
+TIME_DIFF_UPLIM = 1.0 * u.s
 
 # The LST-1 and MAGIC readout dead times
 DEAD_TIME_LST = 7.6 * u.us
@@ -911,7 +911,7 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
         event_data.query(f"combo_type == {three_or_more}", inplace=True)
 
     elif event_type == "software_6_tel":
-        df_events.query(f"combo_type < {combo_types[-1]}", inplace=True)
+        event_data.query(f"combo_type < {combo_types[-1]}", inplace=True)
         
     elif event_type == "magic_only":
         event_data.query(f"combo_type == {combo_types[-1]}", inplace=True)
@@ -1049,6 +1049,7 @@ def load_irf_files(input_dir_irf):
         "migration_bins": [],
         "source_offset_bins": [],
         "bkg_fov_offset_bins": [],
+        "file_names": [],
     }
 
     # Find the input files
@@ -1070,6 +1071,7 @@ def load_irf_files(input_dir_irf):
     for input_file in input_files_irf:
         logger.info(input_file)
         irf_hdus = fits.open(input_file)
+        irf_data["file_names"].append(input_file)
 
         # Read the header
         header = irf_hdus["EFFECTIVE AREA"].header
@@ -1099,6 +1101,7 @@ def load_irf_files(input_dir_irf):
         irf_data["energy_bins"].append(energy_bins)
         irf_data["fov_offset_bins"].append(fov_offset_bins)
         irf_data["migration_bins"].append(migration_bins)
+        irf_data["file_names"] = np.array(irf_data["file_names"])
 
         # Read additional IRF data and bins if they exist
         if "PSF" in irf_hdus:

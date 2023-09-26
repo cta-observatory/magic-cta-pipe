@@ -29,7 +29,6 @@ import os
 import numpy as np
 import argparse
 import glob
-import time
 import yaml
 from pathlib import Path
 
@@ -389,8 +388,8 @@ def main():
     #Below we read the data paths
     target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
     MC_gammas  = str(Path(config["directories"]["MC_gammas"]))
-    MC_electrons = str(Path(config["directories"]["MC_electrons"]))
-    MC_helium = str(Path(config["directories"]["MC_helium"]))
+    #MC_electrons = str(Path(config["directories"]["MC_electrons"]))
+    #MC_helium = str(Path(config["directories"]["MC_helium"]))
     MC_protons = str(Path(config["directories"]["MC_protons"]))
     MC_gammadiff = str(Path(config["directories"]["MC_gammadiff"]))
     

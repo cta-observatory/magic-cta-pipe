@@ -27,13 +27,18 @@ Unless there is any particular reason, please use the default half width
 accidental coincidence rate as much as possible by keeping the number of
 actual coincident events.
 
-Please note that for the data taken before 12th June 2021, a coincidence
-peak should be found around the time offset of -3.1 us, which can be
-explained by the trigger time delays of both systems. For the data taken
-after that date, however, there is an additional global offset appeared
-and then the peak is shifted to the time offset of -6.5 us. Thus, it
-would be needed to tune the offset scan region depending on the date
-when data were taken. The reason of the shift is under investigation.
+Please note that the time offset depends on the date of observations 
+as summarized below:
+* before June 12 2021: -3.1 us
+* June 13 2021 to Feb 28 2023: -6.5 us
+* March 10 2023 to March 30 2023: -76039.3 us
+* April 13 2023 to August 2023: -25.1 us
+* after Sep 11 2023 : -6.2 us
+By default, pre offset search is performed using large shower events.
+The possible time offset is found among all possible combinations of 
+time offsets using those events. Finally, the time offset scan is performed
+around the possible offset found by the pre offset search. Instead of that,
+you can also define the offset scan range in the configuration file.
 
 Usage per single LST data file (indicated if you want to do tests):
 $ python lst1_magic_event_coincidence.py
@@ -181,24 +186,23 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     window_half_width = u.Quantity(window_half_width).to("ns")
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
+    pre_offset_search = False
+    if "pre_offset_search" in config_coinc:
+        pre_offset_search = config_coinc["pre_offset_search"]
 
-    logger.info("\nTime offsets:")
-    logger.info(format_object(config_coinc["time_offset"]))
+    if pre_offset_search:
+        logger.info("\nPre offset search will be performed.")
+        n_pre_offset_search_events = config_coinc["n_pre_offset_search_events"]
+    else:
+        logger.info("\noffset scan range defined in the config file will be used.")
+        offset_start = u.Quantity(config_coinc["time_offset"]["start"])
+        offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
 
-    offset_start = u.Quantity(config_coinc["time_offset"]["start"])
-    offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
-
-    time_offsets = np.arange(
-        start=offset_start.to_value("ns").round(),
-        stop=offset_stop.to_value("ns").round(),
-        step=TIME_ACCURACY.to_value("ns").round(),
-    )
-
-    time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
-
+    
     event_data = pd.DataFrame()
     features = pd.DataFrame()
-    profiles = pd.DataFrame(data={"time_offset": time_offsets.to_value("us").round(1)})
+    
+    profiles = pd.DataFrame(data={"time_offset": []})
 
     # Arrange the LST timestamps. They are stored in the UNIX format in
     # units of seconds with 17 digits, 10 digits for the integral part
@@ -232,12 +236,125 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         df_magic["timestamp"] = timestamps_magic.to_value("s")
         df_magic.drop(["time_sec", "time_nanosec"], axis=1, inplace=True)
 
-        # Extract the MAGIC events taken when LST observed
-        logger.info(f"\nExtracting the {tel_name} events taken when LST observed...")
+        # Pre offset search is performed to define the offset scan region.
+        # First, N events are extracted from largest intensity events for LST and
+        # MAGIC. Then, it counts the number of coincident events within a defined
+        # window after shifting all possible combinations (N x N) of time offsets.
+        if pre_offset_search:
+            logger.info(
+                "\nPre offset search using large-intensity shower events is ongoing..."
+            )
+
+            logger.info(
+                f"\nExtracting the {tel_name} events taken when LST-1 observed for pre offset search..."
+            )
+
+            time_lolim = timestamps_lst[0] - window_half_width
+            time_uplim = timestamps_lst[-1] + window_half_width
+            cond_lolim = timestamps_magic >= time_lolim
+            cond_uplim = timestamps_magic <= time_uplim
+
+            mask_lst_obs_window = np.logical_and(cond_lolim, cond_uplim)
+            n_events_magic = np.count_nonzero(mask_lst_obs_window)
+
+            if n_events_magic == 0:
+                logger.info(f"--> No {tel_name} events are found. Skipping...")
+                continue
+
+            logger.info(f"--> {n_events_magic} events are found.")
+
+            # Extract indexes of MAGIC large shower events
+            index_large_intensity_magic = np.argsort(
+                df_magic["intensity"][mask_lst_obs_window]
+            )[::-1][:n_pre_offset_search_events]
+
+            # If LST/MAGIC observations are not completely overlapped, only small
+            # numbers of MAGIC events are left for the pre offset search.
+            # To find large-intensity showers within the same time window,
+            # time cut around MAGIC observations is applied to the LST data set.
+            time_lolim = timestamps_magic[mask_lst_obs_window][0] - window_half_width
+            time_uplim = timestamps_magic[mask_lst_obs_window][-1] + window_half_width
+
+            cond_lolim = timestamps_lst >= time_lolim
+            cond_uplim = timestamps_lst <= time_uplim
+
+            mask_magic_obs_window = np.logical_and(cond_lolim, cond_uplim)
+
+            if np.count_nonzero(mask_magic_obs_window) == 0:
+                logger.info(
+                    f"\nNo LST events are found around {tel_name} events. Skipping..."
+                )
+                continue
+
+            # Extract indexes of LST large shower events
+            index_large_intensity_lst = np.argsort(
+                event_data_lst["intensity"][mask_magic_obs_window]
+            )[::-1][:n_pre_offset_search_events]
+
+            # Crate an array of all combinations of [MAGIC timestamp, LST timestamp]
+            timestamps_magic_lst_combination = np.array(
+                np.meshgrid(
+                    timestamps_magic[mask_lst_obs_window][
+                        index_large_intensity_magic
+                    ].value,
+                    timestamps_lst[mask_magic_obs_window][
+                        index_large_intensity_lst
+                    ].value,
+                )
+            ).reshape(2, -1)
+
+            # Compute all combinations of time offset between MAGIC and LST
+            time_offsets_pre_search = (
+                timestamps_magic_lst_combination[0]
+                - timestamps_magic_lst_combination[1]
+            )
+
+            time_offsets_pre_search = u.Quantity(
+                time_offsets_pre_search.round(), unit="ns", dtype=int
+            )
+
+            n_coincidences_pre_search = [
+                np.sum(
+                    np.abs(time_offsets_pre_search - time_offset).value
+                    < window_half_width.value
+                )
+                for time_offset in time_offsets_pre_search
+            ]
+
+            n_coincidences_pre_search = np.array(n_coincidences_pre_search)
+
+            offset_at_max_pre_search = time_offsets_pre_search[
+                n_coincidences_pre_search == n_coincidences_pre_search.max()
+            ].mean()
+            offset_at_max_pre_search = offset_at_max_pre_search.to("us").round(1)
+
+            logger.info(
+                f"\nPre offset search finds {offset_at_max_pre_search} as a possible offset"
+            )
+
+            # offset scan region is defined as 3 x half window width
+            # around the offset_at_max to cover "full window width" which will
+            # be used to compute weighted average of the time offset
+            offset_start = offset_at_max_pre_search - 3 * window_half_width
+            offset_stop = offset_at_max_pre_search + 3 * window_half_width
+
+        logger.info("\nTime offsets scan region:")
+        logger.info(f"  start: {offset_start.to('us').round(1)}")
+        logger.info(f"  stop: {offset_stop.to('us').round(1)}")
+
+        time_offsets = np.arange(
+            start=offset_start.to_value("ns").round(),
+            stop=offset_stop.to_value("ns").round(),
+            step=TIME_ACCURACY.to_value("ns").round(),
+        )
+
+        time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
+
+        # Extract the MAGIC events taken when LST-1 observed
+        logger.info(f"\nExtracting the {tel_name} events taken when LST-1 observed...")
 
         time_lolim = timestamps_lst[0] + time_offsets[0] - window_half_width
         time_uplim = timestamps_lst[-1] + time_offsets[-1] + window_half_width
-
         cond_lolim = timestamps_magic >= time_lolim
         cond_uplim = timestamps_magic <= time_uplim
 
@@ -268,7 +385,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         logger.info("\nChecking the event coincidence...")
 
         for time_offset in time_offsets:
-
             times_lolim = timestamps_lst + time_offset - window_half_width
             times_uplim = timestamps_lst + time_offset + window_half_width
 
@@ -283,12 +399,16 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             )
 
             n_coincidences.append(n_coincidence)
+            
+
+       
 
         if not any(n_coincidences):
             logger.info("\nNo coincident events are found. Skipping...")
             continue
 
         n_coincidences = np.array(n_coincidences)
+       
 
         # Sometimes there are more than one time offset maximizing the
         # number of coincidences, so here we calculate the mean of them
@@ -375,7 +495,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
         event_data = pd.concat([event_data, df_lst, df_magic])
         features = pd.concat([features, df_feature])
-        profiles = profiles.merge(df_profile)
+        profiles = profiles.merge(df_profile, on="time_offset", how="outer")
+        profiles = profiles.sort_values("time_offset")
 
     if event_data.empty:
         logger.info("\nNo coincident events are found. Exiting...")

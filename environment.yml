@@ -4,10 +4,11 @@ channels:
   - default
   - conda-forge
 dependencies:
-  - python
+  - python=3.8
   - pip
   - black
   - nbsphinx
+  - numpy=1.21
   - ctapipe=0.12
   - gammapy=0.19.0
   - cython
