@@ -186,8 +186,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     window_half_width = u.Quantity(window_half_width).to("ns")
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
     pre_offset_search = False
-    if "pre_offset_search" in config_coinc:
-        pre_offset_search = config_coinc["pre_offset_search"]
+    if "pre_offset_search" in config_coinc: #looking for the boolean value of pre_offset_search in the configuration file
+        pre_offset_search = config_coinc["pre_offset_search"] 
 
     if pre_offset_search:
         logger.info("\nPre offset search will be performed.")

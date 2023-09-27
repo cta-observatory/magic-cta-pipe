@@ -42,6 +42,8 @@ def configfile_coincidence(ids, target_dir):
     f = open(target_dir+'/config_coincidence.yaml','w')
     f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
     f.write('event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    window_half_width: "300 ns"\n')
+    f.write('    pre_offset_search: true\n')  
+    f.write('    n_pre_offset_search_events: 100\n')  
     f.write('    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n')  
     f.close()
     
