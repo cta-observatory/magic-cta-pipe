@@ -202,9 +202,19 @@ To find coincident events between MAGIC and LST, starting from DL1 data, we run 
 
 This script creates the file config_coincidence.yaml containing the telescope IDs and the following parameters:
 ```
+mc_tel_ids:
+    LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
+    MAGIC-I: 2
+    MAGIC-II: 3
+
 event_coincidence:
     timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"
     window_half_width: "300 ns"
+    pre_offset_search: true
+    n_pre_offset_search_events: 100
     time_offset:
         start: "-10 us"
         stop: "0 us"
