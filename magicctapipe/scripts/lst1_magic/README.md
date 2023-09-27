@@ -228,6 +228,14 @@ Once it is done, we add stereo parameters to the MAGIC+LST coincident DL1 data b
 
 This script creates the file config_stereo.yaml with the follwoing parameters:
 ```
+mc_tel_ids:
+    LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
+    MAGIC-I: 2
+    MAGIC-II: 3
+
 stereo_reco:
     quality_cuts: "(intensity > 50) & (width > 0)"
     theta_uplim: "6 arcmin"
