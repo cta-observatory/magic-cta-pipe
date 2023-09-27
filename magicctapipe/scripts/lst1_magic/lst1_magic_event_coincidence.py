@@ -191,7 +191,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     if pre_offset_search:
         logger.info("\nPre offset search will be performed.")
-        n_pre_offset_search_events = config_coinc["n_pre_offset_search_events"]
+        n_pre_offset_search_events = config_coinc["n_pre_offset_search_events"] #n_pre_offset_search_events is the number of events used to estimate the time offset. Around 100 events may be enough
     else:
         logger.info("\noffset scan range defined in the config file will be used.")
         offset_start = u.Quantity(config_coinc["time_offset"]["start"])
@@ -245,7 +245,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             )
 
             logger.info(
-                f"\nExtracting the {tel_name} events taken when LST-1 observed for pre offset search..."
+                f"\nExtracting the {tel_name} events taken when LST observed for pre offset search..."
             )
 
             time_lolim = timestamps_lst[0] - window_half_width
@@ -349,8 +349,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
         time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
 
-        # Extract the MAGIC events taken when LST-1 observed
-        logger.info(f"\nExtracting the {tel_name} events taken when LST-1 observed...")
+        # Extract the MAGIC events taken when LST observed
+        logger.info(f"\nExtracting the {tel_name} events taken when LST observed...")
 
         time_lolim = timestamps_lst[0] + time_offsets[0] - window_half_width
         time_uplim = timestamps_lst[-1] + time_offsets[-1] + window_half_width

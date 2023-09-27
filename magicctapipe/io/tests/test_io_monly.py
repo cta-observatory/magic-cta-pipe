@@ -54,7 +54,7 @@ def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly, config_gen):
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen)
         assert np.all(data["multiplicity"] == 2)
-        assert np.all(data["combo_type"] == 0)
+        assert np.all(data["combo_type"] == 3)
 
 
 def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly, config_gen):
@@ -334,8 +334,8 @@ def test_get_stereo_events_data(stereo_monly, config_gen):
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen)
-        assert np.all(data["multiplicity"] == 2)
-        assert np.all(data["combo_type"] == 0)
+        assert np.all(data["multiplicity"] == 2)    
+        assert np.all(data["combo_type"] == 3)
 
 
 def test_get_stereo_events_data_cut(stereo_monly, config_gen):

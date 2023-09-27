@@ -287,7 +287,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
         LSTs_in_use = ''.join(str(k) for k in LSTs_in_use)
     elif len(LSTs_in_use) > 0:
         LSTs_in_use = 'LST'+'_LST'.join(str(k) for k in LSTs_in_use)
-        print('lst',LSTs_in_use)
+        
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
     MAGICs_in_use = np.where(MAGICs_IDs > 0)[0] + 1    #Here we select which MAGICs are/is in use
     

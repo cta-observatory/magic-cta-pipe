@@ -29,7 +29,7 @@ from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io import get_stereo_events_old, save_pandas_data_in_table
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
@@ -266,7 +266,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
-    event_data = get_stereo_events(event_data)
+    event_data = get_stereo_events_old(event_data)
 
     subarray = SubarrayDescription.from_hdf(input_file_dl1)
     tel_descriptions = subarray.tel
