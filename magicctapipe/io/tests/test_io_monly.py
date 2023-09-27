@@ -36,7 +36,7 @@ def test_save_pandas_data_in_table(temp_pandas, pd_test):
     assert df.equals(df1)
 
 
-def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly):
+def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly, config_gen):
     """
     Check on stereo data reading
     """
@@ -52,12 +52,12 @@ def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly):
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
-        data = get_stereo_events(event_data)
+        data = get_stereo_events(event_data, config_gen)
         assert np.all(data["multiplicity"] == 2)
         assert np.all(data["combo_type"] == 0)
 
 
-def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly):
+def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly, config_gen):
     """
     Check on quality cuts
     """
@@ -71,7 +71,7 @@ def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly):
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
-        data = get_stereo_events(event_data, "intensity>50")
+        data = get_stereo_events(event_data, config_gen, "intensity>50")
         assert np.all(data["intensity"] > 50)
 
 
@@ -299,12 +299,12 @@ def test_load_lst_dl1_data_file(dl1_lst):
         assert s1.all()
 
 
-def test_load_magic_dl1_data_files(merge_magic_monly):
+def test_load_magic_dl1_data_files(merge_magic_monly, config_gen):
     """
     Check on MAGIC DL1
     """
 
-    events, _ = load_magic_dl1_data_files(str(merge_magic_monly))
+    events, _ = load_magic_dl1_data_files(str(merge_magic_monly), config_gen)
     assert list(events.index.names) == ["obs_id_magic", "event_id_magic", "tel_id"]
     assert "event_id" not in events.columns
     events = events.reset_index()
@@ -313,7 +313,7 @@ def test_load_magic_dl1_data_files(merge_magic_monly):
     assert s1.all()
 
 
-def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc):
+def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc, config_gen):
     """
     Check on MAGIC DL1: exceptions (no DL1 files)
     """
@@ -321,10 +321,10 @@ def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc):
         FileNotFoundError,
         match="Could not find any DL1 data files in the input directory.",
     ):
-        _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc))
+        _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
 
 
-def test_get_stereo_events_data(stereo_monly):
+def test_get_stereo_events_data(stereo_monly, config_gen):
     """
     Check on stereo data reading
     """
@@ -333,12 +333,12 @@ def test_get_stereo_events_data(stereo_monly):
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
-        data = get_stereo_events(event_data)
+        data = get_stereo_events(event_data, config_gen)
         assert np.all(data["multiplicity"] == 2)
         assert np.all(data["combo_type"] == 0)
 
 
-def test_get_stereo_events_data_cut(stereo_monly):
+def test_get_stereo_events_data_cut(stereo_monly, config_gen):
     """
     Check on quality cuts
     """
@@ -347,7 +347,7 @@ def test_get_stereo_events_data_cut(stereo_monly):
         event_data = pd.read_hdf(str(file), key="events/parameters")
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
-        data = get_stereo_events(event_data, "intensity>50")
+        data = get_stereo_events(event_data, config_gen, "intensity>50")
         assert np.all(data["intensity"] > 50)
 
 

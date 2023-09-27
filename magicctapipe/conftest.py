@@ -384,6 +384,11 @@ def config_monly():
     config_path = resource_file("config_monly.yaml")
     return config_path
 
+@pytest.fixture(scope="session")
+def config_gen():
+    config_path = resource_file("config_general.yaml")
+    return config_path
+
 
 """
 Data processing
