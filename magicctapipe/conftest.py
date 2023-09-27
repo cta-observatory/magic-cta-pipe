@@ -7,6 +7,7 @@ import subprocess
 from math import trunc
 from ctapipe.utils.download import download_file_cached
 from magicctapipe.utils import resource_file
+import yaml
 
 maxjoint = 13000
 maxmonly = 500
@@ -50,6 +51,7 @@ Temporary paths
 @pytest.fixture(scope="session")
 def temp_DL1_gamma(tmp_path_factory):
     return tmp_path_factory.mktemp("DL1_gammas")
+        
 
 
 @pytest.fixture(scope="session")
@@ -387,7 +389,9 @@ def config_monly():
 @pytest.fixture(scope="session")
 def config_gen():
     config_path = resource_file("config_general.yaml")
-    return config_path
+    with open(config_path, "rb") as f:
+        config = yaml.safe_load(f)
+    return config
 
 
 """
