@@ -199,6 +199,12 @@ def get_stereo_events_old(
     event_data_stereo: pandas.core.frame.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
+    TEL_COMBINATIONS = {
+    "M1_M2": [2, 3],  # combo_type = 0
+    "LST1_M1": [1, 2],  # combo_type = 1
+    "LST1_M2": [1, 3],  # combo_type = 2
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+    }  #####TO BE REMOVED WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     event_data_stereo = event_data.copy()
 
@@ -737,6 +743,12 @@ def load_train_data_files(
         If any DL1-stereo data files are not found in the input
         directory
     """
+    TEL_COMBINATIONS = {
+    "M1_M2": [2, 3],  # combo_type = 0
+    "LST1_M1": [1, 2],  # combo_type = 1
+    "LST1_M2": [1, 3],  # combo_type = 2
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+    }  #####TO BE REMOVED WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
@@ -1188,7 +1200,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     ValueError
         If the input event type is not known
     """
-
+    
     # Load the input file
     df_events = pd.read_hdf(input_file, key="events/parameters")
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
@@ -1312,6 +1324,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     ValueError
         If the input event type is not known
     """
+   
 
     # Load the input file
     event_data = pd.read_hdf(input_file, key="events/parameters")
