@@ -64,8 +64,7 @@ import pandas as pd
 import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.io import (
-    format_object,
+from magicctapipe.io import (   
     get_stereo_events,
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
