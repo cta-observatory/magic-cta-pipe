@@ -362,9 +362,10 @@ def main():
     
     #Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file
     parser.add_argument(
-        "--partial-analysis",
-        "-p",
-        dest="partial_analysis",
+        "--analysis-type",
+        "-t",
+        choices=['onlyMAGIC', 'onlyMC']
+        dest="analysis_type",
         type=str,
         default="doEverything",
         help="You can type 'onlyMAGIC' or 'onlyMC' to run this script only on MAGIC or MC data, respectively.",
@@ -418,7 +419,7 @@ def main():
     config_file_gen(telescope_ids,target_dir)
     
     #Below we run the analysis on the MC data
-    if not args.partial_analysis=='onlyMAGIC':       
+    if not args.analysis_type=='onlyMAGIC':       
         lists_and_bash_generator("gammas", target_dir, MC_gammas, SimTel_version, focal_length, scripts_dir) #gammas
         #lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, focal_length, scripts_dir) #electrons
         #lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, focal_length, scripts_dir) #helium
@@ -440,7 +441,7 @@ def main():
         os.system(launch_jobs_MC)
     
     #Below we run the analysis on the MAGIC data
-    if not args.partial_analysis=='onlyMC':
+    if not args.analysis_type=='onlyMC':
         lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir) #MAGIC real data
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             
