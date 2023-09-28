@@ -433,8 +433,9 @@ def main():
         "-f",                                 
         dest="focal_length_choice",
         type=str,
+        choices = ["nominal", "effective"],
         default="effective",
-        help='Standard is "effective"',
+        help='Choice of focal length, either "effective" or "nominal". The default (and standard) value is "effective"',
     )
 
     args = parser.parse_args() #Here we select all 3 parameters collected above
