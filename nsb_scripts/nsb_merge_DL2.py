@@ -43,7 +43,7 @@ def MergeDL2(scripts_dir, target_dir, nsb, source):
         list_of_nights = np.sort(glob.glob(DL2_dir + "/20*"))
         print(DL2_dir)
 
-        f = open(f"{source}_DL3_{nsb}_{p}_0_merging.sh", "w")
+        f = open(f"{source}_MergeDL2_{nsb}_{p}.sh", "w")
         f.write("#!/bin/sh\n\n")
         f.write("#SBATCH -p short\n")
         f.write("#SBATCH -J " + process_name + "\n")
@@ -105,7 +105,7 @@ def main():
         MergeDL2(scripts_dir, target_dir, nsblvl, source)
 
     # Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-    list_of_DL1_to_2_scripts = np.sort(glob.glob(f"{source}_DL3_*_0_merging.sh"))
+    list_of_DL1_to_2_scripts = np.sort(glob.glob(f"{source}_MergeDL2_*.sh"))
     print(list_of_DL1_to_2_scripts)
     if len(list_of_DL1_to_2_scripts) < 1:
         return
