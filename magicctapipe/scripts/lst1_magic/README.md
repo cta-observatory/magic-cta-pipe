@@ -144,11 +144,11 @@ Process name: yourprojectnameCrabTeste
 To check the jobs submitted to the cluster, type: squeue -n yourprojectnameCrabTeste
 ```
 Note that this script can be run as  
-> $ python setting_up_config_and_dir.py --partial-analysis onlyMAGIC  
+> $ python setting_up_config_and_dir.py --analysis-type onlyMAGIC  
 
 or  
 
-> $ python setting_up_config_and_dir.py --partial-analysis onlyMC  
+> $ python setting_up_config_and_dir.py --analysis-type onlyMC  
 
 if you want to convert only MAGIC or only MC DL0 files to DL1, respectively.
 
