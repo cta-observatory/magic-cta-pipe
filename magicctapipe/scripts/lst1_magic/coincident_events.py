@@ -48,7 +48,7 @@ def configfile_coincidence(ids, target_dir):
     f.close()
     
 
-def linking_lst(target_dir, LST_runs):
+def linking_lst(target_dir, LST_runs, LST_version):
     
     """
     This function links the LST data paths to the working directory. This is a preparation step required for running lst1_magic_event_coincidence.py 
@@ -68,7 +68,7 @@ def linking_lst(target_dir, LST_runs):
     
     for i in LST_runs:
         lstObsDir = i[0].split("_")[0]+i[0].split("_")[1]+i[0].split("_")[2]
-        inputdir = f'/fefs/aswg/data/real/DL1/{lstObsDir}/v0.9/tailcut84'
+        inputdir = f'/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84'
         outputdir = f'{coincidence_DL1_dir}/Coincident/{lstObsDir}'
         list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
         if os.path.exists(f"{outputdir}/list_LST.txt"):
@@ -137,6 +137,7 @@ def main():
     
     LST_runs_and_dates = config["general"]["LST_runs"]
     LST_runs = np.genfromtxt(LST_runs_and_dates,dtype=str,delimiter=',')
+    LST_version = config["general"]["LST_version"]
     
     print("***** Generating file config_coincidence.yaml...")
     print("***** This file can be found in ",target_dir)
@@ -144,7 +145,7 @@ def main():
     
         
     print("***** Linking the paths to LST data files...")
-    linking_lst(target_dir, LST_runs) #linking the data paths to current working directory
+    linking_lst(target_dir, LST_runs, LST_version) #linking the data paths to current working directory
     
     
     print("***** Generating the bashscript...")
