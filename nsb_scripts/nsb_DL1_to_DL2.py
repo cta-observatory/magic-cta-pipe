@@ -16,13 +16,14 @@ import glob
 import yaml
 import logging
 from pathlib import Path
+from magicctapipe import __version__
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def DL1_to_2(scripts_dir, target_dir, nsb, config):
+def DL1_to_2(scripts_dir, target_dir, nsb, source, config):
     """
     This function creates the bash scripts to run lst1_magic_dl1_stereo_to_dl2.py.
 
@@ -31,51 +32,75 @@ def DL1_to_2(scripts_dir, target_dir, nsb, config):
     target_dir: str
         Path to the working directory
     """
-
-    if not os.path.exists(target_dir + "/DL2"):
-        os.mkdir(target_dir + "/DL2")
-
-    if not os.path.exists(target_dir + "/DL2/Observations"):
-        os.mkdir(target_dir + "/DL2/Observations")
-    if not os.path.exists(target_dir + "/DL2/Observations/" + str(nsb)):
-        os.mkdir(target_dir + "/DL2/Observations/" + str(nsb))
-
     process_name = "DL2_" + target_dir.split("/")[-2:][1] + str(nsb)
-    data_files_dir = target_dir + "/DL1/Observations/Coincident_stereo/" + str(nsb)
-    RFs_dir = (
-        "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/PG1553_nsb/RF/"
-        + str(nsb)
-    )  # then, RFs saved somewhere (as Julian's ones)
-    listOfDL1nights = np.sort(glob.glob(data_files_dir + "/*"))
-    print(data_files_dir)
-    for night in listOfDL1nights:
-        output = target_dir + f'/DL2/Observations/{nsb}/{night.split("/")[-1]}'
-        if not os.path.exists(output):
-            os.mkdir(output)
+    if not os.path.exists(target_dir + f"/v{__version__}/DL2"):
+        os.mkdir(target_dir + f"/v{__version__}/DL2")
 
-        listOfDL1Files = np.sort(glob.glob(night + "/*.h5"))
-        np.savetxt(night + "/list_of_DL1_stereo_files.txt", listOfDL1Files, fmt="%s")
-        process_size = len(listOfDL1Files) - 1
-        if process_size < 0:
-            continue
-        f = open(f'DL1_to_DL2_{nsb}_{night.split("/")[-1]}.sh', "w")
-        f.write("#!/bin/sh\n\n")
-        f.write("#SBATCH -p long\n")
-        f.write("#SBATCH -J " + process_name + "\n")
-        f.write(f"#SBATCH --array=0-{process_size}%100\n")
-        f.write("#SBATCH --mem=30g\n")
-        f.write("#SBATCH -N 1\n\n")
-        f.write("ulimit -l unlimited\n")
-        f.write("ulimit -s unlimited\n")
-        f.write("ulimit -a\n\n")
+    ST_list = [
+        os.path.basename(x)
+        for x in glob.glob(f"{target_dir}/v{__version__}/DL1CoincidentStereo/*")
+    ]
+    for p in ST_list:
+        print('period', p)
+        if not os.path.exists(
+            f"{target_dir}/v{__version__}/DL2/" + str(p)
+        ):
+            os.mkdir(f"{target_dir}/v{__version__}/DL2/" + str(p))
 
-        f.write(f"SAMPLE_LIST=($(<{night}/list_of_DL1_stereo_files.txt))\n")
-        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        f.write(f"export LOG={output}" + "/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(
-            f"conda run -n magic-lst python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
-        )
-        f.close()
+        if (
+            not os.path.exists(
+                f"{target_dir}/v{__version__}/DL2/"
+                + str(p)
+                + "/NSB"
+                + str(nsb)
+            )
+        ) and (
+            os.path.exists(
+                f"{target_dir}/v{__version__}/DL1CoincidentStereo/"
+                + str(p)
+                + "/NSB"
+                + str(nsb)
+            )
+        ):
+            os.mkdir(
+                f"{target_dir}/v{__version__}/DL2/"
+                + str(p)
+                + "/NSB"
+                + str(nsb)
+            )
+        data_files_dir = target_dir + f"/v{__version__}/DL1CoincidentStereo/"+ str(p)+ "/NSB"+ str(nsb) 
+        RFs_dir = "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/PG1553_nsb/RF/" + str(p)+"/NSB"+ str(nsb)  # then, RFs saved somewhere (as Julian's ones)
+        listOfDL1nights = np.sort(glob.glob(data_files_dir + "/*"))
+        print(data_files_dir)
+        for night in listOfDL1nights:
+            output = target_dir + f'/v{__version__}/DL2/{p}/NSB{nsb}/{night.split("/")[-1]}'
+            if not os.path.exists(output):
+                os.mkdir(output)
+            if not os.path.exists(output+"/logs"):
+                os.mkdir(output+"/logs")
+            listOfDL1Files = np.sort(glob.glob(night + "/*.h5"))
+            np.savetxt(output + "/logs/list_of_DL1_stereo_files.txt", listOfDL1Files, fmt="%s")
+            process_size = len(listOfDL1Files) - 1
+            if process_size < 0:
+                continue
+            f = open(f'{source}_DL1_to_DL2_{nsb}_{night.split("/")[-1]}.sh', "w")
+            f.write("#!/bin/sh\n\n")
+            f.write("#SBATCH -p long\n")
+            f.write("#SBATCH -J " + process_name + "\n")
+            f.write(f"#SBATCH --array=0-{process_size}%100\n")
+            f.write("#SBATCH --mem=30g\n")
+            f.write("#SBATCH -N 1\n\n")
+            f.write("ulimit -l unlimited\n")
+            f.write("ulimit -s unlimited\n")
+            f.write("ulimit -a\n\n")
+
+            f.write(f"SAMPLE_LIST=($(<{output}/logs/list_of_DL1_stereo_files.txt))\n")
+            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+            f.write(f"export LOG={output}" + "/logs/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n")
+            f.write(
+                f"conda run -n magic-lst python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
+            )
+            f.close()
 
 
 def main():
@@ -113,7 +138,7 @@ def main():
     print("nsb", nsb)
     for nsblvl in nsb:
         print("***** Generating bashscripts for DL2...")
-        DL1_to_2(scripts_dir, target_dir, nsblvl, args.config_file)
+        DL1_to_2(scripts_dir, target_dir, nsblvl, source, args.config_file)
 
         print("***** Running lst1_magic_dl1_stereo_to_dl2.py in the DL1 data files...")
         print("Process name: DL2_" + target_dir.split("/")[-2:][1] + str(nsblvl))
@@ -124,7 +149,7 @@ def main():
         )
 
         # Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-        list_of_DL1_to_2_scripts = np.sort(glob.glob(f"DL1_to_DL2_{nsblvl}*.sh"))
+        list_of_DL1_to_2_scripts = np.sort(glob.glob(f"{source}_DL1_to_DL2_{nsblvl}*.sh"))
         if len(list_of_DL1_to_2_scripts) < 1:
             continue
         print(list_of_DL1_to_2_scripts)

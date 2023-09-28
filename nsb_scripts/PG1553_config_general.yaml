@@ -9,7 +9,7 @@ mc_tel_ids:
 directories:
     workspace_dir : "/fefs/aswg/workspace/elisa.visentin" 
     scripts_dir : "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/NSB_WIP"
-    target_name   : PG1553
+    target_name   : PG1553A
 
 
 general:

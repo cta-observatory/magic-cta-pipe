@@ -14,13 +14,14 @@ import glob
 import yaml
 import logging
 from pathlib import Path
+from magicctapipe import __version__
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def MergeDL2(scripts_dir, target_dir, nsb):
+def MergeDL2(scripts_dir, target_dir, nsb, source):
     """
     This function creates the bash scripts to run merge_hdf_files.py in all DL2 subruns.
 
@@ -31,29 +32,37 @@ def MergeDL2(scripts_dir, target_dir, nsb):
     """
 
     process_name = "DL3_" + target_dir.split("/")[-2:][1]
+    ST_list = [
+        os.path.basename(x)
+        for x in glob.glob(f"{target_dir}/v{__version__}/DL2/*")
+    ]
+    print(ST_list)
+    for p in ST_list:
 
-    DL2_dir = target_dir + "/DL2/Observations/" + str(nsb)
+        DL2_dir = target_dir+f"/v{__version__}/DL2/"+ str(p)+ "/NSB"+ str(nsb)
+        list_of_nights = np.sort(glob.glob(DL2_dir + "/20*"))
+        print(DL2_dir)
 
-    list_of_nights = np.sort(glob.glob(DL2_dir + "/20*"))
+        f = open(f"{source}_DL3_{nsb}_{p}_0_merging.sh", "w")
+        f.write("#!/bin/sh\n\n")
+        f.write("#SBATCH -p short\n")
+        f.write("#SBATCH -J " + process_name + "\n")
+        f.write("#SBATCH -N 1\n\n")
+        f.write("ulimit -l unlimited\n")
+        f.write("ulimit -s unlimited\n")
+        f.write("ulimit -a\n\n")
 
-    f = open(f"DL3_{nsb}_0_merging.sh", "w")
-    f.write("#!/bin/sh\n\n")
-    f.write("#SBATCH -p short\n")
-    f.write("#SBATCH -J " + process_name + "\n")
-    f.write("#SBATCH -N 1\n\n")
-    f.write("ulimit -l unlimited\n")
-    f.write("ulimit -s unlimited\n")
-    f.write("ulimit -a\n\n")
+        for night in list_of_nights:
+            if not os.path.exists(night + "/Merged"):
+                os.mkdir(night + "/Merged")
+            if not os.path.exists(night + "/Merged/logs"):
+                os.mkdir(night + "/Merged/logs")
+            f.write(f"export LOG={night}/Merged/logs/merge.log\n")
+            f.write(
+                f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n"
+            )
 
-    for night in list_of_nights:
-        if not os.path.exists(night + "/Merged"):
-            os.mkdir(night + "/Merged")
-        f.write(f"export LOG={night}/Merged/merge.log\n")
-        f.write(
-            f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n"
-        )
-
-    f.close()
+        f.close()
 
 
 def main():
@@ -93,10 +102,11 @@ def main():
     print("nsb", nsb)
     for nsblvl in nsb:
         print("***** Merging DL2 files run-wise...")
-        MergeDL2(scripts_dir, target_dir, nsblvl)
+        MergeDL2(scripts_dir, target_dir, nsblvl, source)
 
     # Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-    list_of_DL1_to_2_scripts = np.sort(glob.glob("DL3_*_0_*.sh"))
+    list_of_DL1_to_2_scripts = np.sort(glob.glob(f"{source}_DL3_*_0_merging.sh"))
+    print(list_of_DL1_to_2_scripts)
     if len(list_of_DL1_to_2_scripts) < 1:
         return
     for n, run in enumerate(list_of_DL1_to_2_scripts):
