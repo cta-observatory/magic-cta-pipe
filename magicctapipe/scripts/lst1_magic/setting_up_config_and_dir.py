@@ -364,7 +364,7 @@ def main():
     parser.add_argument(
         "--analysis-type",
         "-t",
-        choices=['onlyMAGIC', 'onlyMC']
+        choices=['onlyMAGIC', 'onlyMC'],
         dest="analysis_type",
         type=str,
         default="doEverything",
