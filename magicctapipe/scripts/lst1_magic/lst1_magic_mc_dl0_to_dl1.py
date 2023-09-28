@@ -509,7 +509,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_step1.yaml",
+        default="./config.yaml",
         help="Path to a configuration file",
     )
     
