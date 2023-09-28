@@ -14,6 +14,7 @@ import glob
 import yaml
 import logging
 from pathlib import Path
+import argparse
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -38,7 +39,7 @@ def configfile_stereo(ids, target_dir):
     f.close()
     
      
-def bash_stereo(target_dir):
+def bash_stereo(target_dir, scripts_dir):
 
     """
     This function generates the bashscript for running the stereo analysis.
@@ -79,10 +80,10 @@ def bash_stereo(target_dir):
         f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n magic-lst python lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
+        f.write(f"conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
         f.close()
 
-def bash_stereoMC(target_dir, identification):
+def bash_stereoMC(target_dir, identification, scripts_dir):
 
     """
     This function generates the bashscript for running the stereo analysis.
@@ -121,7 +122,7 @@ def bash_stereoMC(target_dir, identification):
     f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
     f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
     f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-    f.write(f"conda run -n magic-lst python lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
+    f.write(f"conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
     f.close()
 
 
@@ -134,12 +135,26 @@ def main():
     Here we read the config_general.yaml file and call the functions defined above.
     """
     
-    
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
-    
     target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
+
+    scripts_dir = str(Path(config["directories"]["scripts_dir"])) 
+
     telescope_ids = list(config["mc_tel_ids"].values())
     
     print("***** Generating file config_stereo.yaml...")
@@ -147,13 +162,13 @@ def main():
     configfile_stereo(telescope_ids, target_dir)
     
     print("***** Generating the bashscript...")
-    bash_stereo(target_dir)
+    bash_stereo(target_dir, scripts_dir)
     
     print("***** Generating the bashscript for MCs...")
-    bash_stereoMC(target_dir,"gammadiffuse")
-    bash_stereoMC(target_dir,"gammas")
-    bash_stereoMC(target_dir,"protons")
-    bash_stereoMC(target_dir,"protons_test")
+    bash_stereoMC(target_dir,"gammadiffuse", scripts_dir)
+    bash_stereoMC(target_dir,"gammas", scripts_dir)
+    bash_stereoMC(target_dir,"protons", scripts_dir)
+    bash_stereoMC(target_dir,"protons_test", scripts_dir)
     
     print("***** Submitting processes to the cluster...")
     print("Process name: "+target_dir.split("/")[-2:][1]+"_stereo")

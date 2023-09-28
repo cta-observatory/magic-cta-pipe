@@ -21,6 +21,7 @@ import glob
 import yaml
 import logging
 from pathlib import Path
+import argparse
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -83,7 +84,7 @@ def linking_lst(target_dir, LST_runs, LST_version):
             f.close()
         
      
-def bash_coincident(target_dir):
+def bash_coincident(target_dir, scripts_dir):
 
     """
     This function generates the bashscript for running the coincidence analysis.
@@ -117,7 +118,7 @@ def bash_coincident(target_dir):
         f.write("SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write("export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n magic-lst python lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
+        f.write(f"conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
         f.close()
         
 
@@ -127,13 +128,27 @@ def main():
     """
     Here we read the config_general.yaml file and call the functions defined above.
     """
-    
-    
-    with open("config_general.yaml", "rb") as f:   # "rb" mode opens the file in binary format for reading
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+    
     
     telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
+
+    scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     
     LST_runs_and_dates = config["general"]["LST_runs"]
     LST_runs = np.genfromtxt(LST_runs_and_dates,dtype=str,delimiter=',')
@@ -149,7 +164,7 @@ def main():
     
     
     print("***** Generating the bashscript...")
-    bash_coincident(target_dir)
+    bash_coincident(target_dir, scripts_dir)
     
     
     print("***** Submitting processess to the cluster...")

@@ -16,6 +16,12 @@ entry_points["console_scripts"] = [
     "lst1_magic_train_rfs = magicctapipe.scripts.lst1_magic.lst1_magic_train_rfs:main",
     "magic_calib_to_dl1 = magicctapipe.scripts.lst1_magic.magic_calib_to_dl1:main",
     "merge_hdf_files = magicctapipe.scripts.lst1_magic.merge_hdf_files:main",
+    "setting_up_config_and_dir = magicctapipe.scripts.lst1_magic.setting_up_config_and_dir:main",
+    "merging_runs_and_splitting_training_samples = magicctapipe.scripts.lst1_magic.merging_runs_and_splitting_training_samples:main",
+    "coincident_events = magicctapipe.scripts.lst1_magic.coincident_events:main",
+    "stereo_events = magicctapipe.scripts.lst1_magic.stereo_events:main",
+
+
 ]
 
 tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
