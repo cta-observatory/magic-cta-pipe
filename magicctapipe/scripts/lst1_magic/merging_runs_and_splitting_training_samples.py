@@ -1,9 +1,9 @@
 """
-This script split the proton MC data sample into "train"
+This script splits the proton MC data sample into "train"
 and "test", deletes possible failed runs (only those files
 that end up with a size < 1 kB), and generates the bash 
 scripts to merge the data files calling the script "merge_hdf_files.py"
-in the follwoing order:
+in the following order:
 
 MAGIC:
 1) Merge the subruns into runs for M1 and M2 individually.
@@ -235,7 +235,7 @@ def main():
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',')
     
-    train_fraction = float(config["general"]["proton_train"])
+    train_fraction = float(config["general"]["proton_train_fraction"])
     
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     env_name = config["general"]["env_name"]

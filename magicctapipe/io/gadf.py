@@ -20,15 +20,12 @@ __all__ = [
     "create_pointing_hdu",
 ]
 
-
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 # The MJD reference time
 MJDREF = Time(0, format="unix", scale="utc")
-
-
 
 @u.quantity_input
 def create_gh_cuts_hdu(
@@ -130,7 +127,7 @@ def create_event_hdu(
     "LST1_M1": [1, 2],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
     "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-    }  #####TO BE REMOVED WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    }  #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
 
@@ -232,11 +229,6 @@ def create_event_hdu(
     event_hdu = fits.BinTableHDU(qtable, header=header, name="EVENTS")
 
     return event_hdu
-
-
-
-
-
 
 def create_gti_hdu(event_table):
     """

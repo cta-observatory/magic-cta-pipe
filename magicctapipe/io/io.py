@@ -65,7 +65,7 @@ def telescope_combinations(config):
     Parameters
     ----------
     config: dict
-        yaml file with information about the telescope IDs. Typically evoked from "config_general.yaml" in the main scripts.
+        yaml file with information about the telescope IDs.
 
     Returns
     -------
@@ -163,8 +163,7 @@ def get_stereo_events_old(
     "LST1_M1": [1, 2],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
     "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-    }  #####TO BE REMOVED WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    }  #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
     event_data_stereo = event_data.copy()
 
     # Apply the quality cuts
@@ -234,11 +233,13 @@ def get_stereo_events(
     event_data: pandas.core.frame.DataFrame
         Data frame of shower events
     config: dict 
-        Read from the yaml file with information about the telescope IDs. Typically called "config_general.yaml"
+        Read from the yaml file with information about the telescope IDs.
     quality_cuts: str
         Quality cuts applied to the input data
     group_index: list
         Index to group telescope events
+    eval_multi_combo: bool
+        If True, multiplicity is recalculated, combination type is assigned to each event and the fraction of events per combination type is shown
     
 
     Returns
@@ -514,7 +515,7 @@ def load_magic_dl1_data_files(input_dir, config):
     input_dir: str
         Path to a directory where input MAGIC DL1 data files are stored
     config: dict 
-        yaml file with information about the telescope IDs. Typically called "config_general.yaml"
+        yaml file with information about the telescope IDs. 
 
     Returns
     -------
@@ -618,7 +619,7 @@ def load_train_data_files(
     "LST1_M1": [1, 2],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
     "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-    }  #####TO BE REMOVED WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    } #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
 
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
@@ -680,7 +681,7 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
     input_dir: str
         Path to a directory where input DL1-stereo files are stored
     config: dict 
-        yaml file with information about the telescope IDs. Typically called "config_general.yaml"
+        yaml file with information about the telescope IDs. 
     offaxis_min: str
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`

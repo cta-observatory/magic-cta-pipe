@@ -1,14 +1,9 @@
-
-
 import numpy as np
-
-
 from ctapipe.image import (
     apply_time_delta_cleaning,   
     number_of_islands,
     tailcuts_clean,   
 )
-
 from lstchain.image.cleaning import apply_dynamic_cleaning
 from lstchain.image.modifier import (
     add_noise_in_pixels,

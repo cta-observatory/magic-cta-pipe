@@ -17,13 +17,13 @@ directories:
     MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
     
 general:
-    target_RA_deg : 83.633083 #RA in degrees
-    target_Dec_deg: 22.0145   #Dec in degrees
-    SimTel_version: "v1.4"    
-    LST_version   : "v0.9" 
-    focal_length  : "effective" #effective #nominal
-    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
-    LST_runs      : "LST_runs.txt"  
-    proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
-    env_name      : magic-lst
+    target_RA_deg          : 83.633083 #RA in degrees
+    target_Dec_deg         : 22.0145   #Dec in degrees
+    SimTel_version         : "v1.4"    
+    LST_version            : "v0.9" 
+    focal_length           : "effective" #effective #nominal
+    MAGIC_runs             : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
+    LST_runs               : "LST_runs.txt"  
+    proton_train_fraction  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
+    env_name               : magic-lst
     

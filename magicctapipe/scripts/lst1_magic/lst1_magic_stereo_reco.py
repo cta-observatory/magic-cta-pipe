@@ -60,15 +60,15 @@ logger.setLevel(logging.INFO)
 
 def calculate_pointing_separation(event_data, config):
     """
-    Calculates the angular distance of the LST-1 and MAGIC pointing
+    Calculates the angular distance of the LST and MAGIC pointing
     directions.
 
     Parameters
     ----------
     event_data: pandas.core.frame.DataFrame
-        Data frame of LST-1 and MAGIC events
+        Data frame of LST and MAGIC events
     config: dict
-        Configuration for the LST-1 + MAGIC analysis
+        Configuration for the LST + MAGIC analysis
     Returns
     -------
     theta: pandas.core.series.Series

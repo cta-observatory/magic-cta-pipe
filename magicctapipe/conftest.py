@@ -47,11 +47,9 @@ DL1_LST_data = ["dl1_LST-1.Run03265.0094.h5"]
 Temporary paths
 """
 
-
 @pytest.fixture(scope="session")
 def temp_DL1_gamma(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL1_gammas")
-        
+    return tmp_path_factory.mktemp("DL1_gammas")       
 
 
 @pytest.fixture(scope="session")
@@ -377,18 +375,18 @@ def dl1_lst(base_url, env_prefix):
 
 @pytest.fixture(scope="session")
 def config():
-    config_path = resource_file("config.yaml")
+    config_path = resource_file("test_config.yaml")
     return config_path
 
 
 @pytest.fixture(scope="session")
 def config_monly():
-    config_path = resource_file("config_monly.yaml")
+    config_path = resource_file("test_config_monly.yaml")
     return config_path
 
 @pytest.fixture(scope="session")
 def config_gen():
-    config_path = resource_file("config_general.yaml")
+    config_path = resource_file("test_config_general.yaml")
     with open(config_path, "rb") as f:
         config = yaml.safe_load(f)
     return config

@@ -93,7 +93,7 @@ def telescope_positions(config):
     Parameters
     ----------
     config: dict
-        dictionary generated from an yaml file with information about the telescope IDs. Typically evoked from "config_coincidence.yaml" in the main scripts.
+        dictionary generated from an yaml file with information about the telescope IDs.
         
     Returns
     -------

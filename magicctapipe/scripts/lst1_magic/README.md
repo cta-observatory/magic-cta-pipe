@@ -68,14 +68,15 @@ directories:
     MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
     
 general:
-    target_RA_deg : 83.633083 #RA in degrees
-    target_Dec_deg: 22.0145   #Dec in degrees
-    SimTel_version: "v1.4"    
-    LST_version   : "v0.9" 
-    focal_length  : "effective" #effective #nominal
-    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
-    LST_runs      : "LST_runs.txt"  
-    proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
+    target_RA_deg          : 83.633083 #RA in degrees
+    target_Dec_deg         : 22.0145   #Dec in degrees
+    SimTel_version         : "v1.4"    
+    LST_version            : "v0.9" 
+    focal_length           : "effective" #effective #nominal
+    MAGIC_runs             : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
+    LST_runs               : "LST_runs.txt"  
+    proton_train_fraction  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
+    env_name               : magic-lst
 
 ```
 
@@ -85,32 +86,7 @@ The file `MAGIC_runs.txt` looks like that:
 2020_11_19,5093175
 2020_12_08,5093491
 2020_12_08,5093492
-2020_12_16,5093711
-2020_12_16,5093712
-2020_12_16,5093713
-2020_12_16,5093714
-2021_02_14,5094483
-2021_02_14,5094484
-2021_02_14,5094485
-2021_02_14,5094486
-2021_02_14,5094487
-2021_02_14,5094488
-2021_03_16,5095265
-2021_03_16,5095266
-2021_03_16,5095267
-2021_03_16,5095268
-2021_03_16,5095271
-2021_03_16,5095272
-2021_03_16,5095273
-2021_03_16,5095277
-2021_03_16,5095278
-2021_03_16,5095281
-2021_03_18,5095376
-2021_03_18,5095377
-2021_03_18,5095380
-2021_03_18,5095381
-2021_03_18,5095382
-2021_03_18,5095383
+
 ```
 
 
@@ -120,19 +96,7 @@ The columns here represent the night and run in which you want to select data. P
 2020_11_18,2923
 2020_11_18,2924
 2020_12_07,3093
-2020_12_15,3265
-2020_12_15,3266
-2020_12_15,3267
-2020_12_15,3268
-2021_02_13,3631
-2021_02_13,3633
-2021_02_13,3634
-2021_02_13,3635
-2021_02_13,3636
-2021_03_15,4069
-2021_03_15,4070
-2021_03_15,4071
-2021_03_17,4125
+
 ```
 Note that the LST nights appear as being one day before MAGIC's!!! This is because LST saves the date at the beginning of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
@@ -189,7 +153,7 @@ Process name: merging_CrabTeste
 To check the jobs submitted to the cluster, type: squeue -n merging_CrabTeste
 ```
 
-This script will slice the proton MC sample according to the entry "proton_train" in the "config_general.yaml" file, and then it will merge the MAGIC data files in the following order:
+This script will slice the proton MC sample according to the entry "proton_train_fraction" in the "config_general.yaml" file, and then it will merge the MAGIC data files in the following order:
 - MAGIC subruns are merged into single runs.  
 - MAGIC I and II runs are merged (only if both telescopes are used, of course).  
 - All runs in specific nights are merged, such that in the end we have only one datafile per night.  
