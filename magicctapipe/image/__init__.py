@@ -21,5 +21,6 @@ __all__ = [
     "clean_image_params",
     "get_leakage",
     "Calibrate_LST", 
-    "Calibrate_MAGIC"
+    "Calibrate_MAGIC",
+    "Calibrate"
 ]
