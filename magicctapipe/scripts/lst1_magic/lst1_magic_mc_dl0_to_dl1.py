@@ -44,9 +44,7 @@ from ctapipe.image import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
-from lstchain.image.modifier import (    
-    set_numba_seed,
-)
+
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.calib import Calibrate_LST, Calibrate_MAGIC
 from magicctapipe.io import SimEventInfoContainer, format_object
@@ -129,14 +127,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     logger.info("\nLST PSF modifier:")
     logger.info(format_object(config_lst["increase_psf"]))
 
-    increase_nsb = config_lst["increase_nsb"].pop("use")
-    increase_psf = config_lst["increase_psf"]["use"]
-
-    if increase_nsb:
-        rng = np.random.default_rng(obs_id)
-
-    if increase_psf:
-        set_numba_seed(obs_id)
+    
 
     logger.info("\nLST tailcuts cleaning:")
     logger.info(format_object(config_lst["tailcuts_clean"]))
@@ -147,8 +138,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     logger.info("\nLST dynamic cleaning:")
     logger.info(format_object(config_lst["dynamic_cleaning"]))
 
-    use_time_delta_cleaning = config_lst["time_delta_cleaning"].pop("use")
-    use_dynamic_cleaning = config_lst["dynamic_cleaning"].pop("use")
+    
 
     use_only_main_island = config_lst["use_only_main_island"]
     logger.info(f"\nLST use only main island: {use_only_main_island}")
@@ -242,7 +232,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
                 if tel_id in LSTs_IDs:   ##If the ID is in the LST list, we call Calibrate_LST()
                     # Calibrate the LST-1 event
-                    signal_pixels, image, peak_time = Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, increase_nsb, use_time_delta_cleaning, use_dynamic_cleaning)   
+                    signal_pixels, image, peak_time = Calibrate_LST(event, tel_id, obs_id, config_lst, camera_geoms, calibrator_lst)   
                 elif tel_id in MAGICs_IDs:
                     # Calibrate the MAGIC event
                     signal_pixels, image, peak_time = Calibrate_MAGIC(event, tel_id, config_magic, magic_clean, calibrator_magic)

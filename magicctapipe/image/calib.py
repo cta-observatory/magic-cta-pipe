@@ -7,14 +7,16 @@ from ctapipe.image import (
 from lstchain.image.cleaning import apply_dynamic_cleaning
 from lstchain.image.modifier import (
     add_noise_in_pixels,
-    random_psf_smearer,    
+    random_psf_smearer,  
+    set_numba_seed  
 )
+
 
 __all__ = [
     "Calibrate_LST", "Calibrate_MAGIC"
 ]
 
-def Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, increase_nsb, use_time_delta_cleaning, use_dynamic_cleaning ):
+def Calibrate_LST(event, tel_id, obs_id, config_lst, camera_geoms, calibrator_lst):
 
     """
     This function computes and returns some information for a single event of a telescope of LST type
@@ -24,21 +26,16 @@ def Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, 
     event: event 
         From an EventSource
     tel_id: int
-        telescope ID 
-    rng: numpy Random Generator
-        If increase_nsb=True, used to add noise in camera pixels
+        Telescope ID 
+    obs_id: int
+        Observation ID
     config_lst: dictionary
         Parameters for image extraction and calibration
     camera_geoms: telescope.camera.geometry
         Camera geometry
     calibrator_lst: CameraCalibrator (ctapipe.calib)
         ctapipe object needed to calibrate the camera
-    increase_nsb: bool
-        Whether to add noise in camera pixels
-    use_time_delta_cleaning: bool
-        Whether to use this kind of cleaning  (cf. ctapipe)
-    use_dynamic_cleaning: bool
-        Whether to use this kind of cleaning  (cf. lstchain)
+    
 
     Returns
     -------
@@ -53,15 +50,18 @@ def Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, 
 
     image = event.dl1.tel[tel_id].image.astype(np.float64)
     peak_time = event.dl1.tel[tel_id].peak_time.astype(np.float64)
-    
+    increase_nsb = config_lst["increase_nsb"].pop("use")
     increase_psf = config_lst["increase_psf"]["use"]
-    use_only_main_island = config_lst["use_only_main_island"]
+    use_time_delta_cleaning = config_lst["time_delta_cleaning"].pop("use")
+    use_dynamic_cleaning = config_lst["dynamic_cleaning"].pop("use")
     
     if increase_nsb:
+        rng = np.random.default_rng(obs_id)
         # Add extra noise in pixels
         image = add_noise_in_pixels(rng, image, **config_lst["increase_nsb"])
 
     if increase_psf:
+        set_numba_seed(obs_id)
         # Smear the image
         image = random_psf_smearer(
             image=image,
