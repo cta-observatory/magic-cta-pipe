@@ -18,10 +18,10 @@ If you want to run only the MAGIC or only the MC conversion,
 you can do as follows:
 
 Only MAGIC:
-$ python setting_up_config_and_dir.py --partial-analysis onlyMAGIC
+$ python setting_up_config_and_dir.py --analysis type onlyMAGIC
 
 Only MC:
-$ python setting_up_config_and_dir.py --partial-analysis onlyMC
+$ python setting_up_config_and_dir.py --analysis type onlyMC
 
 """
 
@@ -114,7 +114,7 @@ def config_file_gen(ids, target_dir):
    
 
 
-def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version, focal_length, scripts_dir):
+def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version, focal_length, scripts_dir, env_name):
 
     """
     This function creates the lists list_nodes_gamma_complete.txt and list_folder_gamma.txt with the MC file paths.
@@ -194,7 +194,7 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
         'cat list_dl0_ok.txt | while read line\n',
         'do\n',
         '    cd '+target_dir+'/../\n',
-        f'    conda run -n magic-lst python {scripts_dir}/lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_DL0_to_DL1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n',
+        f'    conda run -n {env_name} python {scripts_dir}/lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_DL0_to_DL1.yaml --focal_length_choice '+focal_length+ '>>$LOG 2>&1\n\n',
         'done\n',
         ""]
         f.writelines(lines_of_config_file)
@@ -203,7 +203,7 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     
     
     
-def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir):
+def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir, env_name):
 
     """
     Below we create a bash script that links the the MAGIC data paths to each subdirectory. 
@@ -257,7 +257,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir)
                     'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
                     'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
                     'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
-                    f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
+                    f'conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
                     ""]
                     f.writelines(lines_of_config_file)
                    
@@ -282,7 +282,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir)
                     'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
                     'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
                     'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
-                    f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
+                    f'conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
                     ""]
                     f.writelines(lines_of_config_file)
                 
@@ -408,6 +408,7 @@ def main():
     MC_gammadiff = str(Path(config["directories"]["MC_gammadiff"]))
 
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
+    env_name = config["general"]["env_name"]
     
     
     print("***** Linking MC paths - this may take a few minutes ******")
@@ -420,11 +421,11 @@ def main():
     
     #Below we run the analysis on the MC data
     if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):       
-        lists_and_bash_generator("gammas", target_dir, MC_gammas, SimTel_version, focal_length, scripts_dir) #gammas
-        #lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, focal_length, scripts_dir) #electrons
-        #lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, focal_length, scripts_dir) #helium
-        lists_and_bash_generator("protons", target_dir, MC_protons, SimTel_version, focal_length, scripts_dir) #protons
-        lists_and_bash_generator("gammadiffuse", target_dir, MC_gammadiff, SimTel_version, focal_length, scripts_dir) #gammadiffuse
+        lists_and_bash_generator("gammas", target_dir, MC_gammas, SimTel_version, focal_length, scripts_dir, env_name) #gammas
+        #lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, focal_length, scripts_dir, env_name) #electrons
+        #lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, focal_length, scripts_dir, env_name) #helium
+        lists_and_bash_generator("protons", target_dir, MC_protons, SimTel_version, focal_length, scripts_dir, env_name) #protons
+        lists_and_bash_generator("gammadiffuse", target_dir, MC_gammadiff, SimTel_version, focal_length, scripts_dir, env_name) #gammadiffuse
         
         #Here we do the MC DL0 to DL1 conversion:
         list_of_MC = glob.glob("linking_MC_*s.sh")
@@ -442,7 +443,7 @@ def main():
     
     #Below we run the analysis on the MAGIC data
     if (args.analysis_type=='onlyMAGIC') or (args.analysis_type=='doEverything'):  
-        lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir) #MAGIC real data
+        lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir, env_name) #MAGIC real data
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             
             list_of_MAGIC_runs = glob.glob("MAGIC-*.sh")

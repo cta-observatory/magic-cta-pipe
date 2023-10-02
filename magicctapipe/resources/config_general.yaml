@@ -25,4 +25,5 @@ general:
     MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
     LST_runs      : "LST_runs.txt"  
     proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
+    env_name      : magic-lst
     
