@@ -37,17 +37,17 @@ def config_file_gen(ids, target_dir):
     """
     Here we create the configuration file needed for transforming DL0 into DL1
     """
-    with open(target_dir+'/config_DL0_to_DL1.yaml','w') as f:
+    with open(f'{target_dir}/config_DL0_to_DL1.yaml','w') as f:
     
-        #f.write("directories:\n    target: "+target_dir+"\n\n")    
+        #f.write(f"directories:\n    target: {target_dir}\n\n")    
         lines_of_config_file = [
         "mc_tel_ids:",
-        "\n    LST-1: "+str(ids[0]),
-        "\n    LST-2: "+str(ids[1]),
-        "\n    LST-3: "+str(ids[2]),
-        "\n    LST-4: "+str(ids[3]),
-        "\n    MAGIC-I: "+str(ids[4]),
-        "\n    MAGIC-II: "+str(ids[5]),
+        f"\n    LST-1: {ids[0]}",
+        f"\n    LST-2: {ids[1]}",
+        f"\n    LST-3: {ids[2]}",
+        f"\n    LST-4: {ids[3]}",
+        f"\n    MAGIC-I: {ids[4]}",
+        f"\n    MAGIC-II: {ids[5]}",
         "\n",
         "\nLST:",
         "\n    image_extractor:",
@@ -124,16 +124,16 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     
     process_name = target_dir.split("/")[-2:][1]
     
-    list_of_nodes = glob.glob(MC_path+"/node*")
-    with open(target_dir+f"/list_nodes_{particle_type}_complete.txt","w") as f:# creating list_nodes_gammas_complete.txt
+    list_of_nodes = glob.glob(f"{MC_path}/node*")
+    with open(f"{target_dir}/list_nodes_{particle_type}_complete.txt","w") as f:# creating list_nodes_gammas_complete.txt
         for i in list_of_nodes:
-            f.write(i+"/output_"+SimTel_version+"\n")   
+            f.write(f"{i}/output_{SimTel_version}\n")   
     
     
     
-    with open(target_dir+f"/list_folder_{particle_type}.txt","w") as f:# creating list_folder_gammas.txt
+    with open(f"{target_dir}/list_folder_{particle_type}.txt","w") as f:# creating list_folder_gammas.txt
         for i in list_of_nodes:
-            f.write(i.split("/")[-1]+"\n")   
+            f.write(f'{i.split("/")[-1]}\n')   
     
    
     
@@ -145,23 +145,23 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
         lines_of_config_file = [
         "#!/bin/sh\n\n",
         "#SBATCH -p short\n",
-        "#SBATCH -J "+process_name+"\n\n",
+        f"#SBATCH -J {process_name}\n\n",
         "#SBATCH -N 1\n\n",
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
         "while read -r -u 3 lineA && read -r -u 4 lineB\n",
         "do\n",
-        "    cd "+target_dir+f"/DL1/MC/{particle_type}\n",
+        f"    cd {target_dir}/DL1/MC/{particle_type}\n",
         "    mkdir $lineB\n",
         "    cd $lineA\n",
         "    ls -lR *.gz |wc -l\n",
-        "    ls *.gz > "+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n",
+        f"    ls *.gz > {target_dir}/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n",
         '    string=$lineA"/"\n',
-        "    export file="+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n\n",
-        "    cat $file | while read line; do echo $string${line} >>"+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0_ok.txt; done\n\n",
+        f"    export file={target_dir}/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n\n",
+        "    cat $file | while read line; do echo $string${line}".join(f" >>{target_dir}/DL1/MC/{particle_type}/$lineB/list_dl0_ok.txt; done\n\n"),
         '    echo "folder $lineB  and node $lineA"\n',
-        'done 3<"'+target_dir+f'/list_nodes_{particle_type}_complete.txt" 4<"'+target_dir+f'/list_folder_{particle_type}.txt"\n',
+        f'done 3<"{target_dir}/list_nodes_{particle_type}_complete.txt" 4<"{target_dir}/list_folder_{particle_type}.txt"\n',
         ""]
         f.writelines(lines_of_config_file)
    
@@ -171,30 +171,30 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     ############################ bash script that applies lst1_magic_mc_dl0_to_dl1.py to all MC data files. 
     ################################################################################################################
     
-    number_of_nodes = glob.glob(MC_path+"/node*")
+    number_of_nodes = glob.glob(f"{MC_path}/node*")
     number_of_nodes = len(number_of_nodes) -1
     
     with open(f"linking_MC_{particle_type}_paths_r.sh","w") as f:
         lines_of_config_file = [
         '#!/bin/sh\n\n',
         '#SBATCH -p xxl\n',
-        '#SBATCH -J '+process_name+'\n',
-        '#SBATCH --array=0-'+str(number_of_nodes)+'%50\n',
+        f'#SBATCH -J {process_name}\n',
+        f'#SBATCH --array=0-{number_of_nodes}%50\n',
         '#SBATCH --mem=10g\n',
         '#SBATCH -N 1\n\n',
         'ulimit -l unlimited\n',
         'ulimit -s unlimited\n',
         'ulimit -a\n',
-        'cd '+target_dir+f'/DL1/MC/{particle_type}\n\n',
-        'export INF='+target_dir+'\n',
+        f'cd {target_dir}/DL1/MC/{particle_type}\n\n',
+        f'export INF={target_dir}\n',
         f'SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n',
         'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n',
         'cd $SAMPLE\n\n',
-        'export LOG='+target_dir+f'/DL1/MC/{particle_type}'+'/simtel_{$SAMPLE}_all.log\n',
+        f'export LOG={target_dir}/DL1/MC/{particle_type}'.join('/simtel_{$SAMPLE}_all.log\n'),
         'cat list_dl0_ok.txt | while read line\n',
         'do\n',
-        '    cd '+target_dir+'/../\n',
-        f'    conda run -n {env_name} python {scripts_dir}/lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_DL0_to_DL1.yaml --focal_length_choice '+focal_length+ '>>$LOG 2>&1\n\n',
+        f'    cd {target_dir}/../\n',
+        f'    conda run -n {env_name} python {scripts_dir}/lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir {target_dir}/DL1/MC/{particle_type}/$SAMPLE --config-file {target_dir}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n',
         'done\n',
         ""]
         f.writelines(lines_of_config_file)
@@ -214,7 +214,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir,
     with open("linking_MAGIC_data_paths.sh","w") as f:
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p short\n')
-        f.write('#SBATCH -J '+process_name+'\n')
+        f.write(f'#SBATCH -J {process_name}\n')
         f.write('#SBATCH -N 1\n\n')
         f.write('ulimit -l unlimited\n')
         f.write('ulimit -s unlimited\n')
@@ -222,16 +222,16 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir,
         
         if telescope_ids[-1] > 0:
             for i in MAGIC_runs:
-                f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
-                f.write('export OUT1='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n')
-                f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
+                f.write(f'export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n')
+                f.write(f'export OUT1={target_dir}/DL1/Observations/M2/{i[0]}/{i[1]}\n')
+                f.write(f'ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n')
         
         f.write('\n')
         if telescope_ids[-2] > 0:
             for i in MAGIC_runs:
-                f.write('export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
-                f.write('export OUT1='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n')
-                f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
+                f.write(f'export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n')
+                f.write(f'export OUT1={target_dir}/DL1/Observations/M1/{i[0]}/{i[1]}\n')
+                f.write(f'ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n')
         
   
     
@@ -239,50 +239,50 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir,
         for i in MAGIC_runs:
             if telescope_ids[-1] > 0:
             
-                number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
+                number_of_nodes = glob.glob(f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root')
                 number_of_nodes = len(number_of_nodes) - 1 
                 
                 with open(f"MAGIC-II_dl0_to_dl1_run_{i[1]}.sh","w") as f:
                     lines_of_config_file = [
                     '#!/bin/sh\n\n',
                     '#SBATCH -p long\n',
-                    '#SBATCH -J '+process_name+'\n',
-                    '#SBATCH --array=0-'+str(number_of_nodes)+'\n',     
+                    f'#SBATCH -J {process_name}\n',
+                    f'#SBATCH --array=0-{number_of_nodes}\n',     
                     '#SBATCH -N 1\n\n',
                     'ulimit -l unlimited\n',
                     'ulimit -s unlimited\n',
                     'ulimit -a\n\n',
-                    'export OUTPUTDIR='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n',
-                    'cd '+target_dir+'/../\n',
+                    f'export OUTPUTDIR={target_dir}/DL1/Observations/M2/{i[0]}/{i[1]}\n',
+                    f'cd {target_dir}/../\n',
                     'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
                     'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
                     'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
-                    f'conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
+                    f'conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
                     ""]
                     f.writelines(lines_of_config_file)
                    
                 
             if telescope_ids[-2] > 0:
                 
-                number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
+                number_of_nodes = glob.glob(f'/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root')
                 number_of_nodes = len(number_of_nodes) - 1 
                 
                 with open(f"MAGIC-I_dl0_to_dl1_run_{i[1]}.sh","w") as f:
                     lines_of_config_file = [
                     '#!/bin/sh\n\n',
                     '#SBATCH -p long\n',
-                    '#SBATCH -J '+process_name+'\n',
-                    '#SBATCH --array=0-'+str(number_of_nodes)+'\n',  
+                    f'#SBATCH -J {process_name}\n',
+                    f'#SBATCH --array=0-{number_of_nodes}\n',  
                     '#SBATCH -N 1\n\n',
                     'ulimit -l unlimited\n',
                     'ulimit -s unlimited\n',
                     'ulimit -a\n\n',
-                    'export OUTPUTDIR='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n',
-                    'cd '+target_dir+'/../\n',
+                    f'export OUTPUTDIR={target_dir}/DL1/Observations/M1/{i[0]}/{i[1]}\n',
+                    f'cd {target_dir}/../\n',
                     'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
                     'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
                     'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
-                    f'conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
+                    f'conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
                     ""]
                     f.writelines(lines_of_config_file)
                 
@@ -300,27 +300,27 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
         
     if not os.path.exists(target_dir):
         os.mkdir(target_dir)
-        os.mkdir(target_dir+"/DL1")
-        os.mkdir(target_dir+"/DL1/Observations")
-        os.mkdir(target_dir+"/DL1/MC")
-        os.mkdir(target_dir+"/DL1/MC/gammas")
-        os.mkdir(target_dir+"/DL1/MC/gammadiffuse")
-        os.mkdir(target_dir+"/DL1/MC/electrons")
-        os.mkdir(target_dir+"/DL1/MC/protons")
-        os.mkdir(target_dir+"/DL1/MC/helium")
+        os.mkdir(f"{target_dir}/DL1")
+        os.mkdir(f"{target_dir}/DL1/Observations")
+        os.mkdir(f"{target_dir}/DL1/MC")
+        os.mkdir(f"{target_dir}/DL1/MC/gammas")
+        os.mkdir(f"{target_dir}/DL1/MC/gammadiffuse")
+        os.mkdir(f"{target_dir}/DL1/MC/electrons")
+        os.mkdir(f"{target_dir}/DL1/MC/protons")
+        os.mkdir(f"{target_dir}/DL1/MC/helium")
     else:
-        overwrite = input("MC directory for "+target_dir.split("/")[-1]+" already exists. Would you like to overwrite it? [only 'y' or 'n']: ")
+        overwrite = input(f'MC directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: ')
         if overwrite == "y":
-            os.system("rm -r "+target_dir)
+            os.system(f"rm -r {target_dir}")
             os.mkdir(target_dir)
-            os.mkdir(target_dir+"/DL1")
-            os.mkdir(target_dir+"/DL1/Observations")
-            os.mkdir(target_dir+"/DL1/MC")
-            os.mkdir(target_dir+"/DL1/MC/gammas")
-            os.mkdir(target_dir+"/DL1/MC/gammadiffuse")
-            os.mkdir(target_dir+"/DL1/MC/electrons")
-            os.mkdir(target_dir+"/DL1/MC/protons")
-            os.mkdir(target_dir+"/DL1/MC/helium")
+            os.mkdir(f"{target_dir}/DL1")
+            os.mkdir(f"{target_dir}/DL1/Observations")
+            os.mkdir(f"{target_dir}/DL1/MC")
+            os.mkdir(f"{target_dir}/DL1/MC/gammas")
+            os.mkdir(f"{target_dir}/DL1/MC/gammadiffuse")
+            os.mkdir(f"{target_dir}/DL1/MC/electrons")
+            os.mkdir(f"{target_dir}/DL1/MC/protons")
+            os.mkdir(f"{target_dir}/DL1/MC/helium")
         else:
             print("Directory not modified.")
     
@@ -331,24 +331,24 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
     ###########################################
     
     if telescope_ids[-1] > 0:    
-        if not os.path.exists(target_dir+"/DL1/Observations/M2"):
-            os.mkdir(target_dir+"/DL1/Observations/M2")
+        if not os.path.exists(f"{target_dir}/DL1/Observations/M2"):
+            os.mkdir(f"{target_dir}/DL1/Observations/M2")
             for i in MAGIC_runs:
-                if not os.path.exists(target_dir+"/DL1/Observations/M2/"+i[0]):
-                    os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0])
-                    os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1])
+                if not os.path.exists(f"{target_dir}/DL1/Observations/M2/{i[0]}"):
+                    os.mkdir(f"{target_dir}/DL1/Observations/M2/{i[0]}")
+                    os.mkdir(f"{target_dir}/DL1/Observations/M2/{i[0]}/{i[1]}")
                 else:
-                    os.mkdir(target_dir+"/DL1/Observations/M2/"+i[0]+"/"+i[1])
+                    os.mkdir(f"{target_dir}/DL1/Observations/M2/{i[0]}/{i[1]}")
     
     if telescope_ids[-2] > 0:
-        if not os.path.exists(target_dir+"/DL1/Observations/M1"):
-            os.mkdir(target_dir+"/DL1/Observations/M1")
+        if not os.path.exists(f"{target_dir}/DL1/Observations/M1"):
+            os.mkdir(f"{target_dir}/DL1/Observations/M1")
             for i in MAGIC_runs:
-                if not os.path.exists(target_dir+"/DL1/Observations/M1/"+i[0]):
-                    os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0])
-                    os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1])
+                if not os.path.exists(f"{target_dir}/DL1/Observations/M1/{i[0]}"):
+                    os.mkdir(f"{target_dir}/DL1/Observations/M1/{i[0]}")
+                    os.mkdir(f"{target_dir}/DL1/Observations/M1/{i[0]}/{i[1]}")
                 else:
-                    os.mkdir(target_dir+"/DL1/Observations/M1/"+i[0]+"/"+i[1])
+                    os.mkdir(f"{target_dir}/DL1/Observations/M1/{i[0]}/{i[1]}")
     
 
 
@@ -400,7 +400,7 @@ def main():
     focal_length = config["general"]["focal_length"]
     
     #Below we read the data paths
-    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
+    target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
     MC_gammas  = str(Path(config["directories"]["MC_gammas"]))
     #MC_electrons = str(Path(config["directories"]["MC_electrons"]))
     #MC_helium = str(Path(config["directories"]["MC_helium"]))
@@ -436,7 +436,7 @@ def main():
             if n == 0:
                 launch_jobs_MC =  f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
             else:
-                launch_jobs_MC = launch_jobs_MC + f" && linking{n}=$(sbatch --parsable --dependency=afterany:$running{n-1} {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+                launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable --dependency=afterany:$running{n-1} {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
         
         
         os.system(launch_jobs_MC)
@@ -452,7 +452,7 @@ def main():
                 if n == 0:
                     launch_jobs =  f"linking=$(sbatch --parsable linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
                 else:
-                    launch_jobs = launch_jobs + f" && RES{n}=$(sbatch --parsable --dependency=afterany:$RES{n-1} {run})"
+                    launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$RES{n-1} {run})"
             
             os.system(launch_jobs)
         

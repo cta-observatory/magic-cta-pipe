@@ -51,7 +51,7 @@ def cleaning(list_of_nodes, target_dir):
         os.chdir(list_of_nodes[i])
         os.system('find . -type f -name "*.h5" -size -1k -delete')
     
-    os.chdir(target_dir+"/../")
+    os.chdir(f"{target_dir}/../")
     print("Cleaning done.")
 
 def split_train_test(target_dir, train_fraction):
@@ -69,28 +69,28 @@ def split_train_test(target_dir, train_fraction):
         Fraction of proton MC files to be used in the training RF dataset
     """
     
-    proton_dir = target_dir+"/DL1/MC/protons"
+    proton_dir = f"{target_dir}/DL1/MC/protons"
     
-    if not os.path.exists(proton_dir+"/train"):
-        os.mkdir(proton_dir+"/train")
-    if not os.path.exists(proton_dir+"/../protons_test"):
-        os.mkdir(proton_dir+"/../protons_test")
+    if not os.path.exists(f"{proton_dir}/train"):
+        os.mkdir(f"{proton_dir}/train")
+    if not os.path.exists(f"{proton_dir}/../protons_test"):
+        os.mkdir(f"{proton_dir}/../protons_test")
     
-    list_of_dir = np.sort(glob.glob(proton_dir+'/node*' + os.path.sep))
+    list_of_dir = np.sort(glob.glob(f'{proton_dir}/node*{os.path.sep}'))
     
     for directory in tqdm(range(len(list_of_dir))):   #tqdm allows us to print a progessbar in the terminal
-        if not os.path.exists(proton_dir+"/train/"+list_of_dir[directory].split("/")[-2]):
-            os.mkdir(proton_dir+"/train/"+list_of_dir[directory].split("/")[-2])
-        if not os.path.exists(proton_dir+"/../protons_test/"+list_of_dir[directory].split("/")[-2]):
-            os.mkdir(proton_dir+"/../protons_test/"+list_of_dir[directory].split("/")[-2])
-        list_of_runs = np.sort(glob.glob(proton_dir+"/"+list_of_dir[directory].split("/")[-2]+"/*.h5"))
+        if not os.path.exists(f"{proton_dir}/train/{list_of_dir[directory].split('/')[-2]}"):
+            os.mkdir(f"{proton_dir}/train/{list_of_dir[directory].split('/')[-2]}")
+        if not os.path.exists(f"{proton_dir}/../protons_test/{list_of_dir[directory].split('/')[-2]}"):
+            os.mkdir(f'{proton_dir}/../protons_test/{list_of_dir[directory].split("/")[-2]}')
+        list_of_runs = np.sort(glob.glob(f'{proton_dir}/{list_of_dir[directory].split("/")[-2]}/*.h5'))
         split_percent = int(len(list_of_runs)*train_fraction)
         for j in list_of_runs[0:split_percent]:
-            os.system(f"mv {j} {proton_dir}/train/"+list_of_dir[directory].split("/")[-2])
+            os.system(f"mv {j} {proton_dir}/train/{list_of_dir[directory].split('/')[-2]}")
         
-        os.system(f"cp {list_of_dir[directory]}*.txt "+proton_dir+"/train/"+list_of_dir[directory].split("/")[-2])
-        os.system(f"mv {list_of_dir[directory]}*.txt "+proton_dir+"/../protons_test/"+list_of_dir[directory].split("/")[-2])
-        os.system(f"mv {list_of_dir[directory]}*.h5 "+proton_dir+"/../protons_test/"+list_of_dir[directory].split("/")[-2])
+        os.system(f"cp {list_of_dir[directory]}*.txt {proton_dir}/train/{list_of_dir[directory].split('/')[-2]}")
+        os.system(f"mv {list_of_dir[directory]}*.txt {proton_dir}/../protons_test/{list_of_dir[directory].split('/')[-2]}")
+        os.system(f"mv {list_of_dir[directory]}*.h5 {proton_dir}/../protons_test/{list_of_dir[directory].split('/')[-2]}")
         os.system(f"rm -r {list_of_dir[directory]}")
 
 def merge(target_dir, identification, MAGIC_runs, scripts_dir, env_name):
@@ -108,48 +108,48 @@ def merge(target_dir, identification, MAGIC_runs, scripts_dir, env_name):
         This matrix is imported from config_general.yaml and tells the function where to find the data and where to put the merged files
     """
     
-    process_name = "merging_"+target_dir.split("/")[-2:][1]
+    process_name = f"merging_{target_dir.split('/')[-2:][1]}"
     
-    MAGIC_DL1_dir = target_dir+"/DL1/Observations"
-    if os.path.exists(MAGIC_DL1_dir+"/M1") & os.path.exists(MAGIC_DL1_dir+"/M2"):
-        if not os.path.exists(MAGIC_DL1_dir+"/Merged"):
-            os.mkdir(MAGIC_DL1_dir+"/Merged")
+    MAGIC_DL1_dir = f"{target_dir}/DL1/Observations"
+    if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(f"{MAGIC_DL1_dir}/M2"):
+        if not os.path.exists(f"{MAGIC_DL1_dir}/Merged"):
+            os.mkdir(f"{MAGIC_DL1_dir}/Merged")
     
     with open(f"Merge_{identification}.sh","w") as f:
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p short\n')
-        f.write('#SBATCH -J '+process_name+'\n')
+        f.write(f'#SBATCH -J {process_name}\n')
         f.write('#SBATCH -N 1\n\n')
         f.write('ulimit -l unlimited\n')
         f.write('ulimit -s unlimited\n')
         f.write('ulimit -a\n\n')
         
         if identification == "0_subruns":
-            if os.path.exists(MAGIC_DL1_dir+"/M1"):
+            if os.path.exists(f"{MAGIC_DL1_dir}/M1"):
                 for i in MAGIC_runs:
-                    if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}"):
+                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
-                    if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
+                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
                     f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
                         
-            if os.path.exists(MAGIC_DL1_dir+"/M2"):
+            if os.path.exists(f"{MAGIC_DL1_dir}/M2"):
                 for i in MAGIC_runs:
-                    if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}"):
+                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
-                    if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/{i[1]}"):
+                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
                     f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
         
         elif identification == "1_M1M2":
-            if os.path.exists(MAGIC_DL1_dir+"/M1") & os.path.exists(MAGIC_DL1_dir+"/M2"):
+            if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(f"{MAGIC_DL1_dir}/M2"):
                 for i in MAGIC_runs:
-                    if not os.path.exists(MAGIC_DL1_dir+f"/Merged/{i[0]}/Merged"):
+                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged") 
                     f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
         else:
             for i in MAGIC_runs:
-                if not os.path.exists(MAGIC_DL1_dir+f"/Merged/Merged_{i[0]}"):
+                if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i[0]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i[0]}")  #Creating a merged directory for each night
                 f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
         
@@ -170,18 +170,18 @@ def mergeMC(target_dir, identification, scripts_dir, env_name):
         Tells which batch to create. Options: protons, gammadiffuse
     """
     
-    process_name = "merging_"+target_dir.split("/")[-2:][1]
+    process_name = f"merging_{target_dir.split('/')[-2:][1]}"
     
-    MC_DL1_dir = target_dir+"/DL1/MC"
-    if not os.path.exists(MC_DL1_dir+f"/{identification}/Merged"):
-        os.mkdir(MC_DL1_dir+f"/{identification}/Merged")
+    MC_DL1_dir = f"{target_dir}/DL1/MC"
+    if not os.path.exists(f"{MC_DL1_dir}/{identification}/Merged"):
+        os.mkdir(f"{MC_DL1_dir}/{identification}/Merged")
     
     if identification == "protons":
-        list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/train/node*"))
+        list_of_nodes = np.sort(glob.glob(f"{MC_DL1_dir}/{identification}/train/node*"))
     else: 
-        list_of_nodes = np.sort(glob.glob(MC_DL1_dir+f"/{identification}/node*"))
+        list_of_nodes = np.sort(glob.glob(f"{MC_DL1_dir}/{identification}/node*"))
     
-    np.savetxt(MC_DL1_dir+f"/{identification}/list_of_nodes.txt",list_of_nodes, fmt='%s')
+    np.savetxt(f"{MC_DL1_dir}/{identification}/list_of_nodes.txt",list_of_nodes, fmt='%s')
     
         
     process_size = len(list_of_nodes) - 1
@@ -191,7 +191,7 @@ def mergeMC(target_dir, identification, scripts_dir, env_name):
     with open(f"Merge_{identification}.sh","w") as f:
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p short\n')
-        f.write('#SBATCH -J '+process_name+'\n')
+        f.write(f'#SBATCH -J {process_name}n')
         f.write(f"#SBATCH --array=0-{process_size}%50\n")
         f.write('#SBATCH --mem=7g\n')
         f.write('#SBATCH -N 1\n\n')
@@ -201,7 +201,7 @@ def mergeMC(target_dir, identification, scripts_dir, env_name):
         
         f.write(f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n')
+        f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged'.join('/merged_${SLURM_ARRAY_TASK_ID}.log\n'))
         f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
         
        
@@ -230,7 +230,7 @@ def main():
     
     
     
-    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
+    target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
     
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',')
@@ -257,8 +257,8 @@ def main():
     
     
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
-    print("Process name: merging_"+target_dir.split("/")[-2:][1])
-    print("To check the jobs submitted to the cluster, type: squeue -n merging_"+target_dir.split("/")[-2:][1])
+    print(f"Process name: merging_{target_dir.split('/')[-2:][1]}")
+    print(f"To check the jobs submitted to the cluster, type: squeue -n merging_{target_dir.split('/')[-2:][1]}")
     
     #Below we run the bash scripts to merge the MAGIC files
     list_of_merging_scripts = np.sort(glob.glob("Merge_*.sh"))
@@ -267,7 +267,7 @@ def main():
         if n == 0:
             launch_jobs =  f"merging{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = launch_jobs + f" && merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
+            launch_jobs = f"{launch_jobs} && merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
     
     #print(launch_jobs)
     os.system(launch_jobs)
