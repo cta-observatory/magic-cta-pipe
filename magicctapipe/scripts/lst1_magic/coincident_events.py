@@ -84,7 +84,7 @@ def linking_lst(target_dir, LST_runs, LST_version):
                
         
      
-def bash_coincident(target_dir, scripts_dir, env_name):
+def bash_coincident(target_dir, env_name):
 
     """
     This function generates the bashscript for running the coincidence analysis.
@@ -118,7 +118,7 @@ def bash_coincident(target_dir, scripts_dir, env_name):
             f.write("SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n")
             f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
             f.write("export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n")
-            f.write(f"conda run -n {env_name} python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
+            f.write(f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
           
         
 
@@ -147,7 +147,7 @@ def main():
     
     telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}"'
-    scripts_dir = str(Path(config["directories"]["scripts_dir"]))
+    
     env_name = config["general"]["env_name"]
     
     LST_runs_and_dates = config["general"]["LST_runs"]
@@ -164,7 +164,7 @@ def main():
     
     
     print("***** Generating the bashscript...")
-    bash_coincident(target_dir, scripts_dir, env_name)
+    bash_coincident(target_dir, env_name)
     
     
     print("***** Submitting processess to the cluster...")

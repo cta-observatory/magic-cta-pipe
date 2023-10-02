@@ -59,7 +59,6 @@ mc_tel_ids:
 
 directories:
     workspace_dir : "/fefs/aswg/workspace/yourname/yourprojectname/" 
-    scripts_dir : "/fefs/aswg/workspace/yourname/yourprojectname/" 
     target_name   : "CrabTeste"
     MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"
     MC_electrons  : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Electrons/sim_telarray/" 

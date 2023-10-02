@@ -39,7 +39,7 @@ def configfile_stereo(ids, target_dir):
       
     
      
-def bash_stereo(target_dir, scripts_dir, env_name):
+def bash_stereo(target_dir, env_name):
 
     """
     This function generates the bashscript for running the stereo analysis.
@@ -80,10 +80,10 @@ def bash_stereo(target_dir, scripts_dir, env_name):
             f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
             f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
             f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-            f.write(f"conda run -n {env_name} python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
+            f.write(f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
             
 
-def bash_stereoMC(target_dir, identification, scripts_dir, env_name):
+def bash_stereoMC(target_dir, identification, env_name):
 
     """
     This function generates the bashscript for running the stereo analysis.
@@ -122,7 +122,7 @@ def bash_stereoMC(target_dir, identification, scripts_dir, env_name):
         f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n {env_name} python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
+        f.write(f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
        
 
 
@@ -153,7 +153,6 @@ def main():
     
     target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
 
-    scripts_dir = str(Path(config["directories"]["scripts_dir"])) 
 
     env_name = config["general"]["env_name"]
 
@@ -164,13 +163,13 @@ def main():
     configfile_stereo(telescope_ids, target_dir)
     
     print("***** Generating the bashscript...")
-    bash_stereo(target_dir, scripts_dir, env_name)
+    bash_stereo(target_dir, env_name)
     
     print("***** Generating the bashscript for MCs...")
-    bash_stereoMC(target_dir,"gammadiffuse", scripts_dir, env_name)
-    bash_stereoMC(target_dir,"gammas", scripts_dir, env_name)
-    bash_stereoMC(target_dir,"protons", scripts_dir, env_name)
-    bash_stereoMC(target_dir,"protons_test", scripts_dir, env_name)
+    bash_stereoMC(target_dir,"gammadiffuse", env_name)
+    bash_stereoMC(target_dir,"gammas", env_name)
+    bash_stereoMC(target_dir,"protons", env_name)
+    bash_stereoMC(target_dir,"protons_test", env_name)
     
     print("***** Submitting processes to the cluster...")
     print(f"Process name: {target_dir.split('/')[-2:][1]}_stereo")

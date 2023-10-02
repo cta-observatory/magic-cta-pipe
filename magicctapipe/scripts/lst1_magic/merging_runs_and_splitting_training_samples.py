@@ -93,7 +93,7 @@ def split_train_test(target_dir, train_fraction):
         os.system(f"mv {list_of_dir[directory]}*.h5 {proton_dir}/../protons_test/{list_of_dir[directory].split('/')[-2]}")
         os.system(f"rm -r {list_of_dir[directory]}")
 
-def merge(target_dir, identification, MAGIC_runs, scripts_dir, env_name):
+def merge(target_dir, identification, MAGIC_runs, env_name):
     
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MAGIC subruns.
@@ -131,7 +131,7 @@ def merge(target_dir, identification, MAGIC_runs, scripts_dir, env_name):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                     if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                    f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                    f.write(f'conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
                         
             if os.path.exists(f"{MAGIC_DL1_dir}/M2"):
                 for i in MAGIC_runs:
@@ -139,25 +139,25 @@ def merge(target_dir, identification, MAGIC_runs, scripts_dir, env_name):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}")   #Creating a merged directory for the respective night
                     if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}") #Creating a merged directory for the respective run
-                    f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
+                    f.write(f'conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} \n')
         
         elif identification == "1_M1M2":
             if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(f"{MAGIC_DL1_dir}/M2"):
                 for i in MAGIC_runs:
                     if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged") 
-                    f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
+                    f.write(f'conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise \n')        
         else:
             for i in MAGIC_runs:
                 if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i[0]}"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i[0]}")  #Creating a merged directory for each night
-                f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
+                f.write(f'conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i[0]} \n')
         
     
     
     
 
-def mergeMC(target_dir, identification, scripts_dir, env_name):
+def mergeMC(target_dir, identification, env_name):
     
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
@@ -202,7 +202,7 @@ def mergeMC(target_dir, identification, scripts_dir, env_name):
         f.write(f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
         f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged'.join('/merged_${SLURM_ARRAY_TASK_ID}.log\n'))
-        f.write(f'conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
+        f.write(f'conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
         
        
         
@@ -236,8 +236,7 @@ def main():
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',')
     
     train_fraction = float(config["general"]["proton_train_fraction"])
-    
-    scripts_dir = str(Path(config["directories"]["scripts_dir"]))
+   
     env_name = config["general"]["env_name"]
     
     #Here we slice the proton MC data into "train" and "test":
@@ -245,15 +244,15 @@ def main():
     split_train_test(target_dir, train_fraction)
     
     print("***** Generating merge bashscripts...")
-    merge(target_dir, "0_subruns", MAGIC_runs, scripts_dir, env_name) #generating the bash script to merge the subruns
-    merge(target_dir, "1_M1M2", MAGIC_runs, scripts_dir, env_name) #generating the bash script to merge the M1 and M2 runs
-    merge(target_dir, "2_nights", MAGIC_runs, scripts_dir, env_name) #generating the bash script to merge all runs per night
+    merge(target_dir, "0_subruns", MAGIC_runs, env_name) #generating the bash script to merge the subruns
+    merge(target_dir, "1_M1M2", MAGIC_runs, env_name) #generating the bash script to merge the M1 and M2 runs
+    merge(target_dir, "2_nights", MAGIC_runs, env_name) #generating the bash script to merge all runs per night
     
     print("***** Generating mergeMC bashscripts...")
-    mergeMC(target_dir, "protons", scripts_dir, env_name) #generating the bash script to merge the files
-    mergeMC(target_dir, "gammadiffuse", scripts_dir, env_name) #generating the bash script to merge the files
-    mergeMC(target_dir, "gammas", scripts_dir, env_name) #generating the bash script to merge the files 
-    mergeMC(target_dir, "protons_test", scripts_dir, env_name)
+    mergeMC(target_dir, "protons", env_name) #generating the bash script to merge the files
+    mergeMC(target_dir, "gammadiffuse", env_name) #generating the bash script to merge the files
+    mergeMC(target_dir, "gammas", env_name) #generating the bash script to merge the files 
+    mergeMC(target_dir, "protons_test", env_name)
     
     
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
