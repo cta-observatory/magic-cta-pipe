@@ -17,7 +17,35 @@ __all__ = [
 def Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, increase_nsb, use_time_delta_cleaning, use_dynamic_cleaning ):
 
     """
-    This function computes and returns signal_pixels, image, and peak_time for LST
+    This function computes and returns some information for a single event of a telescope of LST type
+
+    Parameters
+    ----------
+    event: event 
+        From an EventSource
+    tel_id: int
+        telescope ID 
+    rng: numpy Random Generator
+        If increase_nsb=True, used to add noise in camera pixels
+    config_lst: dictionary
+        Parameters for image extraction and calibration
+    camera_geoms: telescope.camera.geometry
+        Camera geometry
+    calibrator_lst: CameraCalibrator (ctapipe.calib)
+        ctapipe object needed to calibrate the camera
+    increase_nsb: bool
+        Whether to add noise in camera pixels
+    use_time_delta_cleaning: bool
+        Whether to use this kind of cleaning  (cf. ctapipe)
+    use_dynamic_cleaning: bool
+        Whether to use this kind of cleaning  (cf. lstchain)
+
+    Returns
+    -------
+    signal_pixels: Mask of the pixels selected by the cleaning
+    image: Array of number of p.e. in the camera pixels
+    peak_time: Array of the signal peak time in the camera pixels
+
     """
     
     calibrator_lst._calibrate_dl0(event, tel_id)
@@ -76,7 +104,27 @@ def Calibrate_LST(event, tel_id, rng, config_lst, camera_geoms, calibrator_lst, 
 def Calibrate_MAGIC(event, tel_id, config_magic, magic_clean, calibrator_magic):
 
     """
-    This function computes and returns signal_pixels, image, and peak_time for MAGIC
+    This function computes and returns some information for a single event of a telescope of MAGIC type
+
+    Parameters
+    ----------
+    event: event 
+        From an EventSource
+    tel_id: int
+        telescope ID     
+    config_magic: dictionary
+        Parameters for image extraction and calibration
+    magic_clean: dictionary (1 entry per MAGIC telescope)
+        Each entry is a MAGICClean object using the telescope camera geometry
+    calibrator_magic: CameraCalibrator (ctapipe.calib)
+        ctapipe object needed to calibrate the camera
+    
+
+    Returns
+    -------
+    signal_pixels: Mask of the pixels selected by the cleaning
+    image: Array of number of p.e. in the camera pixels
+    peak_time: Array of the signal peak time in the camera pixels
     """
     
     calibrator_magic._calibrate_dl0(event, tel_id)
