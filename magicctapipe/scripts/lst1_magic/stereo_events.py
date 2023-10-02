@@ -33,8 +33,8 @@ def configfile_stereo(ids, target_dir):
         Path to the working directory
     """
     
-    with open(target_dir+'/config_stereo.yaml','w') as f:
-        f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
+    with open(f'{target_dir}/config_stereo.yaml','w') as f:
+        f.write(f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n")
         f.write('stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n')
       
     
@@ -52,23 +52,23 @@ def bash_stereo(target_dir, scripts_dir, env_name):
 
     process_name = target_dir.split("/")[-2:][1]
 
-    if not os.path.exists(target_dir+"/DL1/Observations/Coincident_stereo"):
-        os.mkdir(target_dir+"/DL1/Observations/Coincident_stereo")
+    if not os.path.exists(f"{target_dir}/DL1/Observations/Coincident_stereo"):
+        os.mkdir(f"{target_dir}/DL1/Observations/Coincident_stereo")
         
-    listOfNightsLST = np.sort(glob.glob(target_dir+"/DL1/Observations/Coincident/*"))
+    listOfNightsLST = np.sort(glob.glob(f"{target_dir}/DL1/Observations/Coincident/*"))
     
     for nightLST in listOfNightsLST:
-        stereoDir = target_dir+"/DL1/Observations/Coincident_stereo/"+nightLST.split('/')[-1]
+        stereoDir = f"{target_dir}/DL1/Observations/Coincident_stereo/{nightLST.split('/')[-1]}"
         if not os.path.exists(stereoDir):
             os.mkdir(stereoDir)
         
         os.system(f"ls {nightLST}/*LST*.h5 >  {nightLST}/list_coin.txt")  #generating a list with the DL1 coincident data files.
-        process_size = len(np.genfromtxt(nightLST+"/list_coin.txt",dtype="str")) - 1
+        process_size = len(np.genfromtxt(f"{nightLST}/list_coin.txt",dtype="str")) - 1
         
         with open(f"StereoEvents_{nightLST.split('/')[-1]}.sh","w") as f:
             f.write("#!/bin/sh\n\n")
             f.write("#SBATCH -p short\n")
-            f.write("#SBATCH -J "+process_name+"_stereo\n")
+            f.write(f"#SBATCH -J {process_name}_stereo\n")
             f.write(f"#SBATCH --array=0-{process_size}%100\n")
             f.write("#SBATCH -N 1\n\n")
             f.write("ulimit -l unlimited\n")
@@ -98,18 +98,18 @@ def bash_stereoMC(target_dir, identification, scripts_dir, env_name):
 
     process_name = target_dir.split("/")[-2:][1]
 
-    if not os.path.exists(target_dir+f"/DL1/MC/{identification}/Merged/StereoMerged"):
-        os.mkdir(target_dir+f"/DL1/MC/{identification}/Merged/StereoMerged")
+    if not os.path.exists(f"{target_dir}/DL1/MC/{identification}/Merged/StereoMerged"):
+        os.mkdir(f"{target_dir}/DL1/MC/{identification}/Merged/StereoMerged")
     
-    inputdir = target_dir+f"/DL1/MC/{identification}/Merged"
+    inputdir = f"{target_dir}/DL1/MC/{identification}/Merged"
     
     os.system(f"ls {inputdir}/dl1*.h5 >  {inputdir}/list_coin.txt")  #generating a list with the DL1 coincident data files.
-    process_size = len(np.genfromtxt(inputdir+"/list_coin.txt",dtype="str")) - 1
+    process_size = len(np.genfromtxt(f"{inputdir}/list_coin.txt",dtype="str")) - 1
     
     with open(f"StereoEvents_{identification}.sh","w") as f:
         f.write("#!/bin/sh\n\n")
         f.write("#SBATCH -p xxl\n")
-        f.write("#SBATCH -J "+process_name+"_stereo\n")
+        f.write(f"#SBATCH -J {process_name}_stereo\n")
         f.write(f"#SBATCH --array=0-{process_size}%100\n")
         f.write('#SBATCH --mem=30g\n')
         f.write("#SBATCH -N 1\n\n")
@@ -151,7 +151,7 @@ def main():
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     
-    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
+    target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
 
     scripts_dir = str(Path(config["directories"]["scripts_dir"])) 
 
@@ -173,8 +173,8 @@ def main():
     bash_stereoMC(target_dir,"protons_test", scripts_dir, env_name)
     
     print("***** Submitting processes to the cluster...")
-    print("Process name: "+target_dir.split("/")[-2:][1]+"_stereo")
-    print("To check the jobs submitted to the cluster, type: squeue -n "+target_dir.split("/")[-2:][1]+"_stereo")
+    print(f"Process name: {target_dir.split('/')[-2:][1]}_stereo")
+    print(f"To check the jobs submitted to the cluster, type: squeue -n {target_dir.split('/')[-2:][1]}_stereo")
     
     #Below we run the bash scripts to find the stereo events
     list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_*.sh"))
@@ -183,7 +183,7 @@ def main():
         if n == 0:
             launch_jobs =  f"stereo{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = launch_jobs + f" && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
+            launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
     
     #print(launch_jobs)
     os.system(launch_jobs)

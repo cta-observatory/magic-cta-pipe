@@ -40,8 +40,8 @@ def configfile_coincidence(ids, target_dir):
         Path to the working directory
     """
     
-    with open(target_dir+'/config_coincidence.yaml','w') as f:
-        f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
+    with open(f'{target_dir}/config_coincidence.yaml','w') as f:
+        f.write(f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n")
         f.write('event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    window_half_width: "300 ns"\n')
         f.write('    pre_offset_search: true\n')  
         f.write('    n_pre_offset_search_events: 100\n')  
@@ -63,8 +63,8 @@ def linking_lst(target_dir, LST_runs, LST_version):
     """
     
     
-    coincidence_DL1_dir = target_dir+"/DL1/Observations"
-    if not os.path.exists(coincidence_DL1_dir+"/Coincident"):
+    coincidence_DL1_dir = f"{target_dir}/DL1/Observations"
+    if not os.path.exists(f"{coincidence_DL1_dir}/Coincident"):
         os.mkdir(f"{coincidence_DL1_dir}/Coincident")
     
     for i in LST_runs:
@@ -75,12 +75,12 @@ def linking_lst(target_dir, LST_runs, LST_version):
         if os.path.exists(f"{outputdir}/list_LST.txt"):
             with open(f"{outputdir}/list_LST.txt", "a") as LSTdataPathFile:
                 for subrun in list_of_subruns:
-                    LSTdataPathFile.write(subrun+"\n") #If this files already exists, simply append the new information
+                    LSTdataPathFile.write(f"{subrun}\n") #If this files already exists, simply append the new information
         else:
             os.mkdir(outputdir)
             with open(f"{outputdir}/list_LST.txt", "w") as f: #If the file list_LST.txt does not exist, it will be created here
                 for subrun in list_of_subruns:
-                    f.write(subrun+"\n")
+                    f.write(f"{subrun}\n")
                
         
      
@@ -97,16 +97,16 @@ def bash_coincident(target_dir, scripts_dir, env_name):
 
     process_name = target_dir.split("/")[-2:][1]
     
-    listOfNightsLST = np.sort(glob.glob(target_dir+"/DL1/Observations/Coincident/*"))
-    listOfNightsMAGIC = np.sort(glob.glob(target_dir+"/DL1/Observations/Merged/Merged*"))
+    listOfNightsLST = np.sort(glob.glob(f"{target_dir}/DL1/Observations/Coincident/*"))
+    listOfNightsMAGIC = np.sort(glob.glob(f"{target_dir}/DL1/Observations/Merged/Merged*"))
     
     for nightMAGIC,nightLST in zip(listOfNightsMAGIC,listOfNightsLST):
-        process_size = len(np.genfromtxt(nightLST+"/list_LST.txt",dtype="str")) - 1
+        process_size = len(np.genfromtxt(f"{nightLST}/list_LST.txt",dtype="str")) - 1
         
         with open(f"LST_coincident_{nightLST.split('/')[-1]}.sh","w") as f:
             f.write("#!/bin/sh\n\n")
             f.write("#SBATCH -p short\n")
-            f.write("#SBATCH -J "+process_name+"_coincidence\n")
+            f.write(f"#SBATCH -J {process_name}_coincidence\n")
             f.write(f"#SBATCH --array=0-{process_size}%50\n")
             f.write("#SBATCH -N 1\n\n")
             f.write("ulimit -l unlimited\n")
@@ -146,8 +146,7 @@ def main():
     
     
     telescope_ids = list(config["mc_tel_ids"].values())
-    target_dir = str(Path(config["directories"]["workspace_dir"]))+"/"+config["directories"]["target_name"]
-
+    target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}"'
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     env_name = config["general"]["env_name"]
     
@@ -169,8 +168,8 @@ def main():
     
     
     print("***** Submitting processess to the cluster...")
-    print("Process name: "+target_dir.split("/")[-2:][1]+"_coincidence")
-    print("To check the jobs submitted to the cluster, type: squeue -n "+target_dir.split("/")[-2:][1]+"_coincidence")
+    print(f"Process name: {target_dir.split('/')[-2:][1]}_coincidence")
+    print(f"To check the jobs submitted to the cluster, type: squeue -n {target_dir.split('/')[-2:][1]}_coincidence")
     
     #Below we run the bash scripts to find the coincident events
     list_of_coincidence_scripts = np.sort(glob.glob("LST_coincident*.sh"))
@@ -179,7 +178,7 @@ def main():
         if n == 0:
             launch_jobs =  f"coincidence{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = launch_jobs + f" && coincidence{n}=$(sbatch --parsable --dependency=afterany:$coincidence{n-1} {run})"
+            launch_jobs =  f"{launch_jobs} && coincidence{n}=$(sbatch --parsable --dependency=afterany:$coincidence{n-1} {run})"
     
     #print(launch_jobs)
     os.system(launch_jobs)
