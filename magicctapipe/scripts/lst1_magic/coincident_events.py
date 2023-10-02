@@ -40,13 +40,13 @@ def configfile_coincidence(ids, target_dir):
         Path to the working directory
     """
     
-    f = open(target_dir+'/config_coincidence.yaml','w')
-    f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
-    f.write('event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    window_half_width: "300 ns"\n')
-    f.write('    pre_offset_search: true\n')  
-    f.write('    n_pre_offset_search_events: 100\n')  
-    f.write('    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n')  
-    f.close()
+    with open(target_dir+'/config_coincidence.yaml','w') as f:
+        f.write("mc_tel_ids:\n    LST-1: "+str(ids[0])+"\n    LST-2: "+str(ids[1])+"\n    LST-3: "+str(ids[2])+"\n    LST-4: "+str(ids[3])+"\n    MAGIC-I: "+str(ids[4])+"\n    MAGIC-II: "+str(ids[5])+"\n\n")
+        f.write('event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    window_half_width: "300 ns"\n')
+        f.write('    pre_offset_search: true\n')  
+        f.write('    n_pre_offset_search_events: 100\n')  
+        f.write('    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n')  
+    
     
 
 def linking_lst(target_dir, LST_runs, LST_version):
@@ -78,10 +78,10 @@ def linking_lst(target_dir, LST_runs, LST_version):
                     LSTdataPathFile.write(subrun+"\n") #If this files already exists, simply append the new information
         else:
             os.mkdir(outputdir)
-            f = open(f"{outputdir}/list_LST.txt", "w") #If the file list_LST.txt does not exist, it will be created here
-            for subrun in list_of_subruns:
-                f.write(subrun+"\n")
-            f.close()
+            with open(f"{outputdir}/list_LST.txt", "w") as f: #If the file list_LST.txt does not exist, it will be created here
+                for subrun in list_of_subruns:
+                    f.write(subrun+"\n")
+               
         
      
 def bash_coincident(target_dir, scripts_dir):
@@ -103,23 +103,23 @@ def bash_coincident(target_dir, scripts_dir):
     for nightMAGIC,nightLST in zip(listOfNightsMAGIC,listOfNightsLST):
         process_size = len(np.genfromtxt(nightLST+"/list_LST.txt",dtype="str")) - 1
         
-        f = open(f"LST_coincident_{nightLST.split('/')[-1]}.sh","w")
-        f.write("#!/bin/sh\n\n")
-        f.write("#SBATCH -p short\n")
-        f.write("#SBATCH -J "+process_name+"_coincidence\n")
-        f.write(f"#SBATCH --array=0-{process_size}%50\n")
-        f.write("#SBATCH -N 1\n\n")
-        f.write("ulimit -l unlimited\n")
-        f.write("ulimit -s unlimited\n")
-        f.write("ulimit -a\n\n") 
+        with open(f"LST_coincident_{nightLST.split('/')[-1]}.sh","w") as f:
+            f.write("#!/bin/sh\n\n")
+            f.write("#SBATCH -p short\n")
+            f.write("#SBATCH -J "+process_name+"_coincidence\n")
+            f.write(f"#SBATCH --array=0-{process_size}%50\n")
+            f.write("#SBATCH -N 1\n\n")
+            f.write("ulimit -l unlimited\n")
+            f.write("ulimit -s unlimited\n")
+            f.write("ulimit -a\n\n") 
 
-        f.write(f"export INM={nightMAGIC}\n")
-        f.write(f"export OUTPUTDIR={nightLST}\n")
-        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n")
-        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        f.write("export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
-        f.close()
+            f.write(f"export INM={nightMAGIC}\n")
+            f.write(f"export OUTPUTDIR={nightLST}\n")
+            f.write("SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n")
+            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+            f.write("export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n")
+            f.write(f"conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
+          
         
 
 

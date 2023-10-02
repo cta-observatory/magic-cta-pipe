@@ -37,7 +37,7 @@ MAGIC+LST analysis starts from MAGIC calibrated data (\_Y\_ files), LST DL1 data
 
 Authorized institute server (Client) &rarr;  ssh connection to CTALaPalma &rarr; ssh connection to cp01/02  
 
-2) Once connected to the IT Container, install MAGIC-CTA-PIPE (e.g. in your home directory in the IT Container) following the tutorial here: https://github.com/ranieremenezes/magic-cta-pipe
+2) Once connected to the IT Container, install MAGIC-CTA-PIPE (e.g. in your home directory in the IT Container) following the tutorial here: https://github.com/cta-observatory/magic-cta-pipe
 
 3) Do not forget to open the magic-lst environment with the command `conda activate magic-lst` before starting the analysis
 
@@ -59,6 +59,7 @@ mc_tel_ids:
 
 directories:
     workspace_dir : "/fefs/aswg/workspace/yourname/yourprojectname/" 
+    scripts_dir : "/fefs/aswg/workspace/yourname/yourprojectname/" 
     target_name   : "CrabTeste"
     MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"
     MC_electrons  : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Electrons/sim_telarray/" 
@@ -67,12 +68,15 @@ directories:
     MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
     
 general:
+    target_RA_deg : 83.633083 #RA in degrees
+    target_Dec_deg: 22.0145   #Dec in degrees
     SimTel_version: "v1.4"    
+    LST_version   : "v0.9" 
     focal_length  : "effective" #effective #nominal
     MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
     LST_runs      : "LST_runs.txt"  
     proton_train  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest
-    
+
 ```
 
 The file `MAGIC_runs.txt` looks like that:  

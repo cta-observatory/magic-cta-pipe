@@ -37,81 +37,81 @@ def config_file_gen(ids, target_dir):
     """
     Here we create the configuration file needed for transforming DL0 into DL1
     """
+    with open(target_dir+'/config_DL0_to_DL1.yaml','w') as f:
     
-    f = open(target_dir+'/config_DL0_to_DL1.yaml','w')
-    #f.write("directories:\n    target: "+target_dir+"\n\n")    
-    lines_of_config_file = [
-    "mc_tel_ids:",
-    "\n    LST-1: "+str(ids[0]),
-    "\n    LST-2: "+str(ids[1]),
-    "\n    LST-3: "+str(ids[2]),
-    "\n    LST-4: "+str(ids[3]),
-    "\n    MAGIC-I: "+str(ids[4]),
-    "\n    MAGIC-II: "+str(ids[5]),
-    "\n",
-    "\nLST:",
-    "\n    image_extractor:",
-    '\n        type: "LocalPeakWindowSum"',
-    "\n        window_shift: 4",
-    "\n        window_width: 8",
-    "\n",
-    "\n    increase_nsb:",
-    "\n        use: true",
-    "\n        extra_noise_in_dim_pixels: 1.27",
-    "\n        extra_bias_in_dim_pixels: 0.665",
-    "\n        transition_charge: 8",
-    "\n        extra_noise_in_bright_pixels: 2.08",
-    "\n",
-    "\n    increase_psf:",
-    "\n        use: false",
-    "\n        fraction: null",
-    "\n",
-    "\n    tailcuts_clean:",
-    "\n        picture_thresh: 8",
-    "\n        boundary_thresh: 4",
-    "\n        keep_isolated_pixels: false",
-    "\n        min_number_picture_neighbors: 2",
-    "\n",
-    "\n    time_delta_cleaning:",
-    "\n        use: true",
-    "\n        min_number_neighbors: 1",
-    "\n        time_limit: 2",
-    "\n",
-    "\n    dynamic_cleaning:",
-    "\n        use: true",
-    "\n        threshold: 267",
-    "\n        fraction: 0.03",
-    "\n",
-    "\n    use_only_main_island: false",
-    "\n",
-    "\nMAGIC:",
-    "\n    image_extractor:",
-    '\n        type: "SlidingWindowMaxSum"',
-    "\n        window_width: 5",
-    "\n        apply_integration_correction: false",
-    "\n",
-    "\n    charge_correction:",
-    "\n        use: true",
-    "\n        factor: 1.143",
-    "\n",
-    "\n    magic_clean:",
-    "\n        use_time: true",
-    "\n        use_sum: true",
-    "\n        picture_thresh: 6",
-    "\n        boundary_thresh: 3.5",
-    "\n        max_time_off: 4.5",
-    "\n        max_time_diff: 1.5",
-    "\n        find_hotpixels: true",
-    '\n        pedestal_type: "from_extractor_rndm"',
-    "\n",
-    "\n    muon_ring:",
-    "\n        thr_low: 25",
-    "\n        tailcut: [12, 8]",
-    "\n        ring_completeness_threshold: 25",
-    "\n"]
-    
-    f.writelines(lines_of_config_file)
-    f.close()
+        #f.write("directories:\n    target: "+target_dir+"\n\n")    
+        lines_of_config_file = [
+        "mc_tel_ids:",
+        "\n    LST-1: "+str(ids[0]),
+        "\n    LST-2: "+str(ids[1]),
+        "\n    LST-3: "+str(ids[2]),
+        "\n    LST-4: "+str(ids[3]),
+        "\n    MAGIC-I: "+str(ids[4]),
+        "\n    MAGIC-II: "+str(ids[5]),
+        "\n",
+        "\nLST:",
+        "\n    image_extractor:",
+        '\n        type: "LocalPeakWindowSum"',
+        "\n        window_shift: 4",
+        "\n        window_width: 8",
+        "\n",
+        "\n    increase_nsb:",
+        "\n        use: true",
+        "\n        extra_noise_in_dim_pixels: 1.27",
+        "\n        extra_bias_in_dim_pixels: 0.665",
+        "\n        transition_charge: 8",
+        "\n        extra_noise_in_bright_pixels: 2.08",
+        "\n",
+        "\n    increase_psf:",
+        "\n        use: false",
+        "\n        fraction: null",
+        "\n",
+        "\n    tailcuts_clean:",
+        "\n        picture_thresh: 8",
+        "\n        boundary_thresh: 4",
+        "\n        keep_isolated_pixels: false",
+        "\n        min_number_picture_neighbors: 2",
+        "\n",
+        "\n    time_delta_cleaning:",
+        "\n        use: true",
+        "\n        min_number_neighbors: 1",
+        "\n        time_limit: 2",
+        "\n",
+        "\n    dynamic_cleaning:",
+        "\n        use: true",
+        "\n        threshold: 267",
+        "\n        fraction: 0.03",
+        "\n",
+        "\n    use_only_main_island: false",
+        "\n",
+        "\nMAGIC:",
+        "\n    image_extractor:",
+        '\n        type: "SlidingWindowMaxSum"',
+        "\n        window_width: 5",
+        "\n        apply_integration_correction: false",
+        "\n",
+        "\n    charge_correction:",
+        "\n        use: true",
+        "\n        factor: 1.143",
+        "\n",
+        "\n    magic_clean:",
+        "\n        use_time: true",
+        "\n        use_sum: true",
+        "\n        picture_thresh: 6",
+        "\n        boundary_thresh: 3.5",
+        "\n        max_time_off: 4.5",
+        "\n        max_time_diff: 1.5",
+        "\n        find_hotpixels: true",
+        '\n        pedestal_type: "from_extractor_rndm"',
+        "\n",
+        "\n    muon_ring:",
+        "\n        thr_low: 25",
+        "\n        tailcut: [12, 8]",
+        "\n        ring_completeness_threshold: 25",
+        "\n"]
+        
+        f.writelines(lines_of_config_file)
+   
 
 
 def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version, focal_length, scripts_dir):
@@ -125,46 +125,46 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     process_name = target_dir.split("/")[-2:][1]
     
     list_of_nodes = glob.glob(MC_path+"/node*")
-    f = open(target_dir+f"/list_nodes_{particle_type}_complete.txt","w") # creating list_nodes_gammas_complete.txt
-    for i in list_of_nodes:
-        f.write(i+"/output_"+SimTel_version+"\n")   
+    with open(target_dir+f"/list_nodes_{particle_type}_complete.txt","w") as f:# creating list_nodes_gammas_complete.txt
+        for i in list_of_nodes:
+            f.write(i+"/output_"+SimTel_version+"\n")   
     
-    f.close()
     
-    f = open(target_dir+f"/list_folder_{particle_type}.txt","w") # creating list_folder_gammas.txt
-    for i in list_of_nodes:
-        f.write(i.split("/")[-1]+"\n")   
     
-    f.close()
+    with open(target_dir+f"/list_folder_{particle_type}.txt","w") as f:# creating list_folder_gammas.txt
+        for i in list_of_nodes:
+            f.write(i.split("/")[-1]+"\n")   
+    
+   
     
     ####################################################################################
     ############ bash scripts that link the MC paths to each subdirectory. 
     ####################################################################################
     
-    f = open(f"linking_MC_{particle_type}_paths.sh","w")
-    lines_of_config_file = [
-    "#!/bin/sh\n\n",
-    "#SBATCH -p short\n",
-    "#SBATCH -J "+process_name+"\n\n",
-    "#SBATCH -N 1\n\n",
-    "ulimit -l unlimited\n",
-    "ulimit -s unlimited\n",
-    "ulimit -a\n\n",
-    "while read -r -u 3 lineA && read -r -u 4 lineB\n",
-    "do\n",
-    "    cd "+target_dir+f"/DL1/MC/{particle_type}\n",
-    "    mkdir $lineB\n",
-    "    cd $lineA\n",
-    "    ls -lR *.gz |wc -l\n",
-    "    ls *.gz > "+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n",
-    '    string=$lineA"/"\n',
-    "    export file="+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n\n",
-    "    cat $file | while read line; do echo $string${line} >>"+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0_ok.txt; done\n\n",
-    '    echo "folder $lineB  and node $lineA"\n',
-    'done 3<"'+target_dir+f'/list_nodes_{particle_type}_complete.txt" 4<"'+target_dir+f'/list_folder_{particle_type}.txt"\n',
-    ""]
-    f.writelines(lines_of_config_file)
-    f.close()
+    with open(f"linking_MC_{particle_type}_paths.sh","w") as f:
+        lines_of_config_file = [
+        "#!/bin/sh\n\n",
+        "#SBATCH -p short\n",
+        "#SBATCH -J "+process_name+"\n\n",
+        "#SBATCH -N 1\n\n",
+        "ulimit -l unlimited\n",
+        "ulimit -s unlimited\n",
+        "ulimit -a\n\n",
+        "while read -r -u 3 lineA && read -r -u 4 lineB\n",
+        "do\n",
+        "    cd "+target_dir+f"/DL1/MC/{particle_type}\n",
+        "    mkdir $lineB\n",
+        "    cd $lineA\n",
+        "    ls -lR *.gz |wc -l\n",
+        "    ls *.gz > "+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n",
+        '    string=$lineA"/"\n',
+        "    export file="+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n\n",
+        "    cat $file | while read line; do echo $string${line} >>"+target_dir+f"/DL1/MC/{particle_type}/$lineB/list_dl0_ok.txt; done\n\n",
+        '    echo "folder $lineB  and node $lineA"\n',
+        'done 3<"'+target_dir+f'/list_nodes_{particle_type}_complete.txt" 4<"'+target_dir+f'/list_folder_{particle_type}.txt"\n',
+        ""]
+        f.writelines(lines_of_config_file)
+   
     
     
     ################################################################################################################
@@ -174,31 +174,31 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     number_of_nodes = glob.glob(MC_path+"/node*")
     number_of_nodes = len(number_of_nodes) -1
     
-    f = open(f"linking_MC_{particle_type}_paths_r.sh","w")
-    lines_of_config_file = [
-    '#!/bin/sh\n\n',
-    '#SBATCH -p xxl\n',
-    '#SBATCH -J '+process_name+'\n',
-    '#SBATCH --array=0-'+str(number_of_nodes)+'%50\n',
-    '#SBATCH --mem=10g\n',
-    '#SBATCH -N 1\n\n',
-    'ulimit -l unlimited\n',
-    'ulimit -s unlimited\n',
-    'ulimit -a\n',
-    'cd '+target_dir+f'/DL1/MC/{particle_type}\n\n',
-    'export INF='+target_dir+'\n',
-    f'SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n',
-    'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n',
-    'cd $SAMPLE\n\n',
-    'export LOG='+target_dir+f'/DL1/MC/{particle_type}'+'/simtel_{$SAMPLE}_all.log\n',
-    'cat list_dl0_ok.txt | while read line\n',
-    'do\n',
-    '    cd '+target_dir+'/../\n',
-    f'    conda run -n magic-lst python {scripts_dir}/lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_DL0_to_DL1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n',
-    'done\n',
-    ""]
-    f.writelines(lines_of_config_file)
-    f.close()
+    with open(f"linking_MC_{particle_type}_paths_r.sh","w") as f:
+        lines_of_config_file = [
+        '#!/bin/sh\n\n',
+        '#SBATCH -p xxl\n',
+        '#SBATCH -J '+process_name+'\n',
+        '#SBATCH --array=0-'+str(number_of_nodes)+'%50\n',
+        '#SBATCH --mem=10g\n',
+        '#SBATCH -N 1\n\n',
+        'ulimit -l unlimited\n',
+        'ulimit -s unlimited\n',
+        'ulimit -a\n',
+        'cd '+target_dir+f'/DL1/MC/{particle_type}\n\n',
+        'export INF='+target_dir+'\n',
+        f'SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n',
+        'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n',
+        'cd $SAMPLE\n\n',
+        'export LOG='+target_dir+f'/DL1/MC/{particle_type}'+'/simtel_{$SAMPLE}_all.log\n',
+        'cat list_dl0_ok.txt | while read line\n',
+        'do\n',
+        '    cd '+target_dir+'/../\n',
+        f'    conda run -n magic-lst python {scripts_dir}/lst1_magic_mc_dl0_to_dl1.py --input-file $line --output-dir '+target_dir+f'/DL1/MC/{particle_type}/$SAMPLE --config-file '+target_dir+'/config_DL0_to_DL1.yaml >>$LOG 2>&1 --focal_length_choice '+focal_length+'\n\n',
+        'done\n',
+        ""]
+        f.writelines(lines_of_config_file)
+    
     
     
     
@@ -211,29 +211,29 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir)
     
     process_name = target_dir.split("/")[-2:][1]
     
-    f = open("linking_MAGIC_data_paths.sh","w")
-    f.write('#!/bin/sh\n\n')
-    f.write('#SBATCH -p short\n')
-    f.write('#SBATCH -J '+process_name+'\n')
-    f.write('#SBATCH -N 1\n\n')
-    f.write('ulimit -l unlimited\n')
-    f.write('ulimit -s unlimited\n')
-    f.write('ulimit -a\n')
-    
-    if telescope_ids[-1] > 0:
-        for i in MAGIC_runs:
-            f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
-            f.write('export OUT1='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n')
-            f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
-    
-    f.write('\n')
-    if telescope_ids[-2] > 0:
-        for i in MAGIC_runs:
-            f.write('export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
-            f.write('export OUT1='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n')
-            f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
-      
-    f.close()
+    with open("linking_MAGIC_data_paths.sh","w") as f:
+        f.write('#!/bin/sh\n\n')
+        f.write('#SBATCH -p short\n')
+        f.write('#SBATCH -J '+process_name+'\n')
+        f.write('#SBATCH -N 1\n\n')
+        f.write('ulimit -l unlimited\n')
+        f.write('ulimit -s unlimited\n')
+        f.write('ulimit -a\n')
+        
+        if telescope_ids[-1] > 0:
+            for i in MAGIC_runs:
+                f.write('export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
+                f.write('export OUT1='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n')
+                f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
+        
+        f.write('\n')
+        if telescope_ids[-2] > 0:
+            for i in MAGIC_runs:
+                f.write('export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+'\n')
+                f.write('export OUT1='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n')
+                f.write('ls $IN1/*'+i[1][-2:]+'.*_Y_*.root > $OUT1/list_dl0.txt\n')
+        
+  
     
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
         for i in MAGIC_runs:
@@ -242,50 +242,50 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir)
                 number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
                 number_of_nodes = len(number_of_nodes) - 1 
                 
-                f = open(f"MAGIC-II_dl0_to_dl1_run_{i[1]}.sh","w")
-                lines_of_config_file = [
-                '#!/bin/sh\n\n',
-                '#SBATCH -p long\n',
-                '#SBATCH -J '+process_name+'\n',
-                '#SBATCH --array=0-'+str(number_of_nodes)+'\n',     
-                '#SBATCH -N 1\n\n',
-                'ulimit -l unlimited\n',
-                'ulimit -s unlimited\n',
-                'ulimit -a\n\n',
-                'export OUTPUTDIR='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n',
-                'cd '+target_dir+'/../\n',
-                'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
-                'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
-                'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
-                f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
-                ""]
-                f.writelines(lines_of_config_file)
-                f.close()
+                with open(f"MAGIC-II_dl0_to_dl1_run_{i[1]}.sh","w") as f:
+                    lines_of_config_file = [
+                    '#!/bin/sh\n\n',
+                    '#SBATCH -p long\n',
+                    '#SBATCH -J '+process_name+'\n',
+                    '#SBATCH --array=0-'+str(number_of_nodes)+'\n',     
+                    '#SBATCH -N 1\n\n',
+                    'ulimit -l unlimited\n',
+                    'ulimit -s unlimited\n',
+                    'ulimit -a\n\n',
+                    'export OUTPUTDIR='+target_dir+'/DL1/Observations/M2/'+i[0]+'/'+i[1]+'\n',
+                    'cd '+target_dir+'/../\n',
+                    'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
+                    'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
+                    'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
+                    f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
+                    ""]
+                    f.writelines(lines_of_config_file)
+                   
                 
             if telescope_ids[-2] > 0:
                 
                 number_of_nodes = glob.glob('/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/'+i[0].split("_")[0]+"/"+i[0].split("_")[1]+"/"+i[0].split("_")[2]+f'/*{i[1]}.*_Y_*.root')
                 number_of_nodes = len(number_of_nodes) - 1 
                 
-                f = open(f"MAGIC-I_dl0_to_dl1_run_{i[1]}.sh","w")
-                lines_of_config_file = [
-                '#!/bin/sh\n\n',
-                '#SBATCH -p long\n',
-                '#SBATCH -J '+process_name+'\n',
-                '#SBATCH --array=0-'+str(number_of_nodes)+'\n',  
-                '#SBATCH -N 1\n\n',
-                'ulimit -l unlimited\n',
-                'ulimit -s unlimited\n',
-                'ulimit -a\n\n',
-                'export OUTPUTDIR='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n',
-                'cd '+target_dir+'/../\n',
-                'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
-                'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
-                'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
-                f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
-                ""]
-                f.writelines(lines_of_config_file)
-                f.close()
+                with open(f"MAGIC-I_dl0_to_dl1_run_{i[1]}.sh","w") as f:
+                    lines_of_config_file = [
+                    '#!/bin/sh\n\n',
+                    '#SBATCH -p long\n',
+                    '#SBATCH -J '+process_name+'\n',
+                    '#SBATCH --array=0-'+str(number_of_nodes)+'\n',  
+                    '#SBATCH -N 1\n\n',
+                    'ulimit -l unlimited\n',
+                    'ulimit -s unlimited\n',
+                    'ulimit -a\n\n',
+                    'export OUTPUTDIR='+target_dir+'/DL1/Observations/M1/'+i[0]+'/'+i[1]+'\n',
+                    'cd '+target_dir+'/../\n',
+                    'SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n',
+                    'SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n',
+                    'export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n',
+                    f'conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file '+target_dir+'/config_DL0_to_DL1.yaml >$LOG 2>&1\n',
+                    ""]
+                    f.writelines(lines_of_config_file)
+                
     
     
 def directories_generator(target_dir, telescope_ids,MAGIC_runs):
@@ -419,7 +419,7 @@ def main():
     config_file_gen(telescope_ids,target_dir)
     
     #Below we run the analysis on the MC data
-    if not args.analysis_type=='onlyMAGIC':       
+    if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):       
         lists_and_bash_generator("gammas", target_dir, MC_gammas, SimTel_version, focal_length, scripts_dir) #gammas
         #lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, focal_length, scripts_dir) #electrons
         #lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, focal_length, scripts_dir) #helium
@@ -441,7 +441,7 @@ def main():
         os.system(launch_jobs_MC)
     
     #Below we run the analysis on the MAGIC data
-    if not args.analysis_type=='onlyMC':
+    if (args.analysis_type=='onlyMAGIC') or (args.analysis_type=='doEverything'):  
         lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, scripts_dir) #MAGIC real data
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             
