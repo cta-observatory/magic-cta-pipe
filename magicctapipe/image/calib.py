@@ -54,6 +54,7 @@ def Calibrate_LST(event, tel_id, obs_id, config_lst, camera_geoms, calibrator_ls
     increase_psf = config_lst["increase_psf"]["use"]
     use_time_delta_cleaning = config_lst["time_delta_cleaning"].pop("use")
     use_dynamic_cleaning = config_lst["dynamic_cleaning"].pop("use")
+    use_only_main_island = config_lst["use_only_main_island"]
     
     if increase_nsb:
         rng = np.random.default_rng(obs_id)
