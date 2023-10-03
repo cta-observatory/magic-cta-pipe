@@ -23,7 +23,6 @@ from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
 
 __all__ = [
-    "telescope_combinations",
     "format_object",    
     "get_stereo_events",
     "get_stereo_events_old",
@@ -36,6 +35,7 @@ __all__ = [
     "load_dl2_data_file",
     "load_irf_files",
     "save_pandas_data_in_table",
+    "telescope_combinations",
 ]
 
 logger = logging.getLogger(__name__)
