@@ -7,7 +7,6 @@ from .containers import (
     SimEventInfoContainer,
 )
 from .io import (
-    telescope_combinations,
     format_object,
     get_dl2_mean,
     get_stereo_events,
@@ -20,6 +19,7 @@ from .io import (
     load_train_data_files,
     load_train_data_files_tel,
     save_pandas_data_in_table,
+    telescope_combinations,
 )
 from .gadf import (
     create_event_hdu,
@@ -37,7 +37,6 @@ __all__ = [
     "create_gh_cuts_hdu",
     "create_gti_hdu",
     "create_pointing_hdu",
-    "telescope_combinations",
     "format_object",
     "get_dl2_mean",
     "get_stereo_events",
@@ -50,4 +49,5 @@ __all__ = [
     "load_train_data_files",
     "load_train_data_files_tel",
     "save_pandas_data_in_table",
+    "telescope_combinations",
 ]
