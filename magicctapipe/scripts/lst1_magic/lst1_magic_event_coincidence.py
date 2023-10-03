@@ -72,7 +72,7 @@ from magicctapipe.io import (
     telescope_combinations,
 )
 
-__all__ = ["telescope_positions","event_coincidence"]
+__all__ = ["event_coincidence","telescope_positions"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())

@@ -38,7 +38,7 @@ import numpy as np
 import tables
 from ctapipe.instrument import SubarrayDescription
 
-__all__ = ["write_data_to_table", "merge_hdf_files"]
+__all__ = ["merge_hdf_files","write_data_to_table"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
