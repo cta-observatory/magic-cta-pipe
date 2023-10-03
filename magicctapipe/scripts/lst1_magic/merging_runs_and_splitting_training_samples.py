@@ -189,20 +189,23 @@ def mergeMC(target_dir, identification, env_name):
     cleaning(list_of_nodes, target_dir) #This will delete the (possibly) failed runs.
         
     with open(f"Merge_{identification}.sh","w") as f:
-        f.write('#!/bin/sh\n\n')
-        f.write('#SBATCH -p short\n')
-        f.write(f'#SBATCH -J {process_name}n')
-        f.write(f"#SBATCH --array=0-{process_size}%50\n")
-        f.write('#SBATCH --mem=7g\n')
-        f.write('#SBATCH -N 1\n\n')
-        f.write('ulimit -l unlimited\n')
-        f.write('ulimit -s unlimited\n')
-        f.write('ulimit -a\n\n')
-        
-        f.write(f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n")
-        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n')
-        f.write(f'conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
+        lines_bash_file = [
+        '#!/bin/sh\n\n',
+        '#SBATCH -p short\n',
+        f'#SBATCH -J {process_name}n',
+        f"#SBATCH --array=0-{process_size}%50\n",
+        '#SBATCH --mem=7g\n',
+        '#SBATCH -N 1\n\n',
+        'ulimit -l unlimited\n',
+        'ulimit -s unlimited\n',
+        'ulimit -a\n\n',
+        f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
+        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+        f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n',
+        f'conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n'
+        ]
+        f.writelines(lines_bash_file)
+        f.close()      
         
        
         
