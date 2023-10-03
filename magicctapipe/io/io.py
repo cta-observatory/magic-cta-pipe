@@ -77,7 +77,7 @@ def telescope_combinations(config):
     
     
     TEL_NAMES = {}
-    for k, v in config["mc_tel_ids"].items():    #Here we swap the dictionary keys and values just for convenience.
+    for k, v in config["mc_tel_ids"].items():  # Here we swap the dictionary keys and values just for convenience.
         if v > 0:
             TEL_NAMES[v] =  k
     
@@ -86,16 +86,16 @@ def telescope_combinations(config):
     
     def recursive_solution(current_tel, current_comb):
     
-        if current_tel == len(keys):     #The function stops once we reach the last telescope
+        if current_tel == len(keys):  # The function stops once we reach the last telescope
             return 
       
-        current_comb_name = current_comb[0] + '_' + TEL_NAMES[keys[current_tel]]  #Name of the combo (at this point it can even be a single telescope)
-        current_comb_list = current_comb[1] + [keys[current_tel]]                 #List of telescopes (including individual telescopes)
+        current_comb_name = current_comb[0] + '_' + TEL_NAMES[keys[current_tel]]  # Name of the combo (at this point it can even be a single telescope)
+        current_comb_list = current_comb[1] + [keys[current_tel]]  # List of telescopes (including individual telescopes)
     
-        if len(current_comb_list) > 1:                          #We save them in the new dictionary excluding the single-telescope values
+        if len(current_comb_list) > 1:  # We save them in the new dictionary excluding the single-telescope values
             TEL_COMBINATIONS[current_comb_name[1:]] = current_comb_list;
       
-        current_comb = [current_comb_name, current_comb_list]   #We save the current results in this varible to recal the function recursively ("for" loop below)
+        current_comb = [current_comb_name, current_comb_list]  # We save the current results in this varible to recal the function recursively ("for" loop below)
 
         for i in range(1, len(keys)-current_tel):               
             recursive_solution(current_tel+i, current_comb)
