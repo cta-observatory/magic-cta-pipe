@@ -201,7 +201,7 @@ def mergeMC(target_dir, identification, env_name):
         
         f.write(f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n")
         f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged'.join('/merged_${SLURM_ARRAY_TASK_ID}.log\n'))
+        f.write(f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n')
         f.write(f'conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n')        
         
        
