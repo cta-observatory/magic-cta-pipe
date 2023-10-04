@@ -13,7 +13,7 @@ from lstchain.image.modifier import (
 
 
 __all__ = [
-    "Calibrate"
+    "calibrate"
 ]
 
 

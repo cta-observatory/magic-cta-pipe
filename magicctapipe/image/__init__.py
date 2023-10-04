@@ -14,5 +14,5 @@ __all__ = [
     "get_num_islands_MAGIC",
     "calibrate",
     "clean_image_params",
-    "get_leakage",    
+    "get_leakage",
 ]
