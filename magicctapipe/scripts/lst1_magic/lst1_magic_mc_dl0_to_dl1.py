@@ -46,7 +46,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
 
 from magicctapipe.image import MAGICClean
-from magicctapipe.image.calib import Calibrate_LST, Calibrate_MAGIC
+from magicctapipe.image.calib import calibrate
 from magicctapipe.io import SimEventInfoContainer, format_object
 from magicctapipe.utils import calculate_disp, calculate_impact
 from traitlets.config import Config
@@ -230,12 +230,12 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
             for tel_id in tels_with_trigger:         
 
-                if tel_id in LSTs_IDs:   ##If the ID is in the LST list, we call Calibrate_LST()
+                if tel_id in LSTs_IDs:   ##If the ID is in the LST list, we call calibrate on the LST()
                     # Calibrate the LST-1 event
-                    signal_pixels, image, peak_time = Calibrate_LST(event, tel_id, obs_id, config_lst, camera_geoms, calibrator_lst)   
+                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, obs_id=obs_id, config=config_lst, camera_geoms=camera_geoms, calibrator=calibrator_lst, LST_bool=True)   
                 elif tel_id in MAGICs_IDs:
                     # Calibrate the MAGIC event
-                    signal_pixels, image, peak_time = Calibrate_MAGIC(event, tel_id, config_magic, magic_clean, calibrator_magic)
+                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, config=config_magic, magic_clean=magic_clean, calibrator=calibrator_magic, LST_bool=False)
                 else:
                     logger.info(
                         f"--> Telescope ID {tel_id} not in LST list or MAGIC list. Please check if the IDs are OK in the configuration file"

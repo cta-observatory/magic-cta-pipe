@@ -10,17 +10,14 @@ from .leakage import (
 )
 
 from .calib import (
-    Calibrate_LST, 
-    Calibrate_MAGIC
+    calibrate,   
 )
 
 __all__ = [
     "MAGICClean",
     "PixelTreatment",
     "get_num_islands_MAGIC",
+    "calibrate",
     "clean_image_params",
-    "get_leakage",
-    "Calibrate_LST", 
-    "Calibrate_MAGIC",
-    "Calibrate"
+    "get_leakage",    
 ]
