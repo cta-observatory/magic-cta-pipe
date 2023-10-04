@@ -20,7 +20,7 @@ __all__ = [
 def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_geoms=None, magic_clean=None):
 
     """
-    This function computes and returns some information for a single event of a telescope 
+    This function calibrates the camera image for a single event of a telescope 
 
     Parameters
     ----------
@@ -44,9 +44,12 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
 
     Returns
     -------
-    signal_pixels: Mask of the pixels selected by the cleaning
-    image: Array of number of p.e. in the camera pixels
-    peak_time: Array of the signal peak time in the camera pixels
+    signal_pixels: boolean mask
+        Mask of the pixels selected by the cleaning
+    image: numpy array
+        Array of number of p.e. in the camera pixels
+    peak_time: numpy array
+        Array of the signal peak time in the camera pixels
 
     """
     

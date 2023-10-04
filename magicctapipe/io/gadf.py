@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import logging
-
 import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
@@ -13,6 +12,7 @@ from magicctapipe import __version__
 from magicctapipe.utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
 from pyirf.binning import split_bin_lo_hi
 #from .io import telescope_combinations
+
 __all__ = [
     "create_gh_cuts_hdu",
     "create_event_hdu",
@@ -26,6 +26,7 @@ logger.setLevel(logging.INFO)
 
 # The MJD reference time
 MJDREF = Time(0, format="unix", scale="utc")
+
 
 @u.quantity_input
 def create_gh_cuts_hdu(
@@ -85,6 +86,7 @@ def create_gh_cuts_hdu(
     gh_cuts_hdu = fits.BinTableHDU(qtable, header=header, name="GH_CUTS")
 
     return gh_cuts_hdu
+
 
 def create_event_hdu(
     event_table, on_time, deadc, source_name, source_ra=None, source_dec=None
@@ -229,6 +231,7 @@ def create_event_hdu(
     event_hdu = fits.BinTableHDU(qtable, header=header, name="EVENTS")
 
     return event_hdu
+
 
 def create_gti_hdu(event_table):
     """

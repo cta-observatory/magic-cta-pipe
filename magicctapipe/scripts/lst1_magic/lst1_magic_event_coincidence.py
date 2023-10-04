@@ -58,7 +58,6 @@ import sys
 import time
 from decimal import Decimal
 from pathlib import Path
-
 import numpy as np
 import pandas as pd
 import yaml
@@ -128,9 +127,7 @@ def telescope_positions(config):
     for k, v in telescopes_in_use.items():
         TEL_POSITIONS[k] = list(np.round(np.asarray(v)-average_xyz,2)) * u.m
     
-    return TEL_POSITIONS
-    
-
+    return TEL_POSITIONS  
 
 
 def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
@@ -187,7 +184,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
     pre_offset_search = False
     if "pre_offset_search" in config_coinc: #looking for the boolean value of pre_offset_search in the configuration file
-        pre_offset_search = config_coinc["pre_offset_search"] 
+        pre_offset_search = config_coinc["pre_offset_search"]
 
     if pre_offset_search:
         logger.info("\nPre offset search will be performed.")
@@ -196,7 +193,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
         logger.info("\noffset scan range defined in the config file will be used.")
         offset_start = u.Quantity(config_coinc["time_offset"]["start"])
         offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
-
     
     event_data = pd.DataFrame()
     features = pd.DataFrame()
