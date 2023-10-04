@@ -146,7 +146,7 @@ def main():
     
     
     telescope_ids = list(config["mc_tel_ids"].values())
-    target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}"'
+    target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
     
     env_name = config["general"]["env_name"]
     
