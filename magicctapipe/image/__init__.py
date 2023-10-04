@@ -4,12 +4,8 @@ from .cleaning import (
     get_num_islands_MAGIC,
     clean_image_params,
 )
-from .leakage import (
-    get_leakage,
-)
-from .calib import (
-    calibrate,   
-)
+from .leakage import get_leakage
+from .calib import calibrate
 
 
 __all__ = [

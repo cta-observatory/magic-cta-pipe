@@ -119,6 +119,5 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
             signal_pixels[island_labels != max_island_label] = False
 
     else: 
-        print("Check the provided parameters and the telescope type; calibration was not possible")          
-        return
+        raise ValueError("Check the provided parameters and the telescope type; calibration was not possible") 
     return signal_pixels, image, peak_time
