@@ -18,10 +18,10 @@ If you want to run only the MAGIC or only the MC conversion,
 you can do as follows:
 
 Only MAGIC:
-$ python setting_up_config_and_dir.py --analysis type onlyMAGIC
+$ python setting_up_config_and_dir.py --analysis-type onlyMAGIC
 
 Only MC:
-$ python setting_up_config_and_dir.py --analysis type onlyMC
+$ python setting_up_config_and_dir.py --analysis-type onlyMC
 
 """
 

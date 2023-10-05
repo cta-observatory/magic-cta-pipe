@@ -19,6 +19,14 @@ Workingdir/DL1/MC/PARTICLE/Merged
 Usage:
 $ python merging_runs_and_splitting_training_samples.py
 
+If you want to merge only the MAGIC or only the MC data,
+you can do as follows:
+
+Only MAGIC:
+$ python merging_runs_and_splitting_training_samples.py --analysis-type onlyMAGIC
+
+Only MC:
+$ python merging_runs_and_splitting_training_samples.py --analysis-type onlyMC
 """
 
 import os
@@ -115,7 +123,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name):
         if not os.path.exists(f"{MAGIC_DL1_dir}/Merged"):
             os.mkdir(f"{MAGIC_DL1_dir}/Merged")
     
-    with open(f"Merge_{identification}.sh","w") as f:
+    with open(f"Merge_MAGIC_{identification}.sh","w") as f:
         f.write('#!/bin/sh\n\n')
         f.write('#SBATCH -p short\n')
         f.write(f'#SBATCH -J {process_name}\n')
@@ -188,7 +196,7 @@ def mergeMC(target_dir, identification, env_name):
        
     cleaning(list_of_nodes, target_dir) #This will delete the (possibly) failed runs.
         
-    with open(f"Merge_{identification}.sh","w") as f:
+    with open(f"Merge_MC_{identification}.sh","w") as f:
         lines_bash_file = [
         '#!/bin/sh\n\n',
         '#SBATCH -p short\n',
@@ -225,12 +233,21 @@ def main():
         help="Path to a configuration file",
     )
 
+    parser.add_argument(
+        "--analysis-type",
+        "-t",
+        choices=['onlyMAGIC', 'onlyMC'],
+        dest="analysis_type",
+        type=str,
+        default="doEverything",
+        help="You can type 'onlyMAGIC' or 'onlyMC' to run this script only on MAGIC or MC data, respectively.",
+    )
+
     args = parser.parse_args()
     with open(
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    
     
     
     target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
@@ -242,38 +259,56 @@ def main():
    
     env_name = config["general"]["env_name"]
     
-    #Here we slice the proton MC data into "train" and "test":
-    print("***** Splitting protons into 'train' and 'test' datasets...")
-    split_train_test(target_dir, train_fraction)
+    #Below we run the analysis on the MC data
+    if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):
+        #Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
+        if not os.path.exists(f"{target_dir}/DL1/MC/protons"):
+            print("***** Splitting protons into 'train' and 'test' datasets...")
+            split_train_test(target_dir, train_fraction)
     
-    print("***** Generating merge bashscripts...")
-    merge(target_dir, "0_subruns", MAGIC_runs, env_name) #generating the bash script to merge the subruns
-    merge(target_dir, "1_M1M2", MAGIC_runs, env_name) #generating the bash script to merge the M1 and M2 runs
-    merge(target_dir, "2_nights", MAGIC_runs, env_name) #generating the bash script to merge all runs per night
+        print("***** Generating merge_MC bashscripts...")
+        mergeMC(target_dir, "protons", env_name) #generating the bash script to merge the files
+        mergeMC(target_dir, "gammadiffuse", env_name) #generating the bash script to merge the files
+        mergeMC(target_dir, "gammas", env_name) #generating the bash script to merge the files 
+        mergeMC(target_dir, "protons_test", env_name)
+
+        print("***** Running merge_hdf_files.py on the MC data files...")
+
+        #Below we run the bash scripts to merge the MC files
+        list_of_merging_scripts = np.sort(glob.glob("Merge_MC_*.sh"))
+
+        for n,run in enumerate(list_of_merging_scripts):
+            if n == 0:
+                launch_jobs =  f"merging{n}=$(sbatch --parsable {run})"
+            else:
+                launch_jobs = f"{launch_jobs} && merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
+        
+        os.system(launch_jobs)
+
+
+    #Below we run the analysis on the MAGIC data
+    if (args.analysis_type=='onlyMAGIC') or (args.analysis_type=='doEverything'): 
+        print("***** Generating merge_MAGIC bashscripts...")
+        merge(target_dir, "0_subruns", MAGIC_runs, env_name) #generating the bash script to merge the subruns
+        merge(target_dir, "1_M1M2", MAGIC_runs, env_name) #generating the bash script to merge the M1 and M2 runs
+        merge(target_dir, "2_nights", MAGIC_runs, env_name) #generating the bash script to merge all runs per night
+        
+        print("***** Running merge_hdf_files.py on the MAGIC data files...")
+        
+        #Below we run the bash scripts to merge the MAGIC files
+        list_of_merging_scripts = np.sort(glob.glob("Merge_MAGIC_*.sh"))
+        
+        for n,run in enumerate(list_of_merging_scripts):
+            if n == 0:
+                launch_jobs =  f"merging{n}=$(sbatch --parsable {run})"
+            else:
+                launch_jobs = f"{launch_jobs} && merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
+        
+        os.system(launch_jobs)
     
-    print("***** Generating mergeMC bashscripts...")
-    mergeMC(target_dir, "protons", env_name) #generating the bash script to merge the files
-    mergeMC(target_dir, "gammadiffuse", env_name) #generating the bash script to merge the files
-    mergeMC(target_dir, "gammas", env_name) #generating the bash script to merge the files 
-    mergeMC(target_dir, "protons_test", env_name)
-    
-    
-    print("***** Running merge_hdf_files.py in the MAGIC data files...")
     print(f"Process name: merging_{target_dir.split('/')[-2:][1]}")
     print(f"To check the jobs submitted to the cluster, type: squeue -n merging_{target_dir.split('/')[-2:][1]}")
     
-    #Below we run the bash scripts to merge the MAGIC files
-    list_of_merging_scripts = np.sort(glob.glob("Merge_*.sh"))
-    
-    for n,run in enumerate(list_of_merging_scripts):
-        if n == 0:
-            launch_jobs =  f"merging{n}=$(sbatch --parsable {run})"
-        else:
-            launch_jobs = f"{launch_jobs} && merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
-    
-    #print(launch_jobs)
-    os.system(launch_jobs)
-
 if __name__ == "__main__":
     main()
 
