@@ -24,10 +24,6 @@ $ python lst1_magic_stereo_reco.py
 (--output-dir dl1_stereo)
 (--config-file config.yaml)
 (--magic-only)
-
-Broader usage:
-This script is called automatically from the script "stereo_events.py".
-If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse
@@ -85,7 +81,7 @@ def calculate_pointing_separation(event_data, config):
     # Extract LST events
     df_lst = event_data.query(f"tel_id == {LSTs_IDs}")
 
-    # Extract the MAGIC events seen by also LST
+    # Extract the coincident events observed by both MAGICs and LSTs
     df_magic = event_data.query(f"tel_id == {MAGICs_IDs}")
     df_magic = df_magic.loc[df_lst.index]
 
@@ -156,7 +152,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
 
     if magic_only_analysis:
-        event_data.query(f"tel_id > {LSTs_IDs.max()}", inplace=True) # Here we select only the events with the MAGIC tel_ids, i.e. above the maximum tel_id of the LSTs
+        event_data.query(f"tel_id not in {LSTs_IDs}", inplace=True) # Here we select only the events with the MAGIC tel_ids, i.e. above the maximum tel_id of the LSTs
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
     event_data = get_stereo_events(event_data, config=config, quality_cuts=config_stereo["quality_cuts"])

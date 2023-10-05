@@ -50,7 +50,7 @@ Temporary paths
 
 @pytest.fixture(scope="session")
 def temp_DL1_gamma(tmp_path_factory):
-    return tmp_path_factory.mktemp("DL1_gammas")       
+    return tmp_path_factory.mktemp("DL1_gammas")
 
 
 @pytest.fixture(scope="session")
@@ -379,12 +379,22 @@ def config_monly():
     config_path = resource_file("test_config_monly.yaml")
     return config_path 
 
+
 @pytest.fixture(scope="session")
 def config_gen():
     config_path = resource_file("test_config_general.yaml")
     with open(config_path, "rb") as f:
         config = yaml.safe_load(f)
     return config
+
+
+@pytest.fixture(scope="session")
+def config_gen_4lst():
+    config_path = resource_file("test_config_general_4LST.yaml")
+    with open(config_path, "rb") as f:
+        config = yaml.safe_load(f)
+    return config
+
 
 """
 Data processing

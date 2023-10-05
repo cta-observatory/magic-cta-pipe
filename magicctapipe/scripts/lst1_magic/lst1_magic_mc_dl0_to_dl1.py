@@ -14,15 +14,11 @@ The telescope coordinates will be converted to those
 relative to the center of the LST and MAGIC positions (including the
 altitude) for the convenience of the geometrical stereo reconstruction.
 
-Usage per single data file (indicated if you want to do tests):
+Usage:
 $ python lst1_magic_mc_dl0_to_dl1.py
 --input-file dl0/gamma_40deg_90deg_run1.simtel.gz
 (--output-dir dl1)
 (--config-file config_step1.yaml)
-
-Broader usage:
-This script is called automatically from the script "setting_up_config_and_dir.py".
-If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse #Parser for command-line options, arguments etc
@@ -96,7 +92,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     obs_id = event_source.obs_ids[0]
     subarray = event_source.subarray    
 
-    tel_descriptions = subarray.tel    
+    tel_descriptions = subarray.tel
     tel_positions = subarray.positions
 
     logger.info("\nSubarray description:")
@@ -208,10 +204,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     output_file = (
         f"{output_dir}/dl1_{particle_type}_zd_{zenith.round(3)}deg_"
         f"az_{azimuth.round(3)}deg_{LSTs_in_use}_{MAGICs_in_use}_run{obs_id}.h5"
-    )                                                                                 #The files are saved with the names of all telescopes involved
+    )  #The files are saved with the names of all telescopes involved
 
-    
-    
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 

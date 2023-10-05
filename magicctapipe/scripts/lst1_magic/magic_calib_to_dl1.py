@@ -22,16 +22,12 @@ Please note that it is also possible to process SUM trigger data with
 this script, but since the MaTaJu cleaning is not yet implemented in
 this pipeline, it applies the standard cleaning instead.
 
-Usage per single data file (indicated if you want to do tests):
+Usage:
 $ python magic_calib_to_dl1.py
 --input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 (--output-dir dl1)
 (--config-file config.yaml)
 (--process-run)
-
-Broader usage:
-This script is called automatically from the script "setting_up_config_and_dir.py".
-If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse
@@ -378,8 +374,6 @@ def main():
         default=None,
         help="Max. number of processed showers",
     )
-
-
 
     parser.add_argument(
         "--process-run",

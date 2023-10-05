@@ -9,6 +9,7 @@ from magicctapipe.io.io import (
     load_magic_dl1_data_files,
     load_lst_dl1_data_file,
     load_dl2_data_file,
+    telescope_combinations,
 )
 
 import pytest
@@ -16,6 +17,16 @@ import numpy as np
 import pandas as pd
 
 
+def test_telescope_combinations(config_gen, config_gen_4lst):
+    """
+    Simple check on telescope combinations
+    """
+    M_LST, M_LST_comb = telescope_combinations(config_gen)
+    LSTs, LSTs_comb = telescope_combinations(config_gen_4lst)
+    assert M_LST == {1: 'LST-1', 2: 'MAGIC-I', 3: 'MAGIC-II'}
+    assert M_LST_comb == {'LST-1_MAGIC-I': [1, 2], 'LST-1_MAGIC-I_MAGIC-II': [1, 2, 3], 'LST-1_MAGIC-II': [1, 3], 'MAGIC-I_MAGIC-II': [2, 3]}
+    assert LSTs == {1: 'LST-1', 3: 'LST-2', 2: 'LST-3', 5: 'LST-4'}
+    assert LSTs_comb == {'LST-1_LST-2': [1, 3], 'LST-1_LST-2_LST-3': [1, 3, 2], 'LST-1_LST-2_LST-3_LST-4': [1, 3, 2, 5], 'LST-1_LST-2_LST-4': [1, 3, 5], 'LST-1_LST-3': [1, 2], 'LST-1_LST-3_LST-4': [1, 2, 5], 'LST-1_LST-4': [1, 5], 'LST-2_LST-3': [3, 2], 'LST-2_LST-3_LST-4': [3, 2, 5], 'LST-2_LST-4': [3, 5], 'LST-3_LST-4': [2, 5]}
 
 def test_format_object():
     """
