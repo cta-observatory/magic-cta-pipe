@@ -6,6 +6,15 @@ Coincident MAGIC+LST data files.
 Usage:
 $ python stereo_events.py
 
+If you want to compute the stereo parameters only the real data or only the MC data,
+you can do as follows:
+
+Only real data:
+$ python stereo_events.py --analysis-type onlyReal
+
+Only MC:
+$ python stereo_events.py --analysis-type onlyMC
+
 """
 
 import os
@@ -65,7 +74,7 @@ def bash_stereo(target_dir, env_name):
         os.system(f"ls {nightLST}/*LST*.h5 >  {nightLST}/list_coin.txt")  #generating a list with the DL1 coincident data files.
         process_size = len(np.genfromtxt(f"{nightLST}/list_coin.txt",dtype="str")) - 1
         
-        with open(f"StereoEvents_{nightLST.split('/')[-1]}.sh","w") as f:
+        with open(f"StereoEvents_real_{nightLST.split('/')[-1]}.sh","w") as f:
             f.write("#!/bin/sh\n\n")
             f.write("#SBATCH -p short\n")
             f.write(f"#SBATCH -J {process_name}_stereo\n")
@@ -106,7 +115,7 @@ def bash_stereoMC(target_dir, identification, env_name):
     os.system(f"ls {inputdir}/dl1*.h5 >  {inputdir}/list_coin.txt")  #generating a list with the DL1 coincident data files.
     process_size = len(np.genfromtxt(f"{inputdir}/list_coin.txt",dtype="str")) - 1
     
-    with open(f"StereoEvents_{identification}.sh","w") as f:
+    with open(f"StereoEvents_MC_{identification}.sh","w") as f:
         f.write("#!/bin/sh\n\n")
         f.write("#SBATCH -p xxl\n")
         f.write(f"#SBATCH -J {process_name}_stereo\n")
@@ -126,9 +135,6 @@ def bash_stereoMC(target_dir, identification, env_name):
        
 
 
-
-
-
 def main():
 
     """
@@ -143,6 +149,16 @@ def main():
         type=str,
         default="./config_general.yaml",
         help="Path to a configuration file",
+    )
+
+    parser.add_argument(
+        "--analysis-type",
+        "-t",
+        choices=['onlyReal', 'onlyMC'],
+        dest="analysis_type",
+        type=str,
+        default="doEverything",
+        help="You can type 'onlyReal' or 'onlyMC' to run this script only on real or MC data, respectively.",
     )
 
     args = parser.parse_args()
@@ -162,38 +178,45 @@ def main():
     print("***** This file can be found in ",target_dir)
     configfile_stereo(telescope_ids, target_dir)
     
-    print("***** Generating the bashscript...")
-    bash_stereo(target_dir, env_name)
+    #Below we run the analysis on the MC data
+    if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):
+        print("***** Generating the bashscript for MCs...")
+        bash_stereoMC(target_dir,"gammadiffuse", env_name)
+        bash_stereoMC(target_dir,"gammas", env_name)
+        bash_stereoMC(target_dir,"protons", env_name)
+        bash_stereoMC(target_dir,"protons_test", env_name)
+
+        list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
+
+        for n,run in enumerate(list_of_stereo_scripts):
+            if n == 0:
+                launch_jobs =  f"stereo{n}=$(sbatch --parsable {run})"
+            else:
+                launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
+        
+        #print(launch_jobs)
+        os.system(launch_jobs)
     
-    print("***** Generating the bashscript for MCs...")
-    bash_stereoMC(target_dir,"gammadiffuse", env_name)
-    bash_stereoMC(target_dir,"gammas", env_name)
-    bash_stereoMC(target_dir,"protons", env_name)
-    bash_stereoMC(target_dir,"protons_test", env_name)
+    #Below we run the analysis on the real data
+    if (args.analysis_type=='onlyReal') or (args.analysis_type=='doEverything'): 
+        print("***** Generating the bashscript for real data...")
+        bash_stereo(target_dir, env_name)
+        
+        list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_real_*.sh"))
     
+        for n,run in enumerate(list_of_stereo_scripts):
+            if n == 0:
+                launch_jobs =  f"stereo{n}=$(sbatch --parsable {run})"
+            else:
+                launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
+        
+        #print(launch_jobs)
+        os.system(launch_jobs)
+
     print("***** Submitting processes to the cluster...")
     print(f"Process name: {target_dir.split('/')[-2:][1]}_stereo")
-    print(f"To check the jobs submitted to the cluster, type: squeue -n {target_dir.split('/')[-2:][1]}_stereo")
-    
-    #Below we run the bash scripts to find the stereo events
-    list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_*.sh"))
-    
-    for n,run in enumerate(list_of_stereo_scripts):
-        if n == 0:
-            launch_jobs =  f"stereo{n}=$(sbatch --parsable {run})"
-        else:
-            launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
-    
-    #print(launch_jobs)
-    os.system(launch_jobs)
+    print(f"To check the jobs submitted to the cluster, type: squeue -n {target_dir.split('/')[-2:][1]}_stereo")    
 
 if __name__ == "__main__":
     main()
-
-
-    
-    
-    
-    
-    
     
