@@ -256,10 +256,9 @@ def get_stereo_events(
     if quality_cuts is not None:
         event_data_stereo.query(quality_cuts, inplace=True)
     
-    max_multiplicity=len(TEL_NAMES.keys())
     # Extract stereo events
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
-    event_data_stereo.query(f"multiplicity >1 & multiplicity <= {max_multiplicity}", inplace=True)
+    event_data_stereo.query(f"multiplicity >1", inplace=True)
     if eval_multi_combo==True:
         # Check the total number of events
         n_events_total = len(event_data_stereo.groupby(group_index).size())
