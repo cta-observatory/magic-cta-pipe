@@ -540,7 +540,6 @@ def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
                 f"-c{str(config)}",
             ]
         )
-    print(len(temp_DL1_p_train.glob('*.h5')))
     return (temp_DL1_p_train, temp_DL1_p_test)
 
 
@@ -566,7 +565,6 @@ def p_stereo_monly(
                 "--magic-only",
             ]
         )
-    print(len(temp_DL1_p_train_monly.glob('*.h5')))
     return (temp_DL1_p_train_monly, temp_DL1_p_test_monly)
 
 
