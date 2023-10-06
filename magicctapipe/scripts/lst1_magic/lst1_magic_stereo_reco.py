@@ -152,7 +152,10 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
 
     if magic_only_analysis:
-        event_data.query(f"tel_id not in {LSTs_IDs}", inplace=True) # Here we select only the events with the MAGIC tel_ids, i.e. above the maximum tel_id of the LSTs
+        tel_id=np.asarray(list(assigned_tel_ids.values())[:])
+        used_id=tel_id[tel_id!=0]
+        magic_ids=[item for item in used_id if item not in LSTs_IDs]
+        event_data.query(f"tel_id in {magic_ids}", inplace=True) # Here we select only the events with the MAGIC tel_ids, i.e. above the maximum tel_id of the LSTs
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
     event_data = get_stereo_events(event_data, config=config, quality_cuts=config_stereo["quality_cuts"])
