@@ -217,11 +217,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
             tels_with_trigger = event.trigger.tels_with_trigger
 
             # Check if the event triggers both M1 and M2 or not
-            if((set(MAGICs_IDs).issubset(set(tels_with_trigger))) and (MAGICs_in_use=="MAGIC1_MAGIC2")):
-                magic_stereo = True   #If both have trigger, then magic_stereo = True
-            else:
-                magic_stereo = False
-
+            magic_stereo=(set(MAGICs_IDs).issubset(set(tels_with_trigger))) and (MAGICs_in_use=="MAGIC1_MAGIC2")  #If both have trigger, then magic_stereo = True
+            
             for tel_id in tels_with_trigger:         
 
                 if tel_id in LSTs_IDs:   ##If the ID is in the LST list, we call calibrate on the LST()

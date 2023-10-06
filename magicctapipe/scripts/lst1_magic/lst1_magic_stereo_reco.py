@@ -163,7 +163,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     Number_of_LSTs_in_use = len(LSTs_IDs[LSTs_IDs > 0]) 
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
     Number_of_MAGICs_in_use = len(MAGICs_IDs[MAGICs_IDs > 0])
-    if (Number_of_LSTs_in_use > 0) and (Number_of_MAGICs_in_use > 0): #If we use the two arrays, i.e. MAGIC and LST, then the "if" statement below will work (except for MC simulations)
+    if Number_of_LSTs_in_use*Number_of_MAGICs_in_use > 0: #If we use the two arrays, i.e. MAGIC and LST, then the "if" statement below will work (except for MC simulations)
         Two_arrays_are_used = True
     else:
         Two_arrays_are_used = False
