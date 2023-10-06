@@ -550,13 +550,14 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     # Create the subarray description with the telescope coordinates
     # relative to the center of the LST and MAGIC positions
-    tel_descriptions = {}
-    for k, v in TEL_NAMES.items():
+    tel_descriptions = {}    
+    for k, v in TEL_NAMES.items():       
         if v[:3] == "LST":
             tel_descriptions[k] = subarray_lst.tel[k]
-        else:
+        elif v[:5] == "MAGIC":
             tel_descriptions[k] = subarray_magic.tel[k]
-    
+        else:
+            raise Exception(f"{v} is not a valid telescope name (check the config file). Only MAGIC and LST telescopes can be analyzed --> Valid telescope names are LST-[1-4] and MAGIC-[I-II] ") 
 
     subarray_lst_magic = SubarrayDescription(
         "LST-MAGIC-Array", TEL_POSITIONS, tel_descriptions
