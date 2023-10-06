@@ -58,6 +58,7 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
 
     image = event.dl1.tel[tel_id].image.astype(np.float64)
     peak_time = event.dl1.tel[tel_id].peak_time.astype(np.float64)
+
     if (LST_bool==False) and (magic_clean!=None): 
         use_charge_correction = config["charge_correction"]["use"]
     
@@ -68,11 +69,14 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
         signal_pixels, image, peak_time = magic_clean[tel_id].clean_image(
             event_image=image, event_pulse_time=peak_time
         )
-    elif (LST_bool==True) and (obs_id!=None) and (camera_geoms!=None):    
-        increase_nsb = config["increase_nsb"].pop("use")
+    elif (LST_bool==True) and (obs_id!=None) and (camera_geoms!=None):   
+        nsb=config["increase_nsb"]
+        time_delta=config["time_delta_cleaning"]
+        dynamic=config["dynamic_cleaning"]
+        increase_nsb = nsb.pop("use")
         increase_psf = config["increase_psf"]["use"]
-        use_time_delta_cleaning = config["time_delta_cleaning"].pop("use")
-        use_dynamic_cleaning = config["dynamic_cleaning"].pop("use")
+        use_time_delta_cleaning = time_delta.pop("use")
+        use_dynamic_cleaning = dynamic.pop("use")
         use_only_main_island = config["use_only_main_island"]
     
         if increase_nsb:
