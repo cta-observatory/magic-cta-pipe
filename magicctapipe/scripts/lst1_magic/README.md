@@ -31,3 +31,6 @@ MAGIC+LST analysis starts from MAGIC calibrated data (\_Y\_ files), LST DL1 data
 - `lst1_magic_create_irf.py` to create the IRF
 - `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files
 
+## High level analysis
+
+The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs. Note that the notebooks run with gammapy v0.20 or higher, therefore another conda environment is needed to run them, since the MAGIC+LST-1 pipeline at the moment depends on v0.19.
