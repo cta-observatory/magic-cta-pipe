@@ -12,8 +12,8 @@ LST:
         extra_noise_in_bright_pixels: 2.08
 
     increase_psf:
-        use: false
-        fraction: null
+        use: true
+        fraction: 1.1
 
     tailcuts_clean:
         picture_thresh: 8
@@ -31,7 +31,7 @@ LST:
         threshold: 267
         fraction: 0.03
 
-    use_only_main_island: false
+    use_only_main_island: true
 
 
 MAGIC:
