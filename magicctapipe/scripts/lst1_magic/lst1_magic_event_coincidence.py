@@ -109,24 +109,20 @@ def telescope_positions(config):
     "MAGIC-I" : [-23.540, -191.750, 41.25],
     "MAGIC-II" : [-94.05, -143.770, 42.42]
     }
-    
+
     telescopes_in_use = {}
-    x = np.asarray([])
-    y = np.asarray([])
-    z = np.asarray([])
-    for k, v in config["mc_tel_ids"].items(): 
-        if v > 0:
+    tels=config["mc_tel_ids"]
+    tel_cp=tels.copy()
+    for k, v in tel_cp.copy().items():
+        if v <= 0:
+            tel_cp.pop(k)
+        else:
             telescopes_in_use[v] = RELATIVE_POSITIONS[k]
-            x = np.append(x,RELATIVE_POSITIONS[k][0])
-            y = np.append(y,RELATIVE_POSITIONS[k][1])
-            z = np.append(z,RELATIVE_POSITIONS[k][2])
     
-    average_xyz = np.asarray([np.mean(x), np.mean(y), np.mean(z)])
-    
+    average_xyz=np.array([RELATIVE_POSITIONS[k] for k in tel_cp.keys()]).mean(axis=0)
     TEL_POSITIONS = {}
     for k, v in telescopes_in_use.items():
         TEL_POSITIONS[k] = list(np.round(np.asarray(v)-average_xyz,2)) * u.m
-    
     return TEL_POSITIONS  
 
 
@@ -152,7 +148,6 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     TEL_NAMES, _ = telescope_combinations(config)
     
     TEL_POSITIONS = telescope_positions(config)
-    
     # Load the input LST DL1 data file
     logger.info(f"\nInput LST DL1 data file: {input_file_lst}")
 
