@@ -125,36 +125,36 @@ def test_load_train_data_files_exc(temp_train_exc):
         _ = load_train_data_files(str(temp_train_exc))
 
 
-def test_load_train_data_files_tel_p(p_stereo, config_gen):
+def test_load_train_data_files_tel_p(p_stereo_monly, config_gen):
     """
     Check dictionary
     """
 
-    events = load_train_data_files_tel(str(p_stereo[0]),config_gen)
+    events = load_train_data_files_tel(str(p_stereo_monly[0]),config_gen)
     assert list(events.keys()) == [2,3]
     data = events[2]    
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
 
-def test_load_train_data_files_tel_g(gamma_stereo, config_gen):
+def test_load_train_data_files_tel_g(gamma_stereo_monly, config_gen):
     """
     Check dictionary
     """
 
-    events = load_train_data_files_tel(str(gamma_stereo[0]), config_gen)
+    events = load_train_data_files_tel(str(gamma_stereo_monly[0]), config_gen)
     assert list(events.keys()) == [2,3]
     data = events[3]    
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
 
-def test_load_train_data_files_tel_off(gamma_stereo, config_gen):
+def test_load_train_data_files_tel_off(gamma_stereo_monly, config_gen):
     """
     Check off-axis cut
     """
     events = load_train_data_files_tel(
-        str(gamma_stereo[0]), config=config_gen, offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+        str(gamma_stereo_monly[0]), config=config_gen, offaxis_min="0.2 deg", offaxis_max="0.5 deg"
     )
     data = events[2]
     assert np.all(data["off_axis"] >= 0.2)
