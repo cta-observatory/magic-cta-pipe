@@ -20,6 +20,7 @@ from .io import (
     load_train_data_files_tel,
     save_pandas_data_in_table,
     telescope_combinations,
+    telescope_positions,
 )
 from .gadf import (
     create_event_hdu,
@@ -50,4 +51,5 @@ __all__ = [
     "load_train_data_files_tel",
     "save_pandas_data_in_table",
     "telescope_combinations",
+    "telescope_positions",
 ]

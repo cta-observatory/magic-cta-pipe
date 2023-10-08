@@ -11,11 +11,13 @@ from magicctapipe.io.io import (
     load_lst_dl1_data_file,
     load_dl2_data_file,
     telescope_combinations,
+    telescope_positions,
 )
-
+import glob
 import pytest
 import numpy as np
 import pandas as pd
+import astropy.units as u
 
 
 def test_telescope_combinations(config_gen, config_gen_4lst):
@@ -28,6 +30,24 @@ def test_telescope_combinations(config_gen, config_gen_4lst):
     assert M_LST_comb == {'LST-1_MAGIC-I': [1, 2], 'LST-1_MAGIC-I_MAGIC-II': [1, 2, 3], 'LST-1_MAGIC-II': [1, 3], 'MAGIC-I_MAGIC-II': [2, 3]}
     assert LSTs == {1: 'LST-1', 3: 'LST-2', 2: 'LST-3', 5: 'LST-4'}
     assert LSTs_comb == {'LST-1_LST-2': [1, 3], 'LST-1_LST-2_LST-3': [1, 3, 2], 'LST-1_LST-2_LST-3_LST-4': [1, 3, 2, 5], 'LST-1_LST-2_LST-4': [1, 3, 5], 'LST-1_LST-3': [1, 2], 'LST-1_LST-3_LST-4': [1, 2, 5], 'LST-1_LST-4': [1, 5], 'LST-2_LST-3': [3, 2], 'LST-2_LST-3_LST-4': [3, 2, 5], 'LST-2_LST-4': [3, 5], 'LST-3_LST-4': [2, 5]}
+
+
+def test_telescope_positions(config_gen, config_gen_4lst):
+    """
+    Simple check on telescope positions
+    """
+    M_LST_position = telescope_positions(config_gen)
+    LSTs_position = telescope_positions(config_gen_4lst)
+    assert np.allclose(M_LST_position[1].value ,[-8.09 , 77.13 ,  0.78 ] )
+    assert np.allclose(M_LST_position[2].value ,[39.3 , -62.55 ,  -0.97 ] )
+    assert np.allclose(M_LST_position[3].value ,[-31.21 , -14.57 ,  0.2] )
+    assert np.allclose(LSTs_position[1].value ,[-70.93, -52.08,   9.08] )
+    assert np.allclose(LSTs_position[3].value ,[-35.27,  66.14,  -1.92] )
+    assert np.allclose(LSTs_position[2].value ,[75.28, 50.48, -5.22] )
+    assert np.allclose(LSTs_position[5].value ,[ 30.91, -64.54,  -1.92] )
+    assert M_LST_position[2].unit==u.m
+    assert LSTs_position[5].unit==u.m
+
 
 def test_format_object():
     """
@@ -380,6 +400,11 @@ def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc, config_gen):
         match="Could not find any DL1 data files in the input directory.",
     ):
         _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
+
+
+def test_coinc_preoffset(temp_coinc_preoff):
+    """Check pre-offset search option"""
+    assert len(glob.glob(f"{temp_coinc_preoff}/*.h5"))>0
 
 
 def test_get_stereo_events_data(coincidence_stereo, config_gen):

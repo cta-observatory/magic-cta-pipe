@@ -189,6 +189,11 @@ def temp_coinc(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
+def temp_coinc_preoff(tmp_path_factory):
+    return tmp_path_factory.mktemp("coincidence_pre_offset")
+
+
+@pytest.fixture(scope="session")
 def temp_coinc_stereo(tmp_path_factory):
     return tmp_path_factory.mktemp("coincidence_stereo")
 
@@ -371,6 +376,12 @@ def dl1_lst(base_url, env_prefix):
 @pytest.fixture(scope="session")
 def config():
     config_path = resource_file("test_config.yaml")
+    return config_path
+
+
+@pytest.fixture(scope="session")
+def config_preoff():
+    config_path = resource_file("test_config_preoffset.yaml")
     return config_path
 
 
@@ -891,6 +902,26 @@ def coincidence(dl1_lst, merge_magic, temp_coinc, config):
         )
 
     return temp_coinc
+
+
+@pytest.fixture(scope="session")
+def coincidence_preoffset(dl1_lst, merge_magic, temp_coinc_preoff, config_preoff):
+    """
+    Coincidence
+    """
+
+    for file in dl1_lst:
+        subprocess.run(
+            [
+                "lst1_magic_event_coincidence",
+                f"-l{str(file)}",
+                f"-m{str(merge_magic)}",
+                f"-o{str(temp_coinc_preoff)}",
+                f"-c{str(config_preoff)}",
+            ]
+        )
+
+    return temp_coinc_preoff
 
 
 @pytest.fixture(scope="session")

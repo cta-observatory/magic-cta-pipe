@@ -36,6 +36,7 @@ __all__ = [
     "load_train_data_files_tel",
     "save_pandas_data_in_table",
     "telescope_combinations",
+    "telescope_positions",
 ]
 
 logger = logging.getLogger(__name__)
@@ -107,6 +108,48 @@ def telescope_combinations(config):
   
     return TEL_NAMES, TEL_COMBINATIONS
     
+
+def telescope_positions(config):
+    """
+    This function computes the telescope positions with respect to the array baricenter. 
+    The array can have any configuration, e.g.: M1+M2+LST1+LST2, the full MAGIC+LST array, etc.
+    
+    Parameters
+    ----------
+    config: dict
+        dictionary generated from an yaml file with information about the telescope IDs.
+        
+    Returns
+    -------
+    TEL_POSITIONS: dict
+        Dictionary with telescope positions in the baricenter reference frame of the adopted array.
+    """
+    
+    #Telescope positions in meters in a generic reference frame:
+    RELATIVE_POSITIONS = {
+    "LST-1" : [-70.930, -52.070, 43.00],
+    "LST-2" : [-35.270,  66.140, 32.00],
+    "LST-3" : [75.280 ,  50.490, 28.70],
+    "LST-4" : [30.910 , -64.540, 32.00],
+    "MAGIC-I" : [-23.540, -191.750, 41.25],
+    "MAGIC-II" : [-94.05, -143.770, 42.42]
+    }
+
+    telescopes_in_use = {}
+    tels=config["mc_tel_ids"]
+    tel_cp=tels.copy()
+    for k, v in tel_cp.copy().items():
+        if v <= 0:
+            tel_cp.pop(k)
+        else:
+            telescopes_in_use[v] = RELATIVE_POSITIONS[k]
+    
+    average_xyz=np.array([RELATIVE_POSITIONS[k] for k in tel_cp.keys()]).mean(axis=0)
+    TEL_POSITIONS = {}
+    for k, v in telescopes_in_use.items():
+        TEL_POSITIONS[k] = list(np.round(np.asarray(v)-average_xyz,2)) * u.m
+    return TEL_POSITIONS  
+
 
 def format_object(input_object):
     """
