@@ -115,9 +115,14 @@ def telescope_positions(config):
     tel_cp=tels.copy()
     for k, v in tel_cp.copy().items():
         if v <= 0:
+            # Here we remove the telescopes with ID (i.e. "v") <= 0 from the dictionary:
             tel_cp.pop(k)
         else:
-            telescopes_in_use[v] = RELATIVE_POSITIONS[k]
+            # Here we check if the telescopes "k" listed in the configuration file are indeed LSTs or MAGICs:
+            if k in RELATIVE_POSITIONS.keys():
+                telescopes_in_use[v] = RELATIVE_POSITIONS[k]
+            else:
+                raise Exception(f"Telescope {k} not allowed in analysis. The telescopes allowed are LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.")
     
     average_xyz=np.array([RELATIVE_POSITIONS[k] for k in tel_cp.keys()]).mean(axis=0)
     TEL_POSITIONS = {}
