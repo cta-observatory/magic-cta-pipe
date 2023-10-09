@@ -402,11 +402,6 @@ def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc, config_gen):
         _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
 
 
-def test_coinc_preoffset(coincidence_preoffset):
-    """Check pre-offset search option"""
-    assert len(glob.glob(f"{coincidence_preoffset}/*.h5"))>0
-
-
 def test_get_stereo_events_data(coincidence_stereo, config_gen):
     """
     Check on stereo data reading

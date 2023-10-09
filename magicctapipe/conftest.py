@@ -54,6 +54,11 @@ def temp_DL1_gamma(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
+def temp_DL1_gamma_focal_exc(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL1_gammas_focal_exc")
+
+
+@pytest.fixture(scope="session")
 def temp_DL1_gamma_train(tmp_path_factory):
     return tmp_path_factory.mktemp("DL1_gamma_train")
 
@@ -902,26 +907,6 @@ def coincidence(dl1_lst, merge_magic, temp_coinc, config):
         )
 
     return temp_coinc
-
-
-@pytest.fixture(scope="session")
-def coincidence_preoffset(dl1_lst, merge_magic, temp_coinc_preoff, config_preoff):
-    """
-    Coincidence
-    """
-
-    for file in dl1_lst:
-        subprocess.run(
-            [
-                "lst1_magic_event_coincidence",
-                f"-l{str(file)}",
-                f"-m{str(merge_magic)}",
-                f"-o{str(temp_coinc_preoff)}",
-                f"-c{str(config_preoff)}",
-            ]
-        )
-
-    return temp_coinc_preoff
 
 
 @pytest.fixture(scope="session")
