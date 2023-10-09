@@ -44,7 +44,7 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
-from magicctapipe.io import format_object, get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io import format_object, get_stereo_events, save_pandas_data_in_table, check_input_list
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
@@ -387,6 +387,9 @@ def main():
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
+    
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
     
     # Process the input data
     stereo_reconstruction(args.input_file, args.output_dir, config, args.magic_only)

@@ -69,6 +69,7 @@ from magicctapipe.io import (
     load_magic_dl1_data_files,
     save_pandas_data_in_table,
     telescope_combinations,
+    check_input_list,
 )
 
 __all__ = ["event_coincidence","telescope_positions"]
@@ -615,6 +616,9 @@ def main():
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
+
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
 
     # Check the event coincidence
     event_coincidence(

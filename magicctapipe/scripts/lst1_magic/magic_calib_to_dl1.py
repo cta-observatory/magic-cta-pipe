@@ -51,7 +51,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object
+from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object, check_input_list
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -386,6 +386,9 @@ def main():
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
+
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
 
     # Process the input data
     magic_calib_to_dl1(args.input_file, args.output_dir, config, args.max_events, args.process_run)

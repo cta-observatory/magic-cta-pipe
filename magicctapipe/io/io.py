@@ -23,6 +23,7 @@ from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
 
 __all__ = [
+    "check_input_list",
     "format_object",
     "get_dl2_mean",    
     "get_stereo_events",
@@ -57,6 +58,70 @@ TIME_DIFF_UPLIM = 1.0 * u.s
 # The LST-1 and MAGIC readout dead times
 DEAD_TIME_LST = 7.6 * u.us
 DEAD_TIME_MAGIC = 26 * u.us
+
+def check_input_list(config):
+    """
+    This function checks if the input telescope list is organized as follows:
+    1) All 4 LSTs and 2 MAGICs must be listed
+    2) All 4 LSTs must come before the MAGICs
+    And it rises an exception in case these rules are not satisfied.
+    
+    Below we give two examples of valid lists:
+    i)
+    mc_tel_ids:
+        LST-1: 1
+        LST-2: 0
+        LST-3: 0
+        LST-4: 0
+        MAGIC-I: 2
+        MAGIC-II: 3
+    ii)
+    mc_tel_ids:
+        LST-4: 1
+        LST-2: 7
+        LST-3: 9
+        LST-1: 0
+        MAGIC-II: 2
+        MAGIC-I: 3
+
+    And here one example of an unvalid list:
+    iii)
+    mc_tel_ids:
+        LST-4: 1
+        LST-1: 0
+        MAGIC-II: 2
+        LST-3: 9
+        MAGIC-I: 3
+
+    Parameters
+    ----------
+    config: dict
+        dictionary imported from the yaml configuration file with information about the telescope IDs.
+
+    Returns
+    -------
+        This function will rise an exception if the input list is not properly organized.
+    """
+    
+    list_of_tel_names = list(config["mc_tel_ids"].keys())
+    standard_list_of_tels = ["LST-1", "LST-2", "LST-3", "LST-4", "MAGIC-I", "MAGIC-II"]
+
+    if len(list_of_tel_names) != 6:
+        raise Exception(f"Number of telescopes found in the configuration file is {len(list_of_tel_names)}. It must be 6, i.e.: LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.")
+    else:
+        for tel_name in list_of_tel_names[0:4]:
+            if tel_name in standard_list_of_tels[0:4]:
+                pass
+            else:
+                raise Exception(f"Entry '{tel_name}' not accepted as an LST. Please make sure that the first four telescopes are LSTs, e.g.: 'LST-1', 'LST-2', 'LST-3', and 'LST-4'")
+
+        for tel_name in list_of_tel_names[4:6]:
+            if tel_name in standard_list_of_tels[4:6]:
+                pass
+            else:
+                raise Exception(f"Entry '{tel_name}' not accepted as a MAGIC. Please make sure that the last two telescopes are MAGICs, e.g.: 'MAGIC-I', and 'MAGIC-II'")
+    return
+
 
 def telescope_combinations(config):
     """

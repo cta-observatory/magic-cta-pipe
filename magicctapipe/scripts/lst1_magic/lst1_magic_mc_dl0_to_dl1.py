@@ -43,7 +43,7 @@ from ctapipe.io import EventSource, HDF5TableWriter
 
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.calib import calibrate
-from magicctapipe.io import SimEventInfoContainer, format_object
+from magicctapipe.io import SimEventInfoContainer, format_object, check_input_list
 from magicctapipe.utils import calculate_disp, calculate_impact
 from traitlets.config import Config
 
@@ -423,6 +423,9 @@ def main():
 
     with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)            #Here we collect the inputs from the configuration file
+
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
 
     # Process the input data
     mc_dl0_to_dl1(args.input_file, args.output_dir, config, args.focal_length_choice)
