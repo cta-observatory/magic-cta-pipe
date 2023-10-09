@@ -64,7 +64,7 @@ def check_input_list(config):
     This function checks if the input telescope list is organized as follows:
     1) All 4 LSTs and 2 MAGICs must be listed
     2) All 4 LSTs must come before the MAGICs
-    And it rises an exception in case these rules are not satisfied.
+    And it raises an exception in case these rules are not satisfied.
     
     Below we give two examples of valid lists:
     i)
@@ -100,7 +100,7 @@ def check_input_list(config):
 
     Returns
     -------
-        This function will rise an exception if the input list is not properly organized.
+        This function will raise an exception if the input list is not properly organized.
     """
     
     list_of_tel_names = list(config["mc_tel_ids"].keys())
