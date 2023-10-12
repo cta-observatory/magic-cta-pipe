@@ -112,8 +112,7 @@ def telescope_positions(config):
     }
 
     telescopes_in_use = {}
-    tels=config["mc_tel_ids"]
-    tel_cp=tels.copy()
+    tel_cp=config["mc_tel_ids"].copy()
     for k, v in tel_cp.copy().items():
         if v <= 0:
             # Here we remove the telescopes with ID (i.e. "v") <= 0 from the dictionary:

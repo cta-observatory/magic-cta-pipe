@@ -81,7 +81,7 @@ jobs:
           # activate our env again
           source $CONDA/etc/profile.d/conda.sh
           conda activate ci
-          coverage run -m pytest -v 
+          coverage run -m pytest -v
           coverage xml
 
       - uses: codecov/codecov-action@v3

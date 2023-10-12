@@ -90,7 +90,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     )
 
     obs_id = event_source.obs_ids[0]
-    subarray = event_source.subarray    
+    subarray = event_source.subarray
 
     tel_descriptions = subarray.tel
     tel_positions = subarray.positions
