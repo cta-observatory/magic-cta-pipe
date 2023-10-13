@@ -427,6 +427,8 @@ def main():
     # Checking if the input telescope list is properly organized:
     check_input_list(config)
 
+    config['mc_tel_ids']=dict.sorted(config['mc_tel_ids'].items()) #Sorting needed to correctly name the output file
+
     # Process the input data
     mc_dl0_to_dl1(args.input_file, args.output_dir, config, args.focal_length_choice)
 
