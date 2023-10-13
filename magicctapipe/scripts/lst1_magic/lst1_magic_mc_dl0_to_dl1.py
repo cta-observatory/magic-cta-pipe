@@ -223,10 +223,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
                 if tel_id in LSTs_IDs:   ##If the ID is in the LST list, we call calibrate on the LST()
                     # Calibrate the LST-1 event
-                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, obs_id=obs_id, config=config_lst, camera_geoms=camera_geoms, calibrator=calibrator_lst, LST_bool=True)   
+                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, obs_id=obs_id, config=config_lst, camera_geoms=camera_geoms, calibrator=calibrator_lst, is_lst=True)   
                 elif tel_id in MAGICs_IDs:
                     # Calibrate the MAGIC event
-                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, config=config_magic, magic_clean=magic_clean, calibrator=calibrator_magic, LST_bool=False)
+                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, config=config_magic, magic_clean=magic_clean, calibrator=calibrator_magic, is_lst=False)
                 else:
                     logger.info(
                         f"--> Telescope ID {tel_id} not in LST list or MAGIC list. Please check if the IDs are OK in the configuration file"
@@ -427,7 +427,7 @@ def main():
     # Checking if the input telescope list is properly organized:
     check_input_list(config)
 
-    config['mc_tel_ids']=dict.sorted(config['mc_tel_ids'].items()) #Sorting needed to correctly name the output file
+    config['mc_tel_ids']=dict(sorted(config['mc_tel_ids'].items())) #Sorting needed to correctly name the output file
 
     # Process the input data
     mc_dl0_to_dl1(args.input_file, args.output_dir, config, args.focal_length_choice)

@@ -19,7 +19,7 @@ __all__ = [
 ]
 
 
-def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_geoms=None, magic_clean=None):
+def calibrate(event, tel_id, config, calibrator, is_lst, obs_id=None, camera_geoms=None, magic_clean=None):
 
     """
     This function calibrates the camera image for a single event of a telescope 
@@ -34,7 +34,7 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
         Parameters for image extraction and calibration    
     calibrator: CameraCalibrator (ctapipe.calib)
         ctapipe object needed to calibrate the camera
-    LST_bool: bool
+    is_lst: bool
         Whether the telescope is a LST
     obs_id: int
         Observation ID. Unsed in case of LST telescope
@@ -54,16 +54,16 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
         Array of the signal peak time in the camera pixels
 
     """
-    if (LST_bool==False) and (magic_clean==None):
-        raise ValueError("Check the provided parameters and the telescope type; calibration was not possible") 
-    if (LST_bool==True) and (obs_id==None):
-        raise ValueError("Check the provided parameters and the telescope type; calibration was not possible") 
-    if (LST_bool==True) and (camera_geoms==None):
-        raise ValueError("Check the provided parameters and the telescope type; calibration was not possible") 
-    if (LST_bool==False) and (type(magic_clean[tel_id])!=MAGICClean):
-        raise ValueError("Check the provided magic_clean parameter; calibration was not possible") 
-    if (LST_bool==True) and (type(camera_geoms[tel_id])!=CameraGeometry):
-        raise ValueError("Check the provided camera_geoms parameter; calibration was not possible")
+    if (not is_lst) and (magic_clean==None):
+        raise ValueError("Check the provided parameters and the telescope type; MAGIC calibration not possible if magic_clean not provided") 
+    if (is_lst) and (obs_id==None):
+        raise ValueError("Check the provided parameters and the telescope type; LST calibration not possible if obs_id not provided") 
+    if (is_lst) and (camera_geoms==None):
+        raise ValueError("Check the provided parameters and the telescope type; LST calibration not possible if gamera_geoms not provided") 
+    if (not is_lst) and (type(magic_clean[tel_id])!=MAGICClean):
+        raise ValueError("Check the provided magic_clean parameter; MAGIC calibration not possible if magic_clean not a dictionary of MAGICClean objects") 
+    if (is_lst) and (type(camera_geoms[tel_id])!=CameraGeometry):
+        raise ValueError("Check the provided camera_geoms parameter; LST calibration not possible if camera_geoms not a dictionary of CameraGeometry objects")
 
     calibrator._calibrate_dl0(event, tel_id)
     calibrator._calibrate_dl1(event, tel_id)
@@ -71,7 +71,7 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
     image = event.dl1.tel[tel_id].image.astype(np.float64)
     peak_time = event.dl1.tel[tel_id].peak_time.astype(np.float64)
     
-    if LST_bool==False:
+    if not is_lst:
         use_charge_correction = config["charge_correction"]["use"]
 
         if use_charge_correction:
@@ -83,7 +83,7 @@ def calibrate(event, tel_id, config, calibrator, LST_bool, obs_id=None, camera_g
             event_image=image, event_pulse_time=peak_time
         )
             
-    elif LST_bool==True:
+    else:
         increase_nsb = config["increase_nsb"].pop("use")
         increase_psf = config["increase_psf"]["use"]
         use_time_delta_cleaning = config["time_delta_cleaning"].pop("use")

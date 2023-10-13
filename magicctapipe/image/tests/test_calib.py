@@ -53,7 +53,6 @@ def test_calibrate_LST(dl0_gamma, config_calib, tel_id_LST):
             subarray=subarray,
         )
         
-        LST_bool=True
         for event in event_source:
             if (event.count <200) and (tel_id_LST in event.trigger.tels_with_trigger):
                 signal_pixels, image, peak_time = calibrate(
@@ -63,7 +62,7 @@ def test_calibrate_LST(dl0_gamma, config_calib, tel_id_LST):
                     config=config_lst, 
                     camera_geoms=camera_geoms, 
                     calibrator=calibrator_lst, 
-                    LST_bool=LST_bool
+                    is_lst=True,
                 )
 
                 assert len(signal_pixels)==1855
@@ -110,7 +109,7 @@ def test_calibrate_MAGIC(dl0_gamma, config_calib, tel_id_MAGIC):
             config=Config(config_extractor_magic),
             subarray=subarray,
         )
-        LST_bool=False
+        
         for event in event_source:
             if (event.count <200) and (tel_id_MAGIC in event.trigger.tels_with_trigger):
                 signal_pixels, image, peak_time = calibrate(
@@ -119,7 +118,7 @@ def test_calibrate_MAGIC(dl0_gamma, config_calib, tel_id_MAGIC):
                     config=config_magic, 
                     magic_clean=magic_clean, 
                     calibrator=calibrator_magic, 
-                    LST_bool=LST_bool
+                    is_lst=False,
                 )
 
                 assert len(signal_pixels)==1039
@@ -148,19 +147,19 @@ def test_calibrate_exc_1(dl0_gamma, config_calib, tel_id_MAGIC):
             config=Config(config_extractor_magic),
             subarray=subarray,
         )
-        LST_bool=False
+        
         for event in event_source:
             if (event.count <200) and (tel_id_MAGIC in event.trigger.tels_with_trigger):
                 with pytest.raises(
                     ValueError,
-                    match="Check the provided parameters and the telescope type; calibration was not possible",
+                    match="Check the provided parameters and the telescope type; MAGIC calibration not possible if magic_clean not provided",
                 ):
                     _,_,_ = calibrate(
                         event=event, 
                         tel_id=tel_id_MAGIC, 
                         config=config_magic, 
                         calibrator=calibrator_magic, 
-                        LST_bool=LST_bool
+                        is_lst=False,
                     )
         config_magic["image_extractor"]["type"]=extractor_type_magic
 
@@ -196,12 +195,11 @@ def test_calibrate_exc_2(dl0_gamma, config_calib, tel_id_LST):
             subarray=subarray,
         )
         
-        LST_bool=True
         for event in event_source:
             if (event.count <200) and (tel_id_LST in event.trigger.tels_with_trigger):
                 with pytest.raises(
                     ValueError,
-                    match="Check the provided parameters and the telescope type; calibration was not possible",
+                    match="Check the provided parameters and the telescope type; LST calibration not possible if obs_id not provided",
                 ):                
                     _,_,_ = calibrate(
                         event=event, 
@@ -209,7 +207,7 @@ def test_calibrate_exc_2(dl0_gamma, config_calib, tel_id_LST):
                         config=config_lst, 
                         camera_geoms=camera_geoms, 
                         calibrator=calibrator_lst, 
-                        LST_bool=LST_bool
+                        is_lst=True,
                     )
         config_lst["image_extractor"]["type"]=extractor_type_lst  
 
@@ -241,12 +239,11 @@ def test_calibrate_exc_3(dl0_gamma, config_calib, tel_id_LST):
             subarray=subarray,
         )
         
-        LST_bool=True
         for event in event_source:
             if (event.count <200) and (tel_id_LST in event.trigger.tels_with_trigger):
                 with pytest.raises(
                     ValueError,
-                    match="Check the provided parameters and the telescope type; calibration was not possible",
+                    match="Check the provided parameters and the telescope type; LST calibration not possible if gamera_geoms not provided",
                 ): 
                     signal_pixels, image, peak_time = calibrate(
                         event=event, 
@@ -254,7 +251,7 @@ def test_calibrate_exc_3(dl0_gamma, config_calib, tel_id_LST):
                         obs_id=obs_id, 
                         config=config_lst,                     
                         calibrator=calibrator_lst, 
-                        LST_bool=LST_bool
+                        is_lst=True,
                     )
         config_lst["image_extractor"]["type"]=extractor_type_lst 
 
@@ -281,14 +278,13 @@ def test_calibrate_exc_4(dl0_gamma, config_calib, tel_id_MAGIC):
             image_extractor_type=extractor_type_magic,
             config=Config(config_extractor_magic),
             subarray=subarray,
-        )
+        ) 
         
-        LST_bool=False
         for event in event_source:
             if (event.count <200) and (tel_id_MAGIC in event.trigger.tels_with_trigger):
                 with pytest.raises(
                     ValueError,
-                    match="Check the provided magic_clean parameter; calibration was not possible",
+                    match="Check the provided magic_clean parameter; MAGIC calibration not possible if magic_clean not a dictionary of MAGICClean objects",
                 ):
                     _,_,_ = calibrate(
                         event=event, 
@@ -296,7 +292,7 @@ def test_calibrate_exc_4(dl0_gamma, config_calib, tel_id_MAGIC):
                         config=config_magic, 
                         calibrator=calibrator_magic, 
                         magic_clean=magic_clean,
-                        LST_bool=LST_bool
+                        is_lst=False,
                     )
         config_magic["image_extractor"]["type"]=extractor_type_magic
 
@@ -332,12 +328,11 @@ def test_calibrate_exc_5(dl0_gamma, config_calib, tel_id_LST):
             subarray=subarray,
         )
         
-        LST_bool=True
         for event in event_source:
             if (event.count <200) and (tel_id_LST in event.trigger.tels_with_trigger):
                 with pytest.raises(
                     ValueError,
-                    match="Check the provided camera_geoms parameter; calibration was not possible",
+                    match="Check the provided camera_geoms parameter; LST calibration not possible if camera_geoms not a dictionary of CameraGeometry objects",
                 ):                
                     _,_,_ = calibrate(
                         event=event, 
@@ -346,7 +341,7 @@ def test_calibrate_exc_5(dl0_gamma, config_calib, tel_id_LST):
                         config=config_lst, 
                         camera_geoms=camera_geoms, 
                         calibrator=calibrator_lst, 
-                        LST_bool=LST_bool,                        
+                        is_lst=True,                        
                     )
         config_lst["image_extractor"]["type"]=extractor_type_lst  
 
