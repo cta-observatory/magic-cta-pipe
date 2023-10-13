@@ -1,8 +1,10 @@
 from magicctapipe.io.io import (
+    check_input_list,
     format_object,
     get_dl2_mean,
     get_stereo_events,
     load_train_data_files,
+    load_train_data_files_tel,
     load_mc_dl2_data_file,
     load_irf_files,
     save_pandas_data_in_table,
@@ -17,6 +19,63 @@ import numpy as np
 import pandas as pd
 
 
+def test_check_input_list():
+    """
+    Test on different dictionaries
+    """
+    
+    try:
+        check_input_list({'mc_tel_ids':{'LST-1':1, 'LST-2':2, 'LST-3':3, 'LST-4':4, 'MAGIC-I':5, 'MAGIC-II':6}})
+    except Exception:
+        assert False
+
+    try:
+        check_input_list({'mc_tel_ids':{'LST-1':1, 'LST-2':3, 'LST-3':0, 'LST-4':0, 'MAGIC-I':2, 'MAGIC-II':6}})
+    except Exception:
+        assert False
+
+    try:
+        check_input_list({'mc_tel_ids':{'LST-2':1, 'LST-1':3, 'LST-4':0, 'LST-3':0, 'MAGIC-II':2, 'MAGIC-I':6}})
+    except Exception:
+        assert False
+
+    with pytest.raises(
+        Exception,
+        match="Number of telescopes found in the configuration file is 5. It must be 6, i.e.: LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.",
+    ):
+        check_input_list({'mc_tel_ids':{'LST-2':1, 'LST-2':3, 'LST-4':0, 'LST-3':0, 'MAGIC-II':2, 'MAGIC-I':6}})
+
+    with pytest.raises(
+        Exception,
+        match="Number of telescopes found in the configuration file is 5. It must be 6, i.e.: LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.",
+    ):
+        check_input_list({'mc_tel_ids':{'LST-1':1, 'LST-2':2, 'LST-3':3, 'MAGIC-I':4, 'MAGIC-II':5}})
+
+    with pytest.raises(
+        Exception,
+        match="Number of telescopes found in the configuration file is 7. It must be 6, i.e.: LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.",
+    ):
+        check_input_list({'mc_tel_ids':{'LST-1':1, 'LST-2':2, 'LST-3':3, 'LST-4':6, 'LST-5':7, 'MAGIC-I':4, 'MAGIC-II':5}})
+
+    with pytest.raises(
+        Exception,
+        match="Entry 'LSTT-1' not accepted as an LST. Please make sure that the first four telescopes are LSTs, e.g.: 'LST-1', 'LST-2', 'LST-3', and 'LST-4'",
+    ):
+        check_input_list({'mc_tel_ids':{'LSTT-1':1, 'LST-2':2, 'LST-3':3, 'LST-4':6, 'MAGIC-I':4, 'MAGIC-II':5}})
+
+    with pytest.raises(
+        Exception,
+        match="Entry 'MAGIC-III' not accepted as a MAGIC. Please make sure that the last two telescopes are MAGICs, e.g.: 'MAGIC-I', and 'MAGIC-II'",
+    ):
+        check_input_list({'mc_tel_ids':{'LST-1':1, 'LST-2':2, 'LST-3':3, 'LST-4':6, 'MAGIC-I':4, 'MAGIC-III':5}})
+
+    with pytest.raises(
+        Exception,
+        match="Entry 'MAGIC-I' not accepted as an LST. Please make sure that the first four telescopes are LSTs, e.g.: 'LST-1', 'LST-2', 'LST-3', and 'LST-4'",
+    ):
+        check_input_list({'mc_tel_ids':{'LST-1':1, 'LST-2':2, 'MAGIC-I':4, 'LST-3':3, 'LST-4':6, 'MAGIC-II':5}})
+
+
 def test_telescope_combinations(config_gen, config_gen_4lst):
     """
     Simple check on telescope combinations
@@ -27,6 +86,7 @@ def test_telescope_combinations(config_gen, config_gen_4lst):
     assert M_LST_comb == {'LST-1_MAGIC-I': [1, 2], 'LST-1_MAGIC-I_MAGIC-II': [1, 2, 3], 'LST-1_MAGIC-II': [1, 3], 'MAGIC-I_MAGIC-II': [2, 3]}
     assert LSTs == {1: 'LST-1', 3: 'LST-2', 2: 'LST-3', 5: 'LST-4'}
     assert LSTs_comb == {'LST-1_LST-2': [1, 3], 'LST-1_LST-2_LST-3': [1, 3, 2], 'LST-1_LST-2_LST-3_LST-4': [1, 3, 2, 5], 'LST-1_LST-2_LST-4': [1, 3, 5], 'LST-1_LST-3': [1, 2], 'LST-1_LST-3_LST-4': [1, 2, 5], 'LST-1_LST-4': [1, 5], 'LST-2_LST-3': [3, 2], 'LST-2_LST-3_LST-4': [3, 2, 5], 'LST-2_LST-4': [3, 5], 'LST-3_LST-4': [2, 5]}
+
 
 def test_format_object():
     """
@@ -134,6 +194,53 @@ def test_load_train_data_files_exc(temp_train_exc):
         match="Could not find any DL1-stereo data files in the input directory.",
     ):
         _ = load_train_data_files(str(temp_train_exc))
+
+
+def test_load_train_data_files_tel_p(p_stereo, config_gen):
+    """
+    Check dictionary
+    """
+
+    events = load_train_data_files_tel(str(p_stereo[0]),config_gen)
+    assert list(events.keys()) == [1,2,3]
+    data = events[2]    
+    assert "off_axis" in data.columns
+    assert "true_event_class" not in data.columns
+
+
+def test_load_train_data_files_tel_g(gamma_stereo, config_gen):
+    """
+    Check dictionary
+    """
+
+    events = load_train_data_files_tel(str(gamma_stereo[0]), config_gen)
+    assert list(events.keys()) == [1,2,3]
+    data = events[1]    
+    assert "off_axis" in data.columns
+    assert "true_event_class" not in data.columns
+
+
+def test_load_train_data_files_tel_off(gamma_stereo, config_gen):
+    """
+    Check off-axis cut
+    """
+    events = load_train_data_files_tel(
+        str(gamma_stereo[0]), config=config_gen, offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+    )
+    data = events[1]
+    assert np.all(data["off_axis"] >= 0.2)
+    assert np.all(data["off_axis"] <= 0.5)
+
+
+def test_load_train_data_files_tel_exc(temp_train_exc, config_gen):
+    """
+    Check on exceptions
+    """
+    with pytest.raises(
+        FileNotFoundError,
+        match="Could not find any DL1-stereo data files in the input directory.",
+    ):
+        _ = load_train_data_files(str(temp_train_exc), config_gen)
 
 
 def test_load_mc_dl2_data_file(p_dl2, gamma_dl2):

@@ -155,7 +155,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         tel_id=np.asarray(list(assigned_tel_ids.values())[:])
         used_id=tel_id[tel_id!=0]
         magic_ids=[item for item in used_id if item not in LSTs_IDs]
-        event_data.query(f"tel_id in {magic_ids}", inplace=True) # Here we select only the events with the MAGIC tel_ids, i.e. above the maximum tel_id of the LSTs
+        event_data.query(f"tel_id in {magic_ids}", inplace=True) # Here we select only the events with the MAGIC tel_ids
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
     event_data = get_stereo_events(event_data, config=config, quality_cuts=config_stereo["quality_cuts"])
@@ -166,11 +166,8 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     Number_of_LSTs_in_use = len(LSTs_IDs[LSTs_IDs > 0]) 
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
     Number_of_MAGICs_in_use = len(MAGICs_IDs[MAGICs_IDs > 0])
-    if Number_of_LSTs_in_use*Number_of_MAGICs_in_use > 0: #If we use the two arrays, i.e. MAGIC and LST, then the "if" statement below will work (except for MC simulations)
-        Two_arrays_are_used = True
-    else:
-        Two_arrays_are_used = False
-
+    Two_arrays_are_used = (Number_of_LSTs_in_use*Number_of_MAGICs_in_use > 0)
+    
     if (not is_simulation) and (Two_arrays_are_used):
 
         logger.info(
