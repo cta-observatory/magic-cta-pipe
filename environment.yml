@@ -42,5 +42,4 @@ dependencies:
   - jinja2 # pinned for bokeh 1.0 compatibility
   - pyirf=0.8
   - lstchain~=0.10
-  - pip:
-      - ctapipe_io_magic~=0.5.3
+  - ctapipe-io-magic~=0.5.4
