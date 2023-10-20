@@ -35,12 +35,6 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: Install doc dependencies
-        run: |
-          pip install -U pip -e .[docs]
-          git describe --tags
-          python -c 'import magicctapipe; print(magicctapipe.__version__)'
-
       - name: Build docs
         run: make doc
 
