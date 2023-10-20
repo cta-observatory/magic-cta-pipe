@@ -23,6 +23,32 @@ jobs:
           pip install pyflakes
           pyflakes magicctapipe
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install doc dependencies
+        run: |
+          pip install -U pip -e .[docs]
+          git describe --tags
+          python -c 'import magicctapipe; print(magicctapipe.__version__)'
+
+      - name: Build docs
+        run: make doc
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: docs
+          path: docs/_build/html
+
   tests:
     runs-on: ubuntu-latest
     strategy:
