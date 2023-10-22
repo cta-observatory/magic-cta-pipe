@@ -45,6 +45,62 @@ language = "en"
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
 
+# Define the json_url for our version switcher.
+json_url = "https://magicctapipe.readthedocs.io/en/latest/_static/switcher.json"
+
+# Define the version we use for matching in the version switcher.,
+version_match = os.getenv("READTHEDOCS_VERSION")
+# If READTHEDOCS_VERSION doesn't exist, we're not on RTD
+# If it is an integer, we're in a PR build and the version isn't correct.
+if not version_match or version_match.isdigit():
+    # For local development, infer the version to match from the package.
+    if "dev" in release or "rc" in release:
+        version_match = "latest"
+    else:
+        version_match = release
+
+    # We want to keep the relative reference when on a pull request or locally
+    json_url = "_static/switcher.json"
+
+# Theme options are theme-specific and customize the look and feel of a theme
+# further.  For a list of options available for each theme, see the
+# documentation.
+html_theme_options = {
+    "github_url": "https://github.com/cta-observatory/magic-cta-pipe",
+    "header_links_before_dropdown": 6,
+    "navbar_start": ["navbar-logo", "version-switcher"],
+    "switcher": {
+        "version_match": version_match,
+        "json_url": json_url,
+    },
+    "use_edit_page_button": True,
+    "icon_links_label": "Quick Links",
+    "icon_links": [
+        {
+            "name": "CTA Observatory",
+            "url": "https://www.cta-observatory.org/",
+            "type": "url",
+            "icon": "https://www.cta-observatory.org/wp-content/themes/ctao/favicon.ico",
+        },
+    ],
+    "announcement": """
+        <p>magic-cta-pipe is under active development. Expect large and rapid changes in functionality.</p>
+    """,
+}
+
+# Add any paths that contain custom static files (such as style sheets) here,
+# relative to this directory. They are copied after the builtin static files,
+# so a file named "default.css" will overwrite the builtin "default.css".
+html_static_path = ["_static"]
+html_context = {
+    "default_mode": "light",
+    "github_user": "cta-observatory",
+    "github_repo": "magic-cta-pipe",
+    "github_version": "master",
+    "doc_path": "docs",
+}
+
+
 # -- General configuration
 
 extensions = [
