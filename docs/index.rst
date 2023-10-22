@@ -4,6 +4,8 @@
 Welcome to ``magic-cta-pipe`` documentation!
 ============================================
 
+.. currentmodule:: magicctapipe
+
 **Version**: |version| **Date**: |today|
 
 **Useful links**:
