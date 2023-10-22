@@ -28,6 +28,7 @@ dependencies:
   - sphinx
   - sphinx-automodapi
   - sphinx_rtd_theme
+  - pydata-sphinx-theme
   - uproot~=4.1
   - corsikaio
   - pip:
