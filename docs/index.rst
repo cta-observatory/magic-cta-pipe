@@ -1,5 +1,5 @@
 Welcome to magic-cta-pipe documentation!
-===================================
+=========================================
 
 **magic-cta-pipe** is a pipeline for the analysis of joint data taken with MAGIC and LST-1.
 
