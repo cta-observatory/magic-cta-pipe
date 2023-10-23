@@ -9,14 +9,12 @@ nsb_level.py to be launched (bash script) at the beginning of the analysis, to c
 
 # TODO: 
 
-1. Directory structure (more consistent with the MC one)
-2. Matching of the observation period
-3. RF/IRF paths (config?)
-4. Database (joint observations)
-5. Fix pyflakes errors and run black
-6. Fix comments...
-7. remove print and dependencies
-8. Final checks (CI...)
+1. RF/IRF paths (config?)
+2. Database (joint observations)
+3. Fix pyflakes errors and run black
+4. Fix comments...
+5. remove print and dependencies
+6. Final checks (CI...)
 
 # Quick start tutorial
 

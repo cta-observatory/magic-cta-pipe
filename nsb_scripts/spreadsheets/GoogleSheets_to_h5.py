@@ -47,7 +47,7 @@ def split_lst_date(df):
 
 
 def magic_date(df):
-    date_lst = pd.to_datetime(df["YY_LST"] + "/" + df["MM_LST"] + "/" + df["DD_LST"])
+    date_lst = pd.to_datetime(f'{df["YY_LST"]}/{df["MM_LST"]}/{df["DD_LST"]}')
 
     delta = pd.Timedelta("1 day")
 

@@ -69,7 +69,7 @@ def DL1_to_2(scripts_dir, target_dir, nsb, source, config):
                 + str(nsb)
             )
         data_files_dir = target_dir + f"/v{__version__}/DL1CoincidentStereo/"+ str(p)+ "/NSB"+ str(nsb) 
-        RFs_dir = "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/PG1553_nsb/RF/" + str(p)+"/NSB"+ str(nsb)  # then, RFs saved somewhere (as Julian's ones)
+        RFs_dir = f"/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/{source}/RF/" + str(p)+"/NSB"+ str(nsb)  # then, RFs saved somewhere (as Julian's ones)
         listOfDL1nights = np.sort(glob.glob(data_files_dir + "/*"))
         print(data_files_dir)
         for night in listOfDL1nights:
@@ -83,24 +83,24 @@ def DL1_to_2(scripts_dir, target_dir, nsb, source, config):
             process_size = len(listOfDL1Files) - 1
             if process_size < 0:
                 continue
-            f = open(f'{source}_DL1_to_DL2_{nsb}_{night.split("/")[-1]}.sh', "w")
-            f.write("#!/bin/sh\n\n")
-            f.write("#SBATCH -p long\n")
-            f.write("#SBATCH -J " + process_name + "\n")
-            f.write(f"#SBATCH --array=0-{process_size}%100\n")
-            f.write("#SBATCH --mem=30g\n")
-            f.write("#SBATCH -N 1\n\n")
-            f.write("ulimit -l unlimited\n")
-            f.write("ulimit -s unlimited\n")
-            f.write("ulimit -a\n\n")
+            with open(f'{source}_DL1_to_DL2_{nsb}_{night.split("/")[-1]}.sh', "w") as f:
+                f.write("#!/bin/sh\n\n")
+                f.write("#SBATCH -p long\n")
+                f.write("#SBATCH -J " + process_name + "\n")
+                f.write(f"#SBATCH --array=0-{process_size}%100\n")
+                f.write("#SBATCH --mem=30g\n")
+                f.write("#SBATCH -N 1\n\n")
+                f.write("ulimit -l unlimited\n")
+                f.write("ulimit -s unlimited\n")
+                f.write("ulimit -a\n\n")
 
-            f.write(f"SAMPLE_LIST=($(<{output}/logs/list_of_DL1_stereo_files.txt))\n")
-            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-            f.write(f"export LOG={output}" + "/logs/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n")
-            f.write(
-                f"conda run -n magic-lst python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
-            )
-            f.close()
+                f.write(f"SAMPLE_LIST=($(<{output}/logs/list_of_DL1_stereo_files.txt))\n")
+                f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+                f.write(f"export LOG={output}" + "/logs/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n")
+                f.write(
+                    f"conda run -n magic-lst python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
+                )
+            
 
 
 def main():

@@ -16,14 +16,14 @@ def split_lst_date(df):
     df["YY_LST"] = date.str[:4]
     df["MM_LST"] = date.str[4:6]
     df["DD_LST"] = date.str[6:8]
-    a = df["YY_LST"]+"_"+df["MM_LST"]+"_"+df["DD_LST"]
+    a = f'{df["YY_LST"]}_{df["MM_LST"]}_{df["DD_LST"]}'
     df['date_LST'] = a
     return df
 
 
 def magic_date(df):
     
-    date_lst = pd.to_datetime(df["YY_LST"] + "/" + df["MM_LST"] + "/" + df["DD_LST"])
+    date_lst = pd.to_datetime(f'{df["YY_LST"]}/{df["MM_LST"]}/{df["DD_LST"]}')
 
     delta = pd.Timedelta("1 day")
 
@@ -55,7 +55,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
 
         if skip == False:
             with open(file_list[0], "a+") as f:
-                f.write(str(df["date_LST"][k]) + "," + str(LST[k]).lstrip('0') + "\n")
+                f.write(f'{df["date_LST"][k]},{str(LST[k]).lstrip("0")}\n')
             LST_listed.append(int(LST[k]))
         MAGIC_min = int(df["MAGIC_first_run"][k])
         MAGIC_max = int(df["MAGIC_last_run"][k])
@@ -66,7 +66,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
                 skip = True
             if skip == False:
                 with open(file_list[1], "a+") as f:
-                    f.write(str(df["date_MAGIC"][k]) + "," + str(z) + "\n")
+                    f.write(f'{df["date_MAGIC"][k]},{z}\n')
                 MAGIC_listed.append(int(z))
 
 
@@ -110,13 +110,7 @@ def main():
         max = str(config["data_selection_and_lists"]["max"])
         min = datetime.strptime(min, "%Y_%m_%d")
         max = datetime.strptime(max, "%Y_%m_%d")
-        lst = pd.to_datetime(
-            df["YY_LST"].astype(str)
-            + "/"
-            + df["MM_LST"].astype(str)
-            + "/"
-            + df["DD_LST"].astype(str)
-        )
+        lst = pd.to_datetime(f'{df["YY_LST"]}/{df["MM_LST"]}/{df["DD_LST"]}')
         df["date"] = lst
         df = df[df["date"] > min]
         df = df[df["date"] < max]

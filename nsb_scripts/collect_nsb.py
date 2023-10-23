@@ -34,7 +34,7 @@ def main():
             with open(j) as ff:
                 line = ff.readline()
                 with open(f"{source}_LST_{nsblvl}_.txt", "a+") as f:
-                    f.write(line.rstrip() + "\n")
+                    f.write(f'{line.rstrip()}\n')
 
 
 if __name__ == "__main__":

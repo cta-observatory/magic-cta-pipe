@@ -43,26 +43,26 @@ def MergeDL2(scripts_dir, target_dir, nsb, source):
         list_of_nights = np.sort(glob.glob(DL2_dir + "/20*"))
         print(DL2_dir)
 
-        f = open(f"{source}_MergeDL2_{nsb}_{p}.sh", "w")
-        f.write("#!/bin/sh\n\n")
-        f.write("#SBATCH -p short\n")
-        f.write("#SBATCH -J " + process_name + "\n")
-        f.write("#SBATCH -N 1\n\n")
-        f.write("ulimit -l unlimited\n")
-        f.write("ulimit -s unlimited\n")
-        f.write("ulimit -a\n\n")
+        with open(f"{source}_MergeDL2_{nsb}_{p}.sh", "w") as f:
+            f.write("#!/bin/sh\n\n")
+            f.write("#SBATCH -p short\n")
+            f.write("#SBATCH -J " + process_name + "\n")
+            f.write("#SBATCH -N 1\n\n")
+            f.write("ulimit -l unlimited\n")
+            f.write("ulimit -s unlimited\n")
+            f.write("ulimit -a\n\n")
 
-        for night in list_of_nights:
-            if not os.path.exists(night + "/Merged"):
-                os.mkdir(night + "/Merged")
-            if not os.path.exists(night + "/Merged/logs"):
-                os.mkdir(night + "/Merged/logs")
-            f.write(f"export LOG={night}/Merged/logs/merge.log\n")
-            f.write(
-                f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n"
-            )
+            for night in list_of_nights:
+                if not os.path.exists(night + "/Merged"):
+                    os.mkdir(night + "/Merged")
+                if not os.path.exists(night + "/Merged/logs"):
+                    os.mkdir(night + "/Merged/logs")
+                f.write(f"export LOG={night}/Merged/logs/merge.log\n")
+                f.write(
+                    f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n"
+                )
 
-        f.close()
+       
 
 
 def main():

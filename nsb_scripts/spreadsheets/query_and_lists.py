@@ -29,7 +29,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
 
             if skip == False:
                 with open(file_list[0], "a+") as f:
-                    f.write(str(df["date_LST"][k]) + "," + str(LST[j]) + "\n")
+                    f.write(f'{df["date_LST"][k]},{LST[j]}\n')
         MAGIC_min = int(df["first_MAGIC"][k])
         MAGIC_max = int(df["last_MAGIC"][k])
         for z in range(MAGIC_min, MAGIC_max + 1):
@@ -39,7 +39,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
                     skip = True
             if skip == False:
                 with open(file_list[1], "a+") as f:
-                    f.write(str(df["date_MAGIC"][k]) + "," + str(z) + "\n")
+                    f.write(f'{df["date_MAGIC"][k]},{str(z)}\n')
 
 
 def main():
@@ -74,13 +74,7 @@ def main():
         max = str(config["data_selection_and_lists"]["max"])
         min = datetime.strptime(min, "%Y_%m_%d")
         max = datetime.strptime(max, "%Y_%m_%d")
-        lst = pd.to_datetime(
-            df["YY_LST"].astype(str)
-            + "/"
-            + df["MM_LST"].astype(str)
-            + "/"
-            + df["DD_LST"].astype(str)
-        )
+        lst = pd.to_datetime(f'{df["YY_LST"].astype(str)}/{df["MM_LST"].astype(str)}/{df["DD_LST"].astype(str)}')
         df["date"] = lst
         df = df[df["date"] > min]
         df = df[df["date"] < max]

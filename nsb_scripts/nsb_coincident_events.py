@@ -43,30 +43,30 @@ def configfile_coincidence(ids, target_dir):
         Path to the working directory
     """
 
-    f = open(target_dir + "/config_coincidence.yaml", "w")
-    f.write(
-        "mc_tel_ids:\n    LST-1: "
-        + str(ids[0])
-        + "\n    LST-2: "
-        + str(ids[1])
-        + "\n    LST-3: "
-        + str(ids[2])
-        + "\n    LST-4: "
-        + str(ids[3])
-        + "\n    MAGIC-I: "
-        + str(ids[4])
-        + "\n    MAGIC-II: "
-        + str(ids[5])
-        + "\n\n"
-    )
-    f.write(
-        'event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    pre_offset_search: true\n    n_pre_offset_search_events: 100\n    window_half_width: "300 ns"\n'
-    )
-    f.write('    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n')
-    f.close()
+    with open(target_dir + "/config_coincidence.yaml", "w") as f:
+        f.write(
+            "mc_tel_ids:\n    LST-1: "
+            + str(ids[0])
+            + "\n    LST-2: "
+            + str(ids[1])
+            + "\n    LST-3: "
+            + str(ids[2])
+            + "\n    LST-4: "
+            + str(ids[3])
+            + "\n    MAGIC-I: "
+            + str(ids[4])
+            + "\n    MAGIC-II: "
+            + str(ids[5])
+            + "\n\n"
+        )
+        f.write(
+            'event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    pre_offset_search: true\n    n_pre_offset_search_events: 100\n    window_half_width: "300 ns"\n'
+        )
+        f.write('    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n')
+    
 
 
-def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
+def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source, LST_version):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
     Parameters
@@ -138,7 +138,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                         i[0].split("_")[0] + i[0].split("_")[1] + i[0].split("_")[2]
                     )
 
-                    inputdir = f"/fefs/aswg/data/real/DL1/{lstObsDir}/v0.9/tailcut84"
+                    inputdir = f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
                     if not os.path.exists(
                         coincidence_DL1_dir
                         + "/DL1Coincident/"
@@ -193,12 +193,12 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
                                     subrun + "\n"
                                 )  # If this files already exists, simply append the new information
                     else:
-                        f = open(
+                        with open(
                             f"{outputdir}/logs/list_LST.txt", "w"
-                        )  # If the file list_LST.txt does not exist, it will be created here
-                        for subrun in list_of_subruns:
-                            f.write(subrun + "\n")
-                        f.close()
+                        ) as f:  # If the file list_LST.txt does not exist, it will be created here
+                            for subrun in list_of_subruns:
+                                f.write(subrun + "\n")
+                        
 
                     if not os.path.exists(outputdir + "/logs/list_LST.txt"):
                         continue                    
@@ -211,39 +211,39 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source):
 
                     if process_size < 0:
                         continue
-                    f = open(
+                    with open(
                         f"{source}_LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh",
                         "w",
-                    )
-                    f.write("#!/bin/sh\n\n")
-                    f.write("#SBATCH -p short\n")
-                    f.write(
-                        "#SBATCH -J "
-                        + target_dir.split("/")[-2:][1]
-                        + "_coincidence_"
-                        + str(nsb)
-                        + "\n"
-                    )
-                    f.write(f"#SBATCH --array=0-{process_size}\n")
-                    f.write("#SBATCH --mem=30g\n")
-                    f.write("#SBATCH -N 1\n\n")
-                    f.write("ulimit -l unlimited\n")
-                    f.write("ulimit -s unlimited\n")
-                    f.write("ulimit -a\n\n")
+                    ) as f:
+                        f.write("#!/bin/sh\n\n")
+                        f.write("#SBATCH -p short\n")
+                        f.write(
+                            "#SBATCH -J "
+                            + target_dir.split("/")[-2:][1]
+                            + "_coincidence_"
+                            + str(nsb)
+                            + "\n"
+                        )
+                        f.write(f"#SBATCH --array=0-{process_size}\n")
+                        f.write("#SBATCH --mem=30g\n")
+                        f.write("#SBATCH -N 1\n\n")
+                        f.write("ulimit -l unlimited\n")
+                        f.write("ulimit -s unlimited\n")
+                        f.write("ulimit -a\n\n")
 
-                    f.write(
-                        f"export INM={MAGIC_DL1_dir}/Merged/Merged_{str(Y_M).zfill(4)}_{str(M_M).zfill(2)}_{str(D_M).zfill(2)}\n"
-                    )
-                    f.write(f"export OUTPUTDIR={outputdir}\n")
-                    f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n")
-                    f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-                    f.write(
-                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n"
-                    )
-                    f.write(
-                        f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1"
-                    )
-                    f.close()
+                        f.write(
+                            f"export INM={MAGIC_DL1_dir}/Merged/Merged_{str(Y_M).zfill(4)}_{str(M_M).zfill(2)}_{str(D_M).zfill(2)}\n"
+                        )
+                        f.write(f"export OUTPUTDIR={outputdir}\n")
+                        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n")
+                        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+                        f.write(
+                            "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n"
+                        )
+                        f.write(
+                            f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1"
+                        )
+                    
 
 
 def main():
@@ -274,6 +274,7 @@ def main():
     )
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     source = config["directories"]["target_name"]
+    LST_version = config["general"]["LST_version"]
     print("***** Generating file config_coincidence.yaml...")
     print("***** This file can be found in ", target_dir)
     configfile_coincidence(telescope_ids, target_dir)
@@ -291,7 +292,7 @@ def main():
             print("***** Generating the bashscript...")
             # bash_coincident(scripts_dir, target_dir, nsblvl)
             linking_bash_lst(
-                scripts_dir, target_dir, LST_runs, nsblvl, date, source
+                scripts_dir, target_dir, LST_runs, nsblvl, date, source, LST_version
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")

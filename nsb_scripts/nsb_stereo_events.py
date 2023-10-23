@@ -33,26 +33,26 @@ def configfile_stereo(ids, target_dir):
         Path to the working directory
     """
 
-    f = open(target_dir + "/config_stereo.yaml", "w")
-    f.write(
-        "mc_tel_ids:\n    LST-1: "
-        + str(ids[0])
-        + "\n    LST-2: "
-        + str(ids[1])
-        + "\n    LST-3: "
-        + str(ids[2])
-        + "\n    LST-4: "
-        + str(ids[3])
-        + "\n    MAGIC-I: "
-        + str(ids[4])
-        + "\n    MAGIC-II: "
-        + str(ids[5])
-        + "\n\n"
-    )
-    f.write(
-        'stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n'
-    )
-    f.close()
+    with open(target_dir + "/config_stereo.yaml", "w") as f:
+        f.write(
+            "mc_tel_ids:\n    LST-1: "
+            + str(ids[0])
+            + "\n    LST-2: "
+            + str(ids[1])
+            + "\n    LST-3: "
+            + str(ids[2])
+            + "\n    LST-4: "
+            + str(ids[3])
+            + "\n    MAGIC-I: "
+            + str(ids[4])
+            + "\n    MAGIC-II: "
+            + str(ids[5])
+            + "\n\n"
+        )
+        f.write(
+            'stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n'
+        )
+    
 
 
 def bash_stereo(scripts_dir, target_dir, nsb, source):
@@ -142,25 +142,25 @@ def bash_stereo(scripts_dir, target_dir, nsb, source):
             if process_size < 0:
                 continue
 
-            f = open(f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w")
-            f.write("#!/bin/sh\n\n")
-            f.write("#SBATCH -p short\n")
-            f.write("#SBATCH -J " + process_name + "_stereo_" + str(nsb) + "\n")
-            f.write(f"#SBATCH --array=0-{process_size}\n")
-            f.write("#SBATCH -N 1\n\n")
-            f.write("ulimit -l unlimited\n")
-            f.write("ulimit -s unlimited\n")
-            f.write("ulimit -a\n\n")
+            with open(f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w") as f:
+                f.write("#!/bin/sh\n\n")
+                f.write("#SBATCH -p short\n")
+                f.write("#SBATCH -J " + process_name + "_stereo_" + str(nsb) + "\n")
+                f.write(f"#SBATCH --array=0-{process_size}\n")
+                f.write("#SBATCH -N 1\n\n")
+                f.write("ulimit -l unlimited\n")
+                f.write("ulimit -s unlimited\n")
+                f.write("ulimit -a\n\n")
 
-            f.write(f"export INPUTDIR={nightLST}\n")
-            f.write(f"export OUTPUTDIR={stereoDir}\n")
-            f.write(f"SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin_{nsb}.txt))\n")
-            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-            f.write("export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-            f.write(
-                f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
-            )
-            f.close()
+                f.write(f"export INPUTDIR={nightLST}\n")
+                f.write(f"export OUTPUTDIR={stereoDir}\n")
+                f.write(f"SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin_{nsb}.txt))\n")
+                f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
+                f.write("export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
+                f.write(
+                    f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
+                )
+           
 
 
 def main():

@@ -43,52 +43,52 @@ def config_file_gen(ids, target_dir):
     Here we create the configuration file needed for transforming DL0 data in DL1
     """
 
-    f = open(target_dir + "/config_step1.yaml", "w")
-    f.write("directories:\n    target: " + target_dir + "\n\n")
-    f.write(
-        "mc_tel_ids:\n    LST-1: "
-        + str(ids[0])
-        + "\n    LST-2: "
-        + str(ids[1])
-        + "\n    LST-3: "
-        + str(ids[2])
-        + "\n    LST-4: "
-        + str(ids[3])
-        + "\n    MAGIC-I: "
-        + str(ids[4])
-        + "\n    MAGIC-II: "
-        + str(ids[5])
-        + "\n\n"
-    )
+    with open(target_dir + "/config_step1.yaml", "w") as f:
+        f.write("directories:\n    target: " + target_dir + "\n\n")
+        f.write(
+            "mc_tel_ids:\n    LST-1: "
+            + str(ids[0])
+            + "\n    LST-2: "
+            + str(ids[1])
+            + "\n    LST-3: "
+            + str(ids[2])
+            + "\n    LST-4: "
+            + str(ids[3])
+            + "\n    MAGIC-I: "
+            + str(ids[4])
+            + "\n    MAGIC-II: "
+            + str(ids[5])
+            + "\n\n"
+        )
 
-    f.write(
-        'LST:\n    image_extractor:\n        type: "LocalPeakWindowSum"\n        window_shift: 4\n        window_width: 8\n\n'
-    )
-    f.write(
-        "    increase_nsb:\n        use: true\n        extra_noise_in_dim_pixels: 1.27\n        extra_bias_in_dim_pixels: 0.665\n        transition_charge: 8\n        extra_noise_in_bright_pixels: 2.08\n\n"
-    )
-    f.write("    increase_psf:\n        use: false\n        fraction: null\n\n")
-    f.write(
-        "    tailcuts_clean:\n        picture_thresh: 8\n        boundary_thresh: 4\n        keep_isolated_pixels: false\n        min_number_picture_neighbors: 2\n\n"
-    )
-    f.write(
-        "    time_delta_cleaning:\n        use: true\n        min_number_neighbors: 1\n        time_limit: 2\n\n"
-    )
-    f.write(
-        "    dynamic_cleaning:\n        use: true\n        threshold: 267\n        fraction: 0.03\n\n    use_only_main_island: false\n\n"
-    )
+        f.write(
+            'LST:\n    image_extractor:\n        type: "LocalPeakWindowSum"\n        window_shift: 4\n        window_width: 8\n\n'
+        )
+        f.write(
+            "    increase_nsb:\n        use: true\n        extra_noise_in_dim_pixels: 1.27\n        extra_bias_in_dim_pixels: 0.665\n        transition_charge: 8\n        extra_noise_in_bright_pixels: 2.08\n\n"
+        )
+        f.write("    increase_psf:\n        use: false\n        fraction: null\n\n")
+        f.write(
+            "    tailcuts_clean:\n        picture_thresh: 8\n        boundary_thresh: 4\n        keep_isolated_pixels: false\n        min_number_picture_neighbors: 2\n\n"
+        )
+        f.write(
+            "    time_delta_cleaning:\n        use: true\n        min_number_neighbors: 1\n        time_limit: 2\n\n"
+        )
+        f.write(
+            "    dynamic_cleaning:\n        use: true\n        threshold: 267\n        fraction: 0.03\n\n    use_only_main_island: false\n\n"
+        )
 
-    f.write(
-        'MAGIC:\n    image_extractor:\n        type: "SlidingWindowMaxSum"\n        window_width: 5\n        apply_integration_correction: false\n\n'
-    )
-    f.write("    charge_correction:\n        use: true\n        factor: 1.143\n\n")
-    f.write(
-        '    magic_clean:\n        use_time: true\n        use_sum: true\n        picture_thresh: 6\n        boundary_thresh: 3.5\n        max_time_off: 4.5\n        max_time_diff: 1.5\n        find_hotpixels: true\n        pedestal_type: "from_extractor_rndm"\n\n'
-    )
-    f.write(
-        "    muon_ring:\n        thr_low: 25\n        tailcut: [12, 8]\n        ring_completeness_threshold: 25\n\n"
-    )
-    f.close()
+        f.write(
+            'MAGIC:\n    image_extractor:\n        type: "SlidingWindowMaxSum"\n        window_width: 5\n        apply_integration_correction: false\n\n'
+        )
+        f.write("    charge_correction:\n        use: true\n        factor: 1.143\n\n")
+        f.write(
+            '    magic_clean:\n        use_time: true\n        use_sum: true\n        picture_thresh: 6\n        boundary_thresh: 3.5\n        max_time_off: 4.5\n        max_time_diff: 1.5\n        find_hotpixels: true\n        pedestal_type: "from_extractor_rndm"\n\n'
+        )
+        f.write(
+            "    muon_ring:\n        thr_low: 25\n        tailcut: [12, 8]\n        ring_completeness_threshold: 25\n\n"
+        )
+   
 
 
 def lists_and_bash_gen_MAGIC(
@@ -100,83 +100,83 @@ def lists_and_bash_gen_MAGIC(
 
     process_name = target_dir.split("/")[-2:][0] +"_"+ target_dir.split("/")[-2:][1]
 
-    f = open(f"{source}_linking_MAGIC_data_paths.sh", "w")
-    f.write("#!/bin/sh\n\n")
-    f.write("#SBATCH -p short\n")
-    f.write("#SBATCH -J " + process_name + "\n")
-    f.write("#SBATCH -N 1\n\n")
-    f.write("ulimit -l unlimited\n")
-    f.write("ulimit -s unlimited\n")
-    f.write("ulimit -a\n")
+    with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
+        f.write("#!/bin/sh\n\n")
+        f.write("#SBATCH -p short\n")
+        f.write("#SBATCH -J " + process_name + "\n")
+        f.write("#SBATCH -N 1\n\n")
+        f.write("ulimit -l unlimited\n")
+        f.write("ulimit -s unlimited\n")
+        f.write("ulimit -a\n")
 
-    if (len(MAGIC_runs) == 2) and (len(MAGIC_runs[0]) == 10):
-        MAGIC = MAGIC_runs
+        if (len(MAGIC_runs) == 2) and (len(MAGIC_runs[0]) == 10):
+            MAGIC = MAGIC_runs
 
-        MAGIC_runs = []
-        MAGIC_runs.append(MAGIC)
+            MAGIC_runs = []
+            MAGIC_runs.append(MAGIC)
 
-    for i in MAGIC_runs:
-        for p in range(len(ST_begin)):
-            if (
-                time.strptime(i[0], "%Y_%m_%d")
-                >= time.strptime(ST_begin[p], "%Y_%m_%d")
-            ) and (
-                time.strptime(i[0], "%Y_%m_%d") <= time.strptime(ST_end[p], "%Y_%m_%d")
-            ):
-                if telescope_ids[-1] > 0:
-                    f.write(
-                        "export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/"
-                        + i[0].split("_")[0]
-                        + "/"
-                        + i[0].split("_")[1]
-                        + "/"
-                        + i[0].split("_")[2]
-                        + "\n"
-                    )
-                    f.write(
-                        "export OUT1="
-                        + target_dir
-                        + f"/v{__version__}"
-                        + "/DL1/"
-                        + ST_list[p]
-                        + "/M2/"
-                        + i[0]
-                        + "/"
-                        + i[1]
-                        + "/logs \n"
-                    )
-                    f.write(
-                        "ls $IN1/*" + i[1][-2:] + ".*_Y_*.root > $OUT1/list_dl0.txt\n"
-                    )
+        for i in MAGIC_runs:
+            for p in range(len(ST_begin)):
+                if (
+                    time.strptime(i[0], "%Y_%m_%d")
+                    >= time.strptime(ST_begin[p], "%Y_%m_%d")
+                ) and (
+                    time.strptime(i[0], "%Y_%m_%d") <= time.strptime(ST_end[p], "%Y_%m_%d")
+                ):
+                    if telescope_ids[-1] > 0:
+                        f.write(
+                            "export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/"
+                            + i[0].split("_")[0]
+                            + "/"
+                            + i[0].split("_")[1]
+                            + "/"
+                            + i[0].split("_")[2]
+                            + "\n"
+                        )
+                        f.write(
+                            "export OUT1="
+                            + target_dir
+                            + f"/v{__version__}"
+                            + "/DL1/"
+                            + ST_list[p]
+                            + "/M2/"
+                            + i[0]
+                            + "/"
+                            + i[1]
+                            + "/logs \n"
+                        )
+                        f.write(
+                            "ls $IN1/*" + i[1][-2:] + ".*_Y_*.root > $OUT1/list_dl0.txt\n"
+                        )
 
-                f.write("\n")
-                if telescope_ids[-2] > 0:
-                    f.write(
-                        "export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/"
-                        + i[0].split("_")[0]
-                        + "/"
-                        + i[0].split("_")[1]
-                        + "/"
-                        + i[0].split("_")[2]
-                        + "\n"
-                    )
-                    f.write(
-                        "export OUT1="
-                        + target_dir
-                        + f"/v{__version__}"
-                        + "/DL1/"
-                        + ST_list[p]
-                        + "/M1/"
-                        + i[0]
-                        + "/"
-                        + i[1]
-                        + "/logs \n"
-                    )
-                    f.write(
-                        "ls $IN1/*" + i[1][-2:] + ".*_Y_*.root > $OUT1/list_dl0.txt\n"
-                    )
+                    f.write("\n")
+                    if telescope_ids[-2] > 0:
+                        f.write(
+                            "export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/"
+                            + i[0].split("_")[0]
+                            + "/"
+                            + i[0].split("_")[1]
+                            + "/"
+                            + i[0].split("_")[2]
+                            + "\n"
+                        )
+                        f.write(
+                            "export OUT1="
+                            + target_dir
+                            + f"/v{__version__}"
+                            + "/DL1/"
+                            + ST_list[p]
+                            + "/M1/"
+                            + i[0]
+                            + "/"
+                            + i[1]
+                            + "/logs \n"
+                        )
+                        f.write(
+                            "ls $IN1/*" + i[1][-2:] + ".*_Y_*.root > $OUT1/list_dl0.txt\n"
+                        )
 
-    f.close()
+   
 
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
         for i in MAGIC_runs:
@@ -201,41 +201,41 @@ def lists_and_bash_gen_MAGIC(
                         number_of_nodes = len(number_of_nodes) - 1
                         if number_of_nodes < 0:
                             continue
-                        f = open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w")
-                        f.write("#!/bin/sh\n\n")
-                        f.write("#SBATCH -p long\n")
-                        f.write("#SBATCH -J " + process_name + "\n")
-                        f.write("#SBATCH --array=0-" + str(number_of_nodes) + "\n")
-                        f.write("#SBATCH -N 1\n\n")
-                        f.write("ulimit -l unlimited\n")
-                        f.write("ulimit -s unlimited\n")
-                        f.write("ulimit -a\n\n")
+                        with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
+                            f.write("#!/bin/sh\n\n")
+                            f.write("#SBATCH -p long\n")
+                            f.write("#SBATCH -J " + process_name + "\n")
+                            f.write("#SBATCH --array=0-" + str(number_of_nodes) + "\n")
+                            f.write("#SBATCH -N 1\n\n")
+                            f.write("ulimit -l unlimited\n")
+                            f.write("ulimit -s unlimited\n")
+                            f.write("ulimit -a\n\n")
 
-                        f.write(
-                            "export OUTPUTDIR="
-                            + target_dir
-                            + f"/v{__version__}"
-                            + "/DL1/"
-                            + ST_list[p]
-                            + "/M2/"
-                            + i[0]
-                            + "/"
-                            + i[1]
-                            + "\n"
-                        )
+                            f.write(
+                                "export OUTPUTDIR="
+                                + target_dir
+                                + f"/v{__version__}"
+                                + "/DL1/"
+                                + ST_list[p]
+                                + "/M2/"
+                                + i[0]
+                                + "/"
+                                + i[1]
+                                + "\n"
+                            )
 
-                        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n")
-                        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n")
+                            f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n")
+                            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n")
 
-                        f.write(
-                            "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
-                        )
-                        f.write(
-                            f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
-                            + target_dir
-                            + "/config_step1.yaml >$LOG 2>&1\n"
-                        )
-                        f.close()
+                            f.write(
+                                "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
+                            )
+                            f.write(
+                                f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
+                                + target_dir
+                                + "/config_step1.yaml >$LOG 2>&1\n"
+                            )
+                        
 
                     if telescope_ids[-2] > 0:
                         number_of_nodes = glob.glob(
@@ -250,41 +250,41 @@ def lists_and_bash_gen_MAGIC(
                         number_of_nodes = len(number_of_nodes) - 1
                         if number_of_nodes < 0:
                             continue
-                        f = open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w")
-                        f.write("#!/bin/sh\n\n")
-                        f.write("#SBATCH -p long\n")
-                        f.write("#SBATCH -J " + process_name + "\n")
-                        f.write("#SBATCH --array=0-" + str(number_of_nodes) + "\n")
-                        f.write("#SBATCH -N 1\n\n")
-                        f.write("ulimit -l unlimited\n")
-                        f.write("ulimit -s unlimited\n")
-                        f.write("ulimit -a\n\n")
+                        with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
+                            f.write("#!/bin/sh\n\n")
+                            f.write("#SBATCH -p long\n")
+                            f.write("#SBATCH -J " + process_name + "\n")
+                            f.write("#SBATCH --array=0-" + str(number_of_nodes) + "\n")
+                            f.write("#SBATCH -N 1\n\n")
+                            f.write("ulimit -l unlimited\n")
+                            f.write("ulimit -s unlimited\n")
+                            f.write("ulimit -a\n\n")
 
-                        f.write(
-                            "export OUTPUTDIR="
-                            + target_dir
-                            + f"/v{__version__}"
-                            + "/DL1/"
-                            + ST_list[p]
-                            + "/M1/"
-                            + i[0]
-                            + "/"
-                            + i[1]
-                            + "\n"
-                        )
-                        f.write("cd " + target_dir + "/../\n")
-                        f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n")
-                        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n")
+                            f.write(
+                                "export OUTPUTDIR="
+                                + target_dir
+                                + f"/v{__version__}"
+                                + "/DL1/"
+                                + ST_list[p]
+                                + "/M1/"
+                                + i[0]
+                                + "/"
+                                + i[1]
+                                + "\n"
+                            )
+                            f.write("cd " + target_dir + "/../\n")
+                            f.write("SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n")
+                            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n")
 
-                        f.write(
-                            "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
-                        )
-                        f.write(
-                            f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
-                            + target_dir
-                            + "/config_step1.yaml >$LOG 2>&1\n"
-                        )
-                        f.close()
+                            f.write(
+                                "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
+                            )
+                            f.write(
+                                f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
+                                + target_dir
+                                + "/config_step1.yaml >$LOG 2>&1\n"
+                            )
+                       
 
 
 def directories_generator(target_dir, telescope_ids, MAGIC_runs):

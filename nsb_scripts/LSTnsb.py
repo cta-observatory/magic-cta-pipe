@@ -102,7 +102,7 @@ def main():
     for j in range(0, len(nsb)):
         if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):
             with open(f"{source}_LST_{nsb[j]}_{run_number}.txt", "a+") as f:
-                f.write(run + "\n")
+                f.write(f'{run}\n')
 
 
 if __name__ == "__main__":
