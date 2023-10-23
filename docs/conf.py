@@ -46,7 +46,7 @@ language = "en"
 pygments_style = "sphinx"
 
 # Define the json_url for our version switcher.
-json_url = "https://magicctapipe.readthedocs.io/en/latest/_static/switcher.json"
+json_url = "https://magic-cta-pipe.readthedocs.io/en/latest/_static/switcher.json"
 
 # Define the version we use for matching in the version switcher.,
 version_match = os.getenv("READTHEDOCS_VERSION")
