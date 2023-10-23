@@ -45,11 +45,6 @@ jobs:
       - name: Build docs
         run: make doc
 
-      - uses: actions/upload-artifact@v3
-        with:
-          name: docs
-          path: docs/_build/html
-
   tests:
     runs-on: ubuntu-latest
     strategy:
