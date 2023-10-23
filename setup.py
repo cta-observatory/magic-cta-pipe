@@ -25,6 +25,7 @@ docs_require = [
     "sphinx-automodapi",
     "sphinx_argparse",
     "sphinx_rtd_theme",
+    "pydata_sphinx_theme",
     "numpydoc",
     "nbsphinx",
 ]
