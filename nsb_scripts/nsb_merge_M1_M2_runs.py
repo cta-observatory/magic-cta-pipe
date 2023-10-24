@@ -22,7 +22,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(scripts_dir, target_dir, source):
+def merge(scripts_dir, target_dir, source, env_name):
     """
     This function creates the bash scripts to run merge_hdf_files.py
 
@@ -70,7 +70,7 @@ def merge(scripts_dir, target_dir, source):
                             ):
                                 os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs")
                             f.write(
-                                f"time conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
+                                f"time conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
                             )
 
         
@@ -101,11 +101,12 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
+    env_name = config["general"]["env_name"]
     source = config["directories"]["target_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     print("***** Generating merge bashscripts...")
-    merge(scripts_dir, target_dir, source)
+    merge(scripts_dir, target_dir, source, env_name)
 
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
     print("Process name: merging_" + target_dir.split("/")[-2:][1])

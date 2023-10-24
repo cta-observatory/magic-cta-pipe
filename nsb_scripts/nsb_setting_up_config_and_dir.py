@@ -92,7 +92,7 @@ def config_file_gen(ids, target_dir):
 
 
 def lists_and_bash_gen_MAGIC(
-    scripts_dir, target_dir, telescope_ids, MAGIC_runs, source
+    scripts_dir, target_dir, telescope_ids, MAGIC_runs, source, env_name
 ):
     """
     Below we create a bash script that links the MAGIC data paths to each subdirectory.
@@ -231,7 +231,7 @@ def lists_and_bash_gen_MAGIC(
                                 "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
                             )
                             f.write(
-                                f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
+                                f"time conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
                                 + target_dir
                                 + "/config_step1.yaml >$LOG 2>&1\n"
                             )
@@ -280,7 +280,7 @@ def lists_and_bash_gen_MAGIC(
                                 "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n"
                             )
                             f.write(
-                                f"time conda run -n magic-lst python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
+                                f"time conda run -n {env_name} python {scripts_dir}/magic_calib_to_dl1.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file "
                                 + target_dir
                                 + "/config_step1.yaml >$LOG 2>&1\n"
                             )
@@ -374,6 +374,7 @@ def main():
         config = yaml.safe_load(f)
 
     telescope_ids = list(config["mc_tel_ids"].values())
+    env_name = config["general"]["env_name"]
 
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
     MAGIC_runs = np.genfromtxt(
@@ -401,7 +402,7 @@ def main():
     config_file_gen(telescope_ids, target_dir)
 
     lists_and_bash_gen_MAGIC(
-        scripts_dir, target_dir, telescope_ids, MAGIC_runs, source
+        scripts_dir, target_dir, telescope_ids, MAGIC_runs, source, env_name
     )  # MAGIC real data
     # If there are MAGIC data, we convert them from DL0 to DL1 here:
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):

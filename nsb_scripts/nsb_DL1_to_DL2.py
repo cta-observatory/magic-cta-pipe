@@ -23,7 +23,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def DL1_to_2(scripts_dir, target_dir, nsb, source, config):
+def DL1_to_2(scripts_dir, target_dir, nsb, source, config, env_name):
     """
     This function creates the bash scripts to run lst1_magic_dl1_stereo_to_dl2.py.
 
@@ -98,7 +98,7 @@ def DL1_to_2(scripts_dir, target_dir, nsb, source, config):
                 f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
                 f.write(f"export LOG={output}" + "/logs/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n")
                 f.write(
-                    f"conda run -n magic-lst python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
+                    f"conda run -n {env_name} python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
                 )
             
 
@@ -128,6 +128,7 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
+    env_name = config["general"]["env_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     source = config["directories"]["target_name"]
     listnsb = np.sort(glob.glob(f"{source}_LST_*_.txt"))
@@ -138,7 +139,7 @@ def main():
     print("nsb", nsb)
     for nsblvl in nsb:
         print("***** Generating bashscripts for DL2...")
-        DL1_to_2(scripts_dir, target_dir, nsblvl, source, args.config_file)
+        DL1_to_2(scripts_dir, target_dir, nsblvl, source, args.config_file, env_name)
 
         print("***** Running lst1_magic_dl1_stereo_to_dl2.py in the DL1 data files...")
         print("Process name: DL2_" + target_dir.split("/")[-2:][1] + str(nsblvl))

@@ -20,6 +20,7 @@ general:
     target_Dec_deg: 11.1900   #Dec in degrees  RA: 238.929. Dec: 11.1900
     focal_length  : "effective"
     MAGIC_runs    : PG1553_MAGIC_runs.txt  #If there is no MAGIC data, please fill this file with "0, 0"
-    LST_runs      : PG1553_LST_runs.txt  #Target name!!!  
+    LST_runs      : PG1553_LST_runs.txt  
     nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    env_name      : magic-lst
     

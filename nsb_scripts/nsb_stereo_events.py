@@ -55,7 +55,7 @@ def configfile_stereo(ids, target_dir):
     
 
 
-def bash_stereo(scripts_dir, target_dir, nsb, source):
+def bash_stereo(scripts_dir, target_dir, nsb, source, env_name):
     """
     This function generates the bashscript for running the stereo analysis.
 
@@ -158,7 +158,7 @@ def bash_stereo(scripts_dir, target_dir, nsb, source):
                 f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
                 f.write("export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
                 f.write(
-                    f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
+                    f"time conda run -n {env_name} python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
                 )
            
 
@@ -188,6 +188,7 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
+    env_name = config["general"]["env_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     telescope_ids = list(config["mc_tel_ids"].values())
     source = config["directories"]["target_name"]
@@ -201,7 +202,7 @@ def main():
 
     for nsblvl in nsb:
         print("***** Generating the bashscript...")
-        bash_stereo(scripts_dir, target_dir, nsblvl, source)
+        bash_stereo(scripts_dir, target_dir, nsblvl, source, env_name)
 
         print("***** Submitting processess to the cluster...")
         print(

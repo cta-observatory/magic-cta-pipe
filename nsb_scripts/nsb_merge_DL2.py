@@ -21,7 +21,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def MergeDL2(scripts_dir, target_dir, nsb, source):
+def MergeDL2(scripts_dir, target_dir, nsb, source, env_name):
     """
     This function creates the bash scripts to run merge_hdf_files.py in all DL2 subruns.
 
@@ -59,7 +59,7 @@ def MergeDL2(scripts_dir, target_dir, nsb, source):
                     os.mkdir(night + "/Merged/logs")
                 f.write(f"export LOG={night}/Merged/logs/merge.log\n")
                 f.write(
-                    f"conda run -n magic-lst python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n"
+                    f"conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n"
                 )
 
        
@@ -90,6 +90,7 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
+    env_name = config["general"]["env_name"]
 
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     source = config["directories"]["target_name"]
@@ -102,7 +103,7 @@ def main():
     print("nsb", nsb)
     for nsblvl in nsb:
         print("***** Merging DL2 files run-wise...")
-        MergeDL2(scripts_dir, target_dir, nsblvl, source)
+        MergeDL2(scripts_dir, target_dir, nsblvl, source, env_name)
 
     # Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
     list_of_DL1_to_2_scripts = np.sort(glob.glob(f"{source}_MergeDL2_*.sh"))

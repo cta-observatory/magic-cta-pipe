@@ -64,7 +64,7 @@ def configuration_DL3(ids, target_dir, target_coords):
     
 
 
-def DL2_to_DL3(scripts_dir, target_dir, nsb, source):
+def DL2_to_DL3(scripts_dir, target_dir, nsb, source, env_name):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
 
@@ -109,7 +109,7 @@ def DL2_to_DL3(scripts_dir, target_dir, nsb, source):
                 for DL2_file in listOfDL2files:
                     f.write(f'export LOG={output}/logs/DL3_{DL2_file.split("/")[-1]}.log\n')
                     f.write(
-                        f"conda run -n magic-lst python {scripts_dir}/lst1_magic_dl2_to_dl3.py --input-file-dl2 {DL2_file} --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3_Zd.yaml >$LOG 2>&1\n\n"
+                        f"conda run -n {env_name} python {scripts_dir}/lst1_magic_dl2_to_dl3.py --input-file-dl2 {DL2_file} --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3_Zd.yaml >$LOG 2>&1\n\n"
                     )
 
           
@@ -142,6 +142,7 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
+    env_name = config["general"]["env_name"]
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     target_coords = [
@@ -161,7 +162,7 @@ def main():
     print("nsb", nsb)
     for nsblvl in nsb:
         print("***** Generating bashscripts for DL2-DL3 conversion...")
-        DL2_to_DL3(scripts_dir, target_dir, nsblvl, source)
+        DL2_to_DL3(scripts_dir, target_dir, nsblvl, source, env_name)
 
         print("***** Running lst1_magic_dl2_to_dl3.py in the DL2 real data files...")
         print("Process name: DL3_" + target_dir.split("/")[-2:][1] + str(nsblvl))

@@ -14,7 +14,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def bash_scripts(run, config, source):
+def bash_scripts(run, config, source, env_name):
     with open(f"{source}_run_{run}.sh", "w") as f:
         f.write("#!/bin/sh\n\n")
         f.write("#SBATCH -p long\n")
@@ -26,7 +26,7 @@ def bash_scripts(run, config, source):
         f.write("ulimit -a\n\n")
 
         f.write(
-            f"time conda run -n  magic-lst python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n"
+            f"time conda run -n  {env_name} python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n"
         )
    
 
@@ -49,13 +49,14 @@ def main():
         config = yaml.safe_load(f)
     source = config["directories"]["target_name"]
     runs = config["general"]["LST_runs"]
+    env_name = config["general"]["env_name"]
 
     with open(str(runs), "r") as LSTfile:
         run = LSTfile.readlines()
     print("***** Generating bashscripts...")
     for i in run:
         i = i.rstrip()
-        bash_scripts(i, args.config_file, source)
+        bash_scripts(i, args.config_file, source, env_name)
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob(f"{source}_run_*.sh"))

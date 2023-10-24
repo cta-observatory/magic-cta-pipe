@@ -66,7 +66,7 @@ def configfile_coincidence(ids, target_dir):
     
 
 
-def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source, LST_version):
+def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source, LST_version, env_name):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
     Parameters
@@ -241,7 +241,7 @@ def linking_bash_lst(scripts_dir, target_dir, LST_runs, nsb, date, source, LST_v
                             "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n"
                         )
                         f.write(
-                            f"time conda run -n magic-lst python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1"
+                            f"time conda run -n {env_name} python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1"
                         )
                     
 
@@ -273,6 +273,7 @@ def main():
         / config["directories"]["target_name"]
     )
     scripts_dir = str(Path(config["directories"]["scripts_dir"]))
+    env_name = config["general"]["env_name"]
     source = config["directories"]["target_name"]
     LST_version = config["general"]["LST_version"]
     print("***** Generating file config_coincidence.yaml...")
@@ -292,7 +293,7 @@ def main():
             print("***** Generating the bashscript...")
             # bash_coincident(scripts_dir, target_dir, nsblvl)
             linking_bash_lst(
-                scripts_dir, target_dir, LST_runs, nsblvl, date, source, LST_version
+                scripts_dir, target_dir, LST_runs, nsblvl, date, source, LST_version, env_name
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")

@@ -21,4 +21,5 @@ general:
     MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
     LST_runs      : "LST_runs.txt"  
     nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    env_name      : magic-lst
     
