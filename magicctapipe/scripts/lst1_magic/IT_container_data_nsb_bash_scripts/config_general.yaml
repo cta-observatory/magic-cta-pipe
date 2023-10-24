@@ -1,0 +1,24 @@
+mc_tel_ids:
+    LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
+    MAGIC-I: 2
+    MAGIC-II: 3
+
+directories:
+    workspace_dir : "/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/" 
+    target_name   : "Crab"
+
+general:
+    
+
+
+    target_RA_deg : 83.629 #RA in degrees
+    target_Dec_deg: 22.015   #Dec in degrees 
+    focal_length  : "effective"
+    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
+    LST_runs      : "LST_runs.txt"  
+    nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    env_name      : magic-lst
+    
