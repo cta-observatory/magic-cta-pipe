@@ -15,20 +15,19 @@ logger.setLevel(logging.INFO)
 
 
 def bash_scripts(run, config, source, env_name):
+    lines= [
+        "#!/bin/sh\n\n",
+        "#SBATCH -p long\n",
+        "#SBATCH -J nsb\n",
+        "#SBATCH -N 1\n\n",
+        "ulimit -l unlimited\n",
+        "ulimit -s unlimited\n",
+        "ulimit -a\n\n",
+        f"time conda run -n  {env_name} python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n"
+        
+    ]
     with open(f"{source}_run_{run}.sh", "w") as f:
-        f.write("#!/bin/sh\n\n")
-        f.write("#SBATCH -p long\n")
-        f.write("#SBATCH -J " + "nsb" + "\n")
-
-        f.write("#SBATCH -N 1\n\n")
-        f.write("ulimit -l unlimited\n")
-        f.write("ulimit -s unlimited\n")
-        f.write("ulimit -a\n\n")
-
-        f.write(
-            f"time conda run -n  {env_name} python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n"
-        )
-   
+        f.writelines(lines)
 
 
 def main():

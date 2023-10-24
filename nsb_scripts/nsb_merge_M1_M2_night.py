@@ -38,28 +38,31 @@ def merge(scripts_dir, target_dir, source, env_name):
     ]
 
     for p in ST_list:
-        process_name = "merging_" + target_dir.split("/")[-2:][1]
+        process_name = f'merging_{target_dir.split("/")[-2:][1]}'
 
-        MAGIC_DL1_dir = target_dir + f"/v{__version__}" + "/DL1/" + p
+        MAGIC_DL1_dir = f'{target_dir}/v{__version__}/DL1/{p}'
+        lines=[
+            "#!/bin/sh\n\n",
+            "#SBATCH -p short\n",
+            f"#SBATCH -J {process_name}\n",
+            "#SBATCH -N 1\n\n",
+            "ulimit -l unlimited\n",
+            "ulimit -s unlimited\n",
+            "ulimit -a\n\n",
+        ]
 
         with open(f"{source}_Merge_2_{p}.sh", "w") as f:
-            f.write("#!/bin/sh\n\n")
-            f.write("#SBATCH -p short\n")
-            f.write("#SBATCH -J " + process_name + "\n")
-            f.write("#SBATCH -N 1\n\n")
-            f.write("ulimit -l unlimited\n")
-            f.write("ulimit -s unlimited\n")
-            f.write("ulimit -a\n\n")
-
+            f.writelines(lines)
+           
             dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")]
             for i in dates:
                 if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
                     continue
-                if not os.path.exists(MAGIC_DL1_dir + f"/Merged/Merged_{i}"):
+                if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i}"):
                     os.mkdir(
                         f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
                     )  # Creating a merged directory for each night
-                if not os.path.exists(MAGIC_DL1_dir + f"/Merged/Merged_{i}/logs"):
+                if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs")
                 f.write(
                     f"time conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
@@ -101,10 +104,9 @@ def main():
     merge(scripts_dir, target_dir, source, env_name)
 
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
-    print("Process name: merging_" + target_dir.split("/")[-2:][1])
+    print(f'Process name: merging_{target_dir.split("/")[-2:][1]}')
     print(
-        "To check the jobs submitted to the cluster, type: squeue -n merging_"
-        + target_dir.split("/")[-2:][1]
+        f'To check the jobs submitted to the cluster, type: squeue -n merging_{target_dir.split("/")[-2:][1]}'
     )
 
     # Below we run the bash scripts to merge the MAGIC files
@@ -115,7 +117,7 @@ def main():
         if n == 0:
             launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = launch_jobs + f" && merging{n}=$(sbatch --parsable {run})"
+            launch_jobs = f"{launch_jobs} && merging{n}=$(sbatch --parsable {run})"
 
     # print(launch_jobs)
     os.system(launch_jobs)
