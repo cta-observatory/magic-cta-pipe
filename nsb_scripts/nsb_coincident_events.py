@@ -53,14 +53,12 @@ def configfile_coincidence(ids, target_dir):
 
 
 def linking_bash_lst(
-    scripts_dir, target_dir, LST_runs, nsb, date, source, LST_version, env_name
+    target_dir, LST_runs, nsb, date, source, LST_version, env_name
 ):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
     Parameters
     ----------
-    scripts_dir: str
-        Path to the scripts directory
     target_dir: str
         Path to the working directory
     LST_runs: matrix of strings
@@ -183,7 +181,7 @@ def linking_bash_lst(
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                         "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"time conda run -n {env_name} python {scripts_dir}/lst1_magic_event_coincidence.py --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1",
+                        f"time conda run -n {env_name} python lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1",
                     ]
                     with open(
                         f"{source}_LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh",
@@ -218,7 +216,6 @@ def main():
         Path(config["directories"]["workspace_dir"])
         / config["directories"]["target_name"]
     )
-    scripts_dir = str(Path(config["directories"]["scripts_dir"]))
     env_name = config["general"]["env_name"]
     source = config["directories"]["target_name"]
     LST_version = config["general"]["LST_version"]
@@ -237,9 +234,7 @@ def main():
             print("***** Linking the paths to LST data files...")
 
             print("***** Generating the bashscript...")
-            # bash_coincident(scripts_dir, target_dir, nsblvl)
             linking_bash_lst(
-                scripts_dir,
                 target_dir,
                 LST_runs,
                 nsblvl,

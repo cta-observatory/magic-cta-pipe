@@ -23,14 +23,12 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(scripts_dir, target_dir, source, env_name):
+def merge(target_dir, source, env_name):
     """
     This function creates the bash scripts to run merge_hdf_files.py
 
     Parameters
     ----------
-    scripts_dir: str
-        Path to the scripts directory
     target_dir: str
         Path to the working directory
     """
@@ -85,7 +83,7 @@ def merge(scripts_dir, target_dir, source, env_name):
                             )  # Creating a merged directory for the respective run
 
                         f.write(
-                            f"time conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M1/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M1_{i}_{r}.log \n"
+                            f"time conda run -n {env_name} python merge_hdf_files --input-dir {MAGIC_DL1_dir}/M1/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M1_{i}_{r}.log \n"
                         )
 
             if os.path.exists(f"{MAGIC_DL1_dir}/M2"):
@@ -113,7 +111,7 @@ def merge(scripts_dir, target_dir, source, env_name):
                             )  # Creating a merged directory for the respective run
 
                         f.write(
-                            f"time conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/M2/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M2_{i}_{r}.log \n"
+                            f"time conda run -n {env_name} python merge_hdf_files --input-dir {MAGIC_DL1_dir}/M2/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M2_{i}_{r}.log \n"
                         )
 
 
@@ -144,11 +142,10 @@ def main():
     )
     env_name = config["general"]["env_name"]
     source = config["directories"]["target_name"]
-    scripts_dir = str(Path(config["directories"]["scripts_dir"]))
 
     print("***** Generating merge bashscripts...")
     merge(
-        scripts_dir, target_dir, source, env_name
+        target_dir, source, env_name
     )  # generating the bash script to merge the subruns
 
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
