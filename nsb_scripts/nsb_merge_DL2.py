@@ -8,12 +8,13 @@ $ python IRF.py
 
 """
 import argparse
-import os
-import numpy as np
 import glob
-import yaml
 import logging
+import os
 from pathlib import Path
+
+import numpy as np
+import yaml
 from magicctapipe import __version__
 
 logger = logging.getLogger(__name__)
@@ -33,13 +34,11 @@ def MergeDL2(scripts_dir, target_dir, nsb, source, env_name):
 
     process_name = "DL3_" + target_dir.split("/")[-2:][1]
     ST_list = [
-        os.path.basename(x)
-        for x in glob.glob(f"{target_dir}/v{__version__}/DL2/*")
+        os.path.basename(x) for x in glob.glob(f"{target_dir}/v{__version__}/DL2/*")
     ]
     print(ST_list)
     for p in ST_list:
-
-        DL2_dir = target_dir+f"/v{__version__}/DL2/"+ str(p)+ "/NSB"+ str(nsb)
+        DL2_dir = target_dir + f"/v{__version__}/DL2/" + str(p) + "/NSB" + str(nsb)
         list_of_nights = np.sort(glob.glob(DL2_dir + "/20*"))
         print(DL2_dir)
 
@@ -61,8 +60,6 @@ def MergeDL2(scripts_dir, target_dir, nsb, source, env_name):
                 f.write(
                     f"conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {night} --output-dir {night}/Merged --run-wise >$LOG 2>&1\n"
                 )
-
-       
 
 
 def main():

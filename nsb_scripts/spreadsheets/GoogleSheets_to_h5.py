@@ -2,11 +2,12 @@
 Google Sheets to pandas dataframe
 """
 
-import pandas as pd
 import json
-from google.oauth2 import service_account
+
 import gspread
+import pandas as pd
 import yaml
+from google.oauth2 import service_account
 
 
 def load_to_pandas(config):

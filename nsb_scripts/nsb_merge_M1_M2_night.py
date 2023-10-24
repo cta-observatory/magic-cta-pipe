@@ -9,13 +9,14 @@ $ python merge_M1_M2_night.py
 
 """
 import argparse
-import os
-import numpy as np
-from magicctapipe import __version__
 import glob
-import yaml
 import logging
+import os
 from pathlib import Path
+
+import numpy as np
+import yaml
+from magicctapipe import __version__
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -40,8 +41,8 @@ def merge(scripts_dir, target_dir, source, env_name):
     for p in ST_list:
         process_name = f'merging_{target_dir.split("/")[-2:][1]}'
 
-        MAGIC_DL1_dir = f'{target_dir}/v{__version__}/DL1/{p}'
-        lines=[
+        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/DL1/{p}"
+        lines = [
             "#!/bin/sh\n\n",
             "#SBATCH -p short\n",
             f"#SBATCH -J {process_name}\n",
@@ -53,7 +54,7 @@ def merge(scripts_dir, target_dir, source, env_name):
 
         with open(f"{source}_Merge_2_{p}.sh", "w") as f:
             f.writelines(lines)
-           
+
             dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")]
             for i in dates:
                 if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
@@ -67,8 +68,6 @@ def merge(scripts_dir, target_dir, source, env_name):
                 f.write(
                     f"time conda run -n {env_name} python {scripts_dir}/merge_hdf_files.py --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
                 )
-
-       
 
 
 def main():

@@ -10,12 +10,13 @@ $ python DL1_to_DL2.py
 
 """
 import argparse
-import os
-import numpy as np
 import glob
-import yaml
 import logging
+import os
 from pathlib import Path
+
+import numpy as np
+import yaml
 from magicctapipe import __version__
 
 logger = logging.getLogger(__name__)
@@ -41,18 +42,13 @@ def DL1_to_2(scripts_dir, target_dir, nsb, source, config, env_name):
         for x in glob.glob(f"{target_dir}/v{__version__}/DL1CoincidentStereo/*")
     ]
     for p in ST_list:
-        print('period', p)
-        if not os.path.exists(
-            f"{target_dir}/v{__version__}/DL2/" + str(p)
-        ):
+        print("period", p)
+        if not os.path.exists(f"{target_dir}/v{__version__}/DL2/" + str(p)):
             os.mkdir(f"{target_dir}/v{__version__}/DL2/" + str(p))
 
         if (
             not os.path.exists(
-                f"{target_dir}/v{__version__}/DL2/"
-                + str(p)
-                + "/NSB"
-                + str(nsb)
+                f"{target_dir}/v{__version__}/DL2/" + str(p) + "/NSB" + str(nsb)
             )
         ) and (
             os.path.exists(
@@ -62,24 +58,34 @@ def DL1_to_2(scripts_dir, target_dir, nsb, source, config, env_name):
                 + str(nsb)
             )
         ):
-            os.mkdir(
-                f"{target_dir}/v{__version__}/DL2/"
-                + str(p)
-                + "/NSB"
-                + str(nsb)
-            )
-        data_files_dir = target_dir + f"/v{__version__}/DL1CoincidentStereo/"+ str(p)+ "/NSB"+ str(nsb) 
-        RFs_dir = f"/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/{source}/RF/" + str(p)+"/NSB"+ str(nsb)  # then, RFs saved somewhere (as Julian's ones)
+            os.mkdir(f"{target_dir}/v{__version__}/DL2/" + str(p) + "/NSB" + str(nsb))
+        data_files_dir = (
+            target_dir
+            + f"/v{__version__}/DL1CoincidentStereo/"
+            + str(p)
+            + "/NSB"
+            + str(nsb)
+        )
+        RFs_dir = (
+            f"/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/{source}/RF/"
+            + str(p)
+            + "/NSB"
+            + str(nsb)
+        )  # then, RFs saved somewhere (as Julian's ones)
         listOfDL1nights = np.sort(glob.glob(data_files_dir + "/*"))
         print(data_files_dir)
         for night in listOfDL1nights:
-            output = target_dir + f'/v{__version__}/DL2/{p}/NSB{nsb}/{night.split("/")[-1]}'
+            output = (
+                target_dir + f'/v{__version__}/DL2/{p}/NSB{nsb}/{night.split("/")[-1]}'
+            )
             if not os.path.exists(output):
                 os.mkdir(output)
-            if not os.path.exists(output+"/logs"):
-                os.mkdir(output+"/logs")
+            if not os.path.exists(output + "/logs"):
+                os.mkdir(output + "/logs")
             listOfDL1Files = np.sort(glob.glob(night + "/*.h5"))
-            np.savetxt(output + "/logs/list_of_DL1_stereo_files.txt", listOfDL1Files, fmt="%s")
+            np.savetxt(
+                output + "/logs/list_of_DL1_stereo_files.txt", listOfDL1Files, fmt="%s"
+            )
             process_size = len(listOfDL1Files) - 1
             if process_size < 0:
                 continue
@@ -94,13 +100,17 @@ def DL1_to_2(scripts_dir, target_dir, nsb, source, config, env_name):
                 f.write("ulimit -s unlimited\n")
                 f.write("ulimit -a\n\n")
 
-                f.write(f"SAMPLE_LIST=($(<{output}/logs/list_of_DL1_stereo_files.txt))\n")
+                f.write(
+                    f"SAMPLE_LIST=($(<{output}/logs/list_of_DL1_stereo_files.txt))\n"
+                )
                 f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-                f.write(f"export LOG={output}" + "/logs/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n")
+                f.write(
+                    f"export LOG={output}"
+                    + "/logs/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n"
+                )
                 f.write(
                     f"conda run -n {env_name} python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
                 )
-            
 
 
 def main():
@@ -150,7 +160,9 @@ def main():
         )
 
         # Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-        list_of_DL1_to_2_scripts = np.sort(glob.glob(f"{source}_DL1_to_DL2_{nsblvl}*.sh"))
+        list_of_DL1_to_2_scripts = np.sort(
+            glob.glob(f"{source}_DL1_to_DL2_{nsblvl}*.sh")
+        )
         if len(list_of_DL1_to_2_scripts) < 1:
             continue
         print(list_of_DL1_to_2_scripts)

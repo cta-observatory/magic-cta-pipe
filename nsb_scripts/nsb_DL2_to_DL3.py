@@ -14,12 +14,13 @@ $ python DL2_to_DL3.py
 
 """
 import argparse
-import os
-import numpy as np
 import glob
-import yaml
 import logging
+import os
 from pathlib import Path
+
+import numpy as np
+import yaml
 from magicctapipe import __version__
 
 logger = logging.getLogger(__name__)
@@ -61,8 +62,6 @@ def configuration_DL3(ids, target_dir, target_coords):
             f'dl2_to_dl3:\n    interpolation_method: "linear"  # select "nearest", "linear" or "cubic"\n    interpolation_scheme: "cosZd" # select "cosZdAz" or "cosZd"\n    max_distance: "90. deg"\n    source_name: "{target_name}"\n    source_ra: "{target_coords[0]} deg" # used when the source name cannot be resolved\n    source_dec: "{target_coords[1]} deg" # used when the source name cannot be resolved\n\n'
         )
 
-    
-
 
 def DL2_to_DL3(scripts_dir, target_dir, nsb, source, env_name):
     """
@@ -77,20 +76,29 @@ def DL2_to_DL3(scripts_dir, target_dir, nsb, source, env_name):
     if not os.path.exists(target_dir + f"/v{__version__}/DL3_Zd"):
         os.mkdir(target_dir + f"/v{__version__}/DL3_Zd")
     if not os.path.exists(target_dir + f"/v{__version__}/DL3_Zd/logs"):
-        os.mkdir(target_dir  + f"/v{__version__}/DL3_Zd/logs")
-
+        os.mkdir(target_dir + f"/v{__version__}/DL3_Zd/logs")
 
     process_name = "DL3_" + target_dir.split("/")[-2:][1] + str(nsb)
     ST_list = [
-        os.path.basename(x)
-        for x in glob.glob(f"{target_dir}/v{__version__}/DL2/*")
+        os.path.basename(x) for x in glob.glob(f"{target_dir}/v{__version__}/DL2/*")
     ]
-    output = target_dir  + f"/v{__version__}/DL3_Zd"
+    output = target_dir + f"/v{__version__}/DL3_Zd"
     for p in ST_list:
-        nights = np.sort(glob.glob(target_dir+f"/v{__version__}/DL2/"+ str(p)+ "/NSB"+ str(nsb)+"/20*"))
+        nights = np.sort(
+            glob.glob(
+                target_dir
+                + f"/v{__version__}/DL2/"
+                + str(p)
+                + "/NSB"
+                + str(nsb)
+                + "/20*"
+            )
+        )
         IRF_dir = (
             f"/fefs/aswg/workspace/elisa.visentin/MAGIC_LST_analysis/{source}/IRF/"
-            + str(p)+"/NSB"+ str(nsb) 
+            + str(p)
+            + "/NSB"
+            + str(nsb)
         )  # IRF direcctory
 
         for night in nights:
@@ -107,12 +115,12 @@ def DL2_to_DL3(scripts_dir, target_dir, nsb, source, env_name):
                 f.write("ulimit -a\n\n")
 
                 for DL2_file in listOfDL2files:
-                    f.write(f'export LOG={output}/logs/DL3_{DL2_file.split("/")[-1]}.log\n')
+                    f.write(
+                        f'export LOG={output}/logs/DL3_{DL2_file.split("/")[-1]}.log\n'
+                    )
                     f.write(
                         f"conda run -n {env_name} python {scripts_dir}/lst1_magic_dl2_to_dl3.py --input-file-dl2 {DL2_file} --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3_Zd.yaml >$LOG 2>&1\n\n"
                     )
-
-          
 
 
 def main():
@@ -173,7 +181,9 @@ def main():
         )
 
         # Below we run the bash scripts to perform the DL1 to DL2 cnoversion:
-        list_of_DL2_to_DL3_scripts = np.sort(glob.glob(f"{source}_DL3_Zd_{nsblvl}_*.sh"))
+        list_of_DL2_to_DL3_scripts = np.sort(
+            glob.glob(f"{source}_DL3_Zd_{nsblvl}_*.sh")
+        )
         if len(list_of_DL2_to_DL3_scripts) < 1:
             continue
         for n, run in enumerate(list_of_DL2_to_DL3_scripts):

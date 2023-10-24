@@ -1,14 +1,14 @@
 """
 Evaluates NSB level for a LST run
 """
-import os
 import argparse
-from lstchain.image.modifier import calculate_noise_parameters
-import numpy as np
-import yaml
 import glob
 import logging
+import os
 
+import numpy as np
+import yaml
+from lstchain.image.modifier import calculate_noise_parameters
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -76,17 +76,19 @@ def main():
     else:
         mod = int(len(run_list) / 25)
     for ii in range(0, len(run_list)):
-        if mod==0:
+        if mod == 0:
             break
         if ii % mod == 0:
             try:
                 a, b, c = calculate_noise_parameters(simtel, run_list[ii], lst_config)
                 noise.append(a)
             except IndexError:
-                mod=mod-1
-                logger.info(f'WARNING: a subrun caused an error in the NSB level evaluation for run {run_number}. Check reports before using it')
+                mod = mod - 1
+                logger.info(
+                    f"WARNING: a subrun caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
+                )
 
-    if len(noise)==0:
+    if len(noise) == 0:
         return
     a = sum(noise) / len(noise)
     std = np.std(noise)
@@ -95,14 +97,14 @@ def main():
     for sr in range(0, len(noise)):
         if np.abs(noise[sr] - a) < 3 * std:
             subrun_ok.append(noise[sr])
-    if len(subrun_ok)==0:
+    if len(subrun_ok) == 0:
         return
     a = sum(subrun_ok) / len(subrun_ok)
     logger.info(f"Run n. {run_number}, nsb average (w/o outliers) {a}")
     for j in range(0, len(nsb)):
         if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):
             with open(f"{source}_LST_{nsb[j]}_{run_number}.txt", "a+") as f:
-                f.write(f'{run}\n')
+                f.write(f"{run}\n")
 
 
 if __name__ == "__main__":

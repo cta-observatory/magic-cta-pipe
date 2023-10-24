@@ -8,13 +8,14 @@ $ python stereo_events.py
 
 """
 import argparse
-import os
-import numpy as np
 import glob
-import yaml
 import logging
-from magicctapipe import __version__
+import os
 from pathlib import Path
+
+import numpy as np
+import yaml
+from magicctapipe import __version__
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -32,27 +33,13 @@ def configfile_stereo(ids, target_dir):
     target_dir: str
         Path to the working directory
     """
+    lines = [
+        f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
+        'stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n',
+    ]
 
-    with open(target_dir + "/config_stereo.yaml", "w") as f:
-        f.write(
-            "mc_tel_ids:\n    LST-1: "
-            + str(ids[0])
-            + "\n    LST-2: "
-            + str(ids[1])
-            + "\n    LST-3: "
-            + str(ids[2])
-            + "\n    LST-4: "
-            + str(ids[3])
-            + "\n    MAGIC-I: "
-            + str(ids[4])
-            + "\n    MAGIC-II: "
-            + str(ids[5])
-            + "\n\n"
-        )
-        f.write(
-            'stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n'
-        )
-    
+    with open(f"{target_dir}/config_stereo.yaml", "w") as f:
+        f.writelines(lines)
 
 
 def bash_stereo(scripts_dir, target_dir, nsb, source, env_name):
@@ -69,8 +56,8 @@ def bash_stereo(scripts_dir, target_dir, nsb, source, env_name):
 
     process_name = target_dir.split("/")[-2:][1]
 
-    if not os.path.exists(target_dir + f"/v{__version__}/DL1CoincidentStereo"):
-        os.mkdir(target_dir + f"/v{__version__}/DL1CoincidentStereo")
+    if not os.path.exists(f"{target_dir}/v{__version__}/DL1CoincidentStereo"):
+        os.mkdir(f"{target_dir}/v{__version__}/DL1CoincidentStereo")
 
     ST_list = [
         os.path.basename(x)
@@ -79,53 +66,35 @@ def bash_stereo(scripts_dir, target_dir, nsb, source, env_name):
 
     for p in ST_list:
         if not os.path.exists(
-            f"{target_dir}/v{__version__}/DL1CoincidentStereo/" + str(p)
+            f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}"
         ):
-            os.mkdir(f"{target_dir}/v{__version__}/DL1CoincidentStereo/" + str(p))
+            os.mkdir(f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}")
 
         if (
             not os.path.exists(
-                f"{target_dir}/v{__version__}/DL1CoincidentStereo/"
-                + str(p)
-                + "/NSB"
-                + str(nsb)
+                f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}"
             )
         ) and (
             os.path.exists(
-                f"{target_dir}/v{__version__}/DL1Coincident/"
-                + str(p)
-                + "/NSB"
-                + str(nsb)
+                f"{target_dir}/v{__version__}/DL1Coincident/{p}/NSB{nsb}"
             )
         ):
             os.mkdir(
-                f"{target_dir}/v{__version__}/DL1CoincidentStereo/"
-                + str(p)
-                + "/NSB"
-                + str(nsb)
+                f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}"
             )
         listOfNightsLST = np.sort(
             glob.glob(
-                f"{target_dir}/v{__version__}/DL1Coincident/"
-                + str(p)
-                + "/NSB"
-                + str(nsb)
-                + "/*"
+                f"{target_dir}/v{__version__}/DL1Coincident/{p}/NSB{nsb}/*"
             )
         )
         for nightLST in listOfNightsLST:
             stereoDir = (
-                f"{target_dir}/v{__version__}/DL1CoincidentStereo/"
-                + str(p)
-                + "/NSB"
-                + str(nsb)
-                + "/"
-                + nightLST.split("/")[-1]
+                f'{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}/{nightLST.split("/")[-1]}'
             )
             if not os.path.exists(stereoDir):
                 os.mkdir(stereoDir)
-            if not os.path.exists(stereoDir + "/logs"):
-                os.mkdir(stereoDir + "/logs")
+            if not os.path.exists(f"{stereoDir}/logs"):
+                os.mkdir(f"{stereoDir}/logs")
             if not os.listdir(f"{nightLST}"):
                 continue
             if len(os.listdir(nightLST)) < 2:
@@ -135,32 +104,32 @@ def bash_stereo(scripts_dir, target_dir, nsb, source, env_name):
             )  # generating a list with the DL1 coincident data files.
             process_size = (
                 len(
-                    np.genfromtxt(stereoDir + f"/logs/list_coin_{nsb}.txt", dtype="str")
+                    np.genfromtxt(f"{stereoDir}/logs/list_coin_{nsb}.txt", dtype="str")
                 )
                 - 1
             )
             if process_size < 0:
                 continue
-
-            with open(f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w") as f:
-                f.write("#!/bin/sh\n\n")
-                f.write("#SBATCH -p short\n")
-                f.write("#SBATCH -J " + process_name + "_stereo_" + str(nsb) + "\n")
-                f.write(f"#SBATCH --array=0-{process_size}\n")
-                f.write("#SBATCH -N 1\n\n")
-                f.write("ulimit -l unlimited\n")
-                f.write("ulimit -s unlimited\n")
-                f.write("ulimit -a\n\n")
-
-                f.write(f"export INPUTDIR={nightLST}\n")
-                f.write(f"export OUTPUTDIR={stereoDir}\n")
-                f.write(f"SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin_{nsb}.txt))\n")
-                f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-                f.write("export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-                f.write(
-                    f"time conda run -n {env_name} python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1"
-                )
-           
+            lines = [
+                "#!/bin/sh\n\n",
+                "#SBATCH -p short\n",
+                f"#SBATCH -J {process_name}_stereo_{nsb}\n",
+                f"#SBATCH --array=0-{process_size}\n",
+                "#SBATCH -N 1\n\n",
+                "ulimit -l unlimited\n",
+                "ulimit -s unlimited\n",
+                "ulimit -a\n\n",
+                f"export INPUTDIR={nightLST}\n",
+                f"export OUTPUTDIR={stereoDir}\n",
+                f"SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin_{nsb}.txt))\n",
+                "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+                "export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n",
+                f"time conda run -n {env_name} python {scripts_dir}/lst1_magic_stereo_reco.py --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1",
+            ]
+            with open(
+                f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w"
+            ) as f:
+                f.writelines(lines)
 
 
 def main():
@@ -206,13 +175,10 @@ def main():
 
         print("***** Submitting processess to the cluster...")
         print(
-            "Process name: " + target_dir.split("/")[-2:][1] + "_stereo_" + str(nsblvl)
+            f'Process name: {target_dir.split("/")[-2:][1]}_stereo_{nsblvl}'
         )
         print(
-            "To check the jobs submitted to the cluster, type: squeue -n "
-            + target_dir.split("/")[-2:][1]
-            + "_stereo_"
-            + str(nsblvl)
+            f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}_stereo_{nsblvl}'
         )
 
         # Below we run the bash scripts to find the stereo events
@@ -225,7 +191,7 @@ def main():
             if n == 0:
                 launch_jobs = f"stereo{n}=$(sbatch --parsable {run})"
             else:
-                launch_jobs = launch_jobs + f" && stereo{n}=$(sbatch --parsable {run})"
+                launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
 
         os.system(launch_jobs)
 

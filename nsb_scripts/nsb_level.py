@@ -3,11 +3,12 @@ Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
 """
 
 import argparse
-import os
-import numpy as np
 import glob
-import yaml
 import logging
+import os
+
+import numpy as np
+import yaml
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -15,7 +16,7 @@ logger.setLevel(logging.INFO)
 
 
 def bash_scripts(run, config, source, env_name):
-    lines= [
+    lines = [
         "#!/bin/sh\n\n",
         "#SBATCH -p long\n",
         "#SBATCH -J nsb\n",
@@ -23,8 +24,7 @@ def bash_scripts(run, config, source, env_name):
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
-        f"time conda run -n  {env_name} python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n"
-        
+        f"time conda run -n  {env_name} python LSTnsb.py -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n",
     ]
     with open(f"{source}_run_{run}.sh", "w") as f:
         f.writelines(lines)
@@ -66,7 +66,7 @@ def main():
         if n == 0:
             launch_jobs = f"nsb{n}=$(sbatch --parsable {run})"
         else:
-            launch_jobs = launch_jobs + f" && nsb{n}=$(sbatch --parsable {run})"
+            launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
 
     # print(launch_jobs)
     os.system(launch_jobs)

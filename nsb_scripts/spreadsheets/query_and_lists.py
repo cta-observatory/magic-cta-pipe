@@ -1,11 +1,12 @@
 """
 Query on the desired parameters and runs
 """
-import pandas as pd
-import numpy as np
 import os
-import yaml
 from datetime import datetime
+
+import numpy as np
+import pandas as pd
+import yaml
 
 
 def list_run(source_out, df, skip_LST, skip_MAGIC):
@@ -74,7 +75,9 @@ def main():
         max = str(config["data_selection_and_lists"]["max"])
         min = datetime.strptime(min, "%Y_%m_%d")
         max = datetime.strptime(max, "%Y_%m_%d")
-        lst = pd.to_datetime(f'{df["YY_LST"].astype(str)}/{df["MM_LST"].astype(str)}/{df["DD_LST"].astype(str)}')
+        lst = pd.to_datetime(
+            f'{df["YY_LST"].astype(str)}/{df["MM_LST"].astype(str)}/{df["DD_LST"].astype(str)}'
+        )
         df["date"] = lst
         df = df[df["date"] > min]
         df = df[df["date"] < max]
