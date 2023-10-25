@@ -9,9 +9,33 @@ import os
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
+__all__=['nsb']
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+
+def nsb(run_list, simtel, lst_config, run_number):
+    noise = []
+    if len(run_list) == 0:
+        return
+    if len(run_list) < 25:
+        mod = 1
+    else:
+        mod = int(len(run_list) / 25)
+    for ii in range(0, len(run_list)):
+        if mod == 0:
+            break
+        if ii % mod == 0:
+            try:
+                a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
+                noise.append(a)
+            except IndexError:
+                mod = mod - 1
+                logger.info(
+                    f"WARNING: a subrun caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
+                )
+    return noise
 
 
 def main():
@@ -67,26 +91,7 @@ def main():
     date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date_lst}/v0.9/tailcut84"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
-    noise = []
-    if len(run_list) == 0:
-        return
-    if len(run_list) < 25:
-        mod = 1
-    else:
-        mod = int(len(run_list) / 25)
-    for ii in range(0, len(run_list)):
-        if mod == 0:
-            break
-        if ii % mod == 0:
-            try:
-                a, b, c = calculate_noise_parameters(simtel, run_list[ii], lst_config)
-                noise.append(a)
-            except IndexError:
-                mod = mod - 1
-                logger.info(
-                    f"WARNING: a subrun caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
-                )
-
+    noise=nsb(run_list, simtel, lst_config, run_number)
     if len(noise) == 0:
         return
     a = sum(noise) / len(noise)

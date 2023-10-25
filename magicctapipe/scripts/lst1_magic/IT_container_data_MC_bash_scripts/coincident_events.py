@@ -23,6 +23,8 @@ import logging
 from pathlib import Path
 import argparse
 
+__all__=["configfile_coincidence", "linking_lst", "bash_coincident"]
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)

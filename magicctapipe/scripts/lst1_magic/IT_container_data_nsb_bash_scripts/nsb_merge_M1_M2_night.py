@@ -17,12 +17,14 @@ import yaml
 from magicctapipe import __version__
 from pathlib import Path
 
+__all__=['merge3']
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, source, env_name):
+def merge3(target_dir, source, env_name):
     """
     This function creates the bash scripts to run merge_hdf_files.py
 
@@ -63,7 +65,7 @@ def merge(target_dir, source, env_name):
                 if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs"):
                     os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs")
                 f.write(
-                    f"time conda run -n {env_name} python merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
+                    f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
                 )
 
 

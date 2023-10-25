@@ -38,6 +38,8 @@ from tqdm import tqdm
 from pathlib import Path
 import argparse
 
+__all__=["cleaning", "split_train_test", "merge", "mergeMC"]
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)

@@ -26,6 +26,8 @@ from datetime import timedelta
 from magicctapipe import __version__
 from pathlib import Path
 
+__all__=['configfile_coincidence', 'linking_bash_lst']
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
@@ -177,7 +179,7 @@ def linking_bash_lst(target_dir, LST_runs, nsb, date, source, LST_version, env_n
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                         "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"time conda run -n {env_name} python lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1",
+                        f"time conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1",
                     ]
                     with open(
                         f"{source}_LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh",

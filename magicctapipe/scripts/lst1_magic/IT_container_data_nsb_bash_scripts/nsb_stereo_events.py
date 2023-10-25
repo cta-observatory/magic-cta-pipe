@@ -16,6 +16,8 @@ import yaml
 from magicctapipe import __version__
 from pathlib import Path
 
+__all__=['configfile_stereo', 'bash_stereo']
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
@@ -109,7 +111,7 @@ def bash_stereo(target_dir, nsb, source, env_name):
                 f"SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin_{nsb}.txt))\n",
                 "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                 "export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n",
-                f"time conda run -n {env_name} python lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1",
+                f"time conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1",
             ]
             with open(
                 f"{source}_StereoEvents_{nsb}_{nightLST.split('/')[-1]}.sh", "w"

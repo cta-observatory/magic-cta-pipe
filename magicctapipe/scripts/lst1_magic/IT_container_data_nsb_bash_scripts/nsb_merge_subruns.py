@@ -17,12 +17,15 @@ import yaml
 from magicctapipe import __version__
 from pathlib import Path
 
+
+__all__=['merge1']
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, source, env_name):
+def merge1(target_dir, source, env_name):
     """
     This function creates the bash scripts to run merge_hdf_files.py
 
@@ -82,7 +85,7 @@ def merge(target_dir, source, env_name):
                             )  # Creating a merged directory for the respective run
 
                         f.write(
-                            f"time conda run -n {env_name} python merge_hdf_files --input-dir {MAGIC_DL1_dir}/M1/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M1_{i}_{r}.log \n"
+                            f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M1/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M1_{i}_{r}.log \n"
                         )
 
             if os.path.exists(f"{MAGIC_DL1_dir}/M2"):
@@ -110,7 +113,7 @@ def merge(target_dir, source, env_name):
                             )  # Creating a merged directory for the respective run
 
                         f.write(
-                            f"time conda run -n {env_name} python merge_hdf_files --input-dir {MAGIC_DL1_dir}/M2/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M2_{i}_{r}.log \n"
+                            f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M2/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M2_{i}_{r}.log \n"
                         )
 
 

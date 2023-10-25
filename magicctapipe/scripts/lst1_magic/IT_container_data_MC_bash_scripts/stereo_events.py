@@ -25,6 +25,8 @@ import logging
 from pathlib import Path
 import argparse
 
+__all__=['configfile_stereo', 'bash_stereo', 'bash_stereoMC']
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)

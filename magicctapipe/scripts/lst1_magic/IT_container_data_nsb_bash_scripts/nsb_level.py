@@ -9,6 +9,8 @@ import numpy as np
 import os
 import yaml
 
+__all__=['bash_scripts']
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
@@ -23,7 +25,7 @@ def bash_scripts(run, config, source, env_name):
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
-        f"time conda run -n  {env_name} python LSTnsb -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n",
+        f"time conda run -n  {env_name} LSTnsb -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n",
     ]
     with open(f"{source}_run_{run}.sh", "w") as f:
         f.writelines(lines)

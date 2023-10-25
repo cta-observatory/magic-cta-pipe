@@ -16,12 +16,19 @@ $ python setting_up_config_and_dir.py (-c config_file.yaml)
 """
 import argparse
 import glob
+import logging
 import numpy as np
 import os
 import time
 import yaml
 from magicctapipe import __version__
 from pathlib import Path
+
+__all__=['config_file_gen', 'lists_and_bash_gen_MAGIC', 'directories_generator']
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
 
 ST_list = ["ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
 ST_begin = ["2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
@@ -115,10 +122,11 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_
                 ) and (
                     time.strptime(i[0], "%Y_%m_%d")
                     <= time.strptime(ST_end[p], "%Y_%m_%d")
-                ):
+                ): 
+
                     if telescope_ids[-1] > 0:
                         number_of_nodes = glob.glob(
-                            f'fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                            f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
                         )
                         number_of_nodes = len(number_of_nodes) - 1
                         if number_of_nodes < 0:
@@ -136,7 +144,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_
                             "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                             "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                            f"time conda run -n {env_name} python magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_step1.yaml >$LOG 2>&1\n",
+                            f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_step1.yaml >$LOG 2>&1\n",
                         ]
                         with open(
                             f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w"
@@ -145,7 +153,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_
 
                     if telescope_ids[-2] > 0:
                         number_of_nodes = glob.glob(
-                            f'fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                            f'/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
                         )
                         number_of_nodes = len(number_of_nodes) - 1
                         if number_of_nodes < 0:
@@ -163,7 +171,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_
                             "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                             "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                            f"time conda run -n {env_name} python magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_step1.yaml >$LOG 2>&1\n",
+                            f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_step1.yaml >$LOG 2>&1\n",
                         ]
                         with open(
                             f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w"

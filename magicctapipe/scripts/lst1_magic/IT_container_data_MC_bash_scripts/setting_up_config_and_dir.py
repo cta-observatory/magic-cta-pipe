@@ -29,8 +29,15 @@ import os
 import numpy as np
 import argparse
 import glob
+import logging
 import yaml
 from pathlib import Path
+
+__all__=['config_file_gen', 'lists_and_bash_generator', 'lists_and_bash_gen_MAGIC', 'directories_generator']
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
 
 def config_file_gen(ids, target_dir):
     
