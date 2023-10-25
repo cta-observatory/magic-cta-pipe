@@ -25,6 +25,7 @@ docs_require = [
     "sphinx-automodapi",
     "sphinx_argparse",
     "sphinx_rtd_theme",
+    "pydata_sphinx_theme",
     "numpydoc",
     "nbsphinx",
 ]
@@ -39,6 +40,7 @@ setup(
         'ctaplot~=0.5.5',
         'gammapy~=0.19.0',
         'uproot~=4.1',
+        'numba<=0.56',
         'numpy<1.22.0a0',
         'joblib',
         'pandas',

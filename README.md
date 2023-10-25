@@ -28,7 +28,7 @@ The following command will set up a conda virtual environment, add the necessary
 
 People who would like to join the development of *magic-cta-pipe*, please contact Alessio Berti (<alessioberti90@gmail.com>) to get write access to the repository.
 
-Developers should follow the coding style guidelines of the *ctapipe* project, see https://ctapipe.readthedocs.io/en/latest/development/style-guide.html and https://ctapipe.readthedocs.io/en/latest/development/code-guidelines.html.
+Developers should follow the coding style guidelines of the *ctapipe* project, see https://ctapipe.readthedocs.io/en/stable/developer-guide/style-guide.html and https://ctapipe.readthedocs.io/en/stable/developer-guide/code-guidelines.html.
 
 In short, to check for code/style errors and for reformatting the code:
 
