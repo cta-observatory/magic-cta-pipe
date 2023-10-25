@@ -65,11 +65,11 @@ def main():
     run = args.run
     simtel = "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz"
 
-    nsb = config["general"]["nsb"]
-    width = [a / 2 - b / 2 for a, b in zip(nsb[1:], nsb[:-1])]
+    nsb_list = config["general"]["nsb"]
+    width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
     source = config["directories"]["target_name"]
     width.append(0.25)
-    nsb_limit = [a + b for a, b in zip(nsb[:], width[:])]
+    nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
     nsb_limit.insert(0, 0)
 
     lst_config = "lstchain_standard_config.json"
@@ -105,9 +105,9 @@ def main():
         return
     a = sum(subrun_ok) / len(subrun_ok)
     logger.info(f"Run n. {run_number}, nsb average (w/o outliers) {a}")
-    for j in range(0, len(nsb)):
+    for j in range(0, len(nsb_list)):
         if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):
-            with open(f"{source}_LST_{nsb[j]}_{run_number}.txt", "a+") as f:
+            with open(f"{source}_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
                 f.write(f"{run}\n")
 
 
