@@ -1,11 +1,9 @@
 data_selection_and_lists:
     time_range : True  #Search for all runs in a LST range (e.g., 2020_01_01 -> 2022_01_01)
     min : "2019_11_17"
-    max : "2020_03_19"
-   
+    max : "2020_03_19"   
     date_list : ['2020_12_15','2021_03_11']
-                       #LST list of days to be processed (time_range=False), format: YYYY_MM_DD
- 
+                       #LST list of days to be processed (time_range=False), format: YYYY_MM_DD 
     skipped_LST_runs: [2919,2923]
     skipped_MAGIC_runs: [5088421,5088503]   #MAGIC and LST runs not to be processed (why?)
     source_name_database: 'CrabNebula'  #MUST BE THE SAME AS IN THE DATABASE

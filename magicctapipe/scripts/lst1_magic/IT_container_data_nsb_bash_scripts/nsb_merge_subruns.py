@@ -11,12 +11,11 @@ $ python merge_subruns.py
 import argparse
 import glob
 import logging
-import os
-from pathlib import Path
-
 import numpy as np
+import os
 import yaml
 from magicctapipe import __version__
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())

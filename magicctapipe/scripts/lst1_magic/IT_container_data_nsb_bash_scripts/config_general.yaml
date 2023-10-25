@@ -11,9 +11,6 @@ directories:
     target_name   : "Crab"
 
 general:
-    
-
-
     target_RA_deg : 83.629 #RA in degrees
     target_Dec_deg: 22.015   #Dec in degrees 
     focal_length  : "effective"

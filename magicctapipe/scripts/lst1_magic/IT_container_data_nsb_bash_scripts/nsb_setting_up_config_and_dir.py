@@ -16,13 +16,12 @@ $ python setting_up_config_and_dir.py (-c config_file.yaml)
 """
 import argparse
 import glob
+import numpy as np
 import os
 import time
-from pathlib import Path
-
-import numpy as np
 import yaml
 from magicctapipe import __version__
+from pathlib import Path
 
 ST_list = ["ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
 ST_begin = ["2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
@@ -57,9 +56,7 @@ def config_file_gen(ids, target_dir):
         f.writelines(lines)
 
 
-def lists_and_bash_gen_MAGIC(
-    target_dir, telescope_ids, MAGIC_runs, source, env_name
-):
+def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_name):
     """
     Below we create a bash script that links the MAGIC data paths to each subdirectory.
     """
@@ -209,16 +206,12 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
                     if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}"):
                         os.mkdir(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}")
 
-                    if not os.path.exists(
-                        f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}"
-                    ):
+                    if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}"):
                         os.mkdir(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}")
                     if not os.path.exists(
                         f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}/logs"
                     ):
-                        os.mkdir(
-                            f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}/logs"
-                        )
+                        os.mkdir(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}/logs")
                 if telescope_ids[-2] > 0:
                     if not os.path.exists(f"{dl1_dir}/{ST_list[p]}"):
                         os.mkdir(f"{dl1_dir}/{ST_list[p]}")
@@ -227,16 +220,12 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
                     if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}"):
                         os.mkdir(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}")
 
-                    if not os.path.exists(
-                        f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}"
-                    ):
+                    if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}"):
                         os.mkdir(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}")
                     if not os.path.exists(
                         f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}/logs"
                     ):
-                        os.mkdir(
-                            f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}/logs"
-                        )
+                        os.mkdir(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}/logs")
 
 
 def main():
@@ -298,9 +287,7 @@ def main():
             if n == 0:
                 launch_jobs = f"linking=$(sbatch --parsable {source}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
             else:
-                launch_jobs = (                    
-                    f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
-                )
+                launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
 
         os.system(launch_jobs)
 

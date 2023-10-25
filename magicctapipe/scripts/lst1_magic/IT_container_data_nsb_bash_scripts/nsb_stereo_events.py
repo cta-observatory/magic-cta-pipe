@@ -10,12 +10,11 @@ $ python stereo_events.py
 import argparse
 import glob
 import logging
-import os
-from pathlib import Path
-
 import numpy as np
+import os
 import yaml
 from magicctapipe import __version__
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -63,9 +62,7 @@ def bash_stereo(target_dir, nsb, source, env_name):
     ]
 
     for p in ST_list:
-        if not os.path.exists(
-            f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}"
-        ):
+        if not os.path.exists(f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}"):
             os.mkdir(f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}")
 
         if (
@@ -73,22 +70,14 @@ def bash_stereo(target_dir, nsb, source, env_name):
                 f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}"
             )
         ) and (
-            os.path.exists(
-                f"{target_dir}/v{__version__}/DL1Coincident/{p}/NSB{nsb}"
-            )
+            os.path.exists(f"{target_dir}/v{__version__}/DL1Coincident/{p}/NSB{nsb}")
         ):
-            os.mkdir(
-                f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}"
-            )
+            os.mkdir(f"{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}")
         listOfNightsLST = np.sort(
-            glob.glob(
-                f"{target_dir}/v{__version__}/DL1Coincident/{p}/NSB{nsb}/*"
-            )
+            glob.glob(f"{target_dir}/v{__version__}/DL1Coincident/{p}/NSB{nsb}/*")
         )
         for nightLST in listOfNightsLST:
-            stereoDir = (
-                f'{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}/{nightLST.split("/")[-1]}'
-            )
+            stereoDir = f'{target_dir}/v{__version__}/DL1CoincidentStereo/{p}/NSB{nsb}/{nightLST.split("/")[-1]}'
             if not os.path.exists(stereoDir):
                 os.mkdir(stereoDir)
             if not os.path.exists(f"{stereoDir}/logs"):
@@ -101,9 +90,7 @@ def bash_stereo(target_dir, nsb, source, env_name):
                 f"ls {nightLST}/*LST*.h5 >  {stereoDir}/logs/list_coin_{nsb}.txt"
             )  # generating a list with the DL1 coincident data files.
             process_size = (
-                len(
-                    np.genfromtxt(f"{stereoDir}/logs/list_coin_{nsb}.txt", dtype="str")
-                )
+                len(np.genfromtxt(f"{stereoDir}/logs/list_coin_{nsb}.txt", dtype="str"))
                 - 1
             )
             if process_size < 0:
@@ -171,9 +158,7 @@ def main():
         bash_stereo(target_dir, nsblvl, source, env_name)
 
         print("***** Submitting processess to the cluster...")
-        print(
-            f'Process name: {target_dir.split("/")[-2:][1]}_stereo_{nsblvl}'
-        )
+        print(f'Process name: {target_dir.split("/")[-2:][1]}_stereo_{nsblvl}')
         print(
             f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}_stereo_{nsblvl}'
         )

@@ -1,8 +1,7 @@
 import os
-from datetime import datetime
-
 import pandas as pd
 import yaml
+from datetime import datetime
 
 
 def split_lst_date(df):
@@ -69,7 +68,7 @@ def main():
         config = yaml.safe_load(f)
     df = pd.read_hdf(
         "simultaneous_obs_summary.h5", key="/str"
-    )  #TODO: put this file in a shared folder
+    )  # TODO: put this file in a shared folder
 
     df = split_lst_date(df)
 

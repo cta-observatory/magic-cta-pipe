@@ -18,14 +18,13 @@ $ python coincident_events.py (-c config_file.yaml)
 import argparse
 import glob
 import logging
+import numpy as np
 import os
+import yaml
 from datetime import date as dtdt
 from datetime import timedelta
-from pathlib import Path
-
-import numpy as np
-import yaml
 from magicctapipe import __version__
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -52,9 +51,7 @@ def configfile_coincidence(ids, target_dir):
         f.writelines(lines)
 
 
-def linking_bash_lst(
-    target_dir, LST_runs, nsb, date, source, LST_version, env_name
-):
+def linking_bash_lst(target_dir, LST_runs, nsb, date, source, LST_version, env_name):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
     Parameters
@@ -108,11 +105,10 @@ def linking_bash_lst(
                 D_L = i[0].split("_")[2]
                 day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
                 if day_MAGIC == day_LST + delta:
-                    if not os.path.exists(f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}"
+                    if not os.path.exists(
+                        f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}"
                     ):
-                        os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}"
-                        )
+                        os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}")
 
                     lstObsDir = (
                         i[0].split("_")[0] + i[0].split("_")[1] + i[0].split("_")[2]
@@ -245,9 +241,7 @@ def main():
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")
-            print(
-                f'Process name: {target_dir.split("/")[-2:][1]}_coincidence_{nsb}'
-            )
+            print(f'Process name: {target_dir.split("/")[-2:][1]}_coincidence_{nsb}')
             print(
                 f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}_coincidence_{nsb}'
             )
