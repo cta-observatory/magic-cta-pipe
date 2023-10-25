@@ -14,15 +14,11 @@ The telescope coordinates will be converted to those
 relative to the center of the LST and MAGIC positions (including the
 altitude) for the convenience of the geometrical stereo reconstruction.
 
-Usage per single data file (indicated if you want to do tests):
+Usage:
 $ python lst1_magic_mc_dl0_to_dl1.py
 --input-file dl0/gamma_40deg_90deg_run1.simtel.gz
 (--output-dir dl1)
 (--config-file config_step1.yaml)
-
-Broader usage:
-This script is called automatically from the script "setting_up_config_and_dir.py".
-If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse #Parser for command-line options, arguments etc
@@ -46,8 +42,8 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
 
 from magicctapipe.image import MAGICClean
-from magicctapipe.image.calib import Calibrate_LST, Calibrate_MAGIC
-from magicctapipe.io import SimEventInfoContainer, format_object
+from magicctapipe.image.calib import calibrate
+from magicctapipe.io import SimEventInfoContainer, format_object, check_input_list
 from magicctapipe.utils import calculate_disp, calculate_impact
 from traitlets.config import Config
 
@@ -94,9 +90,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     )
 
     obs_id = event_source.obs_ids[0]
-    subarray = event_source.subarray    
+    subarray = event_source.subarray
 
-    tel_descriptions = subarray.tel    
+    tel_descriptions = subarray.tel
     tel_positions = subarray.positions
 
     logger.info("\nSubarray description:")
@@ -208,10 +204,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     output_file = (
         f"{output_dir}/dl1_{particle_type}_zd_{zenith.round(3)}deg_"
         f"az_{azimuth.round(3)}deg_{LSTs_in_use}_{MAGICs_in_use}_run{obs_id}.h5"
-    )                                                                                 #The files are saved with the names of all telescopes involved
+    )  #The files are saved with the names of all telescopes involved
 
-    
-    
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 
@@ -223,19 +217,16 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
             tels_with_trigger = event.trigger.tels_with_trigger
 
             # Check if the event triggers both M1 and M2 or not
-            if((set(MAGICs_IDs).issubset(set(tels_with_trigger))) and (MAGICs_in_use=="MAGIC1_MAGIC2")):
-                magic_stereo = True   #If both have trigger, then magic_stereo = True
-            else:
-                magic_stereo = False
-
+            magic_stereo=(set(MAGICs_IDs).issubset(set(tels_with_trigger))) and (MAGICs_in_use=="MAGIC1_MAGIC2")  #If both have trigger, then magic_stereo = True
+            
             for tel_id in tels_with_trigger:         
 
-                if tel_id in LSTs_IDs:   ##If the ID is in the LST list, we call Calibrate_LST()
+                if tel_id in LSTs_IDs:   ##If the ID is in the LST list, we call calibrate on the LST()
                     # Calibrate the LST-1 event
-                    signal_pixels, image, peak_time = Calibrate_LST(event, tel_id, obs_id, config_lst, camera_geoms, calibrator_lst)   
+                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, obs_id=obs_id, config=config_lst, camera_geoms=camera_geoms, calibrator=calibrator_lst, is_lst=True)   
                 elif tel_id in MAGICs_IDs:
                     # Calibrate the MAGIC event
-                    signal_pixels, image, peak_time = Calibrate_MAGIC(event, tel_id, config_magic, magic_clean, calibrator_magic)
+                    signal_pixels, image, peak_time = calibrate(event=event, tel_id=tel_id, config=config_magic, magic_clean=magic_clean, calibrator=calibrator_magic, is_lst=False)
                 else:
                     logger.info(
                         f"--> Telescope ID {tel_id} not in LST list or MAGIC list. Please check if the IDs are OK in the configuration file"
@@ -432,6 +423,11 @@ def main():
 
     with open(args.config_file, "rb") as f:   # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)            #Here we collect the inputs from the configuration file
+
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
+
+    config['mc_tel_ids']=dict(sorted(config['mc_tel_ids'].items())) #Sorting needed to correctly name the output file
 
     # Process the input data
     mc_dl0_to_dl1(args.input_file, args.output_dir, config, args.focal_length_choice)

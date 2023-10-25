@@ -7,6 +7,7 @@ from .containers import (
     SimEventInfoContainer,
 )
 from .io import (
+    check_input_list,
     format_object,
     get_dl2_mean,
     get_stereo_events,
@@ -33,6 +34,7 @@ __all__ = [
     "BaseEventInfoContainer",
     "RealEventInfoContainer",
     "SimEventInfoContainer",
+    "check_input_list",
     "create_event_hdu",
     "create_gh_cuts_hdu",
     "create_gti_hdu",

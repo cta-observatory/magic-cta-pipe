@@ -24,10 +24,6 @@ $ python lst1_magic_stereo_reco.py
 (--output-dir dl1_stereo)
 (--config-file config.yaml)
 (--magic-only)
-
-Broader usage:
-This script is called automatically from the script "stereo_events.py".
-If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse
@@ -48,7 +44,7 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
-from magicctapipe.io import format_object, get_stereo_events, save_pandas_data_in_table
+from magicctapipe.io import format_object, get_stereo_events, save_pandas_data_in_table, check_input_list
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
@@ -85,7 +81,7 @@ def calculate_pointing_separation(event_data, config):
     # Extract LST events
     df_lst = event_data.query(f"tel_id == {LSTs_IDs}")
 
-    # Extract the MAGIC events seen by also LST
+    # Extract the coincident events observed by both MAGICs and LSTs
     df_magic = event_data.query(f"tel_id == {MAGICs_IDs}")
     df_magic = df_magic.loc[df_lst.index]
 
@@ -156,7 +152,10 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
 
     if magic_only_analysis:
-        event_data.query(f"tel_id > {LSTs_IDs.max()}", inplace=True) # Here we select only the events with the MAGIC tel_ids, i.e. above the maximum tel_id of the LSTs
+        tel_id=np.asarray(list(assigned_tel_ids.values())[:])
+        used_id=tel_id[tel_id!=0]
+        magic_ids=[item for item in used_id if item not in LSTs_IDs]
+        event_data.query(f"tel_id in {magic_ids}", inplace=True) # Here we select only the events with the MAGIC tel_ids
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
     event_data = get_stereo_events(event_data, config=config, quality_cuts=config_stereo["quality_cuts"])
@@ -167,11 +166,8 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     Number_of_LSTs_in_use = len(LSTs_IDs[LSTs_IDs > 0]) 
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
     Number_of_MAGICs_in_use = len(MAGICs_IDs[MAGICs_IDs > 0])
-    if (Number_of_LSTs_in_use > 0) and (Number_of_MAGICs_in_use > 0): #If we use the two arrays, i.e. MAGIC and LST, then the "if" statement below will work (except for MC simulations)
-        Two_arrays_are_used = True
-    else:
-        Two_arrays_are_used = False
-
+    Two_arrays_are_used = (Number_of_LSTs_in_use*Number_of_MAGICs_in_use > 0)
+    
     if (not is_simulation) and (Two_arrays_are_used):
 
         logger.info(
@@ -388,6 +384,9 @@ def main():
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
+    
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
     
     # Process the input data
     stereo_reconstruction(args.input_file, args.output_dir, config, args.magic_only)

@@ -22,16 +22,12 @@ Please note that it is also possible to process SUM trigger data with
 this script, but since the MaTaJu cleaning is not yet implemented in
 this pipeline, it applies the standard cleaning instead.
 
-Usage per single data file (indicated if you want to do tests):
+Usage:
 $ python magic_calib_to_dl1.py
 --input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 (--output-dir dl1)
 (--config-file config.yaml)
 (--process-run)
-
-Broader usage:
-This script is called automatically from the script "setting_up_config_and_dir.py".
-If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse
@@ -55,7 +51,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object
+from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object, check_input_list
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -379,8 +375,6 @@ def main():
         help="Max. number of processed showers",
     )
 
-
-
     parser.add_argument(
         "--process-run",
         dest="process_run",
@@ -392,6 +386,9 @@ def main():
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
+
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
 
     # Process the input data
     magic_calib_to_dl1(args.input_file, args.output_dir, config, args.max_events, args.process_run)
