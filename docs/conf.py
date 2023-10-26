@@ -69,6 +69,7 @@ html_theme_options = {
     "github_url": "https://github.com/cta-observatory/magic-cta-pipe",
     "header_links_before_dropdown": 6,
     "navbar_start": ["navbar-logo", "version-switcher"],
+    "navigation_with_keys" : False,
     "switcher": {
         "version_match": version_match,
         "json_url": json_url,
