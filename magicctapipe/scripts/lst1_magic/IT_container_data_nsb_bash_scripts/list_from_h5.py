@@ -67,7 +67,7 @@ def main():
     with open("config_h5.yaml", "rb") as f:
         config = yaml.safe_load(f)
     df = pd.read_hdf(
-        "simultaneous_obs_summary.h5", key="/str"
+        "/fefs/aswg/workspace/federico.dipierro/simultaneous_obs_summary.h5", key="/str"
     )  # TODO: put this file in a shared folder
 
     df = split_lst_date(df)

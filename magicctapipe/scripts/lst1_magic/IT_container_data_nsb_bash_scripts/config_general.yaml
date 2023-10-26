@@ -13,6 +13,7 @@ directories:
 general:
     target_RA_deg : 83.629 #RA in degrees
     target_Dec_deg: 22.015   #Dec in degrees 
+    LST_version   : "v0.9"
     focal_length  : "effective"
     MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
     LST_runs      : "LST_runs.txt"  

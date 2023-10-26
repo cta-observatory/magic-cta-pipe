@@ -110,7 +110,7 @@ def main():
     source = config["directories"]["target_name"]
 
     print("***** Generating merge bashscripts...")
-    merge(target_dir, source, env_name)
+    merge2(target_dir, source, env_name)
 
     print("***** Running merge_hdf_files.py in the MAGIC data files...")
     print(f'Process name: merging_{target_dir.split("/")[-2:][1]}')

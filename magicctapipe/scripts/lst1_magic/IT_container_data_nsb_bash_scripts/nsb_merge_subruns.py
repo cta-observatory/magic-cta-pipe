@@ -41,7 +41,7 @@ def merge1(target_dir, source, env_name):
     for p in ST_list:
         process_name = f'merging_{target_dir.split("/")[-2:][1]}'
 
-        MAGIC_DL1_dir = f"target_dir/v{__version__}/DL1/{p}"
+        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/DL1/{p}"
 
         if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(
             f"{MAGIC_DL1_dir}/M2"
@@ -59,12 +59,10 @@ def merge1(target_dir, source, env_name):
         ]
         with open(f"{source}_Merge_0_{p}.sh", "w") as f:
             f.writelines(lines)
-
             if os.path.exists(f"{MAGIC_DL1_dir}/M1"):
                 dates = [
                     os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
                 ]
-
                 for i in dates:
                     runs = [
                         os.path.basename(x)
@@ -146,7 +144,7 @@ def main():
     source = config["directories"]["target_name"]
 
     print("***** Generating merge bashscripts...")
-    merge(
+    merge1(
         target_dir, source, env_name
     )  # generating the bash script to merge the subruns
 
