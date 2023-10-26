@@ -109,7 +109,7 @@ def DL1_to_2(scripts_dir, target_dir, nsb, source, config, env_name):
                     + "/logs/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n"
                 )
                 f.write(
-                    f"conda run -n {env_name} python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {scripts_dir}/{config} >$LOG 2>&1\n\n"
+                    f"conda run -n {env_name} python {scripts_dir}/lst1_magic_dl1_stereo_to_dl2.py --input-file-dl1 $SAMPLE --input-dir-rfs {RFs_dir} --output-dir {output} --config-file {config} >$LOG 2>&1\n\n"
                 )
 
 
