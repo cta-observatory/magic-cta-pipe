@@ -8,7 +8,7 @@ from lstchain.image.modifier import (
     set_numba_seed,
 )
 
-from magicctapipe.image import MAGICClean
+from .cleaning import MAGICClean
 
 __all__ = ["calibrate"]
 
