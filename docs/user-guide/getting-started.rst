@@ -1,5 +1,7 @@
-Usage
-=====
+.. _getting_started_users:
+
+Getting started for users
+=========================
 
 .. _installation:
 
