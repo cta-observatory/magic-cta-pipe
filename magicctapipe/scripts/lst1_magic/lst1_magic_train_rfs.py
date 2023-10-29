@@ -41,7 +41,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from magicctapipe.io import format_object, load_train_data_files
-from magicctapipe.io.io import GROUP_INDEX_TRAIN, TEL_NAMES
+from magicctapipe.io.io import GROUP_INDEX_TRAIN
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = [
@@ -54,6 +54,8 @@ __all__ = [
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+TEL_NAMES = {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"} #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
+
 
 # True event class of gamma and proton MCs
 EVENT_CLASS_GAMMA = 0

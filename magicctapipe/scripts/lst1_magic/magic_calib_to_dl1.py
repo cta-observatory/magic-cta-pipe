@@ -7,11 +7,6 @@ with the MARS-like image cleaning and computes the DL1 parameters, i.e.,
 Hillas, timing and leakage parameters. It saves only the events that all
 the DL1 parameters are successfully reconstructed.
 
-When saving data to an output file, the telescope IDs will be reset to
-the following ones for the convenience of the combined analysis with
-LST-1, whose telescope ID is 1:
-
-MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
 
 When the input is real data, it searches for all the subrun files with
 the same observation ID and stored in the same directory as the input
@@ -56,7 +51,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object
+from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object, check_input_list
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -300,10 +295,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
 
             # Reset the telescope IDs
             if tel_id == 1:
-                event_info.tel_id = 2  # MAGIC-I
+                event_info.tel_id = config["mc_tel_ids"]["MAGIC-I"]  # MAGIC-I
 
             elif tel_id == 2:
-                event_info.tel_id = 3  # MAGIC-II
+                event_info.tel_id = config["mc_tel_ids"]["MAGIC-II"]  # MAGIC-II
 
             # Save the parameters to the output file
             writer.write(
@@ -315,13 +310,13 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
 
     # Reset the telescope IDs of the subarray description
     tel_positions_magic = {
-        2: subarray.positions[1],  # MAGIC-I
-        3: subarray.positions[2],  # MAGIC-II
+        config["mc_tel_ids"]["MAGIC-I"]: subarray.positions[1],  # MAGIC-I
+        config["mc_tel_ids"]["MAGIC-II"]: subarray.positions[2],  # MAGIC-II
     }
 
     tel_descriptions_magic = {
-        2: subarray.tel[1],  # MAGIC-I
-        3: subarray.tel[2],  # MAGIC-II
+        config["mc_tel_ids"]["MAGIC-I"]: subarray.tel[1],  # MAGIC-I
+        config["mc_tel_ids"]["MAGIC-II"]: subarray.tel[2],  # MAGIC-II
     }
 
     subarray_magic = SubarrayDescription(
@@ -392,9 +387,11 @@ def main():
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
+
     # Process the input data
     magic_calib_to_dl1(args.input_file, args.output_dir, config, args.max_events, args.process_run)
-
     logger.info("\nDone.")
 
     process_time = time.time() - start_time
