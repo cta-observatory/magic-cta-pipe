@@ -13,6 +13,17 @@ setup_cfg.read([os.path.join(os.path.dirname(__file__), "..", "setup.cfg")])
 setup_metadata = dict(setup_cfg.items("metadata"))
 setup_options = dict(setup_cfg.items("options"))
 
+# -- General configuration
+
+extensions = [
+    "sphinx.ext.duration",
+    "sphinx.ext.doctest",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
+    "sphinx_design",
+]
+
 # -- Project information
 
 project = setup_metadata["name"]
@@ -62,6 +73,7 @@ if not version_match or version_match.isdigit():
     # We want to keep the relative reference when on a pull request or locally
     json_url = "_static/switcher.json"
 
+# -- Options for HTML output
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
@@ -100,17 +112,17 @@ html_context = {
     "github_version": "master",
     "doc_path": "docs",
 }
+html_css_files = ["magicctapipe.css"]
+html_file_suffix = ".html"
 
+# The name for this set of Sphinx documents.  If None, it defaults to
+# "<project> v<release> documentation".
+html_title = f"{project} v{release}"
 
-# -- General configuration
+# Output file base name for HTML help builder.
+htmlhelp_basename = project + "doc"
 
-extensions = [
-    "sphinx.ext.duration",
-    "sphinx.ext.doctest",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.intersphinx",
-]
+html_theme = "pydata_sphinx_theme"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
@@ -119,14 +131,6 @@ intersphinx_mapping = {
 intersphinx_disabled_domains = ["std"]
 
 templates_path = ["_templates"]
-
-# -- Options for HTML output
-
-html_theme = "pydata_sphinx_theme"
-
-# The name for this set of Sphinx documents.  If None, it defaults to
-# "<project> v<release> documentation".
-html_title = f"{project} v{release}"
 
 # -- Options for EPUB output
 epub_show_urls = "footnote"
