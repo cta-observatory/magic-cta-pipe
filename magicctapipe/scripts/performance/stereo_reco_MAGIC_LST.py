@@ -1,42 +1,38 @@
 # coding: utf-8
 
-import os
-import time
+import argparse
 import copy
 import glob
-import scipy
+import os
 import select
 import sys
-import argparse
-import matplotlib.pyplot as plt
+import time
 
 import astropy.units as u
-from astropy.coordinates import SkyCoord, AltAz, EarthLocation
+import matplotlib.pyplot as plt
+import scipy
+from astropy.coordinates import AltAz, EarthLocation, SkyCoord
 from astropy.time import Time
-
-from ctapipe.io import SimTelEventSource
-from ctapipe.io import HDF5TableWriter
 from ctapipe.calib import CameraCalibrator
+from ctapipe.containers import ImageParametersContainer
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.image.cleaning import tailcuts_clean
 from ctapipe.image.morphology import number_of_islands
-
+from ctapipe.io import HDF5TableWriter, SimTelEventSource
 from ctapipe.reco import HillasReconstructor
-from ctapipe.containers import ImageParametersContainer
 from ctapipe.visualization import ArrayDisplay
 
 from magicctapipe.image import MAGICClean, clean_image_params, get_num_islands_MAGIC
-from magicctapipe.utils import calculate_impact, check_folder
-from magicctapipe.utils.filedir import load_cfg_file, out_file_h5
-from magicctapipe.utils.utils import print_title, print_elapsed_time
-from magicctapipe.utils.tels import check_tel_ids
 from magicctapipe.reco.stereo import (
+    StereoInfoContainer,
     check_stereo,
     write_hillas,
     write_stereo,
-    StereoInfoContainer,
 )
-
+from magicctapipe.utils import calculate_impact, check_folder
+from magicctapipe.utils.filedir import load_cfg_file, out_file_h5
+from magicctapipe.utils.tels import check_tel_ids
+from magicctapipe.utils.utils import print_elapsed_time, print_title
 
 PARSER = argparse.ArgumentParser(
     description="Stereo Reconstruction MAGIC + LST",

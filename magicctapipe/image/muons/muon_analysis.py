@@ -1,5 +1,5 @@
 import numpy as np
-from lstchain.image.muon import tag_pix_thr, fill_muon_event, analyze_muon_event
+from lstchain.image.muon import analyze_muon_event, fill_muon_event, tag_pix_thr
 
 __all__ = [
     "perform_muon_analysis",

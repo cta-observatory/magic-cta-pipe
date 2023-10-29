@@ -3,10 +3,10 @@
 import datetime
 import os
 
-import magicctapipe
-
 # Get configuration information from setup.cfg
 from configparser import ConfigParser
+
+import magicctapipe
 
 setup_cfg = ConfigParser()
 setup_cfg.read([os.path.join(os.path.dirname(__file__), "..", "setup.cfg")])
@@ -69,6 +69,7 @@ html_theme_options = {
     "github_url": "https://github.com/cta-observatory/magic-cta-pipe",
     "header_links_before_dropdown": 6,
     "navbar_start": ["navbar-logo", "version-switcher"],
+    "navigation_with_keys": False,
     "switcher": {
         "version_match": version_match,
         "json_url": json_url,
@@ -104,28 +105,28 @@ html_context = {
 # -- General configuration
 
 extensions = [
-    'sphinx.ext.duration',
-    'sphinx.ext.doctest',
-    'sphinx.ext.autodoc',
-    'sphinx.ext.autosummary',
-    'sphinx.ext.intersphinx',
+    "sphinx.ext.duration",
+    "sphinx.ext.doctest",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.intersphinx",
 ]
 
 intersphinx_mapping = {
-    'python': ('https://docs.python.org/3/', None),
-    'sphinx': ('https://www.sphinx-doc.org/en/master/', None),
+    "python": ("https://docs.python.org/3/", None),
+    "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
 }
-intersphinx_disabled_domains = ['std']
+intersphinx_disabled_domains = ["std"]
 
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # -- Options for HTML output
 
-html_theme = 'pydata_sphinx_theme'
+html_theme = "pydata_sphinx_theme"
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
 html_title = f"{project} v{release}"
 
 # -- Options for EPUB output
-epub_show_urls = 'footnote'
+epub_show_urls = "footnote"

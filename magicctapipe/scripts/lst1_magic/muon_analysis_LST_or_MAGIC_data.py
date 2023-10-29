@@ -14,14 +14,15 @@ $ python muon_analysis_LST_or_MAGIC_data.py
 --config-file ./config.yaml
 """
 import argparse
-import yaml
 import logging
-import numpy as np
 from pathlib import Path
 
+import numpy as np
+import yaml
 from astropy.table import Table
 from ctapipe.io import EventSource
 from lstchain.image.muon import create_muon_table
+
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.muons import perform_muon_analysis
 

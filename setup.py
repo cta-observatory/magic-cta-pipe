@@ -2,7 +2,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 entry_points = {}
 entry_points["console_scripts"] = [
@@ -34,20 +35,20 @@ setup(
     use_scm_version={"write_to": os.path.join("magicctapipe", "_version.py")},
     packages=find_packages(),
     install_requires=[
-        'lstchain~=0.9.6',
-        'ctapipe~=0.12.0',
-        'ctapipe_io_magic~=0.4.7',
-        'ctaplot~=0.5.5',
-        'gammapy~=0.19.0',
-        'uproot~=4.1',
-        'numba<=0.56',
-        'numpy<1.22.0a0',
-        'joblib',
-        'pandas',
-        'pyirf~=0.6.0',
-        'seaborn',
-        'scikit-learn',
-        'setuptools_scm',
+        "lstchain~=0.9.6",
+        "ctapipe~=0.12.0",
+        "ctapipe_io_magic~=0.4.7",
+        "ctaplot~=0.5.5",
+        "gammapy~=0.19.0",
+        "uproot~=4.1",
+        "numba<=0.56",
+        "numpy<1.22.0a0",
+        "joblib",
+        "pandas",
+        "pyirf~=0.6.0",
+        "seaborn",
+        "scikit-learn",
+        "setuptools_scm",
     ],
     entry_points=entry_points,
     extras_require={

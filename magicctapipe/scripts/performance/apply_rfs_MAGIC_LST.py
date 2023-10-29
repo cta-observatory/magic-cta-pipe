@@ -1,24 +1,25 @@
 # coding: utf-8
 
-import time
 import argparse
 import glob
 import os
+import time
+
 import pandas as pd
 
 from magicctapipe.reco.event_processing import (
-    EnergyEstimatorPandas,
     DirectionEstimatorPandas,
+    EnergyEstimatorPandas,
     EventClassifierPandas,
 )
-from magicctapipe.utils.tels import check_tel_ids, get_array_tel_descriptions
-from magicctapipe.utils.utils import print_title, info_message, print_elapsed_time
 from magicctapipe.utils.filedir import (
-    load_cfg_file,
-    out_file_h5_reco,
     check_folder,
+    load_cfg_file,
     load_dl1_data_stereo,
+    out_file_h5_reco,
 )
+from magicctapipe.utils.tels import check_tel_ids, get_array_tel_descriptions
+from magicctapipe.utils.utils import info_message, print_elapsed_time, print_title
 
 PARSER = argparse.ArgumentParser(
     description="Apply random forests. For stereo data.",
@@ -169,7 +170,7 @@ def apply_rfs_stereo(config_file, only_mc_test, only_data_test):
                 try:
                     mc_ = pd.read_hdf(file, key="dl1/mc_header")
                     mc_.to_hdf(out_file, key="dl2/mc_header")
-                except:
+                except Exception:
                     mc_ = pd.read_hdf(file, key="dl2/mc_header")
                     mc_.to_hdf(out_file, key="dl2/mc_header")
             except Exception as e:

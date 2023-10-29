@@ -1,13 +1,9 @@
 import copy
 import itertools
-import numpy as np
-from scipy.sparse.csgraph import connected_components
 
-from ctapipe.image import (
-    hillas_parameters,
-    timing_parameters,
-    leakage_parameters,
-)
+import numpy as np
+from ctapipe.image import hillas_parameters, leakage_parameters, timing_parameters
+from scipy.sparse.csgraph import connected_components
 
 __all__ = [
     "MAGICClean",

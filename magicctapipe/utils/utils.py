@@ -1,4 +1,5 @@
 import datetime
+
 import numpy as np
 
 try:
@@ -139,6 +140,7 @@ def make_title_str(title, style_char="=", in_space=3, width_char=80):
     s3 = f"{style_char*width_char}"
     s = f"{s1}{s2}{s3}"
     return s
+
 
 def resource_file(filename):
     """Get the absoulte path of magicctapipe resource files."""

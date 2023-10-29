@@ -1,54 +1,50 @@
-import os
-import time
-import shutil
+import argparse
 import logging
 import operator
-import argparse
+import os
+import shutil
+import time
 
+import astropy.units as u
 import numpy as np
 from astropy import table
-import astropy.units as u
 from astropy.io import fits
-
+from pyirf.benchmarks import angular_resolution, energy_bias_resolution
 from pyirf.binning import (
-    create_bins_per_decade,
     add_overflow_bins,
+    create_bins_per_decade,
     create_histogram_table,
 )
-from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
-from pyirf.sensitivity import calculate_sensitivity, estimate_background
-from pyirf.utils import calculate_theta, calculate_source_fov_offset
-from pyirf.benchmarks import energy_bias_resolution, angular_resolution
-
-from pyirf.spectral import (
-    calculate_event_weights,
-    PowerLaw,
-    CRAB_HEGRA,
-    IRFDOC_PROTON_SPECTRUM,
-    IRFDOC_ELECTRON_SPECTRUM,
-)
 from pyirf.cut_optimization import optimize_gh_cut
-
+from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
+from pyirf.io import (
+    create_aeff2d_hdu,
+    create_background_2d_hdu,
+    create_energy_dispersion_hdu,
+    create_psf_table_hdu,
+    create_rad_max_hdu,
+)
 from pyirf.irf import (
+    background_2d,
     effective_area_per_energy,
     energy_dispersion,
     psf_table,
-    background_2d,
 )
-
-from pyirf.io import (
-    create_aeff2d_hdu,
-    create_psf_table_hdu,
-    create_energy_dispersion_hdu,
-    create_rad_max_hdu,
-    create_background_2d_hdu,
+from pyirf.sensitivity import calculate_sensitivity, estimate_background
+from pyirf.spectral import (
+    CRAB_HEGRA,
+    IRFDOC_ELECTRON_SPECTRUM,
+    IRFDOC_PROTON_SPECTRUM,
+    PowerLaw,
+    calculate_event_weights,
 )
+from pyirf.utils import calculate_source_fov_offset, calculate_theta
 
-from magicctapipe.utils.filedir import check_folder, load_cfg_file
 from magicctapipe.irfs.utils import (
     plot_irfs_MAGIC_LST,
     read_dl2_mcp_to_pyirf_MAGIC_LST_list,
 )
+from magicctapipe.utils.filedir import check_folder, load_cfg_file
 from magicctapipe.utils.utils import print_elapsed_time, print_title
 
 PARSER = argparse.ArgumentParser(
@@ -409,7 +405,7 @@ def make_irfs_MAGIC_LST(config_file):
                     len(gammas_sel_en[gammas_sel_en["selected"] == True])
                     / len(gammas_sel_en)
                 )
-            except:
+            except Exception:
                 gamma_efficiency["eff_gh"][i] = -1
                 gamma_efficiency["eff"][i] = -1
     hdus.append(fits.BinTableHDU(gamma_efficiency, name="GAMMA_EFFICIENCY"))

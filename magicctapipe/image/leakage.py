@@ -1,5 +1,4 @@
 import numpy as np
-
 from ctapipe.containers import LeakageContainer
 
 __all__ = [

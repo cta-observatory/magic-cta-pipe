@@ -1,9 +1,10 @@
+import copy
 import os
 import sys
-import yaml
-import copy
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+import yaml
 
 __all__ = [
     "load_cfg_file",
@@ -216,7 +217,7 @@ def load_dl1_data_stereo(file, drop=False, slope_abs=False):
         data = data_hillas.merge(data_stereo, on=common_keys)
         # Index
         data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-    except:
+    except Exception:
         data = pd.read_hdf(file, key="dl2/reco")
     data.sort_index(inplace=True)
     # Get absolute value of slope, if needed

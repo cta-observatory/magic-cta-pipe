@@ -1,37 +1,40 @@
 import numpy as np
-from ctapipe.image import (
-    apply_time_delta_cleaning,   
-    number_of_islands,
-    tailcuts_clean,   
-)
+from ctapipe.image import apply_time_delta_cleaning, number_of_islands, tailcuts_clean
 from ctapipe.instrument import CameraGeometry
 from lstchain.image.cleaning import apply_dynamic_cleaning
 from lstchain.image.modifier import (
     add_noise_in_pixels,
-    random_psf_smearer,  
-    set_numba_seed  
+    random_psf_smearer,
+    set_numba_seed,
 )
-from magicctapipe.image import MAGICClean
+
+from .cleaning import MAGICClean
+
+__all__ = ["calibrate"]
 
 
-__all__ = [
-    "calibrate"
-]
-
-
-def calibrate(event, tel_id, config, calibrator, is_lst, obs_id=None, camera_geoms=None, magic_clean=None):
+def calibrate(
+    event,
+    tel_id,
+    config,
+    calibrator,
+    is_lst,
+    obs_id=None,
+    camera_geoms=None,
+    magic_clean=None,
+):
 
     """
-    This function calibrates the camera image for a single event of a telescope 
+    This function calibrates the camera image for a single event of a telescope
 
     Parameters
     ----------
-    event: event 
+    event: event
         From an EventSource
     tel_id: int
-        Telescope ID     
+        Telescope ID
     config: dictionary
-        Parameters for image extraction and calibration    
+        Parameters for image extraction and calibration
     calibrator: CameraCalibrator (ctapipe.calib)
         ctapipe object needed to calibrate the camera
     is_lst: bool
@@ -42,7 +45,7 @@ def calibrate(event, tel_id, config, calibrator, is_lst, obs_id=None, camera_geo
         Camera geometry. Used in case of LST telescope
     magic_clean: dictionary (1 entry per MAGIC telescope)
         Each entry is a MAGICClean object using the telescope camera geometry. Used in case of MAGIC telescope
-    
+
 
     Returns
     -------
@@ -54,23 +57,33 @@ def calibrate(event, tel_id, config, calibrator, is_lst, obs_id=None, camera_geo
         Array of the signal peak time in the camera pixels
 
     """
-    if (not is_lst) and (magic_clean==None):
-        raise ValueError("Check the provided parameters and the telescope type; MAGIC calibration not possible if magic_clean not provided") 
-    if (is_lst) and (obs_id==None):
-        raise ValueError("Check the provided parameters and the telescope type; LST calibration not possible if obs_id not provided") 
-    if (is_lst) and (camera_geoms==None):
-        raise ValueError("Check the provided parameters and the telescope type; LST calibration not possible if gamera_geoms not provided") 
-    if (not is_lst) and (type(magic_clean[tel_id])!=MAGICClean):
-        raise ValueError("Check the provided magic_clean parameter; MAGIC calibration not possible if magic_clean not a dictionary of MAGICClean objects") 
-    if (is_lst) and (type(camera_geoms[tel_id])!=CameraGeometry):
-        raise ValueError("Check the provided camera_geoms parameter; LST calibration not possible if camera_geoms not a dictionary of CameraGeometry objects")
+    if (not is_lst) and (magic_clean is None):
+        raise ValueError(
+            "Check the provided parameters and the telescope type; MAGIC calibration not possible if magic_clean not provided"
+        )
+    if (is_lst) and (obs_id is None):
+        raise ValueError(
+            "Check the provided parameters and the telescope type; LST calibration not possible if obs_id not provided"
+        )
+    if (is_lst) and (camera_geoms is None):
+        raise ValueError(
+            "Check the provided parameters and the telescope type; LST calibration not possible if gamera_geoms not provided"
+        )
+    if (not is_lst) and (type(magic_clean[tel_id]) != MAGICClean):
+        raise ValueError(
+            "Check the provided magic_clean parameter; MAGIC calibration not possible if magic_clean not a dictionary of MAGICClean objects"
+        )
+    if (is_lst) and (type(camera_geoms[tel_id]) != CameraGeometry):
+        raise ValueError(
+            "Check the provided camera_geoms parameter; LST calibration not possible if camera_geoms not a dictionary of CameraGeometry objects"
+        )
 
     calibrator._calibrate_dl0(event, tel_id)
     calibrator._calibrate_dl1(event, tel_id)
 
     image = event.dl1.tel[tel_id].image.astype(np.float64)
     peak_time = event.dl1.tel[tel_id].peak_time.astype(np.float64)
-    
+
     if not is_lst:
         use_charge_correction = config["charge_correction"]["use"]
 
@@ -82,14 +95,14 @@ def calibrate(event, tel_id, config, calibrator, is_lst, obs_id=None, camera_geo
         signal_pixels, image, peak_time = magic_clean[tel_id].clean_image(
             event_image=image, event_pulse_time=peak_time
         )
-            
+
     else:
         increase_nsb = config["increase_nsb"].pop("use")
         increase_psf = config["increase_psf"]["use"]
         use_time_delta_cleaning = config["time_delta_cleaning"].pop("use")
         use_dynamic_cleaning = config["dynamic_cleaning"].pop("use")
         use_only_main_island = config["use_only_main_island"]
-    
+
         if increase_nsb:
             rng = np.random.default_rng(obs_id)
             # Add extra noise in pixels
@@ -133,8 +146,8 @@ def calibrate(event, tel_id, config, calibrator, is_lst, obs_id=None, camera_geo
             max_island_label = np.argmax(n_pixels_on_island)
             signal_pixels[island_labels != max_island_label] = False
 
-        config["increase_nsb"]["use"]=increase_nsb
-        config["time_delta_cleaning"]["use"]=use_time_delta_cleaning
-        config["dynamic_cleaning"]["use"]=use_dynamic_cleaning        
-    
+        config["increase_nsb"]["use"] = increase_nsb
+        config["time_delta_cleaning"]["use"] = use_time_delta_cleaning
+        config["dynamic_cleaning"]["use"] = use_dynamic_cleaning
+
     return signal_pixels, image, peak_time

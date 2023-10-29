@@ -1,22 +1,17 @@
-import glob, sys
+import argparse
+import glob
 import logging
+import sys
 
 import numpy as np
-
-np.set_printoptions(threshold=sys.maxsize)
 import scipy
-
+from ctapipe.image import hillas_parameters
+from ctapipe.instrument import CameraGeometry
 from ctapipe_io_magic import MAGICEventSource
 
-from ctapipe.instrument import CameraGeometry
-from ctapipe.image import hillas_parameters
+from magicctapipe.utils import MAGIC_Badpixels, MAGIC_Cleaning
 
-import argparse
-
-from magicctapipe.utils import MAGIC_Badpixels
-
-# from magicctapipe.utils import bad_pixel_treatment
-from magicctapipe.utils import MAGIC_Cleaning
+np.set_printoptions(threshold=sys.maxsize)
 
 logger = logging.getLogger(__name__)
 
@@ -64,21 +59,21 @@ def main():
     all_events = []
 
     if args.mc:
-        """MC FILES"""
+        # MC FILES
         mars_file_mask = "/remote/ceph/group/magic/MAGIC-LST/MCs/MAGIC/ST.03.07/za05to35/Train_sample/1.Calibrated/GA_M1*root"
         mars_file_list = glob.glob(
             mars_file_mask
-        )  #  Here makes array which contains files matching the input condition (GA_M1*root).
+        )  # Here makes array which contains files matching the input condition (GA_M1*root).
         file_list = list(filter(lambda name: "123" in name, mars_file_list))
         print("Number of files : %s" % len(file_list))
     else:
-        """DATA FILES"""
+        # DATA FILES
         mars_file_mask = (
             "/Users/moritz/Documents/MAGIC-data/Crab/Data/Sorcerer/2020*.root"
         )
         mars_file_list = glob.glob(
             mars_file_mask
-        )  #  Here makes array which contains files matching the input condition (GA_M1*root).
+        )  # Here makes array which contains files matching the input condition (GA_M1*root).
         file_list = list(filter(lambda name: "0" in name, mars_file_list))
         print("Number of files : %s" % len(file_list))
 
@@ -115,7 +110,7 @@ def main():
             if scipy.any(event_image_cleaned):
                 try:
                     hillas_params = hillas_parameters(mars_camera, event_image_cleaned)
-                except:
+                except Exception:
                     continue
 
                 logger.debug(

@@ -1,9 +1,8 @@
-import numpy as np
 import astropy.units as u
-
+import numpy as np
 from ctapipe.core.container import Container, Field
 
-from magicctapipe.utils.tels import tel_ids_2_num
+from ..utils import tel_ids_2_num
 
 __all__ = ["write_hillas", "check_write_stereo", "check_stereo", "write_stereo"]
 

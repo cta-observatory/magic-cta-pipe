@@ -50,8 +50,14 @@ from ctapipe.image import (
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
+
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object, check_input_list
+from magicctapipe.io import (
+    RealEventInfoContainer,
+    SimEventInfoContainer,
+    check_input_list,
+    format_object,
+)
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -89,7 +95,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
-    event_source = MAGICEventSource(input_file, process_run=process_run, max_events=max_events)
+    event_source = MAGICEventSource(
+        input_file, process_run=process_run, max_events=max_events
+    )
 
     is_simulation = event_source.is_simulation
     logger.info(f"\nIs simulation: {is_simulation}")
@@ -391,7 +399,9 @@ def main():
     check_input_list(config)
 
     # Process the input data
-    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.max_events, args.process_run)
+    magic_calib_to_dl1(
+        args.input_file, args.output_dir, config, args.max_events, args.process_run
+    )
     logger.info("\nDone.")
 
     process_time = time.time() - start_time

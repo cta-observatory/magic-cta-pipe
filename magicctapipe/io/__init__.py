@@ -6,6 +6,12 @@ from .containers import (
     RealEventInfoContainer,
     SimEventInfoContainer,
 )
+from .gadf import (
+    create_event_hdu,
+    create_gh_cuts_hdu,
+    create_gti_hdu,
+    create_pointing_hdu,
+)
 from .io import (
     check_input_list,
     format_object,
@@ -22,13 +28,6 @@ from .io import (
     save_pandas_data_in_table,
     telescope_combinations,
 )
-from .gadf import (
-    create_event_hdu,
-    create_gh_cuts_hdu,
-    create_gti_hdu,
-    create_pointing_hdu,
-)
-
 
 __all__ = [
     "BaseEventInfoContainer",
