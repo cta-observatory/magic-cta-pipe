@@ -58,21 +58,23 @@ import sys
 import time
 from decimal import Decimal
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.io import (   
+
+from magicctapipe.io import (
+    check_input_list,
     get_stereo_events,
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
     save_pandas_data_in_table,
     telescope_combinations,
-    check_input_list,
 )
 
-__all__ = ["event_coincidence","telescope_positions"]
+__all__ = ["event_coincidence", "telescope_positions"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -87,32 +89,32 @@ TIME_ACCURACY = 100 * u.ns
 
 def telescope_positions(config):
     """
-    This function computes the telescope positions with respect to the array baricenter. 
+    This function computes the telescope positions with respect to the array baricenter.
     The array can have any configuration, e.g.: M1+M2+LST1+LST2, the full MAGIC+LST array, etc.
-    
+
     Parameters
     ----------
     config: dict
         dictionary generated from an yaml file with information about the telescope IDs.
-        
+
     Returns
     -------
     TEL_POSITIONS: dict
         Dictionary with telescope positions in the baricenter reference frame of the adopted array.
     """
-    
-    #Telescope positions in meters in a generic reference frame:
+
+    # Telescope positions in meters in a generic reference frame:
     RELATIVE_POSITIONS = {
-    "LST-1" : [-70.930, -52.070, 43.00],
-    "LST-2" : [-35.270,  66.140, 32.00],
-    "LST-3" : [75.280 ,  50.490, 28.70],
-    "LST-4" : [30.910 , -64.540, 32.00],
-    "MAGIC-I" : [-23.540, -191.750, 41.25],
-    "MAGIC-II" : [-94.05, -143.770, 42.42]
+        "LST-1": [-70.930, -52.070, 43.00],
+        "LST-2": [-35.270, 66.140, 32.00],
+        "LST-3": [75.280, 50.490, 28.70],
+        "LST-4": [30.910, -64.540, 32.00],
+        "MAGIC-I": [-23.540, -191.750, 41.25],
+        "MAGIC-II": [-94.05, -143.770, 42.42],
     }
 
     telescopes_in_use = {}
-    tel_cp=config["mc_tel_ids"].copy()
+    tel_cp = config["mc_tel_ids"].copy()
     for k, v in tel_cp.copy().items():
         if v <= 0:
             # Here we remove the telescopes with ID (i.e. "v") <= 0 from the dictionary:
@@ -122,13 +124,15 @@ def telescope_positions(config):
             if k in RELATIVE_POSITIONS.keys():
                 telescopes_in_use[v] = RELATIVE_POSITIONS[k]
             else:
-                raise Exception(f"Telescope {k} not allowed in analysis. The telescopes allowed are LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.")
-    
-    average_xyz=np.array([RELATIVE_POSITIONS[k] for k in tel_cp.keys()]).mean(axis=0)
+                raise Exception(
+                    f"Telescope {k} not allowed in analysis. The telescopes allowed are LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II."
+                )
+
+    average_xyz = np.array([RELATIVE_POSITIONS[k] for k in tel_cp.keys()]).mean(axis=0)
     TEL_POSITIONS = {}
     for k, v in telescopes_in_use.items():
-        TEL_POSITIONS[k] = list(np.round(np.asarray(v)-average_xyz,2)) * u.m
-    return TEL_POSITIONS  
+        TEL_POSITIONS[k] = list(np.round(np.asarray(v) - average_xyz, 2)) * u.m
+    return TEL_POSITIONS
 
 
 def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
@@ -151,7 +155,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     config_coinc = config["event_coincidence"]
 
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     TEL_POSITIONS = telescope_positions(config)
     # Load the input LST DL1 data file
     logger.info(f"\nInput LST DL1 data file: {input_file_lst}")
@@ -161,7 +165,9 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     # Load the input MAGIC DL1 data files
     logger.info(f"\nInput MAGIC directory: {input_dir_magic}")
 
-    event_data_magic, subarray_magic = load_magic_dl1_data_files(input_dir_magic, config)
+    event_data_magic, subarray_magic = load_magic_dl1_data_files(
+        input_dir_magic, config
+    )
 
     # Exclude the parameters non-common to LST and MAGIC data
     timestamp_type_lst = config_coinc["timestamp_type_lst"]
@@ -183,20 +189,24 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     window_half_width = u.Quantity(window_half_width).to("ns")
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
     pre_offset_search = False
-    if "pre_offset_search" in config_coinc: #looking for the boolean value of pre_offset_search in the configuration file
+    if (
+        "pre_offset_search" in config_coinc
+    ):  # looking for the boolean value of pre_offset_search in the configuration file
         pre_offset_search = config_coinc["pre_offset_search"]
 
     if pre_offset_search:
         logger.info("\nPre offset search will be performed.")
-        n_pre_offset_search_events = config_coinc["n_pre_offset_search_events"] #n_pre_offset_search_events is the number of events used to estimate the time offset. Around 100 events may be enough
+        n_pre_offset_search_events = config_coinc[
+            "n_pre_offset_search_events"
+        ]  # n_pre_offset_search_events is the number of events used to estimate the time offset. Around 100 events may be enough
     else:
         logger.info("\noffset scan range defined in the config file will be used.")
         offset_start = u.Quantity(config_coinc["time_offset"]["start"])
         offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
-    
+
     event_data = pd.DataFrame()
     features = pd.DataFrame()
-    
+
     profiles = pd.DataFrame(data={"time_offset": []})
 
     # Arrange the LST timestamps. They are stored in the UNIX format in
@@ -394,16 +404,12 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             )
 
             n_coincidences.append(n_coincidence)
-            
-
-       
 
         if not any(n_coincidences):
             logger.info("\nNo coincident events are found. Skipping...")
             continue
 
         n_coincidences = np.array(n_coincidences)
-       
 
         # Sometimes there are more than one time offset maximizing the
         # number of coincidences, so here we calculate the mean of them
@@ -550,14 +556,16 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     # Create the subarray description with the telescope coordinates
     # relative to the center of the LST and MAGIC positions
-    tel_descriptions = {}    
-    for k, v in TEL_NAMES.items():       
+    tel_descriptions = {}
+    for k, v in TEL_NAMES.items():
         if v[:3] == "LST":
             tel_descriptions[k] = subarray_lst.tel[k]
         elif v[:5] == "MAGIC":
             tel_descriptions[k] = subarray_magic.tel[k]
         else:
-            raise Exception(f"{v} is not a valid telescope name (check the config file). Only MAGIC and LST telescopes can be analyzed --> Valid telescope names are LST-[1-4] and MAGIC-[I-II] ") 
+            raise Exception(
+                f"{v} is not a valid telescope name (check the config file). Only MAGIC and LST telescopes can be analyzed --> Valid telescope names are LST-[1-4] and MAGIC-[I-II] "
+            )
 
     subarray_lst_magic = SubarrayDescription(
         "LST-MAGIC-Array", TEL_POSITIONS, tel_descriptions

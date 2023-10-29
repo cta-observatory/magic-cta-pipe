@@ -29,6 +29,7 @@ from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
+
 from magicctapipe.io import get_stereo_events_old, save_pandas_data_in_table
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
@@ -42,7 +43,8 @@ TEL_COMBINATIONS = {
     "LST1_M1": [1, 2],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
     "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-}  #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
+}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
+
 
 def apply_rfs(event_data, estimator):
     """

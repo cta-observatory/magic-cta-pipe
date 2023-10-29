@@ -1,3 +1,4 @@
+from .calib import calibrate
 from .cleaning import (
     MAGICClean,
     PixelTreatment,
@@ -5,8 +6,6 @@ from .cleaning import (
     get_num_islands_MAGIC,
 )
 from .leakage import get_leakage
-from .calib import calibrate
-
 
 __all__ = [
     "MAGICClean",
