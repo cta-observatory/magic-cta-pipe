@@ -35,6 +35,7 @@ Contents
   :hidden:
 
   user-guide/index
+  developer-guide/index
 
 .. grid:: 1 2 2 3
 
@@ -56,3 +57,23 @@ Contents
          :click-parent:
 
          To the user guide
+
+   .. grid-item-card::
+
+      :octicon:`git-branch;40px`
+
+      Developer Guide
+      ^^^^^^^^^^^^^^^
+
+      Learn how to get started as a developer.
+      This guide will help you install magic-cta-pipe for development
+      and explains how to contribute.
+
+      +++
+
+      .. button-ref:: developer-guide/index
+         :expand:
+         :color: primary
+         :click-parent:
+
+         To the developer guide
