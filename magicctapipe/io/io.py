@@ -64,36 +64,50 @@ DEAD_TIME_MAGIC = 26 * u.us
 def check_input_list(config):
     """
     This function checks if the input telescope list is organized as follows:
-    1) All 4 LSTs and 2 MAGICs must be listed
-    2) All 4 LSTs must come before the MAGICs
+
+    1. All 4 LSTs and 2 MAGICs must be listed
+    2. All 4 LSTs must come before the MAGICs
+
     And it raises an exception in case these rules are not satisfied.
 
     Below we give two examples of valid lists:
-    i)
-    mc_tel_ids:
-        LST-1: 1
-        LST-2: 0
-        LST-3: 0
-        LST-4: 0
-        MAGIC-I: 2
-        MAGIC-II: 3
-    ii)
-    mc_tel_ids:
-        LST-4: 1
-        LST-2: 7
-        LST-3: 9
-        LST-1: 0
-        MAGIC-II: 2
-        MAGIC-I: 3
+
+    i.
+
+    ::
+
+        mc_tel_ids:
+            LST-1: 1
+            LST-2: 0
+            LST-3: 0
+            LST-4: 0
+            MAGIC-I: 2
+            MAGIC-II: 3
+
+    ii.
+
+    ::
+
+        mc_tel_ids:
+            LST-4: 1
+            LST-2: 7
+            LST-3: 9
+            LST-1: 0
+            MAGIC-II: 2
+            MAGIC-I: 3
 
     And here one example of an unvalid list:
-    iii)
-    mc_tel_ids:
-        LST-4: 1
-        LST-1: 0
-        MAGIC-II: 2
-        LST-3: 9
-        MAGIC-I: 3
+
+    iii.
+
+    ::
+
+        mc_tel_ids:
+            LST-4: 1
+            LST-1: 0
+            MAGIC-II: 2
+            LST-3: 9
+            MAGIC-I: 3
 
     Parameters
     ----------
