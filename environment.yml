@@ -27,6 +27,7 @@ dependencies:
   - scikit-learn
   - sphinx
   - sphinx-automodapi
+  - sphinx-design
   - sphinx_rtd_theme
   - pydata-sphinx-theme
   - uproot~=4.1
