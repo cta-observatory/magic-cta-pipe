@@ -9,6 +9,7 @@ from astropy.table import Table
 from ctapipe.utils.download import download_file_cached
 
 from magicctapipe.utils import resource_file
+import yaml
 
 maxjoint = 13000
 maxmonly = 500
@@ -44,10 +45,10 @@ DL0_M2_data = [
     "20201216_M2_05093711.014_Y_CrabNebula-W0.40+035.root",
 ]
 DL1_LST_data = ["dl1_LST-1.Run03265.0094.h5"]
+
 """
 Temporary paths
 """
-
 
 @pytest.fixture(scope="session")
 def temp_DL1_gamma(tmp_path_factory):
@@ -233,11 +234,9 @@ def temp_DL2_real_monly(tmp_path_factory):
 def temp_DL3_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL3_monly")
 
-
 """
 Custom data
 """
-
 
 @pytest.fixture(scope="session")
 def dl2_test(temp_DL2_test):
@@ -272,11 +271,9 @@ def pd_test():
     df = pd.DataFrame(np.array([[1, 2], [3, 4], [5, 6]]), columns=["a", "b"])
     return df
 
-
 """
 Remote paths (to download test files)
 """
-
 
 @pytest.fixture(scope="session")
 def base_url():
@@ -288,11 +285,9 @@ def env_prefix():
     # ENVIRONMENT VARIABLES TO BE CREATED
     return "MAGIC_CTA_DATA_"
 
-
 """
 Downloads: files
 """
-
 
 @pytest.fixture(scope="session")
 def dl0_gamma(base_url, env_prefix):
@@ -377,20 +372,51 @@ def dl1_lst(base_url, env_prefix):
 
 @pytest.fixture(scope="session")
 def config():
-    config_path = resource_file("config.yaml")
+    config_path = resource_file("test_config.yaml")
     return config_path
 
 
 @pytest.fixture(scope="session")
 def config_monly():
-    config_path = resource_file("config_monly.yaml")
-    return config_path
+    config_path = resource_file("test_config_monly.yaml")
+    return config_path 
+
+
+@pytest.fixture(scope="session")
+def config_gen():
+    config_path = resource_file("test_config_general.yaml")
+    with open(config_path, "rb") as f:
+        config = yaml.safe_load(f)
+    return config
+
+
+@pytest.fixture(scope="session")
+def config_gen_4lst():
+    config_path = resource_file("test_config_general_4LST.yaml")
+    with open(config_path, "rb") as f:
+        config = yaml.safe_load(f)
+    return config
+
+
+@pytest.fixture(scope="session")
+def config_calib():
+    config_path = resource_file("test_config_calib.yaml")
+    with open(config_path, "rb") as f:
+        config = yaml.safe_load(f)
+    return config
+
+
+@pytest.fixture(scope="session")
+def config_check():
+    config_path = resource_file("test_check_list.yaml")
+    with open(config_path, "rb") as f:
+        config = yaml.safe_load(f)
+    return config
 
 
 """
 Data processing
 """
-
 
 @pytest.fixture(scope="session")
 def gamma_l1(temp_DL1_gamma, dl0_gamma, config):

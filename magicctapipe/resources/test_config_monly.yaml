@@ -1,5 +1,8 @@
 mc_tel_ids:
     LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
     MAGIC-I: 2
     MAGIC-II: 3
 
@@ -240,6 +243,8 @@ create_irf:
 
 dl2_to_dl3:
     interpolation_method: "nearest"  # select "nearest", "linear" or "cubic"
+    interpolation_scheme: "cosZdAz" # select "cosZdAz" or "cosZd"
+    max_distance: "45. deg"  # angle type Quantity, or comment out to remove the cut
     source_name: "Crab"
     source_ra: null  # used when the source name cannot be resolved
     source_dec: null  # used when the source name cannot be resolved
