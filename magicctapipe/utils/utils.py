@@ -78,11 +78,14 @@ def make_elapsed_time_str(start, end):
 def print_title(title, style_char="=", in_space=3, width_char=80):
     """Prints a title string in the following format. If `style_char="="` and
     `in_space=3`, the string will be:
-    ```text
+
+    ::
+
         ===...=================...===
         ===...===   title   ===...===
         ===...=================...===
-    ```
+
+
     The total width in characters is given by the `width_char` option
 
     Parameters
@@ -105,27 +108,31 @@ def print_title(title, style_char="=", in_space=3, width_char=80):
 
 def make_title_str(title, style_char="=", in_space=3, width_char=80):
     """Makes a title string in the following format. If `style_char="="` and
-    `in_space=3`, the string will be:
-        ===...=================...===
-        ===...===   title   ===...===
-        ===...=================...===
-    The total width in characters is given by the `width_char` option
+     `in_space=3`, the string will be:
 
-    Parameters
-    ----------
-    title : str
-        title string
-    style_char : str, optional
-        style characted, by default "="
-    in_space : int, optional
-        number of spaces between the title and the style characters, by default 3
-    width_char : int, optional
-        total width in characters, by default 80
+    ::
 
-    Returns
-    -------
-    str
-        formatted title string
+         ===...=================...===
+         ===...===   title   ===...===
+         ===...=================...===
+
+     The total width in characters is given by the `width_char` option
+
+     Parameters
+     ----------
+     title : str
+         title string
+     style_char : str, optional
+         style characted, by default "="
+     in_space : int, optional
+         number of spaces between the title and the style characters, by default 3
+     width_char : int, optional
+         total width in characters, by default 80
+
+     Returns
+     -------
+     str
+         formatted title string
     """
     s1 = f"{style_char*width_char}\n"
     s2ab_len_float = (width_char - len(title) - in_space * 2) / 2

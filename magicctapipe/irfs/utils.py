@@ -454,10 +454,13 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False, **kwargs):
     ----------
     array : str, optional
         telescope array, by default "4LST"
+
         Possibilities:
-            - "4LST": file = "magic-cta-pipe/data/MARS_4LST.txt"
-            - "MAGIC": file = "magic-cta-pipe/data/MARS_MAGIC.txt"
-            - "MAGIC_LST1": file = "magic-cta-pipe/data/MARS_MAGIC_LST1.txt"
+
+        * "4LST": file = "magic-cta-pipe/data/MARS_4LST.txt"
+        * "MAGIC": file = "magic-cta-pipe/data/MARS_MAGIC.txt"
+        * "MAGIC_LST1": file = "magic-cta-pipe/data/MARS_MAGIC_LST1.txt"
+
     label : str, optional
         custom plot label, by default ""
     print_data : bool, optional

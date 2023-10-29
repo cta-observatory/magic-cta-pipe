@@ -54,4 +54,6 @@ htmlcov
 .coverage
 
 # Sphinx documentation
-docs/_build/
+docs/api
+docs/_build
+docs/auto_examples
