@@ -29,29 +29,8 @@ In general, *magic-cta-pipe* is still in heavy development phase, so expect larg
 
 # Instructions for developers
 
-People who would like to join the development of *magic-cta-pipe*, please contact Alessio Berti (<alessioberti90@gmail.com>) to get write access to the repository.
-
-Developers should follow the coding style guidelines of the *ctapipe* project, see https://ctapipe.readthedocs.io/en/stable/developer-guide/style-guide.html and https://ctapipe.readthedocs.io/en/stable/developer-guide/code-guidelines.html.
-
-In short, to check for code/style errors and for reformatting the code:
-
-```
-pip install hacking     # installs all checker tools
-pip install black       # installs black formatter
-pyflakes magicctapipe   # checks for code errors
-flake8 magicctapipe     # checks style and code errors
-black filename.py       # reformats filename.py with black
-```
-
-The *black* and *isort* auto-formatters are used for automatic adherence to the code style. To enforce running these tools whenever you make a commit, setup the [pre-commit hook](https://pre-commit.com/):
-
-```bash
-$ pre-commit install
-```
-
-The pre-commit hook will then execute the tools with the same settings as when the a pull request is checked on github, and if any problems are reported the commit will be rejected. You then have to fix the reported issues before tying to commit again.
-
-In general, if you want to add a new feature or fix a bug, please open a new issue, and then create a new branch to develop the new feature or code the bug fix. You can create an early pull request even if it is not complete yet, you can tag it as "Draft" so that it will not be merged, and other developers can already check it and provide comments. When the code is ready, remove the tag "Draft" and select two people to review the pull request (at the moment the merge is not blocked if no review is performed, but that may change in the future). When the review is complete, the branch will be merged into the main branch.
+Developers should follow the development install instructions found in the
+[documentation](https://magic-cta-pipe.readthedocs.io/en/latest/developer-guide/getting-started.html).
 
 <!--
 A brief description:
