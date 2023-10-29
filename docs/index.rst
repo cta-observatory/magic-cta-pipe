@@ -36,6 +36,7 @@ Contents
 
   user-guide/index
   developer-guide/index
+  api-reference/index
 
 .. grid:: 1 2 2 3
 
@@ -77,3 +78,23 @@ Contents
          :click-parent:
 
          To the developer guide
+
+   .. grid-item-card::
+
+        :octicon:`code;40px`
+
+        API Docs
+        ^^^^^^^^
+
+        The API docs contain detailed descriptions of
+        of the various modules, classes and functions
+        included in ctapipe.
+
+        +++
+
+        .. button-ref:: api-reference/index
+            :expand:
+            :color: primary
+            :click-parent:
+
+            To API docs
