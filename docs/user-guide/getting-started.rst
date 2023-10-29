@@ -8,10 +8,10 @@ Getting started for users
 Installation
 ------------
 
-*magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
+``magic-cta-pipe`` and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
 first, to isolate the installed version and dependencies from your master environment (this is optional).
 
-The following command will set up a conda virtual environment, add the necessary package channels, and install *magic-cta-pipe* and its dependencies:
+The following command will set up a conda virtual environment, add the necessary package channels, and install ``magic-cta-pipe`` and its dependencies:
 
 .. code-block:: console
 
