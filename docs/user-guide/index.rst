@@ -7,3 +7,4 @@ User Guide
    :maxdepth: 2
 
    getting-started
+   magic-lst-scripts
