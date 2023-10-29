@@ -94,7 +94,6 @@ __all__ = [
     "print_title",
     "make_title_str",
     "resource_file",
-    "get_key_if_exists",
     "LON_ORM",
     "LAT_ORM",
     "HEIGHT_ORM",
