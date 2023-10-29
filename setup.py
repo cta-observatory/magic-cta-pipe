@@ -29,6 +29,7 @@ docs_require = [
     "pydata_sphinx_theme",
     "numpydoc",
     "nbsphinx",
+    "sphinx-design",
 ]
 
 setup(
