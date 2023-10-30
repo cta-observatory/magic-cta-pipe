@@ -1,5 +1,5 @@
 # A conda environment with all useful package for ctapipe developers
-name: magic-lst1
+name: magic-lst
 channels:
   - conda-forge
 dependencies:
@@ -27,6 +27,7 @@ dependencies:
   - scikit-learn
   - sphinx
   - sphinx-automodapi
+  - sphinx-design
   - sphinx_rtd_theme
   - pydata-sphinx-theme
   - uproot~=4.1

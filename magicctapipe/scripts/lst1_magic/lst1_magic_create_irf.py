@@ -52,7 +52,6 @@ import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, vstack
-from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
@@ -74,6 +73,8 @@ from pyirf.spectral import (
     PowerLaw,
     calculate_event_weights,
 )
+
+from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 
 __all__ = ["create_irf"]
 

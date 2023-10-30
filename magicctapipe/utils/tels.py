@@ -1,7 +1,6 @@
-from astropy import units as u
 import numpy as np
-
-from ctapipe.instrument import CameraGeometry, TelescopeDescription, OpticsDescription
+from astropy import units as u
+from ctapipe.instrument import CameraGeometry, OpticsDescription, TelescopeDescription
 
 __all__ = [
     "tel_ids_2_num",
@@ -160,17 +159,19 @@ def check_tel_ids(cfg):
     cfg : dict
         configuration dictionary loaded from config file. It must contain the
         following elements:
-            - cfg['all_tels']['tel_n']: list with all telescope names
-            - cfg[<tel_label>]['tel_ids']: list with telescope <tel_label> ids, where
-            <tel_label> is MAGIC and LST, but not necessarily both
+
+        * cfg['all_tels']['tel_n']: list with all telescope names
+        * cfg[<tel_label>]['tel_ids']: list with telescope <tel_label> ids, where <tel_label> is MAGIC and LST, but not necessarily both
 
     Returns
     -------
     tuple
-        - tel_ids: intersection with tel_ids_sel and the sum between
-            all_tel_ids_LST and all_tel_ids_MAGIC
-        - tel_ids_LST: LST telescope ids in tel_ids
-        - tel_ids_MAGIC: MAGIC telescope ids in tel_ids
+
+        * tel_ids: intersection with tel_ids_sel and the sum between
+          all_tel_ids_LST and all_tel_ids_MAGIC
+        * tel_ids_LST: LST telescope ids in tel_ids
+        * tel_ids_MAGIC: MAGIC telescope ids in tel_ids
+
     """
     all_tel_ids = {"LST": [], "MAGIC": []}
     for k in all_tel_ids.keys():
@@ -206,10 +207,11 @@ def intersec_tel_ids(
     Returns
     -------
     tuple
-        - tel_ids: intersection with tel_ids_sel and the sum between
+
+        * tel_ids: intersection with tel_ids_sel and the sum between
             all_tel_ids_LST and all_tel_ids_MAGIC
-        - tel_ids_LST: LST telescope ids in tel_ids
-        - tel_ids_MAGIC: MAGIC telescope ids in tel_ids
+        * tel_ids_LST: LST telescope ids in tel_ids
+        * tel_ids_MAGIC: MAGIC telescope ids in tel_ids
     """
     sum_ids = all_tel_ids_LST + all_tel_ids_MAGIC
     tel_ids = list(set(tel_ids_sel).intersection(sum_ids))
@@ -231,10 +233,10 @@ def get_tel_name(tel_id, cfg):
     cfg : dict
         configuration dictionary loaded from config file. It must contain the
         following elements:
-            - cfg['all_tels']['tel_n']: list with all telescope names
-            - cfg[<tel_label>]['tel_ids']: list with telescope <tel_label> ids
-            - cfg['all_tels']['tel_n_short']: with with telescope short name,
-                to be plotted
+
+        * cfg['all_tels']['tel_n']: list with all telescope names
+        * cfg[<tel_label>]['tel_ids']: list with telescope <tel_label> ids
+        * cfg['all_tels']['tel_n_short']: with with telescope short name, to be plotted
 
     Returns
     -------

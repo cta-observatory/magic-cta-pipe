@@ -1,5 +1,5 @@
-from astropy.time import Time
 import numpy as np
+from astropy.time import Time
 from ctapipe.instrument import CameraGeometry
 
 __all__ = [

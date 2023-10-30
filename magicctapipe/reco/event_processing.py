@@ -1,26 +1,23 @@
-import re
 import itertools
-import numpy as np
+import re
+from abc import ABC, abstractmethod
 from copy import deepcopy
 
-from abc import ABC, abstractmethod
-
+import joblib
+import numpy as np
+import pandas as pd
 import sklearn
 import sklearn.ensemble
+from astropy import units as u
+from astropy.coordinates import AltAz, SkyCoord
+from astropy.coordinates.angle_utilities import angular_separation
+from ctapipe.containers import ReconstructedContainer, ReconstructedEnergyContainer
+from ctapipe.coordinates import CameraFrame, TelescopeFrame
+from ctapipe.image import hillas_parameters, tailcuts_clean
+from ctapipe.io import EventSource
+from ctapipe.reco.reco_algorithms import TooFewTelescopesException
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.preprocessing import StandardScaler
-import pandas as pd
-import joblib
-
-from ctapipe.image import tailcuts_clean, hillas_parameters
-from ctapipe.io import EventSource
-from ctapipe.containers import ReconstructedContainer, ReconstructedEnergyContainer
-from ctapipe.reco.reco_algorithms import TooFewTelescopesException
-from ctapipe.coordinates import CameraFrame, TelescopeFrame
-
-from astropy.coordinates import AltAz, SkyCoord
-from astropy import units as u
-from astropy.coordinates.angle_utilities import angular_separation
 
 __all__ = [
     "RegressorClassifierBase",
@@ -420,7 +417,7 @@ class RegressorClassifierBase:
             plt.title(cam_id)
             try:
                 importances = model.feature_importances_
-            except:
+            except Exception:
                 plt.gca().axis("off")
                 continue
             bins = range(importances.shape[0])
@@ -895,7 +892,7 @@ class EventProcessor:
                     event.dl1.tel[tel_id].hillas_params = hillas_parameters(
                         camera, event_image_cleaned
                     )
-                except:
+                except Exception:
                     print("Failed")
                     pass
 

@@ -2,23 +2,21 @@
 # coding: utf-8
 
 import argparse
-import yaml
+
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import uproot
-from ctapipe_io_magic import MAGICEventSource
-from ctapipe.visualization import CameraDisplay
-from ctapipe.instrument import CameraGeometry
+import yaml
 from ctapipe.image import hillas_parameters
-from ctapipe.image.timing import timing_parameters
-from ctapipe.instrument import CameraDescription
-from utils import MAGIC_Badpixels
-from utils import MAGIC_Cleaning
-import matplotlib.pyplot as plt
-import matplotlib
-import numpy as np
-
 from ctapipe.image.morphology import number_of_islands
+from ctapipe.image.timing import timing_parameters
+from ctapipe.instrument import CameraDescription, CameraGeometry
+from ctapipe.visualization import CameraDisplay
+from ctapipe_io_magic import MAGICEventSource
 from mars_images_to_hdf5 import read_images
+from utils import MAGIC_Badpixels, MAGIC_Cleaning
 
 # ----------------------------------------------------------------
 
@@ -28,7 +26,7 @@ ids_to_compare = []
 # add argparser arguments
 arg_parser = argparse.ArgumentParser(
     description="""
-This tool compares the images of events processed by MARS and the magic-cta-pipeline. 
+This tool compares the images of events processed by MARS and the magic-cta-pipeline.
 The output is a png file with the camera images and a hdf5 file that contains the pixel information.
 """
 )
@@ -256,7 +254,7 @@ for id_to_compare in ids_to_compare:
                 event_image = event.dl1.tel[tel_id].image
                 event_pulse_time = event.dl1.tel[tel_id].peak_time
 
-                """ 
+                """
                 find different catgories of pixels
                 ------
                 bad: pixel that is unsuitable, defined subrunwise
@@ -265,8 +263,8 @@ for id_to_compare in ids_to_compare:
                     get badrms pixels via badrmspixel_mask
                     get badrms pixel indices via bad_pixel_indices
                 dead: this pixels is not working at all
-                    get dead pixels via deadpixel_mask 
-                    get dead pixel indices via dead_pixel_indices 
+                    get dead pixels via deadpixel_mask
+                    get dead pixel indices via dead_pixel_indices
                 unsuitable: union of badrms and dead pixels
                     get unsuitable pixels via unsuitable_mask
                 ---------

@@ -1,8 +1,8 @@
 # coding: utf-8
 
+import pandas
 import scipy
 import uproot
-import pandas
 
 from .utils import info_message
 
