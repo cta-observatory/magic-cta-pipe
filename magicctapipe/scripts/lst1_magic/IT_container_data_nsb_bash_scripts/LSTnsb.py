@@ -94,17 +94,8 @@ def main():
     noise=nsb(run_list, simtel, lst_config, run_number)
     if len(noise) == 0:
         return
-    a = sum(noise) / len(noise)
-    std = np.std(noise)
-    logger.info(f"Run n. {run_number}, nsb average (all) {a}, std {std}")
-    subrun_ok = []
-    for sr in range(0, len(noise)):
-        if np.abs(noise[sr] - a) < 3 * std:
-            subrun_ok.append(noise[sr])
-    if len(subrun_ok) == 0:
-        return
-    a = sum(subrun_ok) / len(subrun_ok)
-    logger.info(f"Run n. {run_number}, nsb average (w/o outliers) {a}")
+    a=np.median(noise)
+    logger.info(f"Run n. {run_number}, nsb median {a}")
     for j in range(0, len(nsb_list)):
         if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):
             with open(f"{source}_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:

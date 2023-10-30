@@ -265,7 +265,7 @@ def main():
     #Below we run the analysis on the MC data
     if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):
         #Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
-        if os.path.exists(f"{target_dir}/DL1/MC/protons"):
+        if not os.path.exists(f"{target_dir}/DL1/MC/protons_test"):
             print("***** Splitting protons into 'train' and 'test' datasets...")
             split_train_test(target_dir, train_fraction)
     
