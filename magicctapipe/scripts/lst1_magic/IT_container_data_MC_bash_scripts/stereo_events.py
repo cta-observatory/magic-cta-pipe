@@ -45,9 +45,15 @@ def configfile_stereo(ids, target_dir):
     """
     
     with open(f'{target_dir}/config_stereo.yaml','w') as f:
-        f.write(f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n")
-        f.write('stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n')
-      
+
+        lines = [
+            f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
+            'stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n',
+        ]
+    
+        f.writelines(lines)
+
+        
     
      
 def bash_stereo(target_dir, env_name):
@@ -115,6 +121,7 @@ def bash_stereoMC(target_dir, identification, env_name):
     inputdir = f"{target_dir}/DL1/MC/{identification}/Merged"
     
     os.system(f"ls {inputdir}/dl1*.h5 >  {inputdir}/list_coin.txt")  #generating a list with the DL1 coincident data files.
+    print(np.genfromtxt(f"{inputdir}/list_coin.txt",dtype="str"))
     process_size = len(np.genfromtxt(f"{inputdir}/list_coin.txt",dtype="str")) - 1
     
     with open(f"StereoEvents_MC_{identification}.sh","w") as f:

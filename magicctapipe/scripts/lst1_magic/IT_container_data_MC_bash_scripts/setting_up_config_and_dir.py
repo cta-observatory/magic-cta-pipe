@@ -33,11 +33,63 @@ import logging
 import yaml
 from pathlib import Path
 
-__all__=['config_file_gen', 'lists_and_bash_generator', 'lists_and_bash_gen_MAGIC', 'directories_generator']
+__all__=["nab_avg", 'config_file_gen', 'lists_and_bash_generator', 'lists_and_bash_gen_MAGIC', 'directories_generator']
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+
+
+def nsb_avg(source, config, LST_list):
+    allfile = np.sort(glob.glob(f"{source}_LST_*.txt"))
+    if len(allfile) == 0:
+        return
+    noise=[]
+    for j in allfile:
+        with open(j) as ff:
+            line = int(ff.readline())
+            noise.append(line)
+    nsb=np.average(noise)
+    std=np.std(noise)
+    process='y'
+    if std>0.2:
+        process = input(f'Standard deviation of the NSB levels is above 0.2. We strongly recommend to use NSB-matching analysis instead of using the current scripts. Would you like to continue the current analysis anyway? [only "y" or "n"]: ')
+    delete_index=[]
+    for n, j in allfile:
+        run=allfile[i].split("_")[2]
+        if abs(noise[n]-nsb)>3*std:
+            sigma_range = input(f'Run {run} has NSB-value out of the average+-3*sigma range. Would you like to continue the current analysis anyway (if yes, this run will be deleted from the .txt file)? [only "y" or "n"]: ')
+            if sigma_range!='y':
+                return sigma_range
+            delete_index.append(n)
+            with open(
+                LST_list, "r"
+            ) as f: 
+                lines=f.readlines()
+            with open(
+                LST_list, "w"
+            ) as f:
+                for i in lines:       
+                    if not i.endswith(f"{run}\n"):
+                        f.write(i)
+    index=delete_index.reverse()
+    for k in index:
+        np.delete(noise,k)  
+
+    
+    with open(
+        config, "r"
+    ) as f: 
+        lines=f.readlines()
+    with open(
+        config, "w"
+    ) as f:
+        for i in lines:       
+            if not i.startswith("nsb_value"):
+                f.write(i)
+        f.write(f"nsb_value: {nsb}\n")
+    return process
+
 
 def config_file_gen(ids, target_dir):
     
@@ -126,8 +178,11 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     """
     This function creates the lists list_nodes_gamma_complete.txt and list_folder_gamma.txt with the MC file paths.
     After that, it generates a few bash scripts to link the MC paths to each subdirectory. 
-    These bash scripts will be called later in the main() function below. 
+    These bash scripts will be called later in the main() function below. This step will be skipped in case the MC path has not been provided (MC_path='')
     """
+    
+    if MC_path=='':
+        return
     
     process_name = target_dir.split("/")[-2:][1]
     
@@ -403,20 +458,25 @@ def main():
     telescope_ids = list(config["mc_tel_ids"].values())
     SimTel_version = config["general"]["SimTel_version"]
     MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
+    LST_runs_and_dates = config["general"]["LST_runs"]
+    
     MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates,dtype=str,delimiter=',') #READ LIST OF DATES AND RUNS: format table in a way that each line looks like "2020_11_19,5093174"
     focal_length = config["general"]["focal_length"]
     
     #Below we read the data paths
     target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
     MC_gammas  = str(Path(config["directories"]["MC_gammas"]))
-    #MC_electrons = str(Path(config["directories"]["MC_electrons"]))
-    #MC_helium = str(Path(config["directories"]["MC_helium"]))
+    MC_electrons = str(Path(config["directories"]["MC_electrons"]))
+    MC_helium = str(Path(config["directories"]["MC_helium"]))
     MC_protons = str(Path(config["directories"]["MC_protons"]))
     MC_gammadiff = str(Path(config["directories"]["MC_gammadiff"]))
 
 
     env_name = config["general"]["env_name"]
-    
+    source = config['directories']['target_name']
+    if nsb_avg(source, args.config_file, LST_runs_and_dates) !='y':
+        print('OK... The script was terminated by the user choice.')
+        return
     
     print("***** Linking MC paths - this may take a few minutes ******")
     print("*** Reducing DL0 to DL1 data - this can take many hours ***")
@@ -427,10 +487,11 @@ def main():
     config_file_gen(telescope_ids,target_dir)
     
     #Below we run the analysis on the MC data
-    if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):       
+    if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):  
+            
         lists_and_bash_generator("gammas", target_dir, MC_gammas, SimTel_version, focal_length, env_name) #gammas
-        #lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, focal_length, env_name) #electrons
-        #lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, focal_length, env_name) #helium
+        lists_and_bash_generator("electrons", target_dir, MC_electrons, SimTel_version, focal_length, env_name) #electrons
+        lists_and_bash_generator("helium", target_dir, MC_helium, SimTel_version, focal_length, env_name) #helium
         lists_and_bash_generator("protons", target_dir, MC_protons, SimTel_version, focal_length, env_name) #protons
         lists_and_bash_generator("gammadiffuse", target_dir, MC_gammadiff, SimTel_version, focal_length, env_name) #gammadiffuse
         

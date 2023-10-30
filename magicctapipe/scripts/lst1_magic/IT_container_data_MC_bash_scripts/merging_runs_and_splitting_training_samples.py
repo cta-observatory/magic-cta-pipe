@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def cleaning(list_of_nodes, target_dir):
+def cleaning(list_of_nodes, cwd):
     
     """
     This function looks for failed runs in each node and remove them.
@@ -61,7 +61,7 @@ def cleaning(list_of_nodes, target_dir):
         os.chdir(list_of_nodes[i])
         os.system('find . -type f -name "*.h5" -size -1k -delete')
     
-    os.chdir(f"{target_dir}/../")
+    os.chdir(cwd)
     print("Cleaning done.")
 
 def split_train_test(target_dir, train_fraction):
@@ -167,7 +167,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name):
     
     
 
-def mergeMC(target_dir, identification, env_name):
+def mergeMC(target_dir, identification, env_name, cwd):
     
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
@@ -196,26 +196,27 @@ def mergeMC(target_dir, identification, env_name):
         
     process_size = len(list_of_nodes) - 1
        
-    cleaning(list_of_nodes, target_dir) #This will delete the (possibly) failed runs.
+    cleaning(list_of_nodes, cwd) #This will delete the (possibly) failed runs.
         
     with open(f"Merge_MC_{identification}.sh","w") as f:
+        print(os.getcwd())
         lines_bash_file = [
-        '#!/bin/sh\n\n',
-        '#SBATCH -p short\n',
-        f'#SBATCH -J {process_name}n',
-        f"#SBATCH --array=0-{process_size}%50\n",
-        '#SBATCH --mem=7g\n',
-        '#SBATCH -N 1\n\n',
-        'ulimit -l unlimited\n',
-        'ulimit -s unlimited\n',
-        'ulimit -a\n\n',
-        f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
-        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-        f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n',
-        f'conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n'
+            '#!/bin/sh\n\n',
+            '#SBATCH -p short\n',
+            f'#SBATCH -J {process_name}\n',
+            f"#SBATCH --array=0-{process_size}%50\n",
+            '#SBATCH --mem=7g\n',
+            '#SBATCH -N 1\n\n',
+            'ulimit -l unlimited\n',
+            'ulimit -s unlimited\n',
+            'ulimit -a\n\n',
+            "SAMPLE_LIST=($(<"+f"{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
+            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+            f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n',
+            f'conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n'
         ]
         f.writelines(lines_bash_file)
-        f.close()      
+         
         
        
         
@@ -250,7 +251,7 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    
+    cwd=os.getcwd()
     
     target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
     
@@ -269,10 +270,10 @@ def main():
             split_train_test(target_dir, train_fraction)
     
         print("***** Generating merge_MC bashscripts...")
-        mergeMC(target_dir, "protons", env_name) #generating the bash script to merge the files
-        mergeMC(target_dir, "gammadiffuse", env_name) #generating the bash script to merge the files
-        mergeMC(target_dir, "gammas", env_name) #generating the bash script to merge the files 
-        mergeMC(target_dir, "protons_test", env_name)
+        mergeMC(target_dir, "protons", env_name, cwd) #generating the bash script to merge the files
+        mergeMC(target_dir, "gammadiffuse", env_name, cwd) #generating the bash script to merge the files
+        mergeMC(target_dir, "gammas", env_name, cwd) #generating the bash script to merge the files 
+        mergeMC(target_dir, "protons_test", env_name, cwd)
 
         print("***** Running merge_hdf_files.py on the MC data files...")
 

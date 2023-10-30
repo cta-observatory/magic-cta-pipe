@@ -43,12 +43,14 @@ def configfile_coincidence(ids, target_dir):
     """
     
     with open(f'{target_dir}/config_coincidence.yaml','w') as f:
-        f.write(f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n")
-        f.write('event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    window_half_width: "300 ns"\n')
-        f.write('    pre_offset_search: true\n')  
-        f.write('    n_pre_offset_search_events: 100\n')  
-        f.write('    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n')  
+        lines = [
+            f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
+            'event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    pre_offset_search: true\n    n_pre_offset_search_events: 100\n    window_half_width: "300 ns"\n',
+            '    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n',
+        ]
     
+        f.writelines(lines)
+       
     
 
 def linking_lst(target_dir, LST_runs, LST_version):
