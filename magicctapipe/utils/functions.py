@@ -31,14 +31,21 @@ LAT_ORM = 28.76177 * u.deg
 HEIGHT_ORM = 2199.835 * u.m
 
 
-@u.quantity_input
+@u.quantity_input(
+    pointing_alt=u.rad,
+    pointing_az=u.rad,
+    shower_alt=u.deg,
+    shower_az=u.deg,
+    cog_x=u.m,
+    cog_y=u.m,
+)
 def calculate_disp(
-    pointing_alt: u.rad,
-    pointing_az: u.rad,
-    shower_alt: u.deg,
-    shower_az: u.deg,
-    cog_x: u.m,
-    cog_y: u.m,
+    pointing_alt,
+    pointing_az,
+    shower_alt,
+    shower_az,
+    cog_x,
+    cog_y,
     camera_frame,
 ):
     """
@@ -84,15 +91,23 @@ def calculate_disp(
     return disp
 
 
-@u.quantity_input
+@u.quantity_input(
+    shower_alt=u.deg,
+    shower_az=u.deg,
+    core_x=u.m,
+    core_y=u.m,
+    tel_pos_x=u.m,
+    tel_pos_y=u.m,
+    tel_pos_z=u.m,
+)
 def calculate_impact(
-    shower_alt: u.deg,
-    shower_az: u.deg,
-    core_x: u.m,
-    core_y: u.m,
-    tel_pos_x: u.m,
-    tel_pos_y: u.m,
-    tel_pos_z: u.m,
+    shower_alt,
+    shower_az,
+    core_x,
+    core_y,
+    tel_pos_x,
+    tel_pos_y,
+    tel_pos_z,
 ):
     """
     Calculates the impact parameter, i.e., the closest distance between
@@ -216,12 +231,14 @@ def calculate_mean_direction(lon, lat, unit, weights=None):
     return lon_mean, lat_mean
 
 
-@u.quantity_input
+@u.quantity_input(
+    pointing_ra=u.deg, pointing_dec=u.deg, on_coord_ra=u.deg, on_coord_dec=u.deg
+)
 def calculate_off_coordinates(
-    pointing_ra: u.deg,
-    pointing_dec: u.deg,
-    on_coord_ra: u.deg,
-    on_coord_dec: u.deg,
+    pointing_ra,
+    pointing_dec,
+    on_coord_ra,
+    on_coord_dec,
     n_regions,
 ):
     """
@@ -292,8 +309,8 @@ def calculate_off_coordinates(
     return off_coords
 
 
-@u.quantity_input
-def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
+@u.quantity_input(alt=u.deg, az=u.deg)
+def transform_altaz_to_radec(alt, az, obs_time):
     """
     Transforms the Alt/Az direction measured from ORM to the RA/Dec
     coordinate.

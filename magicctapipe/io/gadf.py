@@ -31,10 +31,8 @@ logger.setLevel(logging.INFO)
 MJDREF = Time(0, format="unix", scale="utc")
 
 
-@u.quantity_input
-def create_gh_cuts_hdu(
-    gh_cuts, reco_energy_bins: u.TeV, fov_offset_bins: u.deg, **header_cards
-):
+@u.quantity_input(reco_energy_bins=u.TeV, fov_offset_bins=u.deg)
+def create_gh_cuts_hdu(gh_cuts, reco_energy_bins, fov_offset_bins, **header_cards):
     """
     Creates a fits binary table HDU for dynamic gammaness cuts.
 
@@ -43,9 +41,9 @@ def create_gh_cuts_hdu(
     gh_cuts: numpy.ndarray
         Array of the gammaness cuts, which must have the shape
         (n_reco_energy_bins, n_fov_offset_bins)
-    reco_energy_bins: astropy.units.quantity.Quantity
+    reco_energy_bins: u.Quantity
         Bin edges in the reconstructed energy
-    fov_offset_bins: astropy.units.quantity.Quantity
+    fov_offset_bins: u.Quantity
         Bin edges in the field of view offset
     **header_cards
         Additional metadata to add to the header

@@ -116,6 +116,7 @@ def check_input_list(config):
 
     Returns
     -------
+    Exception
         This function will raise an exception if the input list is not properly organized.
     """
 

@@ -33,7 +33,7 @@ def calibrate(
         From an EventSource
     tel_id: int
         Telescope ID
-    config: dictionary
+    config: dict
         Parameters for image extraction and calibration
     calibrator: CameraCalibrator (ctapipe.calib)
         ctapipe object needed to calibrate the camera
@@ -43,17 +43,17 @@ def calibrate(
         Observation ID. Unsed in case of LST telescope
     camera_geoms: telescope.camera.geometry
         Camera geometry. Used in case of LST telescope
-    magic_clean: dictionary (1 entry per MAGIC telescope)
+    magic_clean: dict (1 entry per MAGIC telescope)
         Each entry is a MAGICClean object using the telescope camera geometry. Used in case of MAGIC telescope
 
 
     Returns
     -------
-    signal_pixels: boolean mask
+    signal_pixels: bool
         Mask of the pixels selected by the cleaning
-    image: numpy array
+    image: np.ndarray
         Array of number of p.e. in the camera pixels
-    peak_time: numpy array
+    peak_time: np.ndarray
         Array of the signal peak time in the camera pixels
 
     """

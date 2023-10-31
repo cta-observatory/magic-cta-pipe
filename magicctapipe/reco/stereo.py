@@ -4,7 +4,13 @@ from ctapipe.core.container import Container, Field
 
 from ..utils import tel_ids_2_num
 
-__all__ = ["write_hillas", "check_write_stereo", "check_stereo", "write_stereo"]
+__all__ = [
+    "write_hillas",
+    "check_write_stereo",
+    "check_stereo",
+    "write_stereo",
+    "StereoInfoContainer",
+]
 
 
 def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p, impact_p):
@@ -22,7 +28,7 @@ def write_hillas(writer, event_info, hillas_p, leakage_p, timing_p, impact_p):
         leakage parameters
     timing_p : ctapipe.containers.TimingParametersContainer
         timing parameters
-    impact_p : magic-cta-pipe custom impact container
+    impact_p : astropy.units.quantity.Quantity
         impact parameters
     """
     writer.write("hillas_params", (event_info, hillas_p, leakage_p, timing_p, impact_p))
@@ -44,13 +50,13 @@ def check_write_stereo(
 
     Parameters
     ----------
-    event : ctapipe.containers.EventAndMonDataContainer
+    event : ctapipe.containers.ArrayEventContainer
         event
     tel_id : int
         telescope id
     hillas_p : dict
         computed hillas parameters
-    hillas_reco : ctapipe.reco.HillasReconstructor.HillasReconstructor
+    hillas_reco : ctapipe.reco.HillasReconstructor
         HillasReconstructor
     subarray : ctapipe.instrument.subarray.SubarrayDescription
         source.subarray
@@ -58,14 +64,14 @@ def check_write_stereo(
         array_pointing
     telescope_pointings : dict
         telescope_pointings
-    event_info : StereoInfoContainer
+    event_info : magicctapipe.reco.stereo.StereoInfoContainer
         StereoInfoContainer object
     writer : ctapipe.io.hdf5tableio.HDF5TableWriter
         HDF5TableWriter object
 
     Returns
     -------
-    ctapipe.containers.ReconstructedShowerContainer
+    ctapipe.containers.ReconstructedContainer
         stereo_params
     """
     if len(hillas_p.keys()) > 1:
@@ -100,7 +106,7 @@ def check_stereo(event, tel_id, hillas_p):
 
     Parameters
     ----------
-    event : ctapipe.containers.EventAndMonDataContainer
+    event : ctapipe.containers.ArrayEventContainer
         event
     tel_id : int
         telescope id
@@ -138,16 +144,16 @@ def write_stereo(
 
     Parameters
     ----------
-    stereo_params : ctapipe.containers.ReconstructedShowerContainer
+    stereo_params : ctapipe.containers.ReconstructedContainer
         stereo parameters
-    event_info : StereoInfoContainer
+    event_info : magicctapipe.reco.stereo.StereoInfoContainer
         StereoInfoContainer object
     writer : ctapipe.io.hdf5tableio.HDF5TableWriter
         HDF5TableWriter object
 
     Returns
     -------
-    ctapipe.containers.ReconstructedShowerContainer
+    ctapipe.containers.ReconstructedContainer
         stereo_params
     """
 
