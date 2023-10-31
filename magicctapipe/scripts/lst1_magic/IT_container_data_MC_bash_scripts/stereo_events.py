@@ -83,22 +83,24 @@ def bash_stereo(target_dir, env_name):
         process_size = len(np.genfromtxt(f"{nightLST}/list_coin.txt",dtype="str")) - 1
         
         with open(f"StereoEvents_real_{nightLST.split('/')[-1]}.sh","w") as f:
-            f.write("#!/bin/sh\n\n")
-            f.write("#SBATCH -p short\n")
-            f.write(f"#SBATCH -J {process_name}_stereo\n")
-            f.write(f"#SBATCH --array=0-{process_size}%100\n")
-            f.write("#SBATCH -N 1\n\n")
-            f.write("ulimit -l unlimited\n")
-            f.write("ulimit -s unlimited\n")
-            f.write("ulimit -a\n\n") 
+            lines=[
+            "#!/bin/sh\n\n",
+            "#SBATCH -p short\n",
+            f"#SBATCH -J {process_name}_stereo\n",
+            f"#SBATCH --array=0-{process_size}%100\n",
+            "#SBATCH -N 1\n\n",
+            "ulimit -l unlimited\n",
+            "ulimit -s unlimited\n",
+            "ulimit -a\n\n", 
             
-            f.write(f"export INPUTDIR={nightLST}\n")
-            f.write(f"export OUTPUTDIR={stereoDir}\n")
-            f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
-            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-            f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-            f.write(f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
-            
+            f"export INPUTDIR={nightLST}\n",
+            f"export OUTPUTDIR={stereoDir}\n",
+            "SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n",
+            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+            "export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n",
+            f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1",
+            ]
+            f.writelines(lines)     
 
 def bash_stereoMC(target_dir, identification, env_name):
 
@@ -124,23 +126,25 @@ def bash_stereoMC(target_dir, identification, env_name):
     process_size = len(np.genfromtxt(f"{inputdir}/list_coin.txt",dtype="str")) - 1
     
     with open(f"StereoEvents_MC_{identification}.sh","w") as f:
-        f.write("#!/bin/sh\n\n")
-        f.write("#SBATCH -p xxl\n")
-        f.write(f"#SBATCH -J {process_name}_stereo\n")
-        f.write(f"#SBATCH --array=0-{process_size}%100\n")
-        f.write('#SBATCH --mem=30g\n')
-        f.write("#SBATCH -N 1\n\n")
-        f.write("ulimit -l unlimited\n")
-        f.write("ulimit -s unlimited\n")
-        f.write("ulimit -a\n\n")
+        lines=[
+        "#!/bin/sh\n\n",
+        "#SBATCH -p xxl\n",
+        f"#SBATCH -J {process_name}_stereo\n",
+        f"#SBATCH --array=0-{process_size}%100\n",
+        '#SBATCH --mem=30g\n',
+        "#SBATCH -N 1\n\n",
+        "ulimit -l unlimited\n",
+        "ulimit -s unlimited\n",
+        "ulimit -a\n\n",
         
-        f.write(f"export INPUTDIR={inputdir}\n")
-        f.write(f"export OUTPUTDIR={inputdir}/StereoMerged\n")
-        f.write("SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n")
-        f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-        f.write("export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n")
-        f.write(f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1")
-       
+        f"export INPUTDIR={inputdir}\n",
+        f"export OUTPUTDIR={inputdir}/StereoMerged\n",
+        "SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n",
+        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+        "export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_TASK_ID}.log\n",
+        f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_stereo.yaml >$LOG 2>&1",
+        ]
+        f.writelines(lines)
 
 
 def main():

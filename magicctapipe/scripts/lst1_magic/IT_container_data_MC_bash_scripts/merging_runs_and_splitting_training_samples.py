@@ -126,13 +126,16 @@ def merge(target_dir, identification, MAGIC_runs, env_name):
             os.mkdir(f"{MAGIC_DL1_dir}/Merged")
     
     with open(f"Merge_MAGIC_{identification}.sh","w") as f:
-        f.write('#!/bin/sh\n\n')
-        f.write('#SBATCH -p short\n')
-        f.write(f'#SBATCH -J {process_name}\n')
-        f.write('#SBATCH -N 1\n\n')
-        f.write('ulimit -l unlimited\n')
-        f.write('ulimit -s unlimited\n')
-        f.write('ulimit -a\n\n')
+        lines = [
+            "#!/bin/sh\n\n",
+            "#SBATCH -p short\n",
+            f"#SBATCH -J {process_name}\n",
+            "#SBATCH -N 1\n\n",
+            "ulimit -l unlimited\n",
+            "ulimit -s unlimited\n",
+            "ulimit -a\n\n",
+        ]
+        f.writelines(lines)
         
         if identification == "0_subruns":
             if os.path.exists(f"{MAGIC_DL1_dir}/M1"):

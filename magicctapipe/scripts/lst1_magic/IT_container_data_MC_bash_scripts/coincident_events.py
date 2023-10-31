@@ -108,22 +108,24 @@ def bash_coincident(target_dir, env_name):
         process_size = len(np.genfromtxt(f"{nightLST}/list_LST.txt",dtype="str")) - 1
         
         with open(f"LST_coincident_{nightLST.split('/')[-1]}.sh","w") as f:
-            f.write("#!/bin/sh\n\n")
-            f.write("#SBATCH -p short\n")
-            f.write(f"#SBATCH -J {process_name}_coincidence\n")
-            f.write(f"#SBATCH --array=0-{process_size}%50\n")
-            f.write("#SBATCH -N 1\n\n")
-            f.write("ulimit -l unlimited\n")
-            f.write("ulimit -s unlimited\n")
-            f.write("ulimit -a\n\n") 
+            lines=[
+            "#!/bin/sh\n\n",
+            "#SBATCH -p short\n",
+            f"#SBATCH -J {process_name}_coincidence\n",
+            f"#SBATCH --array=0-{process_size}%50\n",
+            "#SBATCH -N 1\n\n",
+            "ulimit -l unlimited\n",
+            "ulimit -s unlimited\n",
+            "ulimit -a\n\n",
 
-            f.write(f"export INM={nightMAGIC}\n")
-            f.write(f"export OUTPUTDIR={nightLST}\n")
-            f.write("SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n")
-            f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-            f.write("export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n")
-            f.write(f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1")
-          
+            f"export INM={nightMAGIC}\n",
+            f"export OUTPUTDIR={nightLST}\n",
+            "SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n",
+            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+            "export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n",
+            f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1",
+            ]
+            f.writelines(lines)
         
 
 

@@ -101,7 +101,7 @@ def config_file_gen(ids, target_dir, noise_value):
     """
     with open(f'{target_dir}/config_DL0_to_DL1.yaml','w') as f:
     
-        #f.write(f"directories:\n    target: {target_dir}\n\n")    
+        
         lines_of_config_file = [
         "mc_tel_ids:",
         f"\n    LST-1: {ids[0]}",
@@ -275,30 +275,35 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, env_name):
     """
     
     process_name = target_dir.split("/")[-2:][1]
-    
+    lines = [
+        "#!/bin/sh\n\n",
+        "#SBATCH -p short\n",
+        f"#SBATCH -J {process_name}\n",
+        "#SBATCH -N 1\n\n",
+        "ulimit -l unlimited\n",
+        "ulimit -s unlimited\n",
+        "ulimit -a\n",
+    ]
     with open("linking_MAGIC_data_paths.sh","w") as f:
-        f.write('#!/bin/sh\n\n')
-        f.write('#SBATCH -p short\n')
-        f.write(f'#SBATCH -J {process_name}\n')
-        f.write('#SBATCH -N 1\n\n')
-        f.write('ulimit -l unlimited\n')
-        f.write('ulimit -s unlimited\n')
-        f.write('ulimit -a\n')
-        
+        f.writelines(lines)
+                
         if telescope_ids[-1] > 0:
             for i in MAGIC_runs:
-                f.write(f'export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n')
-                f.write(f'export OUT1={target_dir}/DL1/Observations/M2/{i[0]}/{i[1]}\n')
-                f.write(f'ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n')
-        
+                lines=[
+                f'export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
+                f'export OUT1={target_dir}/DL1/Observations/M2/{i[0]}/{i[1]}\n',
+                f'ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n',
+                ]
+                f.writelines(lines)
         f.write('\n')
         if telescope_ids[-2] > 0:
             for i in MAGIC_runs:
-                f.write(f'export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n')
-                f.write(f'export OUT1={target_dir}/DL1/Observations/M1/{i[0]}/{i[1]}\n')
-                f.write(f'ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n')
-        
-  
+                lines=[
+                f'export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
+                f'export OUT1={target_dir}/DL1/Observations/M1/{i[0]}/{i[1]}\n',
+                f'ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n',
+                ]
+                f.writelines(lines)
     
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
         for i in MAGIC_runs:
