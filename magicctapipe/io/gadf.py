@@ -38,19 +38,19 @@ def create_gh_cuts_hdu(gh_cuts, reco_energy_bins, fov_offset_bins, **header_card
 
     Parameters
     ----------
-    gh_cuts: numpy.ndarray
+    gh_cuts : np.ndarray
         Array of the gammaness cuts, which must have the shape
         (n_reco_energy_bins, n_fov_offset_bins)
-    reco_energy_bins: u.Quantity
+    reco_energy_bins : astropy.units.quantity.Quantity
         Bin edges in the reconstructed energy
-    fov_offset_bins: u.Quantity
+    fov_offset_bins : astropy.units.quantity.Quantity
         Bin edges in the field of view offset
-    **header_cards
+    header_cards : dict
         Additional metadata to add to the header
 
     Returns
     -------
-    gh_cuts_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    gh_cuts_hdu : astropy.io.fits.hdu.table.BinTableHDU
         Gammaness-cut HDU
     """
 
@@ -97,26 +97,26 @@ def create_event_hdu(
 
     Parameters
     ----------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
-    on_time: astropy.table.table.QTable
+    on_time : astropy.table.table.QTable
         ON time of the input data
-    deadc: float
+    deadc : float
         Dead time correction factor
-    source_name: str
+    source_name : str
         Name of the observed source
-    source_ra: str
+    source_ra : str, optional
         Right ascension of the observed source, whose format should be
         acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
-    source_dec: str
+    source_dec : str, optional
         Declination of the observed source, whose format should be
         acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
 
     Returns
     -------
-    event_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    event_hdu : astropy.io.fits.hdu.table.BinTableHDU
         Event HDU
 
     Raises
@@ -240,12 +240,12 @@ def create_gti_hdu(event_table):
 
     Parameters
     ----------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
 
     Returns
     -------
-    gti_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    gti_hdu : astropy.io.fits.hdu.table.BinTableHDU
         GTI HDU
     """
 
@@ -285,12 +285,12 @@ def create_pointing_hdu(event_table):
 
     Parameters
     ----------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
 
     Returns
     -------
-    pointing_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    pointing_hdu : astropy.io.fits.hdu.table.BinTableHDU
         Pointing HDU
     """
 

@@ -49,10 +49,10 @@ def make_elapsed_time_str(start, end):
 
     Parameters
     ----------
-    start : [type]
-        [description]
+    start : str
+        start time of the observation
     end : str
-        [description]
+        end time of the observation
 
     """
     """Makes elapsed time string as start - end. Output format is `hh:mm:ss`
@@ -150,5 +150,16 @@ def make_title_str(title, style_char="=", in_space=3, width_char=80):
 
 
 def resource_file(filename):
-    """Get the absoulte path of magicctapipe resource files."""
+    """Get the absoulte path of magicctapipe resource files.
+
+    Parameters
+    ----------
+    filename : str
+        Input filename
+
+    Returns
+    -------
+    str
+        Absolute path of the input filename
+    """
     return files("magicctapipe").joinpath("resources", filename)

@@ -23,38 +23,35 @@ def calibrate(
     camera_geoms=None,
     magic_clean=None,
 ):
-
     """
     This function calibrates the camera image for a single event of a telescope
 
     Parameters
     ----------
-    event: event
+    event : ctapipe.containers.ArrayEventContainer
         From an EventSource
-    tel_id: int
+    tel_id : int
         Telescope ID
-    config: dict
+    config : dict
         Parameters for image extraction and calibration
-    calibrator: CameraCalibrator (ctapipe.calib)
+    calibrator : ctapipe.calib.CameraCalibrator
         ctapipe object needed to calibrate the camera
-    is_lst: bool
+    is_lst : bool
         Whether the telescope is a LST
-    obs_id: int
-        Observation ID. Unsed in case of LST telescope
-    camera_geoms: telescope.camera.geometry
-        Camera geometry. Used in case of LST telescope
-    magic_clean: dict (1 entry per MAGIC telescope)
-        Each entry is a MAGICClean object using the telescope camera geometry. Used in case of MAGIC telescope
-
+    obs_id : int, optional
+        Observation ID. Unused in case of LST telescope, by default None
+    camera_geoms : ctapipe.instrument.camera.geometry.CameraGeometry, optional
+        Camera geometry. Used in case of LST telescope, by default None
+    magic_clean : dict, optional
+        Each entry is a MAGICClean object using the telescope camera geometry.
+        Used in case of MAGIC telescope, by default None
 
     Returns
     -------
-    signal_pixels: bool
-        Mask of the pixels selected by the cleaning
-    image: np.ndarray
-        Array of number of p.e. in the camera pixels
-    peak_time: np.ndarray
-        Array of the signal peak time in the camera pixels
+    tuple
+        Mask of the pixels selected by the cleaning,
+        array of number of p.e. in the camera pixels,
+        array of the signal peak time in the camera pixels
 
     """
     if (not is_lst) and (magic_clean is None):

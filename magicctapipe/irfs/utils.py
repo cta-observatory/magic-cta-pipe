@@ -213,9 +213,9 @@ def plot_sensitivity(data, unit, label, ax=None, **kwargs):
         sensitivity unit
     label : str
         label for plot
-    ax : matplotlib.axes
+    ax : matplotlib.axes, optional
         give it if you want to specify the axis, by default None
-    **kwargs : dict
+    **kwargs : dict, optional
     """
     e = data["reco_energy_center"]
     s_mc = e**2 * data["flux_sensitivity"]
