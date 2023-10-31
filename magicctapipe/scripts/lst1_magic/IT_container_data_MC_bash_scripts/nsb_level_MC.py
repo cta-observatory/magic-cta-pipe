@@ -25,7 +25,7 @@ def bash_scripts(run, config, source, env_name):
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
-        f"time conda run -n  {env_name} LSTnsb -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n",
+        f"time conda run -n  {env_name} LSTnsb_MC -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n",
     ]
     with open(f"{source}_run_{run}.sh", "w") as f:
         f.writelines(lines)
@@ -69,7 +69,7 @@ def main():
         else:
             launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
 
-    # print(launch_jobs)
+  
     os.system(launch_jobs)
 
 

@@ -121,7 +121,6 @@ def bash_stereoMC(target_dir, identification, env_name):
     inputdir = f"{target_dir}/DL1/MC/{identification}/Merged"
     
     os.system(f"ls {inputdir}/dl1*.h5 >  {inputdir}/list_coin.txt")  #generating a list with the DL1 coincident data files.
-    print(np.genfromtxt(f"{inputdir}/list_coin.txt",dtype="str"))
     process_size = len(np.genfromtxt(f"{inputdir}/list_coin.txt",dtype="str")) - 1
     
     with open(f"StereoEvents_MC_{identification}.sh","w") as f:
@@ -203,7 +202,6 @@ def main():
             else:
                 launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
         
-        #print(launch_jobs)
         os.system(launch_jobs)
     
     #Below we run the analysis on the real data
@@ -219,7 +217,6 @@ def main():
             else:
                 launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
         
-        #print(launch_jobs)
         os.system(launch_jobs)
 
     print("***** Submitting processes to the cluster...")

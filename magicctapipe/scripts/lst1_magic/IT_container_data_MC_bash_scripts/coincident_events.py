@@ -184,7 +184,6 @@ def main():
         else:
             launch_jobs =  f"{launch_jobs} && coincidence{n}=$(sbatch --parsable --dependency=afterany:$coincidence{n-1} {run})"
     
-    #print(launch_jobs)
     os.system(launch_jobs)
 
 if __name__ == "__main__":

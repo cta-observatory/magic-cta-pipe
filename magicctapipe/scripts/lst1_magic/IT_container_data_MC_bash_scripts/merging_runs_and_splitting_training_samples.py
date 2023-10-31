@@ -199,7 +199,6 @@ def mergeMC(target_dir, identification, env_name, cwd):
     cleaning(list_of_nodes, cwd) #This will delete the (possibly) failed runs.
         
     with open(f"Merge_MC_{identification}.sh","w") as f:
-        print(os.getcwd())
         lines_bash_file = [
             '#!/bin/sh\n\n',
             '#SBATCH -p short\n',
@@ -210,7 +209,7 @@ def mergeMC(target_dir, identification, env_name, cwd):
             'ulimit -l unlimited\n',
             'ulimit -s unlimited\n',
             'ulimit -a\n\n',
-            "SAMPLE_LIST=($(<"+f"{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
+            f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             f'export LOG={MC_DL1_dir}/{identification}/Merged'+'/merged_${SLURM_ARRAY_TASK_ID}.log\n',
             f'conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n'

@@ -47,7 +47,8 @@ def nsb_avg(source, config, LST_list):
     noise=[]
     for j in allfile:
         with open(j) as ff:
-            line = int(ff.readline())
+            line_str=ff.readline().rstrip('\n')
+            line = float(line_str)
             noise.append(line)
     nsb=np.average(noise)
     std=np.std(noise)
@@ -55,12 +56,12 @@ def nsb_avg(source, config, LST_list):
     if std>0.2:
         process = input(f'Standard deviation of the NSB levels is above 0.2. We strongly recommend to use NSB-matching analysis instead of using the current scripts. Would you like to continue the current analysis anyway? [only "y" or "n"]: ')
     delete_index=[]
-    for n, j in allfile:
-        run=allfile[i].split("_")[2]
+    for n, j in enumerate(allfile):
+        run=j.split("_")[2]
         if abs(noise[n]-nsb)>3*std:
             sigma_range = input(f'Run {run} has NSB-value out of the average+-3*sigma range. Would you like to continue the current analysis anyway (if yes, this run will be deleted from the .txt file)? [only "y" or "n"]: ')
             if sigma_range!='y':
-                return sigma_range
+                return (sigma_range, 0)
             delete_index.append(n)
             with open(
                 LST_list, "r"
@@ -72,11 +73,13 @@ def nsb_avg(source, config, LST_list):
                 for i in lines:       
                     if not i.endswith(f"{run}\n"):
                         f.write(i)
-    index=delete_index.reverse()
-    for k in index:
-        np.delete(noise,k)  
+    if len(delete_index)!=0:                    
+        index=delete_index.reverse()
+        
+        for k in index:
+            np.delete(noise,k)  
 
-    
+    nsb=np.average(noise)
     with open(
         config, "r"
     ) as f: 
@@ -88,10 +91,10 @@ def nsb_avg(source, config, LST_list):
             if not i.startswith("nsb_value"):
                 f.write(i)
         f.write(f"nsb_value: {nsb}\n")
-    return process
+    return (process, nsb)
 
 
-def config_file_gen(ids, target_dir):
+def config_file_gen(ids, target_dir, noise_value):
     
     """
     Here we create the configuration file needed for transforming DL0 into DL1
@@ -116,10 +119,10 @@ def config_file_gen(ids, target_dir):
         "\n",
         "\n    increase_nsb:",
         "\n        use: true",
-        "\n        extra_noise_in_dim_pixels: 1.27",
-        "\n        extra_bias_in_dim_pixels: 0.665",
+        f"\n        extra_noise_in_dim_pixels: {noise_value[0]}",
+        f"\n        extra_bias_in_dim_pixels: {noise_value[2]}",
         "\n        transition_charge: 8",
-        "\n        extra_noise_in_bright_pixels: 2.08",
+        f"\n        extra_noise_in_bright_pixels: {noise_value[1]}",
         "\n",
         "\n    increase_psf:",
         "\n        use: false",
@@ -474,17 +477,20 @@ def main():
 
     env_name = config["general"]["env_name"]
     source = config['directories']['target_name']
-    if nsb_avg(source, args.config_file, LST_runs_and_dates) !='y':
+    running, nsb=nsb_avg(source, args.config_file, LST_runs_and_dates)
+    if  running!='y':
         print('OK... The script was terminated by the user choice.')
         return
-    
+    noisebright=1.15*pow(nsb,1.115)
+    biasdim=0.358*pow(nsb,0.805)
+    noise_value=[nsb, noisebright, biasdim]
     print("***** Linking MC paths - this may take a few minutes ******")
     print("*** Reducing DL0 to DL1 data - this can take many hours ***")
     print("Process name: ",target_dir.split('/')[-2:][1])
     print("To check the jobs submitted to the cluster, type: squeue -n",target_dir.split('/')[-2:][1])
     
     directories_generator(target_dir, telescope_ids, MAGIC_runs) #Here we create all the necessary directories in the given workspace and collect the main directory of the target   
-    config_file_gen(telescope_ids,target_dir)
+    config_file_gen(telescope_ids,target_dir, noise_value)
     
     #Below we run the analysis on the MC data
     if (args.analysis_type=='onlyMC') or (args.analysis_type=='doEverything'):  
