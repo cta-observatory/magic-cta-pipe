@@ -1,5 +1,6 @@
 """
 Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
+Usage: python nsb_level.py (-c config.yaml)
 """
 
 import argparse
@@ -17,6 +18,19 @@ logger.setLevel(logging.INFO)
 
 
 def bash_scripts(run, config, source, env_name):
+    '''Here we create the bash scripts (one per LST run)
+    Parameters
+    ----------
+    run: str
+        LST date and run number
+    config: str
+        Configuration file
+    source: str
+        Source name
+    env_name:str
+        Name of the environment
+
+    '''
     lines = [
         "#!/bin/sh\n\n",
         "#SBATCH -p long\n",

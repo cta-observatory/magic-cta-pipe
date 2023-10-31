@@ -11,7 +11,7 @@ event files.
 
 
 Usage:
-$ python coincident_events.py
+$ python coincident_events.py (-c config.yaml)
 
 """
 
@@ -64,6 +64,8 @@ def linking_lst(target_dir, LST_runs, LST_version):
         Path to the working directory
     LST_runs: matrix of strings
         This matrix is imported from config_general.yaml and tells the function where to find the LST data and link them to our working directory
+    LST_version: str
+        Version of lstchain used to process data
     """
     
     
@@ -97,6 +99,8 @@ def bash_coincident(target_dir, env_name):
     ----------
     target_dir: str
         Path to the working directory
+    env_name: str
+        Name of the environment
     """
 
     process_name = target_dir.split("/")[-2:][1]

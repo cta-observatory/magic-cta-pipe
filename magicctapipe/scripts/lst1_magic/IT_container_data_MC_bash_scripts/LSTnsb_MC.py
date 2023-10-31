@@ -16,6 +16,19 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 def nsb(run_list, simtel, lst_config, run_number):
+    """Here we compute the NSB value for a run
+    Parameters
+    ----------
+    run_list: list
+        List of subruns in the run
+    simtel: str
+        Simtel (MC) file to be used to evaluate the extra noise in dim pixels
+    lst_config: str
+        LST configuration file (cf. lstchain)
+    run number: int
+        LST run number
+
+    """
     noise = []
     if len(run_list) == 0:
         return

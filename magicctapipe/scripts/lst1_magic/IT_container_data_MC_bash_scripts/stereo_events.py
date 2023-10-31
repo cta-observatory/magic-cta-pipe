@@ -4,16 +4,16 @@ to compute the stereo parameters of DL1 MC and
 Coincident MAGIC+LST data files. 
 
 Usage:
-$ python stereo_events.py
+$ python stereo_events.py (-c config.yaml)
 
 If you want to compute the stereo parameters only the real data or only the MC data,
 you can do as follows:
 
 Only real data:
-$ python stereo_events.py --analysis-type onlyReal
+$ python stereo_events.py --analysis-type onlyReal (-c config.yaml)
 
 Only MC:
-$ python stereo_events.py --analysis-type onlyMC
+$ python stereo_events.py --analysis-type onlyMC (-c config.yaml)
 
 """
 
@@ -65,6 +65,8 @@ def bash_stereo(target_dir, env_name):
     ----------
     target_dir: str
         Path to the working directory
+    env_name: str
+        Name of the environment
     """
 
     process_name = target_dir.split("/")[-2:][1]
@@ -113,6 +115,8 @@ def bash_stereoMC(target_dir, identification, env_name):
         Path to the working directory
     identification: str
         Particle name. Options: protons, gammadiffuse
+    env_name: str
+        Name of the environment
     """
 
     process_name = target_dir.split("/")[-2:][1]

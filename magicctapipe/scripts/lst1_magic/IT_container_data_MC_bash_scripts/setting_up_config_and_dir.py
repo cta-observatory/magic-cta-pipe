@@ -12,16 +12,16 @@ Notice that in this stage we only use MAGIC + MC data.
 No LST data is used here.
 
 Standard usage:
-$ python setting_up_config_and_dir.py
+$ python setting_up_config_and_dir.py (-c config.yaml)
 
 If you want to run only the MAGIC or only the MC conversion,
 you can do as follows:
 
 Only MAGIC:
-$ python setting_up_config_and_dir.py --analysis-type onlyMAGIC
+$ python setting_up_config_and_dir.py --analysis-type onlyMAGIC (-c config.yaml)
 
 Only MC:
-$ python setting_up_config_and_dir.py --analysis-type onlyMC
+$ python setting_up_config_and_dir.py --analysis-type onlyMC (-c config.yaml)
 
 """
 
@@ -41,6 +41,19 @@ logger.setLevel(logging.INFO)
 
 
 def nsb_avg(source, config, LST_list):
+    """
+    This function evaluates the average of the NSB distribution (per run)
+    
+    Parameters
+    ----------
+    source: str
+        Source name
+    config: str
+        Config file
+    LST_list: str
+        File where LST runs to be processed are written
+    
+    """
     allfile = np.sort(glob.glob(f"{source}_LST_*.txt"))
     if len(allfile) == 0:
         return
@@ -98,6 +111,14 @@ def config_file_gen(ids, target_dir, noise_value):
     
     """
     Here we create the configuration file needed for transforming DL0 into DL1
+    Parameters
+    ----------
+    ids: list
+        Telescope IDs
+    target_dir: path
+        Directory to store the results
+    noise_value: list
+        Extra noise in dim and bright pixels, Extra bias in dim pixels
     """
     with open(f'{target_dir}/config_DL0_to_DL1.yaml','w') as f:
     
@@ -182,6 +203,20 @@ def lists_and_bash_generator(particle_type, target_dir, MC_path, SimTel_version,
     This function creates the lists list_nodes_gamma_complete.txt and list_folder_gamma.txt with the MC file paths.
     After that, it generates a few bash scripts to link the MC paths to each subdirectory. 
     These bash scripts will be called later in the main() function below. This step will be skipped in case the MC path has not been provided (MC_path='')
+    Parameters
+    ----------
+    particle_type: str
+        Particle type (e.g., protons)
+    target_dir: str
+        Directory to store the results
+    MC_path: str
+        Path to the MCs DL0s
+    SimTel_version: str
+        Version of SimTel (used to produce MCs)
+    focal_length: str
+        Focal length to be used to process MCs (e.g., 'nominal')
+    env_name: str
+        Name of the environment
     """
     
     if MC_path=='':
@@ -272,6 +307,16 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, env_name):
 
     """
     Below we create a bash script that links the the MAGIC data paths to each subdirectory. 
+    Parameters
+    ----------
+    target_dir: str
+        Directory to store the results
+    telescope_ids: list
+        List of the telescope IDs (set by the user)
+    MAGIC_runs: str
+        MAGIC dates and runs to be processed
+    env_name: str
+        Name of the environment
     """
     
     process_name = target_dir.split("/")[-2:][1]
@@ -362,6 +407,14 @@ def directories_generator(target_dir, telescope_ids,MAGIC_runs):
 
     """
     Here we create all subdirectories for a given workspace and target name.
+    Parameters
+    ----------
+    target_dir: str
+        Directory to store the results
+    telescope_ids: list
+        List of the telescope IDs (set by the user)
+    MAGIC_runs: str
+        MAGIC dates and runs to be processed
     """
     
     ###########################################

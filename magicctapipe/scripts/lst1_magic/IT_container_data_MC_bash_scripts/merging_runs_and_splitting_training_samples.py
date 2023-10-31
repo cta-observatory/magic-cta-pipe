@@ -17,16 +17,16 @@ Workingdir/DL1/MC/PARTICLE/Merged
 
 
 Usage:
-$ python merging_runs_and_splitting_training_samples.py
+$ python merging_runs_and_splitting_training_samples.py (-c config.yaml)
 
 If you want to merge only the MAGIC or only the MC data,
 you can do as follows:
 
 Only MAGIC:
-$ python merging_runs_and_splitting_training_samples.py --analysis-type onlyMAGIC
+$ python merging_runs_and_splitting_training_samples.py --analysis-type onlyMAGIC (-c config.yaml)
 
 Only MC:
-$ python merging_runs_and_splitting_training_samples.py --analysis-type onlyMC
+$ python merging_runs_and_splitting_training_samples.py --analysis-type onlyMC (-c config.yaml)
 """
 
 import os
@@ -50,11 +50,11 @@ def cleaning(list_of_nodes, cwd):
     This function looks for failed runs in each node and remove them.
     
     Parameters
-    ----------
-    target_dir: str
-        Path to the target directory.
+    ----------    
     list_of_nodes: array of str
         List of nodes where the function will look for failed runs.
+    cwd: Path
+        Current working directory
     """
     
     for i in tqdm(range(len(list_of_nodes)), desc="Cleaning failed runs"):
@@ -116,6 +116,8 @@ def merge(target_dir, identification, MAGIC_runs, env_name):
         Tells which batch to create. Options: subruns, M1M2, nights
     MAGIC_runs: matrix of strings
         This matrix is imported from config_general.yaml and tells the function where to find the data and where to put the merged files
+    env_name: str
+        Name of the environment
     """
     
     process_name = f"merging_{target_dir.split('/')[-2:][1]}"
@@ -181,6 +183,11 @@ def mergeMC(target_dir, identification, env_name, cwd):
         Path to the working directory
     identification: str
         Tells which batch to create. Options: protons, gammadiffuse
+    env_name: str
+        Name of the environment
+    cwd: Path
+        Current working directory
+    
     """
     
     process_name = f"merging_{target_dir.split('/')[-2:][1]}"
