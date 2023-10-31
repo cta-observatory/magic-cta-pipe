@@ -691,12 +691,7 @@ def clean_image_params(geom, image, clean, peakpos):
     Returns
     -------
     tuple
-        ctapipe.containers.HillasParametersContainer
-            hillas_p
-        ctapipe.containers.LeakageContainer
-            leakage_p
-        ctapipe.containers.TimingParametersContainer
-            timing_p
+        tuple of three containers for hillas, leakage and timing parameters
     """
     # Hillas parameters, same for LST and MAGIC. From ctapipe
     hillas_p = hillas_parameters(geom=geom[clean], image=image[clean])

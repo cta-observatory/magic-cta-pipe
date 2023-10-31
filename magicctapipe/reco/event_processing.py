@@ -55,15 +55,15 @@ class RegressorClassifierBase:
 
     model: scikit-learn model
         the model you want to use to estimate the shower energies
-    cam_id_list: list of strings
+    cam_id_list: list
         list of identifiers to differentiate the various sources of
         the images; could be the camera IDs or even telescope IDs. We
         will train one model for each of the identifiers.
-    unit: 1 or astropy unit
+    unit: str
         scikit-learn regressors don't work with astropy unit. so, tell
         in advance in which unit we want to deal here in case we need
         one. (default: 1)
-    kwargs: **dict
+    kwargs: dict
         arguments to be passed on to the constructor of the regressors
 
     """
@@ -105,15 +105,15 @@ class RegressorClassifierBase:
 
         Parameters
         ----------
-        X : list of dictionaries of lists
+        X : list
             collection of training features see Notes section for a sketch of
             the container's expected shape
-        y : list of astropy quantities
+        y : list
             list of the training targets (i.e. shower energies) for all events
 
         Returns
         -------
-        trainFeatures, trainTarget : dictionaries of lists
+        trainFeatures, trainTarget : dict
             flattened containers to be handed over to `.fit`
 
         Raises
@@ -188,22 +188,22 @@ class RegressorClassifierBase:
 
         Parameters
         ----------
-        X : dictionary of lists of lists
+        X : dict
             Dictionary that maps the telescope identifiers to lists of
             feature-lists.  The values of the dictionary are the lists
             `scikit-learn` regressors train on and are supposed to
             comply to their format requirements e.g. each featuer-list
             has to contain the same features at the same position
-        y : dictionary of lists
+        y : dict
             the energies corresponding to all the feature-lists of `X`
-        sample_weight : dictionary of lists, optional (default: None)
+        sample_weight : dict
             lists of weights for the various telescope identifiers
             Note: Not all models support this; e.g. RandomForests do
             (Regressor and Classifier)
 
         Returns
         -------
-        self
+        RegressorClassifierBase
 
         Raises
         ------
@@ -285,7 +285,7 @@ class RegressorClassifierBase:
 
         Parameters
         ----------
-        path : string
+        path : str
             Path to store the different models.  Expects to contain
             `{cam_id}` or at least an empty `{}` to replace it with
             the keys in `.reg_dict`.
@@ -313,7 +313,7 @@ class RegressorClassifierBase:
 
         Parameters
         ----------
-        path : string
+        path : str
             the path where the pre-trained, pickled regressors are
             stored `path` is assumed to contain a `{cam_id}` keyword
             to be replaced by each camera identifier in `cam_id_list`
@@ -322,7 +322,7 @@ class RegressorClassifierBase:
             list of camera identifiers like telescope ID or camera ID
             and the assumed distinguishing feature in the filenames of
             the various pickled regressors.
-        unit : 1 or astropy unit, optional
+        unit : str, optional
             scikit-learn regressor/classifier do not work with
             units. so append this one to the predictions in case you
             deal with unified targets (like energy).  assuming that
@@ -363,7 +363,7 @@ class RegressorClassifierBase:
             list of camera identifiers like telescope ID or camera ID
             and the assumed distinguishing feature in the filenames of
             the various pickled regressors.
-        feature_list : dictionary of lists of lists
+        feature_list : dict
             Dictionary that maps the telescope identifiers to lists of
             feature-lists.  The values of the dictionary are the lists
             `scikit-learn` regressors train on and are supposed to
@@ -372,7 +372,7 @@ class RegressorClassifierBase:
 
         Returns
         -------
-        f_dict : dictionary of lists of lists
+        f_dict : dict
             a copy of feature_list input, with scaled values
 
         """
@@ -393,13 +393,13 @@ class RegressorClassifierBase:
 
         Parameters
         ----------
-        feature_labels : list of strings, optional
+        feature_labels : list, optional
             a list of the feature names in proper order
             to be used as x-axis tick-labels
 
         Returns
         -------
-        fig : matplotlib figure
+        fig : matplotlib.figure
             the figure holding the different bar plots
 
         """
@@ -459,7 +459,7 @@ class EnergyRegressor(RegressorClassifierBase):
     ----------
     regressor : scikit-learn regressor
         the regressor you want to use to estimate the shower energies
-    cam_id_list : list of strings
+    cam_id_list : list
         list of identifiers to differentiate the various sources of
         the images; could be the camera IDs or even telescope IDs. We
         will train one regressor for each of the identifiers.
@@ -484,7 +484,7 @@ class EnergyRegressor(RegressorClassifierBase):
         is supposed to look like.  The singular estimate for the event
         is simply the mean of the various estimators of the event.
 
-        event_list : list of "events"
+        event_list : list
             cf. `.reshuffle_event_list` under Notes
 
         Returns
@@ -570,7 +570,7 @@ class EnergyRegressor(RegressorClassifierBase):
 
         Parameters
         ----------
-        path : string
+        path : str
             the path where the pre-trained, pickled regressors are
             stored `path` is assumed to contain a `{cam_id}` keyword
             to be replaced by each camera identifier in `cam_id_list`

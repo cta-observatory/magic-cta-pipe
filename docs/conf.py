@@ -86,10 +86,6 @@ nitpick_ignore = [
     ("py:obj", "name"),
     ("py:class", "astropy.coordinates.baseframe.BaseCoordinateFrame"),
     ("py:class", "astropy.table.table.Table"),
-    ("py:class", "Unit('TeV')"),
-    ("py:class", "Unit('deg')"),
-    ("py:class", "Unit('m')"),
-    ("py:class", "Unit('rad')"),
     ("py:class", "eventio.simtel.simtelfile.SimTelFile"),
     ("py:class", "ctapipe.compat.StrEnum"),
     ("py:class", "ctapipe.core.container.Container"),
@@ -195,18 +191,22 @@ htmlhelp_basename = project + "doc"
 
 html_theme = "pydata_sphinx_theme"
 
+numpydoc_xref_param_type = True
+numpydoc_xref_ignore = {"type", "optional", "default"}
+
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.9", None),
+    "python": ("https://docs.python.org/3.8", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
-    "astropy": ("https://docs.astropy.org/en/latest/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
     "pytables": ("http://www.pytables.org/", None),
     "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
     "matplotlib": ("https://matplotlib.org/stable", None),
     "cython": ("https://docs.cython.org/en/latest/", None),
     "iminuit": ("https://iminuit.readthedocs.io/en/latest/", None),
     "traitlets": ("https://traitlets.readthedocs.io/en/stable/", None),
-    # "ctapipe": ("https://ctapipe.readthedocs.io/en/latest/index.html", None),
+    "ctapipe": ("https://ctapipe.readthedocs.io/en/v0.12.0-rtd/", None),
+    "pyirf": ("https://pyirf.readthedocs.io/en/stable/", None),
 }
 
 # -- Options for EPUB output

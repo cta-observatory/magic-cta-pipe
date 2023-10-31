@@ -111,11 +111,12 @@ def check_input_list(config):
 
     Parameters
     ----------
-    config: dict
+    config : dict
         dictionary imported from the yaml configuration file with information about the telescope IDs.
 
-    Returns
-    -------
+    Raises
+    ------
+    Exception
         This function will raise an exception if the input list is not properly organized.
     """
 
@@ -151,14 +152,14 @@ def telescope_combinations(config):
 
     Parameters
     ----------
-    config: dict
+    config : dict
         yaml file with information about the telescope IDs.
 
     Returns
     -------
-    TEL_NAMES: dict
+    TEL_NAMES : dict
         Dictionary with telescope IDs and names.
-    TEL_COMBINATIONS: dict
+    TEL_COMBINATIONS : dict
         Dictionary with all telescope combinations with no repetions.
     """
 
@@ -211,12 +212,12 @@ def format_object(input_object):
 
     Parameters
     ----------
-    input_dict: dict
+    input_dict : dict
         Dictionary that should be formatted
 
     Returns
     -------
-    string: str
+    string : str
         The formatted object
     """
 
@@ -243,16 +244,16 @@ def get_stereo_events_old(
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of shower events
-    quality_cuts: str
+    quality_cuts : str, optional
         Quality cuts applied to the input data
-    group_index: list
+    group_index : list, optional
         Index to group telescope events
 
     Returns
     -------
-    event_data_stereo: pandas.core.frame.DataFrame
+    event_data_stereo : pandas.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
     TEL_COMBINATIONS = {
@@ -330,21 +331,20 @@ def get_stereo_events(
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of shower events
-    config: dict
+    config : dict
         Read from the yaml file with information about the telescope IDs.
-    quality_cuts: str
+    quality_cuts : str
         Quality cuts applied to the input data
-    group_index: list
+    group_index : list
         Index to group telescope events
-    eval_multi_combo: bool
+    eval_multi_combo : bool
         If True, multiplicity is recalculated, combination type is assigned to each event and the fraction of events per combination type is shown
-
 
     Returns
     -------
-    event_data_stereo: pandas.core.frame.DataFrame
+    event_data_stereo : pandas.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
 
@@ -410,19 +410,19 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of shower events
-    weight_type: str
+    weight_type : str, optional
         Type of the weights for telescope-wise DL2 parameters -
         "simple" does not use any weights for calculations,
         "variance" uses the inverse of the RF variance, and
         "intensity" uses the linear-scale intensity parameter
-    group_index: list
+    group_index : list, optional
         Index to group telescope events
 
     Returns
     -------
-    event_data_mean: pandas.core.frame.DataFrame
+    event_data_mean : pandas.DataFrame
         Data frame of the shower events with mean DL2 parameters
 
     Raises
@@ -527,14 +527,14 @@ def load_lst_dl1_data_file(input_file):
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input LST-1 data file
 
     Returns
     -------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of LST-1 events
-    subarray: ctapipe.instrument.subarray.SubarrayDescription
+    subarray : ctapipe.instrument.subarray.SubarrayDescription
         LST-1 subarray description
     """
 
@@ -611,16 +611,16 @@ def load_magic_dl1_data_files(input_dir, config):
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input MAGIC DL1 data files are stored
-    config: dict
+    config : dict
         yaml file with information about the telescope IDs.
 
     Returns
     -------
-    event_data: pandas.core.frame.DataFrame
-        Data frame of MAGIC events
-    subarray: ctapipe.instrument.subarray.SubarrayDescription
+    event_data : pandas.DataFrame
+        dataframe of MAGIC events
+    subarray : ctapipe.instrument.subarray.SubarrayDescription
         MAGIC subarray description
 
     Raises
@@ -690,20 +690,20 @@ def load_train_data_files(
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input DL1-stereo files are stored
-    offaxis_min: str
+    offaxis_min : str, optional
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
-    offaxis_max: str
+    offaxis_max : str, optional
         Maximum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
-    true_event_class: int
+    true_event_class : int, optional
         True event class of the input events
 
     Returns
     -------
-    data_train: dict
+    data_train : dict
         Data frames of the shower events separated by the telescope
         combination types
 
@@ -780,23 +780,23 @@ def load_train_data_files_tel(
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input DL1-stereo files are stored
-    config: dict
+    config : dict
         yaml file with information about the telescope IDs.
-    offaxis_min: str
+    offaxis_min : str, optional
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
-    offaxis_max: str
+    offaxis_max : str, optional
         Maximum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
-    true_event_class: int
+    true_event_class : int, optional
         True event class of the input events
 
 
     Returns
     -------
-    data_train: dict
+    data_train : dict
         Data frames of the shower events separated telescope-wise
 
 
@@ -866,25 +866,25 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input MC DL2 data file
-    quality_cuts: str
+    quality_cuts : str
         Quality cuts applied to the input events
-    event_type: str
+    event_type : str
         Type of the events which will be used -
         "software" uses software coincident events,
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
         "hardware" uses all the telescope combination events
-    weight_type_dl2: str
+    weight_type_dl2 : str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
     Returns
     -------
     event_table: astropy.table.table.QTable
-        Table of the MC DL2 events surviving the cuts
-    pointing: numpy.ndarray
+        Table with the MC DL2 events surviving the cuts
+    pointing: np.ndarray
         Telescope pointing direction (zd, az) in the unit of degree
     sim_info: pyirf.simulations.SimulatedEventsInfo
         Container of the simulation information
@@ -990,28 +990,28 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input DL2 data file
-    quality_cuts: str
+    quality_cuts : str
         Quality cuts applied to the input events
-    event_type: str
+    event_type : str
         Type of the events which will be used -
         "software" uses software coincident events,
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
         "hardware" uses all the telescope combination events
-    weight_type_dl2: str
+    weight_type_dl2 : str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
     Returns
     -------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the MC DL2 events surviving the cuts
-    on_time: astropy.units.quantity.Quantity
+    on_time : astropy.units.quantity.Quantity
         ON time of the input data
-    deadc: float
-        Dead time correction factor
+    deadc : float
+        dead time correction factor
 
     Raises
     ------
@@ -1122,15 +1122,15 @@ def load_irf_files(input_dir_irf):
 
     Parameters
     ----------
-    input_dir_irf: str
+    input_dir_irf : str
         Path to a directory where input IRF data files are stored
 
     Returns
     -------
-    irf_data: dict
+    irf_data : dict
         IRF data
-    extra_header: dict
-        Extra header of the input IRF data
+    extra_header : dict
+        extra header of the input IRF data
 
     Raises
     ------
@@ -1328,15 +1328,15 @@ def save_pandas_data_in_table(
 
     Parameters
     ----------
-    input_data: pandas.core.frame.DataFrame
+    input_data : pandas.DataFrame
         Pandas data frame
-    output_file: str
+    output_file : str
         Path to an output HDF file
-    group_name: str
+    group_name : str
         Group name of the table
-    table_name: str
+    table_name : str
         Name of the table
-    mode: str
+    mode : str
         Mode of saving the data if a file already exists at the path -
         "w" for overwriting the file with the new table, and
         "a" for appending the table to the file

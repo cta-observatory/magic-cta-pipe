@@ -116,7 +116,7 @@ def load_dl1_data_stereo_list_selected(
 
     Returns
     -------
-    pd.Dataframe
+    pandas.DataFrame
         data
     """
     if file_n_key in sub_dict.keys():
@@ -144,7 +144,7 @@ def load_dl1_data_stereo_list(file_list, drop=False, verbose=False, mono_mode=Fa
 
     Returns
     -------
-    pd.Dataframe
+    pandas.DataFrame
         data
     """
     if verbose:
@@ -183,7 +183,7 @@ def load_dl1_data_stereo(file, drop=False, slope_abs=False):
 
     Returns
     -------
-    pd.Dataframe
+    pandas.DataFrame
         data
     """
     extra_keys = [
@@ -375,7 +375,7 @@ def read_mc_header(file, mc_header_key="dl2/mc_header"):
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         mc_header
     """
     return pd.read_hdf(file, key=mc_header_key)
