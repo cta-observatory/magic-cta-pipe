@@ -11,20 +11,20 @@ Repository for the analysis of MAGIC and MAGIC+LST1 data, based on `ctapipe <htt
 * Code: https://github.com/cta-observatory/magic-cta-pipe
 * Docs (preliminary): https://magic-cta-pipe.readthedocs.io/
 
-v0.3.1 of `magic-cta-pipe` provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
+v0.3.1 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
 See `here <https://magic-cta-pipe.readthedocs.io/en/latest/user-guide/magic-lst-scripts.html>`_ for more details on how to run the analysis.
 
 **NOTE**
 
-v0.3.1 of `magic-cta-pipe` will be the last one before cleanup of old files. Also the last one supporting ctapipe v0.12 and most probably having backward incompatible changes!
+v0.3.1 of *magic-cta-pipe* will be the last one before cleanup of old files. Also the last one supporting ctapipe v0.12 and most probably having backward incompatible changes!
 
 Installation for users
 ----------------------
 
-`magic-cta-pipe` and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
+*magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
 first, to isolate the installed version and dependencies from your master environment (this is optional).
 
-The following command will set up a conda virtual environment, add the necessary package channels, and install `magic-cta-pipe` and its dependencies::
+The following command will set up a conda virtual environment, add the necessary package channels, and install *magic-cta-pipe* and its dependencies::
 
     git clone https://github.com/cta-observatory/magic-cta-pipe.git
     cd magic-cta-pipe
@@ -32,7 +32,7 @@ The following command will set up a conda virtual environment, add the necessary
     conda activate magic-lst1
     pip install .
 
-In general, `magic-cta-pipe` is still in heavy development phase, so expect large changes between different releases.
+In general, *magic-cta-pipe* is still in heavy development phase, so expect large changes between different releases.
 
 Instructions for developers
 ---------------------------
