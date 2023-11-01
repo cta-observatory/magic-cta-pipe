@@ -36,12 +36,12 @@ def read_simu_info_mcp_sum_num_showers(file_list, mc_header_key="dl2/mc_header")
     ----------
     file_list : list
         magic-cta-pipe DL2 file list
-    mc_header_key : str, optional
+    mc_header_key : str
         mc_header key, by default "dl2/mc_header"
 
     Returns
     -------
-    pd.DataFrame
+    pandas.DataFrame
         mc_header with sum num showers
     """
     d = read_mc_header(file_list[0], mc_header_key)
@@ -63,14 +63,14 @@ def convert_simu_info_mcp_to_pyirf(file_list, mc_header_key="dl2/mc_header"):
 
     Parameters
     ----------
-    file_list : file list
+    file_list : list
         magic-cta-pipe DL2 file list
-    mc_header_key : str, optional
+    mc_header_key : str
         mc_header key, by default "dl2/mc_header"
 
     Returns
     -------
-    SimulatedEventsInfo
+    pyirf.simulations.SimulatedEventsInfo
         pyirf_simu_info
     """
     simu_info = read_simu_info_mcp_sum_num_showers(file_list, mc_header_key)
@@ -115,19 +115,19 @@ def read_dl2_mcp_to_pyirf_MAGIC_LST_list(
     ----------
     file_mask : str
         file mask for magic-cta-pipe DL2 files
-    reco_key : str, optional
+    reco_key : str
         key for DL2 reco files, by default "dl2/reco"
-    mc_header_key : str, optional
+    mc_header_key : str
         mc_header key, by default "dl2/mc_header"
-    useless_cols : list, optional
+    useless_cols : list
         columns not used, by default []
-    cuts : str, optional
+    cuts : str
         cuts on dl2 events, by default ""
-    max_files : int, optional
+    max_files : int
         max number of files to be processed, 0 to process all of them, by default 0
-    eval_mean_events : bool, optional
+    eval_mean_events : bool
         evaluate mean of event, to get single row per obs_id, by default False
-    verbose : bool, optional
+    verbose : bool
         verbose mode, by default False
 
     Returns
@@ -207,15 +207,15 @@ def plot_sensitivity(data, unit, label, ax=None, **kwargs):
 
     Parameters
     ----------
-    data : astropy QTable
+    data : astropy.table.QTable
         sensitivity data
-    unit : astropy unit
+    unit : str
         sensitivity unit
     label : str
         label for plot
-    ax : matplotlib axis, optional
+    ax : matplotlib.axes, optional
         give it if you want to specify the axis, by default None
-    **kwargs : passed to plt.errorbar
+    **kwargs : dict, optional
     """
     e = data["reco_energy_center"]
     s_mc = e**2 * data["flux_sensitivity"]
@@ -236,11 +236,11 @@ def plot_en_res_bias(data, label, **kwargs):
 
     Parameters
     ----------
-    data : astropy QTable
+    data : astropy.table.QTable
         angular resolution data
     label : str
         label for plot
-    **kwargs : passed to plt.errorbar
+    **kwargs : dict
     """
     e = data["reco_energy_center"]
     e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
@@ -258,11 +258,11 @@ def plot_en_res_resolution(data, label, **kwargs):
 
     Parameters
     ----------
-    data : astropy QTable
+    data : astropy.table.QTable
         angular resolution data
     label : str
         label for plot
-    **kwargs : passed to plt.errorbar
+    **kwargs : dict
     """
     e = data["reco_energy_center"]
     e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
@@ -280,11 +280,11 @@ def plot_ang_res(data, label, **kwargs):
 
     Parameters
     ----------
-    data : astropy QTable
+    data : astropy.table.QTable
         angular resolution data
     label : str
         label for plot
-    **kwargs : passed to plt.errorbar
+    **kwargs : dict
     """
     e = data["reco_energy_center"]
     e_low, e_high = data["reco_energy_low"], data["reco_energy_high"]
@@ -302,11 +302,11 @@ def plot_effective_area(data, label, **kwargs):
 
     Parameters
     ----------
-    data : astropy QTable
+    data : astropy.table.QTable
         effective area data
     label : str
         label for plot
-    **kwargs : passed to plt.errorbar
+    **kwargs : dict
     """
     e_low, e_high = data["ENERG_LO"][0], data["ENERG_HI"][0]
     e = (e_low + e_high) / 2
@@ -327,11 +327,11 @@ def plot_gamma_eff_gh(gamma_efficiency, gh_cuts, sensitivity):
 
     Parameters
     ----------
-    gamma_efficiency : astropy QTable
+    gamma_efficiency : astropy.table.QTable
         gamma efficiency
-    gh_cuts : astropy QTable
+    gh_cuts : astropy.table.QTable
         gh cuts
-    sensitivity : astropy QTable
+    sensitivity : astropy.table.QTable
         sensitivity
     """
     fig, ax = plt.subplots()
@@ -452,7 +452,7 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False, **kwargs):
 
     Parameters
     ----------
-    array : str, optional
+    array : str
         telescope array, by default "4LST"
 
         Possibilities:
@@ -461,9 +461,9 @@ def plot_MARS_sensitivity(array="4LST", label="", print_data=False, **kwargs):
         * "MAGIC": file = "magic-cta-pipe/data/MARS_MAGIC.txt"
         * "MAGIC_LST1": file = "magic-cta-pipe/data/MARS_MAGIC_LST1.txt"
 
-    label : str, optional
+    label : str
         custom plot label, by default ""
-    print_data : bool, optional
+    print_data : bool
         print data, by default False
     """
     available_arrays = ["4LST", "MAGIC", "MAGIC_LST1"]
@@ -513,9 +513,9 @@ def plot_MAGIC_reference_sensitivity(ax, **kwargs):
 
     Parameters
     ----------
-    ax : plt.ax
+    ax : matplotlib.axes
         ax where you want to plot the sensitivity
-    **kwargs : passed to plt.errorbar
+    **kwargs : dict
     """
     d = np.loadtxt(
         os.path.join(

@@ -26,7 +26,13 @@ from .global_utils import (
     compute_event_weights,
     get_weights_mc_dir_class,
 )
-from .stereo import check_stereo, check_write_stereo, write_hillas, write_stereo
+from .stereo import (
+    StereoInfoContainer,
+    check_stereo,
+    check_write_stereo,
+    write_hillas,
+    write_stereo,
+)
 
 __all__ = [
     "GetHist_classifier",
@@ -60,4 +66,5 @@ __all__ = [
     "check_write_stereo",
     "check_stereo",
     "write_stereo",
+    "StereoInfoContainer",
 ]

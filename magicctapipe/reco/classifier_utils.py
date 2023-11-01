@@ -207,13 +207,13 @@ def check_train_test_intersections_classifier(
 
     Parameters
     ----------
-    mc_data_train : pd.DataFrame
+    mc_data_train : pandas.DataFrame
         mc_data_train
-    bkg_data_train : pd.DataFrame
+    bkg_data_train : pandas.DataFrame
         bkg_data_train
-    mc_data_test : pd.DataFrame
+    mc_data_test : pandas.DataFrame
         mc_data_test
-    bkg_data_test : pd.DataFrame
+    bkg_data_test : pandas.DataFrame
         bkg_data_test
 
      Returns

@@ -54,9 +54,9 @@ def check_train_test_intersections(train, test):
 
     Parameters
     ----------
-    train : pd.DataFrame
+    train : pandas.DataFrame
         train dataframe
-    test : pd.DataFrame
+    test : pandas.DataFrame
         test dataframe
 
      Returns
