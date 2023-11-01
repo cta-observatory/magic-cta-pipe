@@ -29,17 +29,6 @@ from .functions import (
 )
 from .gti import GTIGenerator, identify_time_edges, intersect_time_intervals
 from .plot import load_default_plot_settings, load_default_plot_settings_02, save_plt
-from .tels import (
-    check_tel_ids,
-    convert_positions_dict,
-    get_array_tel_descriptions,
-    get_tel_descriptions,
-    get_tel_ids_dl1,
-    get_tel_name,
-    intersec_tel_ids,
-    num_2_tel_ids,
-    tel_ids_2_num,
-)
 from .utils import (
     info_message,
     make_elapsed_time_str,
@@ -79,15 +68,6 @@ __all__ = [
     "save_plt",
     "load_default_plot_settings",
     "load_default_plot_settings_02",
-    "tel_ids_2_num",
-    "num_2_tel_ids",
-    "get_tel_descriptions",
-    "get_array_tel_descriptions",
-    "get_tel_ids_dl1",
-    "convert_positions_dict",
-    "check_tel_ids",
-    "intersec_tel_ids",
-    "get_tel_name",
     "info_message",
     "print_elapsed_time",
     "make_elapsed_time_str",
