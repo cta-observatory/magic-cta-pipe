@@ -21,6 +21,11 @@ from pyirf.binning import join_bin_lo_hi
 from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
 
+try:
+    from importlib.resources import files
+except ImportError:
+    from importlib_resources import files
+
 from ..utils import calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
@@ -38,6 +43,7 @@ __all__ = [
     "load_train_data_files_tel",
     "save_pandas_data_in_table",
     "telescope_combinations",
+    "resource_file",
 ]
 
 logger = logging.getLogger(__name__)
@@ -1349,3 +1355,19 @@ def save_pandas_data_in_table(
 
     with tables.open_file(output_file, mode=mode) as f_out:
         f_out.create_table(group_name, table_name, createparents=True, obj=data_array)
+
+
+def resource_file(filename):
+    """Get the absoulte path of magicctapipe resource files.
+
+    Parameters
+    ----------
+    filename : str
+        Input filename
+
+    Returns
+    -------
+    str
+        Absolute path of the input filename
+    """
+    return files("magicctapipe").joinpath("resources", filename)
