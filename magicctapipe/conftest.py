@@ -9,7 +9,7 @@ from astropy.io.misc.hdf5 import write_table_hdf5
 from astropy.table import Table
 from ctapipe.utils.download import download_file_cached
 
-from magicctapipe.utils import resource_file
+from magicctapipe.io import resource_file
 
 maxjoint = 13000
 maxmonly = 500
