@@ -1,16 +1,31 @@
 # coding: utf-8
 
+import datetime
+
 import pandas
 import scipy
 import uproot
 
-from .utils import info_message
-
 __all__ = [
+    "info_message",
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
 ]
+
+
+def info_message(text, prefix="info"):
+    """Prints the specified text with the prefix of the current date
+
+    Parameters
+    ----------
+    text : str
+        text
+    prefix : str, optional
+        prefix, by default 'info'
+    """
+    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    print(f"({prefix:s}) {date_str:s}: {text:s}")
 
 
 def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
