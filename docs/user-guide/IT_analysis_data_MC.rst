@@ -1,3 +1,6 @@
+.. _IT_data_MC:
+IT Cluster analysis: data + MC
+==============================
 # Script for MAGIC and MAGIC+LST analysis
 
 This folder contains scripts to perform MAGIC-only or MAGIC+LST analysis.

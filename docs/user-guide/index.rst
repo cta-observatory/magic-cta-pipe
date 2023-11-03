@@ -8,3 +8,5 @@ User Guide
 
    getting-started
    magic-lst-scripts
+   IT_analysis_data_MC
+   IT_analysis_NSB
