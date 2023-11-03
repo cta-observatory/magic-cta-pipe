@@ -16,7 +16,9 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 def nsb(run_list, simtel, lst_config, run_number):
-    """Here we compute the NSB value for a run
+    """
+    Here we compute the NSB value for a run based on a subset of subruns.
+    
     Parameters
     ----------
     run_list: list
@@ -30,12 +32,13 @@ def nsb(run_list, simtel, lst_config, run_number):
 
     """
     noise = []
+    denominator = 25
     if len(run_list) == 0:
         return
-    if len(run_list) < 25:
+    if len(run_list) < denominator:
         mod = 1
     else:
-        mod = int(len(run_list) / 25)
+        mod = int(len(run_list) / denominator)
     for ii in range(0, len(run_list)):
         if mod == 0:
             break
@@ -44,7 +47,7 @@ def nsb(run_list, simtel, lst_config, run_number):
                 a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
                 noise.append(a)
             except IndexError:
-                mod = mod - 1
+                mod = int(len(run_list) / (denominator+1))
                 logger.info(
                     f"WARNING: a subrun caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
                 )
@@ -82,18 +85,18 @@ def main():
     
     lst_config = "lstchain_standard_config.json"
     run_number = run.split(",")[1]
-    LST_files = np.sort(glob.glob(f"{source}_LST_nsb_{run_number}.txt"))
+    LST_files = np.sort(glob.glob(f"{source}_LST_nsb_*{run_number}*.txt"))
 
     date = run.split(",")[0]
     if len(LST_files) > 1:
         logger.info(
-            f"run {run_number} classified in more than one NSB bin. Removing all these files and evaluating it again"
+            f"run {run_number} classified in more than one NSB bin. Removing all these files and evaluating it again."
         )
-        for kk in LST_files:
-            os.remove(kk)
+        for repeated_files in LST_files:
+            os.remove(repeated_files)
         LST_files = []
-    if len(LST_files) == 1:
-        logger.info(f"run {run_number} already processed")
+    elif len(LST_files) == 1:
+        logger.info(f"run {run_number} already processed.")
         return
 
     date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
