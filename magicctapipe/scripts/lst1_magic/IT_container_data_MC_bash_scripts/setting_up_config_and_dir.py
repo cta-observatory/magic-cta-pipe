@@ -54,7 +54,7 @@ def nsb_avg(source, config, LST_list):
         Name of the file where the adopted LST runs are listed
     
     """
-    allfile = np.sort(glob.glob(f"{source}_LST_nsb_*.txt"))
+    allfile = np.sort(glob.glob(f"{source}_LST_nsb_*.txt"))  # List with the names of all files containing the NSB values for each run
     if len(allfile) == 0:
         return
     noise=[]
@@ -65,30 +65,33 @@ def nsb_avg(source, config, LST_list):
             noise.append(line)
     nsb=np.average(noise)
     std=np.std(noise)
-    process='y'
-    if std>0.2:
-        process = input(f'Standard deviation of the NSB levels is above 0.2. We strongly recommend to use NSB-matching analysis instead of using the current scripts. Would you like to continue the current analysis anyway? [only "y" or "n"]: ')
+    continue_process='y'
+    if std > 0.2:
+        continue_process = input(f'The standard deviation of the NSB levels is {std}. We recommend using NSB-matching scripts always that the standard deviation of NSB is > 0.2. Would you like to continue the current analysis anyway? [only "y" or "n"]: ')
     delete_index=[]
     for n, j in enumerate(allfile):
-        run=j.split("_")[2]
-        if abs(noise[n]-nsb)>3*std:
-            sigma_range = input(f'Run {run} has NSB-value out of the average+-3*sigma range. Would you like to continue the current analysis anyway (if yes, this run will be deleted from the .txt file)? [only "y" or "n"]: ')
-            if sigma_range!='y':
+        run=j.split("_")[3].rstrip(".txt")
+        if abs(noise[n]-nsb) > 3*std:
+            sigma_range = input(f'Run {run} has an NSB value of {noise[n]}, which is more than 3*sigma (i.e. {3*std}) away from the average (i.e. {nsb}). Would you like to continue the current analysis anyway? [only "y" or "n"]: ')
+            if sigma_range != 'y':
                 return (sigma_range, 0)
-            delete_index.append(n)
-            with open(
-                LST_list, "r"
-            ) as f: 
-                lines=f.readlines()
-            with open(
-                LST_list, "w"
-            ) as f:
-                for i in lines:       
-                    if not i.endswith(f"{run}\n"):
-                        f.write(i)
-    if len(delete_index)!=0:                    
-        index=delete_index.reverse()
-        
+
+            sigma_range = input(f'Would you like to keep this run (i.e. {run}) in the analysis? [only "y" or "n"]:')
+            if sigma_range != "y":
+                delete_index.append(n)
+                with open(
+                    LST_list, "r"
+                ) as f: 
+                    lines=f.readlines()
+                with open(
+                    LST_list, "w"
+                ) as f:
+                    for i in lines:       
+                        if not i.endswith(f"{run}\n"):
+                            f.write(i)
+                        
+    if len(delete_index) > 0:                    
+        index=delete_index.reverse()  # Here we reverse the list of indexes associated with out-of-the-average NSB values, such that after deleting one element (below), the indexes of the array do not change.
         for k in index:
             np.delete(noise,k)  
 
@@ -104,7 +107,7 @@ def nsb_avg(source, config, LST_list):
             if not i.startswith("nsb_value"):
                 f.write(i)
         f.write(f"nsb_value: {nsb}\n")
-    return (process, nsb)
+    return (continue_process, nsb)
 
 
 def config_file_gen(ids, target_dir, noise_value):
@@ -536,7 +539,7 @@ def main():
     env_name = config["general"]["env_name"]
     source = config['directories']['target_name']
     running, nsb=nsb_avg(source, args.config_file, LST_runs_and_dates)
-    if  running!='y':
+    if  running != 'y':
         print('OK... The script was terminated by the user choice.')
         return
     noisebright=1.15*pow(nsb,1.115)
