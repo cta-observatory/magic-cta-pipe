@@ -179,34 +179,8 @@ html_context = {
     "github_version": "master",
     "doc_path": "docs",
 }
-<<<<<<< HEAD
-
-
-# -- General configuration
-
-extensions = [
-    "sphinx.ext.duration",
-    "sphinx.ext.doctest",
-    "sphinx.ext.autodoc",
-    "sphinx.ext.autosummary",
-    "sphinx.ext.intersphinx",
-]
-
-intersphinx_mapping = {
-    "python": ("https://docs.python.org/3/", None),
-    "sphinx": ("https://www.sphinx-doc.org/en/master/", None),
-}
-intersphinx_disabled_domains = ["std"]
-
-templates_path = ["_templates"]
-
-# -- Options for HTML output
-
-html_theme = "pydata_sphinx_theme"
-=======
 html_css_files = ["magicctapipe.css"]
 html_file_suffix = ".html"
->>>>>>> master
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

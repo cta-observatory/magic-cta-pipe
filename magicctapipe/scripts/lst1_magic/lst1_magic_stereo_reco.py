@@ -184,12 +184,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     Number_of_LSTs_in_use = len(LSTs_IDs[LSTs_IDs > 0])
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
     Number_of_MAGICs_in_use = len(MAGICs_IDs[MAGICs_IDs > 0])
-    Two_arrays_are_used = Number_of_LSTs_in_use * Number_of_MAGICs_in_use > 0
-<<<<<<< HEAD
-=======
-
-    if (not is_simulation) and (Two_arrays_are_used):
->>>>>>> master
+    Two_arrays_are_used = Number_of_LSTs_in_use * Number_of_MAGICs_in_use > 0   
 
     if (not is_simulation) and (Two_arrays_are_used):
         logger.info(
