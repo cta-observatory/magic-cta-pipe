@@ -1,7 +1,8 @@
 import os
+from datetime import datetime
+
 import pandas as pd
 import yaml
-from datetime import datetime
 
 
 def split_lst_date(df):
@@ -32,7 +33,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
     file_list = [
         f"{source_out}_LST_runs.txt",
         f"{source_out}_MAGIC_runs.txt",
-    ]  #### LST, MAGIC!!!!
+    ]  # LST, MAGIC!!!!
     for j in file_list:
         if os.path.isfile(j):
             os.remove(j)

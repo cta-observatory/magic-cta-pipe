@@ -25,13 +25,14 @@ $ python setting_up_config_and_dir.py --analysis-type onlyMC (-c config.yaml)
 
 """
 
-import os
-import numpy as np
 import argparse
 import glob
 import logging
-import yaml
+import os
 from pathlib import Path
+
+import numpy as np
+import yaml
 
 __all__ = [
     "nsb_avg",
@@ -247,7 +248,7 @@ def lists_and_bash_generator(
             f.write(f'{i.split("/")[-1]}\n')
 
     ####################################################################################
-    ############ bash scripts that link the MC paths to each subdirectory.
+    # bash scripts that link the MC paths to each subdirectory.
     ####################################################################################
 
     with open(f"linking_MC_{particle_type}_paths.sh", "w") as f:
@@ -277,7 +278,7 @@ def lists_and_bash_generator(
         f.writelines(lines_of_config_file)
 
     ################################################################################################################
-    ############################ bash script that applies lst1_magic_mc_dl0_to_dl1.py to all MC data files.
+    # bash script that applies lst1_magic_mc_dl0_to_dl1.py to all MC data files.
     ################################################################################################################
 
     number_of_nodes = glob.glob(f"{MC_path}/node*")
@@ -426,7 +427,7 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
     """
 
     ###########################################
-    ##################### MC
+    # MC
     ###########################################
 
     if not os.path.exists(target_dir):
@@ -458,7 +459,7 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
             print("Directory not modified.")
 
     ###########################################
-    ##################### MAGIC
+    # MAGIC
     ###########################################
 
     if telescope_ids[-1] > 0:

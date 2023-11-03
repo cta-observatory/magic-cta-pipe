@@ -1,7 +1,7 @@
 """
 This scripts generates and runs the bashscripts
-to compute the stereo parameters of DL1 MC and 
-Coincident MAGIC+LST data files. 
+to compute the stereo parameters of DL1 MC and
+Coincident MAGIC+LST data files.
 
 Usage:
 $ python stereo_events.py (-c config.yaml)
@@ -17,13 +17,14 @@ $ python stereo_events.py --analysis-type onlyMC (-c config.yaml)
 
 """
 
-import os
-import numpy as np
-import glob
-import yaml
-import logging
-from pathlib import Path
 import argparse
+import glob
+import logging
+import os
+from pathlib import Path
+
+import numpy as np
+import yaml
 
 __all__ = ["configfile_stereo", "bash_stereo", "bash_stereoMC"]
 

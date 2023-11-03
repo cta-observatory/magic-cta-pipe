@@ -18,13 +18,15 @@ $ python coincident_events.py (-c config_file.yaml)
 import argparse
 import glob
 import logging
-import numpy as np
 import os
-import yaml
 from datetime import date as dtdt
 from datetime import timedelta
-from magicctapipe import __version__
 from pathlib import Path
+
+import numpy as np
+import yaml
+
+from magicctapipe import __version__
 
 __all__ = ["configfile_coincidence", "linking_bash_lst"]
 

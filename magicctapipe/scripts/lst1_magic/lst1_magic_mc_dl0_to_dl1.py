@@ -395,7 +395,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
 
 def main():
-   
+
     """Here we collect the input parameters from the command line, load the configuration file and run mc_dl0_to_dl1()"""
 
     start_time = time.time()

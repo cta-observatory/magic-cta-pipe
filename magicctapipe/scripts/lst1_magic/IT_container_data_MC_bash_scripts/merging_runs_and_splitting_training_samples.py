@@ -1,7 +1,7 @@
 """
 This script splits the proton MC data sample into "train"
 and "test", deletes possible failed runs (only those files
-that end up with a size < 1 kB), and generates the bash 
+that end up with a size < 1 kB), and generates the bash
 scripts to merge the data files calling the script "merge_hdf_files.py"
 in the following order:
 
@@ -9,11 +9,11 @@ MAGIC:
 1) Merge the subruns into runs for M1 and M2 individually.
 2) Merge the runs of M1 and M2 into M1-M2 runs.
 3) Merge all the M1-M2 runs for a given night.
-Workingdir/DL1/Observations/Merged 
+Workingdir/DL1/Observations/Merged
 
 MC:
 1) Merges all MC runs in a node and save them at
-Workingdir/DL1/MC/PARTICLE/Merged 
+Workingdir/DL1/MC/PARTICLE/Merged
 
 
 Usage:
@@ -29,14 +29,15 @@ Only MC:
 $ python merging_runs_and_splitting_training_samples.py --analysis-type onlyMC (-c config.yaml)
 """
 
-import os
-import numpy as np
-import glob
-import yaml
-import logging
-from tqdm import tqdm
-from pathlib import Path
 import argparse
+import glob
+import logging
+import os
+from pathlib import Path
+
+import numpy as np
+import yaml
+from tqdm import tqdm
 
 __all__ = ["cleaning", "split_train_test", "merge", "mergeMC"]
 

@@ -1,22 +1,23 @@
 """
-This script generates the bash scripts to merge the data 
-files calling the script "merge_hdf_files.py" to 
+This script generates the bash scripts to merge the data
+files calling the script "merge_hdf_files.py" to
 merge the subruns into runs for M1 and M2 individually.
 
 Usage:
-$ python merge_subruns.py 
+$ python merge_subruns.py
 (-c config_file.yaml)
 
 """
 import argparse
 import glob
 import logging
-import numpy as np
 import os
-import yaml
-from magicctapipe import __version__
 from pathlib import Path
 
+import numpy as np
+import yaml
+
+from magicctapipe import __version__
 
 __all__ = ["merge1"]
 

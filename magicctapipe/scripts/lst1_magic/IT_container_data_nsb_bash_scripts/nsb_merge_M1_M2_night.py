@@ -1,21 +1,23 @@
 """
-This script generates the bash scripts to merge the data 
-files calling the script "merge_hdf_files.py" to 
+This script generates the bash scripts to merge the data
+files calling the script "merge_hdf_files.py" to
 merge all the M1-M2 runs for a given night.
 
 Usage:
-$ python merge_M1_M2_night.py 
+$ python merge_M1_M2_night.py
 (-c config_file.yaml)
 
 """
 import argparse
 import glob
 import logging
-import numpy as np
 import os
-import yaml
-from magicctapipe import __version__
 from pathlib import Path
+
+import numpy as np
+import yaml
+
+from magicctapipe import __version__
 
 __all__ = ["merge3"]
 

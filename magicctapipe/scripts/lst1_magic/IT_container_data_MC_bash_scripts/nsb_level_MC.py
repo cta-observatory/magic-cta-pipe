@@ -6,8 +6,9 @@ Usage: python nsb_level.py (-c config.yaml)
 import argparse
 import glob
 import logging
-import numpy as np
 import os
+
+import numpy as np
 import yaml
 
 __all__ = ["bash_scripts"]

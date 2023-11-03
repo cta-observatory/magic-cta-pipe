@@ -5,8 +5,9 @@ Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
 import argparse
 import glob
 import logging
-import numpy as np
 import os
+
+import numpy as np
 import yaml
 
 __all__ = ["bash_scripts"]

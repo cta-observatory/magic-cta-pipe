@@ -15,13 +15,14 @@ $ python coincident_events.py (-c config.yaml)
 
 """
 
-import os
-import numpy as np
-import glob
-import yaml
-import logging
-from pathlib import Path
 import argparse
+import glob
+import logging
+import os
+from pathlib import Path
+
+import numpy as np
+import yaml
 
 __all__ = ["configfile_coincidence", "linking_lst", "bash_coincident"]
 

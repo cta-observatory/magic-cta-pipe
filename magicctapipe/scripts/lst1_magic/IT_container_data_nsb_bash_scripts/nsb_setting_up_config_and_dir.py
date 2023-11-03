@@ -1,5 +1,5 @@
 """
-This script facilitates the usage of 
+This script facilitates the usage of
 "magic_calib_to_dl1.py". This script is more like a
 "manager" that organizes the analysis process by:
 1) Creating the necessary directories and subdirectories.
@@ -17,12 +17,14 @@ $ python setting_up_config_and_dir.py (-c config_file.yaml)
 import argparse
 import glob
 import logging
-import numpy as np
 import os
 import time
-import yaml
-from magicctapipe import __version__
 from pathlib import Path
+
+import numpy as np
+import yaml
+
+from magicctapipe import __version__
 
 __all__ = ["config_file_gen", "lists_and_bash_gen_MAGIC", "directories_generator"]
 

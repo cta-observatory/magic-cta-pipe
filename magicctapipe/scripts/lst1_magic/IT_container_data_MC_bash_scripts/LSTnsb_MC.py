@@ -4,8 +4,9 @@ Evaluates NSB level for a LST run
 import argparse
 import glob
 import logging
-import numpy as np
 import os
+
+import numpy as np
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
