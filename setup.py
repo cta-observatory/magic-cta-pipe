@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
-import os
-
 from setuptools import find_packages, setup
 
 entry_points = {}
@@ -33,7 +31,6 @@ docs_require = [
 ]
 
 setup(
-    use_scm_version={"write_to": os.path.join("magicctapipe", "_version.py")},
     packages=find_packages(),
     install_requires=[
         "lstchain~=0.9.6",
