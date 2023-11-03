@@ -82,7 +82,7 @@ def main():
     
     lst_config = "lstchain_standard_config.json"
     run_number = run.split(",")[1]
-    LST_files = np.sort(glob.glob(f"{source}_LST_{run_number}.txt"))
+    LST_files = np.sort(glob.glob(f"{source}_LST_nsb_{run_number}.txt"))
 
     date = run.split(",")[0]
     if len(LST_files) > 1:
@@ -105,7 +105,7 @@ def main():
     a=np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {a}")
     
-    with open(f"{source}_LST_{run_number}.txt", "a+") as f:
+    with open(f"{source}_LST_nsb_{run_number}.txt", "a+") as f:
         f.write(f"{a}\n")
 
 
