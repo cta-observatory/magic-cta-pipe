@@ -43,13 +43,20 @@ Continuous integration system
 The *Travis* continuos integration (CI) system runs tests for pushes on a pull request
 or the ``master`` branch. At the moment the CI system runs the following workflows:
 
-* ``release-drafter``, which drafts release notes (runs only for pushes on the ``master`` branch)
-* ``lint``, which runs the ``pre-commit`` hook over the code
-* ``pyflakes``, which runs ``pyflakes`` over the code
-* ``docs``, which tests if the documentation can be built correctly
-* ``tests``, which runs unit tests over a set of test files
+* ``lint``, which runs the ``pre-commit`` hook over the code (runs for all pull requests and push commits to the ``master`` branch)
+* ``pyflakes``, which runs ``pyflakes`` over the code (runs for all pull requests and push commits to the ``master`` branch)
+* ``docs``, which tests if the documentation can be built correctly (runs for all pull requests and push commits to the ``master`` branch)
+* ``tests``, which runs unit tests over a set of test files (runs for all pull requests and push commit to the ``master`` branch)
+* ``release-drafter``, which drafts release notes (runs only for pushes on the ``master`` branch). Note that the
+  release drafter will produce different sections based on the label applied to the pull requests merged into the
+  ``master`` branch. See `categories` in the `release drafter configuration file <https://github.com/cta-observatory/magic-cta-pipe/blob/master/.github/release-drafter.yml>`_
 * ``deploy``, which deploys automatically a new release to PyPI whenever a tag called ``v*``
   (e.g. ``v0.3.4``) is pushed to the ``master`` branch
+
+.. note::
+
+    If you apply the ``documentation-only`` label on a pull request, only the ``docs`` workflow will run!
+    This allows to have a faster CI run when changes are made only to the documentation part.
 
 Keep in mind
 ------------
