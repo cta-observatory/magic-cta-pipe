@@ -42,7 +42,7 @@ logger.setLevel(logging.INFO)
 
 def nsb_avg(source, config, LST_list):
     """
-    This function evaluates the average of the NSB distribution (per run)
+    This function evaluates the average of the NSB distribution per run
     
     Parameters
     ----------
@@ -51,7 +51,7 @@ def nsb_avg(source, config, LST_list):
     config: str
         Config file
     LST_list: str
-        File where LST runs to be processed are written
+        Name of the file where the adopted LST runs are listed
     
     """
     allfile = np.sort(glob.glob(f"{source}_LST_*.txt"))
