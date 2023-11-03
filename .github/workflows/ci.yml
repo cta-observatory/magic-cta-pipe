@@ -26,7 +26,7 @@ jobs:
           python-version: 3.8
       - uses: pre-commit/action@v3.0.0
         with:
-          extra_args: --files $(git diff origin/main --name-only)
+          extra_args: --files $(git diff origin/master --name-only)
 
   pyflakes:
     if: contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
