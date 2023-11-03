@@ -24,9 +24,9 @@ def bash_scripts(run, config, source, env_name):
     run: str
         LST date and run number
     config: str
-        Configuration file
+        Name of the configuration file
     source: str
-        Source name
+        Target name
     env_name:str
         Name of the environment
 
