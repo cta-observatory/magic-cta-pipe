@@ -95,22 +95,7 @@ jobs:
         with:
           environment-file: environment.yml
           cache-downloads: true
-
-      - name: Prepare mamba installation        
-        env:
-          PYTHON_VERSION: ${{ matrix.python-version }}
-        run: |
-          # setup correct python version
-          sed -i -e "s/- python=.*/- python=$PYTHON_VERSION/g" environment.yml
-
-      - name: mamba setup
-        uses: mamba-org/setup-micromamba@v1
-        with:
-          environment-file: environment.yml
-          environment-name: "ci"
-         
-
-          cache-downloads: true
+          
       - name: Install dependencies
         env:
           CTAPIPE_VERSION: ${{ matrix.ctapipe-version }}
