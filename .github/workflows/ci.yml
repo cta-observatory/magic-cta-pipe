@@ -95,7 +95,7 @@ jobs:
         with:
           environment-file: environment.yml
           cache-downloads: true
-          
+
       - name: Install dependencies
         env:
           CTAPIPE_VERSION: ${{ matrix.ctapipe-version }}
