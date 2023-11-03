@@ -40,7 +40,7 @@ Instructions for developers
 Developers should follow the development install instructions found in the
 `documentation <https://magic-cta-pipe.readthedocs.io/en/latest/developer-guide/getting-started.html>`_.
 
-.. |Actions Status| image:: https://github.com/cta-observatory/magic-cta-pipe/workflows/CI/badge.svg
+.. |Actions Status| image:: https://github.com/cta-observatory/magic-cta-pipe/actions/workflows/ci.yml/badge.svg?branch=master
     :target: https://github.com/cta-observatory/magic-cta-pipe/actions
     :alt: magic-cta-pipe GitHub Actions CI Status
 
