@@ -1,10 +1,5 @@
 from .calib import calibrate
-from .cleaning import (
-    MAGICClean,
-    PixelTreatment,
-    clean_image_params,
-    get_num_islands_MAGIC,
-)
+from .cleaning import MAGICClean, PixelTreatment, get_num_islands_MAGIC
 from .leakage import get_leakage
 
 __all__ = [
@@ -12,6 +7,5 @@ __all__ = [
     "PixelTreatment",
     "get_num_islands_MAGIC",
     "calibrate",
-    "clean_image_params",
     "get_leakage",
 ]

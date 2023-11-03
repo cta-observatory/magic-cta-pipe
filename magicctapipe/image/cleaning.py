@@ -2,14 +2,12 @@ import copy
 import itertools
 
 import numpy as np
-from ctapipe.image import hillas_parameters, leakage_parameters, timing_parameters
 from scipy.sparse.csgraph import connected_components
 
 __all__ = [
     "MAGICClean",
     "PixelTreatment",
     "get_num_islands_MAGIC",
-    "clean_image_params",
 ]
 
 
@@ -672,41 +670,3 @@ def get_num_islands_MAGIC(camera, clean_mask, event_image):
     clean_neighbors = neighbors[clean_mask][:, clean_mask]
     num_islands, labels = connected_components(clean_neighbors, directed=False)
     return num_islands
-
-
-def clean_image_params(geom, image, clean, peakpos):
-    """Evaluate cleaned image parameters
-
-    Parameters
-    ----------
-    geom : ctapipe.instrument.camera.geometry.CameraGeometry
-        camera geometry
-    image : numpy.ndarray
-        image
-    clean : numpy.ndarray
-        clean mask
-    peakpos : numpy.ndarray
-        peakpos
-
-    Returns
-    -------
-    tuple
-        tuple of three containers for hillas, leakage and timing parameters
-    """
-    # Hillas parameters, same for LST and MAGIC. From ctapipe
-    hillas_p = hillas_parameters(geom=geom[clean], image=image[clean])
-    # Leakage, same for LST and MAGIC. From ctapipe
-    leakage_p = leakage_parameters(geom=geom, image=image, cleaning_mask=clean)
-    # Timing parameters, same for LST and MAGIC. From ctapipe
-    timing_p = timing_parameters(
-        geom=geom[clean],
-        image=image[clean],
-        peak_time=peakpos[clean],
-        hillas_parameters=hillas_p,
-    )
-
-    # Make sure each telescope get's an arrow
-    # if abs(time_grad[tel_id]) < 0.2:
-    #     time_grad[tel_id] = 1
-
-    return hillas_p, leakage_p, timing_p
