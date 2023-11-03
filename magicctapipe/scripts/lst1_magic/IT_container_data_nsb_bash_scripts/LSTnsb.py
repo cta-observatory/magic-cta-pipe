@@ -17,12 +17,13 @@ logger.setLevel(logging.INFO)
 
 def nsb(run_list, simtel, lst_config, run_number):
     noise = []
+    denominator = 25
     if len(run_list) == 0:
         return
-    if len(run_list) < 25:
+    if len(run_list) < denominator:
         mod = 1
     else:
-        mod = int(len(run_list) / 25)
+        mod = int(len(run_list) / denominator)
     for ii in range(0, len(run_list)):
         if mod == 0:
             break
@@ -31,7 +32,7 @@ def nsb(run_list, simtel, lst_config, run_number):
                 a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
                 noise.append(a)
             except IndexError:
-                mod = mod - 1
+                mod = int(len(run_list) / (denominator + 1))
                 logger.info(
                     f"WARNING: a subrun caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
                 )
