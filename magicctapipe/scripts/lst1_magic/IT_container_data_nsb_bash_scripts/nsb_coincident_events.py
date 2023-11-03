@@ -26,7 +26,7 @@ from datetime import timedelta
 from magicctapipe import __version__
 from pathlib import Path
 
-__all__=['configfile_coincidence', 'linking_bash_lst']
+__all__ = ["configfile_coincidence", "linking_bash_lst"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())

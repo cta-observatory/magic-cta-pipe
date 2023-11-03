@@ -14,7 +14,11 @@ __all__ = ["EnergyRegressor", "DispRegressor", "EventClassifier"]
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-TEL_NAMES = {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"} #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
+TEL_NAMES = {
+    1: "LST-1",
+    2: "MAGIC-I",
+    3: "MAGIC-II",
+}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 
 class EnergyRegressor:
@@ -61,7 +65,7 @@ class EnergyRegressor:
         event_data: pandas.core.frame.DataFrame
             Data frame of shower events
         """
-        
+
         self.telescope_rfs.clear()
 
         # Loop over every telescope

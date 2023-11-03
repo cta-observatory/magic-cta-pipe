@@ -25,7 +25,7 @@ from pyirf.utils import calculate_source_fov_offset, calculate_theta
 __all__ = [
     "check_input_list",
     "format_object",
-    "get_dl2_mean",    
+    "get_dl2_mean",
     "get_stereo_events",
     "get_stereo_events_old",
     "load_dl2_data_file",
@@ -59,13 +59,14 @@ TIME_DIFF_UPLIM = 1.0 * u.s
 DEAD_TIME_LST = 7.6 * u.us
 DEAD_TIME_MAGIC = 26 * u.us
 
+
 def check_input_list(config):
     """
     This function checks if the input telescope list is organized as follows:
     1) All 4 LSTs and 2 MAGICs must be listed
     2) All 4 LSTs must come before the MAGICs
     And it raises an exception in case these rules are not satisfied.
-    
+
     Below we give two examples of valid lists:
     i)
     mc_tel_ids:
@@ -102,24 +103,30 @@ def check_input_list(config):
     -------
         This function will raise an exception if the input list is not properly organized.
     """
-    
+
     list_of_tel_names = list(config["mc_tel_ids"].keys())
     standard_list_of_tels = ["LST-1", "LST-2", "LST-3", "LST-4", "MAGIC-I", "MAGIC-II"]
 
     if len(list_of_tel_names) != 6:
-        raise Exception(f"Number of telescopes found in the configuration file is {len(list_of_tel_names)}. It must be 6, i.e.: LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.")
+        raise Exception(
+            f"Number of telescopes found in the configuration file is {len(list_of_tel_names)}. It must be 6, i.e.: LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II."
+        )
     else:
         for tel_name in list_of_tel_names[0:4]:
             if tel_name in standard_list_of_tels[0:4]:
                 pass
             else:
-                raise Exception(f"Entry '{tel_name}' not accepted as an LST. Please make sure that the first four telescopes are LSTs, e.g.: 'LST-1', 'LST-2', 'LST-3', and 'LST-4'")
+                raise Exception(
+                    f"Entry '{tel_name}' not accepted as an LST. Please make sure that the first four telescopes are LSTs, e.g.: 'LST-1', 'LST-2', 'LST-3', and 'LST-4'"
+                )
 
         for tel_name in list_of_tel_names[4:6]:
             if tel_name in standard_list_of_tels[4:6]:
                 pass
             else:
-                raise Exception(f"Entry '{tel_name}' not accepted as a MAGIC. Please make sure that the last two telescopes are MAGICs, e.g.: 'MAGIC-I', and 'MAGIC-II'")
+                raise Exception(
+                    f"Entry '{tel_name}' not accepted as a MAGIC. Please make sure that the last two telescopes are MAGICs, e.g.: 'MAGIC-I', and 'MAGIC-II'"
+                )
     return
 
 
@@ -139,39 +146,48 @@ def telescope_combinations(config):
     TEL_COMBINATIONS: dict
         Dictionary with all telescope combinations with no repetions.
     """
-    
-    
+
     TEL_NAMES = {}
-    for k, v in config["mc_tel_ids"].items():  # Here we swap the dictionary keys and values just for convenience.
+    for k, v in config[
+        "mc_tel_ids"
+    ].items():  # Here we swap the dictionary keys and values just for convenience.
         if v > 0:
-            TEL_NAMES[v] =  k
-    
+            TEL_NAMES[v] = k
+
     TEL_COMBINATIONS = {}
     keys = list(TEL_NAMES.keys())
-    
+
     def recursive_solution(current_tel, current_comb):
-    
-        if current_tel == len(keys):  # The function stops once we reach the last telescope
-            return 
-      
-        current_comb_name = current_comb[0] + '_' + TEL_NAMES[keys[current_tel]]  # Name of the combo (at this point it can even be a single telescope)
-        current_comb_list = current_comb[1] + [keys[current_tel]]  # List of telescopes (including individual telescopes)
-    
-        if len(current_comb_list) > 1:  # We save them in the new dictionary excluding the single-telescope values
-            TEL_COMBINATIONS[current_comb_name[1:]] = current_comb_list;
-      
-        current_comb = [current_comb_name, current_comb_list]  # We save the current results in this varible to recal the function recursively ("for" loop below)
+        if current_tel == len(
+            keys
+        ):  # The function stops once we reach the last telescope
+            return
 
-        for i in range(1, len(keys)-current_tel):               
-            recursive_solution(current_tel+i, current_comb)
+        current_comb_name = (
+            current_comb[0] + "_" + TEL_NAMES[keys[current_tel]]
+        )  # Name of the combo (at this point it can even be a single telescope)
+        current_comb_list = current_comb[1] + [
+            keys[current_tel]
+        ]  # List of telescopes (including individual telescopes)
 
-  
+        if (
+            len(current_comb_list) > 1
+        ):  # We save them in the new dictionary excluding the single-telescope values
+            TEL_COMBINATIONS[current_comb_name[1:]] = current_comb_list
+
+        current_comb = [
+            current_comb_name,
+            current_comb_list,
+        ]  # We save the current results in this varible to recal the function recursively ("for" loop below)
+
+        for i in range(1, len(keys) - current_tel):
+            recursive_solution(current_tel + i, current_comb)
+
     for key in range(len(keys)):
-        recursive_solution(key, ['',[]])
+        recursive_solution(key, ["", []])
 
-  
     return TEL_NAMES, TEL_COMBINATIONS
-    
+
 
 def format_object(input_object):
     """
@@ -198,7 +214,7 @@ def format_object(input_object):
     string = string.replace("'", "").replace(",", "")
 
     return string
-    
+
 
 def get_stereo_events_old(
     event_data, quality_cuts=None, group_index=["obs_id", "event_id"]
@@ -224,11 +240,11 @@ def get_stereo_events_old(
         Data frame of the stereo events surviving the quality cuts
     """
     TEL_COMBINATIONS = {
-    "M1_M2": [2, 3],  # combo_type = 0
-    "LST1_M1": [1, 2],  # combo_type = 1
-    "LST1_M2": [1, 3],  # combo_type = 2
-    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-    }  #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
+        "M1_M2": [2, 3],  # combo_type = 0
+        "LST1_M1": [1, 2],  # combo_type = 1
+        "LST1_M2": [1, 3],  # combo_type = 2
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+    }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
     event_data_stereo = event_data.copy()
 
     # Apply the quality cuts
@@ -283,9 +299,12 @@ def get_stereo_events_old(
     return event_data_stereo
 
 
-
 def get_stereo_events(
-    event_data, config, quality_cuts=None, group_index=["obs_id", "event_id"], eval_multi_combo=True
+    event_data,
+    config,
+    quality_cuts=None,
+    group_index=["obs_id", "event_id"],
+    eval_multi_combo=True,
 ):
     """
     Gets the stereo events surviving specified quality cuts.
@@ -297,7 +316,7 @@ def get_stereo_events(
     ----------
     event_data: pandas.core.frame.DataFrame
         Data frame of shower events
-    config: dict 
+    config: dict
         Read from the yaml file with information about the telescope IDs.
     quality_cuts: str
         Quality cuts applied to the input data
@@ -305,26 +324,26 @@ def get_stereo_events(
         Index to group telescope events
     eval_multi_combo: bool
         If True, multiplicity is recalculated, combination type is assigned to each event and the fraction of events per combination type is shown
-    
+
 
     Returns
     -------
     event_data_stereo: pandas.core.frame.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
-    
+
     TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
-    
+
     event_data_stereo = event_data.copy()
 
     # Apply the quality cuts
     if quality_cuts is not None:
         event_data_stereo.query(quality_cuts, inplace=True)
-    
+
     # Extract stereo events
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
     event_data_stereo.query("multiplicity > 1", inplace=True)
-    if eval_multi_combo==True:
+    if eval_multi_combo == True:
         # Check the total number of events
         n_events_total = len(event_data_stereo.groupby(group_index).size())
         logger.info(f"\nIn total {n_events_total} stereo events are found:")
@@ -578,8 +597,8 @@ def load_magic_dl1_data_files(input_dir, config):
     ----------
     input_dir: str
         Path to a directory where input MAGIC DL1 data files are stored
-    config: dict 
-        yaml file with information about the telescope IDs. 
+    config: dict
+        yaml file with information about the telescope IDs.
 
     Returns
     -------
@@ -593,9 +612,9 @@ def load_magic_dl1_data_files(input_dir, config):
     FileNotFoundError
         If any DL1 data files are not found in the input directory
     """
-    
+
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     # Find the input files
     file_mask = f"{input_dir}/dl1_*.h5"
 
@@ -679,11 +698,11 @@ def load_train_data_files(
         directory
     """
     TEL_COMBINATIONS = {
-    "M1_M2": [2, 3],  # combo_type = 0
-    "LST1_M1": [1, 2],  # combo_type = 1
-    "LST1_M2": [1, 3],  # combo_type = 2
-    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-    } #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
+        "M1_M2": [2, 3],  # combo_type = 0
+        "LST1_M1": [1, 2],  # combo_type = 1
+        "LST1_M2": [1, 3],  # combo_type = 2
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+    }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
@@ -735,7 +754,10 @@ def load_train_data_files(
 
     return data_train
 
-def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=None, true_event_class=None):
+
+def load_train_data_files_tel(
+    input_dir, config, offaxis_min=None, offaxis_max=None, true_event_class=None
+):
     """
     Loads DL1-stereo data files and separates the shower events per
     telescope combination type for training RFs.
@@ -744,8 +766,8 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
     ----------
     input_dir: str
         Path to a directory where input DL1-stereo files are stored
-    config: dict 
-        yaml file with information about the telescope IDs. 
+    config: dict
+        yaml file with information about the telescope IDs.
     offaxis_min: str
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
@@ -754,7 +776,7 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
         acceptable by `astropy.units.quantity.Quantity`
     true_event_class: int
         True event class of the input events
-    
+
 
     Returns
     -------
@@ -768,9 +790,9 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
         If any DL1-stereo data files are not found in the input
         directory
     """
-    
+
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
 
@@ -856,7 +878,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     ValueError
         If the input event type is not known
     """
-    
+
     # Load the input file
     df_events = pd.read_hdf(input_file, key="events/parameters")
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
@@ -980,7 +1002,6 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     ValueError
         If the input event type is not known
     """
-   
 
     # Load the input file
     event_data = pd.read_hdf(input_file, key="events/parameters")
@@ -1076,6 +1097,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     logger.info(f"--> Total correction factor: {deadc.round(3)}")
 
     return event_table, on_time, deadc
+
 
 def load_irf_files(input_dir_irf):
     """

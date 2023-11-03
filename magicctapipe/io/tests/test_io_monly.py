@@ -130,9 +130,9 @@ def test_load_train_data_files_tel_p(p_stereo_monly, config_gen):
     Check dictionary
     """
 
-    events = load_train_data_files_tel(str(p_stereo_monly[0]),config_gen)
-    assert list(events.keys()) == [2,3]
-    data = events[2]    
+    events = load_train_data_files_tel(str(p_stereo_monly[0]), config_gen)
+    assert list(events.keys()) == [2, 3]
+    data = events[2]
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
@@ -143,8 +143,8 @@ def test_load_train_data_files_tel_g(gamma_stereo_monly, config_gen):
     """
 
     events = load_train_data_files_tel(str(gamma_stereo_monly[0]), config_gen)
-    assert list(events.keys()) == [2,3]
-    data = events[3]    
+    assert list(events.keys()) == [2, 3]
+    data = events[3]
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
@@ -154,7 +154,10 @@ def test_load_train_data_files_tel_off(gamma_stereo_monly, config_gen):
     Check off-axis cut
     """
     events = load_train_data_files_tel(
-        str(gamma_stereo_monly[0]), config=config_gen, offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+        str(gamma_stereo_monly[0]),
+        config=config_gen,
+        offaxis_min="0.2 deg",
+        offaxis_max="0.5 deg",
     )
     data = events[2]
     assert np.all(data["off_axis"] >= 0.2)
@@ -207,7 +210,6 @@ def test_load_mc_dl2_data_file_opt(p_dl2_monly, gamma_dl2_monly):
     """
     dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
     for file in dl2_mc:
-
         data_m, _, _ = load_mc_dl2_data_file(
             str(file), "width>0", "magic_only", "simple"
         )
@@ -382,7 +384,7 @@ def test_get_stereo_events_data(stereo_monly, config_gen):
         event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen)
-        assert np.all(data["multiplicity"] == 2)    
+        assert np.all(data["multiplicity"] == 2)
         assert np.all(data["combo_type"] == 3)
 
 
@@ -404,7 +406,9 @@ def test_load_dl2_data_file(real_dl2_monly):
     Checks on default loading
     """
     for file in real_dl2_monly.glob("*"):
-        data, on, dead = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
+        data, on, dead = load_dl2_data_file(
+            str(file), "width>0", "magic_only", "simple"
+        )
         assert "pointing_alt" in data.colnames
         assert "timestamp" in data.colnames
         assert data["reco_energy"].unit == "TeV"
@@ -429,7 +433,6 @@ def test_load_dl2_data_file_opt(real_dl2_monly):
     Check on event_type
     """
     for file in real_dl2_monly.glob("*"):
-
         data_m, _, _ = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
 
         assert np.all(data_m["combo_type"] == 0)

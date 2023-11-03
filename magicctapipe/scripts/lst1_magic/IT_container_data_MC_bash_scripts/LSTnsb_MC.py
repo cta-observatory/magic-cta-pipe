@@ -9,16 +9,17 @@ import os
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
-__all__=['nsb']
+__all__ = ["nsb"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
+
 def nsb(run_list, simtel, lst_config, run_number):
     """
     Here we compute the NSB value for a run based on a subset of subruns.
-    
+
     Parameters
     ----------
     run_list: list
@@ -47,7 +48,7 @@ def nsb(run_list, simtel, lst_config, run_number):
                 a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
                 noise.append(a)
             except IndexError:
-                mod = int(len(run_list) / (denominator+1))
+                mod = int(len(run_list) / (denominator + 1))
                 logger.info(
                     f"WARNING: a subrun caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
                 )
@@ -82,7 +83,7 @@ def main():
     simtel = "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz"
 
     source = config["directories"]["target_name"]
-    
+
     lst_config = "lstchain_standard_config.json"
     run_number = run.split(",")[1]
     LST_files = np.sort(glob.glob(f"{source}_LST_nsb_*{run_number}*.txt"))
@@ -102,12 +103,12 @@ def main():
     date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date_lst}/v0.9/tailcut84"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
-    noise=nsb(run_list, simtel, lst_config, run_number)
+    noise = nsb(run_list, simtel, lst_config, run_number)
     if len(noise) == 0:
         return
-    a=np.median(noise)
+    a = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {a}")
-    
+
     with open(f"{source}_LST_nsb_{run_number}.txt", "a+") as f:
         f.write(f"{a}\n")
 

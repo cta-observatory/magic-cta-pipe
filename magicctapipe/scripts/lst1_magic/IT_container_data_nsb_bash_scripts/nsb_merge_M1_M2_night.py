@@ -17,7 +17,7 @@ import yaml
 from magicctapipe import __version__
 from pathlib import Path
 
-__all__=['merge3']
+__all__ = ["merge3"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())

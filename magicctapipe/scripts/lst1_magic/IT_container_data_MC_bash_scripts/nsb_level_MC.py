@@ -10,7 +10,7 @@ import numpy as np
 import os
 import yaml
 
-__all__=['bash_scripts']
+__all__ = ["bash_scripts"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -18,7 +18,7 @@ logger.setLevel(logging.INFO)
 
 
 def bash_scripts(run, config, source, env_name):
-    '''Here we create the bash scripts (one per LST run)
+    """Here we create the bash scripts (one per LST run)
     Parameters
     ----------
     run: str
@@ -30,7 +30,7 @@ def bash_scripts(run, config, source, env_name):
     env_name:str
         Name of the environment
 
-    '''
+    """
     lines = [
         "#!/bin/sh\n\n",
         "#SBATCH -p long\n",
@@ -83,7 +83,6 @@ def main():
         else:
             launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
 
-  
     os.system(launch_jobs)
 
 

@@ -42,7 +42,8 @@ TEL_COMBINATIONS = {
     "LST1_M1": [1, 2],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
     "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-}  #TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE) 
+}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
+
 
 def apply_rfs(event_data, estimator):
     """

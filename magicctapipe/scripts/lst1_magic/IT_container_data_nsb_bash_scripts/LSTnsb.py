@@ -9,11 +9,12 @@ import os
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
-__all__=['nsb']
+__all__ = ["nsb"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+
 
 def nsb(run_list, simtel, lst_config, run_number):
     noise = []
@@ -92,10 +93,10 @@ def main():
     date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date_lst}/v0.9/tailcut84"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
-    noise=nsb(run_list, simtel, lst_config, run_number)
+    noise = nsb(run_list, simtel, lst_config, run_number)
     if len(noise) == 0:
         return
-    a=np.median(noise)
+    a = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {a}")
     for j in range(0, len(nsb_list)):
         if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):

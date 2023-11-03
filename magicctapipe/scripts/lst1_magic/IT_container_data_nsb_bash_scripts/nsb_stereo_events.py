@@ -16,7 +16,7 @@ import yaml
 from magicctapipe import __version__
 from pathlib import Path
 
-__all__=['configfile_stereo', 'bash_stereo']
+__all__ = ["configfile_stereo", "bash_stereo"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())

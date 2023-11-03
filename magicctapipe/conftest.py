@@ -48,6 +48,7 @@ DL1_LST_data = ["dl1_LST-1.Run03265.0094.h5"]
 Temporary paths
 """
 
+
 @pytest.fixture(scope="session")
 def temp_DL1_gamma(tmp_path_factory):
     return tmp_path_factory.mktemp("DL1_gammas")
@@ -232,9 +233,11 @@ def temp_DL2_real_monly(tmp_path_factory):
 def temp_DL3_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL3_monly")
 
+
 """
 Custom data
 """
+
 
 @pytest.fixture(scope="session")
 def dl2_test(temp_DL2_test):
@@ -269,9 +272,11 @@ def pd_test():
     df = pd.DataFrame(np.array([[1, 2], [3, 4], [5, 6]]), columns=["a", "b"])
     return df
 
+
 """
 Remote paths (to download test files)
 """
+
 
 @pytest.fixture(scope="session")
 def base_url():
@@ -283,9 +288,11 @@ def env_prefix():
     # ENVIRONMENT VARIABLES TO BE CREATED
     return "MAGIC_CTA_DATA_"
 
+
 """
 Downloads: files
 """
+
 
 @pytest.fixture(scope="session")
 def dl0_gamma(base_url, env_prefix):
@@ -377,7 +384,7 @@ def config():
 @pytest.fixture(scope="session")
 def config_monly():
     config_path = resource_file("test_config_monly.yaml")
-    return config_path 
+    return config_path
 
 
 @pytest.fixture(scope="session")
@@ -415,6 +422,7 @@ def config_check():
 """
 Data processing
 """
+
 
 @pytest.fixture(scope="session")
 def gamma_l1(temp_DL1_gamma, dl0_gamma, config):

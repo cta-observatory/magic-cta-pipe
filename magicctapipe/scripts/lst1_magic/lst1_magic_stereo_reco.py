@@ -44,7 +44,12 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
-from magicctapipe.io import format_object, get_stereo_events, save_pandas_data_in_table, check_input_list
+from magicctapipe.io import (
+    format_object,
+    get_stereo_events,
+    save_pandas_data_in_table,
+    check_input_list,
+)
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
@@ -71,12 +76,14 @@ def calculate_pointing_separation(event_data, config):
         Angular distance of the LST array and MAGIC pointing directions
         in units of degree
     """
-    
-    assigned_tel_ids = config["mc_tel_ids"] #This variable becomes a dictionary, e.g.: {'LST-1': 1, 'LST-2': 0, 'LST-3': 0, 'LST-4': 0, 'MAGIC-I': 2, 'MAGIC-II': 3}
+
+    assigned_tel_ids = config[
+        "mc_tel_ids"
+    ]  # This variable becomes a dictionary, e.g.: {'LST-1': 1, 'LST-2': 0, 'LST-3': 0, 'LST-4': 0, 'MAGIC-I': 2, 'MAGIC-II': 3}
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
-    LSTs_IDs = list(LSTs_IDs[LSTs_IDs > 0]) #Here we list only the LSTs in use
+    LSTs_IDs = list(LSTs_IDs[LSTs_IDs > 0])  # Here we list only the LSTs in use
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
-    MAGICs_IDs = list(MAGICs_IDs[MAGICs_IDs > 0]) #Here we list only the MAGICs in use
+    MAGICs_IDs = list(MAGICs_IDs[MAGICs_IDs > 0])  # Here we list only the MAGICs in use
 
     # Extract LST events
     df_lst = event_data.query(f"tel_id == {LSTs_IDs}")
@@ -86,8 +93,12 @@ def calculate_pointing_separation(event_data, config):
     df_magic = df_magic.loc[df_lst.index]
 
     # Calculate the mean of the LSTs, and also of the M1 and M2 pointing directions
-    pnt_az_LST, pnt_alt_LST = calculate_mean_direction(lon=df_lst["pointing_az"], lat=df_lst["pointing_alt"], unit="rad")
-    pnt_az_magic, pnt_alt_magic = calculate_mean_direction(lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"], unit="rad")
+    pnt_az_LST, pnt_alt_LST = calculate_mean_direction(
+        lon=df_lst["pointing_az"], lat=df_lst["pointing_alt"], unit="rad"
+    )
+    pnt_az_magic, pnt_alt_magic = calculate_mean_direction(
+        lon=df_magic["pointing_az"], lat=df_magic["pointing_alt"], unit="rad"
+    )
 
     # Calculate the angular distance of their pointing directions
     theta = angular_separation(
@@ -121,8 +132,10 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     """
 
     config_stereo = config["stereo_reco"]
-    assigned_tel_ids = config["mc_tel_ids"] #This variable becomes a dictionary, e.g.: {'LST-1': 1, 'LST-2': 0, 'LST-3': 0, 'LST-4': 0, 'MAGIC-I': 2, 'MAGIC-II': 3}
-    
+    assigned_tel_ids = config[
+        "mc_tel_ids"
+    ]  # This variable becomes a dictionary, e.g.: {'LST-1': 1, 'LST-2': 0, 'LST-3': 0, 'LST-4': 0, 'MAGIC-I': 2, 'MAGIC-II': 3}
+
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
@@ -152,24 +165,27 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
 
     if magic_only_analysis:
-        tel_id=np.asarray(list(assigned_tel_ids.values())[:])
-        used_id=tel_id[tel_id!=0]
-        magic_ids=[item for item in used_id if item not in LSTs_IDs]
-        event_data.query(f"tel_id in {magic_ids}", inplace=True) # Here we select only the events with the MAGIC tel_ids
+        tel_id = np.asarray(list(assigned_tel_ids.values())[:])
+        used_id = tel_id[tel_id != 0]
+        magic_ids = [item for item in used_id if item not in LSTs_IDs]
+        event_data.query(
+            f"tel_id in {magic_ids}", inplace=True
+        )  # Here we select only the events with the MAGIC tel_ids
 
     logger.info(f"\nQuality cuts: {config_stereo['quality_cuts']}")
-    event_data = get_stereo_events(event_data, config=config, quality_cuts=config_stereo["quality_cuts"])
+    event_data = get_stereo_events(
+        event_data, config=config, quality_cuts=config_stereo["quality_cuts"]
+    )
 
     # Check the angular distance of the LST and MAGIC pointing directions
     tel_ids = np.unique(event_data.index.get_level_values("tel_id")).tolist()
 
-    Number_of_LSTs_in_use = len(LSTs_IDs[LSTs_IDs > 0]) 
+    Number_of_LSTs_in_use = len(LSTs_IDs[LSTs_IDs > 0])
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
     Number_of_MAGICs_in_use = len(MAGICs_IDs[MAGICs_IDs > 0])
-    Two_arrays_are_used = (Number_of_LSTs_in_use*Number_of_MAGICs_in_use > 0)
-    
-    if (not is_simulation) and (Two_arrays_are_used):
+    Two_arrays_are_used = Number_of_LSTs_in_use * Number_of_MAGICs_in_use > 0
 
+    if (not is_simulation) and (Two_arrays_are_used):
         logger.info(
             "\nChecking the angular distances of "
             "the LST and MAGIC pointing directions..."
@@ -219,7 +235,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     multi_indices = event_data.groupby(["obs_id", "event_id"]).size().index
 
     for i_evt, (obs_id, event_id) in enumerate(multi_indices):
-
         if i_evt % 100 == 0:
             logger.info(f"{i_evt} events")
 
@@ -237,7 +252,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         tel_ids = df_evt.index.get_level_values("tel_id")
 
         for tel_id in tel_ids:
-
             df_tel = df_evt.loc[tel_id]
 
             # Assign the telescope information
@@ -341,7 +355,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
 
 def main():
-
     start_time = time.time()
 
     parser = argparse.ArgumentParser()
@@ -384,10 +397,10 @@ def main():
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
-    
+
     # Checking if the input telescope list is properly organized:
     check_input_list(config)
-    
+
     # Process the input data
     stereo_reconstruction(args.input_file, args.output_dir, config, args.magic_only)
 

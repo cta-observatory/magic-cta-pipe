@@ -24,7 +24,7 @@ import yaml
 from magicctapipe import __version__
 from pathlib import Path
 
-__all__=['config_file_gen', 'lists_and_bash_gen_MAGIC', 'directories_generator']
+__all__ = ["config_file_gen", "lists_and_bash_gen_MAGIC", "directories_generator"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -122,8 +122,7 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_
                 ) and (
                     time.strptime(i[0], "%Y_%m_%d")
                     <= time.strptime(ST_end[p], "%Y_%m_%d")
-                ): 
-
+                ):
                     if telescope_ids[-1] > 0:
                         number_of_nodes = glob.glob(
                             f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'

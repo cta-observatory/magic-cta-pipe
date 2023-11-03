@@ -18,7 +18,7 @@ from magicctapipe import __version__
 from pathlib import Path
 
 
-__all__=['merge1']
+__all__ = ["merge1"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())

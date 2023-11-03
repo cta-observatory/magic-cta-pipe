@@ -142,7 +142,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         f"\nTarget point: {target_point.round(5).tolist()} with scheme: {scheme}"
     )
 
-    if 'max_distance' in config_dl3:
+    if "max_distance" in config_dl3:
         max_distance = u.Quantity(config_dl3.pop("max_distance"))
         logger.info(f"selecting only nodes up to {max_distance} from the data")
 

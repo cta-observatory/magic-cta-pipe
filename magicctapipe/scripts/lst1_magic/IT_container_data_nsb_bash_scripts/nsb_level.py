@@ -9,7 +9,7 @@ import numpy as np
 import os
 import yaml
 
-__all__=['bash_scripts']
+__all__ = ["bash_scripts"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
