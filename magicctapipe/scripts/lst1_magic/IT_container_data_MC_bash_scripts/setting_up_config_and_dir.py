@@ -54,7 +54,7 @@ def nsb_avg(source, config, LST_list):
         Name of the file where the adopted LST runs are listed
     
     """
-    allfile = np.sort(glob.glob(f"{source}_LST_*.txt"))
+    allfile = np.sort(glob.glob(f"{source}_LST_nsb_*.txt"))
     if len(allfile) == 0:
         return
     noise=[]
