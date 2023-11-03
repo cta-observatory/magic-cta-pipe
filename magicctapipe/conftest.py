@@ -1,13 +1,15 @@
-import pytest
-import numpy as np
-from astropy.io.misc.hdf5 import write_table_hdf5
-from astropy.table import Table
-import pandas as pd
 import subprocess
 from math import trunc
-from ctapipe.utils.download import download_file_cached
-from magicctapipe.utils import resource_file
+
+import numpy as np
+import pandas as pd
+import pytest
 import yaml
+from astropy.io.misc.hdf5 import write_table_hdf5
+from astropy.table import Table
+from ctapipe.utils.download import download_file_cached
+
+from magicctapipe.io import resource_file
 
 maxjoint = 13000
 maxmonly = 500

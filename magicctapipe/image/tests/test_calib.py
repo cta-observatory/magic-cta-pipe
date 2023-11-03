@@ -1,13 +1,10 @@
-from magicctapipe.image.calib import calibrate
 import pytest
-
-
 from ctapipe.calib import CameraCalibrator
-
 from ctapipe.io import EventSource
+from traitlets.config import Config
 
 from magicctapipe.image import MAGICClean
-from traitlets.config import Config
+from magicctapipe.image.calib import calibrate
 
 
 @pytest.fixture(scope="session")

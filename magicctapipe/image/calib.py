@@ -1,9 +1,5 @@
 import numpy as np
-from ctapipe.image import (
-    apply_time_delta_cleaning,
-    number_of_islands,
-    tailcuts_clean,
-)
+from ctapipe.image import apply_time_delta_cleaning, number_of_islands, tailcuts_clean
 from ctapipe.instrument import CameraGeometry
 from lstchain.image.cleaning import apply_dynamic_cleaning
 from lstchain.image.modifier import (
@@ -11,8 +7,8 @@ from lstchain.image.modifier import (
     random_psf_smearer,
     set_numba_seed,
 )
-from magicctapipe.image import MAGICClean
 
+from .cleaning import MAGICClean
 
 __all__ = ["calibrate"]
 
@@ -32,43 +28,41 @@ def calibrate(
 
     Parameters
     ----------
-    event: event
+    event : ctapipe.containers.ArrayEventContainer
         From an EventSource
-    tel_id: int
+    tel_id : int
         Telescope ID
-    config: dictionary
+    config : dict
         Parameters for image extraction and calibration
-    calibrator: CameraCalibrator (ctapipe.calib)
+    calibrator : ctapipe.calib.CameraCalibrator
         ctapipe object needed to calibrate the camera
-    is_lst: bool
+    is_lst : bool
         Whether the telescope is a LST
-    obs_id: int
-        Observation ID. Unsed in case of LST telescope
-    camera_geoms: telescope.camera.geometry
-        Camera geometry. Used in case of LST telescope
-    magic_clean: dictionary (1 entry per MAGIC telescope)
-        Each entry is a MAGICClean object using the telescope camera geometry. Used in case of MAGIC telescope
-
+    obs_id : int, optional
+        Observation ID. Unused in case of LST telescope, by default None
+    camera_geoms : ctapipe.instrument.camera.geometry.CameraGeometry, optional
+        Camera geometry. Used in case of LST telescope, by default None
+    magic_clean : dict, optional
+        Each entry is a MAGICClean object using the telescope camera geometry.
+        Used in case of MAGIC telescope, by default None
 
     Returns
     -------
-    signal_pixels: boolean mask
-        Mask of the pixels selected by the cleaning
-    image: numpy array
-        Array of number of p.e. in the camera pixels
-    peak_time: numpy array
-        Array of the signal peak time in the camera pixels
+    tuple
+        Mask of the pixels selected by the cleaning,
+        array of number of p.e. in the camera pixels,
+        array of the signal peak time in the camera pixels
 
     """
-    if (not is_lst) and (magic_clean == None):
+    if (not is_lst) and (magic_clean is None):
         raise ValueError(
             "Check the provided parameters and the telescope type; MAGIC calibration not possible if magic_clean not provided"
         )
-    if (is_lst) and (obs_id == None):
+    if (is_lst) and (obs_id is None):
         raise ValueError(
             "Check the provided parameters and the telescope type; LST calibration not possible if obs_id not provided"
         )
-    if (is_lst) and (camera_geoms == None):
+    if (is_lst) and (camera_geoms is None):
         raise ValueError(
             "Check the provided parameters and the telescope type; LST calibration not possible if gamera_geoms not provided"
         )

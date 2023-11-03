@@ -27,7 +27,7 @@ Unless there is any particular reason, please use the default half width
 accidental coincidence rate as much as possible by keeping the number of
 actual coincident events.
 
-Please note that the time offset depends on the date of observations 
+Please note that the time offset depends on the date of observations
 as summarized below:
 * before June 12 2021: -3.1 us
 * June 13 2021 to Feb 28 2023: -6.5 us
@@ -35,7 +35,7 @@ as summarized below:
 * April 13 2023 to August 2023: -25.1 us
 * after Sep 11 2023 : -6.2 us
 By default, pre offset search is performed using large shower events.
-The possible time offset is found among all possible combinations of 
+The possible time offset is found among all possible combinations of
 time offsets using those events. Finally, the time offset scan is performed
 around the possible offset found by the pre offset search. Instead of that,
 you can also define the offset scan range in the configuration file.
@@ -58,18 +58,20 @@ import sys
 import time
 from decimal import Decimal
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
+
 from magicctapipe.io import (
+    check_input_list,
     get_stereo_events,
     load_lst_dl1_data_file,
     load_magic_dl1_data_files,
     save_pandas_data_in_table,
     telescope_combinations,
-    check_input_list,
 )
 
 __all__ = ["event_coincidence", "telescope_positions"]

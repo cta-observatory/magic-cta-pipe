@@ -44,11 +44,12 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
+
 from magicctapipe.io import (
+    check_input_list,
     format_object,
     get_stereo_events,
     save_pandas_data_in_table,
-    check_input_list,
 )
 from magicctapipe.utils import calculate_impact, calculate_mean_direction
 
@@ -184,6 +185,11 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
     Number_of_MAGICs_in_use = len(MAGICs_IDs[MAGICs_IDs > 0])
     Two_arrays_are_used = Number_of_LSTs_in_use * Number_of_MAGICs_in_use > 0
+<<<<<<< HEAD
+=======
+
+    if (not is_simulation) and (Two_arrays_are_used):
+>>>>>>> master
 
     if (not is_simulation) and (Two_arrays_are_used):
         logger.info(

@@ -1,16 +1,31 @@
 # coding: utf-8
 
+import datetime
+
+import pandas
 import scipy
 import uproot
-import pandas
-
-from .utils import info_message
 
 __all__ = [
+    "info_message",
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
 ]
+
+
+def info_message(text, prefix="info"):
+    """Prints the specified text with the prefix of the current date
+
+    Parameters
+    ----------
+    text : str
+        text
+    prefix : str, optional
+        prefix, by default 'info'
+    """
+    date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    print(f"({prefix:s}) {date_str:s}: {text:s}")
 
 
 def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
@@ -21,18 +36,18 @@ def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
 
     Parameters
     ----------
-    times: array_like
+    times : np.ndarray
         Array of the time data points.
-    criterion: array_like
+    criterion : np.ndarray
         Array of True/False values, indicating the goodness of the
         corresponding data points.
-    max_time_diff: float, optional
+    max_time_diff : float, optional
         Maximal time difference between the time intervals, below which
         they are joined into one.
 
     Returns
     -------
-    parts_edges: list
+    parts_edges : list
         List of start/stop pairs, describing the identified time intervals.
 
     """
@@ -101,14 +116,14 @@ def intersect_time_intervals(intervals1, intervals2):
 
     Parameters
     ----------
-    interval1: list
+    interval1 : list
         First list of (TStart, TStop) lists (or tuples).
-    interval2: list
+    interval2 : list
         Second list of (TStart, TStop) lists (or tuples).
 
     Returns
     -------
-    joint_intervals: list
+    joint_intervals : list
         A list of (TStart, TStop) lists, representing the start/stop invervals,
         common in both input lists.
 
@@ -315,12 +330,12 @@ class GTIGenerator:
 
         Parameters
         ----------
-        config: dict
+        config : dict
             Configuration dictionary (e.g. read from a YAML file).
 
         Returns
         -------
-        joint_intervals: list
+        joint_intervals : list
             A list of (TStart, TStop) lists, representing the identified GTIs.
 
         """

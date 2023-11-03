@@ -7,18 +7,16 @@ This can be later used to compare the cleaned images as produced by MARS and
 by magic-cta-pipe.
 """
 
+import argparse
 import re
 import sys
-import argparse
 from pathlib import Path
 
 import numpy as np
-import uproot
 import tables
-
+import uproot
 from ctapipe.core.container import Container, Field
-from ctapipe.io import HDF5TableWriter, HDF5TableReader
-
+from ctapipe.io import HDF5TableReader, HDF5TableWriter
 from ctapipe_io_magic import MARSDataLevel
 
 

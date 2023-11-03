@@ -1,5 +1,5 @@
-from astropy.time import Time
 import numpy as np
+from astropy.time import Time
 from ctapipe.instrument import CameraGeometry
 
 __all__ = [
@@ -89,7 +89,8 @@ class MAGICBadPixelsCalc:
 
         Returns
         -------
-        self.badrmspixel_mask: Mask with the Pedestal RMS outliers.
+        bool
+            Mask with the Pedestal RMS outliers.
         """
 
         if (len(charge_std)) != self.n_camera_pixels:
@@ -183,7 +184,8 @@ class MAGICBadPixelsCalc:
 
         Returns
         -------
-        badrmspixel_mask: has two dimensions: Masks for M1 and/or M2.
+        bool
+            Has two dimensions: masks for M1 and/or M2.
         """
 
         badrmspixel_mask = [None, None]
@@ -218,7 +220,7 @@ class MAGICBadPixelsCalc:
 
         Returns
         -------
-        badrmspixel_indices
+        list
         """
         badrmspixel_indices = [[None], [None]]
 
@@ -238,7 +240,7 @@ class MAGICBadPixelsCalc:
 
         Returns
         -------
-         self.sample_times_ped, self.charge_std_outliers
+        self.sample_times_ped, self.charge_std_outliers
         """
 
         if self.n_samples_ped[tel_id - 1] == -1:
@@ -286,7 +288,8 @@ class MAGICBadPixelsCalc:
 
         Returns
         -------
-        deadpixel_mask: has two dimensions: Masks for M1 and/or M2.
+        bool
+            Has two dimensions: masks for M1 and/or M2.
         """
 
         deadpixel_mask = [[None], [None]]
@@ -351,7 +354,8 @@ class MAGICBadPixelsCalc:
 
         Returns
         -------
-        badpixel_mask: has two dimensions: Masks for M1 and/or M2.
+        bool
+            Has two dimensions: masks for M1 and/or M2.
         """
         badpixel_mask = [[None], [None]]
 

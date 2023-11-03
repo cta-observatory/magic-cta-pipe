@@ -1,5 +1,4 @@
 import numpy as np
-
 from ctapipe.containers import LeakageContainer
 
 __all__ = [
@@ -65,14 +64,14 @@ def get_leakage(geom, event_image, clean_mask):
     ----------
     geom : ctapipe.instrument.CameraGeometry
         Camera geometry information
-    event_image : np.array
+    event_image : np.ndarray
         Event image
-    clean_mask : np.array
+    clean_mask : np.ndarray
         Cleaning mask
 
     Returns
     -------
-    LeakageContainer
+    ctapipe.containers.LeakageContainer
     """
 
     outermostring_mask, outerring_mask = get_border_masks_mars(geom)

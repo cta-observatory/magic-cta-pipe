@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import sklearn.ensemble
 
-
 __all__ = ["EnergyRegressor", "DispRegressor", "EventClassifier"]
 
 logger = logging.getLogger(__name__)

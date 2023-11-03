@@ -40,6 +40,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
+
 from magicctapipe.io import format_object, load_train_data_files
 from magicctapipe.io.io import GROUP_INDEX_TRAIN
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier

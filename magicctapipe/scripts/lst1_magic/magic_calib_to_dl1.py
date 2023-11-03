@@ -50,12 +50,13 @@ from ctapipe.image import (
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_magic import MAGICEventSource
+
 from magicctapipe.image import MAGICClean
 from magicctapipe.io import (
     RealEventInfoContainer,
     SimEventInfoContainer,
-    format_object,
     check_input_list,
+    format_object,
 )
 from magicctapipe.utils import calculate_disp, calculate_impact
 

@@ -1,15 +1,17 @@
+from math import isclose
+
+import astropy.units as u
+import numpy as np
+import pytest
+from astropy.table import QTable
+
+from magicctapipe import __version__
 from magicctapipe.io.gadf import (
     create_event_hdu,
     create_gh_cuts_hdu,
     create_gti_hdu,
     create_pointing_hdu,
 )
-from magicctapipe import __version__
-import numpy as np
-import pytest
-import astropy.units as u
-from astropy.table import QTable
-from math import isclose
 
 
 @pytest.fixture(scope="session")

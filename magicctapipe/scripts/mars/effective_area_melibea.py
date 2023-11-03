@@ -1,9 +1,7 @@
-import numpy as np
-
-from astropy.table import QTable, vstack
 import astropy.units as u
-
+import numpy as np
 import uproot
+from astropy.table import QTable, vstack
 from pyirf.simulations import SimulatedEventsInfo
 
 melibea_columns = {

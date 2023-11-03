@@ -1,20 +1,20 @@
+import numpy as np
+import pandas as pd
+import pytest
+
 from magicctapipe.io.io import (
     format_object,
     get_dl2_mean,
     get_stereo_events,
+    load_dl2_data_file,
+    load_irf_files,
+    load_lst_dl1_data_file,
+    load_magic_dl1_data_files,
+    load_mc_dl2_data_file,
     load_train_data_files,
     load_train_data_files_tel,
-    load_mc_dl2_data_file,
-    load_irf_files,
     save_pandas_data_in_table,
-    load_magic_dl1_data_files,
-    load_lst_dl1_data_file,
-    load_dl2_data_file,
 )
-
-import pytest
-import numpy as np
-import pandas as pd
 
 
 def test_format_object():

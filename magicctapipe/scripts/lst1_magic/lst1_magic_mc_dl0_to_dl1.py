@@ -40,12 +40,12 @@ from ctapipe.image import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
+from traitlets.config import Config
 
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.calib import calibrate
-from magicctapipe.io import SimEventInfoContainer, format_object, check_input_list
+from magicctapipe.io import SimEventInfoContainer, check_input_list, format_object
 from magicctapipe.utils import calculate_disp, calculate_impact
-from traitlets.config import Config
 
 __all__ = ["mc_dl0_to_dl1"]
 
@@ -225,9 +225,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
             )  # If both have trigger, then magic_stereo = True
 
             for tel_id in tels_with_trigger:
+
                 if (
                     tel_id in LSTs_IDs
-                ):  ##If the ID is in the LST list, we call calibrate on the LST()
+                ):  # If the ID is in the LST list, we call calibrate on the LST()
                     # Calibrate the LST-1 event
                     signal_pixels, image, peak_time = calibrate(
                         event=event,
@@ -394,6 +395,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
 
 def main():
+    """Here we collect the input parameters from the command line, load the configuration file and run mc_dl0_to_dl1()"""
+
     """Here we collect the input parameters from the command line, load the configuration file and run mc_dl0_to_dl1()"""
 
     start_time = time.time()
