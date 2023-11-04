@@ -35,7 +35,8 @@ def nsb(run_list, simtel, lst_config, run_number):
     """
     noise = []
     denominator = 25
-    if len(run_list) == 0:
+    if len(run_list) == 0:     
+        logger.info('There is no subrun matching the provided run number. Check the list of the LST runs (LST_runs.txt)')
         return
     if len(run_list) < denominator:
         mod = 1
@@ -106,6 +107,7 @@ def main():
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number)
     if len(noise) == 0:
+        logger.info('No NSB value could be evaluated: check the observation logs (observation problems, car flashes...)') 
         return
     a = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {a}")

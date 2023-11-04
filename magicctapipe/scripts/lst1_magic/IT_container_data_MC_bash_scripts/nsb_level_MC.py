@@ -63,20 +63,21 @@ def main():
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     source = config["directories"]["target_name"]
-    runs = config["general"]["LST_runs"]
+    lst_runs_filename = config["general"]["LST_runs"]
     env_name = config["general"]["env_name"]
 
-    with open(str(runs), "r") as LSTfile:
-        run = LSTfile.readlines()
+    with open(str(lst_runs_filename), "r") as LSTfile:
+        run_list = LSTfile.readlines()
     print("***** Generating bashscripts...")
-    for i in run:
-        i = i.rstrip()
-        bash_scripts(i, args.config_file, source, env_name)
+    for run in run_list:
+        run = run.rstrip()
+        bash_scripts(run, args.config_file, source, env_name)
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob(f"{source}_run_*.sh"))
 
-    if len(list_of_bash_scripts) < 1:
+    if len(list_of_bash_scripts) < 1:  
+        print('Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list')
         return
     for n, run in enumerate(list_of_bash_scripts):
         if n == 0:
