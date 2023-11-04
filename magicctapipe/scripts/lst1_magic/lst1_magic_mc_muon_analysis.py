@@ -50,13 +50,13 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input simtel MC DL0 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output file
-    config: dict
+    config : dict
         Configuration for the analysis
-    plots_path: string
+    plots_path : str
         Path to output plots. No plots are created if None is provided
     """
 
@@ -290,6 +290,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
     parser = argparse.ArgumentParser()
 

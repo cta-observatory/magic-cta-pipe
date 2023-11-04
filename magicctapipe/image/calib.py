@@ -1,3 +1,6 @@
+"""
+Module for calibration
+"""
 import numpy as np
 from ctapipe.image import apply_time_delta_cleaning, number_of_islands, tailcuts_clean
 from ctapipe.instrument import CameraGeometry
@@ -35,7 +38,7 @@ def calibrate(
     config : dict
         Parameters for image extraction and calibration
     calibrator : ctapipe.calib.CameraCalibrator
-        ctapipe object needed to calibrate the camera
+        `ctapipe` object needed to calibrate the camera
     is_lst : bool
         Whether the telescope is a LST
     obs_id : int, optional
@@ -52,7 +55,6 @@ def calibrate(
         Mask of the pixels selected by the cleaning,
         array of number of p.e. in the camera pixels,
         array of the signal peak time in the camera pixels
-
     """
     if (not is_lst) and (magic_clean is None):
         raise ValueError(

@@ -43,12 +43,16 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
 
     Parameters
     ----------
-    input_file:
-    output_dir:
-    config:
-    process_run:
-    plots_path:
-
+    input_file : str
+        Input file.
+    output_dir : str
+        Output directory.
+    config : dict
+        Configuration.
+    process_run : bool
+        Flag to process all subruns from the same run.
+    plots_path : bool
+        Flag to plot or not the plots.
     """
 
     event_source = EventSource(input_url=input_file)
@@ -139,6 +143,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
 
 
 def main():
+    """Main function."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

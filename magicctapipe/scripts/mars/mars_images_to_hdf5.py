@@ -21,8 +21,17 @@ from ctapipe_io_magic import MARSDataLevel
 
 
 def parse_args(args):
-    """
-    Parse command line options and arguments.
+    """Parse command line options and arguments.
+
+    Parameters
+    ----------
+    args : dict
+        Arguments.
+
+    Returns
+    -------
+    dict
+        Parsed arguments.
     """
 
     parser = argparse.ArgumentParser(description="", prefix_chars="-")
@@ -52,19 +61,19 @@ def get_run_info_from_name(file_name):
 
     Returns
     -------
-    run_number: int
+    run_number : int
         The run number of the file.
-    is_mc: Bool
+    is_mc : Bool
         Flag to tag MC files
-    telescope: int
+    telescope : int
         Number of the telescope
-    datalevel: MARSDataLevel
+    datalevel : MARSDataLevel
         Data level according to MARS
 
     Raises
     ------
     IndexError
-        Description
+        Could not identify run information.
     """
 
     file_name = str(file_name)
@@ -134,6 +143,8 @@ def get_run_info_from_name(file_name):
 
 
 class ImageContainerCalibrated(Container):
+    """Container for calibrated images."""
+
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
     tel_id = Field(-1, "Telescope ID")
@@ -152,6 +163,8 @@ class ImageContainerCalibrated(Container):
 
 
 class ImageContainerCleaned(Container):
+    """Container for cleaned images."""
+
     obs_id = Field(-1, "Observation ID")
     event_id = Field(-1, "Event ID")
     tel_id = Field(-1, "Telescope ID")
@@ -282,6 +295,8 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
         Mask for input MARS files
     save_calibrated : bool, optional
         Flag to save also calibrated images
+    max_events : int
+        Maximum number of events to process
     """
 
     mars_files = Path(mars_files_mask)
@@ -437,6 +452,13 @@ def save_images(mars_files_mask, save_calibrated=False, max_events=-1):
 
 
 def main(*args):
+    """Main function.
+
+    Parameters
+    ----------
+    *args : dict
+        Arguments.
+    """
     flags = parse_args(args)
 
     save_calibrated = flags.calibrated

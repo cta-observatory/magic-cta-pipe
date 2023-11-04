@@ -1,5 +1,6 @@
-# coding: utf-8
-
+"""
+GTIs calculation
+"""
 import datetime
 
 import pandas
@@ -20,9 +21,9 @@ def info_message(text, prefix="info"):
     Parameters
     ----------
     text : str
-        text
+        Text
     prefix : str, optional
-        prefix, by default 'info'
+        Prefix, by default 'info'
     """
     date_str = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     print(f"({prefix:s}) {date_str:s}: {text:s}")
@@ -47,9 +48,8 @@ def identify_time_edges(times, criterion, max_time_diff=6.9e-4):
 
     Returns
     -------
-    parts_edges : list
+    list
         List of start/stop pairs, describing the identified time intervals.
-
     """
 
     times = scipy.array(times)
@@ -116,17 +116,16 @@ def intersect_time_intervals(intervals1, intervals2):
 
     Parameters
     ----------
-    interval1 : list
+    intervals1 : list
         First list of (TStart, TStop) lists (or tuples).
-    interval2 : list
+    intervals2 : list
         Second list of (TStart, TStop) lists (or tuples).
 
     Returns
     -------
-    joint_intervals : list
+    list
         A list of (TStart, TStop) lists, representing the start/stop invervals,
         common in both input lists.
-
     """
 
     joined_intervals = []
@@ -154,16 +153,54 @@ def intersect_time_intervals(intervals1, intervals2):
 
 
 class GTIGenerator:
+    """Generate good time intervals (GTI).
+
+    Parameters
+    ----------
+    config : dict, optional
+        Configuration, by default None
+    verbose : bool, optional
+        Verbose flag, by default False
+    """
+
     def __init__(self, config=None, verbose=False):
+        """Initialize class.
+
+        Parameters
+        ----------
+        config : dict, optional
+            Configuration, by default None
+        verbose : bool, optional
+            Verbose flag, by default False
+        """
         self._config = config
         self.verbose = verbose
 
     @property
     def config(self):
+        """Copy configuration.
+
+        Returns
+        -------
+        dict
+            Configuration.
+        """
         return self._config.copy()
 
     @config.setter
     def config(self, new_config):
+        """Set new configuration.
+
+        Parameters
+        ----------
+        new_config : dict
+            New configuration.
+
+        Raises
+        ------
+        ValueError
+            Error if `event_list` key is not present in configuration.
+        """
         if "event_list" not in new_config:
             raise ValueError(
                 'GTI generator error: the configuration dict is missing the "event_list" section.'
@@ -172,6 +209,25 @@ class GTIGenerator:
         self._config = new_config.copy()
 
     def _identify_data_taking_time_edges(self, file_list, max_tdiff=1):
+        """Identify data taking time edges.
+
+        Parameters
+        ----------
+        file_list : list
+            List of files.
+        max_tdiff : int, optional
+            Maximum time difference, by default 1
+
+        Returns
+        -------
+        list
+            List of data taking time edges.
+
+        Raises
+        ------
+        ValueError
+            Error if no files to process.
+        """
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
@@ -214,6 +270,25 @@ class GTIGenerator:
         return time_intervals
 
     def _identify_dc_time_edges(self, file_list):
+        """Identifies time edges after DC cuts.
+
+        Parameters
+        ----------
+        file_list : list
+            File list.
+
+        Returns
+        -------
+        list
+            List of time edges after DC cuts.
+
+        Raises
+        ------
+        ValueError
+            Error if no files to process.
+        ValueError
+            Error if no DC cuts given.
+        """
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
@@ -270,6 +345,25 @@ class GTIGenerator:
         return time_intervals
 
     def _identify_l3rate_time_edges(self, file_list):
+        """Identifies time edges after L3 rate cuts.
+
+        Parameters
+        ----------
+        file_list : list
+            File list.
+
+        Returns
+        -------
+        list
+            List of time edges after L3 rate cuts.
+
+        Raises
+        ------
+        ValueError
+            Error if no files to process.
+        ValueError
+            Error if no L3 rate cuts given.
+        """
         if not file_list:
             raise ValueError("GTI generator: no files to process")
 
@@ -330,14 +424,13 @@ class GTIGenerator:
 
         Parameters
         ----------
-        config : dict
-            Configuration dictionary (e.g. read from a YAML file).
+        file_list : list
+            File list.
 
         Returns
         -------
-        joint_intervals : list
+        list
             A list of (TStart, TStop) lists, representing the identified GTIs.
-
         """
 
         if not self.config:
