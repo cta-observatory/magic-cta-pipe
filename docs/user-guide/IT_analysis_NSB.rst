@@ -3,10 +3,10 @@
 IT Cluster analysis: NSB_matching
 =================================
 
-TODO:
+TODO
 ----- 
 
-1. Database (joint observations)
+1. Database (joint observations): choose format and share the needed file
 
 Quick start tutorial
 --------------------
