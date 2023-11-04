@@ -47,8 +47,8 @@ lint:
 	@flake8 magicctapipe
 
 env:
-	conda env create -n cta-dev -f environment.yml
-	source activate cta-dev
+	conda env create -n magic-lst -f environment.yml
+	source activate magic-lst
 
 develop:
 	pip install -e .
