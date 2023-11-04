@@ -1,3 +1,6 @@
+"""
+Utilities for camera geometry transformations
+"""
 from ctapipe.instrument import CameraGeometry
 
 __all__ = [
@@ -11,7 +14,7 @@ def scale_camera_geometry(camera_geom, factor):
 
     Parameters
     ----------
-    camera : ctapipe.instrument.camera.geometry.CameraGeometry
+    camera_geom : ctapipe.instrument.camera.geometry.CameraGeometry
         Camera geometry
     factor : float
         Scale factor

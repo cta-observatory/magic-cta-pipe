@@ -68,13 +68,13 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     Parameters
     ----------
-    input_file_dl2: str
+    input_file_dl2 : str
         Path to an input DL2 data file
-    input_dir_irf: str
+    input_dir_irf : str
         Path to a directory where input IRF files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL3 data file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
     """
 
@@ -385,6 +385,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

@@ -1,3 +1,6 @@
+"""
+MAGIC bad pixels calculation
+"""
 import numpy as np
 from astropy.time import Time
 from ctapipe.instrument import CameraGeometry
@@ -8,7 +11,35 @@ __all__ = [
 
 
 class MAGICBadPixelsCalc:
-    def __init__(self, is_simulation, camera=None, config=None, tool=None, **kwargs):
+    """Calculate bad pixels for MAGIC camera.
+
+    Parameters
+    ----------
+    is_simulation : bool
+        Flag for simulation or real data
+    camera : ctapipe.instrument.camera.geometry.CameraGeometry, optional
+        Camera geometry, by default None
+    config : dict, optional
+        Configuration dictionary, by default None
+    """
+
+    def __init__(self, is_simulation, camera=None, config=None):
+        """Initialize class.
+
+        Parameters
+        ----------
+        is_simulation : bool
+            Flag for simulation or real data
+        camera : ctapipe.instrument.camera.geometry.CameraGeometry, optional
+            Camera geometry, by default None
+        config : dict, optional
+            Configuration dictionary, by default None
+
+        Raises
+        ------
+        ValueError
+            Error if wrong keys.
+        """
         # MAGIC telescope description
         if camera is None:
             camera = CameraGeometry.from_name("MAGICCam")
@@ -66,9 +97,13 @@ class MAGICBadPixelsCalc:
         self.is_mc = is_simulation
 
     def _check_new_run(self, event):
-        """
-        Initializes or resets for each new run subrun-wise dead pixel samples
+        """Initializes or resets for each new run subrun-wise dead pixel samples
         or pedestal info with computed outlier masks.
+
+        Parameters
+        ----------
+        event : ctapipe.containers.ArrayEventContainer
+            Event container.
         """
 
         if event.index.obs_id != self.current_obs_id:
@@ -86,6 +121,11 @@ class MAGICBadPixelsCalc:
         """
         This internal method calculates the pedestal outlier pixels depending on the
         values in self.config. Corresponds to mbadpixels/MBadPixelsCalc::CheckPedestalRms()
+
+        Parameters
+        ----------
+        charge_std : np.ndarray
+            Charge standard deviation.
 
         Returns
         -------
@@ -174,6 +214,18 @@ class MAGICBadPixelsCalc:
         return True
 
     def _getpixratiosqrt(self, i_pix):
+        """Return pixels ration
+
+        Parameters
+        ----------
+        i_pix : int
+            Pixel index
+
+        Returns
+        -------
+        float
+            Pixel ratio.
+        """
         #         i_pixzero = np.where(self.geom.pix_id == 0)[0][0]
         #         return np.sqrt(self.geom.pix_area[i_pix] / self.geom.pix_area[i_pixzero])
         return 1.0
@@ -181,6 +233,11 @@ class MAGICBadPixelsCalc:
     def get_badrmspixel_mask(self, event):
         """
         Fetch the bad RMS pixel mask for a given event, that is the event time.
+
+        Parameters
+        ----------
+        event : ctapipe.containers.ArrayEventContainer
+            Event container.
 
         Returns
         -------
@@ -218,9 +275,15 @@ class MAGICBadPixelsCalc:
         """
         Quick workaround to get the pixel IDs and not the mask
 
+        Parameters
+        ----------
+        event : ctapipe.containers.ArrayEventContainer
+            Event container.
+
         Returns
         -------
         list
+            Bad pixels indices.
         """
         badrmspixel_indices = [[None], [None]]
 
@@ -238,9 +301,12 @@ class MAGICBadPixelsCalc:
         Update the pedestal RMS outliers. Does it only once after initializing the class.
         and reduces the samples to the unique ones.
 
-        Returns
-        -------
-        self.sample_times_ped, self.charge_std_outliers
+        Parameters
+        ----------
+        tel_id : int
+            Telescope ID
+        event : ctapipe.containers.ArrayEventContainer
+            Event container.
         """
 
         if self.n_samples_ped[tel_id - 1] == -1:
@@ -285,6 +351,11 @@ class MAGICBadPixelsCalc:
     def get_deadpixel_mask(self, event):
         """
         Fetch the subrun-wise defined dead pixels for a given event, that is the event time.
+
+        Parameters
+        ----------
+        event : ctapipe.containers.ArrayEventContainer
+            Event container.
 
         Returns
         -------
@@ -351,6 +422,11 @@ class MAGICBadPixelsCalc:
     def get_badpixel_mask(self, event):
         """
         Fetch the union of bad RMS and bad pixels for a given event, that is the event time.
+
+        Parameters
+        ----------
+        event : ctapipe.containers.ArrayEventContainer
+            Event container.
 
         Returns
         -------

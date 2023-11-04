@@ -19,3 +19,17 @@ exclude = '''
   | build
 )/
 '''
+
+[tool.numpydoc_validation]
+checks = [
+    "all",
+    "EX01",
+    "ES01",
+    "GL01",
+    "PR09",
+    "RT05",
+    "SA01",
+    "SS03",
+    "SS05",
+    "SS06",
+]

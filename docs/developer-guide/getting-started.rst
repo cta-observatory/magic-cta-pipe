@@ -118,6 +118,12 @@ You then have to fix the reported issues before tying to commit again.
 Note that a common problem is code not complying with the style guide, and that whenever this was the only problem found,
 simply adding the changes resulting from the pre-commit hook to the commit will result in your changes being accepted.
 
+``pre-commit`` will run the following checks:
+
+* ``isort``, which checks the import statements
+* ``black`` and ``flake8``, which check for the formatting of the code
+* ``numpydoc-validation``, which checks for the ``numpydoc`` validation tools.
+
 Run the tests to make sure everything is OK:
 
 .. code-block:: console

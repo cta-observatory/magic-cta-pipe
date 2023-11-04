@@ -64,12 +64,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input simtel MC DL0 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL1 data file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
+    focal_length : str
+        Focal length choice, effective or nominal
     """
 
     assigned_tel_ids = config[
@@ -395,8 +397,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
 
 def main():
-
-    """Here we collect the input parameters from the command line, load the configuration file and run mc_dl0_to_dl1()"""
+    """Main function."""
 
     start_time = time.time()
 

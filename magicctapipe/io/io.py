@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+I/O utilities
+"""
 import glob
 import logging
 import pprint
@@ -118,7 +118,7 @@ def check_input_list(config):
     Parameters
     ----------
     config : dict
-        dictionary imported from the yaml configuration file with information about the telescope IDs.
+        Dictionary imported from the yaml configuration file with information about the telescope IDs.
 
     Raises
     ------
@@ -159,7 +159,7 @@ def telescope_combinations(config):
     Parameters
     ----------
     config : dict
-        yaml file with information about the telescope IDs.
+        Yaml file with information about the telescope IDs.
 
     Returns
     -------
@@ -180,6 +180,15 @@ def telescope_combinations(config):
     keys = list(TEL_NAMES.keys())
 
     def recursive_solution(current_tel, current_comb):
+        """Recursive solution for telescope names and combination.
+
+        Parameters
+        ----------
+        current_tel : int
+            Current telescope
+        current_comb : str
+            Current combination
+        """
 
         if current_tel == len(
             keys
@@ -218,12 +227,12 @@ def format_object(input_object):
 
     Parameters
     ----------
-    input_dict : dict
+    input_object : dict
         Dictionary that should be formatted
 
     Returns
     -------
-    string : str
+    str
         The formatted object
     """
 
@@ -259,7 +268,7 @@ def get_stereo_events_old(
 
     Returns
     -------
-    event_data_stereo : pandas.DataFrame
+    pandas.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
     TEL_COMBINATIONS = {
@@ -350,7 +359,7 @@ def get_stereo_events(
 
     Returns
     -------
-    event_data_stereo : pandas.DataFrame
+    pandas.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
 
@@ -428,7 +437,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
 
     Returns
     -------
-    event_data_mean : pandas.DataFrame
+    pandas.DataFrame
         Data frame of the shower events with mean DL2 parameters
 
     Raises
@@ -620,12 +629,12 @@ def load_magic_dl1_data_files(input_dir, config):
     input_dir : str
         Path to a directory where input MAGIC DL1 data files are stored
     config : dict
-        yaml file with information about the telescope IDs.
+        Yaml file with information about the telescope IDs.
 
     Returns
     -------
     event_data : pandas.DataFrame
-        dataframe of MAGIC events
+        Dataframe of MAGIC events
     subarray : ctapipe.instrument.subarray.SubarrayDescription
         MAGIC subarray description
 
@@ -709,7 +718,7 @@ def load_train_data_files(
 
     Returns
     -------
-    data_train : dict
+    dict
         Data frames of the shower events separated by the telescope
         combination types
 
@@ -789,7 +798,7 @@ def load_train_data_files_tel(
     input_dir : str
         Path to a directory where input DL1-stereo files are stored
     config : dict
-        yaml file with information about the telescope IDs.
+        Yaml file with information about the telescope IDs.
     offaxis_min : str, optional
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
@@ -799,12 +808,10 @@ def load_train_data_files_tel(
     true_event_class : int, optional
         True event class of the input events
 
-
     Returns
     -------
-    data_train : dict
+    dict
         Data frames of the shower events separated telescope-wise
-
 
     Raises
     ------
@@ -888,11 +895,11 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     Returns
     -------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table with the MC DL2 events surviving the cuts
-    pointing: np.ndarray
+    pointing : np.ndarray
         Telescope pointing direction (zd, az) in the unit of degree
-    sim_info: pyirf.simulations.SimulatedEventsInfo
+    sim_info : pyirf.simulations.SimulatedEventsInfo
         Container of the simulation information
 
     Raises
@@ -1017,7 +1024,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     on_time : astropy.units.quantity.Quantity
         ON time of the input data
     deadc : float
-        dead time correction factor
+        Dead time correction factor
 
     Raises
     ------
@@ -1136,7 +1143,7 @@ def load_irf_files(input_dir_irf):
     irf_data : dict
         IRF data
     extra_header : dict
-        extra header of the input IRF data
+        Extra header of the input IRF data
 
     Raises
     ------

@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+DL3 generation utilities
+"""
 import logging
 
 import numpy as np
@@ -45,12 +45,12 @@ def create_gh_cuts_hdu(gh_cuts, reco_energy_bins, fov_offset_bins, **header_card
         Bin edges in the reconstructed energy
     fov_offset_bins : astropy.units.quantity.Quantity
         Bin edges in the field of view offset
-    header_cards : dict
+    **header_cards : dict
         Additional metadata to add to the header
 
     Returns
     -------
-    gh_cuts_hdu : astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         Gammaness-cut HDU
     """
 
@@ -116,7 +116,7 @@ def create_event_hdu(
 
     Returns
     -------
-    event_hdu : astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         Event HDU
 
     Raises
@@ -245,7 +245,7 @@ def create_gti_hdu(event_table):
 
     Returns
     -------
-    gti_hdu : astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         GTI HDU
     """
 
@@ -290,7 +290,7 @@ def create_pointing_hdu(event_table):
 
     Returns
     -------
-    pointing_hdu : astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         Pointing HDU
     """
 
