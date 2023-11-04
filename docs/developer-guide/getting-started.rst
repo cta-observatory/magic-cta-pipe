@@ -209,7 +209,7 @@ we recommend starting a new branch like this:
 Edit the code
 ^^^^^^^^^^^^^
 
-and make as many commits as you want (more than one is generally
+Make as many commits as you want (more than one is generally
 better for large changes!).
 
 .. code-block:: sh
@@ -240,7 +240,7 @@ sub-module), check the style, and make sure the docs render correctly
    Therefore it's best to group related changes with ``git
    add <files>``. You may even commit only *parts* of a changed file
    using and ``git add -p``.  If you want to keep your git commit
-   history clean, learn to use commands like ``git commit --ammend``
+   history clean, learn to use commands like ``git commit --amend``
    (append to previous commit without creating a new one, e.g. when
    you find a typo or something small).
 
@@ -330,10 +330,39 @@ For differences between rebasing and merging and when to use which, see `this tu
 Create a *Pull Request*
 ^^^^^^^^^^^^^^^^^^^^^^^
 
-When you're happy, you create PR on on your github fork page by clicking
-"pull request".  You can also do this via *GitHub Desktop* if you have
-that installed, by pushing the pull-request button in the
-upper-right-hand corner.
+.. warning::
+   Before creating a pull request, please check the following:
+
+   * the code style is ok i.e. run:
+
+      .. code-block:: console
+
+         pre-commit run --all-files
+
+     and possibly fix files that needs changes
+
+   * the documentation builds without issues i.e. run:
+
+      .. code-block:: console
+
+         make doc
+
+     and have a look at the local documentation with your browser by opening ``docs/_build/html/index.html``
+
+   * the tests are passing i.e. run:
+
+      .. code-block:: console
+
+         make test
+
+     and fix the code if there are failing tests.
+
+When you are happy, you can create a pull request (PR):
+
+* if you work on a fork, on your github fork page by clicking "pull request". You can also do this via *GitHub Desktop* if you have
+  that installed, by pushing the pull-request button in the upper-right-hand corner.
+* if you work on the main repository, on the `magic-cta-pipe pull requests page <https://github.com/cta-observatory/magic-cta-pipe/pulls>`_,
+  by clicking on the `New pull request` button.
 
 Make sure to describe all the changes and give examples and use cases!
 
@@ -345,7 +374,11 @@ Wait for a code review
 Keep in mind the following:
 
 * At least one reviewer must look at your code and accept your
-  request. They may ask for changes before accepting.
+  request. They may ask for changes before accepting. Like before opening a PR,
+  please verify that code style is ok, that documentation builds fine and that
+  unit tests are not failing before committing new changes to the PR branch. This
+  avoids that the Continuos Integration runs for changes that you know already
+  are not passing all checks. See also :ref:`pull-requests` section for more info.
 * All unit tests must pass.  They are automatically run by *Travis* when
   you submit or update your pull request and you can monitor the
   results on the pull-request page.  If there is a test that you added
@@ -355,7 +388,8 @@ Keep in mind the following:
   feature is complete.
 * All documentation must build without errors. Again, this is checked
   by *Travis*.  It is your responsibility to run ``make doc`` and check
-  that you don't have any syntax errors in your docstrings.
+  that you don't have any syntax errors in your docstrings (check the
+  local documentation in your browser by opening the file ``docs/_build/html/index.html``)
 * All code you have written should follow the style guide (e.g. no
   warnings when you run the ``flake8`` syntax checker)
 
