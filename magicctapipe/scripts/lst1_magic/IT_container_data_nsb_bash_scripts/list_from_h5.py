@@ -1,3 +1,7 @@
+"""
+By using this scrip, the list of MAGIC and LST runs (date and run number) can be automatically created from a dataframe in the .h5 format
+"""
+
 import os
 from datetime import datetime
 
@@ -6,8 +10,22 @@ import yaml
 
 
 def split_lst_date(df):
-    date = df["DATE"]
 
+    """
+    This function appends to the provided dataframe, which contains the LST date as YYYYMMDD in one of the columns, four new columns: the LST year, month and day and the date as YYYY_MM_DD
+
+    Parameters
+    ----------
+    df : :class:`pandas.DataFrame`
+        Dataframe of the joint MAGIC+LST-1 observations
+
+    Returns
+    -------
+    :class:`pandas.DataFrame`
+        The input dataframe with some added columns
+    """
+
+    date = df["DATE"]
     df["YY_LST"] = date.str[:4]
     df["MM_LST"] = date.str[4:6]
     df["DD_LST"] = date.str[6:8]
@@ -17,6 +35,21 @@ def split_lst_date(df):
 
 
 def magic_date(df):
+
+    """
+    This function appends to the provided dataframe, which contains the LST date, year, month and day, a column with the MAGIC date (in the YYYY_MM_DD format)
+
+    Parameters
+    ----------
+    df : :class:`pandas.DataFrame`
+        Dataframe of the joint MAGIC+LST-1 observations
+
+    Returns
+    -------
+    :class:`pandas.DataFrame`
+        The input dataframe with an added column
+    """
+
     date_lst = pd.to_datetime(f'{df["YY_LST"]}/{df["MM_LST"]}/{df["DD_LST"]}')
 
     delta = pd.Timedelta("1 day")
@@ -30,6 +63,22 @@ def magic_date(df):
 
 
 def list_run(source_out, df, skip_LST, skip_MAGIC):
+
+    """
+    This function create the MAGIC_runs.txt and LST_runs.txt files, which contain the list of runs (with date) to be processed
+
+    Parameters
+    ----------
+    source_out : str
+        Name of the source to be used in the output file name
+    df : :class:`pandas.DataFrame`
+        Dataframe of the joint MAGIC+LST-1 observations
+    skip_LST : list
+        List of the LST runs not to be added to the files
+    skip_MAGIC : list
+        List of the MAGIC runs not to be added to the files
+    """
+
     file_list = [
         f"{source_out}_LST_runs.txt",
         f"{source_out}_MAGIC_runs.txt",
@@ -65,6 +114,11 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
 
 
 def main():
+
+    """
+    Main function
+    """
+
     with open("config_h5.yaml", "rb") as f:
         config = yaml.safe_load(f)
     df = pd.read_hdf(

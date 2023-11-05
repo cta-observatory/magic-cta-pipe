@@ -62,7 +62,7 @@ def nsb_avg(source, config, LST_list):
 
     Returns
     -------
-    continue_process: string
+    continue_process : string
         If 'y', data processing will continue, otherwise it will be stopped
     nsb : double
         NSB value (average over the runs)
@@ -139,6 +139,7 @@ def config_file_gen(ids, target_dir, noise_value):
     noise_value : list
         Extra noise in dim and bright pixels, Extra bias in dim pixels
     """
+
     with open(f"{target_dir}/config_DL0_to_DL1.yaml", "w") as f:
         lines_of_config_file = [
             "mc_tel_ids:",

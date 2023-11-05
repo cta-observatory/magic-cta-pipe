@@ -12,7 +12,6 @@ No LST data is used here.
 
 Standard usage:
 $ python setting_up_config_and_dir.py (-c config_file.yaml)
-
 """
 import argparse
 import glob
@@ -44,9 +43,18 @@ ST_end = [
 
 
 def config_file_gen(ids, target_dir):
+
     """
-    Here we create the configuration file needed for transforming DL0 data in DL1
+    Here we create the configuration file needed for transforming DL0 into DL1
+
+    Parameters
+    ----------
+    ids : list
+        Telescope IDs
+    target_dir : path
+        Directory to store the results
     """
+
     lines = [
         f"directories:\n    target: {target_dir}\n\n",
         f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
@@ -66,8 +74,22 @@ def config_file_gen(ids, target_dir):
 
 
 def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_name):
+
     """
-    Below we create a bash script that links the MAGIC data paths to each subdirectory.
+    Below we create a bash script that links the the MAGIC data paths to each subdirectory.
+
+    Parameters
+    ----------
+    target_dir : str
+        Directory to store the results
+    telescope_ids : list
+        List of the telescope IDs (set by the user)
+    MAGIC_runs : str
+        MAGIC dates and runs to be processed
+    source : str
+        Name of the target
+    env_name : str
+        Name of the environment
     """
 
     process_name = f'{target_dir.split("/")[-2:][0]}_{target_dir.split("/")[-2:][1]}'
@@ -181,8 +203,18 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, source, env_
 
 
 def directories_generator(target_dir, telescope_ids, MAGIC_runs):
+
     """
     Here we create all subdirectories for a given workspace and target name.
+
+    Parameters
+    ----------
+    target_dir : str
+        Directory to store the results
+    telescope_ids : list
+        List of the telescope IDs (set by the user)
+    MAGIC_runs : str
+        MAGIC dates and runs to be processed
     """
 
     if not os.path.exists(target_dir):
@@ -238,6 +270,7 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
 
 
 def main():
+
     """Here we read the config file and call the functions to generate the necessary directories, bash scripts and launching the jobs."""
 
     # Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file

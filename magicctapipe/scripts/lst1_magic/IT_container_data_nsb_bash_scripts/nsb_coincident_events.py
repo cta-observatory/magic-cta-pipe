@@ -9,11 +9,8 @@ night.
 2) Creating the subdirectories for the coincident
 event files.
 
-
 Usage:
 $ python coincident_events.py (-c config_file.yaml)
-
-
 """
 import argparse
 import glob
@@ -36,16 +33,18 @@ logger.setLevel(logging.INFO)
 
 
 def configfile_coincidence(ids, target_dir):
+
     """
     This function creates the configuration file needed for the event coincidence step
 
     Parameters
     ----------
-    ids: list
-        list of telescope IDs
-    target_dir: str
+    ids : list
+        List of telescope IDs
+    target_dir : str
         Path to the working directory
     """
+
     lines = [
         f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
         'event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    pre_offset_search: true\n    n_pre_offset_search_events: 100\n    window_half_width: "300 ns"\n',
@@ -56,18 +55,26 @@ def configfile_coincidence(ids, target_dir):
 
 
 def linking_bash_lst(target_dir, LST_runs, nsb, date, source, LST_version, env_name):
+
     """
     This function links the LST data paths to the working directory and creates bash scripts.
+
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    LST_runs: matrix of strings
+    LST_runs : matrix of strings
         This matrix is imported from config_general.yaml and tells the function where to find the LST data and link them to our working directory
-    nsb: int
+    nsb : int
         NSB level
-    date:
-        Array of lists [date run] for all the LST runs (no NSB splitting)
+    date : numpy array
+        Array of lists [date run] for all the LST runs (before the NSB splitting)
+    source : str
+        Target name
+    LST_version : str
+        The lstchain version used to process the LST data
+    env_name : str
+        Name of the conda environment
     """
 
     coincidence_DL1_dir = f"{target_dir}/v{__version__}"
@@ -191,6 +198,7 @@ def linking_bash_lst(target_dir, LST_runs, nsb, date, source, LST_version, env_n
 
 
 def main():
+
     """
     Here we read the config file and call the functions defined above.
     """

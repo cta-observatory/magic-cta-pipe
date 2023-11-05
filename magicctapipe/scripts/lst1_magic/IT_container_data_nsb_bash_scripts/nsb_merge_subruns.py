@@ -6,7 +6,6 @@ merge the subruns into runs for M1 and M2 individually.
 Usage:
 $ python merge_subruns.py
 (-c config_file.yaml)
-
 """
 import argparse
 import glob
@@ -27,14 +26,20 @@ logger.setLevel(logging.INFO)
 
 
 def merge1(target_dir, source, env_name):
+
     """
     This function creates the bash scripts to run merge_hdf_files.py
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
+    source : str
+        Target name
+    env_name : str
+        Name of the conda environment
     """
+
     ST_list = [
         os.path.basename(x) for x in glob.glob(f"{target_dir}/v{__version__}/DL1/*")
     ]
@@ -117,6 +122,7 @@ def merge1(target_dir, source, env_name):
 
 
 def main():
+
     """
     Here we read the config_general.yaml file, split the pronton sample into "test" and "train", and merge the MAGIC files.
     """

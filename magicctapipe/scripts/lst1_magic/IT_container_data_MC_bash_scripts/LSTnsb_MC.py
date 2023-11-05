@@ -35,7 +35,7 @@ def nsb(run_list, simtel, lst_config, run_number):
 
     Returns
     -------
-    noise: list
+    list
         List of the sub-run wise NSB values
     """
 

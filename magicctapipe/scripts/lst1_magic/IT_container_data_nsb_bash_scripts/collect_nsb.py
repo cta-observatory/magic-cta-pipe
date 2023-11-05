@@ -1,6 +1,7 @@
 """
 Loop on the files produced by the parallel jobs to create a list of LST runs for each NSB level
 """
+
 import argparse
 import glob
 
@@ -9,6 +10,11 @@ import yaml
 
 
 def main():
+
+    """
+    Main function
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",

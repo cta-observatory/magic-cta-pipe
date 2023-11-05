@@ -5,7 +5,6 @@ Coincident MAGIC+LST data files.
 
 Usage:
 $ python stereo_events.py
-
 """
 import argparse
 import glob
@@ -26,16 +25,18 @@ logger.setLevel(logging.INFO)
 
 
 def configfile_stereo(ids, target_dir):
+
     """
     This function creates the configuration file needed for the event stereo step
 
     Parameters
     ----------
-    ids: list
-        list of telescope IDs
-    target_dir: str
+    ids : list
+        List of telescope IDs
+    target_dir : str
         Path to the working directory
     """
+
     lines = [
         f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
         'stereo_reco:\n    quality_cuts: "(intensity > 50) & (width > 0)"\n    theta_uplim: "6 arcmin"\n',
@@ -46,13 +47,20 @@ def configfile_stereo(ids, target_dir):
 
 
 def bash_stereo(target_dir, nsb, source, env_name):
+
     """
     This function generates the bashscript for running the stereo analysis.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
+    nsb : double
+        NSB level in which the run has been classified
+    source : str
+        Target level
+    env_name : str
+        Name of the conda environment
     """
 
     process_name = target_dir.split("/")[-2:][1]
@@ -122,6 +130,7 @@ def bash_stereo(target_dir, nsb, source, env_name):
 
 
 def main():
+
     """
     Here we read the config file and call the functions defined above.
     """
