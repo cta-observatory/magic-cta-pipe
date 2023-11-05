@@ -1,5 +1,6 @@
 """
 Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
+
 Usage: python nsb_level.py (-c config.yaml)
 """
 
@@ -18,20 +19,24 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def bash_scripts(run, config, source, env_name):
+def bash_scripts(run, date, config, source, env_name):
+
     """Here we create the bash scripts (one per LST run)
+
     Parameters
     ----------
-    run: str
-        LST date and run number
-    config: str
+    run : str
+        LST run number
+    date : str
+        LST date
+    config : str
         Name of the configuration file
-    source: str
+    source : str
         Target name
-    env_name:str
+    env_name : str
         Name of the environment
-
     """
+
     lines = [
         "#!/bin/sh\n\n",
         "#SBATCH -p long\n",
@@ -40,13 +45,18 @@ def bash_scripts(run, config, source, env_name):
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
-        f"time conda run -n  {env_name} LSTnsb_MC -c {config} -i {run} > {source}_nsblog_{run}.log 2>&1 \n\n",
+        f"time conda run -n  {env_name} LSTnsb_MC -c {config} -i {run} -d {date} > {source}_nsblog_{run}.log 2>&1 \n\n",
     ]
-    with open(f"{source}_run_{run}.sh", "w") as f:
+    with open(f"{source}_{date}_run_{run}.sh", "w") as f:
         f.writelines(lines)
 
 
 def main():
+
+    """
+    Main function
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",
@@ -71,13 +81,17 @@ def main():
     print("***** Generating bashscripts...")
     for run in run_list:
         run = run.rstrip()
-        bash_scripts(run, args.config_file, source, env_name)
+        run_number = run.split(",")[1]
+        date = run.split(",")[0]
+        bash_scripts(run_number, date, args.config_file, source, env_name)
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
-    list_of_bash_scripts = np.sort(glob.glob(f"{source}_run_*.sh"))
+    list_of_bash_scripts = np.sort(glob.glob(f"{source}_*_run_*.sh"))
 
-    if len(list_of_bash_scripts) < 1:  
-        print('Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list')
+    if len(list_of_bash_scripts) < 1:
+        print(
+            "Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
+        )
         return
     for n, run in enumerate(list_of_bash_scripts):
         if n == 0:

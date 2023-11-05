@@ -18,25 +18,33 @@ logger.setLevel(logging.INFO)
 
 
 def nsb(run_list, simtel, lst_config, run_number):
+
     """
     Here we compute the NSB value for a run based on a subset of subruns.
 
     Parameters
     ----------
-    run_list: list
+    run_list : list
         List of subruns in the run
-    simtel: str
+    simtel : str
         Simtel (MC) file to be used to evaluate the extra noise in dim pixels
-    lst_config: str
+    lst_config : str
         LST configuration file (cf. lstchain)
-    run number: int
+    run_number : int
         LST run number
 
+    Returns
+    -------
+    noise: list
+        List of the sub-run wise NSB values
     """
+
     noise = []
     denominator = 25
-    if len(run_list) == 0:     
-        logger.info('There is no subrun matching the provided run number. Check the list of the LST runs (LST_runs.txt)')
+    if len(run_list) == 0:
+        logger.info(
+            "There is no subrun matching the provided run number. Check the list of the LST runs (LST_runs.txt)"
+        )
         return
     if len(run_list) < denominator:
         mod = 1
@@ -58,6 +66,11 @@ def nsb(run_list, simtel, lst_config, run_number):
 
 
 def main():
+
+    """
+    Main function
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",
@@ -74,6 +87,13 @@ def main():
         type=str,
         help="Run to be processed",
     )
+    parser.add_argument(
+        "--day",
+        "-d",
+        dest="day",
+        type=str,
+        help="Day of the run to be processed",
+    )
 
     args = parser.parse_args()
     with open(
@@ -81,25 +101,22 @@ def main():
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
 
-    run = args.run
+    run_number = args.run
+    date = args.day
     simtel = "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz"
-
     source = config["directories"]["target_name"]
-
     lst_config = "lstchain_standard_config.json"
-    run_number = run.split(",")[1]
     LST_files = np.sort(glob.glob(f"{source}_LST_nsb_*{run_number}*.txt"))
 
-    date = run.split(",")[0]
     if len(LST_files) > 1:
         logger.info(
-            f"run {run_number} classified in more than one NSB bin. Removing all these files and evaluating it again."
+            f"More than one files exists for run {run_number}. Removing all these files and evaluating it again."
         )
         for repeated_files in LST_files:
             os.remove(repeated_files)
         LST_files = []
     elif len(LST_files) == 1:
-        logger.info(f"run {run_number} already processed.")
+        logger.info(f"Run {run_number} already processed.")
         return
 
     date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
@@ -107,7 +124,9 @@ def main():
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number)
     if len(noise) == 0:
-        logger.info('No NSB value could be evaluated: check the observation logs (observation problems, car flashes...)') 
+        logger.info(
+            "No NSB value could be evaluated: check the observation logs (observation problems, car flashes...)"
+        )
         return
     a = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {a}")

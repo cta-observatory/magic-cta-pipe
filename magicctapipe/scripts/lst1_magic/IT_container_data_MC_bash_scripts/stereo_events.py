@@ -14,7 +14,6 @@ $ python stereo_events.py --analysis-type onlyReal (-c config.yaml)
 
 Only MC:
 $ python stereo_events.py --analysis-type onlyMC (-c config.yaml)
-
 """
 
 import argparse
@@ -34,14 +33,15 @@ logger.setLevel(logging.INFO)
 
 
 def configfile_stereo(ids, target_dir):
+
     """
     This function creates the configuration file needed for the event stereo step
 
     Parameters
     ----------
-    ids: list
-        list of telescope IDs
-    target_dir: str
+    ids : list
+        List of telescope IDs
+    target_dir : str
         Path to the working directory
     """
 
@@ -55,14 +55,15 @@ def configfile_stereo(ids, target_dir):
 
 
 def bash_stereo(target_dir, env_name):
+
     """
     This function generates the bashscript for running the stereo analysis.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    env_name: str
+    env_name : str
         Name of the environment
     """
 
@@ -106,16 +107,17 @@ def bash_stereo(target_dir, env_name):
 
 
 def bash_stereoMC(target_dir, identification, env_name):
+
     """
     This function generates the bashscript for running the stereo analysis.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    identification: str
+    identification : str
         Particle name. Options: protons, gammadiffuse
-    env_name: str
+    env_name : str
         Name of the environment
     """
 
@@ -153,6 +155,7 @@ def bash_stereoMC(target_dir, identification, env_name):
 
 
 def main():
+
     """
     Here we read the config_general.yaml file and call the functions defined above.
     """

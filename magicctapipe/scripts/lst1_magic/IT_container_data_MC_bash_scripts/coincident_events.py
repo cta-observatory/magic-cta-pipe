@@ -9,10 +9,8 @@ night.
 2) Creating the subdirectories for the coincident
 event files.
 
-
 Usage:
 $ python coincident_events.py (-c config.yaml)
-
 """
 
 import argparse
@@ -32,14 +30,15 @@ logger.setLevel(logging.INFO)
 
 
 def configfile_coincidence(ids, target_dir):
+
     """
     This function creates the configuration file needed for the event coincidence step
 
     Parameters
     ----------
-    ids: list
-        list of telescope IDs
-    target_dir: str
+    ids : list
+        List of telescope IDs
+    target_dir : str
         Path to the working directory
     """
 
@@ -54,16 +53,17 @@ def configfile_coincidence(ids, target_dir):
 
 
 def linking_lst(target_dir, LST_runs, LST_version):
+
     """
     This function links the LST data paths to the working directory. This is a preparation step required for running lst1_magic_event_coincidence.py
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    LST_runs: matrix of strings
+    LST_runs : matrix of strings
         This matrix is imported from config_general.yaml and tells the function where to find the LST data and link them to our working directory
-    LST_version: str
+    LST_version : str
         Version of lstchain used to process data
     """
 
@@ -92,14 +92,15 @@ def linking_lst(target_dir, LST_runs, LST_version):
 
 
 def bash_coincident(target_dir, env_name):
+
     """
     This function generates the bashscript for running the coincidence analysis.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    env_name: str
+    env_name : str
         Name of the environment
     """
 
@@ -134,9 +135,11 @@ def bash_coincident(target_dir, env_name):
 
 
 def main():
+
     """
     Here we read the config_general.yaml file and call the functions defined above.
     """
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",

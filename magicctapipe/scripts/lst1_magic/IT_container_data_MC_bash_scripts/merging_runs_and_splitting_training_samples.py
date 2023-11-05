@@ -15,7 +15,6 @@ MC:
 1) Merges all MC runs in a node and save them at
 Workingdir/DL1/MC/PARTICLE/Merged
 
-
 Usage:
 $ python merging_runs_and_splitting_training_samples.py (-c config.yaml)
 
@@ -47,14 +46,15 @@ logger.setLevel(logging.INFO)
 
 
 def cleaning(list_of_nodes, cwd):
+
     """
     This function looks for failed runs in each node and remove them.
 
     Parameters
     ----------
-    list_of_nodes: array of str
+    list_of_nodes : array of str
         List of nodes where the function will look for failed runs.
-    cwd: Path
+    cwd : Path
         Current working directory
     """
 
@@ -67,6 +67,7 @@ def cleaning(list_of_nodes, cwd):
 
 
 def split_train_test(target_dir, train_fraction):
+
     """
     This function splits the MC proton sample in 2, i.e. the "test" and the "train" subsamples.
     It generates 2 subdirectories in the directory .../DL1/MC/protons named "test" and "train" and creates sub-sub-directories with the names of all nodes.
@@ -74,9 +75,9 @@ def split_train_test(target_dir, train_fraction):
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    train_fraction: float
+    train_fraction : float
         Fraction of proton MC files to be used in the training RF dataset
     """
 
@@ -124,18 +125,19 @@ def split_train_test(target_dir, train_fraction):
 
 
 def merge(target_dir, identification, MAGIC_runs, env_name):
+
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MAGIC subruns.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    identification: str
+    identification : str
         Tells which batch to create. Options: subruns, M1M2, nights
-    MAGIC_runs: matrix of strings
+    MAGIC_runs : matrix of strings
         This matrix is imported from config_general.yaml and tells the function where to find the data and where to put the merged files
-    env_name: str
+    env_name : str
         Name of the environment
     """
 
@@ -209,20 +211,20 @@ def merge(target_dir, identification, MAGIC_runs, env_name):
 
 
 def mergeMC(target_dir, identification, env_name, cwd):
+
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    identification: str
+    identification : str
         Tells which batch to create. Options: protons, gammadiffuse
-    env_name: str
+    env_name : str
         Name of the environment
-    cwd: Path
+    cwd : Path
         Current working directory
-
     """
 
     process_name = f"merging_{target_dir.split('/')[-2:][1]}"
@@ -265,9 +267,11 @@ def mergeMC(target_dir, identification, env_name, cwd):
 
 
 def main():
+
     """
     Here we read the config_general.yaml file, split the pronton sample into "test" and "train", and merge the MAGIC files.
     """
+
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",

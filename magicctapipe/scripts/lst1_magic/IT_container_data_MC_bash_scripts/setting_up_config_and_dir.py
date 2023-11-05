@@ -22,7 +22,6 @@ $ python setting_up_config_and_dir.py --analysis-type onlyMAGIC (-c config.yaml)
 
 Only MC:
 $ python setting_up_config_and_dir.py --analysis-type onlyMC (-c config.yaml)
-
 """
 
 import argparse
@@ -48,18 +47,25 @@ logger.setLevel(logging.INFO)
 
 
 def nsb_avg(source, config, LST_list):
+
     """
     This function evaluates the average of the NSB distribution per run
 
     Parameters
     ----------
-    source: str
+    source : str
         Source name
-    config: str
+    config : str
         Config file
-    LST_list: str
+    LST_list : str
         Name of the file where the adopted LST runs are listed
 
+    Returns
+    -------
+    continue_process: string
+        If 'y', data processing will continue, otherwise it will be stopped
+    nsb : double
+        NSB value (average over the runs)
     """
     allfile = np.sort(
         glob.glob(f"{source}_LST_nsb_*.txt")
@@ -120,15 +126,17 @@ def nsb_avg(source, config, LST_list):
 
 
 def config_file_gen(ids, target_dir, noise_value):
+
     """
     Here we create the configuration file needed for transforming DL0 into DL1
+
     Parameters
     ----------
-    ids: list
+    ids : list
         Telescope IDs
-    target_dir: path
+    target_dir : path
         Directory to store the results
-    noise_value: list
+    noise_value : list
         Extra noise in dim and bright pixels, Extra bias in dim pixels
     """
     with open(f"{target_dir}/config_DL0_to_DL1.yaml", "w") as f:
@@ -209,23 +217,25 @@ def config_file_gen(ids, target_dir, noise_value):
 def lists_and_bash_generator(
     particle_type, target_dir, MC_path, SimTel_version, focal_length, env_name
 ):
+
     """
     This function creates the lists list_nodes_gamma_complete.txt and list_folder_gamma.txt with the MC file paths.
     After that, it generates a few bash scripts to link the MC paths to each subdirectory.
     These bash scripts will be called later in the main() function below. This step will be skipped in case the MC path has not been provided (MC_path='')
+
     Parameters
     ----------
-    particle_type: str
+    particle_type : str
         Particle type (e.g., protons)
-    target_dir: str
+    target_dir : str
         Directory to store the results
-    MC_path: str
+    MC_path : str
         Path to the MCs DL0s
-    SimTel_version: str
+    SimTel_version : str
         Version of SimTel (used to produce MCs)
-    focal_length: str
+    focal_length : str
         Focal length to be used to process MCs (e.g., 'nominal')
-    env_name: str
+    env_name : str
         Name of the environment
     """
 
@@ -313,17 +323,19 @@ def lists_and_bash_generator(
 
 
 def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, env_name):
+
     """
     Below we create a bash script that links the the MAGIC data paths to each subdirectory.
+
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Directory to store the results
-    telescope_ids: list
+    telescope_ids : list
         List of the telescope IDs (set by the user)
-    MAGIC_runs: str
+    MAGIC_runs : str
         MAGIC dates and runs to be processed
-    env_name: str
+    env_name : str
         Name of the environment
     """
 
@@ -414,15 +426,17 @@ def lists_and_bash_gen_MAGIC(target_dir, telescope_ids, MAGIC_runs, env_name):
 
 
 def directories_generator(target_dir, telescope_ids, MAGIC_runs):
+
     """
     Here we create all subdirectories for a given workspace and target name.
+
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Directory to store the results
-    telescope_ids: list
+    telescope_ids : list
         List of the telescope IDs (set by the user)
-    MAGIC_runs: str
+    MAGIC_runs : str
         MAGIC dates and runs to be processed
     """
 
@@ -484,6 +498,7 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs):
 
 
 def main():
+
     """Here we read the config_general.yaml file and call the functions to generate the necessary directories, bash scripts and launching the jobs."""
 
     parser = argparse.ArgumentParser()
