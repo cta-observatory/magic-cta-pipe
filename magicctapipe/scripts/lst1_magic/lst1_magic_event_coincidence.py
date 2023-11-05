@@ -94,12 +94,12 @@ def telescope_positions(config):
 
     Parameters
     ----------
-    config: dict
-        dictionary generated from an yaml file with information about the telescope IDs.
+    config : dict
+        Dictionary generated from an yaml file with information about the telescope IDs.
 
     Returns
     -------
-    TEL_POSITIONS: dict
+    dict
         Dictionary with telescope positions in the baricenter reference frame of the adopted array.
     """
 
@@ -142,13 +142,13 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     Parameters
     ----------
-    input_file_lst: str
+    input_file_lst : str
         Path to an input LST DL1 data file
-    input_dir_magic: str
+    input_dir_magic : str
         Path to a directory where input MAGIC DL1 data files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL1 data file
-    config: dict
+    config : dict
         Configuration for the LST + MAGIC combined analysis
     """
 
@@ -577,6 +577,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
 
 def main():
+    """Main function."""
+
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

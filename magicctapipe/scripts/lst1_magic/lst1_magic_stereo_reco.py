@@ -67,13 +67,14 @@ def calculate_pointing_separation(event_data, config):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of LST and MAGIC events
-    config: dict
+    config : dict
         Configuration for the LST + MAGIC analysis
+
     Returns
     -------
-    theta: pandas.core.series.Series
+    pandas.core.series.Series
         Angular distance of the LST array and MAGIC pointing directions
         in units of degree
     """
@@ -121,13 +122,13 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input DL1 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL1-stereo data file
-    config: dict
+    config : dict
         Configuration file for the stereo LST + MAGIC analysis, i.e. config_stereo.yaml
-    magic_only_analysis: bool
+    magic_only_analysis : bool, optional
         If `True`, it reconstructs the stereo parameters using only
         MAGIC events
     """
@@ -356,6 +357,8 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
 
 def main():
+    """Main function."""
+
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

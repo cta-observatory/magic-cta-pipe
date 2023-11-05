@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+Utilities for training
+"""
 import logging
 
 import joblib
@@ -24,16 +24,14 @@ class EnergyRegressor:
     """
     RF regressors to reconstruct the energies of primary particles.
 
-    Attributes
+    Parameters
     ----------
-    settings: dict
+    settings : dict
         Settings of RF regressors
-    features: list
+    features : list
         Parameters for training RFs
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it trains RFs with unsigned features
-    telescope_rfs: dict
-        Telescope RFs
     """
 
     def __init__(self, settings={}, features=[], use_unsigned_features=None):
@@ -42,11 +40,11 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        settings: dict
+        settings : dict
             Settings of RF regressors
-        features: list
+        features : list
             Parameters for training RFs
-        use_unsigned_features: bool
+        use_unsigned_features : bool
             If `True`, it trains RFs with unsigned features
         """
 
@@ -61,7 +59,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -97,12 +95,12 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        reco_params: pandas.core.frame.DataFrame
+        pandas.core.frame.DataFrame
             Data frame of the shower events with reconstructed energies
         """
 
@@ -152,7 +150,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        output_file: str
+        output_file : str
             Path to an output joblib file
         """
 
@@ -171,7 +169,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        input_file: str
+        input_file : str
             Path to an input joblib file
         """
 
@@ -187,16 +185,14 @@ class DispRegressor:
     """
     RF regressors to reconstruct the DISP parameter.
 
-    Attributes
+    Parameters
     ----------
-    settings: dict
+    settings : dict
         Settings of RF regressors
-    features: list
+    features : list
         Parameters for training RFs
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it trains RFs with unsigned features
-    telescope_rfs: dict
-        Telescope RFs
     """
 
     def __init__(self, settings={}, features=[], use_unsigned_features=None):
@@ -205,11 +201,11 @@ class DispRegressor:
 
         Parameters
         ----------
-        settings: dict
+        settings : dict
             Settings of RF regressors
-        features: list
+        features : list
             Parameters for training RFs
-        use_unsigned_features: bool
+        use_unsigned_features : bool
             If `True`, it trains RFs with unsigned features
         """
 
@@ -224,7 +220,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -259,12 +255,12 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        reco_params: pandas.core.frame.DataFrame
+        pandas.core.frame.DataFrame
             Data frame of the shower events with the DISP parameter
         """
 
@@ -312,7 +308,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        output_file: str
+        output_file : str
             Path to an output joblib file
         """
 
@@ -331,7 +327,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        input_file: str
+        input_file : str
             Path to an input joblib file
         """
 
@@ -347,16 +343,14 @@ class EventClassifier:
     """
     RF classifiers to reconstruct the gammaness.
 
-    Attributes
+    Parameters
     ----------
-    settings: dict
+    settings : dict
         Settings of RF classifiers
-    features: list
+    features : list
         Parameters for training RFs
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it trains RFs with unsigned features
-    telescope_rfs: dict
-        Telescope RFs
     """
 
     def __init__(self, settings={}, features=[], use_unsigned_features=None):
@@ -365,11 +359,11 @@ class EventClassifier:
 
         Parameters
         ----------
-        settings: dict
+        settings : dict
             Settings of RF classifiers
-        features: list
+        features : list
             Parameters for training RFs
-        use_unsigned_features: bool
+        use_unsigned_features : bool
             If `True`, it trains RFs with unsigned features
         """
 
@@ -384,7 +378,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -419,12 +413,12 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        reco_params: pandas.core.frame.DataFrame
+        pandas.core.frame.DataFrame
             Data frame of the shower events with the gammaness
         """
 
@@ -475,7 +469,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        output_file: str
+        output_file : str
             Path to an output joblib file
         """
 
@@ -494,7 +488,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        input_file: str
+        input_file : str
             Path to an input joblib file
         """
 

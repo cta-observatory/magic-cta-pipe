@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+Custom containers
+"""
 import numpy as np
 from astropy import units as u
 from ctapipe.core import Container, Field

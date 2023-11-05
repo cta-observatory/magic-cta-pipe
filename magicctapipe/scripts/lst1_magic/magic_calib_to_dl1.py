@@ -7,7 +7,6 @@ with the MARS-like image cleaning and computes the DL1 parameters, i.e.,
 Hillas, timing and leakage parameters. It saves only the events that all
 the DL1 parameters are successfully reconstructed.
 
-
 When the input is real data, it searches for all the subrun files with
 the same observation ID and stored in the same directory as the input
 subrun file. Then, it reads their drive reports and uses the information
@@ -75,18 +74,19 @@ PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
 def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=False):
     """
-    Processes the events of MAGIC calibrated data and computes the DL1
-    parameters.
+    Processes the events of MAGIC calibrated data and computes the DL1 parameters.
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input MAGIC calibrated data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL1 data file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
-    process_run: bool
+    max_events : int
+        Maximum number of events to process
+    process_run : bool, optional
         If `True`, it processes the events of all the subrun files
         found in the same directory of the input subrun file at once
         (applicable only to real data)
@@ -343,6 +343,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()
