@@ -49,7 +49,7 @@ logger.setLevel(logging.INFO)
 def nsb_avg(source, config, LST_list):
 
     """
-    This function evaluates the average of the NSB distribution per run
+    This function evaluates the average of the NSB levels that have been evaluated by LSTnsb_MC.py (one value per run).
 
     Parameters
     ----------

@@ -45,7 +45,7 @@ def bash_scripts(run, date, config, source, env_name):
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
-        f"time conda run -n  {env_name} LSTnsb_MC -c {config} -i {run} -d {date} > {source}_nsblog_{run}.log 2>&1 \n\n",
+        f"time conda run -n  {env_name} LSTnsb_MC -c {config} -i {run} -d {date} > {source}_nsblog_{date}_{run}.log 2>&1 \n\n",
     ]
     with open(f"{source}_{date}_run_{run}.sh", "w") as f:
         f.writelines(lines)
