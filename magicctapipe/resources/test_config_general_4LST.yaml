@@ -20,6 +20,7 @@ general:
     target_Dec_deg         : 22.0145   #Dec in degrees
     SimTel_version         : "v1.4"    
     LST_version            : "v0.9" 
+    LST_tailcut            : "tailcut84"
     focal_length           : "effective" #effective #nominal
     MAGIC_runs             : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
     LST_runs               : "LST_runs.txt"  

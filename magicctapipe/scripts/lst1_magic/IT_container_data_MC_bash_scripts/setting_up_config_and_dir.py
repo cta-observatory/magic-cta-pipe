@@ -4,7 +4,7 @@ of the MCP, i.e. "lst1_magic_mc_dl0_to_dl1.py" and
 "magic_calib_to_dl1.py". This script is more like a
 "manager" that organizes the analysis process by:
 1) Creating the necessary directories and subdirectories.
-2) Generatign all the bash script files that convert the
+2) Generating all the bash script files that convert the
 MAGIC and MC files from DL0 to DL1.
 3) Launching these jobs in the IT container.
 
@@ -71,6 +71,9 @@ def nsb_avg(source, config, LST_list):
         glob.glob(f"{source}_LST_nsb_*.txt")
     )  # List with the names of all files containing the NSB values for each run
     if len(allfile) == 0:
+        print(
+            "Warning: no file (containing the NSB value) exists for any of the LST runs to be processed. Check the input list"
+        )
         return
     noise = []
     for j in allfile:

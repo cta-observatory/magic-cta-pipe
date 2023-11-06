@@ -89,6 +89,9 @@ def main():
     list_of_bash_scripts = np.sort(glob.glob(f"{source}_*_run_*.sh"))
 
     if len(list_of_bash_scripts) < 1:
+        print(
+            "Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
+        )
         return
     for n, run in enumerate(list_of_bash_scripts):
         if n == 0:

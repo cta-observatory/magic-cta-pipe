@@ -128,6 +128,9 @@ def main():
     # Below we run the bash scripts to merge the MAGIC files
     list_of_merging_scripts = np.sort(glob.glob(f"{source}_Merge_1_*.sh"))
     if len(list_of_merging_scripts) < 1:
+        print(
+            "Warning: no bash script has been produced. Please check the files to be merged"
+        )
         return
     for n, run in enumerate(list_of_merging_scripts):
         if n == 0:

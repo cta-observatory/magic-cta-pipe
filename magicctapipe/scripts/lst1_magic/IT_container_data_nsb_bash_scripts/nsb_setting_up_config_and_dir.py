@@ -3,7 +3,7 @@ This script facilitates the usage of
 "magic_calib_to_dl1.py". This script is more like a
 "manager" that organizes the analysis process by:
 1) Creating the necessary directories and subdirectories.
-2) Generatign all the bash script files that convert the
+2) Generating all the bash script files that convert the
 MAGIC files from DL0 to DL1.
 3) Launching these jobs in the IT container.
 
@@ -324,6 +324,9 @@ def main():
     if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
         list_of_MAGIC_runs = glob.glob(f"{source}_MAGIC-*.sh")
         if len(list_of_MAGIC_runs) < 1:
+            print(
+                "Warning: no bash script has been produced. Please check the provided MAGIC_runs.txt and the MAGIC calibrated data"
+            )
             return
         for n, run in enumerate(list_of_MAGIC_runs):
             if n == 0:
