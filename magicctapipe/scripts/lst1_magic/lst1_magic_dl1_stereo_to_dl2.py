@@ -29,8 +29,8 @@ from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
-from magicctapipe.io.io import TEL_COMBINATIONS
+
+from magicctapipe.io import get_stereo_events_old, save_pandas_data_in_table
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
@@ -38,6 +38,12 @@ __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+TEL_COMBINATIONS = {
+    "M1_M2": [2, 3],  # combo_type = 0
+    "LST1_M1": [1, 2],  # combo_type = 1
+    "LST1_M2": [1, 3],  # combo_type = 2
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 
 def apply_rfs(event_data, estimator):
@@ -47,14 +53,14 @@ def apply_rfs(event_data, estimator):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    estimator: magicctapipe.reco.estimator
+    estimator : magicctapipe.reco.estimator
         Trained regressor or classifier
 
     Returns
     -------
-    reco_params: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed parameters
     """
 
@@ -77,14 +83,14 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    tel_descriptions: dict
+    tel_descriptions : dict
         Telescope descriptions
 
     Returns
     -------
-    reco_params: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed directions
     """
 
@@ -244,11 +250,11 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     Parameters
     ----------
-    input_file_dl1: str
+    input_file_dl1 : str
         Path to an input DL1-stereo data file
-    input_dir_rfs: str
+    input_dir_rfs : str
         Path to a directory where trained RFs are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL2 data file
     """
 
@@ -262,7 +268,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
-    event_data = get_stereo_events(event_data)
+    event_data = get_stereo_events_old(event_data)
 
     subarray = SubarrayDescription.from_hdf(input_file_dl1)
     tel_descriptions = subarray.tel
@@ -386,6 +392,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

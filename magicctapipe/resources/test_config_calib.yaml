@@ -1,0 +1,60 @@
+LST:
+    image_extractor:
+        type: "LocalPeakWindowSum"
+        window_shift: 4
+        window_width: 8
+
+    increase_nsb:
+        use: true
+        extra_noise_in_dim_pixels: 1.27
+        extra_bias_in_dim_pixels: 0.665
+        transition_charge: 8
+        extra_noise_in_bright_pixels: 2.08
+
+    increase_psf:
+        use: false
+        fraction: null
+
+    tailcuts_clean:
+        picture_thresh: 8
+        boundary_thresh: 4
+        keep_isolated_pixels: false
+        min_number_picture_neighbors: 2
+
+    time_delta_cleaning:
+        use: true
+        min_number_neighbors: 1
+        time_limit: 2
+
+    dynamic_cleaning:
+        use: true
+        threshold: 267
+        fraction: 0.03
+
+    use_only_main_island: false
+
+
+MAGIC:
+    image_extractor:
+        type: "SlidingWindowMaxSum"
+        window_width: 5
+        apply_integration_correction: false
+
+    charge_correction:
+        use: true
+        factor: 1.143
+
+    magic_clean:
+        use_time: true
+        use_sum: true
+        picture_thresh: 6
+        boundary_thresh: 3.5
+        max_time_off: 4.5
+        max_time_diff: 1.5
+        find_hotpixels: true
+        pedestal_type: "from_extractor_rndm"
+
+    muon_ring:
+        thr_low: 25
+        tailcut: [12, 8]
+        ring_completeness_threshold: 25

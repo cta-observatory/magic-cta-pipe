@@ -1,3 +1,6 @@
+"""
+Utilities for camera geometry transformations
+"""
 from ctapipe.instrument import CameraGeometry
 
 __all__ = [
@@ -11,14 +14,14 @@ def scale_camera_geometry(camera_geom, factor):
 
     Parameters
     ----------
-    camera : CameraGeometry
+    camera_geom : ctapipe.instrument.camera.geometry.CameraGeometry
         Camera geometry
     factor : float
         Scale factor
 
     Returns
     -------
-    CameraGeometry
+    ctapipe.instrument.camera.geometry.CameraGeometry
         Scaled camera geometry
     """
     pix_x_scaled = factor * camera_geom.pix_x
@@ -44,12 +47,12 @@ def reflected_camera_geometry(camera_geom):
 
     Parameters
     ----------
-    camera_geom : CameraGeometry
+    camera_geom : ctapipe.instrument.camera.geometry.CameraGeometry
         Camera geometry
 
     Returns
     -------
-    CameraGeometry
+    ctapipe.instrument.camera.geometry.CameraGeometry
         Reflected camera geometry
     """
 

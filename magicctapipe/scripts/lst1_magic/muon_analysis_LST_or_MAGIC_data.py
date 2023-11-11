@@ -14,14 +14,15 @@ $ python muon_analysis_LST_or_MAGIC_data.py
 --config-file ./config.yaml
 """
 import argparse
-import yaml
 import logging
-import numpy as np
 from pathlib import Path
 
+import numpy as np
+import yaml
 from astropy.table import Table
 from ctapipe.io import EventSource
 from lstchain.image.muon import create_muon_table
+
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.muons import perform_muon_analysis
 
@@ -42,12 +43,16 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
 
     Parameters
     ----------
-    input_file:
-    output_dir:
-    config:
-    process_run:
-    plots_path:
-
+    input_file : str
+        Input file.
+    output_dir : str
+        Output directory.
+    config : dict
+        Configuration.
+    process_run : bool
+        Flag to process all subruns from the same run.
+    plots_path : bool
+        Flag to plot or not the plots.
     """
 
     event_source = EventSource(input_url=input_file)
@@ -138,6 +143,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
 
 
 def main():
+    """Main function."""
     parser = argparse.ArgumentParser()
 
     parser.add_argument(

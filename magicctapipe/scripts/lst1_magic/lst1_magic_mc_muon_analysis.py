@@ -10,25 +10,27 @@ $ python lst1_magic_mc_dl0_to_dl1.py
 --config-file ./config.yaml
 """
 
+import argparse
+import logging
 import re
 import time
-import yaml
-import logging
-import argparse
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+import yaml
 from astropy.table import Table
-from traitlets.config import Config
-from ctapipe.io import EventSource
 from ctapipe.calib import CameraCalibrator
 from ctapipe.image import (
     ImageExtractor,
-    tailcuts_clean,
     apply_time_delta_cleaning,
     number_of_islands,
+    tailcuts_clean,
 )
+from ctapipe.io import EventSource
 from lstchain.image.cleaning import apply_dynamic_cleaning
 from lstchain.image.muon import create_muon_table
+from traitlets.config import Config
+
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.muons import perform_muon_analysis
 
@@ -48,13 +50,13 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input simtel MC DL0 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output file
-    config: dict
+    config : dict
         Configuration for the analysis
-    plots_path: string
+    plots_path : str
         Path to output plots. No plots are created if None is provided
     """
 
@@ -288,6 +290,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
     parser = argparse.ArgumentParser()
 

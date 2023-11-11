@@ -31,7 +31,7 @@ def create_dl3_index_files(input_dir):
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input DL3 data files are stored
 
     Raises
@@ -85,6 +85,7 @@ def create_dl3_index_files(input_dir):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

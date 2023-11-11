@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def add_delta_t_key(events):
     """
     Adds the time difference with the previous event to a real data

@@ -1,14 +1,12 @@
-
 import logging
 
 import numpy as np
-
 from numba import njit
 
 __all__ = [
-    'add_noise_in_pixels',
-    'random_psf_smearer',
-    'set_numba_seed',
+    "add_noise_in_pixels",
+    "random_psf_smearer",
+    "set_numba_seed",
 ]
 
 log = logging.getLogger(__name__)
@@ -19,9 +17,14 @@ N_PIXEL_NEIGHBORS = 6
 SMEAR_PROBABILITIES = np.full(N_PIXEL_NEIGHBORS, 1 / N_PIXEL_NEIGHBORS)
 
 
-def add_noise_in_pixels(rng, image, extra_noise_in_dim_pixels,
-                        extra_bias_in_dim_pixels, transition_charge,
-                        extra_noise_in_bright_pixels):
+def add_noise_in_pixels(
+    rng,
+    image,
+    extra_noise_in_dim_pixels,
+    extra_bias_in_dim_pixels,
+    transition_charge,
+    extra_noise_in_bright_pixels,
+):
     """
     Addition of Poissonian noise to the pixels
 
@@ -61,10 +64,14 @@ def add_noise_in_pixels(rng, image, extra_noise_in_dim_pixels,
     """
 
     bright_pixels = image > transition_charge
-    noise = np.where(bright_pixels, extra_noise_in_bright_pixels,
-                     extra_noise_in_dim_pixels)
-    bias = np.where(bright_pixels, -extra_noise_in_bright_pixels,
-                    extra_bias_in_dim_pixels - extra_noise_in_dim_pixels)
+    noise = np.where(
+        bright_pixels, extra_noise_in_bright_pixels, extra_noise_in_dim_pixels
+    )
+    bias = np.where(
+        bright_pixels,
+        -extra_noise_in_bright_pixels,
+        extra_bias_in_dim_pixels - extra_noise_in_dim_pixels,
+    )
 
     image = image + rng.poisson(noise) + bias
 
@@ -116,7 +123,7 @@ def random_psf_smearer(image, fraction, indices, indptr):
         new_image[pixel] -= to_smear
 
         # add light to neighbor pixels
-        neighbors = indices[indptr[pixel]: indptr[pixel + 1]]
+        neighbors = indices[indptr[pixel] : indptr[pixel + 1]]
         n_neighbors = len(neighbors)
 
         # all neighbors are equally likely to receive the charge

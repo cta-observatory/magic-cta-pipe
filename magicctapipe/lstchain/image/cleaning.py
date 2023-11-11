@@ -1,6 +1,6 @@
 import numpy as np
 
-__all__ = ['apply_dynamic_cleaning']
+__all__ = ["apply_dynamic_cleaning"]
 
 
 def apply_dynamic_cleaning(image, signal_pixels, threshold, fraction):

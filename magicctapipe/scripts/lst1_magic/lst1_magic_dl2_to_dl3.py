@@ -33,15 +33,6 @@ from astropy.coordinates import Angle
 from astropy.coordinates.angle_utilities import angular_separation
 from astropy.io import fits
 from astropy.table import QTable
-from magicctapipe.io import (
-    create_event_hdu,
-    create_gh_cuts_hdu,
-    create_gti_hdu,
-    create_pointing_hdu,
-    format_object,
-    load_dl2_data_file,
-    load_irf_files,
-)
 from pyirf.cuts import evaluate_binned_cut
 from pyirf.interpolation import interpolate_effective_area_per_energy_and_fov
 from pyirf.io import (
@@ -53,6 +44,16 @@ from pyirf.io import (
 )
 from pyirf.utils import cone_solid_angle
 from scipy.interpolate import griddata
+
+from magicctapipe.io import (
+    create_event_hdu,
+    create_gh_cuts_hdu,
+    create_gti_hdu,
+    create_pointing_hdu,
+    format_object,
+    load_dl2_data_file,
+    load_irf_files,
+)
 
 __all__ = ["dl2_to_dl3"]
 
@@ -67,13 +68,13 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     Parameters
     ----------
-    input_file_dl2: str
+    input_file_dl2 : str
         Path to an input DL2 data file
-    input_dir_irf: str
+    input_dir_irf : str
         Path to a directory where input IRF files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL3 data file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
     """
 
@@ -142,7 +143,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         f"\nTarget point: {target_point.round(5).tolist()} with scheme: {scheme}"
     )
 
-    if 'max_distance' in config_dl3:
+    if "max_distance" in config_dl3:
         max_distance = u.Quantity(config_dl3.pop("max_distance"))
         logger.info(f"selecting only nodes up to {max_distance} from the data")
 
@@ -387,6 +388,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

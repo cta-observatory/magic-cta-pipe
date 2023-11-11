@@ -2,7 +2,8 @@
 # Licensed under a 3-clause BSD style license - see LICENSE.rst
 
 import os
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 entry_points = {}
 entry_points["console_scripts"] = [
@@ -25,8 +26,10 @@ docs_require = [
     "sphinx-automodapi",
     "sphinx_argparse",
     "sphinx_rtd_theme",
+    "pydata_sphinx_theme",
     "numpydoc",
     "nbsphinx",
+    "sphinx-design",
 ]
 
 setup(

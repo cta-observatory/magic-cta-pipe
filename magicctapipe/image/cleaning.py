@@ -1,24 +1,40 @@
+"""
+Module for cleaning utilities
+"""
 import copy
 import itertools
+
 import numpy as np
 from scipy.sparse.csgraph import connected_components
-
-from ctapipe.image import (
-    hillas_parameters,
-    timing_parameters,
-    leakage_parameters,
-)
 
 __all__ = [
     "MAGICClean",
     "PixelTreatment",
     "get_num_islands_MAGIC",
-    "clean_image_params",
 ]
 
 
 class MAGICClean:
+    """Implement the cleaning used by MAGIC.
+
+    Parameters
+    ----------
+    camera : ctapipe.instrument.CameraGeometry
+        Camera geometry.
+    configuration : dict
+        Dictionary for the configuration.
+    """
+
     def __init__(self, camera, configuration):
+        """Initiate cleaning class.
+
+        Parameters
+        ----------
+        camera : ctapipe.instrument.CameraGeometry
+            Camera geometry.
+        configuration : dict
+            Dictionary for the configuration.
+        """
         self.configuration = configuration
         self.camera = camera
 
@@ -110,6 +126,20 @@ class MAGICClean:
             self.pixel_treatment = PixelTreatment(self.camera, treatment_config)
 
     def GetListOfNN(self, NN_size=2, bad_pixels=None):
+        """Get the list of next neighbor pixels.
+
+        Parameters
+        ----------
+        NN_size : int, optional
+            Order of next neighbors to find, by default 2.
+        bad_pixels : np.ndarray, optional
+            Array of bad pixels, by default None.
+
+        Returns
+        -------
+        np.ndarray
+            Array of neighbor pixels.
+        """
         NN = []
         pixels = list(range(self.camera.n_pixels))
 
@@ -174,6 +204,31 @@ class MAGICClean:
         return np.unique(NN, axis=0)
 
     def clean_image(self, event_image, event_pulse_time, unsuitable_mask=None):
+        """Clean the input image.
+
+        Parameters
+        ----------
+        event_image : np.ndarray
+            Input array with event image (charge per each pixel).
+        event_pulse_time : np.ndarray
+            Input array with event times (time per each pixel).
+        unsuitable_mask : np.ndarray, optional
+            Array of unsuitable pixels, by default None.
+
+        Returns
+        -------
+        clean_mask : np.ndarray
+            Mask with pixels surviving the cleaning.
+        self.event_image : np.ndarray
+            Image (charges) with only surviving pixels.
+        self.event_pulse_time : np.ndarray
+            Image (times) with only surviving pixels.
+
+        Raises
+        ------
+        ValueError
+            Raised if no unsuitable mask is provided but `find_hotpixles` is True.
+        """
         if unsuitable_mask is None and self.find_hotpixels:
             raise ValueError(
                 "find_hotpixels set to %s but not unsuitable_mask provided."
@@ -225,6 +280,26 @@ class MAGICClean:
         return clean_mask, self.event_image, self.event_pulse_time
 
     def group_calculation(self, mask, NN, clipNN, windowNN, thresholdNN):
+        """Calculate pixel groups.
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            Mask aray.
+        NN : np.ndarray
+            Neighbor pixels array.
+        clipNN : float
+            Charge clipping value.
+        windowNN : float
+            Time window cut.
+        thresholdNN : float
+            Group charge threshold.
+
+        Returns
+        -------
+        np.ndarray
+            Updated mask array.
+        """
         meantime = 0.0
         totcharge = 0.0
 
@@ -246,6 +321,13 @@ class MAGICClean:
         return mask, NN[selection]
 
     def magic_clean_step1Sum(self):
+        """Perform the 1st step of the Sum cleaning.
+
+        Returns
+        -------
+        np.ndarray
+            Mask array with excluded pixels.
+        """
         sumthresh2NN = (
             self.SumThresh2NNPerPixel * 2 * self.configuration["picture_thresh"]
         )
@@ -298,10 +380,29 @@ class MAGICClean:
         return np.asarray(mask)
 
     def magic_clean_step1(self):
+        """Perform the 1st step of the cleaning.
+
+        Returns
+        -------
+        np.ndarray
+            Mask array with excluded pixels.
+        """
         mask = self.event_image <= self.configuration["picture_thresh"]
         return ~mask
 
     def magic_clean_step2(self, mask):
+        """Perform the 2nd step of the cleaning.
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            Input mask.
+
+        Returns
+        -------
+        np.ndarray
+            Mask array with excluded pixels.
+        """
         if np.sum(mask) == 0:
             return mask
 
@@ -375,6 +476,18 @@ class MAGICClean:
             return mask
 
     def magic_clean_step2b(self, mask):
+        """Perform the 2nd step of the cleaning (b version).
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            Input mask.
+
+        Returns
+        -------
+        np.ndarray
+            Mask array with excluded pixels.
+        """
         if np.sum(mask) == 0:
             return mask
 
@@ -430,6 +543,18 @@ class MAGICClean:
         return mask
 
     def magic_clean_step3(self, mask):
+        """Perform the 3rd step of the cleaning.
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            Input mask.
+
+        Returns
+        -------
+        np.ndarray
+            Mask array with excluded pixels.
+        """
         selection = []
         core_mask = mask.copy()
 
@@ -472,6 +597,18 @@ class MAGICClean:
         return mask
 
     def magic_clean_step3b(self, mask):
+        """Perform the 3rd step of the cleaning (b version).
+
+        Parameters
+        ----------
+        mask : np.ndarray
+            Input mask.
+
+        Returns
+        -------
+        np.ndarray
+            Mask array with excluded pixels.
+        """
         selection = []
         core_mask = mask.copy()
         boundary_mask = ~mask
@@ -505,7 +642,21 @@ class MAGICClean:
         mask[selection] = True
         return mask
 
-    def single_island(self, neighbors, mask, image):
+    def single_island(self, neighbors, mask):
+        """Find single islands in the image.
+
+        Parameters
+        ----------
+        neighbors : np.ndarray
+            Array with neighbor pixels.
+        mask : np.ndarray
+            Input mask array.
+
+        Returns
+        -------
+        np.ndarray
+            Mask of pixels with single islands.
+        """
         pixels_to_remove = []
         for pix_id in np.where(mask)[0]:
             if len(set(np.where(neighbors[pix_id] & mask)[0])) == 0:
@@ -515,7 +666,26 @@ class MAGICClean:
 
 
 class PixelTreatment:
+    """Interpolation for unsuitable pixels.
+
+    Parameters
+    ----------
+    camera : ctapipe.instrument.CameraGeometry
+        Camera geometry.
+    configuration : dict
+        Dictionary for the configuration.
+    """
+
     def __init__(self, camera, configuration):
+        """_summary_
+
+        Parameters
+        ----------
+        camera : ctapipe.instrument.CameraGeometry
+            Camera geometry.
+        configuration : dict
+            Dictionary for the configuration.
+        """
         self.configuration = configuration
         self.camera = camera
 
@@ -550,6 +720,22 @@ class PixelTreatment:
         self.npix = self.camera.n_pixels
 
     def treat(self, event_image, event_pulse_time, unsuitable_mask):
+        """Interpolate unsuitable pixels (charge and time).
+
+        Parameters
+        ----------
+        event_image : np.ndarray
+            Event image (charge).
+        event_pulse_time : np.ndarray
+            Event image (time).
+        unsuitable_mask : np.ndarray
+            Mask array with unsuitable pixels.
+
+        Returns
+        -------
+        tuple
+            Tuple with interpolated values for pixels' charge and time.
+        """
         self.event_image = event_image
         self.event_pulse_time = event_pulse_time
         self.unsuitable_mask = unsuitable_mask
@@ -573,6 +759,7 @@ class PixelTreatment:
         )
 
     def interpolate_signals(self):
+        """Interpolate charge values."""
         neighbors_unsuitable = copy.copy(self.unsuitable_neighbors)
         neighbors_unsuitable[:, self.unsuitable_mask] = False
 
@@ -600,6 +787,18 @@ class PixelTreatment:
         self.unsuitable_pixels_new = np.where(self.unsuitable_mask_new)[0]
 
     def find_two_closest_times(self, times_arr):
+        """Find two closest times to the one of the current pixel.
+
+        Parameters
+        ----------
+        times_arr : np.ndarray
+            Time array.
+
+        Returns
+        -------
+        tuple
+            Two closest times.
+        """
         n0 = len(times_arr)
         minval = 1e10
         p0 = -1
@@ -619,6 +818,7 @@ class PixelTreatment:
         return p0, p1
 
     def interpolate_times_slow(self):
+        """Interpolate times (slow version)."""
         pixel_and_times = zip(
             self.unsuitable_pixels_new, self.event_pulse_time[self.unsuitable_mask_new]
         )
@@ -632,6 +832,7 @@ class PixelTreatment:
                 self.event_pulse_time[ipixel] = (times[p0] + times[p1]) / 2.0
 
     def interpolate_times_fast(self):
+        """Interpolate times (fast version)."""
         neighbors_unsuitable = self.neighbors_array[self.unsuitable_mask_new]
         neighbors_unsuitable[:, self.unsuitable_mask] = False
 
@@ -651,71 +852,27 @@ class PixelTreatment:
             self.event_pulse_time[ipixel] = (time1 + time2) / 2.0
 
     def interpolate_pedestals(self):
+        """Interpolate pedestals (not implemented)."""
         pass
 
 
-def get_num_islands_MAGIC(camera, clean_mask, event_image):
-    """Eval num islands for MAGIC
+def get_num_islands_MAGIC(camera, clean_mask):
+    """Evaluate the number of islands as in MARS.
 
     Parameters
     ----------
     camera : ctapipe.instrument.camera.geometry.CameraGeometry
-        camera geometry
+        Camera geometry.
     clean_mask : numpy.ndarray
-        clean mask
-    event_image : numpy.ndarray
-        event image
+        Clean mask.
 
     Returns
     -------
     int
-        num_islands
+        Number of islands in the image.
     """
     # Identifying connected islands
     neighbors = camera.neighbor_matrix_sparse
     clean_neighbors = neighbors[clean_mask][:, clean_mask]
     num_islands, labels = connected_components(clean_neighbors, directed=False)
     return num_islands
-
-
-def clean_image_params(geom, image, clean, peakpos):
-    """Evaluate cleaned image parameters
-
-    Parameters
-    ----------
-    geom : ctapipe.instrument.camera.geometry.CameraGeometry
-        camera geometry
-    image : numpy.ndarray
-        image
-    clean : numpy.ndarray
-        clean mask
-    peakpos : numpy.ndarray
-        peakpos
-
-    Returns
-    -------
-    tuple
-        ctapipe.containers.HillasParametersContainer
-            hillas_p
-        ctapipe.containers.LeakageContainer
-            leakage_p
-        ctapipe.containers.TimingParametersContainer
-            timing_p
-    """
-    # Hillas parameters, same for LST and MAGIC. From ctapipe
-    hillas_p = hillas_parameters(geom=geom[clean], image=image[clean])
-    # Leakage, same for LST and MAGIC. From ctapipe
-    leakage_p = leakage_parameters(geom=geom, image=image, cleaning_mask=clean)
-    # Timing parameters, same for LST and MAGIC. From ctapipe
-    timing_p = timing_parameters(
-        geom=geom[clean],
-        image=image[clean],
-        peak_time=peakpos[clean],
-        hillas_parameters=hillas_p,
-    )
-
-    # Make sure each telescope get's an arrow
-    # if abs(time_grad[tel_id]) < 0.2:
-    #     time_grad[tel_id] = 1
-
-    return hillas_p, leakage_p, timing_p
