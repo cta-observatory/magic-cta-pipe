@@ -5,7 +5,7 @@ mc_tel_ids:
     LST-4: 0
     MAGIC-I: 2
     MAGIC-II: 3
-    
-general: 
-    focal_length           : "effective" #effective #nominal
-    
+
+general:
+    focal_length           : "effective" #effective #equivalent
+

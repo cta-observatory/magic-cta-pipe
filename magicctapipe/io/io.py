@@ -54,8 +54,8 @@ logger.setLevel(logging.INFO)
 # telescope pointing directions but have the same observation ID
 GROUP_INDEX_TRAIN = ["obs_id", "event_id", "true_alt", "true_az"]
 
-# The LST nominal and effective focal lengths
-NOMINAL_FOCLEN_LST = 28 * u.m
+# The LST equivalent and effective focal lengths
+EQUIVALENT_FOCLEN_LST = 28 * u.m
 EFFECTIVE_FOCLEN_LST = 29.30565 * u.m
 
 # The upper limit of the trigger time differences of consecutive events,
@@ -610,7 +610,7 @@ def load_lst_dl1_data_file(input_file):
     # Read the subarray description
     subarray = SubarrayDescription.from_hdf(input_file)
 
-    if focal_length == NOMINAL_FOCLEN_LST:
+    if focal_length == EQUIVALENT_FOCLEN_LST:
         # Set the effective focal length to the subarray description
         subarray.tel[1].optics.equivalent_focal_length = EFFECTIVE_FOCLEN_LST
         subarray.tel[1].camera.geometry.frame = CameraFrame(

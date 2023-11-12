@@ -38,7 +38,7 @@ from ctapipe.image import (
     number_of_islands,
     timing_parameters,
 )
-from ctapipe.instrument import SubarrayDescription
+from ctapipe.instrument import FocalLengthKind, SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
 from traitlets.config import Config
 
@@ -71,7 +71,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     config : dict
         Configuration for the LST-1 + MAGIC analysis
     focal_length : str
-        Focal length choice, effective or nominal
+        Focal length choice, effective or equivalent
     """
 
     assigned_tel_ids = config[
@@ -85,6 +85,16 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
+
+    if focal_length == "effective":
+        focal_length = FocalLengthKind.EFFECTIVE
+    elif focal_length == "equivalent":
+        focal_length = FocalLengthKind.EQUIVALENT
+    else:
+        raise ValueError(
+            f"Accepted choices for focal_length are 'effective' or 'equivalent'.\n"
+            f"Chosen value: {focal_length}."
+        )
 
     event_source = EventSource(
         input_file,
@@ -227,7 +237,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
             )  # If both have trigger, then magic_stereo = True
 
             for tel_id in tels_with_trigger:
-
                 if (
                     tel_id in LSTs_IDs
                 ):  # If the ID is in the LST list, we call calibrate on the LST()
@@ -436,9 +445,9 @@ def main():
         "-f",
         dest="focal_length_choice",
         type=str,
-        choices=["nominal", "effective"],
+        choices=["equivalent", "effective"],
         default="effective",
-        help='Choice of focal length, either "effective" or "nominal". The default (and standard) value is "effective"',
+        help='Choice of focal length, either "effective" or "equivalent". The default (and standard) value is "effective"',
     )
 
     args = parser.parse_args()  # Here we select all 3 parameters collected above
