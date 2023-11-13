@@ -101,7 +101,7 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-
+    NSB_match = config["general"]["NSB_matching"]
     run_number = args.run
     date = args.day
     simtel = "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz"
@@ -116,19 +116,32 @@ def main():
     nsb_limit.insert(0, 0)
 
     lst_config = "lstchain_standard_config.json"
+    if NSB_match:
+        LST_files = np.sort(glob.glob(f"{source}_LST_[0-9]*_{run_number}.txt"))
 
-    LST_files = np.sort(glob.glob(f"{source}_LST_[0-9]*_{run_number}.txt"))
+        if len(LST_files) > 1:
+            logger.info(
+                f"Run {run_number} classified in more than one NSB bin. Removing all these files and evaluating it again"
+            )
+            for kk in LST_files:
+                os.remove(kk)
+            LST_files = []
+        if len(LST_files) == 1:
+            logger.info(f"Run {run_number} already processed")
+            return
+    else:
+        LST_files = np.sort(glob.glob(f"{source}_LST_nsb_*{run_number}*.txt"))
 
-    if len(LST_files) > 1:
-        logger.info(
-            f"Run {run_number} classified in more than one NSB bin. Removing all these files and evaluating it again"
-        )
-        for kk in LST_files:
-            os.remove(kk)
-        LST_files = []
-    if len(LST_files) == 1:
-        logger.info(f"Run {run_number} already processed")
-        return
+        if len(LST_files) > 1:
+            logger.warning(
+                f"More than one files exists for run {run_number}. Removing all these files and evaluating it again."
+            )
+            for repeated_files in LST_files:
+                os.remove(repeated_files)
+            LST_files = []
+        elif len(LST_files) == 1:
+            logger.info(f"Run {run_number} already processed.")
+            return
 
     date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date_lst}/{lst_version}/{lst_tailcut}"
@@ -141,10 +154,14 @@ def main():
         return
     a = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {a}")
-    for j in range(0, len(nsb_list)):
-        if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):
-            with open(f"{source}_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
-                f.write(f"{date},{run_number}\n")
+    if NSB_match:
+        for j in range(0, len(nsb_list)):
+            if (a < nsb_limit[j + 1]) & (a > nsb_limit[j]):
+                with open(f"{source}_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
+                    f.write(f"{date},{run_number}\n")
+    else:
+        with open(f"{source}_LST_nsb_{run_number}.txt", "a+") as f:
+            f.write(f"{a}\n")
 
 
 if __name__ == "__main__":

@@ -96,7 +96,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
         if (int(LST[k]) in skip_LST) or (int(LST[k]) in LST_listed):
             skip = True
 
-        if skip == False:
+        if not skip:
             with open(file_list[0], "a+") as f:
                 f.write(f'{df["date_LST"][k]},{str(LST[k]).lstrip("0")}\n')
             LST_listed.append(int(LST[k]))
@@ -107,7 +107,7 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
 
             if (int(z) in skip_MAGIC) or (int(z) in MAGIC_listed):
                 skip = True
-            if skip == False:
+            if not skip:
                 with open(file_list[1], "a+") as f:
                     f.write(f'{df["date_MAGIC"][k]},{z}\n')
                 MAGIC_listed.append(int(z))
@@ -148,7 +148,7 @@ def main():
         inplace=True,
     )  #
 
-    if range == True:
+    if range:
         min = str(config["data_selection_and_lists"]["min"])
         max = str(config["data_selection_and_lists"]["max"])
         min = datetime.strptime(min, "%Y_%m_%d")
@@ -158,7 +158,7 @@ def main():
         df = df[df["date"] > min]
         df = df[df["date"] < max]
 
-    if range == False:
+    else:
         dates = config["data_selection_and_lists"]["date_list"]
 
         df = df[df["date_LST"].isin(dates)]

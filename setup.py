@@ -7,7 +7,7 @@ from setuptools import find_packages, setup
 
 entry_points = {}
 entry_points["console_scripts"] = [
-    "coincident_events = magicctapipe.scripts.lst1_magic.IT_container_data_MC_bash_scripts.coincident_events:main",
+    "coincident_events = magicctapipe.scripts.lst1_magic.semi_automatic_scripts.coincident_events:main",
     "create_dl3_index_files = magicctapipe.scripts.lst1_magic.create_dl3_index_files:main",
     "lst1_magic_create_irf = magicctapipe.scripts.lst1_magic.lst1_magic_create_irf:main",
     "lst1_magic_dl1_stereo_to_dl2 = magicctapipe.scripts.lst1_magic.lst1_magic_dl1_stereo_to_dl2:main",
@@ -16,21 +16,13 @@ entry_points["console_scripts"] = [
     "lst1_magic_mc_dl0_to_dl1 = magicctapipe.scripts.lst1_magic.lst1_magic_mc_dl0_to_dl1:main",
     "lst1_magic_stereo_reco = magicctapipe.scripts.lst1_magic.lst1_magic_stereo_reco:main",
     "lst1_magic_train_rfs = magicctapipe.scripts.lst1_magic.lst1_magic_train_rfs:main",
-    "LSTnsb = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.LSTnsb:main",
-    "LSTnsb_MC = magicctapipe.scripts.lst1_magic.IT_container_data_MC_bash_scripts.LSTnsb_MC:main",
+    "LSTnsb = magicctapipe.scripts.lst1_magic.semi_automatic_scripts.LSTnsb:main",
     "magic_calib_to_dl1 = magicctapipe.scripts.lst1_magic.magic_calib_to_dl1:main",
     "merge_hdf_files = magicctapipe.scripts.lst1_magic.merge_hdf_files:main",
-    "merging_runs_and_splitting_training_samples = magicctapipe.scripts.lst1_magic.IT_container_data_MC_bash_scripts.merging_runs_and_splitting_training_samples:main",
-    "nsb_coincident_events = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.nsb_coincident_events:main",
-    "nsb_level = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.nsb_level:main",
-    "nsb_level_MC = magicctapipe.scripts.lst1_magic.IT_container_data_MC_bash_scripts.nsb_level_MC:main",
-    "nsb_merge_M1_M2_night = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.nsb_merge_M1_M2_night:main",
-    "nsb_merge_M1_M2_runs = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.nsb_merge_M1_M2_runs:main",
-    "nsb_merge_subruns = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.nsb_merge_subruns:main",
-    "nsb_setting_up_config_and_dir = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.nsb_setting_up_config_and_dir:main",
-    "nsb_stereo_events = magicctapipe.scripts.lst1_magic.IT_container_data_nsb_bash_scripts.nsb_stereo_events:main",
-    "setting_up_config_and_dir = magicctapipe.scripts.lst1_magic.IT_container_data_MC_bash_scripts.setting_up_config_and_dir:main",
-    "stereo_events = magicctapipe.scripts.lst1_magic.IT_container_data_MC_bash_scripts.stereo_events:main",
+    "merging_runs_and_splitting_training_samples = magicctapipe.scripts.lst1_magic.semi_automatic_scripts.merging_runs_and_splitting_training_samples:main",
+    "nsb_level = magicctapipe.scripts.lst1_magic.semi_automatic_scripts.nsb_level:main",
+    "setting_up_config_and_dir = magicctapipe.scripts.lst1_magic.semi_automatic_scripts.setting_up_config_and_dir:main",
+    "stereo_events = magicctapipe.scripts.lst1_magic.semi_automatic_scripts.stereo_events:main",
 ]
 
 tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
