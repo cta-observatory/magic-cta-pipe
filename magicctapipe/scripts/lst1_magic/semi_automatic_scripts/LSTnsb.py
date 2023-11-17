@@ -50,7 +50,9 @@ def nsb(run_list, simtel, lst_config, run_number):
         mod = 1
     else:
         mod = int(len(run_list) / denominator)
+    failed = 0
     for ii in range(0, len(run_list)):
+        print(mod)
         subrun = run_list[ii].split(".")[-2]
         if mod == 0:
             break
@@ -58,8 +60,11 @@ def nsb(run_list, simtel, lst_config, run_number):
             try:
                 a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
                 noise.append(a)
+                logger.info(a)
             except IndexError:
-                mod = int(len(run_list) / (denominator + 1))
+                failed=failed+1
+                if len(run_list) > denominator:
+                    mod = int(len(run_list) / (denominator + failed))
                 logger.warning(
                     f"Subrun {subrun} caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
                 )
