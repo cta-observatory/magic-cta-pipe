@@ -318,7 +318,9 @@ def main():
             if n == 0:
                 launch_jobs = f"coincidence{n}=$(sbatch --parsable {run})"
             else:
-                launch_jobs = f"{launch_jobs} && coincidence{n}=$(sbatch --parsable --dependency=afterany:$coincidence{n-1} {run})"
+                launch_jobs = (
+                    f"{launch_jobs} && coincidence{n}=$(sbatch --parsable {run})"
+                )
 
         os.system(launch_jobs)
     else:
@@ -362,7 +364,6 @@ def main():
                     else:
                         launch_jobs = f"{launch_jobs} && coincidence{n}=$(sbatch --parsable {run})"
 
-                # print(launch_jobs)
                 os.system(launch_jobs)
 
             except OSError as exc:

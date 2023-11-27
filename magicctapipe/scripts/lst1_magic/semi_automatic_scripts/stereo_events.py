@@ -281,7 +281,11 @@ def main():
     configfile_stereo(telescope_ids, target_dir)
 
     # Below we run the analysis on the MC data
-    if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
+    if (
+        (args.analysis_type == "onlyMC")
+        or (args.analysis_type == "doEverything")
+        and not NSB_match
+    ):
         print("***** Generating the bashscript for MCs...")
         bash_stereoMC(target_dir, "gammadiffuse", env_name)
         bash_stereoMC(target_dir, "gammas", env_name)
@@ -327,11 +331,11 @@ def main():
         listnsb = np.sort(glob.glob(f"{source}_LST_*_.txt"))
         nsb = []
         for f in listnsb:
-            nsb.append(f.split("_")[2])
+            nsb.append(f.split("_")[-2])
 
         for nsblvl in nsb:
             print("***** Generating the bashscript...")
-            bash_stereo(target_dir, nsblvl, source, env_name)
+            bash_stereo(target_dir, nsblvl, source, env_name, NSB_match)
 
             print("***** Submitting processess to the cluster...")
             print(f'Process name: {target_dir.split("/")[-2:][1]}_stereo_{nsblvl}')

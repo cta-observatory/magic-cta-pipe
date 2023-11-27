@@ -4,7 +4,7 @@ By using this scrip, the list of MAGIC and LST runs (date and run number) can be
 
 import os
 from datetime import datetime
-import numpy as np
+
 import pandas as pd
 import yaml
 
@@ -28,8 +28,8 @@ def split_lst_date(df):
     date = df["DATE"]
     df["YY_LST"] = date.str[:4]
     df["MM_LST"] = date.str[4:6]
-    df["DD_LST"] = date.str[6:8]    
-    df["date_LST"] = df["YY_LST"]+ '-' + df["MM_LST"] + '-' + df["DD_LST"]  
+    df["DD_LST"] = date.str[6:8]
+    df["date_LST"] = df["YY_LST"] + "-" + df["MM_LST"] + "-" + df["DD_LST"]
     return df
 
 
@@ -49,7 +49,7 @@ def magic_date(df):
         The input dataframe with an added column
     """
 
-    date_lst = pd.to_datetime(df['date_LST'])
+    date_lst = pd.to_datetime(df["date_LST"])
     delta = pd.Timedelta("1 day")
     date_magic = date_lst + delta
     date_magic = date_magic.dt.strftime("%Y-%m-%d")
@@ -93,7 +93,9 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
 
         if not skip:
             with open(file_list[0], "a+") as f:
-                f.write(f"{df['date_LST'][k].replace('-','_')},{str(LST[k]).lstrip('0')}\n")
+                f.write(
+                    f"{df['date_LST'][k].replace('-','_')},{str(LST[k]).lstrip('0')}\n"
+                )
             LST_listed.append(int(LST[k]))
         MAGIC_min = int(df["MAGIC_first_run"][k])
         MAGIC_max = int(df["MAGIC_last_run"][k])
@@ -148,7 +150,7 @@ def main():
         max = str(config["data_selection_and_lists"]["max"])
         min = datetime.strptime(min, "%Y_%m_%d")
         max = datetime.strptime(max, "%Y_%m_%d")
-        lst = pd.to_datetime(df['date_LST'].str.replace('_', '-'))
+        lst = pd.to_datetime(df["date_LST"].str.replace("_", "-"))
         df["date"] = lst
         df = df[df["date"] > min]
         df = df[df["date"] < max]

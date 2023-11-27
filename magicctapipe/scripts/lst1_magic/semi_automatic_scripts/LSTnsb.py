@@ -62,7 +62,7 @@ def nsb(run_list, simtel, lst_config, run_number):
                 noise.append(a)
                 logger.info(a)
             except IndexError:
-                failed=failed+1
+                failed = failed + 1
                 if len(run_list) > denominator:
                     mod = int(len(run_list) / (denominator + failed))
                 logger.warning(

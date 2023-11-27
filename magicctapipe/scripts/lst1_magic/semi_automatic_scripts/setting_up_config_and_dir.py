@@ -23,11 +23,6 @@ from pathlib import Path
 import numpy as np
 import yaml
 
-try:
-    from importlib.resources import files
-except ImportError:
-    from importlib_resources import files
-
 from magicctapipe import __version__
 
 __all__ = [
@@ -188,7 +183,7 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match):
     noise_value : list
         Extra noise in dim and bright pixels, Extra bias in dim pixels
     """
-    config_file = files("magicctapipe").joinpath("scripts/lst1_magic", "config.yaml")
+    config_file = "../config.yaml"
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
@@ -350,7 +345,6 @@ def lists_and_bash_gen_MAGIC(
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
     """
-
     process_name = f'{target_dir.split("/")[-2:][1]}'
     lines = [
         "#!/bin/sh\n\n",
@@ -414,8 +408,10 @@ def lists_and_bash_gen_MAGIC(
                     ]
                     f.writelines(lines)
     if NSB_match:
+
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             for i in MAGIC_runs:
+
                 for p in range(len(ST_begin)):
                     if (
                         time.strptime(i[0], "%Y_%m_%d")
@@ -424,6 +420,7 @@ def lists_and_bash_gen_MAGIC(
                         time.strptime(i[0], "%Y_%m_%d")
                         <= time.strptime(ST_end[p], "%Y_%m_%d")
                     ):
+
                         if telescope_ids[-1] > 0:
                             number_of_nodes = glob.glob(
                                 f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
@@ -444,7 +441,7 @@ def lists_and_bash_gen_MAGIC(
                                 "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                                 "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                                 "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                                f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_step1.yaml >$LOG 2>&1\n",
+                                f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                             ]
                             with open(
                                 f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w"
@@ -471,7 +468,7 @@ def lists_and_bash_gen_MAGIC(
                                 "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                                 "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                                 "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                                f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_step1.yaml >$LOG 2>&1\n",
+                                f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                             ]
                             with open(
                                 f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w"
@@ -667,6 +664,16 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
+        "--analysis-type",
+        "-t",
+        choices=["onlyMAGIC", "onlyMC"],
+        dest="analysis_type",
+        type=str,
+        default="doEverything",
+        help="You can type 'onlyMAGIC' or 'onlyMC' to run this script only on MAGIC or MC data, respectively.",
+    )
+
+    parser.add_argument(
         "--config-file",
         "-c",
         dest="config_file",
@@ -720,7 +727,7 @@ def main():
     )
 
     directories_generator(
-        target_dir, telescope_ids, MAGIC_runs
+        target_dir, telescope_ids, MAGIC_runs, NSB_match
     )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
     config_file_gen(telescope_ids, target_dir, noise_value, NSB_match)
 
@@ -767,7 +774,7 @@ def main():
                 if n == 0:
                     launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
                 else:
-                    launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable --dependency=afterany:$running{n-1} {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+                    launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
 
             os.system(launch_jobs_MC)
 
@@ -778,7 +785,7 @@ def main():
         or (NSB_match)
     ):
         lists_and_bash_gen_MAGIC(
-            target_dir, telescope_ids, MAGIC_runs, env_name, NSB_match
+            target_dir, telescope_ids, MAGIC_runs, source, env_name, NSB_match
         )  # MAGIC real data
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             list_of_MAGIC_runs = glob.glob(f"{source}_MAGIC-*.sh")
@@ -792,7 +799,7 @@ def main():
                 if n == 0:
                     launch_jobs = f"linking=$(sbatch --parsable linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
                 else:
-                    launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$RES{n-1} {run})"
+                    launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
 
             os.system(launch_jobs)
 

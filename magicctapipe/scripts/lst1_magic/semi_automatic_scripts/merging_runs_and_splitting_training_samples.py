@@ -156,7 +156,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
             if not os.path.exists(f"{MAGIC_DL1_dir}/Merged"):
                 os.mkdir(f"{MAGIC_DL1_dir}/Merged")
 
-        with open(f"Merge_MAGIC_{identification}.sh", "w") as f:
+        with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
             lines = [
                 "#!/bin/sh\n\n",
                 "#SBATCH -p short\n",
@@ -241,66 +241,124 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                 "ulimit -s unlimited\n",
                 "ulimit -a\n\n",
             ]
-            with open(f"{source}_Merge_0_{p}.sh", "w") as f:
+            with open(f"{source}_Merge_MAGIC_{identification}_{p}.sh", "w") as f:
                 f.writelines(lines)
-                if os.path.exists(f"{MAGIC_DL1_dir}/M1"):
+                if identification == "0_subruns":
+
+                    if os.path.exists(f"{MAGIC_DL1_dir}/M1"):
+                        dates = [
+                            os.path.basename(x)
+                            for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
+                        ]
+                        for i in dates:
+                            runs = [
+                                os.path.basename(x)
+                                for x in glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/*")
+                            ]
+                            if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}"):
+                                os.mkdir(
+                                    f"{MAGIC_DL1_dir}/Merged/{i}"
+                                )  # Creating a merged directory for the respective night
+                            for r in runs:
+                                if not os.path.exists(
+                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
+                                ):
+                                    os.mkdir(
+                                        f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
+                                    )  # Creating a merged directory for the respective run
+                                if not os.path.exists(
+                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
+                                ):
+                                    os.mkdir(
+                                        f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
+                                    )  # Creating a merged directory for the respective run
+
+                                f.write(
+                                    f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M1/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M1_{i}_{r}.log \n"
+                                )
+
+                    if os.path.exists(f"{MAGIC_DL1_dir}/M2"):
+                        dates = [
+                            os.path.basename(x)
+                            for x in glob.glob(f"{MAGIC_DL1_dir}/M2/*")
+                        ]
+
+                        for i in dates:
+                            runs = [
+                                os.path.basename(x)
+                                for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
+                            ]
+                            if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}"):
+                                os.mkdir(
+                                    f"{MAGIC_DL1_dir}/Merged/{i}"
+                                )  # Creating a merged directory for the respective night
+                            for r in runs:
+                                if not os.path.exists(
+                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
+                                ):
+                                    os.mkdir(
+                                        f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
+                                    )  # Creating a merged directory for the respective run
+                                if not os.path.exists(
+                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
+                                ):
+                                    os.mkdir(
+                                        f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
+                                    )  # Creating a merged directory for the respective run
+
+                                f.write(
+                                    f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M2/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M2_{i}_{r}.log \n"
+                                )
+                elif identification == "1_M1M2":
+                    if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(
+                        f"{MAGIC_DL1_dir}/M2"
+                    ):
+                        dates = [
+                            os.path.basename(x)
+                            for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
+                        ]
+                        for i in dates:
+                            runs = [
+                                os.path.basename(x)
+                                for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
+                            ]
+                            for r in runs:
+                                if (
+                                    len(os.listdir(f"{MAGIC_DL1_dir}/M1/{i}/{r}")) > 1
+                                ) and (
+                                    len(os.listdir(f"{MAGIC_DL1_dir}/M2/{i}/{r}"))
+                                ) > 1:
+                                    if not os.path.exists(
+                                        f"{MAGIC_DL1_dir}/Merged/{i}/Merged"
+                                    ):
+                                        os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged")
+                                    if not os.path.exists(
+                                        f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs"
+                                    ):
+                                        os.mkdir(
+                                            f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs"
+                                        )
+                                    f.write(
+                                        f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
+                                    )
+                else:
                     dates = [
                         os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
                     ]
                     for i in dates:
-                        runs = [
-                            os.path.basename(x)
-                            for x in glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/*")
-                        ]
-                        if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}"):
+                        if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
+                            continue
+                        if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i}"):
                             os.mkdir(
-                                f"{MAGIC_DL1_dir}/Merged/{i}"
-                            )  # Creating a merged directory for the respective night
-                        for r in runs:
-                            if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/{r}"):
-                                os.mkdir(
-                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
-                                )  # Creating a merged directory for the respective run
-                            if not os.path.exists(
-                                f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
-                            ):
-                                os.mkdir(
-                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
-                                )  # Creating a merged directory for the respective run
-
-                            f.write(
-                                f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M1/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M1_{i}_{r}.log \n"
-                            )
-
-                if os.path.exists(f"{MAGIC_DL1_dir}/M2"):
-                    dates = [
-                        os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M2/*")
-                    ]
-
-                    for i in dates:
-                        runs = [
-                            os.path.basename(x)
-                            for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
-                        ]
-                        if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}"):
-                            os.mkdir(
-                                f"{MAGIC_DL1_dir}/Merged/{i}"
-                            )  # Creating a merged directory for the respective night
-                        for r in runs:
-                            if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/{r}"):
-                                os.mkdir(
-                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
-                                )  # Creating a merged directory for the respective run
-                            if not os.path.exists(
-                                f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
-                            ):
-                                os.mkdir(
-                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs"
-                                )  # Creating a merged directory for the respective run
-
-                            f.write(
-                                f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M2/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M2_{i}_{r}.log \n"
-                            )
+                                f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
+                            )  # Creating a merged directory for each night
+                        if not os.path.exists(
+                            f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs"
+                        ):
+                            os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs")
+                        f.write(
+                            f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
+                        )
 
 
 def mergeMC(target_dir, identification, env_name, cwd):
@@ -457,8 +515,10 @@ def main():
         print("***** Running merge_hdf_files.py on the MAGIC data files...")
 
         # Below we run the bash scripts to merge the MAGIC files
-        list_of_merging_scripts = np.sort(glob.glob("Merge_MAGIC_*.sh"))
-
+        list_of_merging_scripts = np.sort(glob.glob(f"{source}_Merge_MAGIC_*.sh"))
+        if len(list_of_merging_scripts) < 1:
+            logger.warning("no bash scripts")
+            return
         for n, run in enumerate(list_of_merging_scripts):
             if n == 0:
                 launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
