@@ -284,7 +284,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             time_par = TimingParametersContainer(
                 slope=u.Quantity(df_tel["slope"], unit="1/deg"),
                 intercept=float(df_tel["intercept"]),
-                deviation=float(df_tel["deviation"]),
             )
             leak_par = LeakageContainer(
                 intensity_width_1=float(df_tel["intensity_width_1"]),
