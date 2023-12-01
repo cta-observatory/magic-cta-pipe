@@ -1,3 +1,5 @@
+import glob
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -37,6 +39,26 @@ def test_save_pandas_data_in_table(temp_pandas, pd_test):
     assert df.equals(df1)
 
 
+def test_exist_dl1_mc(gamma_l1_monly, p_l1_monly):
+    """
+    Check if DL1 MC produced
+    """
+
+    assert len(glob.glob(f"{gamma_l1_monly}/*")) == 4
+    assert len(glob.glob(f"{p_l1_monly}/*")) == 2
+
+
+def test_exist_dl1_stereo_mc(gamma_stereo_monly, p_stereo_monly):
+    """
+    Check if DL1 stereo MC produced
+    """
+
+    assert len(glob.glob(f"{gamma_stereo_monly[0]}/*")) == 2
+    assert len(glob.glob(f"{gamma_stereo_monly[1]}/*")) == 2
+    assert len(glob.glob(f"{p_stereo_monly[0]}/*")) == 1
+    assert len(glob.glob(f"{p_stereo_monly[1]}/*")) == 1
+
+
 def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly, config_gen):
     """
     Check on stereo data reading
@@ -74,6 +96,14 @@ def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly, config_gen
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen, "intensity>50")
         assert np.all(data["intensity"] > 50)
+
+
+def test_exist_rf(RF_monly):
+    """
+    Check if RFs produced
+    """
+
+    assert len(glob.glob(f"{RF_monly}/*")) == 3
 
 
 def test_load_train_data_files_p(p_stereo_monly):
@@ -175,6 +205,15 @@ def test_load_train_data_files_tel_exc(temp_train_exc, config_gen):
         _ = load_train_data_files(str(temp_train_exc), config_gen)
 
 
+def test_exist_dl2_mc(p_dl2_monly, gamma_dl2_monly):
+    """
+    Check if DL2 MC produced
+    """
+
+    assert len(glob.glob(f"{p_dl2_monly}/*")) == 1
+    assert len(glob.glob(f"{gamma_dl2_monly}/*")) == 1
+
+
 def test_load_mc_dl2_data_file(p_dl2_monly, gamma_dl2_monly):
     """
     Checks on default loading
@@ -271,6 +310,14 @@ def test_get_dl2_mean_exc(p_dl2_monly, gamma_dl2_monly):
             _ = get_dl2_mean(event_data, weight_type=weight)
 
 
+def test_exist_irf(IRF_monly):
+    """
+    Check if IRFs produced
+    """
+
+    assert len(glob.glob(f"{IRF_monly}/*")) == 1
+
+
 def test_load_irf_files(IRF_monly):
     """
     Check on IRF dictionaries
@@ -350,6 +397,23 @@ def test_load_lst_dl1_data_file(dl1_lst):
         assert s1.all()
 
 
+def test_exist_dl1_magic(M2_l1_monly, M1_l1_monly):
+    """
+    Check if DL1 created
+    """
+
+    assert len(glob.glob(f"{M1_l1_monly}/*")) == 2
+    assert len(glob.glob(f"{M2_l1_monly}/*")) == 2
+
+
+def test_exist_merged_magic(merge_magic_monly):
+    """
+    Check if MAGIC merged
+    """
+
+    assert len(glob.glob(f"{merge_magic_monly}/*")) == 1
+
+
 def test_load_magic_dl1_data_files(merge_magic_monly, config_gen):
     """
     Check on MAGIC DL1
@@ -373,6 +437,14 @@ def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc, config_gen):
         match="Could not find any DL1 data files in the input directory.",
     ):
         _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
+
+
+def test_exist_stereo(stereo_monly):
+    """
+    Check if MAGIC stereo exist
+    """
+
+    assert len(glob.glob(f"{stereo_monly}/*")) == 1
 
 
 def test_get_stereo_events_data(stereo_monly, config_gen):
@@ -400,6 +472,14 @@ def test_get_stereo_events_data_cut(stereo_monly, config_gen):
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen, "intensity>50")
         assert np.all(data["intensity"] > 50)
+
+
+def test_exist_dl2(real_dl2_monly):
+    """
+    Check if DL2 exist
+    """
+
+    assert len(glob.glob(f"{real_dl2_monly}/*")) == 1
 
 
 def test_load_dl2_data_file(real_dl2_monly):
@@ -465,8 +545,17 @@ def test_get_dl2_mean_real(real_dl2_monly):
         assert "timestamp" in events.columns
 
 
-def test_index(real_index_monly):
+def test_exist_dl3(real_dl3_monly):
     """
-    Check on DL3 creation (up to indexes)
+    Check if DL3 exist
     """
-    print("Indexes created")
+
+    assert len(glob.glob(f"{real_dl3_monly}/dl3*")) == 1
+
+
+def test_exist_index(real_index_monly):
+    """
+    Check if indexes created
+    """
+
+    assert len(glob.glob(f"{real_index_monly}/*index*")) == 2

@@ -1,3 +1,5 @@
+import glob
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -204,6 +206,26 @@ def test_save_pandas_data_in_table(temp_pandas, pd_test):
     assert df.equals(df1)
 
 
+def test_exist_dl1_mc(gamma_l1, p_l1):
+    """
+    Check if DL1 MC produced
+    """
+
+    assert len(glob.glob(f"{gamma_l1}/*")) == 4
+    assert len(glob.glob(f"{p_l1}/*")) == 2
+
+
+def test_exist_dl1_stereo_mc(gamma_stereo, p_stereo):
+    """
+    Check if DL1 stereo MC produced
+    """
+
+    assert len(glob.glob(f"{gamma_stereo[0]}/*")) == 2
+    assert len(glob.glob(f"{gamma_stereo[1]}/*")) == 2
+    assert len(glob.glob(f"{p_stereo[0]}/*")) == 1
+    assert len(glob.glob(f"{p_stereo[1]}/*")) == 1
+
+
 def test_get_stereo_events_mc(gamma_stereo, p_stereo, config_gen):
     """
     Check on stereo data reading
@@ -241,6 +263,14 @@ def test_get_stereo_events_mc_cut(gamma_stereo, p_stereo, config_gen):
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen, "intensity>50")
         assert np.all(data["intensity"] > 50)
+
+
+def test_exist_rf(RF):
+    """
+    Check if RFs produced
+    """
+
+    assert len(glob.glob(f"{RF}/*")) == 12
 
 
 def test_load_train_data_files_p(p_stereo):
@@ -342,6 +372,15 @@ def test_load_train_data_files_tel_exc(temp_train_exc, config_gen):
         _ = load_train_data_files(str(temp_train_exc), config_gen)
 
 
+def test_exist_dl2_mc(p_dl2, gamma_dl2):
+    """
+    Check if DL2 MC produced
+    """
+
+    assert len(glob.glob(f"{p_dl2}/*")) == 1
+    assert len(glob.glob(f"{gamma_dl2}/*")) == 1
+
+
 def test_load_mc_dl2_data_file(p_dl2, gamma_dl2):
     """
     Checks on default loading
@@ -434,6 +473,14 @@ def test_get_dl2_mean_exc(p_dl2, gamma_dl2):
             _ = get_dl2_mean(event_data, weight_type=weight)
 
 
+def test_exist_irf(IRF):
+    """
+    Check if IRFs produced
+    """
+
+    assert len(glob.glob(f"{IRF}/*")) == 1
+
+
 def test_load_irf_files(IRF):
     """
     Check on IRF dictionaries
@@ -513,6 +560,23 @@ def test_load_lst_dl1_data_file(dl1_lst):
         assert s1.all()
 
 
+def test_exist_dl1_magic(M2_l1, M1_l1):
+    """
+    Check if DL1 created
+    """
+
+    assert len(glob.glob(f"{M1_l1}/*")) == 2
+    assert len(glob.glob(f"{M2_l1}/*")) == 2
+
+
+def test_exist_merged_magic(merge_magic):
+    """
+    Check if MAGIC merged
+    """
+
+    assert len(glob.glob(f"{merge_magic}/*")) == 1
+
+
 def test_load_magic_dl1_data_files(merge_magic, config_gen):
     """
     Check on MAGIC DL1
@@ -536,6 +600,22 @@ def test_load_magic_dl1_data_files_exc(temp_DL1_M_exc, config_gen):
         match="Could not find any DL1 data files in the input directory.",
     ):
         _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
+
+
+def test_exist_coincidence(coincidence):
+    """
+    Check if coincidence created
+    """
+
+    assert len(glob.glob(f"{coincidence}/*")) == 1
+
+
+def test_exist_coincidence_stereo(coincidence_stereo):
+    """
+    Check if coincidence stereo created
+    """
+
+    assert len(glob.glob(f"{coincidence_stereo}/*")) == 1
 
 
 def test_get_stereo_events_data(coincidence_stereo, config_gen):
@@ -563,6 +643,14 @@ def test_get_stereo_events_data_cut(coincidence_stereo, config_gen):
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen, "intensity>50")
         assert np.all(data["intensity"] > 50)
+
+
+def test_exist_dl2(real_dl2):
+    """
+    Check if DL2 exist
+    """
+
+    assert len(glob.glob(f"{real_dl2}/*")) == 1
 
 
 def test_load_dl2_data_file(real_dl2):
@@ -624,8 +712,17 @@ def test_get_dl2_mean_real(real_dl2):
         assert "timestamp" in events.columns
 
 
-def test_index(real_index):
+def test_exist_dl3(real_dl3):
     """
-    Check on DL3 creation (up to indexes)
+    Check if DL3 exist
     """
-    print("Indexes created")
+
+    assert len(glob.glob(f"{real_dl3}/dl3*")) == 1
+
+
+def test_exist_index(real_index):
+    """
+    Check if indexes created
+    """
+
+    assert len(glob.glob(f"{real_index}/*index*")) == 2
