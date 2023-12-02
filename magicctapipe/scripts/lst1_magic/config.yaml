@@ -1,5 +1,8 @@
 mc_tel_ids:
     LST-1: 1
+    LST-2: 0
+    LST-3: 0
+    LST-4: 0
     MAGIC-I: 2
     MAGIC-II: 3
 
