@@ -19,7 +19,7 @@ entry_points["console_scripts"] = [
     "merge_hdf_files = magicctapipe.scripts.lst1_magic.merge_hdf_files:main",
 ]
 
-tests_require = ["pytest", "pandas>=0.24.0", "importlib_resources;python_version<'3.9'"]
+tests_require = ["pytest", "pandas ~=1.0", "importlib_resources;python_version<'3.9'"]
 
 docs_require = [
     "sphinx",
@@ -37,12 +37,13 @@ setup(
     packages=find_packages(),
     install_requires=[
         "ctapipe~=0.19.2",
-        "ctaplot~=0.6.2",
-        "ctapipe_io_magic~=0.5.3",
+        "lstchain~=0.10.5",
+        "ctaplot~=0.6.4",
+        "ctapipe_io_magic~=0.5.4",
         "gammapy~=1.1",
-        "uproot",
+        "uproot~=5.0",
         "pandas",
-        "pyirf",
+        "pyirf~=0.10.0",
         "seaborn",
         "setuptools_scm",
         "astropy",
@@ -61,7 +62,7 @@ setup(
         "toml",
         "pymongo",
         "pyparsing",
-        "jinja2",
+        "jinja2~=3.0.2",
     ],
     entry_points=entry_points,
     extras_require={
