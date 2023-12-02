@@ -89,6 +89,8 @@ nitpick_ignore = [
     ("py:obj", "m"),
     ("py:obj", "TeV"),
     ("py:obj", "rad"),
+    ("py:obj", "s"),
+    ("py:obj", "ns"),
     ("py:class", "astropy.coordinates.baseframe.BaseCoordinateFrame"),
     ("py:class", "astropy.table.table.Table"),
     ("py:class", "eventio.simtel.simtelfile.SimTelFile"),
