@@ -1,6 +1,6 @@
-"""
-Utilities for training
-"""
+#!/usr/bin/env python
+# coding: utf-8
+
 import logging
 
 import joblib
@@ -13,11 +13,6 @@ __all__ = ["EnergyRegressor", "DispRegressor", "EventClassifier"]
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-TEL_NAMES = {
-    1: "LST-1",
-    2: "MAGIC-I",
-    3: "MAGIC-II",
-}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 
 class EnergyRegressor:
@@ -26,28 +21,30 @@ class EnergyRegressor:
 
     Parameters
     ----------
-    settings : dict
+    settings: dict
         Settings of RF regressors
-    features : list
+    features: list
         Parameters for training RFs
-    use_unsigned_features : bool
+    use_unsigned_features: bool
         If `True`, it trains RFs with unsigned features
     """
 
-    def __init__(self, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, TEL_NAMES, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        settings : dict
+        TEL_NAMES: dict
+            dictionary with telescope IDs and names.
+        settings: dict
             Settings of RF regressors
-        features : list
+        features: list
             Parameters for training RFs
-        use_unsigned_features : bool
+        use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-
+        self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -59,7 +56,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data: pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -84,7 +81,7 @@ class EnergyRegressor:
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {self.TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
@@ -95,12 +92,12 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data: pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        pandas.core.frame.DataFrame
+        reco_params: pandas.core.frame.DataFrame
             Data frame of the shower events with reconstructed energies
         """
 
@@ -150,7 +147,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        output_file : str
+        output_file: str
             Path to an output joblib file
         """
 
@@ -169,7 +166,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        input_file : str
+        input_file: str
             Path to an input joblib file
         """
 
@@ -187,28 +184,31 @@ class DispRegressor:
 
     Parameters
     ----------
-    settings : dict
+    settings: dict
         Settings of RF regressors
-    features : list
+    features: list
         Parameters for training RFs
-    use_unsigned_features : bool
+    use_unsigned_features: bool
         If `True`, it trains RFs with unsigned features
     """
 
-    def __init__(self, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, TEL_NAMES, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        settings : dict
+        TEL_NAMES: dict
+            dictionary with telescope IDs and names.
+        settings: dict
             Settings of RF regressors
-        features : list
+        features: list
             Parameters for training RFs
-        use_unsigned_features : bool
+        use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-
+        
+        self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -220,7 +220,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data: pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -244,7 +244,7 @@ class DispRegressor:
             regressor = sklearn.ensemble.RandomForestRegressor(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {self.TEL_NAMES[tel_id]} RF...")
             regressor.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = regressor
@@ -255,12 +255,12 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data: pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        pandas.core.frame.DataFrame
+        reco_params: pandas.core.frame.DataFrame
             Data frame of the shower events with the DISP parameter
         """
 
@@ -308,7 +308,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        output_file : str
+        output_file: str
             Path to an output joblib file
         """
 
@@ -327,7 +327,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        input_file : str
+        input_file: str
             Path to an input joblib file
         """
 
@@ -345,28 +345,31 @@ class EventClassifier:
 
     Parameters
     ----------
-    settings : dict
+    settings: dict
         Settings of RF classifiers
-    features : list
+    features: list
         Parameters for training RFs
-    use_unsigned_features : bool
+    use_unsigned_features: bool
         If `True`, it trains RFs with unsigned features
     """
 
-    def __init__(self, settings={}, features=[], use_unsigned_features=None):
+    def __init__(self, TEL_NAMES, settings={}, features=[], use_unsigned_features=None):
         """
         Constructor of the class.
 
         Parameters
         ----------
-        settings : dict
+        TEL_NAMES: dict
+            dictionary with telescope IDs and names
+        settings: dict
             Settings of RF classifiers
-        features : list
+        features: list
             Parameters for training RFs
-        use_unsigned_features : bool
+        use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-
+        
+        self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features
         self.use_unsigned_features = use_unsigned_features
@@ -378,7 +381,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data: pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -402,7 +405,7 @@ class EventClassifier:
             classifier = sklearn.ensemble.RandomForestClassifier(**self.settings)
 
             # Train a telescope RF
-            logger.info(f"Training a {TEL_NAMES[tel_id]} RF...")
+            logger.info(f"Training a {self.TEL_NAMES[tel_id]} RF...")
             classifier.fit(x_train, y_train)
 
             self.telescope_rfs[tel_id] = classifier
@@ -413,12 +416,12 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data: pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        pandas.core.frame.DataFrame
+        reco_params: pandas.core.frame.DataFrame
             Data frame of the shower events with the gammaness
         """
 
@@ -469,7 +472,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        output_file : str
+        output_file: str
             Path to an output joblib file
         """
 
@@ -488,7 +491,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        input_file : str
+        input_file: str
             Path to an input joblib file
         """
 

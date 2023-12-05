@@ -18,14 +18,14 @@ IRFs, which allows us to perform the 1D spectral analysis even if only
 diffuse data is available for test MCs.
 
 There are four different event types with which the IRFs are created.
-The "hardware" type is supposed for the hardware trigger between LST-1
+The "hardware" type stands for the hardware trigger between LST
 and MAGIC, allowing for the events of all the telescope combinations.
-The "software(_only_3tel)" types are supposed for the software event
-coincidence with LST-mono and MAGIC-stereo observations, allowing for
-only the events triggering both M1 and M2. The "software" type allows
-for the events of the any 2-tel combinations except the MAGIC-stereo
-combination at the moment. The "software_only_3tel" type allows for only
-the events of the 3-tel combination. The "magic_only" type allows for
+The "software_3tels_or_more" type stands for the software event
+coincidence with any combination of 3 or more telescopes (e.g. LST2, LST3, and
+MAGIC-I observations). The "software_6_tel" type allows for the events of any 
+2,3,4,5 or 6 telescope combinations (except the combination MAGIC-I + MAGIC-II).
+The "software" type is similar to "software_6_tel", but requires that
+we the events are tagged as "stereo_magic". The "magic_only" type allows for
 only the events of the MAGIC-stereo combination.
 
 There are two types of gammaness and theta cuts, "global" and "dynamic".
@@ -52,6 +52,7 @@ import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, vstack
+from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
@@ -74,8 +75,6 @@ from pyirf.spectral import (
     calculate_event_weights,
 )
 
-from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
-
 __all__ = ["create_irf"]
 
 logger = logging.getLogger(__name__)
@@ -91,15 +90,15 @@ def create_irf(
 
     Parameters
     ----------
-    input_file_gamma : str
+    input_file_gamma: str
         Path to an input gamma MC DL2 data file
-    input_file_proton : str
+    input_file_proton: str
         Path to an input proton MC DL2 data file
-    input_file_electron : str
+    input_file_electron: str
         Path to an input electron MC DL2 data file
-    output_dir : str
+    output_dir: str
         Path to a directory where to save an output IRF file
-    config : dict
+    config: dict
         Configuration for the LST-1 + MAGIC analysis
 
     Raises
@@ -124,7 +123,7 @@ def create_irf(
     logger.info(f"\nInput gamma MC DL2 data file: {input_file_gamma}")
 
     event_table_gamma, pnt_gamma, sim_info_gamma = load_mc_dl2_data_file(
-        input_file_gamma, quality_cuts, event_type, weight_type_dl2
+        config, input_file_gamma, quality_cuts, event_type, weight_type_dl2
     )
 
     is_diffuse_mc = sim_info_gamma.viewcone.to_value("deg") > 0
@@ -197,7 +196,7 @@ def create_irf(
         logger.info(f"\nInput proton MC DL2 data file: {input_file_proton}")
 
         event_table_proton, pnt_proton, sim_info_proton = load_mc_dl2_data_file(
-            input_file_proton, quality_cuts, event_type, weight_type_dl2
+            config, input_file_proton, quality_cuts, event_type, weight_type_dl2
         )
 
         if any(pnt_proton != pnt_gamma):
@@ -210,7 +209,7 @@ def create_irf(
         logger.info(f"\nInput electron MC DL2 data file: {input_file_electron}")
 
         event_table_electron, pnt_electron, sim_info_electron = load_mc_dl2_data_file(
-            input_file_electron, quality_cuts, event_type, weight_type_dl2
+            config, input_file_electron, quality_cuts, event_type, weight_type_dl2
         )
 
         if any(pnt_electron != pnt_gamma):
