@@ -74,7 +74,8 @@ event_coincidence:
     # April 13 2023 to August 2023: -25.1 us
     # Sep 11 2023 to Nov 14 2023: -6.2 us
     # Nov 15 2023: -1583.8 us
-    # After Nov 16 2023 : 118.8 us
+    # Nov 16 2023 to Nov 30 2023: 118.8 us
+    # After Dec 1 2023: -3.2 us
     timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"
     window_half_width: "300 ns"
     pre_offset_search: true
