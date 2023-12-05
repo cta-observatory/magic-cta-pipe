@@ -40,7 +40,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
-from magicctapipe.io import format_object, load_train_data_files_tel, telescope_combinations
+
+from magicctapipe.io import (
+    format_object,
+    load_train_data_files_tel,
+    telescope_combinations,
+)
 from magicctapipe.io.io import GROUP_INDEX_TRAIN
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
@@ -115,7 +120,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     config_rf = config["energy_regressor"]
 
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     gamma_offaxis = config_rf["gamma_offaxis"]
 
     logger.info("\nGamma off-axis angles allowed:")
@@ -136,7 +141,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     logger.info(format_object(config_rf["features"]))
 
     logger.info(f"\nUse unsigned features: {use_unsigned_features}")
-    
+
     logger.info(f"\nconfiguration file: {config}")
     logger.info(f'\nmc_tel_ids: {config["mc_tel_ids"]}')
     energy_regressor = EnergyRegressor(
@@ -193,7 +198,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     config_rf = config["disp_regressor"]
 
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     gamma_offaxis = config_rf["gamma_offaxis"]
 
     logger.info("\nGamma off-axis angles allowed:")
@@ -273,7 +278,7 @@ def train_event_classifier(
     config_rf = config["event_classifier"]
 
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     gamma_offaxis = config_rf["gamma_offaxis"]
 
     logger.info("\nGamma off-axis angles allowed:")
@@ -283,7 +288,11 @@ def train_event_classifier(
     logger.info(f"\nInput gamma MC directory: {input_dir_gamma}")
 
     event_data_gamma = load_train_data_files_tel(
-        input_dir_gamma, config, gamma_offaxis["min"], gamma_offaxis["max"], EVENT_CLASS_GAMMA
+        input_dir_gamma,
+        config,
+        gamma_offaxis["min"],
+        gamma_offaxis["max"],
+        EVENT_CLASS_GAMMA,
     )
 
     # Load the input proton MC data files

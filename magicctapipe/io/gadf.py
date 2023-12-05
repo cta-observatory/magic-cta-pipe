@@ -97,28 +97,28 @@ def create_event_hdu(
 
     Parameters
     ----------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
-    config: dict
-        yaml file with information about the telescope IDs.
-    on_time: astropy.table.table.QTable
+    config : dict
+        Dictionary with information about the telescope IDs.
+    on_time : astropy.table.table.QTable
         ON time of the input data
-    deadc: float
+    deadc : float
         Dead time correction factor
-    source_name: str
+    source_name : str
         Name of the observed source
-    source_ra: str
+    source_ra : str
         Right ascension of the observed source, whose format should be
         acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
-    source_dec: str
+    source_dec : str
         Declination of the observed source, whose format should be
         acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
 
     Returns
     -------
-    event_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         Event HDU
 
     Raises
@@ -128,7 +128,7 @@ def create_event_hdu(
         source RA/Dec coordinate is set to None
     """
     _, TEL_COMBINATIONS = telescope_combinations(config)
-    
+
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
 
     time_start = Time(event_table["timestamp"][0], format="unix", scale="utc")

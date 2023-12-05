@@ -33,15 +33,6 @@ from astropy.coordinates import Angle
 from astropy.coordinates.angle_utilities import angular_separation
 from astropy.io import fits
 from astropy.table import QTable
-from magicctapipe.io import (
-    create_event_hdu,
-    create_gh_cuts_hdu,
-    create_gti_hdu,
-    create_pointing_hdu,
-    format_object,
-    load_dl2_data_file,
-    load_irf_files,
-)
 from pyirf.cuts import evaluate_binned_cut
 from pyirf.interpolation import interpolate_effective_area_per_energy_and_fov
 from pyirf.io import (
@@ -53,6 +44,16 @@ from pyirf.io import (
 )
 from pyirf.utils import cone_solid_angle
 from scipy.interpolate import griddata
+
+from magicctapipe.io import (
+    create_event_hdu,
+    create_gh_cuts_hdu,
+    create_gti_hdu,
+    create_pointing_hdu,
+    format_object,
+    load_dl2_data_file,
+    load_irf_files,
+)
 
 __all__ = ["dl2_to_dl3"]
 

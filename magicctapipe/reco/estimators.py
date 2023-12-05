@@ -207,7 +207,7 @@ class DispRegressor:
         use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-        
+
         self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features
@@ -368,7 +368,7 @@ class EventClassifier:
         use_unsigned_features: bool
             If `True`, it trains RFs with unsigned features
         """
-        
+
         self.TEL_NAMES = TEL_NAMES
         self.settings = settings
         self.features = features

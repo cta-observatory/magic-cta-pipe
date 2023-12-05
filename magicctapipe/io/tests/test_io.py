@@ -327,8 +327,10 @@ def test_load_mc_dl2_data_file_opt(config_gen, p_dl2, gamma_dl2):
     """
     dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
     for file in dl2_mc:
-        data_s, _, _ = load_mc_dl2_data_file(config_gen, str(file), "width>0", "software", "simple")
-        assert np.all(data_s["combo_type"] > 0)
+        data_s, _, _ = load_mc_dl2_data_file(
+            config_gen, str(file), "width>0", "software", "simple"
+        )
+        assert np.all(data_s["combo_type"] < 3)
 
 
 def test_load_mc_dl2_data_file_exc(config_gen, p_dl2, gamma_dl2):
@@ -342,7 +344,9 @@ def test_load_mc_dl2_data_file_exc(config_gen, p_dl2, gamma_dl2):
             ValueError,
             match=f"Unknown event type '{event_type}'.",
         ):
-            _, _, _ = load_mc_dl2_data_file(config_gen, str(file), "width>0", event_type, "simple")
+            _, _, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "width>0", event_type, "simple"
+            )
 
 
 def test_get_dl2_mean_mc(p_dl2, gamma_dl2):
@@ -520,7 +524,9 @@ def test_load_dl2_data_file(config_gen, real_dl2):
     Checks on default loading
     """
     for file in real_dl2.glob("*"):
-        data, on, dead = load_dl2_data_file(config_gen, str(file), "width>0", "software", "simple")
+        data, on, dead = load_dl2_data_file(
+            config_gen, str(file), "width>0", "software", "simple"
+        )
         assert "pointing_alt" in data.colnames
         assert "timestamp" in data.colnames
         assert data["reco_energy"].unit == "TeV"
@@ -545,8 +551,10 @@ def test_load_dl2_data_file_opt(config_gen, real_dl2):
     Check on event_type
     """
     for file in real_dl2.glob("*"):
-        data_s, _, _ = load_dl2_data_file(config_gen, str(file), "width>0", "software", "simple")
-        assert np.all(data_s["combo_type"] > 0)
+        data_s, _, _ = load_dl2_data_file(
+            config_gen, str(file), "width>0", "software", "simple"
+        )
+        assert np.all(data_s["combo_type"] < 3)
 
 
 def test_load_dl2_data_file_exc(config_gen, real_dl2):
@@ -559,7 +567,9 @@ def test_load_dl2_data_file_exc(config_gen, real_dl2):
             ValueError,
             match=f"Unknown event type '{event_type}'.",
         ):
-            _, _, _ = load_dl2_data_file(config_gen, str(file), "width>0", event_type, "simple")
+            _, _, _ = load_dl2_data_file(
+                config_gen, str(file), "width>0", event_type, "simple"
+            )
 
 
 def test_get_dl2_mean_real(real_dl2):

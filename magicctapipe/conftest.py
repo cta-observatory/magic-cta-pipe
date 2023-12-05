@@ -639,7 +639,7 @@ def RF_monly(gamma_stereo_monly, p_stereo_monly, temp_rf_monly, config_monly):
 
 
 @pytest.fixture(scope="session")
-def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
+def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma, config):
     """
     Produce a DL2 file
     """
@@ -651,6 +651,7 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
                 f"-d{str(file)}",
                 f"-r{str(RF)}",
                 f"-o{str(temp_DL2_gamma)}",
+                f"-c{str(config)}",
             ]
         )
 
@@ -673,7 +674,9 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
 
 
 @pytest.fixture(scope="session")
-def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
+def gamma_dl2_monly(
+    temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly, config_monly
+):
     """
     Produce a DL2 file
     """
@@ -685,6 +688,7 @@ def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
                 f"-d{str(file)}",
                 f"-r{str(RF_monly)}",
                 f"-o{str(temp_DL2_gamma_monly)}",
+                f"-c{str(config_monly)}",
             ]
         )
 
@@ -742,7 +746,7 @@ def IRF_monly(gamma_dl2_monly, config_monly, temp_irf_monly):
 
 
 @pytest.fixture(scope="session")
-def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
+def p_dl2(temp_DL1_p_test, RF, temp_DL2_p, config):
     """
     Produce a DL2 file
     """
@@ -754,13 +758,14 @@ def p_dl2(temp_DL1_p_test, RF, temp_DL2_p):
                 f"-d{str(file)}",
                 f"-r{str(RF)}",
                 f"-o{str(temp_DL2_p)}",
+                f"-c{str(config)}",
             ]
         )
     return temp_DL2_p
 
 
 @pytest.fixture(scope="session")
-def p_dl2_monly(temp_DL1_p_test_monly, RF_monly, temp_DL2_p_monly):
+def p_dl2_monly(temp_DL1_p_test_monly, RF_monly, temp_DL2_p_monly, config_monly):
     """
     Produce a DL2 file
     """
@@ -772,6 +777,7 @@ def p_dl2_monly(temp_DL1_p_test_monly, RF_monly, temp_DL2_p_monly):
                 f"-d{str(file)}",
                 f"-r{str(RF_monly)}",
                 f"-o{str(temp_DL2_p_monly)}",
+                f"-c{str(config_monly)}",
             ]
         )
     return temp_DL2_p_monly
@@ -951,7 +957,7 @@ def stereo_monly(merge_magic_monly, temp_stereo_monly, config_monly):
 
 
 @pytest.fixture(scope="session")
-def real_dl2(coincidence_stereo, RF, temp_DL2_real):
+def real_dl2(coincidence_stereo, RF, temp_DL2_real, config):
     """
     Produce a DL2 file
     """
@@ -963,13 +969,14 @@ def real_dl2(coincidence_stereo, RF, temp_DL2_real):
                 f"-d{str(file)}",
                 f"-r{str(RF)}",
                 f"-o{str(temp_DL2_real)}",
+                f"-c{str(config)}",
             ]
         )
     return temp_DL2_real
 
 
 @pytest.fixture(scope="session")
-def real_dl2_monly(stereo_monly, RF_monly, temp_DL2_real_monly):
+def real_dl2_monly(stereo_monly, RF_monly, temp_DL2_real_monly, config_monly):
     """
     Produce a DL2 file
     """
@@ -981,6 +988,7 @@ def real_dl2_monly(stereo_monly, RF_monly, temp_DL2_real_monly):
                 f"-d{str(file)}",
                 f"-r{str(RF_monly)}",
                 f"-o{str(temp_DL2_real_monly)}",
+                f"-c{str(config_monly)}",
             ]
         )
     return temp_DL2_real_monly

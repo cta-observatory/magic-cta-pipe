@@ -22,7 +22,7 @@ The "hardware" type stands for the hardware trigger between LST
 and MAGIC, allowing for the events of all the telescope combinations.
 The "software_3tels_or_more" type stands for the software event
 coincidence with any combination of 3 or more telescopes (e.g. LST2, LST3, and
-MAGIC-I observations). The "software_6_tel" type allows for the events of any 
+MAGIC-I observations). The "software_6_tel" type allows for the events of any
 2,3,4,5 or 6 telescope combinations (except the combination MAGIC-I + MAGIC-II).
 The "software" type is similar to "software_6_tel", but requires that
 we the events are tagged as "stereo_magic". The "magic_only" type allows for
@@ -52,7 +52,6 @@ import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, vstack
-from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
@@ -74,6 +73,8 @@ from pyirf.spectral import (
     PowerLaw,
     calculate_event_weights,
 )
+
+from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 
 __all__ = ["create_irf"]
 

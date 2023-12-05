@@ -16,7 +16,6 @@ $ python lst1_magic_dl1_stereo_to_dl2.py
 (--output-dir dl2)
 """
 
-import yaml
 import argparse
 import glob
 import itertools
@@ -26,11 +25,17 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
-from magicctapipe.io import get_stereo_events, save_pandas_data_in_table, telescope_combinations
+
+from magicctapipe.io import (
+    get_stereo_events,
+    save_pandas_data_in_table,
+    telescope_combinations,
+)
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
@@ -58,9 +63,9 @@ def apply_rfs(event_data, estimator, config):
     reco_params: pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed parameters
     """
-    
+
     tel_ids = list(estimator.telescope_rfs.keys())
-    
+
     # Extract the events with the same telescope ID
     df_events = event_data.query(f"tel_id == {tel_ids[0]}")
 
@@ -90,9 +95,9 @@ def reconstruct_arrival_direction(event_data, tel_descriptions, config):
     """
 
     params_with_flips = pd.DataFrame()
-    
+
     _, TEL_COMBINATIONS = telescope_combinations(config)
-    
+
     # First of all, we reconstruct the directions of all the head and
     # tail candidates for every telescope image, i.e., the directions
     # separated by the DISP parameter from the image CoG along the
@@ -256,9 +261,9 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
     config: dict
         dictionary with telescope IDs information
     """
-    
+
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     # Load the input DL1-stereo data file
     logger.info(f"\nInput DL1-stereo data file: {input_file_dl1}")
 
@@ -323,7 +328,9 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
         # Reconstruct the arrival directions with the DISP method
         logger.info("\nReconstructing the arrival directions...")
 
-        reco_params = reconstruct_arrival_direction(event_data, tel_descriptions, config)
+        reco_params = reconstruct_arrival_direction(
+            event_data, tel_descriptions, config
+        )
         event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del disp_regressor
@@ -423,7 +430,7 @@ def main():
         default="./data",
         help="Path to a directory where to save an output DL2 data file",
     )
-    
+
     parser.add_argument(
         "--config-file",
         "-c",
@@ -434,10 +441,10 @@ def main():
     )
 
     args = parser.parse_args()
-    
+
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
-        
+
     # Process the input data
     dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir, config)
 

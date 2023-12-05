@@ -165,7 +165,7 @@ def test_load_mc_dl2_data_file_opt(config_gen, p_dl2_monly, gamma_dl2_monly):
             config_gen, str(file), "width>0", "magic_only", "simple"
         )
 
-        assert np.all(data_m["combo_type"] == 0)
+        assert np.all(data_m["combo_type"] == 3)
 
 
 def test_load_mc_dl2_data_file_exc(config_gen, p_dl2_monly, gamma_dl2_monly):
@@ -179,7 +179,9 @@ def test_load_mc_dl2_data_file_exc(config_gen, p_dl2_monly, gamma_dl2_monly):
             ValueError,
             match=f"Unknown event type '{event_type}'.",
         ):
-            _, _, _ = load_mc_dl2_data_file(config_gen, str(file), "width>0", event_type, "simple")
+            _, _, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "width>0", event_type, "simple"
+            )
 
 
 def test_get_dl2_mean_mc(p_dl2_monly, gamma_dl2_monly):
@@ -385,9 +387,11 @@ def test_load_dl2_data_file_opt(config_gen, real_dl2_monly):
     """
     for file in real_dl2_monly.glob("*"):
 
-        data_m, _, _ = load_dl2_data_file(config_gen, str(file), "width>0", "magic_only", "simple")
+        data_m, _, _ = load_dl2_data_file(
+            config_gen, str(file), "width>0", "magic_only", "simple"
+        )
 
-        assert np.all(data_m["combo_type"] == 0)
+        assert np.all(data_m["combo_type"] == 3)
 
 
 def test_load_dl2_data_file_exc(config_gen, real_dl2_monly):
@@ -400,7 +404,9 @@ def test_load_dl2_data_file_exc(config_gen, real_dl2_monly):
             ValueError,
             match=f"Unknown event type '{event_type}'.",
         ):
-            _, _, _ = load_dl2_data_file(config_gen, str(file), "width>0", event_type, "simple")
+            _, _, _ = load_dl2_data_file(
+                config_gen, str(file), "width>0", event_type, "simple"
+            )
 
 
 def test_get_dl2_mean_real(real_dl2_monly):

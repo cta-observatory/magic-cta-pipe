@@ -611,7 +611,9 @@ def load_magic_dl1_data_files(input_dir, config):
     return event_data, subarray
 
 
-def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=None, true_event_class=None):
+def load_train_data_files_tel(
+    input_dir, config, offaxis_min=None, offaxis_max=None, true_event_class=None
+):
     """
     Loads DL1-stereo data files and separates the shower events per
     telescope combination type for training RFs.
@@ -620,7 +622,7 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
     ----------
     input_dir: str
         Path to a directory where input DL1-stereo files are stored
-    config: dict 
+    config: dict
         yaml file with information about the telescope IDs.
     offaxis_min: str
         Minimum shower off-axis angle allowed, whose format should be
@@ -630,7 +632,7 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
         acceptable by `astropy.units.quantity.Quantity`
     true_event_class: int
         True event class of the input events
-    
+
 
     Returns
     -------
@@ -644,9 +646,9 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
         If any DL1-stereo data files are not found in the input
         directory
     """
-    
+
     TEL_NAMES, _ = telescope_combinations(config)
-    
+
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
 
@@ -698,35 +700,37 @@ def load_train_data_files_tel(input_dir, config, offaxis_min=None, offaxis_max=N
     return data_train
 
 
-def load_mc_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type_dl2):
+def load_mc_dl2_data_file(
+    config, input_file, quality_cuts, event_type, weight_type_dl2
+):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
     Parameters
     ----------
-    config: dict 
+    config : dict
         evoked from an yaml file with information about the telescope IDs.
-    input_file: str
+    input_file : str
         Path to an input MC DL2 data file
-    quality_cuts: str
+    quality_cuts : str
         Quality cuts applied to the input events
-    event_type: str
+    event_type : str
         Type of the events which will be used -
         "software" uses software coincident events,
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
         "hardware" uses all the telescope combination events
-    weight_type_dl2: str
+    weight_type_dl2 : str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
     Returns
     -------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the MC DL2 events surviving the cuts
-    pointing: numpy.ndarray
+    pointing : numpy.ndarray
         Telescope pointing direction (zd, az) in the unit of degree
-    sim_info: pyirf.simulations.SimulatedEventsInfo
+    sim_info : pyirf.simulations.SimulatedEventsInfo
         Container of the simulation information
 
     Raises
@@ -738,23 +742,26 @@ def load_mc_dl2_data_file(config, input_file, quality_cuts, event_type, weight_t
     TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
     combo_types = np.asarray(range(len(TEL_COMBINATIONS)))
     three_or_more = []
-    for n,combination in enumerate(TEL_COMBINATIONS.values()):
+    for n, combination in enumerate(TEL_COMBINATIONS.values()):
         if len(combination) >= 3:
             three_or_more.append(n)
-    
-        
+
     # Load the input file
     df_events = pd.read_hdf(input_file, key="events/parameters")
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
-    df_events = get_stereo_events(df_events, config, quality_cuts, eval_multi_combo=False)
+    df_events = get_stereo_events(
+        df_events, config, quality_cuts, eval_multi_combo=False
+    )
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        df_events.query(f"(combo_type < {combo_types[-1]}) & (magic_stereo == True)", inplace=True)
+        df_events.query(
+            f"(combo_type < {combo_types[-1]}) & (magic_stereo == True)", inplace=True
+        )
 
     elif event_type == "software_3tels_or_more":
         df_events.query(f"combo_type == {three_or_more}", inplace=True)
@@ -840,28 +847,29 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
 
     Parameters
     ----------
-    config: dict 
-        evoked from an yaml file with information about the telescope IDs.
+    config : dict
+        Evoked from an yaml file with information about the telescope IDs.
+    input_file: str
         Path to an input DL2 data file
-    quality_cuts: str
+    quality_cuts : str
         Quality cuts applied to the input events
-    event_type: str
+    event_type : str
         Type of the events which will be used -
         "software" uses software coincident events,
         "software_only_3tel" uses only 3-tel combination events,
         "magic_only" uses only MAGIC-stereo combination events, and
         "hardware" uses all the telescope combination events
-    weight_type_dl2: str
+    weight_type_dl2 : str
         Type of the weight for averaging telescope-wise DL2 parameters -
         "simple", "variance" or "intensity" are allowed
 
     Returns
     -------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the MC DL2 events surviving the cuts
-    on_time: astropy.units.quantity.Quantity
+    on_time : astropy.units.quantity.Quantity
         ON time of the input data
-    deadc: float
+    deadc : float
         Dead time correction factor
 
     Raises
@@ -869,21 +877,22 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
     ValueError
         If the input event type is not known
     """
-    
+
     TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
     combo_types = np.asarray(range(len(TEL_COMBINATIONS)))
     three_or_more = []
-    for n,combination in enumerate(TEL_COMBINATIONS.values()):
+    for n, combination in enumerate(TEL_COMBINATIONS.values()):
         if len(combination) >= 3:
             three_or_more.append(n)
-            
-            
+
     # Load the input file
     event_data = pd.read_hdf(input_file, key="events/parameters")
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
-    event_data = get_stereo_events(event_data, config, quality_cuts, eval_multi_combo=False)
+    event_data = get_stereo_events(
+        event_data, config, quality_cuts, eval_multi_combo=False
+    )
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
@@ -896,7 +905,7 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
 
     elif event_type == "software_6_tel":
         event_data.query(f"combo_type < {combo_types[-1]}", inplace=True)
-        
+
     elif event_type == "magic_only":
         event_data.query(f"combo_type == {combo_types[-1]}", inplace=True)
 
