@@ -340,19 +340,19 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    weight_type: str
+    weight_type : str
         Type of the weights for telescope-wise DL2 parameters -
         "simple" does not use any weights for calculations,
         "variance" uses the inverse of the RF variance, and
         "intensity" uses the linear-scale intensity parameter
-    group_index: list
+    group_index : list
         Index to group telescope events
 
     Returns
     -------
-    event_data_mean: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events with mean DL2 parameters
 
     Raises
@@ -620,25 +620,23 @@ def load_train_data_files_tel(
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input DL1-stereo files are stored
-    config: dict
-        yaml file with information about the telescope IDs.
-    offaxis_min: str
+    config : dict
+        Dictionary with information about the telescope IDs.
+    offaxis_min : str
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
-    offaxis_max: str
+    offaxis_max : str
         Maximum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
-    true_event_class: int
+    true_event_class : int
         True event class of the input events
-
 
     Returns
     -------
-    data_train: dict
+    dict
         Data frames of the shower events separated telescope-wise
-
 
     Raises
     ------
@@ -709,7 +707,7 @@ def load_mc_dl2_data_file(
     Parameters
     ----------
     config : dict
-        evoked from an yaml file with information about the telescope IDs.
+        Evoked from an yaml file with information about the telescope IDs.
     input_file : str
         Path to an input MC DL2 data file
     quality_cuts : str
@@ -849,7 +847,7 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
     ----------
     config : dict
         Evoked from an yaml file with information about the telescope IDs.
-    input_file: str
+    input_file : str
         Path to an input DL2 data file
     quality_cuts : str
         Quality cuts applied to the input events

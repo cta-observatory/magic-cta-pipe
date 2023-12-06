@@ -91,15 +91,15 @@ def create_irf(
 
     Parameters
     ----------
-    input_file_gamma: str
+    input_file_gamma : str
         Path to an input gamma MC DL2 data file
-    input_file_proton: str
+    input_file_proton : str
         Path to an input proton MC DL2 data file
-    input_file_electron: str
+    input_file_electron : str
         Path to an input electron MC DL2 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output IRF file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
 
     Raises

@@ -74,9 +74,9 @@ def get_events_at_random(event_data, n_events_random):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    n_events_random: int or float
+    n_events_random : int or float
         Number of events to be extracted randomly
 
     Returns
@@ -107,13 +107,13 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input gamma MC data files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save trained RFs
-    config: dict
+    config : dict
         Configuration for the LST + MAGIC analysis
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it uses unsigned features for training RFs
     """
 
@@ -185,13 +185,13 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input gamma MC data files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save trained RFs
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it uses unsigned features for training RFs
     """
 
@@ -263,15 +263,15 @@ def train_event_classifier(
 
     Parameters
     ----------
-    input_dir_gamma: str
+    input_dir_gamma : str
         Path to a directory where input gamma MC data files are stored
-    input_dir_proton: str
+    input_dir_proton : str
         Path to a directory where input proton MC data files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save trained RFs
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it uses unsigned features for training RFs
     """
 

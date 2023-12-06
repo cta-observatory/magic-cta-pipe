@@ -52,15 +52,16 @@ def apply_rfs(event_data, estimator, config):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    estimator: magicctapipe.reco.estimator
+    estimator : magicctapipe.reco.estimator
         Trained regressor or classifier
-    config: dict
-        evoked from an yaml file with information about the telescope IDs.
+    config : dict
+        Evoked from an yaml file with information about the telescope IDs.
+
     Returns
     -------
-    reco_params: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed parameters
     """
 
@@ -82,15 +83,16 @@ def reconstruct_arrival_direction(event_data, tel_descriptions, config):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    tel_descriptions: dict
+    tel_descriptions : dict
         Telescope descriptions
-    config: dict
-        dictionary with telescope IDs information
+    config : dict
+        Dictionary with telescope IDs information
+
     Returns
     -------
-    reco_params: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed directions
     """
 
@@ -252,14 +254,14 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
 
     Parameters
     ----------
-    input_file_dl1: str
+    input_file_dl1 : str
         Path to an input DL1-stereo data file
-    input_dir_rfs: str
+    input_dir_rfs : str
         Path to a directory where trained RFs are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL2 data file
-    config: dict
-        dictionary with telescope IDs information
+    config : dict
+        Dictionary with telescope IDs information
     """
 
     TEL_NAMES, _ = telescope_combinations(config)
@@ -400,6 +402,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
 
 
 def main():
+    """Main function"""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

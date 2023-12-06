@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+Utilities for training
+"""
 import logging
 
 import joblib
@@ -21,11 +21,13 @@ class EnergyRegressor:
 
     Parameters
     ----------
-    settings: dict
+    TEL_NAMES : dict
+        Dictionary with telescope IDs and names
+    settings : dict
         Settings of RF regressors
-    features: list
+    features : list
         Parameters for training RFs
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it trains RFs with unsigned features
     """
 
@@ -35,13 +37,13 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        TEL_NAMES: dict
-            dictionary with telescope IDs and names.
-        settings: dict
+        TEL_NAMES : dict
+            Dictionary with telescope IDs and names.
+        settings : dict
             Settings of RF regressors
-        features: list
+        features : list
             Parameters for training RFs
-        use_unsigned_features: bool
+        use_unsigned_features : bool
             If `True`, it trains RFs with unsigned features
         """
         self.TEL_NAMES = TEL_NAMES
@@ -56,7 +58,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -92,12 +94,12 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        reco_params: pandas.core.frame.DataFrame
+        pandas.core.frame.DataFrame
             Data frame of the shower events with reconstructed energies
         """
 
@@ -147,7 +149,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        output_file: str
+        output_file : str
             Path to an output joblib file
         """
 
@@ -166,7 +168,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        input_file: str
+        input_file : str
             Path to an input joblib file
         """
 
@@ -184,11 +186,13 @@ class DispRegressor:
 
     Parameters
     ----------
-    settings: dict
+    TEL_NAMES : dict
+        Dictionary with telescope IDs and names
+    settings : dict
         Settings of RF regressors
-    features: list
+    features : list
         Parameters for training RFs
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it trains RFs with unsigned features
     """
 
@@ -198,13 +202,13 @@ class DispRegressor:
 
         Parameters
         ----------
-        TEL_NAMES: dict
-            dictionary with telescope IDs and names.
-        settings: dict
+        TEL_NAMES : dict
+            Dictionary with telescope IDs and names.
+        settings : dict
             Settings of RF regressors
-        features: list
+        features : list
             Parameters for training RFs
-        use_unsigned_features: bool
+        use_unsigned_features : bool
             If `True`, it trains RFs with unsigned features
         """
 
@@ -220,7 +224,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -255,12 +259,12 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        reco_params: pandas.core.frame.DataFrame
+        pandas.core.frame.DataFrame
             Data frame of the shower events with the DISP parameter
         """
 
@@ -308,7 +312,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        output_file: str
+        output_file : str
             Path to an output joblib file
         """
 
@@ -327,7 +331,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        input_file: str
+        input_file : str
             Path to an input joblib file
         """
 
@@ -345,11 +349,13 @@ class EventClassifier:
 
     Parameters
     ----------
-    settings: dict
+    TEL_NAMES : dict
+        Dictionary with telescope IDs and names
+    settings : dict
         Settings of RF classifiers
-    features: list
+    features : list
         Parameters for training RFs
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it trains RFs with unsigned features
     """
 
@@ -359,13 +365,13 @@ class EventClassifier:
 
         Parameters
         ----------
-        TEL_NAMES: dict
-            dictionary with telescope IDs and names
-        settings: dict
+        TEL_NAMES : dict
+            Dictionary with telescope IDs and names
+        settings : dict
             Settings of RF classifiers
-        features: list
+        features : list
             Parameters for training RFs
-        use_unsigned_features: bool
+        use_unsigned_features : bool
             If `True`, it trains RFs with unsigned features
         """
 
@@ -381,7 +387,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
         """
 
@@ -416,12 +422,12 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data: pandas.core.frame.DataFrame
+        event_data : pandas.core.frame.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        reco_params: pandas.core.frame.DataFrame
+        pandas.core.frame.DataFrame
             Data frame of the shower events with the gammaness
         """
 
@@ -472,7 +478,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        output_file: str
+        output_file : str
             Path to an output joblib file
         """
 
@@ -491,7 +497,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        input_file: str
+        input_file : str
             Path to an input joblib file
         """
 
