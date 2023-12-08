@@ -25,7 +25,7 @@ coincidence with any combination of 3 or more telescopes (e.g. LST2, LST3, and
 MAGIC-I observations). The "software_6_tel" type allows for the events of any
 2,3,4,5 or 6 telescope combinations (except the combination MAGIC-I + MAGIC-II).
 The "software" type is similar to "software_6_tel", but requires that
-we the events are tagged as "stereo_magic". The "magic_only" type allows for
+the events are tagged as "stereo_magic". The "magic_only" type allows for
 only the events of the MAGIC-stereo combination.
 
 There are two types of gammaness and theta cuts, "global" and "dynamic".
