@@ -76,7 +76,7 @@ def get_events_at_random(event_data, n_events_random):
     ----------
     event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    n_events_random : int or float
+    n_events_random : int
         Number of events to be extracted randomly
 
     Returns
