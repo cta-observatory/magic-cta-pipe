@@ -326,9 +326,9 @@ def transform_altaz_to_radec(alt, az, obs_time):
 
     Returns
     -------
-    ra : astropy.coordinates.angles.Longitude
+    ra : astropy.coordinates.Longitude
         Right ascension of the input direction
-    dec : astropy.coordinates.angles.Latitude
+    dec : astropy.coordinates.Latitude
         Declination of the input direction
     """
 
