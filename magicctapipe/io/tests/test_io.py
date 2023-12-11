@@ -262,7 +262,7 @@ def test_load_train_data_files_g(gamma_stereo):
     """
 
     events = load_train_data_files(str(gamma_stereo[0]))
-    assert list(events.keys()) == ["LST1_M1", "LST1_M1_M2", "LST1_M2"]
+    assert list(events.keys()) == ["LST1_M1", "LST1_M1_M2", "LST1_M2", "M1_M2"]
     data = events["LST1_M1"]
     assert np.all(data["combo_type"] == 0)
     assert "off_axis" in data.columns
