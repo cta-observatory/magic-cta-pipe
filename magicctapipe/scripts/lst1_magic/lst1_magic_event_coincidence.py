@@ -254,94 +254,115 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
                 f"\nExtracting the {tel_name} events taken when LST observed for pre offset search..."
             )
 
-            time_lolim = timestamps_lst[0] - window_half_width
-            time_uplim = timestamps_lst[-1] + window_half_width
-            cond_lolim = timestamps_magic >= time_lolim
-            cond_uplim = timestamps_magic <= time_uplim
+            lst_obs_window = timestamps_lst[-1] - timestamps_lst[0]
+            N = 10
+            success_flag = False
+            for k in [n * i for n in range(N) for i in [-1, 1]][1:]:
+                t_start = timestamps_lst[0] + k * lst_obs_window
+                t_end = t_start + lst_obs_window
+                print(f"t_start: {t_start}, obs_window: {lst_obs_window}")
+                time_lolim = t_start - window_half_width
+                time_uplim = t_end + window_half_width
+                cond_lolim = timestamps_magic >= time_lolim
+                cond_uplim = timestamps_magic <= time_uplim
 
-            mask_lst_obs_window = np.logical_and(cond_lolim, cond_uplim)
-            n_events_magic = np.count_nonzero(mask_lst_obs_window)
+                mask_lst_obs_window = np.logical_and(cond_lolim, cond_uplim)
+                n_events_magic = np.count_nonzero(mask_lst_obs_window)
 
-            if n_events_magic == 0:
-                logger.info(f"--> No {tel_name} events are found. Skipping...")
-                continue
+                if n_events_magic == 0:
+                    logger.info(f"--> No {tel_name} events are found. Skipping...")
+                    continue
+                    
+                logger.info(f"--> {n_events_magic} events are found.")
+                
+                # Extract indexes of MAGIC large shower events
+                index_large_intensity_magic = np.argsort(
+                    df_magic["intensity"][mask_lst_obs_window]
+                )[::-1][:n_pre_offset_search_events]
+                
+                # If LST/MAGIC observations are not completely overlapped, only small
+                # numbers of MAGIC events are left for the pre offset search.
+                # To find large-intensity showers within the same time window,
+                # time cut around MAGIC observations is applied to the LST data set.
+                time_lolim = timestamps_magic[mask_lst_obs_window][0] - window_half_width
+                time_uplim = timestamps_magic[mask_lst_obs_window][-1] + window_half_width
+                
+                #cond_lolim = timestamps_lst >= time_lolim
+                #cond_uplim = timestamps_lst <= time_uplim
+                cond_lolim = timestamps_lst >= timestamps_lst[0]
+                cond_uplim = timestamps_lst <= timestamps_lst[-1]
+                
+                mask_magic_obs_window = np.logical_and(cond_lolim, cond_uplim)
+                
+                if np.count_nonzero(mask_magic_obs_window) == 0:
+                    logger.info(
+                        f"\nNo LST events are found around {tel_name} events. Skipping..."
+                    )
+                    continue
 
-            logger.info(f"--> {n_events_magic} events are found.")
+                # Extract indexes of LST large shower events
+                index_large_intensity_lst = np.argsort(
+                    event_data_lst["intensity"][mask_magic_obs_window]
+                )[::-1][:n_pre_offset_search_events]
+                
+                # Crate an array of all combinations of [MAGIC timestamp, LST timestamp]
+                timestamps_magic_lst_combination = np.array(
+                    np.meshgrid(
+                        timestamps_magic[mask_lst_obs_window][
+                            index_large_intensity_magic
+                        ].value,
+                        timestamps_lst[mask_magic_obs_window][
+                            index_large_intensity_lst
+                        ].value,
+                    )
+                ).reshape(2, -1)
+                
+                # Compute all combinations of time offset between MAGIC and LST
+                time_offsets_pre_search = (
+                    timestamps_magic_lst_combination[0]
+                    - timestamps_magic_lst_combination[1]
+                )
+                
+                time_offsets_pre_search = u.Quantity(
+                    time_offsets_pre_search.round(), unit="ns", dtype=int
+                )
+                
+                n_coincidences_pre_search = [
+                    np.sum(
+                        np.abs(time_offsets_pre_search - time_offset).value
+                        < window_half_width.value
+                    )
+                    for time_offset in time_offsets_pre_search
+                ]
+                
+                n_coincidences_pre_search = np.array(n_coincidences_pre_search)
+                coincidence_event_ratio = n_coincidences_pre_search.max() / n_pre_offset_search_events
+                print(f"coincidence ratio: {100 * coincidence_event_ratio} %")
 
-            # Extract indexes of MAGIC large shower events
-            index_large_intensity_magic = np.argsort(
-                df_magic["intensity"][mask_lst_obs_window]
-            )[::-1][:n_pre_offset_search_events]
+                if coincidence_event_ratio < 0.3:
+                    print("Too low coincidence ratio: Skipping...")
+                    continue
 
-            # If LST/MAGIC observations are not completely overlapped, only small
-            # numbers of MAGIC events are left for the pre offset search.
-            # To find large-intensity showers within the same time window,
-            # time cut around MAGIC observations is applied to the LST data set.
-            time_lolim = timestamps_magic[mask_lst_obs_window][0] - window_half_width
-            time_uplim = timestamps_magic[mask_lst_obs_window][-1] + window_half_width
-
-            cond_lolim = timestamps_lst >= time_lolim
-            cond_uplim = timestamps_lst <= time_uplim
-
-            mask_magic_obs_window = np.logical_and(cond_lolim, cond_uplim)
-
-            if np.count_nonzero(mask_magic_obs_window) == 0:
+                offset_at_max_pre_search = time_offsets_pre_search[
+                    n_coincidences_pre_search == n_coincidences_pre_search.max()
+                ].mean()
+                offset_at_max_pre_search = offset_at_max_pre_search.to("us").round(1)
+                
                 logger.info(
-                    f"\nNo LST events are found around {tel_name} events. Skipping..."
+                    f"\nPre offset search finds {offset_at_max_pre_search} as a possible offset"
                 )
+                success_flag = True
+                break
+
+            if success_flag == False:
+                logger.info("pre-offset seach failed")
                 continue
 
-            # Extract indexes of LST large shower events
-            index_large_intensity_lst = np.argsort(
-                event_data_lst["intensity"][mask_magic_obs_window]
-            )[::-1][:n_pre_offset_search_events]
-
-            # Crate an array of all combinations of [MAGIC timestamp, LST timestamp]
-            timestamps_magic_lst_combination = np.array(
-                np.meshgrid(
-                    timestamps_magic[mask_lst_obs_window][
-                        index_large_intensity_magic
-                    ].value,
-                    timestamps_lst[mask_magic_obs_window][
-                        index_large_intensity_lst
-                    ].value,
-                )
-            ).reshape(2, -1)
-
-            # Compute all combinations of time offset between MAGIC and LST
-            time_offsets_pre_search = (
-                timestamps_magic_lst_combination[0]
-                - timestamps_magic_lst_combination[1]
-            )
-
-            time_offsets_pre_search = u.Quantity(
-                time_offsets_pre_search.round(), unit="ns", dtype=int
-            )
-
-            n_coincidences_pre_search = [
-                np.sum(
-                    np.abs(time_offsets_pre_search - time_offset).value
-                    < window_half_width.value
-                )
-                for time_offset in time_offsets_pre_search
-            ]
-
-            n_coincidences_pre_search = np.array(n_coincidences_pre_search)
-
-            offset_at_max_pre_search = time_offsets_pre_search[
-                n_coincidences_pre_search == n_coincidences_pre_search.max()
-            ].mean()
-            offset_at_max_pre_search = offset_at_max_pre_search.to("us").round(1)
-
-            logger.info(
-                f"\nPre offset search finds {offset_at_max_pre_search} as a possible offset"
-            )
-
-            # offset scan region is defined as 3 x half window width
-            # around the offset_at_max to cover "full window width" which will
-            # be used to compute weighted average of the time offset
-            offset_start = offset_at_max_pre_search - 3 * window_half_width
-            offset_stop = offset_at_max_pre_search + 3 * window_half_width
+        # offset scan region is defined as 3 x half window width
+        # around the offset_at_max to cover "full window width" which will
+        # be used to compute weighted average of the time offset
+        offset_start = offset_at_max_pre_search - 3 * window_half_width
+        offset_stop = offset_at_max_pre_search + 3 * window_half_width
 
         logger.info("\nTime offsets scan region:")
         logger.info(f"  start: {offset_start.to('us').round(1)}")
