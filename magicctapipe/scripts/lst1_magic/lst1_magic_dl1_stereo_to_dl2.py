@@ -39,10 +39,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 TEL_COMBINATIONS = {
-    "LST1_M1": [1, 2],  # combo_type = 0
-    "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
+    "M1_M2": [2, 3],  # combo_type = 0
+    "LST1_M1": [1, 2],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
-    "M1_M2": [2, 3],  # combo_type = 3
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
 }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 

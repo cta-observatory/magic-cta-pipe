@@ -217,6 +217,23 @@ def telescope_combinations(config):
 
     for key in range(len(keys)):
         recursive_solution(key, ["", []])
+    values = list(TEL_NAMES.values()) # TODO: remove in next PR
+    if set(values) == set(["LST-1", "MAGIC-I", "MAGIC-II"]):  # TODO: remove in next PR
+        combos = list(TEL_COMBINATIONS.values())
+        comb_key = list(TEL_COMBINATIONS.keys())
+        TEL_COMBINATIONS = {}
+        for (comb, valcomb) in zip(comb_key, combos):
+            if comb == "MAGIC-I_MAGIC-II":
+                TEL_COMBINATIONS["M1_M2"] = valcomb
+        for (comb, valcomb) in zip(comb_key, combos):
+            if comb == "LST-1_MAGIC-I":
+                TEL_COMBINATIONS["LST1_M1"] = valcomb
+        for (comb, valcomb) in zip(comb_key, combos):
+            if comb == "LST-1_MAGIC-II":
+                TEL_COMBINATIONS["LST1_M2"] = valcomb
+        for (comb, valcomb) in zip(comb_key, combos):
+            if comb == "LST-1_MAGIC-I_MAGIC-II":
+                TEL_COMBINATIONS["LST1_M1_M2"] = valcomb
 
     return TEL_NAMES, TEL_COMBINATIONS
 
@@ -272,10 +289,10 @@ def get_stereo_events_old(
         Data frame of the stereo events surviving the quality cuts
     """
     TEL_COMBINATIONS = {
-        "LST1_M1": [1, 2],  # combo_type = 0
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
+        "M1_M2": [2, 3],  # combo_type = 0
+        "LST1_M1": [1, 2],  # combo_type = 1
         "LST1_M2": [1, 3],  # combo_type = 2
-        "M1_M2": [2, 3],  # combo_type = 3
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
     }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
     event_data_stereo = event_data.copy()
 
@@ -729,11 +746,12 @@ def load_train_data_files(
         directory
     """
     TEL_COMBINATIONS = {
-        "LST1_M1": [1, 2],  # combo_type = 0
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
+        "M1_M2": [2, 3],  # combo_type = 0
+        "LST1_M1": [1, 2],  # combo_type = 1
         "LST1_M2": [1, 3],  # combo_type = 2
-        "M1_M2": [2, 3],  # combo_type = 3
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
     }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
+
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
 
@@ -918,13 +936,15 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        df_events.query("(combo_type < 3) & (magic_stereo == True)", inplace=True)
+        df_events.query(
+            "(combo_type > 0) & (magic_stereo == True)", inplace=True
+        )  # TODO: change in next PR
 
     elif event_type == "software_only_3tel":
-        df_events.query("combo_type == 1", inplace=True)
+        df_events.query("combo_type == 3", inplace=True)  # TODO: change in next PR
 
     elif event_type == "magic_only":
-        df_events.query("combo_type == 3", inplace=True)
+        df_events.query("combo_type == 0", inplace=True)  # TODO: change in next PR
 
     elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
@@ -1042,13 +1062,13 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        event_data.query("combo_type < 3", inplace=True)
+        event_data.query("combo_type > 0", inplace=True)  # TODO: change in next PR
 
     elif event_type == "software_only_3tel":
-        event_data.query("combo_type == 1", inplace=True)
+        event_data.query("combo_type == 3", inplace=True)  # TODO: change in next PR
 
     elif event_type == "magic_only":
-        event_data.query("combo_type == 3", inplace=True)
+        event_data.query("combo_type == 0", inplace=True)  # TODO: change in next PR
 
     elif event_type == "hardware":
         logger.warning(

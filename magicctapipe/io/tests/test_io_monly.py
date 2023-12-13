@@ -55,7 +55,7 @@ def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly, config_gen):
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen)
         assert np.all(data["multiplicity"] == 2)
-        assert np.all(data["combo_type"] == 3)
+        assert np.all(data["combo_type"] == 0) #TODO: change in next PR
 
 
 def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly, config_gen):
@@ -84,8 +84,7 @@ def test_load_train_data_files_p(p_stereo_monly):
     events = load_train_data_files(str(p_stereo_monly[0]))
     assert list(events.keys()) == ["M1_M2"]
     data = events["M1_M2"]
-    print(data["combo_type"])
-    assert np.all(data["combo_type"] == 3)
+    assert np.all(data["combo_type"] == 0)  # TODO: change in next PR
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
@@ -98,7 +97,7 @@ def test_load_train_data_files_g(gamma_stereo_monly):
     events = load_train_data_files(str(gamma_stereo_monly[0]))
     assert list(events.keys()) == ["M1_M2"]
     data = events["M1_M2"]
-    assert np.all(data["combo_type"] == 3)
+    assert np.all(data["combo_type"] == 0)  # TODO: change in next PR
     assert "off_axis" in data.columns
     assert "true_event_class" not in data.columns
 
@@ -216,7 +215,7 @@ def test_load_mc_dl2_data_file_opt(p_dl2_monly, gamma_dl2_monly):
             str(file), "width>0", "magic_only", "simple"
         )
 
-        assert np.all(data_m["combo_type"] == 3)
+        assert np.all(data_m["combo_type"] == 0)  # TODO: change in next PR
 
 
 def test_load_mc_dl2_data_file_exc(p_dl2_monly, gamma_dl2_monly):
@@ -387,7 +386,7 @@ def test_get_stereo_events_data(stereo_monly, config_gen):
         event_data.sort_index(inplace=True)
         data = get_stereo_events(event_data, config_gen)
         assert np.all(data["multiplicity"] == 2)
-        assert np.all(data["combo_type"] == 3)
+        assert np.all(data["combo_type"] == 0) #TODO: change in next PR
 
 
 def test_get_stereo_events_data_cut(stereo_monly, config_gen):
@@ -438,7 +437,7 @@ def test_load_dl2_data_file_opt(real_dl2_monly):
 
         data_m, _, _ = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
 
-        assert np.all(data_m["combo_type"] == 3)
+        assert np.all(data_m["combo_type"] == 0)  # TODO: change in next PR
 
 
 def test_load_dl2_data_file_exc(real_dl2_monly):
