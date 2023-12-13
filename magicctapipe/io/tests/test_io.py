@@ -393,9 +393,7 @@ def test_load_mc_dl2_data_file_opt(p_dl2, gamma_dl2):
     """
     dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
     for file in dl2_mc:
-        data_s, _, _ = load_mc_dl2_data_file(
-            str(file), "width>0", "software", "simple"
-        )
+        data_s, _, _ = load_mc_dl2_data_file(str(file), "width>0", "software", "simple")
         assert np.all(data_s["combo_type"] > 0)  # TODO: change in next PR
 
 

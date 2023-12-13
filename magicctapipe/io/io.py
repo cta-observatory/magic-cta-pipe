@@ -217,7 +217,7 @@ def telescope_combinations(config):
 
     for key in range(len(keys)):
         recursive_solution(key, ["", []])
-    values = list(TEL_NAMES.values()) # TODO: remove in next PR
+    values = list(TEL_NAMES.values())  # TODO: remove in next PR
     if set(values) == set(["LST-1", "MAGIC-I", "MAGIC-II"]):  # TODO: remove in next PR
         combos = list(TEL_COMBINATIONS.values())
         comb_key = list(TEL_COMBINATIONS.keys())
