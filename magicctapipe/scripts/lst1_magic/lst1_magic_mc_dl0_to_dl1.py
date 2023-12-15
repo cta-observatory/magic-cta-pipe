@@ -361,6 +361,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                     magic_stereo=magic_stereo,
+                    tels_with_trigger=tels_with_trigger,
                 )
 
                 # Reset the telescope IDs
