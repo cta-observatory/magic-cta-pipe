@@ -71,10 +71,10 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 # The pedestal types to find bad RMS pixels
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 TEL_COMBINATIONS = {
-    "M1_M2": [2, 3],  # combo_type = 0
-    "LST1_M1": [1, 2],  # combo_type = 1
+    "LST1_M1": [1, 2],  # combo_type = 0
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
-    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+    "M1_M2": [2, 3],  # combo_type = 3
 }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 

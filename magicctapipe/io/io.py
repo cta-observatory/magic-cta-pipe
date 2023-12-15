@@ -272,10 +272,10 @@ def get_stereo_events_old(
         Data frame of the stereo events surviving the quality cuts
     """
     TEL_COMBINATIONS = {
-        "M1_M2": [2, 3],  # combo_type = 0
-        "LST1_M1": [1, 2],  # combo_type = 1
+        "LST1_M1": [1, 2],  # combo_type = 0
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
         "LST1_M2": [1, 3],  # combo_type = 2
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+        "M1_M2": [2, 3],  # combo_type = 3
     }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
     event_data_stereo = event_data.copy()
 
@@ -374,7 +374,7 @@ def get_stereo_events(
     # Extract stereo events
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
     event_data_stereo.query("multiplicity > 1", inplace=True)
-    if eval_multi_combo == True:
+    if eval_multi_combo:
         # Check the total number of events
         n_events_total = len(event_data_stereo.groupby(group_index).size())
         logger.info(f"\nIn total {n_events_total} stereo events are found:")
@@ -729,10 +729,10 @@ def load_train_data_files(
         directory
     """
     TEL_COMBINATIONS = {
-        "M1_M2": [2, 3],  # combo_type = 0
-        "LST1_M1": [1, 2],  # combo_type = 1
+        "LST1_M1": [1, 2],  # combo_type = 0
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
         "LST1_M2": [1, 3],  # combo_type = 2
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+        "M1_M2": [2, 3],  # combo_type = 3
     }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
     # Find the input files
@@ -919,13 +919,13 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
+        df_events.query("(combo_type < 3) & (magic_stereo == True)", inplace=True)
 
     elif event_type == "software_only_3tel":
-        df_events.query("combo_type == 3", inplace=True)
+        df_events.query("combo_type == 1", inplace=True)
 
     elif event_type == "magic_only":
-        df_events.query("combo_type == 0", inplace=True)
+        df_events.query("combo_type == 3", inplace=True)
 
     elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
@@ -1043,13 +1043,13 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        event_data.query("combo_type > 0", inplace=True)
+        event_data.query("combo_type < 3", inplace=True)
 
     elif event_type == "software_only_3tel":
-        event_data.query("combo_type == 3", inplace=True)
+        event_data.query("combo_type == 1", inplace=True)
 
     elif event_type == "magic_only":
-        event_data.query("combo_type == 0", inplace=True)
+        event_data.query("combo_type == 3", inplace=True)
 
     elif event_type == "hardware":
         logger.warning(
