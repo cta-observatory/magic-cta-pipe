@@ -624,10 +624,10 @@ def load_train_data_files_tel(
         Path to a directory where input DL1-stereo files are stored
     config : dict
         Dictionary with information about the telescope IDs.
-    offaxis_min : str
+    offaxis_min : str, optional
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
-    offaxis_max : str
+    offaxis_max : str, optional
         Maximum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
     true_event_class : int
@@ -737,12 +737,16 @@ def load_mc_dl2_data_file(
         If the input event type is not known
     """
 
-    TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
-    combo_types = np.asarray(range(len(TEL_COMBINATIONS)))
+    _, TEL_COMBINATIONS = telescope_combinations(config)
     three_or_more = []
+    magic_only = None
     for n, combination in enumerate(TEL_COMBINATIONS.values()):
         if len(combination) >= 3:
             three_or_more.append(n)
+    for n, combination in enumerate(TEL_COMBINATIONS.keys()):
+        if combination in ["MAGIC-II_MAGIC-I", "MAGIC-I_MAGIC-II"]:
+            magic_only = n
+            break
 
     # Load the input file
     df_events = pd.read_hdf(input_file, key="events/parameters")
@@ -756,20 +760,34 @@ def load_mc_dl2_data_file(
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     if event_type == "software":
-        # The events of the MAGIC-stereo combination are excluded
-        df_events.query(
-            f"(combo_type < {combo_types[-1]}) & (magic_stereo == True)", inplace=True
-        )
+        if magic_only is not None:  # TODO: change doc and in data
+            # Stadard MAGIC+LST-1 case; remove magic-only events
+            df_events.query(
+                f"(combo_type != {magic_only}) & (magic_stereo == True)", inplace=True
+            )
+        else:
+            logger.warning(
+                'Requested event type and provided telescopes IDs are not consistent; "software" must be used in case of standard MAGIC+LST-1 analyses'
+            )
+            return
 
-    elif event_type == "software_3tels_or_more":
+    elif event_type == "trigger_3tels_or_more":  # at least three telescopes triggered
         df_events.query(f"combo_type == {three_or_more}", inplace=True)
 
-    elif event_type == "software_6_tel":
-        df_events.query(f"combo_type < {combo_types[-1]}", inplace=True)
+    elif (
+        event_type == "trigger_no_magic_stereo"
+    ):  # no need for both MAGIC to trigger, to be used if more than one LST is used; remove MAGIC-only data if they exist
+        if magic_only is not None:
+            df_events.query(f"combo_type != {magic_only}", inplace=True)
 
     elif event_type == "magic_only":
-        df_events.query(f"combo_type == {combo_types[-1]}", inplace=True)
-
+        if magic_only is not None:
+            df_events.query(f"combo_type == {magic_only}", inplace=True)
+        else:
+            logger.warning(
+                "MAGIC-only analysis requested, but inconsistent with the provided telescope IDs: check the configuration file"
+            )
+            return
     elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
     n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
@@ -907,13 +925,7 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
     elif event_type == "magic_only":
         event_data.query(f"combo_type == {combo_types[-1]}", inplace=True)
 
-    elif event_type == "hardware":
-        logger.warning(
-            "WARNING: Please confirm that this type is correct for the input data, "
-            "since the hardware trigger between LST-1 and MAGIC may NOT be used."
-        )
-
-    else:
+    elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
 
     n_events = len(event_data.groupby(["obs_id", "event_id"]).size())
