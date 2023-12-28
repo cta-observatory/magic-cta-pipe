@@ -126,8 +126,10 @@ def create_irf(
     event_table_gamma, pnt_gamma, sim_info_gamma = load_mc_dl2_data_file(
         input_file_gamma, quality_cuts, event_type, weight_type_dl2
     )
-
-    is_diffuse_mc = sim_info_gamma.viewcone.to_value("deg") > 0
+    viewcone = sim_info_gamma.viewcone_max.to_value(
+        "deg"
+    ) - sim_info_gamma.viewcone_min.to_value("deg")
+    is_diffuse_mc = viewcone > 0
     logger.info(f"\nIs diffuse MC: {is_diffuse_mc}")
 
     if is_diffuse_mc:

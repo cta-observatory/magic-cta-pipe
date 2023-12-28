@@ -981,9 +981,10 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     if viewcone_diff < u.Quantity(0.001, unit="deg"):
         # Handle ring-wobble MCs as same as point-like MCs
-        viewcone = 0 * u.deg
-    else:
-        viewcone = max_viewcone_radius
+        # viewcone = 0 * u.deg
+        min_viewcone_radius = max_viewcone_radius
+    # else:
+    # viewcone = max_viewcone_radius
 
     sim_info = SimulatedEventsInfo(
         n_showers=n_total_showers,
@@ -991,7 +992,8 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
         energy_max=u.Quantity(sim_config["energy_range_max"][0], unit="TeV"),
         max_impact=u.Quantity(sim_config["max_scatter_range"][0], unit="m"),
         spectral_index=sim_config["spectral_index"][0],
-        viewcone=viewcone,
+        viewcone_min=min_viewcone_radius,
+        viewcone_max=max_viewcone_radius,
     )
 
     return event_table, pointing, sim_info

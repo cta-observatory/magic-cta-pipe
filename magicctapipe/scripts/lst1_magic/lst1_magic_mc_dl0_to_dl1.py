@@ -344,6 +344,18 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     lat2=event.simulation.shower.alt,
                 )
 
+                tels_with_trigger = np.intersect1d(
+                    tels_with_trigger,
+                    np.concatenate(
+                        (LSTs_IDs[LSTs_IDs != 0], MAGICs_IDs[MAGICs_IDs != 0])
+                    ),
+                    assume_unique=True,
+                ).tolist()
+
+                tels_trigger = ""
+                for i in tels_with_trigger:
+                    tels_trigger = tels_trigger + str(i) + "010"
+                tels_trigger.rstrip("010")
                 # Set the event information
                 event_info = SimEventInfoContainer(
                     obs_id=event.index.obs_id,
@@ -361,7 +373,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                     magic_stereo=magic_stereo,
-                    tels_with_trigger=tels_with_trigger,
+                    tels_with_trigger=int(tels_trigger),
                 )
 
                 # Reset the telescope IDs
