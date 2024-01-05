@@ -217,7 +217,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     # according to GDAF standard migration matrix is normalized to integral of bins
     widths = np.diff(irf_data["migration_bins"])
-    edisp_interp /= widths [np.newaxis, : , np.newaxis]
+    edisp_interp /= widths[np.newaxis, :, np.newaxis]
 
     edisp_hdu = create_energy_dispersion_hdu(
         energy_dispersion=edisp_interp,
