@@ -17,16 +17,12 @@ is more than one. In case the number is one, it creates the "POINT-LIKE"
 IRFs, which allows us to perform the 1D spectral analysis even if only
 diffuse data is available for test MCs.
 
-There are four different event types with which the IRFs are created.
-The "hardware" type stands for the hardware trigger between LST
-and MAGIC, allowing for the events of all the telescope combinations.
-The "software_3tels_or_more" type stands for the software event
-coincidence with any combination of 3 or more telescopes (e.g. LST2, LST3, and
-MAGIC-I observations). The "software_6_tel" type allows for the events of any
-2,3,4,5 or 6 telescope combinations (except the combination MAGIC-I + MAGIC-II).
-The "software" type is similar to "software_6_tel", but requires that
-the events are tagged as "stereo_magic". The "magic_only" type allows for
-only the events of the MAGIC-stereo combination.
+There are five different event types with which the IRFs are created:
+- 'software': Stadard MAGIC+LST-1 case; remove magic-only events
+- 'trigger_3tels_or_more': at least three telescopes triggered
+- 'trigger_no_magic_stereo': no need for both MAGIC to trigger, to be used if more than one LST is used; remove MAGIC-only data if they exist
+- 'magic_only': only M1_M2 events selected
+- 'hardware': hardware trigger
 
 There are two types of gammaness and theta cuts, "global" and "dynamic".
 In case of the dynamic cuts, the optimal cut satisfying a given
