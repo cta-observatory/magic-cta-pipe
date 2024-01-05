@@ -988,10 +988,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     if viewcone_diff < u.Quantity(0.001, unit="deg"):
         # Handle ring-wobble MCs as same as point-like MCs
-        # viewcone = 0 * u.deg
         min_viewcone_radius = max_viewcone_radius
-    # else:
-    # viewcone = max_viewcone_radius
 
     sim_info = SimulatedEventsInfo(
         n_showers=n_total_showers,
