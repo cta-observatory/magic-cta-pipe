@@ -163,11 +163,17 @@ def test_telescope_combinations(config_gen, config_gen_4lst):
     LSTs, LSTs_comb = telescope_combinations(config_gen_4lst)
     assert M_LST == {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"}
     assert M_LST_comb == {
-        "LST-1_MAGIC-I": [1, 2],
-        "LST-1_MAGIC-I_MAGIC-II": [1, 2, 3],
-        "LST-1_MAGIC-II": [1, 3],
-        "MAGIC-I_MAGIC-II": [2, 3],
-    }
+        "M1_M2": [2, 3],  # combo_type = 0
+        "LST1_M1": [1, 2],  # combo_type = 1
+        "LST1_M2": [1, 3],  # combo_type = 2
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+    }  # TODO: change in next PR
+    assert list(M_LST_comb.keys()) == [
+        "M1_M2",
+        "LST1_M1",
+        "LST1_M2",
+        "LST1_M1_M2",
+    ]  # TODO: change in next PR
     assert LSTs == {1: "LST-1", 3: "LST-2", 2: "LST-3", 5: "LST-4"}
     assert LSTs_comb == {
         "LST-1_LST-2": [1, 3],
@@ -379,7 +385,6 @@ def test_load_mc_dl2_data_file_opt(p_dl2, gamma_dl2):
     for file in dl2_mc:
         data_s, _, _ = load_mc_dl2_data_file(str(file), "width>0", "software", "simple")
         assert np.all(data_s["combo_type"] < 3)
-
 
 def test_load_mc_dl2_data_file_exc(p_dl2, gamma_dl2):
     """
@@ -598,7 +603,7 @@ def test_load_dl2_data_file_opt(real_dl2):
         data_s, _, _ = load_dl2_data_file(str(file), "width>0", "software", "simple")
         assert np.all(data_s["combo_type"] < 3)
 
-
+        
 def test_load_dl2_data_file_exc(real_dl2):
     """
     Check on event_type exceptions
