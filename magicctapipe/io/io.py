@@ -69,32 +69,41 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
     """
     Function to select data (both real and MC) according to the event_type
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
 
-    df_events: pandas.dataframe
+    df_events : pandas.dataframe
         Dataframe of the events
-    magic_only: int or None
-        Index of the M1_M2 combination (if it exist, otherwise it is equal to None)
-    event_type: str
+    event_type : str
         Type of events to be selected
-        'software': Stadard MAGIC+LST-1 case; remove magic-only events
-        'trigger_3tels_or_more': at least three telescopes triggered
-        'trigger_no_magic_stereo': no need for both MAGIC to trigger, to be used if more than one LST is used; remove MAGIC-only data if they exist
-        'magic_only': only M1_M2 events selected
-        'hardware': hardware trigger
+        'software' : Stadard MAGIC+LST-1 case; remove magic-only events
+        'trigger_3tels_or_more' : at least three telescopes triggered
+        'trigger_no_magic_stereo' : no need for both MAGIC to trigger, to be used if more than one LST is used; remove MAGIC-only data if they exist
+        'magic_only' : only M1_M2 events selected
+        'hardware' : hardware trigger
+    magic_only : int or None
+        Index of the M1_M2 combination (if it exist, otherwise it is equal to None)
+    three_or_more : list
+        List of combination indexes for combinations with at least 3 telescopes
+    is_mc : bool
+        True if this function is called on MC
+
+    Returns
+    -------
+
+    pandas.dataframe
+        Dataframe of events after query
     """
     if event_type == "software":
-        if magic_only is not None:  
-            
+        if magic_only is not None:
+
             if is_mc:
                 df_events.query(
-                    f"(combo_type != {magic_only}) & (magic_stereo == True)", inplace=True
+                    f"(combo_type != {magic_only}) & (magic_stereo == True)",
+                    inplace=True,
                 )
             else:
-                df_events.query(
-                    f"combo_type != {magic_only}", inplace=True
-                )
+                df_events.query(f"combo_type != {magic_only}", inplace=True)
 
         else:
             logger.warning(
@@ -102,12 +111,10 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
             )
             return
 
-    elif event_type == "trigger_3tels_or_more":  
+    elif event_type == "trigger_3tels_or_more":
         df_events.query(f"combo_type == {three_or_more}", inplace=True)
 
-    elif (
-        event_type == "trigger_no_magic_stereo"
-    ):  
+    elif event_type == "trigger_no_magic_stereo":
         if magic_only is not None:
             df_events.query(f"combo_type != {magic_only}", inplace=True)
 
@@ -121,7 +128,7 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
             return
     elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
-    
+
     return df_events
 
 
@@ -823,7 +830,7 @@ def load_mc_dl2_data_file(
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
     df_events = query_data(df_events, event_type, magic_only, three_or_more, True)
-    
+
     n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
 
@@ -945,7 +952,7 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
-    df_events = query_data(df_events, event_type, magic_only, three_or_more, False)
+    event_data = query_data(event_data, event_type, magic_only, three_or_more, False)
 
     n_events = len(event_data.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
