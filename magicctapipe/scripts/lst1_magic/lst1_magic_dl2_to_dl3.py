@@ -99,7 +99,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     dl2_weight_type = extra_header["DL2_WEIG"]
 
     event_table, on_time, deadc = load_dl2_data_file(
-        input_file_dl2, quality_cuts, event_type, dl2_weight_type
+        config, input_file_dl2, quality_cuts, event_type, dl2_weight_type
     )
 
     # Calculate the mean pointing direction for the target point of the
@@ -353,7 +353,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Create an event HDU
     logger.info("\nCreating an event HDU...")
 
-    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
+    event_hdu = create_event_hdu(event_table, config, on_time, deadc, **config_dl3)
 
     hdus.append(event_hdu)
 

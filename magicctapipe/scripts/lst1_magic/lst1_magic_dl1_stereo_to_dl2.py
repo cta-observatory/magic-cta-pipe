@@ -25,12 +25,17 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
 
-from magicctapipe.io import get_stereo_events_old, save_pandas_data_in_table
+from magicctapipe.io import (
+    get_stereo_events,
+    save_pandas_data_in_table,
+    telescope_combinations,
+)
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
@@ -38,15 +43,9 @@ __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-TEL_COMBINATIONS = {
-    "M1_M2": [2, 3],  # combo_type = 0
-    "LST1_M1": [1, 2],  # combo_type = 1
-    "LST1_M2": [1, 3],  # combo_type = 2
-    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
-}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 
-def apply_rfs(event_data, estimator):
+def apply_rfs(event_data, estimator, config):
     """
     Applies trained RFs to DL1-stereo events, whose telescope
     combination type is same as the RFs.
@@ -57,6 +56,8 @@ def apply_rfs(event_data, estimator):
         Data frame of shower events
     estimator : magicctapipe.reco.estimator
         Trained regressor or classifier
+    config : dict
+        Evoked from an yaml file with information about the telescope IDs.
 
     Returns
     -------
@@ -66,9 +67,8 @@ def apply_rfs(event_data, estimator):
 
     tel_ids = list(estimator.telescope_rfs.keys())
 
-    # Extract the events of the same telescope combination type
-    combo_type = list(TEL_COMBINATIONS.values()).index(tel_ids)
-    df_events = event_data.query(f"combo_type == {combo_type}")
+    # Extract the events with the same telescope ID
+    df_events = event_data.query(f"tel_id == {tel_ids[0]}")
 
     # Apply the RFs
     reco_params = estimator.predict(df_events)
@@ -76,7 +76,7 @@ def apply_rfs(event_data, estimator):
     return reco_params
 
 
-def reconstruct_arrival_direction(event_data, tel_descriptions):
+def reconstruct_arrival_direction(event_data, tel_descriptions, config):
     """
     Reconstructs the arrival directions of shower events with the
     MARS-like DISP method.
@@ -87,6 +87,8 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
         Data frame of shower events
     tel_descriptions : dict
         Telescope descriptions
+    config : dict
+        Dictionary with telescope IDs information
 
     Returns
     -------
@@ -95,6 +97,8 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     """
 
     params_with_flips = pd.DataFrame()
+
+    _, TEL_COMBINATIONS = telescope_combinations(config)
 
     # First of all, we reconstruct the directions of all the head and
     # tail candidates for every telescope image, i.e., the directions
@@ -243,7 +247,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     return reco_params
 
 
-def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
+def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
     """
     Processes DL1-stereo events and reconstructs the DL2 parameters with
     trained RFs.
@@ -256,7 +260,11 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         Path to a directory where trained RFs are stored
     output_dir : str
         Path to a directory where to save an output DL2 data file
+    config : dict
+        Dictionary with telescope IDs information
     """
+
+    TEL_NAMES, _ = telescope_combinations(config)
 
     # Load the input DL1-stereo data file
     logger.info(f"\nInput DL1-stereo data file: {input_file_dl1}")
@@ -268,7 +276,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
-    event_data = get_stereo_events_old(event_data)
+    event_data = get_stereo_events(event_data, config)
 
     subarray = SubarrayDescription.from_hdf(input_file_dl1)
     tel_descriptions = subarray.tel
@@ -291,11 +299,11 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         for input_file_energy in input_files_energy:
             logger.info(f"Applying {input_file_energy}...")
 
-            energy_regressor = EnergyRegressor()
+            energy_regressor = EnergyRegressor(TEL_NAMES)
             energy_regressor.load(input_file_energy)
 
             # Apply the RFs
-            reco_params = apply_rfs(event_data, energy_regressor)
+            reco_params = apply_rfs(event_data, energy_regressor, config)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del energy_regressor
@@ -312,17 +320,19 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         for input_file_disp in input_files_dips:
             logger.info(f"Applying {input_file_disp}...")
 
-            disp_regressor = DispRegressor()
+            disp_regressor = DispRegressor(TEL_NAMES)
             disp_regressor.load(input_file_disp)
 
             # Apply the RFs
-            reco_params = apply_rfs(event_data, disp_regressor)
+            reco_params = apply_rfs(event_data, disp_regressor, config)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
         # Reconstruct the arrival directions with the DISP method
         logger.info("\nReconstructing the arrival directions...")
 
-        reco_params = reconstruct_arrival_direction(event_data, tel_descriptions)
+        reco_params = reconstruct_arrival_direction(
+            event_data, tel_descriptions, config
+        )
         event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del disp_regressor
@@ -339,11 +349,11 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         for input_file_class in input_files_class:
             logger.info(f"Applying {input_file_class}...")
 
-            event_classifier = EventClassifier()
+            event_classifier = EventClassifier(TEL_NAMES)
             event_classifier.load(input_file_class)
 
             # Apply the RFs
-            reco_params = apply_rfs(event_data, event_classifier)
+            reco_params = apply_rfs(event_data, event_classifier, config)
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del event_classifier
@@ -392,7 +402,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
 
 def main():
-    """Main function."""
+    """Main function"""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()
@@ -424,10 +434,22 @@ def main():
         help="Path to a directory where to save an output DL2 data file",
     )
 
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
     args = parser.parse_args()
 
+    with open(args.config_file, "rb") as f:
+        config = yaml.safe_load(f)
+
     # Process the input data
-    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir)
+    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir, config)
 
     logger.info("\nDone.")
 
