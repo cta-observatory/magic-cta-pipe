@@ -192,8 +192,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     )
     hdus.append(aeff_hdu)
 
-    # Interpolate the energy dispersion with a custom way, since there
-    # is a bug in the function of pyirf v0.6.0 about the renormalization
+    # Interpolate the energy dispersion with a custom way,
+    # TBD: use pyirf quantile interpolation instead
     logger.info("Interpolating the energy dispersion...")
 
     if len(irf_data["grid_points"]) > 2:
@@ -214,6 +214,10 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     edisp_interp = np.divide(
         edisp_interp, norm, out=np.zeros_like(edisp_interp), where=mask_zeros
     )
+
+    # according to GDAF standard migration matrix is normalized to integral of bins
+    widths = np.diff(irf_data["migration_bins"])
+    edisp_interp /= widths [np.newaxis, : , np.newaxis]
 
     edisp_hdu = create_energy_dispersion_hdu(
         energy_dispersion=edisp_interp,
