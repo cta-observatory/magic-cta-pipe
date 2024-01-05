@@ -1223,7 +1223,7 @@ def load_irf_files(input_dir_irf):
     for input_file in input_files_irf:
         logger.info(input_file)
         irf_hdus = fits.open(input_file)
-        irf_data["file_names"]=np.append(irf_data["file_names"],input_file)
+        irf_data["file_names"] = np.append(irf_data["file_names"], input_file)
 
         # Read the header
         header = irf_hdus["EFFECTIVE AREA"].header
@@ -1242,8 +1242,10 @@ def load_irf_files(input_dir_irf):
         aeff_data = irf_hdus["EFFECTIVE AREA"].data[0]
         edisp_data = irf_hdus["ENERGY DISPERSION"].data[0]
 
-        irf_data["effective_area"].append(aeff_data["EFFAREA"].T) # ENERGY, THETA
-        irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T) # ENERGY, MIGRA, THETA
+        irf_data["effective_area"].append(aeff_data["EFFAREA"].T)  # ENERGY, THETA
+        irf_data["energy_dispersion"].append(
+            edisp_data["MATRIX"].T
+        )  # ENERGY, MIGRA, THETA
 
         energy_bins = join_bin_lo_hi(aeff_data["ENERG_LO"], aeff_data["ENERG_HI"])
         fov_offset_bins = join_bin_lo_hi(aeff_data["THETA_LO"], aeff_data["THETA_HI"])

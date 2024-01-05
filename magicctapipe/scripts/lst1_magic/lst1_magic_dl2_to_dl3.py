@@ -165,18 +165,19 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
     if len(irf_data["grid_points"]) > 2:
-        effective_area=irf_data["effective_area"].to_value('m2')
-        # due to large changes in Aeff we will interpolate in log space, 
+        effective_area = irf_data["effective_area"].to_value("m2")
+        # due to large changes in Aeff we will interpolate in log space,
         # meaning that we need to set a minimal value (1 m^2)
-        effective_area[effective_area<1] = 1
+        effective_area[effective_area < 1] = 1
         interpolator = GridDataInterpolator(
             grid_points=irf_data["grid_points"],
             params=np.log(effective_area),
-            method=interpolation_method)
+            method=interpolation_method,
+        )
         aeff_interp = np.exp(interpolator.interpolate(target_point)[0])
         # setting values below the minimal value back to 0, allowing for 10% error margin
-        aeff_interp[aeff_interp<1.1]=0
-        aeff_interp*=u.Unit('m2')
+        aeff_interp[aeff_interp < 1.1] = 0
+        aeff_interp *= u.Unit("m2")
     else:
         aeff_interp = irf_data["effective_area"][0]
         print("skipping interpolation since only one point is given")
@@ -203,7 +204,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             method=interpolation_method,
         )
     else:
-        edisp_interp=irf_data["energy_dispersion"]
+        edisp_interp = irf_data["energy_dispersion"]
 
     edisp_interp = edisp_interp[0]  # Remove the dimension of the grid points
 
@@ -297,7 +298,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
                 method=interpolation_method,
             )
         else:
-            gh_cuts_interp=irf_data["gh_cuts"]
+            gh_cuts_interp = irf_data["gh_cuts"]
 
         # Remove the dimension of the grid points
         gh_cuts_interp = gh_cuts_interp[0]

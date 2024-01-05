@@ -386,6 +386,7 @@ def test_load_mc_dl2_data_file_opt(p_dl2, gamma_dl2):
         data_s, _, _ = load_mc_dl2_data_file(str(file), "width>0", "software", "simple")
         assert np.all(data_s["combo_type"] < 3)
 
+
 def test_load_mc_dl2_data_file_exc(p_dl2, gamma_dl2):
     """
     Check on event_type exceptions
@@ -603,7 +604,7 @@ def test_load_dl2_data_file_opt(real_dl2):
         data_s, _, _ = load_dl2_data_file(str(file), "width>0", "software", "simple")
         assert np.all(data_s["combo_type"] < 3)
 
-        
+
 def test_load_dl2_data_file_exc(real_dl2):
     """
     Check on event_type exceptions
