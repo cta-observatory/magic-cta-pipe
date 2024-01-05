@@ -26,6 +26,5 @@ repos:
                 magicctapipe/conftest.py|
                 magicctapipe/version.py|
                 .*__init__.py|
-                .*/lstchain/.*|
                 .*/tests/.*
             )$
