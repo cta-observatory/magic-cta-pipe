@@ -465,10 +465,8 @@ def test_get_dl2_mean_real(real_dl2_monly):
         assert "timestamp" in events.columns
 
 
-'''
 def test_index(real_index_monly):
     """
     Check on DL3 creation (up to indexes)
     """
     print("Indexes created")
-'''
