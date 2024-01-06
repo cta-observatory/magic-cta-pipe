@@ -39,6 +39,7 @@ def test_save_pandas_data_in_table(temp_pandas, pd_test):
     assert df.equals(df1)
 
 
+@pytest.mark.dependency()
 def test_exist_dl1_mc(gamma_l1_monly, p_l1_monly):
     """
     Check if DL1 MC produced
@@ -48,6 +49,7 @@ def test_exist_dl1_mc(gamma_l1_monly, p_l1_monly):
     assert len(glob.glob(f"{p_l1_monly}/*")) == 2
 
 
+@pytest.mark.dependency(depends=["test_exist_dl1_mc"])
 def test_exist_dl1_stereo_mc(gamma_stereo_monly, p_stereo_monly):
     """
     Check if DL1 stereo MC produced
@@ -59,43 +61,137 @@ def test_exist_dl1_stereo_mc(gamma_stereo_monly, p_stereo_monly):
     assert len(glob.glob(f"{p_stereo_monly[1]}/*")) == 1
 
 
-def test_get_stereo_events_mc(gamma_stereo_monly, p_stereo_monly, config_gen):
-    """
-    Check on stereo data reading
-    """
+@pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
+class TestStereoMC:
+    def test_get_stereo_events_mc(self, gamma_stereo_monly, p_stereo_monly, config_gen):
+        """
+        Check on stereo data reading
+        """
 
-    stereo_mc = (
-        [p for p in gamma_stereo_monly[0].glob("*")]
-        + [p for p in gamma_stereo_monly[1].glob("*")]
-        + [p for p in p_stereo_monly[0].glob("*")]
-        + [p for p in p_stereo_monly[1].glob("*")]
-    )
+        stereo_mc = (
+            [p for p in gamma_stereo_monly[0].glob("*")]
+            + [p for p in gamma_stereo_monly[1].glob("*")]
+            + [p for p in p_stereo_monly[0].glob("*")]
+            + [p for p in p_stereo_monly[1].glob("*")]
+        )
 
-    for file in stereo_mc:
-        event_data = pd.read_hdf(str(file), key="events/parameters")
-        event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-        event_data.sort_index(inplace=True)
-        data = get_stereo_events(event_data, config_gen)
-        assert np.all(data["multiplicity"] == 2)
-        assert np.all(data["combo_type"] == 3)
+        for file in stereo_mc:
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            data = get_stereo_events(event_data, config_gen)
+            assert np.all(data["multiplicity"] == 2)
+            assert np.all(data["combo_type"] == 3)
 
+    def test_get_stereo_events_mc_cut(
+        self, gamma_stereo_monly, p_stereo_monly, config_gen
+    ):
+        """
+        Check on quality cuts
+        """
+        stereo_mc = (
+            [p for p in gamma_stereo_monly[0].glob("*")]
+            + [p for p in gamma_stereo_monly[1].glob("*")]
+            + [p for p in p_stereo_monly[0].glob("*")]
+            + [p for p in p_stereo_monly[1].glob("*")]
+        )
+        for file in stereo_mc:
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            data = get_stereo_events(event_data, config_gen, "intensity>50")
+            assert np.all(data["intensity"] > 50)
 
-def test_get_stereo_events_mc_cut(gamma_stereo_monly, p_stereo_monly, config_gen):
-    """
-    Check on quality cuts
-    """
-    stereo_mc = (
-        [p for p in gamma_stereo_monly[0].glob("*")]
-        + [p for p in gamma_stereo_monly[1].glob("*")]
-        + [p for p in p_stereo_monly[0].glob("*")]
-        + [p for p in p_stereo_monly[1].glob("*")]
-    )
-    for file in stereo_mc:
-        event_data = pd.read_hdf(str(file), key="events/parameters")
-        event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
-        event_data.sort_index(inplace=True)
-        data = get_stereo_events(event_data, config_gen, "intensity>50")
-        assert np.all(data["intensity"] > 50)
+    def test_load_train_data_files_p(self, p_stereo_monly):
+        """
+        Check dictionary
+        """
+
+        events = load_train_data_files(str(p_stereo_monly[0]))
+        assert list(events.keys()) == ["M1_M2"]
+        data = events["M1_M2"]
+        assert np.all(data["combo_type"]) == 0
+        assert "off_axis" in data.columns
+        assert "true_event_class" not in data.columns
+
+    def test_load_train_data_files_g(self, gamma_stereo_monly):
+        """
+        Check dictionary
+        """
+
+        events = load_train_data_files(str(gamma_stereo_monly[0]))
+        assert list(events.keys()) == ["M1_M2"]
+        data = events["M1_M2"]
+        assert np.all(data["combo_type"]) == 0
+        assert "off_axis" in data.columns
+        assert "true_event_class" not in data.columns
+
+    def test_load_train_data_files_off(self, gamma_stereo_monly):
+        """
+        Check off-axis cut
+        """
+        events = load_train_data_files(
+            str(gamma_stereo_monly[0]), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+        )
+        data = events["M1_M2"]
+        assert np.all(data["off_axis"] >= 0.2)
+        assert np.all(data["off_axis"] <= 0.5)
+
+    def test_load_train_data_files_exc(self, temp_train_exc):
+        """
+        Check on exceptions
+        """
+        with pytest.raises(
+            FileNotFoundError,
+            match="Could not find any DL1-stereo data files in the input directory.",
+        ):
+            _ = load_train_data_files(str(temp_train_exc))
+
+    def test_load_train_data_files_tel_p(self, p_stereo_monly, config_gen):
+        """
+        Check dictionary
+        """
+
+        events = load_train_data_files_tel(str(p_stereo_monly[0]), config_gen)
+        assert list(events.keys()) == [2, 3]
+        data = events[2]
+        assert "off_axis" in data.columns
+        assert "true_event_class" not in data.columns
+
+    def test_load_train_data_files_tel_g(self, gamma_stereo_monly, config_gen):
+        """
+        Check dictionary
+        """
+
+        events = load_train_data_files_tel(str(gamma_stereo_monly[0]), config_gen)
+        assert list(events.keys()) == [2, 3]
+        data = events[3]
+        assert "off_axis" in data.columns
+        assert "true_event_class" not in data.columns
+
+    def test_load_train_data_files_tel_off(self, gamma_stereo_monly, config_gen):
+        """
+        Check off-axis cut
+        """
+        events = load_train_data_files_tel(
+            str(gamma_stereo_monly[0]),
+            config=config_gen,
+            offaxis_min="0.2 deg",
+            offaxis_max="0.5 deg",
+        )
+        data = events[2]
+        assert np.all(data["off_axis"] >= 0.2)
+        assert np.all(data["off_axis"] <= 0.5)
+
+    def test_load_train_data_files_tel_exc(self, temp_train_exc, config_gen):
+        """
+        Check on exceptions
+        """
+        with pytest.raises(
+            FileNotFoundError,
+            match="Could not find any DL1-stereo data files in the input directory.",
+        ):
+            _ = load_train_data_files(str(temp_train_exc), config_gen)
 
 
 def test_exist_rf(RF_monly):
@@ -104,105 +200,6 @@ def test_exist_rf(RF_monly):
     """
 
     assert len(glob.glob(f"{RF_monly}/*")) == 3
-
-
-def test_load_train_data_files_p(p_stereo_monly):
-    """
-    Check dictionary
-    """
-
-    events = load_train_data_files(str(p_stereo_monly[0]))
-    assert list(events.keys()) == ["M1_M2"]
-    data = events["M1_M2"]
-    assert np.all(data["combo_type"]) == 0
-    assert "off_axis" in data.columns
-    assert "true_event_class" not in data.columns
-
-
-def test_load_train_data_files_g(gamma_stereo_monly):
-    """
-    Check dictionary
-    """
-
-    events = load_train_data_files(str(gamma_stereo_monly[0]))
-    assert list(events.keys()) == ["M1_M2"]
-    data = events["M1_M2"]
-    assert np.all(data["combo_type"]) == 0
-    assert "off_axis" in data.columns
-    assert "true_event_class" not in data.columns
-
-
-def test_load_train_data_files_off(gamma_stereo_monly):
-    """
-    Check off-axis cut
-    """
-    events = load_train_data_files(
-        str(gamma_stereo_monly[0]), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
-    )
-    data = events["M1_M2"]
-    assert np.all(data["off_axis"] >= 0.2)
-    assert np.all(data["off_axis"] <= 0.5)
-
-
-def test_load_train_data_files_exc(temp_train_exc):
-    """
-    Check on exceptions
-    """
-    with pytest.raises(
-        FileNotFoundError,
-        match="Could not find any DL1-stereo data files in the input directory.",
-    ):
-        _ = load_train_data_files(str(temp_train_exc))
-
-
-def test_load_train_data_files_tel_p(p_stereo_monly, config_gen):
-    """
-    Check dictionary
-    """
-
-    events = load_train_data_files_tel(str(p_stereo_monly[0]), config_gen)
-    assert list(events.keys()) == [2, 3]
-    data = events[2]
-    assert "off_axis" in data.columns
-    assert "true_event_class" not in data.columns
-
-
-def test_load_train_data_files_tel_g(gamma_stereo_monly, config_gen):
-    """
-    Check dictionary
-    """
-
-    events = load_train_data_files_tel(str(gamma_stereo_monly[0]), config_gen)
-    assert list(events.keys()) == [2, 3]
-    data = events[3]
-    assert "off_axis" in data.columns
-    assert "true_event_class" not in data.columns
-
-
-def test_load_train_data_files_tel_off(gamma_stereo_monly, config_gen):
-    """
-    Check off-axis cut
-    """
-    events = load_train_data_files_tel(
-        str(gamma_stereo_monly[0]),
-        config=config_gen,
-        offaxis_min="0.2 deg",
-        offaxis_max="0.5 deg",
-    )
-    data = events[2]
-    assert np.all(data["off_axis"] >= 0.2)
-    assert np.all(data["off_axis"] <= 0.5)
-
-
-def test_load_train_data_files_tel_exc(temp_train_exc, config_gen):
-    """
-    Check on exceptions
-    """
-    with pytest.raises(
-        FileNotFoundError,
-        match="Could not find any DL1-stereo data files in the input directory.",
-    ):
-        _ = load_train_data_files(str(temp_train_exc), config_gen)
 
 
 def test_exist_dl2_mc(p_dl2_monly, gamma_dl2_monly):

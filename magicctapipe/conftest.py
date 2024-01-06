@@ -535,6 +535,7 @@ def p_l1_monly(temp_DL1_p_monly, dl0_p, config_monly):
     """
     Produce a DL1 file
     """
+
     for file in dl0_p:
         subprocess.run(
             [
