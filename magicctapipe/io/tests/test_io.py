@@ -165,10 +165,10 @@ class TestGeneral:
         LSTs, LSTs_comb = telescope_combinations(config_gen_4lst)
         assert M_LST == {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"}
         assert M_LST_comb == {
-            'M1_M2': [2, 3],
-            'LST1_M1': [1, 2],            
-            'LST1_M2': [1, 3],
-            'LST1_M1_M2': [1, 2, 3],
+            "M1_M2": [2, 3],
+            "LST1_M1": [1, 2],            
+            "LST1_M2": [1, 3],
+            "LST1_M1_M2": [1, 2, 3],
         }
         assert LSTs == {1: "LST-1", 3: "LST-2", 2: "LST-3", 5: "LST-4"}
         assert LSTs_comb == {
