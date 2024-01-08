@@ -18,6 +18,7 @@ from magicctapipe.io.io import (
     save_pandas_data_in_table,
 )
 
+
 class TestGeneral:
     def test_format_object(self):
         """
@@ -26,7 +27,6 @@ class TestGeneral:
         str_a = "a{b[[xz,cde}"
         str_b = format_object(str_a)
         assert str_b == "a b  xzcde "
-
 
     def test_save_pandas_data_in_table(self, temp_pandas, pd_test):
         """
@@ -193,6 +193,7 @@ class TestStereoMC:
         ):
             _ = load_train_data_files(str(temp_train_exc), config_gen)
 
+
 @pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
 def test_exist_rf(RF_monly):
     """
@@ -200,6 +201,7 @@ def test_exist_rf(RF_monly):
     """
 
     assert len(glob.glob(f"{RF_monly}/*")) == 3
+
 
 @pytest.mark.dependency(depends=["test_exist_rf"])
 def test_exist_dl2_mc(p_dl2_monly, gamma_dl2_monly):
@@ -210,13 +212,16 @@ def test_exist_dl2_mc(p_dl2_monly, gamma_dl2_monly):
     assert len(glob.glob(f"{p_dl2_monly}/*")) == 1
     assert len(glob.glob(f"{gamma_dl2_monly}/*")) == 1
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 class TestDL2MC:
     def test_load_mc_dl2_data_file(self, p_dl2_monly, gamma_dl2_monly):
         """
         Checks on default loading
         """
-        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
+        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [
+            p for p in p_dl2_monly.glob("*")
+        ]
         for file in dl2_mc:
             data, point, _ = load_mc_dl2_data_file(
                 str(file), "width>0", "magic_only", "simple"
@@ -228,24 +233,26 @@ class TestDL2MC:
             assert point[0] >= 0
             assert point[0] <= 90
 
-
     def test_load_mc_dl2_data_file_cut(self, p_dl2_monly, gamma_dl2_monly):
         """
         Check on quality cuts
         """
-        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
+        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [
+            p for p in p_dl2_monly.glob("*")
+        ]
         for file in dl2_mc:
             data, _, _ = load_mc_dl2_data_file(
                 str(file), "gammaness>0.1", "magic_only", "simple"
             )
             assert np.all(data["gammaness"] > 0.1)
 
-
     def test_load_mc_dl2_data_file_opt(self, p_dl2_monly, gamma_dl2_monly):
         """
         Check on event_type
         """
-        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
+        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [
+            p for p in p_dl2_monly.glob("*")
+        ]
         for file in dl2_mc:
 
             data_m, _, _ = load_mc_dl2_data_file(
@@ -254,26 +261,30 @@ class TestDL2MC:
 
             assert np.all(data_m["combo_type"] == 0)
 
-
     def test_load_mc_dl2_data_file_exc(self, p_dl2_monly, gamma_dl2_monly):
         """
         Check on event_type exceptions
         """
-        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
+        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [
+            p for p in p_dl2_monly.glob("*")
+        ]
         for file in dl2_mc:
             event_type = "abc"
             with pytest.raises(
                 ValueError,
                 match=f"Unknown event type '{event_type}'.",
             ):
-                _, _, _ = load_mc_dl2_data_file(str(file), "width>0", event_type, "simple")
-
+                _, _, _ = load_mc_dl2_data_file(
+                    str(file), "width>0", event_type, "simple"
+                )
 
     def test_get_dl2_mean_mc(self, p_dl2_monly, gamma_dl2_monly):
         """
         Check on MC DL2
         """
-        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
+        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [
+            p for p in p_dl2_monly.glob("*")
+        ]
         for file in dl2_mc:
             event_data = pd.read_hdf(str(file), key="events/parameters")
             event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
@@ -281,7 +292,6 @@ class TestDL2MC:
             events = get_dl2_mean(event_data)
             assert "true_energy" in events.columns
             assert events["multiplicity"].dtype == int
-
 
     def test_get_dl2_mean_avg(self, dl2_test):
         """
@@ -293,12 +303,13 @@ class TestDL2MC:
         events = get_dl2_mean(event_data)
         assert np.allclose(np.array(events["gammaness"]), np.array([0.5, 0.6, 1]))
 
-
     def test_get_dl2_mean_exc(self, p_dl2_monly, gamma_dl2_monly):
         """
         Check on exceptions (weight type)
         """
-        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [p for p in p_dl2_monly.glob("*")]
+        dl2_mc = [p for p in gamma_dl2_monly.glob("*")] + [
+            p for p in p_dl2_monly.glob("*")
+        ]
         for file in dl2_mc:
             weight = "abc"
             event_data = pd.read_hdf(str(file), key="events/parameters")
@@ -307,6 +318,7 @@ class TestDL2MC:
             with pytest.raises(ValueError, match=f"Unknown weight type '{weight}'."):
                 _ = get_dl2_mean(event_data, weight_type=weight)
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 def test_exist_irf(IRF_monly):
     """
@@ -314,6 +326,7 @@ def test_exist_irf(IRF_monly):
     """
 
     assert len(glob.glob(f"{IRF_monly}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_irf"])
 class TestIRF:
@@ -369,7 +382,6 @@ class TestIRF:
         assert header["DL2_WEIG"] == "simple"
         assert header["EVT_TYPE"] == "magic_only"
 
-
     def test_load_irf_files_exc(self, temp_irf_exc):
         """
         Check on exception (FileNotFound)
@@ -379,6 +391,7 @@ class TestIRF:
             match="Could not find any IRF data files in the input directory.",
         ):
             _, _ = load_irf_files(str(temp_irf_exc))
+
 
 class TestDL1LST:
     def test_load_lst_dl1_data_file(self, dl1_lst):
@@ -395,6 +408,7 @@ class TestDL1LST:
             s1 = ~s
             assert s1.all()
 
+
 @pytest.mark.dependency()
 def test_exist_dl1_magic(M2_l1_monly, M1_l1_monly):
     """
@@ -404,6 +418,7 @@ def test_exist_dl1_magic(M2_l1_monly, M1_l1_monly):
     assert len(glob.glob(f"{M1_l1_monly}/*")) == 2
     assert len(glob.glob(f"{M2_l1_monly}/*")) == 2
 
+
 @pytest.mark.dependency(depends=["test_exist_dl1_magic"])
 def test_exist_merged_magic(merge_magic_monly):
     """
@@ -411,6 +426,7 @@ def test_exist_merged_magic(merge_magic_monly):
     """
 
     assert len(glob.glob(f"{merge_magic_monly}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_merged_magic"])
 class TestDL1MAGIC:
@@ -427,7 +443,6 @@ class TestDL1MAGIC:
         s1 = ~s
         assert s1.all()
 
-
     def test_load_magic_dl1_data_files_exc(self, temp_DL1_M_exc, config_gen):
         """
         Check on MAGIC DL1: exceptions (no DL1 files)
@@ -438,6 +453,7 @@ class TestDL1MAGIC:
         ):
             _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
 
+
 @pytest.mark.dependency(depends=["test_exist_merged_magic"])
 def test_exist_stereo(stereo_monly):
     """
@@ -445,6 +461,7 @@ def test_exist_stereo(stereo_monly):
     """
 
     assert len(glob.glob(f"{stereo_monly}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_stereo"])
 class TestStereoData:
@@ -461,7 +478,6 @@ class TestStereoData:
             assert np.all(data["multiplicity"] == 2)
             assert np.all(data["combo_type"] == 3)
 
-
     def test_get_stereo_events_data_cut(self, stereo_monly, config_gen):
         """
         Check on quality cuts
@@ -474,6 +490,7 @@ class TestStereoData:
             data = get_stereo_events(event_data, config_gen, "intensity>50")
             assert np.all(data["intensity"] > 50)
 
+
 @pytest.mark.dependency(depends=["test_exist_stereo"])
 def test_exist_dl2(real_dl2_monly):
     """
@@ -481,6 +498,7 @@ def test_exist_dl2(real_dl2_monly):
     """
 
     assert len(glob.glob(f"{real_dl2_monly}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_dl2"])
 class TestDL2Data:
@@ -499,7 +517,6 @@ class TestDL2Data:
             assert on > 0
             assert dead > 0
 
-
     def test_load_dl2_data_file_cut(self, real_dl2_monly):
         """
         Check on quality cuts
@@ -510,17 +527,17 @@ class TestDL2Data:
             )
             assert np.all(data["gammaness"] < 0.9)
 
-
     def test_load_dl2_data_file_opt(self, real_dl2_monly):
         """
         Check on event_type
         """
         for file in real_dl2_monly.glob("*"):
 
-            data_m, _, _ = load_dl2_data_file(str(file), "width>0", "magic_only", "simple")
+            data_m, _, _ = load_dl2_data_file(
+                str(file), "width>0", "magic_only", "simple"
+            )
 
             assert np.all(data_m["combo_type"] == 0)
-
 
     def test_load_dl2_data_file_exc(self, real_dl2_monly):
         """
@@ -534,7 +551,6 @@ class TestDL2Data:
             ):
                 _, _, _ = load_dl2_data_file(str(file), "width>0", event_type, "simple")
 
-
     def test_get_dl2_mean_real(self, real_dl2_monly):
         """
         Check on real data DL2
@@ -546,6 +562,7 @@ class TestDL2Data:
             events = get_dl2_mean(event_data)
             assert "timestamp" in events.columns
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2"])
 def test_exist_dl3(real_dl3_monly):
     """
@@ -553,6 +570,7 @@ def test_exist_dl3(real_dl3_monly):
     """
 
     assert len(glob.glob(f"{real_dl3_monly}/dl3*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_dl3"])
 def test_exist_index(real_index_monly):

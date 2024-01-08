@@ -20,6 +20,7 @@ from magicctapipe.io.io import (
     telescope_combinations,
 )
 
+
 class TestGeneral:
     def test_check_input_list(self, config_check):
         """
@@ -156,7 +157,6 @@ class TestGeneral:
                 }
             )
 
-
     def test_telescope_combinations(self, config_gen, config_gen_4lst):
         """
         Simple check on telescope combinations
@@ -185,7 +185,6 @@ class TestGeneral:
             "LST-3_LST-4": [2, 5],
         }
 
-
     def test_format_object(self):
         """
         Simple check on a string
@@ -193,7 +192,6 @@ class TestGeneral:
         str_a = "a{b[[xz,cde}"
         str_b = format_object(str_a)
         assert str_b == "a b  xzcde "
-
 
     def test_save_pandas_data_in_table(self, temp_pandas, pd_test):
         """
@@ -205,6 +203,7 @@ class TestGeneral:
         df = pd.read_hdf(str(out), key="event")
         assert df.equals(df1)
 
+
 @pytest.mark.dependency()
 def test_exist_dl1_mc(gamma_l1, p_l1):
     """
@@ -213,6 +212,7 @@ def test_exist_dl1_mc(gamma_l1, p_l1):
 
     assert len(glob.glob(f"{gamma_l1}/*")) == 4
     assert len(glob.glob(f"{p_l1}/*")) == 2
+
 
 @pytest.mark.dependency(depends=["test_exist_dl1_mc"])
 def test_exist_dl1_stereo_mc(gamma_stereo, p_stereo):
@@ -224,6 +224,7 @@ def test_exist_dl1_stereo_mc(gamma_stereo, p_stereo):
     assert len(glob.glob(f"{gamma_stereo[1]}/*")) == 2
     assert len(glob.glob(f"{p_stereo[0]}/*")) == 1
     assert len(glob.glob(f"{p_stereo[1]}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
 class TestStereoMC:
@@ -247,7 +248,6 @@ class TestStereoMC:
             assert np.all(data["multiplicity"] > 1)
             assert np.all(data["combo_type"] >= 0)
 
-
     def test_get_stereo_events_mc_cut(self, gamma_stereo, p_stereo, config_gen):
         """
         Check on quality cuts
@@ -265,10 +265,6 @@ class TestStereoMC:
             data = get_stereo_events(event_data, config_gen, "intensity>50")
             assert np.all(data["intensity"] > 50)
 
-
-    
-
-
     def test_load_train_data_files_p(self, p_stereo):
         """
         Check dictionary
@@ -280,7 +276,6 @@ class TestStereoMC:
         assert np.all(data["combo_type"]) == 1
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
-
 
     def test_load_train_data_files_g(self, gamma_stereo):
         """
@@ -294,7 +289,6 @@ class TestStereoMC:
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
 
-
     def test_load_train_data_files_off(self, gamma_stereo):
         """
         Check off-axis cut
@@ -306,7 +300,6 @@ class TestStereoMC:
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
 
-
     def test_load_train_data_files_exc(self, temp_train_exc):
         """
         Check on exceptions
@@ -316,7 +309,6 @@ class TestStereoMC:
             match="Could not find any DL1-stereo data files in the input directory.",
         ):
             _ = load_train_data_files(str(temp_train_exc))
-
 
     def test_load_train_data_files_tel_p(self, p_stereo, config_gen):
         """
@@ -329,7 +321,6 @@ class TestStereoMC:
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
 
-
     def test_load_train_data_files_tel_g(self, gamma_stereo, config_gen):
         """
         Check dictionary
@@ -340,7 +331,6 @@ class TestStereoMC:
         data = events[1]
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
-
 
     def test_load_train_data_files_tel_off(self, gamma_stereo, config_gen):
         """
@@ -356,7 +346,6 @@ class TestStereoMC:
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
 
-
     def test_load_train_data_files_tel_exc(self, temp_train_exc, config_gen):
         """
         Check on exceptions
@@ -367,13 +356,15 @@ class TestStereoMC:
         ):
             _ = load_train_data_files(str(temp_train_exc), config_gen)
 
+
 @pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
 def test_exist_rf(RF):
-        """
-        Check if RFs produced
-        """
+    """
+    Check if RFs produced
+    """
 
-        assert len(glob.glob(f"{RF}/*")) == 12
+    assert len(glob.glob(f"{RF}/*")) == 12
+
 
 @pytest.mark.dependency(depends=["test_exist_rf"])
 def test_exist_dl2_mc(p_dl2, gamma_dl2):
@@ -383,6 +374,7 @@ def test_exist_dl2_mc(p_dl2, gamma_dl2):
 
     assert len(glob.glob(f"{p_dl2}/*")) == 1
     assert len(glob.glob(f"{gamma_dl2}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 class TestDL2MC:
@@ -402,7 +394,6 @@ class TestDL2MC:
             assert point[0] >= 0
             assert point[0] <= 90
 
-
     def test_load_mc_dl2_data_file_cut(self, p_dl2, gamma_dl2):
         """
         Check on quality cuts
@@ -414,16 +405,16 @@ class TestDL2MC:
             )
             assert np.all(data["gammaness"] > 0.1)
 
-
     def test_load_mc_dl2_data_file_opt(self, p_dl2, gamma_dl2):
         """
         Check on event_type
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
         for file in dl2_mc:
-            data_s, _, _ = load_mc_dl2_data_file(str(file), "width>0", "software", "simple")
+            data_s, _, _ = load_mc_dl2_data_file(
+                str(file), "width>0", "software", "simple"
+            )
             assert np.all(data_s["combo_type"] > 0)
-
 
     def test_load_mc_dl2_data_file_exc(self, p_dl2, gamma_dl2):
         """
@@ -436,8 +427,9 @@ class TestDL2MC:
                 ValueError,
                 match=f"Unknown event type '{event_type}'.",
             ):
-                _, _, _ = load_mc_dl2_data_file(str(file), "width>0", event_type, "simple")
-
+                _, _, _ = load_mc_dl2_data_file(
+                    str(file), "width>0", event_type, "simple"
+                )
 
     def test_get_dl2_mean_mc(self, p_dl2, gamma_dl2):
         """
@@ -452,7 +444,6 @@ class TestDL2MC:
             assert "true_energy" in events.columns
             assert events["multiplicity"].dtype == int
 
-
     def test_get_dl2_mean_avg(self, dl2_test):
         """
         Check on average evaluation
@@ -462,7 +453,6 @@ class TestDL2MC:
         event_data.sort_index(inplace=True)
         events = get_dl2_mean(event_data)
         assert np.allclose(np.array(events["gammaness"]), np.array([0.5, 0.6, 1]))
-
 
     def test_get_dl2_mean_exc(self, p_dl2, gamma_dl2):
         """
@@ -477,6 +467,7 @@ class TestDL2MC:
             with pytest.raises(ValueError, match=f"Unknown weight type '{weight}'."):
                 _ = get_dl2_mean(event_data, weight_type=weight)
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 def test_exist_irf(IRF):
     """
@@ -484,6 +475,7 @@ def test_exist_irf(IRF):
     """
 
     assert len(glob.glob(f"{IRF}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_irf"])
 class TestIRF:
@@ -539,7 +531,6 @@ class TestIRF:
         assert header["DL2_WEIG"] == "simple"
         assert header["EVT_TYPE"] == "software"
 
-
     def test_load_irf_files_exc(self, temp_irf_exc):
         """
         Check on exception (FileNotFound)
@@ -549,6 +540,7 @@ class TestIRF:
             match="Could not find any IRF data files in the input directory.",
         ):
             _, _ = load_irf_files(str(temp_irf_exc))
+
 
 class TestDL1LST:
     @pytest.mark.dependency()
@@ -565,6 +557,7 @@ class TestDL1LST:
             s = events.duplicated(subset=["obs_id_lst", "event_id_lst"])
             s1 = ~s
             assert s1.all()
+
 
 @pytest.mark.dependency()
 def test_exist_dl1_magic(M2_l1, M1_l1):
@@ -584,6 +577,7 @@ def test_exist_merged_magic(merge_magic):
 
     assert len(glob.glob(f"{merge_magic}/*")) == 1
 
+
 @pytest.mark.dependency(depends=["test_exist_merged_magic"])
 class TestDL1MAGIC:
     def test_load_magic_dl1_data_files(self, merge_magic, config_gen):
@@ -599,7 +593,6 @@ class TestDL1MAGIC:
         s1 = ~s
         assert s1.all()
 
-
     def test_load_magic_dl1_data_files_exc(self, temp_DL1_M_exc, config_gen):
         """
         Check on MAGIC DL1: exceptions (no DL1 files)
@@ -610,13 +603,17 @@ class TestDL1MAGIC:
         ):
             _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
 
-@pytest.mark.dependency(depends=["test_exist_merged_magic", "TestDL1LST::test_load_lst_dl1_data_file"])
+
+@pytest.mark.dependency(
+    depends=["test_exist_merged_magic", "TestDL1LST::test_load_lst_dl1_data_file"]
+)
 def test_exist_coincidence(coincidence):
     """
     Check if coincidence created
     """
 
     assert len(glob.glob(f"{coincidence}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_coincidence"])
 def test_exist_coincidence_stereo(coincidence_stereo):
@@ -625,6 +622,7 @@ def test_exist_coincidence_stereo(coincidence_stereo):
     """
 
     assert len(glob.glob(f"{coincidence_stereo}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_coincidence_stereo"])
 class TestStereoData:
@@ -641,7 +639,6 @@ class TestStereoData:
             assert np.all(data["multiplicity"] > 1)
             assert np.all(data["combo_type"] >= 0)
 
-
     def test_get_stereo_events_data_cut(self, coincidence_stereo, config_gen):
         """
         Check on quality cuts
@@ -654,6 +651,7 @@ class TestStereoData:
             data = get_stereo_events(event_data, config_gen, "intensity>50")
             assert np.all(data["intensity"] > 50)
 
+
 @pytest.mark.dependency(depends=["test_exist_coincidence_stereo"])
 def test_exist_dl2(real_dl2):
     """
@@ -662,6 +660,7 @@ def test_exist_dl2(real_dl2):
 
     assert len(glob.glob(f"{real_dl2}/*")) == 1
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2"])
 class TestDL2Data:
     def test_load_dl2_data_file(self, real_dl2):
@@ -669,14 +668,15 @@ class TestDL2Data:
         Checks on default loading
         """
         for file in real_dl2.glob("*"):
-            data, on, dead = load_dl2_data_file(str(file), "width>0", "software", "simple")
+            data, on, dead = load_dl2_data_file(
+                str(file), "width>0", "software", "simple"
+            )
             assert "pointing_alt" in data.colnames
             assert "timestamp" in data.colnames
             assert data["reco_energy"].unit == "TeV"
             assert on.unit == "s"
             assert on > 0
             assert dead > 0
-
 
     def test_load_dl2_data_file_cut(self, real_dl2):
         """
@@ -688,15 +688,15 @@ class TestDL2Data:
             )
             assert np.all(data["gammaness"] < 0.9)
 
-
     def test_load_dl2_data_file_opt(self, real_dl2):
         """
         Check on event_type
         """
         for file in real_dl2.glob("*"):
-            data_s, _, _ = load_dl2_data_file(str(file), "width>0", "software", "simple")
+            data_s, _, _ = load_dl2_data_file(
+                str(file), "width>0", "software", "simple"
+            )
             assert np.all(data_s["combo_type"] > 0)
-
 
     def test_load_dl2_data_file_exc(self, real_dl2):
         """
@@ -710,7 +710,6 @@ class TestDL2Data:
             ):
                 _, _, _ = load_dl2_data_file(str(file), "width>0", event_type, "simple")
 
-
     def test_get_dl2_mean_real(self, real_dl2):
         """
         Check on real data DL2
@@ -722,6 +721,7 @@ class TestDL2Data:
             events = get_dl2_mean(event_data)
             assert "timestamp" in events.columns
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2"])
 def test_exist_dl3(real_dl3):
     """
@@ -729,6 +729,7 @@ def test_exist_dl3(real_dl3):
     """
 
     assert len(glob.glob(f"{real_dl3}/dl3*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_dl3"])
 def test_exist_index(real_index):
