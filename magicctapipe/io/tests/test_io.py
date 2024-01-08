@@ -166,7 +166,7 @@ class TestGeneral:
         assert M_LST == {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"}
         assert M_LST_comb == {
             "M1_M2": [2, 3],
-            "LST1_M1": [1, 2],            
+            "LST1_M1": [1, 2],
             "LST1_M2": [1, 3],
             "LST1_M1_M2": [1, 2, 3],
         }
