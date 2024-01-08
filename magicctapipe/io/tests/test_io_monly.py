@@ -81,7 +81,7 @@ class TestStereoMC:
             event_data.sort_index(inplace=True)
             data = get_stereo_events(event_data, config_gen)
             assert np.all(data["multiplicity"] == 2)
-            assert np.all(data["combo_type"] == 3)
+            assert np.all(data["combo_type"] == 0)
 
     def test_get_stereo_events_mc_cut(
         self, gamma_stereo_monly, p_stereo_monly, config_gen
@@ -110,7 +110,7 @@ class TestStereoMC:
         events = load_train_data_files(str(p_stereo_monly[0]))
         assert list(events.keys()) == ["M1_M2"]
         data = events["M1_M2"]
-        assert np.all(data["combo_type"]) == 0
+        assert np.all(data["combo_type"] == 0)
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
 
@@ -122,7 +122,7 @@ class TestStereoMC:
         events = load_train_data_files(str(gamma_stereo_monly[0]))
         assert list(events.keys()) == ["M1_M2"]
         data = events["M1_M2"]
-        assert np.all(data["combo_type"]) == 0
+        assert np.all(data["combo_type"] == 0)
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
 
@@ -476,7 +476,7 @@ class TestStereoData:
             event_data.sort_index(inplace=True)
             data = get_stereo_events(event_data, config_gen)
             assert np.all(data["multiplicity"] == 2)
-            assert np.all(data["combo_type"] == 3)
+            assert np.all(data["combo_type"] == 0)
 
     def test_get_stereo_events_data_cut(self, stereo_monly, config_gen):
         """
