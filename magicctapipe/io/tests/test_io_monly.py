@@ -491,7 +491,7 @@ class TestStereoData:
             assert np.all(data["intensity"] > 50)
 
 
-@pytest.mark.dependency(depends=["test_exist_stereo"])
+@pytest.mark.dependency(depends=["test_exist_stereo", "test_exist_rf"])
 def test_exist_dl2(real_dl2_monly):
     """
     Check if DL2 exist
@@ -563,7 +563,7 @@ class TestDL2Data:
             assert "timestamp" in events.columns
 
 
-@pytest.mark.dependency(depends=["test_exist_dl2"])
+@pytest.mark.dependency(depends=["test_exist_dl2", "test_exist_irf"])
 def test_exist_dl3(real_dl3_monly):
     """
     Check if DL3 exist
