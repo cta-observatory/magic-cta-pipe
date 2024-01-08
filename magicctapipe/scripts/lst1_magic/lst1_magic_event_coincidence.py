@@ -33,7 +33,10 @@ as summarized below:
 * June 13 2021 to Feb 28 2023: -6.5 us
 * March 10 2023 to March 30 2023: -76039.3 us
 * April 13 2023 to August 2023: -25.1 us
-* after Sep 11 2023 : -6.2 us
+* Sep 11 2023 to Nov 14 2023: -6.2 us
+* Nov 15 2023: -1583.8 us
+* Nov 16 2023 to Nov 30 2023: 118.8 us
+* After Dec 1 2023: -3.2 us
 By default, pre offset search is performed using large shower events.
 The possible time offset is found among all possible combinations of
 time offsets using those events. Finally, the time offset scan is performed
