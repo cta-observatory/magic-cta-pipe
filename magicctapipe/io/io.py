@@ -669,10 +669,19 @@ def load_magic_dl1_data_files(input_dir, config):
 
     data_list = []
 
+    # subarray of first file taken as reference for the check
+    subarray = SubarrayDescription.from_hdf(input_files[0])
+
     for input_file in input_files:
         logger.info(input_file)
 
         df_events = pd.read_hdf(input_file, key="events/parameters")
+
+        # check if subarrays are matching
+        subarray_other = SubarrayDescription.from_hdf(input_file)
+        if subarray_other != subarray:
+            raise IOError(f"Subarrays do not match for file: {input_file}")
+
         data_list.append(df_events)
 
     event_data = pd.concat(data_list)
@@ -695,10 +704,6 @@ def load_magic_dl1_data_files(input_dir, config):
 
     event_data.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
-
-    # Read the subarray description from the first input file, assuming
-    # that it is consistent with the others
-    subarray = SubarrayDescription.from_hdf(input_files[0])
 
     return event_data, subarray
 
