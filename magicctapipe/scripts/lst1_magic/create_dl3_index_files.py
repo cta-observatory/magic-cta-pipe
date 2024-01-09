@@ -59,9 +59,7 @@ def create_dl3_index_files(input_dir):
 
     for input_file in input_files:
         logger.info(input_file)
-
-        input_file_name = Path(input_file).name
-        file_names.append(input_file_name)
+        file_names.append(Path(input_file))
 
     # Create the DL3 index files
     logger.info("\nCreating DL3 index files...")
@@ -70,15 +68,13 @@ def create_dl3_index_files(input_dir):
     obs_index_file = f"{input_dir}/obs-index.fits.gz"
 
     create_hdu_index_hdu(
-        filename_list=file_names,
-        fits_dir=Path(input_dir),
+        file_list=file_names,
         hdu_index_file=Path(hdu_index_file),
         overwrite=True,
     )
 
     create_obs_index_hdu(
-        filename_list=file_names,
-        fits_dir=Path(input_dir),
+        file_list=file_names,
         obs_index_file=Path(obs_index_file),
         overwrite=True,
     )
