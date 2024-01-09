@@ -39,7 +39,7 @@ dependencies:
   - sphinx-design
   - sphinx_rtd_theme
   - numba>=0.56
-  - uproot
+  - uproot~=5.0
   - pymongo
   - jinja2 # pinned for bokeh 1.0 compatibility
   - pyirf~=0.10.0
