@@ -376,17 +376,8 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
                     assigned_tel_ids["MAGIC-II"],
                 ]
 
-            # create array of booleans from the trigger
-            tels_with_trigger_mask = subarray_magic.tel_ids_to_mask(
-                tels_with_trigger_magic_lst
-            )
-
             tels_with_trigger_binary_int = np.array(
-                [
-                    2 ** (idx + 1)
-                    for idx in range(len(tels_with_trigger_mask))
-                    if tels_with_trigger_mask[idx] == True
-                ]
+                [2 ** (tel_id) for tel_id in tels_with_trigger_magic_lst]
             ).sum()
 
             event_info.tels_with_trigger = tels_with_trigger_binary_int
