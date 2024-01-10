@@ -376,6 +376,10 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
                     assigned_tel_ids["MAGIC-II"],
                 ]
 
+            # encode tels_with_trigger as an int value
+            # that can be decoded later as a binary
+            # tels_with_trigger = sum_{tel_id} 2**tel_id
+            # where tel_id is only for those triggered
             tels_with_trigger_binary_int = np.array(
                 [2 ** (tel_id) for tel_id in tels_with_trigger_magic_lst]
             ).sum()
