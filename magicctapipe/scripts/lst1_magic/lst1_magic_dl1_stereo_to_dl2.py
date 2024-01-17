@@ -158,6 +158,10 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
         n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
 
+        if n_events == 0:
+            print(f"Telescope combination {combo_type} has no events. Skipping.")
+            continue
+
         # Here we first define all the possible flip combinations. For
         # example, in case that we have two telescope images, in total
         # 4 combinations are defined as follows:
