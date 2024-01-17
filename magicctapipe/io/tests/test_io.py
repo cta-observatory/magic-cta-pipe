@@ -304,7 +304,7 @@ class TestStereoMC:
         """
         Check on exceptions
         """
-        
+
         with pytest.raises(
             FileNotFoundError,
             match="Could not find any DL1-stereo data files in the input directory.",
@@ -658,7 +658,7 @@ def test_exist_dl2(real_dl2):
     """
     Check if DL2 exist
     """
-    
+
     assert len(glob.glob(f"{real_dl2}/*")) == 1
 
 
