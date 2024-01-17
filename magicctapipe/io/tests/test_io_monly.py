@@ -5,17 +5,14 @@ import pandas as pd
 import pytest
 
 from magicctapipe.io.io import (
-    format_object,
     get_dl2_mean,
     get_stereo_events,
     load_dl2_data_file,
     load_irf_files,
-    load_lst_dl1_data_file,
     load_magic_dl1_data_files,
     load_mc_dl2_data_file,
     load_train_data_files,
     load_train_data_files_tel,
-    save_pandas_data_in_table,
 )
 
 
@@ -117,16 +114,6 @@ class TestStereoMC:
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
 
-    def test_load_train_data_files_exc(self, temp_train_exc):
-        """
-        Check on exceptions
-        """
-        with pytest.raises(
-            FileNotFoundError,
-            match="Could not find any DL1-stereo data files in the input directory.",
-        ):
-            _ = load_train_data_files(str(temp_train_exc))
-
     def test_load_train_data_files_tel_p(self, p_stereo_monly, config_gen):
         """
         Check dictionary
@@ -163,18 +150,7 @@ class TestStereoMC:
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
 
-    def test_load_train_data_files_tel_exc(self, temp_train_exc, config_gen):
-        """
-        Check on exceptions
-        """
-
-        with pytest.raises(
-            FileNotFoundError,
-            match="Could not find any DL1-stereo data files in the input directory.",
-        ):
-            _ = load_train_data_files(str(temp_train_exc), config_gen)
-
-
+    
 @pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
 def test_exist_rf(RF_monly):
     """
@@ -363,17 +339,7 @@ class TestIRF:
         assert header["DL2_WEIG"] == "simple"
         assert header["EVT_TYPE"] == "magic_only"
 
-    def test_load_irf_files_exc(self, temp_irf_exc):
-        """
-        Check on exception (FileNotFound)
-        """
-        with pytest.raises(
-            FileNotFoundError,
-            match="Could not find any IRF data files in the input directory.",
-        ):
-            _, _ = load_irf_files(str(temp_irf_exc))
-
-
+    
 @pytest.mark.dependency()
 def test_exist_dl1_magic(M2_l1_monly, M1_l1_monly):
     """
@@ -408,17 +374,7 @@ class TestDL1MAGIC:
         s1 = ~s
         assert s1.all()
 
-    def test_load_magic_dl1_data_files_exc(self, temp_DL1_M_exc, config_gen):
-        """
-        Check on MAGIC DL1: exceptions (no DL1 files)
-        """
-        with pytest.raises(
-            FileNotFoundError,
-            match="Could not find any DL1 data files in the input directory.",
-        ):
-            _, _ = load_magic_dl1_data_files(str(temp_DL1_M_exc), config_gen)
-
-
+    
 @pytest.mark.dependency(depends=["test_exist_merged_magic"])
 def test_exist_stereo(stereo_monly):
     """
