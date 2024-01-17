@@ -245,7 +245,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                 if use_charge_correction:
                     # Scale the charges of the DL1 image by the correction factor:
                     event.dl1.tel[tel_id].image *= config_magic["charge_correction"][
-                        "correction_factor"
+                        "factor"
                     ]
 
                 # Apply the image cleaning:

@@ -3,37 +3,45 @@ name: magic-lst
 channels:
   - conda-forge
 dependencies:
-  - python=3.8
+  - python=3.11
   - pip
+  - numpy
+  - astropy=5
   - black
   - nbsphinx
-  - numpy=1.21
-  - ctapipe=0.12
-  - gammapy=0.19.0
-  - cython
+  - ctapipe=0.19.2
+  - gammapy=1.1
+  - ctaplot~=0.6.4
+  - h5py
+  - ipython
+  - jupyter
+  - matplotlib=3.7
+  - notebook
   - graphviz
   - iminuit>=2
-  - joblib
+  - joblib~=1.2.0
   - numpydoc
+  - jinja2~=3.0.2
   - jupyterlab=3.5.0
-  - pandas
+  - pandas>=2
   - pre-commit
-  - protozfits=2.0
+  - toml
+  - protobuf=3.20
+  - pydata-sphinx-theme
+  - pyparsing
   - psutil
   - pytest
   - pytest-cov
   - pytest-runner
   - pyyaml
-  - scikit-learn
+  - scikit-learn=1.2
   - sphinx
   - sphinx-automodapi
   - sphinx-design
   - sphinx_rtd_theme
-  - pydata-sphinx-theme
-  - uproot~=4.1
-  - corsikaio
-  - pip:
-      - lstchain~=0.9.6
-      - ctapipe_io_magic~=0.4.7
-      - ctaplot~=0.5.5
-      - pyirf~=0.6.0
+  - numba>=0.56
+  - uproot~=5.0
+  - pymongo
+  - pyirf~=0.10.0
+  - ctapipe-io-magic~=0.5.4
+  - lstchain~=0.10.5

@@ -1,5 +1,5 @@
 from .badpixels import MAGICBadPixelsCalc
-from .camera_geometry import reflected_camera_geometry, scale_camera_geometry
+from .camera_geometry import reflected_camera_geometry_mars
 from .functions import (
     HEIGHT_ORM,
     LAT_ORM,
@@ -19,8 +19,7 @@ from .gti import (
 
 __all__ = [
     "MAGICBadPixelsCalc",
-    "scale_camera_geometry",
-    "reflected_camera_geometry",
+    "reflected_camera_geometry_mars",
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
