@@ -110,7 +110,7 @@ class TestStereoMC:
         events = load_train_data_files(str(p_stereo_monly[0]))
         assert list(events.keys()) == ["M1_M2"]
         data = events["M1_M2"]
-        assert np.all(data["combo_type"] == 0)
+        assert np.all(data["combo_type"] == 3)
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
 
@@ -122,7 +122,7 @@ class TestStereoMC:
         events = load_train_data_files(str(gamma_stereo_monly[0]))
         assert list(events.keys()) == ["M1_M2"]
         data = events["M1_M2"]
-        assert np.all(data["combo_type"] == 0)
+        assert np.all(data["combo_type"] == 3)
         assert "off_axis" in data.columns
         assert "true_event_class" not in data.columns
 
@@ -260,7 +260,7 @@ class TestDL2MC:
                 str(file), "width>0", "magic_only", "simple"
             )
 
-            assert np.all(data_m["combo_type"] == 0)
+            assert np.all(data_m["combo_type"] == 3)
 
     def test_load_mc_dl2_data_file_exc(self, p_dl2_monly, gamma_dl2_monly):
         """
@@ -538,7 +538,7 @@ class TestDL2Data:
                 str(file), "width>0", "magic_only", "simple"
             )
 
-            assert np.all(data_m["combo_type"] == 0)
+            assert np.all(data_m["combo_type"] == 3)
 
     def test_load_dl2_data_file_exc(self, real_dl2_monly):
         """
