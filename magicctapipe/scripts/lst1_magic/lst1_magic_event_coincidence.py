@@ -339,7 +339,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
                 coincidence_event_ratio = n_coincidences_pre_search.max() / n_pre_offset_search_events
                 print(f"coincidence ratio: {100 * coincidence_event_ratio} %")
 
-                if coincidence_event_ratio < 0.3:
+                if coincidence_event_ratio < 0.1:
                     print("Too low coincidence ratio: Skipping...")
                     continue
 
