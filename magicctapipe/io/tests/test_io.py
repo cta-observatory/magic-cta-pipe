@@ -267,7 +267,7 @@ class TestStereoMC:
 
     def test_load_train_data_files_p(self, p_stereo):
         """
-        Check dictionary
+        Check dictionary of the combo types
         """
 
         events = load_train_data_files(str(p_stereo[0]))
@@ -279,7 +279,7 @@ class TestStereoMC:
 
     def test_load_train_data_files_g(self, gamma_stereo):
         """
-        Check dictionary
+        Check dictionary of the combo types
         """
 
         events = load_train_data_files(str(gamma_stereo[0]))

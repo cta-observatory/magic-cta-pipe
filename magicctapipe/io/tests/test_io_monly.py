@@ -19,26 +19,6 @@ from magicctapipe.io.io import (
 )
 
 
-class TestGeneral:
-    def test_format_object(self):
-        """
-        Simple check on a string
-        """
-        str_a = "a{b[[xz,cde}"
-        str_b = format_object(str_a)
-        assert str_b == "a b  xzcde "
-
-    def test_save_pandas_data_in_table(self, temp_pandas, pd_test):
-        """
-        Check on pandas dataframe (before = after saving it)
-        """
-        out = temp_pandas / "pandas.h5"
-        save_pandas_data_in_table(pd_test, str(out), "abc", "event")
-        df1 = pd.DataFrame(np.array([[1, 2], [3, 4], [5, 6]]), columns=["a", "b"])
-        df = pd.read_hdf(str(out), key="event")
-        assert df.equals(df1)
-
-
 @pytest.mark.dependency()
 def test_exist_dl1_mc(gamma_l1_monly, p_l1_monly):
     """
@@ -392,22 +372,6 @@ class TestIRF:
             match="Could not find any IRF data files in the input directory.",
         ):
             _, _ = load_irf_files(str(temp_irf_exc))
-
-
-class TestDL1LST:
-    def test_load_lst_dl1_data_file(self, dl1_lst):
-        """
-        Check on LST DL1
-        """
-        for file in dl1_lst:
-            events, _ = load_lst_dl1_data_file(str(file))
-            assert "event_type" in events.columns
-            assert "slope" in events.columns
-            assert "az_tel" not in events.columns
-            events = events.reset_index()
-            s = events.duplicated(subset=["obs_id_lst", "event_id_lst"])
-            s1 = ~s
-            assert s1.all()
 
 
 @pytest.mark.dependency()
