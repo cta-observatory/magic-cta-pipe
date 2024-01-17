@@ -57,7 +57,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
 
     event_source = EventSource(input_url=input_file)
     subarray = event_source.subarray
-    obs_id = event_source.obs_ids[0]
+    obs_id = event_source.obs_ids
     tel_id = event_source.telescope
 
     # Create the table which will contain the selected muon ring parameters

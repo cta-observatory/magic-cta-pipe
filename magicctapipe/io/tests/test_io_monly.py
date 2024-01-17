@@ -187,6 +187,7 @@ class TestStereoMC:
         """
         Check on exceptions
         """
+
         with pytest.raises(
             FileNotFoundError,
             match="Could not find any DL1-stereo data files in the input directory.",

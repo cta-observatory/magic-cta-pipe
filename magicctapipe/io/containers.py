@@ -26,6 +26,9 @@ class BaseEventInfoContainer(Container):
     pointing_az = Field(DEFAULT_RAD, "Azimuth of the pointing direction", unit="rad")
     n_pixels = Field(DEFAULT_VALUE, "Number of pixels after the image cleaning")
     n_islands = Field(DEFAULT_VALUE, "Number of islands after the image cleaning")
+    tels_with_trigger = Field(
+        None, "Integer indicating the combination of telescopes that triggered"
+    )
 
 
 class RealEventInfoContainer(BaseEventInfoContainer):

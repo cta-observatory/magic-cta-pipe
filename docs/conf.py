@@ -84,6 +84,13 @@ nitpick_ignore = [
     ("py:meth", "BaseDescriptor.instance_init"),
     ("py:obj", "cls"),
     ("py:obj", "name"),
+    ("py:obj", "Field"),
+    ("py:obj", "deg"),
+    ("py:obj", "m"),
+    ("py:obj", "TeV"),
+    ("py:obj", "rad"),
+    ("py:obj", "s"),
+    ("py:obj", "ns"),
     ("py:class", "astropy.coordinates.baseframe.BaseCoordinateFrame"),
     ("py:class", "astropy.table.table.Table"),
     ("py:class", "eventio.simtel.simtelfile.SimTelFile"),
@@ -215,7 +222,7 @@ htmlhelp_basename = project + "doc"
 html_theme = "pydata_sphinx_theme"
 
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.8", None),
+    "python": ("https://docs.python.org/3.11", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
@@ -225,7 +232,7 @@ intersphinx_mapping = {
     "cython": ("https://docs.cython.org/en/latest/", None),
     "iminuit": ("https://iminuit.readthedocs.io/en/latest/", None),
     "traitlets": ("https://traitlets.readthedocs.io/en/stable/", None),
-    "ctapipe": ("https://ctapipe.readthedocs.io/en/v0.12.0-rtd/", None),
+    "ctapipe": ("https://ctapipe.readthedocs.io/en/v0.19.2/", None),
     "pyirf": ("https://pyirf.readthedocs.io/en/stable/", None),
 }
 
