@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This script merges the HDF files produced by the LST-1 + MAGIC combined
+This script merges the HDF files produced by the LST + MAGIC combined
 analysis pipeline. It parses information from the file names, so they
 should follow the convention, i.e., *Run*.*.h5 or *run*.h5.
 
@@ -13,8 +13,7 @@ under the input directory.
 If the `--run-wise` argument is given, it merges input files run-wise.
 It is applicable only to real data since MC data are already produced
 run-wise. The `--subrun-wise` argument can be also used to merge MAGIC
-DL1 real data subrun-wise (for example, dl1_M1.Run05093711.001.h5
-+ dl1_M2.Run05093711.001.h5 -> dl1_MAGIC.Run05093711.001.h5).
+DL1 real data subrun-wise.
 
 Usage:
 $ python merge_hdf_files.py
@@ -22,6 +21,10 @@ $ python merge_hdf_files.py
 (--output-dir dl1_merged)
 (--run-wise)
 (--subrun-wise)
+
+Broader usage:
+This script is called automatically from the script "merging_runs_and_spliting_training_samples.py".
+If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
 import argparse
@@ -35,7 +38,7 @@ import numpy as np
 import tables
 from ctapipe.instrument import SubarrayDescription
 
-__all__ = ["write_data_to_table", "merge_hdf_files"]
+__all__ = ["merge_hdf_files", "write_data_to_table"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -48,9 +51,9 @@ def write_data_to_table(input_file_mask, output_file):
 
     Parameters
     ----------
-    input_file_mask: str
+    input_file_mask : str
         Mask of the paths to input HDF files
-    output_file: str
+    output_file : str
         Path to an output HDF file
     """
 
@@ -106,14 +109,14 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input HDF files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save output HDF files
-    run_wise: bool
+    run_wise : bool
         If `True`, it merges the input files run-wise
         (applicable only to real data)
-    subrun_wise: bool
+    subrun_wise : bool, optional
         If `True`, it merges the input files subrun-wise
         (applicable only to MAGIC real data)
 
@@ -244,6 +247,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

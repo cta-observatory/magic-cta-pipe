@@ -40,8 +40,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yaml
+
 from magicctapipe.io import format_object, load_train_data_files
-from magicctapipe.io.io import GROUP_INDEX_TRAIN, TEL_NAMES
+from magicctapipe.io.io import GROUP_INDEX_TRAIN
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = [
@@ -54,6 +55,12 @@ __all__ = [
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
+TEL_NAMES = {
+    1: "LST-1",
+    2: "MAGIC-I",
+    3: "MAGIC-II",
+}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
+
 
 # True event class of gamma and proton MCs
 EVENT_CLASS_GAMMA = 0
@@ -69,14 +76,14 @@ def get_events_at_random(event_data, n_events_random):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    n_events_random: int or float
+    n_events_random : int
         Number of events to be extracted randomly
 
     Returns
     -------
-    event_data_selected: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events extracted randomly
     """
 
@@ -102,13 +109,13 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input gamma MC data files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save trained RFs
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it uses unsigned features for training RFs
     """
 
@@ -174,13 +181,13 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input gamma MC data files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save trained RFs
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it uses unsigned features for training RFs
     """
 
@@ -248,15 +255,15 @@ def train_event_classifier(
 
     Parameters
     ----------
-    input_dir_gamma: str
+    input_dir_gamma : str
         Path to a directory where input gamma MC data files are stored
-    input_dir_proton: str
+    input_dir_proton : str
         Path to a directory where input proton MC data files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save trained RFs
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
-    use_unsigned_features: bool
+    use_unsigned_features : bool
         If `True`, it uses unsigned features for training RFs
     """
 
@@ -343,6 +350,7 @@ def train_event_classifier(
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

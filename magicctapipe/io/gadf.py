@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+DL3 generation utilities
+"""
 import logging
 
 import numpy as np
@@ -9,10 +9,10 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import QTable
 from astropy.time import Time
-from magicctapipe import __version__
-from magicctapipe.io.io import TEL_COMBINATIONS
-from magicctapipe.utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
 from pyirf.binning import split_bin_lo_hi
+
+from .. import __version__ as MCP_VERSION
+from ..utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
 
 __all__ = [
     "create_gh_cuts_hdu",
@@ -29,28 +29,26 @@ logger.setLevel(logging.INFO)
 MJDREF = Time(0, format="unix", scale="utc")
 
 
-@u.quantity_input
-def create_gh_cuts_hdu(
-    gh_cuts, reco_energy_bins: u.TeV, fov_offset_bins: u.deg, **header_cards
-):
+@u.quantity_input(reco_energy_bins=u.TeV, fov_offset_bins=u.deg)
+def create_gh_cuts_hdu(gh_cuts, reco_energy_bins, fov_offset_bins, **header_cards):
     """
     Creates a fits binary table HDU for dynamic gammaness cuts.
 
     Parameters
     ----------
-    gh_cuts: numpy.ndarray
+    gh_cuts : np.ndarray
         Array of the gammaness cuts, which must have the shape
         (n_reco_energy_bins, n_fov_offset_bins)
-    reco_energy_bins: astropy.units.quantity.Quantity
+    reco_energy_bins : astropy.units.quantity.Quantity
         Bin edges in the reconstructed energy
-    fov_offset_bins: astropy.units.quantity.Quantity
+    fov_offset_bins : astropy.units.quantity.Quantity
         Bin edges in the field of view offset
-    **header_cards
+    **header_cards : dict
         Additional metadata to add to the header
 
     Returns
     -------
-    gh_cuts_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         Gammaness-cut HDU
     """
 
@@ -71,7 +69,7 @@ def create_gh_cuts_hdu(
     # Create a header
     header = fits.Header(
         cards=[
-            ("CREATOR", f"magicctapipe v{__version__}"),
+            ("CREATOR", f"magicctapipe v{MCP_VERSION}"),
             ("HDUCLAS1", "RESPONSE"),
             ("HDUCLAS2", "GH_CUTS"),
             ("HDUCLAS3", "POINT-LIKE"),
@@ -97,26 +95,26 @@ def create_event_hdu(
 
     Parameters
     ----------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
-    on_time: astropy.table.table.QTable
+    on_time : astropy.table.table.QTable
         ON time of the input data
-    deadc: float
+    deadc : float
         Dead time correction factor
-    source_name: str
+    source_name : str
         Name of the observed source
-    source_ra: str
+    source_ra : str, optional
         Right ascension of the observed source, whose format should be
         acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
-    source_dec: str
+    source_dec : str, optional
         Declination of the observed source, whose format should be
         acceptable by `astropy.coordinates.sky_coordinate.SkyCoord`
         (Used only when the source name cannot be resolved)
 
     Returns
     -------
-    event_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         Event HDU
 
     Raises
@@ -125,7 +123,12 @@ def create_event_hdu(
         If the source name cannot be resolved and also either or both of
         source RA/Dec coordinate is set to None
     """
-
+    TEL_COMBINATIONS = {
+        "LST1_M1": [1, 2],  # combo_type = 0
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
+        "LST1_M2": [1, 3],  # combo_type = 2
+        "M1_M2": [2, 3],  # combo_type = 3
+    }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
 
     time_start = Time(event_table["timestamp"][0], format="unix", scale="utc")
@@ -234,12 +237,12 @@ def create_gti_hdu(event_table):
 
     Parameters
     ----------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
 
     Returns
     -------
-    gti_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         GTI HDU
     """
 
@@ -279,12 +282,12 @@ def create_pointing_hdu(event_table):
 
     Parameters
     ----------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
 
     Returns
     -------
-    pointing_hdu: astropy.io.fits.hdu.table.BinTableHDU
+    astropy.io.fits.hdu.table.BinTableHDU
         Pointing HDU
     """
 

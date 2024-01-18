@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+Miscellanea functions
+"""
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -20,6 +20,9 @@ __all__ = [
     "calculate_mean_direction",
     "calculate_off_coordinates",
     "transform_altaz_to_radec",
+    "LON_ORM",
+    "LAT_ORM",
+    "HEIGHT_ORM",
 ]
 
 # The geographic coordinate of ORM
@@ -28,14 +31,21 @@ LAT_ORM = 28.76177 * u.deg
 HEIGHT_ORM = 2199.835 * u.m
 
 
-@u.quantity_input
+@u.quantity_input(
+    pointing_alt=u.rad,
+    pointing_az=u.rad,
+    shower_alt=u.deg,
+    shower_az=u.deg,
+    cog_x=u.m,
+    cog_y=u.m,
+)
 def calculate_disp(
-    pointing_alt: u.rad,
-    pointing_az: u.rad,
-    shower_alt: u.deg,
-    shower_az: u.deg,
-    cog_x: u.m,
-    cog_y: u.m,
+    pointing_alt,
+    pointing_az,
+    shower_alt,
+    shower_az,
+    cog_x,
+    cog_y,
     camera_frame,
 ):
     """
@@ -45,24 +55,24 @@ def calculate_disp(
 
     Parameters
     ----------
-    pointing_alt: astropy.units.quantity.Quantity
+    pointing_alt : astropy.units.quantity.Quantity
         Altitude of the telescope pointing direction
-    pointing_az: astropy.units.quantity.Quantity
+    pointing_az : astropy.units.quantity.Quantity
         Azimuth of the telescope pointing direction
-    shower_alt: astropy.units.quantity.Quantity
+    shower_alt : astropy.units.quantity.Quantity
         Altitude of the event arrival direction
-    shower_az: astropy.units.quantity.Quantity
+    shower_az : astropy.units.quantity.Quantity
         Azimuth of the event arrival direction
-    cog_x: astropy.units.quantity.Quantity
+    cog_x : astropy.units.quantity.Quantity
         Image CoG along the X coordinate of the camera geometry
-    cog_y: astropy.units.quantity.Quantity
+    cog_y : astropy.units.quantity.Quantity
         Image CoG along the Y coordinate of the camera geometry
-    camera_frame: ctapipe.coordinates.camera_frame.CameraFrame
+    camera_frame : ctapipe.coordinates.camera_frame.CameraFrame
         Camera frame of the telescope
 
     Returns
     -------
-    disp: astropy.units.quantity.Quantity
+    astropy.units.quantity.Quantity
         DISP parameter
     """
 
@@ -81,15 +91,23 @@ def calculate_disp(
     return disp
 
 
-@u.quantity_input
+@u.quantity_input(
+    shower_alt=u.deg,
+    shower_az=u.deg,
+    core_x=u.m,
+    core_y=u.m,
+    tel_pos_x=u.m,
+    tel_pos_y=u.m,
+    tel_pos_z=u.m,
+)
 def calculate_impact(
-    shower_alt: u.deg,
-    shower_az: u.deg,
-    core_x: u.m,
-    core_y: u.m,
-    tel_pos_x: u.m,
-    tel_pos_y: u.m,
-    tel_pos_z: u.m,
+    shower_alt,
+    shower_az,
+    core_x,
+    core_y,
+    tel_pos_x,
+    tel_pos_y,
+    tel_pos_z,
 ):
     """
     Calculates the impact parameter, i.e., the closest distance between
@@ -103,24 +121,24 @@ def calculate_impact(
 
     Parameters
     ----------
-    shower_alt: astropy.units.quantity.Quantity
+    shower_alt : astropy.units.quantity.Quantity
         Altitude of the event arrival direction
-    shower_az: astropy.units.quantity.Quantity
+    shower_az : astropy.units.quantity.Quantity
         Azimuth of the event arrival direction
-    core_x: astropy.units.quantity.Quantity
+    core_x : astropy.units.quantity.Quantity
         Core position along the geographic north
-    core_y: astropy.units.quantity.Quantity
+    core_y : astropy.units.quantity.Quantity
         Core position along the geographic west
-    tel_pos_x: astropy.units.quantity.Quantity
+    tel_pos_x : astropy.units.quantity.Quantity
         Telescope position along the geographic north
-    tel_pos_y: astropy.units.quantity.Quantity
+    tel_pos_y : astropy.units.quantity.Quantity
         Telescope position along the geographic west
-    tel_pos_z: astropy.units.quantity.Quantity
+    tel_pos_z : astropy.units.quantity.Quantity
         Telescope height from the reference altitude
 
     Returns
     -------
-    impact: astropy.units.quantity.Quantity
+    astropy.units.quantity.Quantity
         Impact parameter
     """
 
@@ -151,21 +169,21 @@ def calculate_mean_direction(lon, lat, unit, weights=None):
 
     Parameters
     ----------
-    lon: pandas.core.series.Series
+    lon : pandas.core.series.Series
         Longitude in a spherical coordinate
-    lat: pandas.core.series.Series
+    lat : pandas.core.series.Series
         Latitude in a spherical coordinate
-    unit: str
+    unit : str
         Unit of the input (and output) angles -
         "deg", "degree", "rad" or "radian" are allowed
-    weights: pandas.core.series.Series
+    weights : pandas.core.series.Series
         Weights for the input directions
 
     Returns
     -------
-    lon_mean: pandas.core.series.Series
+    lon_mean : pandas.core.series.Series
         Longitude of the mean direction
-    lat_mean: pandas.core.series.Series
+    lat_mean : pandas.core.series.Series
         Latitude of the mean direction
     """
 
@@ -213,12 +231,14 @@ def calculate_mean_direction(lon, lat, unit, weights=None):
     return lon_mean, lat_mean
 
 
-@u.quantity_input
+@u.quantity_input(
+    pointing_ra=u.deg, pointing_dec=u.deg, on_coord_ra=u.deg, on_coord_dec=u.deg
+)
 def calculate_off_coordinates(
-    pointing_ra: u.deg,
-    pointing_dec: u.deg,
-    on_coord_ra: u.deg,
-    on_coord_dec: u.deg,
+    pointing_ra,
+    pointing_dec,
+    on_coord_ra,
+    on_coord_dec,
     n_regions,
 ):
     """
@@ -230,20 +250,20 @@ def calculate_off_coordinates(
 
     Parameters
     ----------
-    pointing_ra: astropy.units.quantity.Quantity
+    pointing_ra : astropy.units.quantity.Quantity
         Right ascension of the telescope pointing direction
-    pointing_dec: astropy.units.quantity.Quantity
+    pointing_dec : astropy.units.quantity.Quantity
         Declination of the telescope pointing direction
-    on_coord_ra: astropy.units.quantity.Quantity
+    on_coord_ra : astropy.units.quantity.Quantity
         Right ascension of the center of the ON region
-    on_coord_dec: astropy.units.quantity.Quantity
+    on_coord_dec : astropy.units.quantity.Quantity
         Declination of the center of the ON region
-    n_regions: int
+    n_regions : int
         Number of OFF regions to be created
 
     Returns
     -------
-    off_coords: dict
+    dict
         Coordinates of the centers of the OFF regions
     """
 
@@ -289,26 +309,26 @@ def calculate_off_coordinates(
     return off_coords
 
 
-@u.quantity_input
-def transform_altaz_to_radec(alt: u.deg, az: u.deg, obs_time):
+@u.quantity_input(alt=u.deg, az=u.deg)
+def transform_altaz_to_radec(alt, az, obs_time):
     """
     Transforms the Alt/Az direction measured from ORM to the RA/Dec
     coordinate.
 
     Parameters
     ----------
-    alt: astropy.units.quantity.Quantity
+    alt : astropy.units.quantity.Quantity
         Altitude measured from ORM
-    az: astropy.units.quantity.Quantity
+    az : astropy.units.quantity.Quantity
         Azimuth measured from ORM
-    obs_time: astropy.time.core.Time
+    obs_time : astropy.time.core.Time
         Time when the direction was measured
 
     Returns
     -------
-    ra: astropy.coordinates.angles.Longitude
+    ra : astropy.coordinates.Longitude
         Right ascension of the input direction
-    dec: astropy.coordinates.angles.Latitude
+    dec : astropy.coordinates.Latitude
         Declination of the input direction
     """
 

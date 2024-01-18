@@ -1,5 +1,7 @@
+"""Script for the muon analysis."""
+
 import numpy as np
-from lstchain.image.muon import tag_pix_thr, fill_muon_event, analyze_muon_event
+from lstchain.image.muon import analyze_muon_event, fill_muon_event, tag_pix_thr
 
 __all__ = [
     "perform_muon_analysis",
@@ -22,32 +24,36 @@ def perform_muon_analysis(
     plots_path="./",
 ):
     """
+    Performs the muon analysis.
 
     Parameters
     ----------
-    muon_parameters: dict
+    muon_parameters : dict
         Container for the parameters of all muon rings
-    event: ctapipe event container
-    telescope_id: int
+    event : ctapipe.containers.ArrayEventContainer
+        Event container.
+    telescope_id : int
         Id of the telescope
-    telescope_name:
+    telescope_name : str
         Name of the telescope
-    image:  `np.ndarray`
+    image : np.ndarray
         Number of photoelectrons in each pixel
-    subarray: `ctapipe.instrument.subarray.SubarrayDescription`
-    r1_dl1_calibrator_for_muon_rings: `ctapipe.calib.camera.CameraCalibrator`
-    good_ring_config: dict
+    subarray : ctapipe.instrument.subarray.SubarrayDescription
+        Subarray
+    r1_dl1_calibrator_for_muon_rings : ctapipe.calib.camera.CameraCalibrator
+        Camera calibrator.
+    good_ring_config : dict
         Set of parameters used to perform the muon ring analysis and select good rings
-    event_time: float
-    min_pe_for_muon_t_calc: float
+    event_time : float
+        Event time.
+    min_pe_for_muon_t_calc : float
         Minimum pixel brightness used to search for the waveform maximum time
-    data_type: string
+    data_type : str
         'obs' or 'mc'
-    plot_rings: `bool`
+    plot_rings : `bool`
         If True, muon ring plots are produced
-    plots_path: string
+    plots_path : str
         Destination of plotted muon rings
-
     """
     if data_type == "obs":
         try:

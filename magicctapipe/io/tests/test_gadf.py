@@ -1,15 +1,17 @@
+from math import isclose
+
+import astropy.units as u
+import numpy as np
+import pytest
+from astropy.table import QTable
+
+from magicctapipe import __version__
 from magicctapipe.io.gadf import (
     create_event_hdu,
     create_gh_cuts_hdu,
     create_gti_hdu,
     create_pointing_hdu,
 )
-from magicctapipe import __version__
-import numpy as np
-import pytest
-import astropy.units as u
-from astropy.table import QTable
-from math import isclose
 
 
 @pytest.fixture(scope="session")
@@ -60,10 +62,10 @@ def event():
 def test_create_gh_cuts_hdu(gammaness_cut, energy_bins, fov_bins, header):
     g_cuts_fits = create_gh_cuts_hdu(gammaness_cut, energy_bins, fov_bins, **header)
     g_cuts = g_cuts_fits.data
-    assert np.array_equal(g_cuts["ENERG_LO"][0], np.array([0.1, 1, 10]))
-    assert np.array_equal(g_cuts["ENERG_HI"][0], np.array([1, 10, 100]))
+    assert np.allclose(g_cuts["ENERG_LO"][0], np.array([0.1, 1.0, 10.0]))
+    assert np.allclose(g_cuts["ENERG_HI"][0], np.array([1.0, 10.0, 100.0]))
     assert g_cuts["THETA_LO"] == 0
-    assert np.array_equal(g_cuts["GH_CUTS"][0], np.array([0.7, 0.8, 0.9]))
+    assert np.allclose(g_cuts["GH_CUTS"][0], np.array([0.7, 0.8, 0.9]))
     g_head = g_cuts_fits.header
     assert g_head["TELESCOP"] == "CTA-N"
     assert g_head["INSTRUME"] == "LST-1_MAGIC"
