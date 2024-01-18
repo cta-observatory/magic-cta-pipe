@@ -418,14 +418,6 @@ def config_calib():
     return config
 
 
-@pytest.fixture(scope="session")
-def config_check():
-    config_path = resource_file("test_check_list.yaml")
-    with open(config_path, "rb") as f:
-        config = yaml.safe_load(f)
-    return config
-
-
 """
 Data processing
 """
