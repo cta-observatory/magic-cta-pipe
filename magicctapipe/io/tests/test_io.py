@@ -556,8 +556,7 @@ class TestDL1LST:
             assert "az_tel" not in events.columns
             events = events.reset_index()
             s = events.duplicated(subset=["obs_id_lst", "event_id_lst"])
-            s1 = ~s
-            assert s1.all()
+            assert np.all (s==False)
 
 
 @pytest.mark.dependency()
@@ -591,8 +590,7 @@ class TestDL1MAGIC:
         assert "event_id" not in events.columns
         events = events.reset_index()
         s = events.duplicated(subset=["obs_id_magic", "event_id_magic", "tel_id"])
-        s1 = ~s
-        assert s1.all()
+        assert np.all (s==False)
 
     def test_load_magic_dl1_data_files_exc(self, temp_DL1_M_exc, config_gen):
         """
