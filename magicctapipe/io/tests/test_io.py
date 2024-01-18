@@ -73,23 +73,6 @@ class TestGeneral:
             check_input_list(
                 {
                     "mc_tel_ids": {
-                        "LST-2": 1,
-                        "LST-2": 3,
-                        "LST-4": 0,
-                        "LST-3": 0,
-                        "MAGIC-II": 2,
-                        "MAGIC-I": 6,
-                    }
-                }
-            )
-
-        with pytest.raises(
-            Exception,
-            match="Number of telescopes found in the configuration file is 5. It must be 6, i.e.: LST-1, LST-2, LST-3, LST-4, MAGIC-I, and MAGIC-II.",
-        ):
-            check_input_list(
-                {
-                    "mc_tel_ids": {
                         "LST-1": 1,
                         "LST-2": 2,
                         "LST-3": 3,
