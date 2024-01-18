@@ -78,30 +78,20 @@ class TestStereoMC:
             event_data.sort_index(inplace=True)
             data = get_stereo_events(event_data, config_gen, "intensity>50")
             assert np.all(data["intensity"] > 50)
+            assert len(data) > 0
 
-    def test_load_train_data_files_p(self, p_stereo_monly):
+    def test_load_train_data_files(self, p_stereo_monly, gamma_stereo_monly):
         """
         Check dictionary
         """
 
-        events = load_train_data_files(str(p_stereo_monly[0]))
-        assert list(events.keys()) == ["M1_M2"]
-        data = events["M1_M2"]
-        assert np.all(data["combo_type"] == 3)
-        assert "off_axis" in data.columns
-        assert "true_event_class" not in data.columns
-
-    def test_load_train_data_files_g(self, gamma_stereo_monly):
-        """
-        Check dictionary
-        """
-
-        events = load_train_data_files(str(gamma_stereo_monly[0]))
-        assert list(events.keys()) == ["M1_M2"]
-        data = events["M1_M2"]
-        assert np.all(data["combo_type"] == 3)
-        assert "off_axis" in data.columns
-        assert "true_event_class" not in data.columns
+        for stereo in [p_stereo_monly, gamma_stereo_monly]:
+            events = load_train_data_files(str(stereo[0]))
+            assert list(events.keys()) == ["M1_M2"]
+            data = events["M1_M2"]
+            assert np.all(data["combo_type"] == 3)
+            assert "off_axis" in data.columns
+            assert "true_event_class" not in data.columns
 
     def test_load_train_data_files_off(self, gamma_stereo_monly):
         """
@@ -113,28 +103,21 @@ class TestStereoMC:
         data = events["M1_M2"]
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
+        assert len(data) > 0
 
-    def test_load_train_data_files_tel_p(self, p_stereo_monly, config_gen):
+    def test_load_train_data_files_tel(
+        self, p_stereo_monly, gamma_stereo_monly, config_gen
+    ):
         """
         Check dictionary
         """
 
-        events = load_train_data_files_tel(str(p_stereo_monly[0]), config_gen)
-        assert list(events.keys()) == [2, 3]
-        data = events[2]
-        assert "off_axis" in data.columns
-        assert "true_event_class" not in data.columns
-
-    def test_load_train_data_files_tel_g(self, gamma_stereo_monly, config_gen):
-        """
-        Check dictionary
-        """
-
-        events = load_train_data_files_tel(str(gamma_stereo_monly[0]), config_gen)
-        assert list(events.keys()) == [2, 3]
-        data = events[3]
-        assert "off_axis" in data.columns
-        assert "true_event_class" not in data.columns
+        for stereo in [p_stereo_monly, gamma_stereo_monly]:
+            events = load_train_data_files_tel(str(stereo[0]), config_gen)
+            assert list(events.keys()) == [2, 3]
+            data = events[2]
+            assert "off_axis" in data.columns
+            assert "true_event_class" not in data.columns
 
     def test_load_train_data_files_tel_off(self, gamma_stereo_monly, config_gen):
         """
@@ -149,8 +132,9 @@ class TestStereoMC:
         data = events[2]
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
+        assert len(data) > 0
 
-    
+
 @pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
 def test_exist_rf(RF_monly):
     """
@@ -202,6 +186,7 @@ class TestDL2MC:
                 str(file), "gammaness>0.1", "magic_only", "simple"
             )
             assert np.all(data["gammaness"] > 0.1)
+            assert len(data) > 0
 
     def test_load_mc_dl2_data_file_opt(self, p_dl2_monly, gamma_dl2_monly):
         """
@@ -217,6 +202,7 @@ class TestDL2MC:
             )
 
             assert np.all(data_m["combo_type"] == 3)
+            assert len(data_m) > 0
 
     def test_load_mc_dl2_data_file_exc(self, p_dl2_monly, gamma_dl2_monly):
         """
@@ -339,7 +325,7 @@ class TestIRF:
         assert header["DL2_WEIG"] == "simple"
         assert header["EVT_TYPE"] == "magic_only"
 
-    
+
 @pytest.mark.dependency()
 def test_exist_dl1_magic(M2_l1_monly, M1_l1_monly):
     """
@@ -374,7 +360,7 @@ class TestDL1MAGIC:
         s1 = ~s
         assert s1.all()
 
-    
+
 @pytest.mark.dependency(depends=["test_exist_merged_magic"])
 def test_exist_stereo(stereo_monly):
     """
@@ -410,6 +396,7 @@ class TestStereoData:
             event_data.sort_index(inplace=True)
             data = get_stereo_events(event_data, config_gen, "intensity>50")
             assert np.all(data["intensity"] > 50)
+            assert len(data) > 0
 
 
 @pytest.mark.dependency(depends=["test_exist_stereo", "test_exist_rf"])
@@ -447,6 +434,7 @@ class TestDL2Data:
                 str(file), "gammaness<0.9", "magic_only", "simple"
             )
             assert np.all(data["gammaness"] < 0.9)
+            assert len(data) > 0
 
     def test_load_dl2_data_file_opt(self, real_dl2_monly):
         """
@@ -459,6 +447,7 @@ class TestDL2Data:
             )
 
             assert np.all(data_m["combo_type"] == 3)
+            assert len(data_m) > 0
 
     def test_load_dl2_data_file_exc(self, real_dl2_monly):
         """

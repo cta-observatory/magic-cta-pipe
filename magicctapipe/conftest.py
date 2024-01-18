@@ -1031,7 +1031,7 @@ def real_dl3_monly(real_dl2_monly, IRF_monly, temp_DL3_monly, config_monly):
 
 
 @pytest.fixture(scope="session")
-def real_index(real_dl3, temp_DL3):
+def real_index(real_dl3):
     """
     Produce indexes
     """
@@ -1042,11 +1042,11 @@ def real_index(real_dl3, temp_DL3):
             f"-i{str(real_dl3)}",
         ]
     )
-    return temp_DL3
+    return real_dl3
 
 
 @pytest.fixture(scope="session")
-def real_index_monly(real_dl3_monly, temp_DL3_monly):
+def real_index_monly(real_dl3_monly):
     """
     Produce indexes
     """
@@ -1057,4 +1057,4 @@ def real_index_monly(real_dl3_monly, temp_DL3_monly):
             f"-i{str(real_dl3_monly)}",
         ]
     )
-    return temp_DL3_monly
+    return real_dl3_monly
