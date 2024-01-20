@@ -52,8 +52,8 @@ Developers should follow the development install instructions found in the
     :target: https://pypi.org/project/magic-cta-pipe
     :alt: magic-cta-pipe PyPI Status
 
-.. |Documentation Status| image:: https://img.shields.io/readthedocs/magic-cta-pipe/latest.svg?logo=read%20the%20docs&logoColor=white&label=Docs&version=stable
-    :target: https://magic-cta-pipe.readthedocs.io/en/latest/?badge=stable
+.. |Documentation Status| image:: https://readthedocs.org/projects/magic-cta-pipe/badge/?version=latest&style=flat
+    :target: https://magic-cta-pipe.readthedocs.io/en/latest/
     :alt: magic-cta-pipe documentation Status
 
 .. |Pre-Commit| image:: https://img.shields.io/badge/pre--commit-enabled-brightgreen?logo=pre-commit&logoColor=white

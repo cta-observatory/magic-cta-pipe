@@ -23,6 +23,24 @@ exclude = '''
 )/
 '''
 
+[tool.pytest.ini_options]
+minversion = "7"
+testpaths = ["magicctapipe"]
+log_cli_level = "INFO"
+xfail_strict = true
+
+# print summar of failed tests, force errors if settings are misspelled
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+
+filterwarnings = [
+    "error::astropy.utils.exceptions.AstropyDeprecationWarning",
+]
+norecursedirs = [
+    ".git",
+    "_build",
+    "auto_examples",
+]
+
 [tool.numpydoc_validation]
 checks = [
     "all",
