@@ -10,10 +10,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # make sure we have version info
-      - run: git fetch --tags
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
