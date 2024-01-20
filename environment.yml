@@ -26,6 +26,7 @@ dependencies:
   - pandas>=2
   - pre-commit
   - toml
+  - tomli
   - protobuf=3.20
   - pydata-sphinx-theme
   - pyparsing
@@ -36,6 +37,7 @@ dependencies:
   - pytest-runner
   - pyyaml
   - scikit-learn=1.2
+  - setuptools
   - sphinx
   - sphinx-automodapi
   - sphinx-design

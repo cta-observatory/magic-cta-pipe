@@ -59,7 +59,7 @@ jobs:
       - name: Install doc dependencies
         run: |
           pip install -U pip
-          pip install -e .[docs]
+          pip install -e .[docs,dev]
           git describe --tags
           python -c 'import magicctapipe; print(magicctapipe.__version__)'
 
