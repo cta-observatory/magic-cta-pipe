@@ -1,9 +1,11 @@
 include README.rst
 include setup.cfg
 
+recursive-include docs *
+
+prune build
+prune docs/_build
+prune docs/api
 prune magicctapipe/_dev_version
-prune .github
-exclude .gitignore
-exclude .codacy.yml
 
 global-exclude *.pyc *.o
