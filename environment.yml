@@ -32,6 +32,7 @@ dependencies:
   - psutil
   - pytest
   - pytest-cov
+  - pytest-dependency
   - pytest-runner
   - pyyaml
   - scikit-learn=1.2

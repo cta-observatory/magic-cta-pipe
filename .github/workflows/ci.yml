@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: 3.9
       - uses: pre-commit/action@v3.0.0
@@ -35,7 +35,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.9"
 
@@ -52,9 +52,9 @@ jobs:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: 3.9
 
       - name: Install doc dependencies
         run: |
@@ -116,7 +116,7 @@ jobs:
           MAGIC_CTA_DATA_USER: ${{ secrets.magic_cta_data_user }}
           MAGIC_CTA_DATA_PASSWORD: ${{ secrets.magic_cta_data_password }}
         run: |
-          coverage run -m pytest -v
+          coverage run -m pytest -vra
           coverage xml
 
       - uses: codecov/codecov-action@v3

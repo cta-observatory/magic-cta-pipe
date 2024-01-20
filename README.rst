@@ -11,12 +11,16 @@ Repository for the analysis of MAGIC and MAGIC+LST1 data, based on `ctapipe <htt
 * Code: https://github.com/cta-observatory/magic-cta-pipe
 * Docs (preliminary): https://magic-cta-pipe.readthedocs.io/
 
-v0.3.1 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
+v0.4.0 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
 See `here <https://magic-cta-pipe.readthedocs.io/en/latest/user-guide/magic-lst-scripts.html>`_ for more details on how to run the analysis.
 
-**NOTE**
+v0.4.0 is based on *ctapipe* v0.19.x and *cta-lstchain* v0.10.x.
 
-v0.3.1 of *magic-cta-pipe* will be the last one before cleanup of old files. Also the last one supporting ctapipe v0.12 and most probably having backward incompatible changes!
+**NOTE ON OLD RELEASES**
+
+v0.3.1 of *magic-cta-pipe* was the last release before the cleanup of old files. Also, it was the last one supporting ctapipe v0.12.
+In order to exploit fully the new functionalities provided by *ctapipe*, use always the latest stable release of *magic-cta-pipe* (currently v0.4.0).
+v0.4.0 contains backward incompatible changes with respect to v0.3.1. Therefore, you cannot mix analyses performed with the two releases.
 
 Installation for users
 ----------------------

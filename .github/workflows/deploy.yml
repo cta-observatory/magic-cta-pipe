@@ -10,23 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      # make sure we have version info
-      - run: git fetch --tags
-
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: "3.8"
+          python-version: "3.9"
 
       - name: Install dependencies
         run: |
           python --version
-          pip install -U pip setuptools wheel setuptools_scm[toml]
-          python setup.py sdist bdist_wheel
+          pip install -U build
+          python -m build
 
       - name: Publish package
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}

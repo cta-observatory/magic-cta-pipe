@@ -418,14 +418,6 @@ def config_calib():
     return config
 
 
-@pytest.fixture(scope="session")
-def config_check():
-    config_path = resource_file("test_check_list.yaml")
-    with open(config_path, "rb") as f:
-        config = yaml.safe_load(f)
-    return config
-
-
 """
 Data processing
 """
@@ -540,6 +532,7 @@ def p_l1_monly(temp_DL1_p_monly, dl0_p, config_monly):
     """
     Produce a DL1 file
     """
+
     for file in dl0_p:
         subprocess.run(
             [
@@ -1041,7 +1034,7 @@ def real_index(real_dl3):
             f"-i{str(real_dl3)}",
         ]
     )
-    return temp_DL3
+    return real_dl3
 
 
 @pytest.fixture(scope="session")
@@ -1056,4 +1049,4 @@ def real_index_monly(real_dl3_monly):
             f"-i{str(real_dl3_monly)}",
         ]
     )
-    return temp_DL3_monly
+    return real_dl3_monly
