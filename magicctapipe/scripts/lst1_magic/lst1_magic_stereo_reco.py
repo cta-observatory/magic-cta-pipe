@@ -47,6 +47,7 @@ from ctapipe.containers import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
+from numpy.linalg import LinAlgError
 
 from magicctapipe.io import (
     check_input_list,
@@ -190,7 +191,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     Two_arrays_are_used = Number_of_LSTs_in_use * Number_of_MAGICs_in_use > 0
 
     if (not is_simulation) and (Two_arrays_are_used):
-
         logger.info(
             "\nChecking the angular distances of "
             "the LST and MAGIC pointing directions..."
@@ -240,7 +240,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     multi_indices = event_data.groupby(["obs_id", "event_id"]).size().index
 
     for i_evt, (obs_id, event_id) in enumerate(multi_indices):
-
         if i_evt % 100 == 0:
             logger.info(f"{i_evt} events")
 
@@ -260,7 +259,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         event.trigger.tels_with_trigger = tel_ids
 
         for tel_id in tel_ids:
-
             df_tel = df_evt.loc[tel_id]
 
             # Assign the telescope information
@@ -310,8 +308,16 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 morphology=morph_par,
             )
             # event.dl1.tel[tel_id].is_valid=True
+
         # Reconstruct the stereo parameters
-        hillas_reconstructor(event)
+        try:
+            hillas_reconstructor(event)
+        except LinAlgError:
+            logger.info(
+                f"--> event {i_evt} (event ID {event_id}) failed to reconstruct valid "
+                "stereo parameters, caught LinAlgError exception. Skipping..."
+            )
+            continue
 
         stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
 
