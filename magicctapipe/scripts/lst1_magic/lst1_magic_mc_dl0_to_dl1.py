@@ -38,7 +38,7 @@ from ctapipe.image import (
     number_of_islands,
     timing_parameters,
 )
-from ctapipe.instrument import SubarrayDescription
+from ctapipe.instrument import FocalLengthKind, SubarrayDescription
 from ctapipe.io import EventSource, HDF5TableWriter
 from traitlets.config import Config
 
@@ -64,12 +64,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input simtel MC DL0 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL1 data file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
+    focal_length : str
+        Focal length choice, effective or equivalent
     """
 
     assigned_tel_ids = config[
@@ -83,6 +85,16 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
+
+    if focal_length == "effective":
+        focal_length = FocalLengthKind.EFFECTIVE
+    elif focal_length == "equivalent":
+        focal_length = FocalLengthKind.EQUIVALENT
+    else:
+        raise ValueError(
+            f"Accepted choices for focal_length are 'effective' or 'equivalent'.\n"
+            f"Chosen value: {focal_length}."
+        )
 
     event_source = EventSource(
         input_file,
@@ -169,7 +181,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     # Prepare for saving data to an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    sim_config = event_source.simulation_config
+    sim_config = event_source.simulation_config[obs_id]
     corsika_inputcard = event_source.file_.corsika_inputcards[0].decode()
 
     regex = r".*\nPRMPAR\s+(\d+)\s+.*"
@@ -225,7 +237,6 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
             )  # If both have trigger, then magic_stereo = True
 
             for tel_id in tels_with_trigger:
-
                 if (
                     tel_id in LSTs_IDs
                 ):  # If the ID is in the LST list, we call calibrate on the LST()
@@ -333,6 +344,22 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     lat2=event.simulation.shower.alt,
                 )
 
+                tels_with_trigger = np.intersect1d(
+                    tels_with_trigger,
+                    np.concatenate(
+                        (LSTs_IDs[LSTs_IDs != 0], MAGICs_IDs[MAGICs_IDs != 0])
+                    ),
+                    assume_unique=True,
+                ).tolist()
+
+                # encode tels_with_trigger as an int value
+                # that can be decoded later as a binary
+                # tels_with_trigger = sum_{tel_id} 2**tel_id
+                # where tel_id is only for those triggered
+                tels_with_trigger_binary_int = np.array(
+                    [2 ** (tel_id) for tel_id in tels_with_trigger]
+                ).sum()
+
                 # Set the event information
                 event_info = SimEventInfoContainer(
                     obs_id=event.index.obs_id,
@@ -350,6 +377,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     n_pixels=n_pixels,
                     n_islands=n_islands,
                     magic_stereo=magic_stereo,
+                    tels_with_trigger=tels_with_trigger_binary_int,
                 )
 
                 # Reset the telescope IDs
@@ -395,8 +423,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
 
 def main():
-
-    """Here we collect the input parameters from the command line, load the configuration file and run mc_dl0_to_dl1()"""
+    """Main function."""
 
     start_time = time.time()
 
@@ -435,9 +462,9 @@ def main():
         "-f",
         dest="focal_length_choice",
         type=str,
-        choices=["nominal", "effective"],
+        choices=["equivalent", "effective"],
         default="effective",
-        help='Choice of focal length, either "effective" or "nominal". The default (and standard) value is "effective"',
+        help='Choice of focal length, either "effective" or "equivalent". The default (and standard) value is "effective"',
     )
 
     args = parser.parse_args()  # Here we select all 3 parameters collected above

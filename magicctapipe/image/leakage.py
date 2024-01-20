@@ -1,3 +1,6 @@
+"""
+Leakage utilities (MARS-like)
+"""
 import numpy as np
 from ctapipe.containers import LeakageContainer
 
@@ -16,12 +19,12 @@ def get_border_masks_mars(geom):
     Parameters
     ----------
     geom : ctapipe.instrument.CameraGeometry
-        Camera geometry information
+        Camera geometry information.
 
     Returns
     -------
     tuple
-        Tuple with the two masks
+        Tuple with the two masks.
     """
 
     if geom.camera_name in border_cache:
@@ -63,15 +66,16 @@ def get_leakage(geom, event_image, clean_mask):
     Parameters
     ----------
     geom : ctapipe.instrument.CameraGeometry
-        Camera geometry information
+        Camera geometry information.
     event_image : np.ndarray
-        Event image
+        Event image.
     clean_mask : np.ndarray
-        Cleaning mask
+        Cleaning mask.
 
     Returns
     -------
     ctapipe.containers.LeakageContainer
+        Container with leakage value.
     """
 
     outermostring_mask, outerring_mask = get_border_masks_mars(geom)

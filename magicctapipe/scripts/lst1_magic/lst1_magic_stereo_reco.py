@@ -41,6 +41,9 @@ from ctapipe.containers import (
     ArrayEventContainer,
     CameraHillasParametersContainer,
     ImageParametersContainer,
+    LeakageContainer,
+    MorphologyContainer,
+    TimingParametersContainer,
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.reco import HillasReconstructor
@@ -67,13 +70,14 @@ def calculate_pointing_separation(event_data, config):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of LST and MAGIC events
-    config: dict
+    config : dict
         Configuration for the LST + MAGIC analysis
+
     Returns
     -------
-    theta: pandas.core.series.Series
+    pandas.core.series.Series
         Angular distance of the LST array and MAGIC pointing directions
         in units of degree
     """
@@ -121,13 +125,13 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input DL1 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL1-stereo data file
-    config: dict
+    config : dict
         Configuration file for the stereo LST + MAGIC analysis, i.e. config_stereo.yaml
-    magic_only_analysis: bool
+    magic_only_analysis : bool, optional
         If `True`, it reconstructs the stereo parameters using only
         MAGIC events
     """
@@ -141,7 +145,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     logger.info(f"\nInput file: {input_file}")
 
     event_data = pd.read_hdf(input_file, key="events/parameters")
-
     # It sometimes happens that there are MAGIC events whose event and
     # telescope IDs are duplicated, so here we exclude those events
     event_data.drop_duplicates(
@@ -252,7 +255,9 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         df_evt = event_data.loc[(obs_id, event_id, slice(None))]
 
         # Loop over every telescope
-        tel_ids = df_evt.index.get_level_values("tel_id")
+        tel_ids = df_evt.index.get_level_values("tel_id").values
+
+        event.trigger.tels_with_trigger = tel_ids
 
         for tel_id in tel_ids:
 
@@ -268,17 +273,43 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 y=u.Quantity(df_tel["y"], unit="m"),
                 r=u.Quantity(df_tel["r"], unit="m"),
                 phi=Angle(df_tel["phi"], unit="deg"),
-                length=u.Quantity(df_tel["length"], unit="m"),
-                width=u.Quantity(df_tel["width"], unit="m"),
                 psi=Angle(df_tel["psi"], unit="deg"),
+                length=u.Quantity(df_tel["length"], unit="m"),
+                length_uncertainty=u.Quantity(df_tel["length_uncertainty"], unit="m"),
+                width=u.Quantity(df_tel["width"], unit="m"),
+                width_uncertainty=u.Quantity(df_tel["width_uncertainty"], unit="m"),
                 skewness=float(df_tel["skewness"]),
                 kurtosis=float(df_tel["kurtosis"]),
             )
-
-            event.dl1.tel[tel_id].parameters = ImageParametersContainer(
-                hillas=hillas_params
+            time_par = TimingParametersContainer(
+                slope=u.Quantity(df_tel["slope"], unit="1/deg"),
+                intercept=float(df_tel["intercept"]),
+            )
+            leak_par = LeakageContainer(
+                intensity_width_1=float(df_tel["intensity_width_1"]),
+                intensity_width_2=float(df_tel["intensity_width_2"]),
+                pixels_width_1=float(df_tel["pixels_width_1"]),
+                pixels_width_2=float(df_tel["pixels_width_2"]),
             )
 
+            morph_par = MorphologyContainer(
+                n_islands=int(df_tel["n_islands"]),
+                # n_large_islands=int(df_morph_tel["n_large_islands"]),
+                # n_medium_islands=int(df_morph_tel["n_medium_islands"]),
+                # n_small_islands=int(df_morph_tel["n_small_islands"]),
+                n_large_islands=np.nan,
+                n_medium_islands=np.nan,
+                n_small_islands=np.nan,
+                n_pixels=int(df_tel["n_pixels"]),
+            )
+
+            event.dl1.tel[tel_id].parameters = ImageParametersContainer(
+                hillas=hillas_params,
+                timing=time_par,
+                leakage=leak_par,
+                morphology=morph_par,
+            )
+            # event.dl1.tel[tel_id].is_valid=True
         # Reconstruct the stereo parameters
         hillas_reconstructor(event)
 
@@ -359,7 +390,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
 
 def main():
-
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

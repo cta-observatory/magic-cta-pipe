@@ -11,7 +11,7 @@ from ctapipe.utils.download import download_file_cached
 
 from magicctapipe.io import resource_file
 
-maxjoint = 13000
+maxjoint = 4000
 maxmonly = 500
 
 DL0_gamma_data = [
@@ -35,16 +35,21 @@ DL0_M1_data = [
     # "20201216_M1_05093711.002_Y_CrabNebula-W0.40+035.root",
     # "20201216_M1_05093711.003_Y_CrabNebula-W0.40+035.root",
     # "20201216_M1_05093711.004_Y_CrabNebula-W0.40+035.root",
-    "20201216_M1_05093711.014_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M1_05093711.014_Y_CrabNebula-W0.40+035.root",
+    "20231109_M1_05110669.001_Y_CrabNebula-W0.40+215.root"
 ]
 DL0_M2_data = [
     # "20201216_M2_05093711.001_Y_CrabNebula-W0.40+035.root",
     # "20201216_M2_05093711.002_Y_CrabNebula-W0.40+035.root",
     # "20201216_M2_05093711.003_Y_CrabNebula-W0.40+035.root",
     # "20201216_M2_05093711.004_Y_CrabNebula-W0.40+035.root",
-    "20201216_M2_05093711.014_Y_CrabNebula-W0.40+035.root",
+    # "20201216_M2_05093711.014_Y_CrabNebula-W0.40+035.root",
+    "20231109_M2_05110669.001_Y_CrabNebula-W0.40+215.root"
 ]
-DL1_LST_data = ["dl1_LST-1.Run03265.0094.h5"]
+DL1_LST_data = [
+    # "dl1_LST-1.Run15337.0001.h5",
+    "dl1_LST-1.Run15337.0002.h5"
+]
 
 """
 Temporary paths
@@ -413,14 +418,6 @@ def config_calib():
     return config
 
 
-@pytest.fixture(scope="session")
-def config_check():
-    config_path = resource_file("test_check_list.yaml")
-    with open(config_path, "rb") as f:
-        config = yaml.safe_load(f)
-    return config
-
-
 """
 Data processing
 """
@@ -535,6 +532,7 @@ def p_l1_monly(temp_DL1_p_monly, dl0_p, config_monly):
     """
     Produce a DL1 file
     """
+
     for file in dl0_p:
         subprocess.run(
             [
@@ -1036,7 +1034,7 @@ def real_index(real_dl3):
             f"-i{str(real_dl3)}",
         ]
     )
-    return temp_DL3
+    return real_dl3
 
 
 @pytest.fixture(scope="session")
@@ -1051,4 +1049,4 @@ def real_index_monly(real_dl3_monly):
             f"-i{str(real_dl3_monly)}",
         ]
     )
-    return temp_DL3_monly
+    return real_dl3_monly

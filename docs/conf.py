@@ -32,12 +32,12 @@ extensions = [
     "sphinx_design",
 ]
 
+# Add any paths that contain templates here, relative to this directory.
+templates_path = ["_templates"]
+
 numpydoc_show_class_members = False
 numpydoc_class_members_toctree = False
 nbsphinx_timeout = 200  # allow max 2 minutes to build each notebook
-
-# Add any paths that contain templates here, relative to this directory.
-templates_path = ["_templates"]
 
 # These links are ignored in the checks, necessary due to broken intersphinx for
 # these
@@ -84,12 +84,42 @@ nitpick_ignore = [
     ("py:meth", "BaseDescriptor.instance_init"),
     ("py:obj", "cls"),
     ("py:obj", "name"),
+    ("py:obj", "Field"),
+    ("py:obj", "deg"),
+    ("py:obj", "m"),
+    ("py:obj", "TeV"),
+    ("py:obj", "rad"),
+    ("py:obj", "s"),
+    ("py:obj", "ns"),
     ("py:class", "astropy.coordinates.baseframe.BaseCoordinateFrame"),
     ("py:class", "astropy.table.table.Table"),
     ("py:class", "eventio.simtel.simtelfile.SimTelFile"),
     ("py:class", "ctapipe.compat.StrEnum"),
     ("py:class", "ctapipe.core.container.Container"),
 ]
+
+numpydoc_xref_param_type = True
+numpydoc_xref_ignore = {"type", "optional", "default"}
+
+# Report warnings for all validation checks except those after all
+numpydoc_validation_checks = {
+    "all",
+    "EX01",
+    "ES01",
+    "GL01",
+    "PR09",
+    "RT05",
+    "SA01",
+    "SS03",
+    "SS05",
+    "SS06",
+}
+# don't report on objects that match any of these regex
+numpydoc_validation_exclude = {
+    "magicctapipe.io.BaseEventInfoContainer",
+    "magicctapipe.io.RealEventInfoContainer",
+    "magicctapipe.io.SimEventInfoContainer",
+}
 
 # -- Project information
 
@@ -191,11 +221,8 @@ htmlhelp_basename = project + "doc"
 
 html_theme = "pydata_sphinx_theme"
 
-numpydoc_xref_param_type = True
-numpydoc_xref_ignore = {"type", "optional", "default"}
-
 intersphinx_mapping = {
-    "python": ("https://docs.python.org/3.8", None),
+    "python": ("https://docs.python.org/3.11", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
@@ -205,7 +232,7 @@ intersphinx_mapping = {
     "cython": ("https://docs.cython.org/en/latest/", None),
     "iminuit": ("https://iminuit.readthedocs.io/en/latest/", None),
     "traitlets": ("https://traitlets.readthedocs.io/en/stable/", None),
-    "ctapipe": ("https://ctapipe.readthedocs.io/en/v0.12.0-rtd/", None),
+    "ctapipe": ("https://ctapipe.readthedocs.io/en/v0.19.2/", None),
     "pyirf": ("https://pyirf.readthedocs.io/en/stable/", None),
 }
 

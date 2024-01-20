@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+I/O utilities
+"""
 import glob
 import logging
 import pprint
@@ -54,8 +54,8 @@ logger.setLevel(logging.INFO)
 # telescope pointing directions but have the same observation ID
 GROUP_INDEX_TRAIN = ["obs_id", "event_id", "true_alt", "true_az"]
 
-# The LST nominal and effective focal lengths
-NOMINAL_FOCLEN_LST = 28 * u.m
+# The LST equivalent and effective focal lengths
+EQUIVALENT_FOCLEN_LST = 28 * u.m
 EFFECTIVE_FOCLEN_LST = 29.30565 * u.m
 
 # The upper limit of the trigger time differences of consecutive events,
@@ -118,7 +118,7 @@ def check_input_list(config):
     Parameters
     ----------
     config : dict
-        dictionary imported from the yaml configuration file with information about the telescope IDs.
+        Dictionary imported from the yaml configuration file with information about the telescope IDs.
 
     Raises
     ------
@@ -159,7 +159,7 @@ def telescope_combinations(config):
     Parameters
     ----------
     config : dict
-        yaml file with information about the telescope IDs.
+        Yaml file with information about the telescope IDs.
 
     Returns
     -------
@@ -180,6 +180,15 @@ def telescope_combinations(config):
     keys = list(TEL_NAMES.keys())
 
     def recursive_solution(current_tel, current_comb):
+        """Recursive solution for telescope names and combination.
+
+        Parameters
+        ----------
+        current_tel : int
+            Current telescope
+        current_comb : str
+            Current combination
+        """
 
         if current_tel == len(
             keys
@@ -208,7 +217,6 @@ def telescope_combinations(config):
 
     for key in range(len(keys)):
         recursive_solution(key, ["", []])
-
     return TEL_NAMES, TEL_COMBINATIONS
 
 
@@ -218,12 +226,12 @@ def format_object(input_object):
 
     Parameters
     ----------
-    input_dict : dict
+    input_object : dict
         Dictionary that should be formatted
 
     Returns
     -------
-    string : str
+    str
         The formatted object
     """
 
@@ -259,14 +267,14 @@ def get_stereo_events_old(
 
     Returns
     -------
-    event_data_stereo : pandas.DataFrame
+    pandas.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
     TEL_COMBINATIONS = {
-        "M1_M2": [2, 3],  # combo_type = 0
-        "LST1_M1": [1, 2],  # combo_type = 1
+        "LST1_M1": [1, 2],  # combo_type = 0
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
         "LST1_M2": [1, 3],  # combo_type = 2
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+        "M1_M2": [2, 3],  # combo_type = 3
     }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
     event_data_stereo = event_data.copy()
 
@@ -350,7 +358,7 @@ def get_stereo_events(
 
     Returns
     -------
-    event_data_stereo : pandas.DataFrame
+    pandas.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
 
@@ -365,7 +373,7 @@ def get_stereo_events(
     # Extract stereo events
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
     event_data_stereo.query("multiplicity > 1", inplace=True)
-    if eval_multi_combo == True:
+    if eval_multi_combo:
         # Check the total number of events
         n_events_total = len(event_data_stereo.groupby(group_index).size())
         logger.info(f"\nIn total {n_events_total} stereo events are found:")
@@ -428,7 +436,7 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
 
     Returns
     -------
-    event_data_mean : pandas.DataFrame
+    pandas.DataFrame
         Data frame of the shower events with mean DL2 parameters
 
     Raises
@@ -601,7 +609,7 @@ def load_lst_dl1_data_file(input_file):
     # Read the subarray description
     subarray = SubarrayDescription.from_hdf(input_file)
 
-    if focal_length == NOMINAL_FOCLEN_LST:
+    if focal_length == EQUIVALENT_FOCLEN_LST:
         # Set the effective focal length to the subarray description
         subarray.tel[1].optics.equivalent_focal_length = EFFECTIVE_FOCLEN_LST
         subarray.tel[1].camera.geometry.frame = CameraFrame(
@@ -620,12 +628,12 @@ def load_magic_dl1_data_files(input_dir, config):
     input_dir : str
         Path to a directory where input MAGIC DL1 data files are stored
     config : dict
-        yaml file with information about the telescope IDs.
+        Yaml file with information about the telescope IDs.
 
     Returns
     -------
     event_data : pandas.DataFrame
-        dataframe of MAGIC events
+        Dataframe of MAGIC events
     subarray : ctapipe.instrument.subarray.SubarrayDescription
         MAGIC subarray description
 
@@ -653,10 +661,19 @@ def load_magic_dl1_data_files(input_dir, config):
 
     data_list = []
 
+    # subarray of first file taken as reference for the check
+    subarray = SubarrayDescription.from_hdf(input_files[0])
+
     for input_file in input_files:
         logger.info(input_file)
 
         df_events = pd.read_hdf(input_file, key="events/parameters")
+
+        # check if subarrays are matching
+        subarray_other = SubarrayDescription.from_hdf(input_file)
+        if subarray_other != subarray:
+            raise IOError(f"Subarrays do not match for file: {input_file}")
+
         data_list.append(df_events)
 
     event_data = pd.concat(data_list)
@@ -679,10 +696,6 @@ def load_magic_dl1_data_files(input_dir, config):
 
     event_data.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
-
-    # Read the subarray description from the first input file, assuming
-    # that it is consistent with the others
-    subarray = SubarrayDescription.from_hdf(input_files[0])
 
     return event_data, subarray
 
@@ -709,7 +722,7 @@ def load_train_data_files(
 
     Returns
     -------
-    data_train : dict
+    dict
         Data frames of the shower events separated by the telescope
         combination types
 
@@ -720,10 +733,10 @@ def load_train_data_files(
         directory
     """
     TEL_COMBINATIONS = {
-        "M1_M2": [2, 3],  # combo_type = 0
-        "LST1_M1": [1, 2],  # combo_type = 1
+        "LST1_M1": [1, 2],  # combo_type = 0
+        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
         "LST1_M2": [1, 3],  # combo_type = 2
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+        "M1_M2": [2, 3],  # combo_type = 3
     }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
     # Find the input files
@@ -789,7 +802,7 @@ def load_train_data_files_tel(
     input_dir : str
         Path to a directory where input DL1-stereo files are stored
     config : dict
-        yaml file with information about the telescope IDs.
+        Yaml file with information about the telescope IDs.
     offaxis_min : str, optional
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
@@ -799,12 +812,10 @@ def load_train_data_files_tel(
     true_event_class : int, optional
         True event class of the input events
 
-
     Returns
     -------
-    data_train : dict
+    dict
         Data frames of the shower events separated telescope-wise
-
 
     Raises
     ------
@@ -888,11 +899,11 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     Returns
     -------
-    event_table: astropy.table.table.QTable
+    event_table : astropy.table.table.QTable
         Table with the MC DL2 events surviving the cuts
-    pointing: np.ndarray
+    pointing : np.ndarray
         Telescope pointing direction (zd, az) in the unit of degree
-    sim_info: pyirf.simulations.SimulatedEventsInfo
+    sim_info : pyirf.simulations.SimulatedEventsInfo
         Container of the simulation information
 
     Raises
@@ -912,13 +923,13 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        df_events.query("(combo_type > 0) & (magic_stereo == True)", inplace=True)
+        df_events.query("(combo_type < 3) & (magic_stereo == True)", inplace=True)
 
     elif event_type == "software_only_3tel":
-        df_events.query("combo_type == 3", inplace=True)
+        df_events.query("combo_type == 1", inplace=True)
 
     elif event_type == "magic_only":
-        df_events.query("combo_type == 0", inplace=True)
+        df_events.query("combo_type == 3", inplace=True)
 
     elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
@@ -962,7 +973,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     sim_config = pd.read_hdf(input_file, key="simulation/config")
 
     n_total_showers = (
-        sim_config["num_showers"][0]
+        sim_config["n_showers"][0]
         * sim_config["shower_reuse"][0]
         * len(np.unique(event_table["obs_id"]))
     )
@@ -974,9 +985,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
 
     if viewcone_diff < u.Quantity(0.001, unit="deg"):
         # Handle ring-wobble MCs as same as point-like MCs
-        viewcone = 0 * u.deg
-    else:
-        viewcone = max_viewcone_radius
+        min_viewcone_radius = max_viewcone_radius
 
     sim_info = SimulatedEventsInfo(
         n_showers=n_total_showers,
@@ -984,7 +993,8 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
         energy_max=u.Quantity(sim_config["energy_range_max"][0], unit="TeV"),
         max_impact=u.Quantity(sim_config["max_scatter_range"][0], unit="m"),
         spectral_index=sim_config["spectral_index"][0],
-        viewcone=viewcone,
+        viewcone_min=min_viewcone_radius,
+        viewcone_max=max_viewcone_radius,
     )
 
     return event_table, pointing, sim_info
@@ -1017,7 +1027,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     on_time : astropy.units.quantity.Quantity
         ON time of the input data
     deadc : float
-        dead time correction factor
+        Dead time correction factor
 
     Raises
     ------
@@ -1036,13 +1046,13 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
 
     if event_type == "software":
         # The events of the MAGIC-stereo combination are excluded
-        event_data.query("combo_type > 0", inplace=True)
+        event_data.query("combo_type < 3", inplace=True)
 
     elif event_type == "software_only_3tel":
-        event_data.query("combo_type == 3", inplace=True)
+        event_data.query("combo_type == 1", inplace=True)
 
     elif event_type == "magic_only":
-        event_data.query("combo_type == 0", inplace=True)
+        event_data.query("combo_type == 3", inplace=True)
 
     elif event_type == "hardware":
         logger.warning(
@@ -1059,6 +1069,14 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     # Get the mean DL2 parameters
     df_dl2_mean = get_dl2_mean(event_data, weight_type_dl2)
     df_dl2_mean.reset_index(inplace=True)
+    event_before_nan_filter = df_dl2_mean.shape[0]
+    df_dl2_mean.dropna(inplace=True)
+    event_after_nan_filter = df_dl2_mean.shape[0]
+
+    logger.info(
+        f"{event_before_nan_filter - event_after_nan_filter} "
+        f"stereo events removed because of NaN values."
+    )
 
     # Convert the pandas data frame to astropy QTable
     event_table = QTable.from_pandas(df_dl2_mean)
@@ -1136,7 +1154,7 @@ def load_irf_files(input_dir_irf):
     irf_data : dict
         IRF data
     extra_header : dict
-        extra header of the input IRF data
+        Extra header of the input IRF data
 
     Raises
     ------
@@ -1199,11 +1217,10 @@ def load_irf_files(input_dir_irf):
     for input_file in input_files_irf:
         logger.info(input_file)
         irf_hdus = fits.open(input_file)
-        irf_data["file_names"].append(input_file)
+        irf_data["file_names"] = np.append(irf_data["file_names"], input_file)
 
         # Read the header
         header = irf_hdus["EFFECTIVE AREA"].header
-
         for key in extra_header.keys():
             if key in header:
                 extra_header[key].append(header[key])
@@ -1219,8 +1236,10 @@ def load_irf_files(input_dir_irf):
         aeff_data = irf_hdus["EFFECTIVE AREA"].data[0]
         edisp_data = irf_hdus["ENERGY DISPERSION"].data[0]
 
-        irf_data["effective_area"].append(aeff_data["EFFAREA"])
-        irf_data["energy_dispersion"].append(edisp_data["MATRIX"].T)
+        irf_data["effective_area"].append(aeff_data["EFFAREA"].T)  # ENERGY, THETA
+        irf_data["energy_dispersion"].append(
+            edisp_data["MATRIX"].T
+        )  # ENERGY, MIGRA, THETA
 
         energy_bins = join_bin_lo_hi(aeff_data["ENERG_LO"], aeff_data["ENERG_HI"])
         fov_offset_bins = join_bin_lo_hi(aeff_data["THETA_LO"], aeff_data["THETA_HI"])

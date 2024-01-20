@@ -1,6 +1,6 @@
-#!/usr/bin/env python
-# coding: utf-8
-
+"""
+Miscellanea functions
+"""
 import numpy as np
 import pandas as pd
 from astropy import units as u
@@ -72,7 +72,7 @@ def calculate_disp(
 
     Returns
     -------
-    disp : astropy.units.quantity.Quantity
+    astropy.units.quantity.Quantity
         DISP parameter
     """
 
@@ -138,7 +138,7 @@ def calculate_impact(
 
     Returns
     -------
-    impact : astropy.units.quantity.Quantity
+    astropy.units.quantity.Quantity
         Impact parameter
     """
 
@@ -263,7 +263,7 @@ def calculate_off_coordinates(
 
     Returns
     -------
-    off_coords : dict
+    dict
         Coordinates of the centers of the OFF regions
     """
 
@@ -326,9 +326,9 @@ def transform_altaz_to_radec(alt, az, obs_time):
 
     Returns
     -------
-    ra : astropy.coordinates.angles.Longitude
+    ra : astropy.coordinates.Longitude
         Right ascension of the input direction
-    dec : astropy.coordinates.angles.Latitude
+    dec : astropy.coordinates.Latitude
         Declination of the input direction
     """
 

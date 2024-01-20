@@ -62,10 +62,17 @@ Keep in mind
 ------------
 
 * make sure you remember to update the **documentation** as well as the code!
-  (see the ``docs/`` directory), and make sure it builds with no errors
-  (``make doc``)
+  (see the ``docs/`` directory), and make sure it builds with no errors i.e. run
+  ``make doc`` and check the local documentation in your browser by opening the
+  file ``docs/_build/html/index.html``
 
-* pull requests that cause tests to fail on *Travis* will not be accepted until those tests pass
+* pull requests that cause tests to fail on *Travis* will not be accepted until those tests pass.
+  For this, check that the tests are passing on your local repository by running ``make test``
+  before pushing new changes to the PR
+
+* the code style will be checked. If you have ``pre-commit`` installed, this will be checked
+  automatically when you try to add a commit, possibly stopping the commit if the checks
+  are not passing
 
 .. * make sure to add a news fragment for the changelog.  In order to do this add a file to the directory ``docs/changes`` and use the following naming scheme
   ``<PULL REQUEST>.<TYPE>.rst`` (take a look at the ``README`` inside of the directory for more details). The file should contain a brief summary of the purpose of this pull request.

@@ -50,13 +50,13 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input simtel MC DL0 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output file
-    config: dict
+    config : dict
         Configuration for the analysis
-    plots_path: string
+    plots_path : str
         Path to output plots. No plots are created if None is provided
     """
 
@@ -245,7 +245,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                 if use_charge_correction:
                     # Scale the charges of the DL1 image by the correction factor:
                     event.dl1.tel[tel_id].image *= config_magic["charge_correction"][
-                        "correction_factor"
+                        "factor"
                     ]
 
                 # Apply the image cleaning:
@@ -290,6 +290,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
     parser = argparse.ArgumentParser()
 

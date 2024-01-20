@@ -39,10 +39,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 TEL_COMBINATIONS = {
-    "M1_M2": [2, 3],  # combo_type = 0
-    "LST1_M1": [1, 2],  # combo_type = 1
+    "LST1_M1": [1, 2],  # combo_type = 0
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
     "LST1_M2": [1, 3],  # combo_type = 2
-    "LST1_M1_M2": [1, 2, 3],  # combo_type = 3
+    "M1_M2": [2, 3],  # combo_type = 3
 }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 
@@ -53,14 +53,14 @@ def apply_rfs(event_data, estimator):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    estimator: magicctapipe.reco.estimator
+    estimator : magicctapipe.reco.estimator
         Trained regressor or classifier
 
     Returns
     -------
-    reco_params: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed parameters
     """
 
@@ -83,14 +83,14 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
 
     Parameters
     ----------
-    event_data: pandas.core.frame.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
-    tel_descriptions: dict
+    tel_descriptions : dict
         Telescope descriptions
 
     Returns
     -------
-    reco_params: pandas.core.frame.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed directions
     """
 
@@ -157,6 +157,10 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
         df_events = params_with_flips.query(f"combo_type == {combo_type}")
 
         n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
+
+        if n_events == 0:
+            print(f"Telescope combination {combo_type} has no events. Skipping.")
+            continue
 
         # Here we first define all the possible flip combinations. For
         # example, in case that we have two telescope images, in total
@@ -250,11 +254,11 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
     Parameters
     ----------
-    input_file_dl1: str
+    input_file_dl1 : str
         Path to an input DL1-stereo data file
-    input_dir_rfs: str
+    input_dir_rfs : str
         Path to a directory where trained RFs are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL2 data file
     """
 
@@ -392,6 +396,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

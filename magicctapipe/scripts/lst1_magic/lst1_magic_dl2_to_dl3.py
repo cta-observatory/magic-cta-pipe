@@ -34,7 +34,7 @@ from astropy.coordinates.angle_utilities import angular_separation
 from astropy.io import fits
 from astropy.table import QTable
 from pyirf.cuts import evaluate_binned_cut
-from pyirf.interpolation import interpolate_effective_area_per_energy_and_fov
+from pyirf.interpolation import GridDataInterpolator
 from pyirf.io import (
     create_aeff2d_hdu,
     create_background_2d_hdu,
@@ -68,13 +68,13 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     Parameters
     ----------
-    input_file_dl2: str
+    input_file_dl2 : str
         Path to an input DL2 data file
-    input_dir_irf: str
+    input_dir_irf : str
         Path to a directory where input IRF files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL3 data file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
     """
 
@@ -164,15 +164,23 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
-
-    aeff_interp = interpolate_effective_area_per_energy_and_fov(
-        effective_area=irf_data["effective_area"],
-        grid_points=irf_data["grid_points"],
-        target_point=target_point,
-        method=interpolation_method,
-    )
-
-    aeff_interp = aeff_interp[:, :, 0]  # Remove the dimension of the grid points
+    if len(irf_data["grid_points"]) > 2:
+        effective_area = irf_data["effective_area"].to_value("m2")
+        # due to large changes in Aeff we will interpolate in log space,
+        # meaning that we need to set a minimal value (1 m^2)
+        effective_area[effective_area < 1] = 1
+        interpolator = GridDataInterpolator(
+            grid_points=irf_data["grid_points"],
+            params=np.log(effective_area),
+            method=interpolation_method,
+        )
+        aeff_interp = np.exp(interpolator.interpolate(target_point)[0])
+        # setting values below the minimal value back to 0, allowing for 10% error margin
+        aeff_interp[aeff_interp < 1.1] = 0
+        aeff_interp *= u.Unit("m2")
+    else:
+        aeff_interp = irf_data["effective_area"][0]
+        print("skipping interpolation since only one point is given")
 
     aeff_hdu = create_aeff2d_hdu(
         effective_area=aeff_interp,
@@ -182,19 +190,21 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         extname="EFFECTIVE AREA",
         **extra_header,
     )
-
     hdus.append(aeff_hdu)
 
-    # Interpolate the energy dispersion with a custom way, since there
-    # is a bug in the function of pyirf v0.6.0 about the renormalization
+    # Interpolate the energy dispersion with a custom way,
+    # TBD: use pyirf quantile interpolation instead
     logger.info("Interpolating the energy dispersion...")
 
-    edisp_interp = griddata(
-        points=irf_data["grid_points"],
-        values=irf_data["energy_dispersion"],
-        xi=target_point,
-        method=interpolation_method,
-    )
+    if len(irf_data["grid_points"]) > 2:
+        edisp_interp = griddata(
+            points=irf_data["grid_points"],
+            values=irf_data["energy_dispersion"],
+            xi=target_point,
+            method=interpolation_method,
+        )
+    else:
+        edisp_interp = irf_data["energy_dispersion"]
 
     edisp_interp = edisp_interp[0]  # Remove the dimension of the grid points
 
@@ -204,6 +214,10 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     edisp_interp = np.divide(
         edisp_interp, norm, out=np.zeros_like(edisp_interp), where=mask_zeros
     )
+
+    # according to GDAF standard migration matrix is normalized to integral of bins
+    widths = np.diff(irf_data["migration_bins"])
+    edisp_interp /= widths[np.newaxis, :, np.newaxis]
 
     edisp_hdu = create_energy_dispersion_hdu(
         energy_dispersion=edisp_interp,
@@ -280,12 +294,15 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         # Interpolate the dynamic gammaness cuts
         logger.info("Interpolating the dynamic gammaness cuts...")
 
-        gh_cuts_interp = griddata(
-            points=irf_data["grid_points"],
-            values=irf_data["gh_cuts"],
-            xi=target_point,
-            method=interpolation_method,
-        )
+        if len(irf_data["grid_points"]) > 2:
+            gh_cuts_interp = griddata(
+                points=irf_data["grid_points"],
+                values=irf_data["gh_cuts"],
+                xi=target_point,
+                method=interpolation_method,
+            )
+        else:
+            gh_cuts_interp = irf_data["gh_cuts"]
 
         # Remove the dimension of the grid points
         gh_cuts_interp = gh_cuts_interp[0]
@@ -385,6 +402,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

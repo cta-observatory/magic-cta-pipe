@@ -15,3 +15,16 @@ repos:
     hooks:
       - id: flake8
         args: [--max-line-length=88, "--extend-ignore=E203,E712"]
+  - repo: https://github.com/numpy/numpydoc
+    rev: v1.6.0
+    hooks:
+      - id: numpydoc-validation
+        exclude : |
+            (?x)^(
+                setup.cfg|
+                docs/conf.py|
+                magicctapipe/conftest.py|
+                magicctapipe/version.py|
+                .*__init__.py|
+                .*/tests/.*
+            )$

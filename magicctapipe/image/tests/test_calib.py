@@ -1,5 +1,6 @@
 import pytest
 from ctapipe.calib import CameraCalibrator
+from ctapipe.instrument import FocalLengthKind
 from ctapipe.io import EventSource
 from traitlets.config import Config
 
@@ -18,11 +19,12 @@ def tel_id_MAGIC():
 
 
 def test_calibrate_LST(dl0_gamma, config_calib, tel_id_LST):
-
     assigned_tel_ids = [1, 2, 3]
     for input_file in dl0_gamma:
         event_source = EventSource(
-            input_file, allowed_tels=assigned_tel_ids, focal_length_choice="effective"
+            input_file,
+            allowed_tels=assigned_tel_ids,
+            focal_length_choice=FocalLengthKind.EFFECTIVE,
         )
 
         obs_id = event_source.obs_ids[0]
@@ -67,11 +69,12 @@ def test_calibrate_LST(dl0_gamma, config_calib, tel_id_LST):
 
 
 def test_calibrate_MAGIC(dl0_gamma, config_calib, tel_id_MAGIC):
-
     assigned_tel_ids = [1, 2, 3]
     for input_file in dl0_gamma:
         event_source = EventSource(
-            input_file, allowed_tels=assigned_tel_ids, focal_length_choice="effective"
+            input_file,
+            allowed_tels=assigned_tel_ids,
+            focal_length_choice=FocalLengthKind.EFFECTIVE,
         )
 
         subarray = event_source.subarray
@@ -89,7 +92,6 @@ def test_calibrate_MAGIC(dl0_gamma, config_calib, tel_id_MAGIC):
         config_extractor_magic = {extractor_type_magic: config_magic["image_extractor"]}
         magic_clean = {}
         for k in [1, 2]:
-
             magic_clean[k] = MAGICClean(camera_geoms[k], config_magic["magic_clean"])
         calibrator_magic = CameraCalibrator(
             image_extractor_type=extractor_type_magic,
@@ -122,7 +124,9 @@ def test_calibrate_exc_1(dl0_gamma, config_calib, tel_id_MAGIC):
     assigned_tel_ids = [1, 2, 3]
     for input_file in dl0_gamma:
         event_source = EventSource(
-            input_file, allowed_tels=assigned_tel_ids, focal_length_choice="effective"
+            input_file,
+            allowed_tels=assigned_tel_ids,
+            focal_length_choice=FocalLengthKind.EFFECTIVE,
         )
         subarray = event_source.subarray
         config_magic = config_calib["MAGIC"]
@@ -157,7 +161,9 @@ def test_calibrate_exc_2(dl0_gamma, config_calib, tel_id_LST):
     assigned_tel_ids = [1, 2, 3]
     for input_file in dl0_gamma:
         event_source = EventSource(
-            input_file, allowed_tels=assigned_tel_ids, focal_length_choice="effective"
+            input_file,
+            allowed_tels=assigned_tel_ids,
+            focal_length_choice=FocalLengthKind.EFFECTIVE,
         )
 
         subarray = event_source.subarray
@@ -200,7 +206,9 @@ def test_calibrate_exc_3(dl0_gamma, config_calib, tel_id_LST):
     assigned_tel_ids = [1, 2, 3]
     for input_file in dl0_gamma:
         event_source = EventSource(
-            input_file, allowed_tels=assigned_tel_ids, focal_length_choice="effective"
+            input_file,
+            allowed_tels=assigned_tel_ids,
+            focal_length_choice=FocalLengthKind.EFFECTIVE,
         )
 
         obs_id = event_source.obs_ids[0]
@@ -239,7 +247,9 @@ def test_calibrate_exc_4(dl0_gamma, config_calib, tel_id_MAGIC):
     assigned_tel_ids = [1, 2, 3]
     for input_file in dl0_gamma:
         event_source = EventSource(
-            input_file, allowed_tels=assigned_tel_ids, focal_length_choice="effective"
+            input_file,
+            allowed_tels=assigned_tel_ids,
+            focal_length_choice=FocalLengthKind.EFFECTIVE,
         )
         subarray = event_source.subarray
         tel_descriptions = subarray.tel
@@ -280,7 +290,9 @@ def test_calibrate_exc_5(dl0_gamma, config_calib, tel_id_LST):
     assigned_tel_ids = [1, 2, 3]
     for input_file in dl0_gamma:
         event_source = EventSource(
-            input_file, allowed_tels=assigned_tel_ids, focal_length_choice="effective"
+            input_file,
+            allowed_tels=assigned_tel_ids,
+            focal_length_choice=FocalLengthKind.EFFECTIVE,
         )
 
         obs_id = event_source.obs_ids[0]

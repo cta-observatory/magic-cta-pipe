@@ -51,9 +51,9 @@ def write_data_to_table(input_file_mask, output_file):
 
     Parameters
     ----------
-    input_file_mask: str
+    input_file_mask : str
         Mask of the paths to input HDF files
-    output_file: str
+    output_file : str
         Path to an output HDF file
     """
 
@@ -109,14 +109,14 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
     Parameters
     ----------
-    input_dir: str
+    input_dir : str
         Path to a directory where input HDF files are stored
-    output_dir: str
+    output_dir : str
         Path to a directory where to save output HDF files
-    run_wise: bool
+    run_wise : bool
         If `True`, it merges the input files run-wise
         (applicable only to real data)
-    subrun_wise: bool
+    subrun_wise : bool, optional
         If `True`, it merges the input files subrun-wise
         (applicable only to MAGIC real data)
 
@@ -247,6 +247,7 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()
