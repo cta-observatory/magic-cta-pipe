@@ -343,45 +343,24 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
                     n_islands=n_islands,
                 )
 
+            tel_ids_new_assignments = {
+                1: assigned_tel_ids["MAGIC-I"],
+                2: assigned_tel_ids["MAGIC-II"],
+                3: assigned_tel_ids["LST-1"],
+            }
+
             # Reset the telescope IDs
-            if tel_id == 1:
-                event_info.tel_id = assigned_tel_ids["MAGIC-I"]  # MAGIC-I
+            event_info.tel_id = tel_ids_new_assignments[event_info.tel_id]
 
-            elif tel_id == 2:
-                event_info.tel_id = assigned_tel_ids["MAGIC-II"]  # MAGIC-II
-
-            # M1+M2 trigger
-            if event.trigger.tels_with_trigger == [1, 2]:
-                tels_with_trigger_magic_lst = [
-                    assigned_tel_ids["MAGIC-I"],
-                    assigned_tel_ids["MAGIC-II"],
-                ]
-            # M2+LST1 trigger
-            elif event.trigger.tels_with_trigger == [2, 3]:
-                tels_with_trigger_magic_lst = [
-                    assigned_tel_ids["LST-1"],
-                    assigned_tel_ids["MAGIC-II"],
-                ]
-            # M1+LST1 trigger
-            elif event.trigger.tels_with_trigger == [1, 3]:
-                tels_with_trigger_magic_lst = [
-                    assigned_tel_ids["LST-1"],
-                    assigned_tel_ids["MAGIC-I"],
-                ]
-            # M1+M2+LST1 trigger
-            elif event.trigger.tels_with_trigger == [1, 2, 3]:
-                tels_with_trigger_magic_lst = [
-                    assigned_tel_ids["LST-1"],
-                    assigned_tel_ids["MAGIC-I"],
-                    assigned_tel_ids["MAGIC-II"],
-                ]
+            for idx, tel_idx in enumerate(event.trigger.tels_with_trigger):
+                event.trigger.tels_with_trigger[idx] = tel_ids_new_assignments[tel_idx]
 
             # encode tels_with_trigger as an int value
             # that can be decoded later as a binary
             # tels_with_trigger = sum_{tel_id} 2**tel_id
             # where tel_id is only for those triggered
             tels_with_trigger_binary_int = np.array(
-                [2 ** (tel_id) for tel_id in tels_with_trigger_magic_lst]
+                [2 ** (tel_id) for tel_id in event.trigger.tels_with_trigger]
             ).sum()
 
             event_info.tels_with_trigger = tels_with_trigger_binary_int
