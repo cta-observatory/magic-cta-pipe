@@ -247,6 +247,38 @@ Custom data
 
 
 @pytest.fixture(scope="session")
+def query_test_1(temp_DL2_test):
+    """
+    Toy DL2
+    """
+    path = temp_DL2_test / "query_test_1.h5"
+    data = Table()  
+    data["event_id"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] 
+    data["combo_type"] = [1, 3, 3, 2, 2, 0, 1, 2, 3, 0, 1, 2]
+    data["magic_stereo"] = [True, True, False, True, False, True, False, False, True, False, True, True]    
+    write_table_hdf5(
+        data, str(path), "/events/parameters", overwrite=True, serialize_meta=False
+    )
+    return path
+
+
+@pytest.fixture(scope="session")
+def query_test_2(temp_DL2_test):
+    """
+    Toy DL2
+    """
+    path = temp_DL2_test / "query_test_2.h5"
+    data = Table()  
+    data["event_id"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] 
+    data["combo_type"] = [1, 6, 3, 4, 2, 3, 1, 2, 3, 5, 1, 2]
+    data["magic_stereo"] = [True, True, False, True, False, True, False, False, True, False, True, True]    
+    write_table_hdf5(
+        data, str(path), "/events/parameters", overwrite=True, serialize_meta=False
+    )
+    return path
+
+
+@pytest.fixture(scope="session")
 def dl2_test(temp_DL2_test):
     """
     Toy DL2

@@ -39,6 +39,7 @@ __all__ = [
     "load_magic_dl1_data_files",
     "load_mc_dl2_data_file",
     "load_train_data_files_tel",
+    "query_data",
     "save_pandas_data_in_table",
     "telescope_combinations",
     "resource_file",
