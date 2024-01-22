@@ -71,6 +71,7 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 # The pedestal types to find bad RMS pixels
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
 
+
 def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=False):
     """
     Processes the events of MAGIC calibrated data and computes the DL1 parameters.
