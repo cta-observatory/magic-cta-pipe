@@ -350,7 +350,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
             }
 
             # Reset the telescope IDs
-            event_info.tel_id = tel_ids_new_assignments[event_info.tel_id]
+            event_info.tel_id = tel_ids_new_assignments[tel_id]
 
             for idx, tel_idx in enumerate(event.trigger.tels_with_trigger):
                 event.trigger.tels_with_trigger[idx] = tel_ids_new_assignments[tel_idx]
