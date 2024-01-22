@@ -73,7 +73,7 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
     Parameters
     ----------
 
-    df_events : pandas.Dataframe
+    df_events : pandas.core.frame.DataFrame
         Dataframe of the events
     event_type : str
         Type of events to be selected
@@ -92,7 +92,7 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
     Returns
     -------
 
-    pandas.Dataframe
+    pandas.core.frame.DataFrame
         Dataframe of events after query
     """
     if event_type == "software":
@@ -328,7 +328,7 @@ def get_stereo_events(
 
     Parameters
     ----------
-    event_data : pandas.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of shower events
     config : dict
         Read from the yaml file with information about the telescope IDs.
@@ -341,7 +341,7 @@ def get_stereo_events(
 
     Returns
     -------
-    pandas.DataFrame
+    pandas.core.frame.DataFrame
         Data frame of the stereo events surviving the quality cuts
     """
 
@@ -529,7 +529,7 @@ def load_lst_dl1_data_file(input_file):
 
     Returns
     -------
-    event_data : pandas.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Data frame of LST-1 events
     subarray : ctapipe.instrument.subarray.SubarrayDescription
         LST-1 subarray description
@@ -615,7 +615,7 @@ def load_magic_dl1_data_files(input_dir, config):
 
     Returns
     -------
-    event_data : pandas.DataFrame
+    event_data : pandas.core.frame.DataFrame
         Dataframe of MAGIC events
     subarray : ctapipe.instrument.subarray.SubarrayDescription
         MAGIC subarray description
@@ -1239,7 +1239,7 @@ def save_pandas_data_in_table(
 
     Parameters
     ----------
-    input_data : pandas.DataFrame
+    input_data : pandas.core.frame.DataFrame
         Pandas data frame
     output_file : str
         Path to an output HDF file
