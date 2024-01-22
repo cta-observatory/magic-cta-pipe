@@ -17,16 +17,12 @@ is more than one. In case the number is one, it creates the "POINT-LIKE"
 IRFs, which allows us to perform the 1D spectral analysis even if only
 diffuse data is available for test MCs.
 
-There are four different event types with which the IRFs are created.
-The "hardware" type is supposed for the hardware trigger between LST-1
-and MAGIC, allowing for the events of all the telescope combinations.
-The "software(_only_3tel)" types are supposed for the software event
-coincidence with LST-mono and MAGIC-stereo observations, allowing for
-only the events triggering both M1 and M2. The "software" type allows
-for the events of the any 2-tel combinations except the MAGIC-stereo
-combination at the moment. The "software_only_3tel" type allows for only
-the events of the 3-tel combination. The "magic_only" type allows for
-only the events of the MAGIC-stereo combination.
+There are five different event types with which the IRFs are created:
+- 'software': Stadard MAGIC+LST-1 case; remove magic-only events
+- 'trigger_3tels_or_more': at least three telescopes triggered
+- 'trigger_no_magic_stereo': no need for both MAGIC to trigger, to be used if more than one LST is used; remove MAGIC-only data if they exist
+- 'magic_only': only M1_M2 events selected
+- 'hardware': hardware trigger
 
 There are two types of gammaness and theta cuts, "global" and "dynamic".
 In case of the dynamic cuts, the optimal cut satisfying a given
@@ -124,7 +120,7 @@ def create_irf(
     logger.info(f"\nInput gamma MC DL2 data file: {input_file_gamma}")
 
     event_table_gamma, pnt_gamma, sim_info_gamma = load_mc_dl2_data_file(
-        input_file_gamma, quality_cuts, event_type, weight_type_dl2
+        config, input_file_gamma, quality_cuts, event_type, weight_type_dl2
     )
     viewcone = sim_info_gamma.viewcone_max.to_value(
         "deg"
@@ -199,7 +195,7 @@ def create_irf(
         logger.info(f"\nInput proton MC DL2 data file: {input_file_proton}")
 
         event_table_proton, pnt_proton, sim_info_proton = load_mc_dl2_data_file(
-            input_file_proton, quality_cuts, event_type, weight_type_dl2
+            config, input_file_proton, quality_cuts, event_type, weight_type_dl2
         )
 
         if any(pnt_proton != pnt_gamma):
@@ -212,7 +208,7 @@ def create_irf(
         logger.info(f"\nInput electron MC DL2 data file: {input_file_electron}")
 
         event_table_electron, pnt_electron, sim_info_electron = load_mc_dl2_data_file(
-            input_file_electron, quality_cuts, event_type, weight_type_dl2
+            config, input_file_electron, quality_cuts, event_type, weight_type_dl2
         )
 
         if any(pnt_electron != pnt_gamma):
