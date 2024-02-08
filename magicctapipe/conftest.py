@@ -287,7 +287,7 @@ Remote paths (to download test files)
 
 @pytest.fixture(scope="session")
 def base_url():
-    return "http://www.magic.iac.es/mcp-testdata"
+    return "https://www.magic.iac.es/mcp-testdata"
 
 
 @pytest.fixture(scope="session")
