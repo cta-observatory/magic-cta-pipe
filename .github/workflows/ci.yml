@@ -119,4 +119,4 @@ jobs:
           coverage run -m pytest -vra
           coverage xml
 
-      - uses: codecov/codecov-action@v3
+      - uses: codecov/codecov-action@v4
