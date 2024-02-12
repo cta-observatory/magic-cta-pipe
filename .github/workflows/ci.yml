@@ -24,7 +24,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.9
-      - uses: pre-commit/action@v3.0.0
+      - uses: pre-commit/action@v3.0.1
         with:
           extra_args: --files $(git diff origin/master --name-only)
 
@@ -113,8 +113,8 @@ jobs:
 
       - name: Tests
         env:
-          MAGIC_CTA_DATA_USER: '${{ secrets.magic_cta_data_user }}'
-          MAGIC_CTA_DATA_PASSWORD: '${{ secrets.magic_cta_data_password }}'
+          MAGIC_CTA_DATA_USER: ${{ secrets.magic_cta_data_user }}
+          MAGIC_CTA_DATA_PASSWORD: ${{ secrets.magic_cta_data_password }}
         run: |
           coverage run -m pytest -vra
           coverage xml
