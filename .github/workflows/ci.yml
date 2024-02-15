@@ -85,6 +85,12 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: cache test data
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/magicctapipe
+          key: mcp-test-data
+
       - name: Set python version ${{ matrix.python-version }}
         env:
           PYTHON_VERSION: ${{ matrix.python-version }}
