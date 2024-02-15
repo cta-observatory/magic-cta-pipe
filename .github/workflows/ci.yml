@@ -68,6 +68,7 @@ jobs:
 
   tests:
     if: contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
+    needs: lint
     runs-on: ubuntu-latest
 
     strategy:
