@@ -467,11 +467,11 @@ def gamma_stereo(temp_DL1_gamma_train, temp_DL1_gamma_test, gamma_l1, config):
     Produce a DL1 stereo file
     """
 
-    for i, file in enumerate(gamma_l1.glob("*")):
+    for i, file in enumerate(sorted(gamma_l1.glob("*"))):
         if i < ntraingamma:
-            out = temp_DL1_gamma_train
-        else:
             out = temp_DL1_gamma_test
+        else:
+            out = temp_DL1_gamma_train
         subprocess.run(
             [
                 "lst1_magic_stereo_reco",
@@ -492,11 +492,11 @@ def gamma_stereo_monly(
     Produce a DL1 stereo file
     """
 
-    for i, file in enumerate(gamma_l1_monly.glob("*")):
+    for i, file in enumerate(sorted(gamma_l1_monly.glob("*"))):
         if i < ntraingamma:
-            out = temp_DL1_gamma_train_monly
-        else:
             out = temp_DL1_gamma_test_monly
+        else:
+            out = temp_DL1_gamma_train_monly
         subprocess.run(
             [
                 "lst1_magic_stereo_reco",
@@ -551,11 +551,11 @@ def p_stereo(temp_DL1_p_train, temp_DL1_p_test, p_l1, config):
     Produce a DL1 stereo file
     """
 
-    for i, file in enumerate(p_l1.glob("*")):
+    for i, file in enumerate(sorted(p_l1.glob("*"))):
         if i < ntrainp:
-            out = temp_DL1_p_train
-        else:
             out = temp_DL1_p_test
+        else:
+            out = temp_DL1_p_train
         subprocess.run(
             [
                 "lst1_magic_stereo_reco",
@@ -575,11 +575,11 @@ def p_stereo_monly(
     Produce a DL1 stereo file
     """
 
-    for i, file in enumerate(p_l1_monly.glob("*")):
+    for i, file in enumerate(sorted(p_l1_monly.glob("*"))):
         if i < ntrainp:
-            out = temp_DL1_p_train_monly
-        else:
             out = temp_DL1_p_test_monly
+        else:
+            out = temp_DL1_p_train_monly
         subprocess.run(
             [
                 "lst1_magic_stereo_reco",
