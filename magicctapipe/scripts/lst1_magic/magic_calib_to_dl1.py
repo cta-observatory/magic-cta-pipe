@@ -359,9 +359,9 @@ def magic_calib_to_dl1(input_file, output_dir, config, max_events, process_run=F
             # that can be decoded later as a binary
             # tels_with_trigger = sum_{tel_id} 2**tel_id
             # where tel_id is only for those triggered
-            tels_with_trigger_binary_int = np.array(
-                [2 ** (tel_id) for tel_id in event.trigger.tels_with_trigger]
-            ).sum()
+            tels_with_trigger_binary_int = np.sum(
+                2 ** np.array(event.trigger.tels_with_trigger)
+            )
 
             event_info.tels_with_trigger = tels_with_trigger_binary_int
 
