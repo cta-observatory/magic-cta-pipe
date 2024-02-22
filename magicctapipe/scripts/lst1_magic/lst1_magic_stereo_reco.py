@@ -339,7 +339,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 "az_uncert": stereo_params.az_uncert.to_value("deg"),
                 "core_x": stereo_params.core_x.to_value("m"),
                 "core_y": stereo_params.core_y.to_value("m"),
-                "impact": event.dl2.tel[tel_id].impact.distance.to_value("m"),
+                "impact": event.dl2.tel[tel_id].impact[tel_id].distance.to_value("m"),
                 "h_max": stereo_params.h_max.to_value("m"),
             }
 
