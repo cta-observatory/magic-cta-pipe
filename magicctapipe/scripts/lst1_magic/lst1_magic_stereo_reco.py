@@ -341,6 +341,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 "core_y": stereo_params.core_y.to_value("m"),
                 "impact": event.dl2.tel[tel_id].impact[tel_id].distance.to_value("m"),
                 "h_max": stereo_params.h_max.to_value("m"),
+                "is_valid": int(stereo_params.is_valid),
             }
 
             event_data.loc[(obs_id, event_id, tel_id), params.keys()] = params.values()
