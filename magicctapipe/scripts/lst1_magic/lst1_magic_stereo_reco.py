@@ -319,7 +319,9 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             )
             continue
 
-        stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
+        reconstructor_name = "HillasReconstructor"
+
+        stereo_params = event.dl2.stereo.geometry[reconstructor_name]
 
         if not stereo_params.is_valid:
             logger.info(
@@ -340,7 +342,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 "core_x": stereo_params.core_x.to_value("m"),
                 "core_y": stereo_params.core_y.to_value("m"),
                 "impact": event.dl2.tel[tel_id]
-                .impact["HillasReconstructor"]
+                .impact[reconstructor_name]
                 .distance.to_value("m"),
                 "h_max": stereo_params.h_max.to_value("m"),
                 "is_valid": int(stereo_params.is_valid),
