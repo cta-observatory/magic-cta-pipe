@@ -355,7 +355,7 @@ def lists_and_bash_gen_MAGIC(
         "ulimit -s unlimited\n",
         "ulimit -a\n",
     ]
-    with open("linking_MAGIC_data_paths.sh", "w") as f:
+    with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         if NSB_match:
             if (len(MAGIC_runs) == 2) and (len(MAGIC_runs[0]) == 10):
@@ -797,7 +797,7 @@ def main():
 
             for n, run in enumerate(list_of_MAGIC_runs):
                 if n == 0:
-                    launch_jobs = f"linking=$(sbatch --parsable linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
+                    launch_jobs = f"linking=$(sbatch --parsable {source}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
                 else:
                     launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
 
