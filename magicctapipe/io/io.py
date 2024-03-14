@@ -834,6 +834,14 @@ def load_mc_dl2_data_file(
     # Get the mean DL2 parameters
     df_dl2_mean = get_dl2_mean(df_events, weight_type_dl2)
     df_dl2_mean.reset_index(inplace=True)
+    event_before_nan_filter = df_dl2_mean.shape[0]
+    df_dl2_mean.dropna(inplace=True)
+    event_after_nan_filter = df_dl2_mean.shape[0]
+
+    logger.info(
+        f"{event_before_nan_filter - event_after_nan_filter} "
+        f"stereo events removed because of NaN values."
+    )
 
     # Convert the pandas data frame to the astropy QTable
     event_table = QTable.from_pandas(df_dl2_mean)

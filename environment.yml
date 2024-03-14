@@ -36,6 +36,7 @@ dependencies:
   - pytest-dependency
   - pytest-runner
   - pyyaml
+  - scipy~=1.11.4
   - scikit-learn=1.2
   - setuptools
   - sphinx

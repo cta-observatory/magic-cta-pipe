@@ -29,7 +29,6 @@ from pathlib import Path
 
 import numpy as np
 import yaml
-from astropy import units as u
 from astropy.coordinates import Angle, angular_separation
 from ctapipe.calib import CameraCalibrator
 from ctapipe.image import (
@@ -38,7 +37,7 @@ from ctapipe.image import (
     number_of_islands,
     timing_parameters,
 )
-from ctapipe.instrument import FocalLengthKind, SubarrayDescription
+from ctapipe.instrument import FocalLengthKind
 from ctapipe.io import EventSource, HDF5TableWriter
 from traitlets.config import Config
 
@@ -392,28 +391,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
 
-    # Convert the telescope coordinate to the one relative to the center
-    # of the LST and MAGIC positions, and reset the telescope IDs
-    position_mean = u.Quantity(list(tel_positions.values())).mean(axis=0)
-
-    tel_positions_lst_magic = {}
-    tel_descriptions_lst_magic = {}
-    IDs_in_use = np.asarray(list(assigned_tel_ids.values()))
-    IDs_in_use = IDs_in_use[IDs_in_use > 0]
-    for k in IDs_in_use:
-        tel_positions_lst_magic[k] = tel_positions[k] - position_mean
-        tel_descriptions_lst_magic[k] = tel_descriptions[k]
-
-    subarray_lst_magic = SubarrayDescription(
-        "LST-MAGIC-Array", tel_positions_lst_magic, tel_descriptions_lst_magic
-    )
-    tel_positions = subarray_lst_magic.positions
-
-    logger.info("\nTelescope positions:")
-    logger.info(format_object(tel_positions))
-
     # Save the subarray description
-    subarray_lst_magic.to_hdf(output_file)
+    subarray.to_hdf(output_file)
 
     # Save the simulation configuration
     with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
