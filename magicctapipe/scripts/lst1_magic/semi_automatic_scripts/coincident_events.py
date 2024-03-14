@@ -346,10 +346,10 @@ def main():
 
                 print("***** Submitting processess to the cluster...")
                 print(
-                    f'Process name: {target_dir.split("/")[-2:][1]}_coincidence_{nsb}'
+                    f'Process name: {target_dir.split("/")[-2:][1]}_coincidence_{nsblvl}'
                 )
                 print(
-                    f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}_coincidence_{nsb}'
+                    f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}_coincidence_{nsblvl}'
                 )
 
                 # Below we run the bash scripts to find the coincident events
