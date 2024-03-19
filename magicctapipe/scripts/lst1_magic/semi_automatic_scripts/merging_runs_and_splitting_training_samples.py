@@ -324,10 +324,10 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                             ]
                             for r in runs:
                                 if (
-                                    len(os.listdir(f"{MAGIC_DL1_dir}/M1/{i}/{r}")) > 1
+                                    len(glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/{r}")) > 0
                                 ) and (
-                                    len(os.listdir(f"{MAGIC_DL1_dir}/M2/{i}/{r}"))
-                                ) > 1:
+                                    len(glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/{r}"))
+                                ) > 0:
                                     if not os.path.exists(
                                         f"{MAGIC_DL1_dir}/Merged/{i}/Merged"
                                     ):
