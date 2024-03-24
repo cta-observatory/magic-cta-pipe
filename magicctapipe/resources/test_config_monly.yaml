@@ -197,7 +197,7 @@ event_classifier:
 
 create_irf:
     quality_cuts: "disp_diff_mean < 0.22"
-    event_type: "magic_only"  # select "software", "software_only_3tel", "magic_only" or "hardware"
+    event_type: "magic_only"  # select "software", "trigger_3tels_or_more", "trigger_no_magic_stereo", "magic_only" or "hardware"
     weight_type_dl2: "simple"  # select "simple", "variance" or "intensity"
     obs_time_irf: "50 h"  # used when creating a background HDU
 
