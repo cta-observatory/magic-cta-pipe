@@ -140,7 +140,7 @@ The columns here represent the night and run in which you want to select data. P
 Note that the LST nights appear as being one day before MAGIC's!!! This is because LST saves the date at the beginning of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
 To convert the MAGIC data into DL1 format, you simply do:
-> $ setting_up_config_and_dir -c config_general.yaml
+> $ setting_up_config_and_dir (-c config_general.yaml)
 
 The output in the terminal will be something like this:
 ```
@@ -172,7 +172,7 @@ or
 
 Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1/` will be filled with files of the type `dl1_MX.RunXXXXXX.0XX.h5` for each MAGIC subrun. The next step of the conversion from DL0 to DL1 is to merge all the MAGIC data files such that in the end, we have only one datafile per night. To do so, we run the following command (always in the directory `yourprojectname`):
 
-> $ merging_runs_and_splitting_training_samples
+> $ merging_runs (-c config_general.yaml)
 
 The output in the terminal will be something like this:
 ```
@@ -191,7 +191,7 @@ This script will merge the MAGIC data files in the following order:
 
 To find coincident events between MAGIC and LST, starting from DL1 data, we run the following command in the working directory:
 
-> $ coincident_events
+> $ coincident_events (-c config_general.yaml)
 
 This script creates the file config_coincidence.yaml containing the telescope IDs and the following parameters:
 ```
@@ -209,7 +209,7 @@ It then links the LST data files to the output directory [...]DL1/Observations/C
 
 Once it is done, we add stereo parameters to the MAGIC+LST coincident DL1 files by running:
 
-> $ stereo_events
+> $ stereo_events (-c config_general.yaml)
 
 This script creates the file config_stereo.yaml with the following parameters:
 ```
