@@ -12,7 +12,6 @@ MAGIC+LST analysis starts from MAGIC calibrated data (\_Y\_ files), LST  data le
 
 Behind the scenes, the semi-automatic scripts will run:
 - `magic_calib_to_dl1` on real MAGIC data, to convert them into DL1 format.
-- `lst1_magic_mc_dl0_to_dl1` over SimTelArray MCs to convert them into DL1 format.
 - `merge_hdf_files.py` on MAGIC data to merge subruns and/or runs together.
 - `lst1_magic_event_coincidence.py` to find coincident events between MAGIC and LST-1, starting from DL1 data.
 - `lst1_magic_stereo_reco.py` to add stereo parameters to the DL1 data.
@@ -140,14 +139,11 @@ The columns here represent the night and run in which you want to select data. P
 ```
 Note that the LST nights appear as being one day before MAGIC's!!! This is because LST saves the date at the beginning of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
-In this analysis, we use a wobble of 0.4°.
-
-To convert the MAGIC and SimTelArray MCs data into DL1 format, you simply do:
+To convert the MAGIC data into DL1 format, you simply do:
 > $ setting_up_config_and_dir -c config_general.yaml
 
 The output in the terminal will be something like this:
 ```
-***** Linking MC paths - this may take a few minutes ******
 *** Reducing DL0 to DL1 data - this can take many hours ***
 Process name: yourprojectname_Crab
 To check the jobs submitted to the cluster, type: squeue -n yourprojectname_Crab
@@ -160,38 +156,36 @@ The command `setting_up_config_and_dir` does a series of things:
 /fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1
 /fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1/[subdirectories]
 ```
-where [subdirectories] stands for several subdirectories containing the MC and MAGIC subruns in the DL1 format.
+where [subdirectories] stands for several subdirectories containing the MAGIC subruns in the DL1 format.
 - Generates a configuration file called `config_step1.yaml` with telescope ID information and adopted imaging/cleaning cuts, and puts it in the directory `[...]/yourprojectname/Crab/` created in the previous step.
-- Links the MAGIC and MC data addresses to their respective subdirectories defined in the previous steps.
-- Runs the scripts `lst1_magic_mc_dl0_to_dl1.py` and `magic_calib_to_dl1.py` for each one of the linked data files.
+- Links the MAGIC data addresses to their respective subdirectories defined in the previous steps.
+- Runs the script `magic_calib_to_dl1.py` for each one of the linked data files.
 
 
 You can check if this process is done with the following commands:
+
 > $ squeue -n yourprojectname_Crab
+
 or
+
 > $ squeue -u your_user_name
 
-Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1/` will be filled with files of the type `dl1_[...]_LST1_MAGIC1_MAGIC2_runXXXXXX.h5` for the MCs and `dl1_MX.RunXXXXXX.0XX.h5` for the MAGIC runs. The next step of the conversion from DL0 to DL1 is to split the DL1 MC proton sample into "train" and "test" datasets (these will be used later in the Random Forest event classification and to do some diagnostic plots) and to merge all the MAGIC data files such that in the end, we have only one datafile per night. To do so, we run the following command (always in the dorectory `yourprojectname`):
+Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1/` will be filled with files of the type `dl1_MX.RunXXXXXX.0XX.h5` for each MAGIC subrun. The next step of the conversion from DL0 to DL1 is to merge all the MAGIC data files such that in the end, we have only one datafile per night. To do so, we run the following command (always in the directory `yourprojectname`):
 
 > $ merging_runs_and_splitting_training_samples
 
 The output in the terminal will be something like this:
 ```
-***** Splitting protons into 'train' and 'test' datasets...  
 ***** Generating merge bashscripts...  
 ***** Running merge_hdf_files.py in the MAGIC data files...  
 Process name: merging_Crab  
 To check the jobs submitted to the cluster, type: squeue -n merging_Crab
 ```
 
-This script will slice the proton MC sample according to the entry "proton_train" in the "config_general.yaml" file, and then it will merge the MAGIC data files in the following order:
+This script will merge the MAGIC data files in the following order:
 - MAGIC subruns are merged into single runs.
 - MAGIC I and II runs are merged (only if both telescopes are used, of course).
 - All runs in specific nights are merged, such that in the end we have only one datafile per night.
-- Proton MC training data is merged.
-- Proton MC testing data is merged.
-- Diffuse MC gammas are merged.
-- MC gammas are merged.
 
 ### Coincident events and stereo parameters on DL1
 
@@ -211,20 +205,20 @@ event_coincidence:
         stop: "0 us
 ```
 
-It then links the real LST data files to the output directory [...]DL1/Observations/Coincident, and runs the script lst1_magic_event_coincidence.py in all of them.
+It then links the LST data files to the output directory [...]DL1/Observations/Coincident, and runs the script lst1_magic_event_coincidence.py in all of them.
 
-Once it is done, we add stereo parameters to the MAGIC+LST coincident DL1 data by running:
+Once it is done, we add stereo parameters to the MAGIC+LST coincident DL1 files by running:
 
 > $ stereo_events
 
-This script creates the file config_stereo.yaml with the follwoing parameters:
+This script creates the file config_stereo.yaml with the following parameters:
 ```
 stereo_reco:
     quality_cuts: "(intensity > 50) & (width > 0)"
     theta_uplim: "6 arcmin"
 ```
 
-It then creates the output directories for the DL1 with stereo parameters [...]DL1/Observations/Coincident__stereo/SEVERALNIGHTS and [...]/DL1/MC/GAMMAorPROTON/Merged/StereoMerged, and then runs the script lst1_magic_stereo_reco.py in all of the coincident DL1 files. The stereo DL1 files for MC and real data are then saved in these directories.
+It then creates the output directories for the DL1 with stereo parameters [...]DL1/Observations/Coincident__stereo/SEVERALNIGHTS, and then runs the script lst1_magic_stereo_reco.py in all of the coincident DL1 files. The stereo DL1 files are then saved in these directories.
 
 ### Random forest and DL1 to DL2
 
