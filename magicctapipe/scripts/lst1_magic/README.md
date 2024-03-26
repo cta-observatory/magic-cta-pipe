@@ -140,7 +140,7 @@ The columns here represent the night and run in which you want to select data. P
 Note that the LST nights appear as being one day before MAGIC's!!! This is because LST saves the date at the beginning of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
 To convert the MAGIC data into DL1 format, you simply do:
-> $ setting_up_config_and_dir (-c config_general.yaml)
+> $ setting_up_config_and_dir -c config_general.yaml
 
 The output in the terminal will be something like this:
 ```
@@ -174,6 +174,7 @@ Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/you
 
 > $ merging_runs (-c config_general.yaml)
 
+**The command inside parenthesis is not mandatory**. By the way, it is better if you don't use it unless you know what you are doing. 
 The output in the terminal will be something like this:
 ```
 ***** Generating merge bashscripts...  
