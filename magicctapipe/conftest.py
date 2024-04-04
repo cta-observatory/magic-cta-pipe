@@ -50,7 +50,7 @@ DL1_LST_data = [
     # "dl1_LST-1.Run15337.0001.h5",
     "dl1_LST-1.Run15337.0002.h5"
 ]
-DL1_LST_old_lstchain = ["dl1_LST-1.Run03265.0094.h5"]
+DL1_LST_old_lstchain = "dl1_LST-1.Run03265.0094.h5"
 
 
 """
@@ -385,19 +385,16 @@ def dl1_lst(base_url, env_prefix):
 
 
 @pytest.fixture(scope="session")
-def dl1_lst_old(base_url, env_prefix):
-    LST_dl1_old = []
-    for file in DL1_LST_old_lstchain:
-        download_path = download_file_cached(
-            name=f"LST/{file}",
-            cache_name="magicctapipe",
-            env_prefix=env_prefix,
-            auth=True,
-            default_url=base_url,
-            progress=True,
-        )
-        LST_dl1_old.append(download_path)
-    return LST_dl1_old
+def dl1_lst_old(base_url, env_prefix):    
+    download_path = download_file_cached(
+        name=f"LST/{DL1_LST_old_lstchain}",
+        cache_name="magicctapipe",
+        env_prefix=env_prefix,
+        auth=True,
+        default_url=base_url,
+        progress=True,
+    )
+    return download_path
 
 
 @pytest.fixture(scope="session")
