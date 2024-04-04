@@ -385,7 +385,7 @@ def dl1_lst(base_url, env_prefix):
 
 
 @pytest.fixture(scope="session")
-def dl1_lst_old(base_url, env_prefix):    
+def dl1_lst_old(base_url, env_prefix):
     download_path = download_file_cached(
         name=f"LST/{DL1_LST_old_lstchain}",
         cache_name="magicctapipe",
