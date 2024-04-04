@@ -28,10 +28,10 @@ From DL3 on, the analysis is done with gammapy.
 
 Authorized institute server (Client) &rarr;  ssh connection to CTALaPalma &rarr; ssh connection to cp01/02.
 
-2) Once connected to the IT Container, install magic-cta-pipe (e.g. in your home directory in the IT Container) with the following commands:
+2) Once connected to the IT Container, install magic-cta-pipe (e.g. in your home directory in the IT Container) with the following commands (if you have mamba installed, we recommend yo uuse it instead of conda. The installation process will be much faster.):
 
 ```
-git clone https://github.com/cta-observatory/magic-cta-pipe/tree/Torino_auto_MCP
+git clone -b Torino_auto_MCP https://github.com/cta-observatory/magic-cta-pipe.git
 cd magic-cta-pipe
 conda env create -n magic-lst -f environment.yml
 conda activate magic-lst
