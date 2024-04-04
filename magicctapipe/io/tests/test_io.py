@@ -527,16 +527,15 @@ class TestDL1LST:
         """
         Check on LST DL1
         """
-        for file in dl1_lst_old:
-            events, subarray = load_lst_dl1_data_file(str(file))
-            assert "event_type" in events.columns
-            assert "slope" in events.columns
-            assert "az_tel" not in events.columns
-            events = events.reset_index()
-            s = events.duplicated(subset=["obs_id_lst", "event_id_lst"])
-            assert np.all(s == False)
-            assert subarray.name == "LST-1 subarray"
-            assert subarray.reference_location == REFERENCE_LOCATION
+        events, subarray = load_lst_dl1_data_file(str(dl1_lst_old))
+        assert "event_type" in events.columns
+        assert "slope" in events.columns
+        assert "az_tel" not in events.columns
+        events = events.reset_index()
+        s = events.duplicated(subset=["obs_id_lst", "event_id_lst"])
+        assert np.all(s == False)
+        assert subarray.name == "LST-1 subarray"
+        assert subarray.reference_location == REFERENCE_LOCATION
 
     @pytest.mark.dependency()
     def test_load_lst_dl1_data_file(self, dl1_lst):
