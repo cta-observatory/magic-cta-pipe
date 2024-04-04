@@ -7,12 +7,6 @@ with the MARS-like image cleaning and computes the DL1 parameters, i.e.,
 Hillas, timing and leakage parameters. It saves only the events that all
 the DL1 parameters are successfully reconstructed.
 
-When saving data to an output file, the telescope IDs will be reset to
-the following ones for the convenience of the combined analysis with
-LST-1, whose telescope ID is 1:
-
-MAGIC-I: tel_id = 2,  MAGIC-II: tel_id = 3
-
 When the input is real data, it searches for all the subrun files with
 the same observation ID and stored in the same directory as the input
 subrun file. Then, it reads their drive reports and uses the information
@@ -23,6 +17,11 @@ files in the same directory.
 If the `--process-run` argument is given, it not only reads the drive
 reports but also processes all the events of the subrun files at once.
 
+If the `--magic-only` argument is given, the processing is unchanged,
+but the subarray will contain only the MAGIC telescopes. This is needed
+when performing a MAGIC-only analysis using the pipeline. In all other
+cases, LST is included in the subarray.
+
 Please note that it is also possible to process SUM trigger data with
 this script, but since the MaTaJu cleaning is not yet implemented in
 this pipeline, it applies the standard cleaning instead.
@@ -32,6 +31,7 @@ $ python magic_calib_to_dl1.py
 --input-file calib/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 (--output-dir dl1)
 (--config-file config.yaml)
+(--magic-only)
 (--process-run)
 """
 
@@ -55,9 +55,16 @@ from ctapipe.image import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
+from ctapipe_io_lst import LSTEventSource
 from ctapipe_io_magic import MAGICEventSource
+
 from magicctapipe.image import MAGICClean
-from magicctapipe.io import RealEventInfoContainer, SimEventInfoContainer, format_object
+from magicctapipe.io import (
+    RealEventInfoContainer,
+    SimEventInfoContainer,
+    check_input_list,
+    format_object,
+)
 from magicctapipe.utils import calculate_disp, calculate_impact
 
 __all__ = ["magic_calib_to_dl1"]
@@ -71,22 +78,35 @@ warnings.simplefilter("ignore", category=RuntimeWarning)
 
 # The pedestal types to find bad RMS pixels
 PEDESTAL_TYPES = ["fundamental", "from_extractor", "from_extractor_rndm"]
+TEL_COMBINATIONS = {
+    "LST1_M1": [1, 2],  # combo_type = 0
+    "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
+    "LST1_M2": [1, 3],  # combo_type = 2
+    "M1_M2": [2, 3],  # combo_type = 3
+}  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
 
-def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
+def magic_calib_to_dl1(
+    input_file, output_dir, config, max_events, magic_only=False, process_run=False
+):
     """
-    Processes the events of MAGIC calibrated data and computes the DL1
-    parameters.
+    Processes the events of MAGIC calibrated data and computes the DL1 parameters.
 
     Parameters
     ----------
-    input_file: str
+    input_file : str
         Path to an input MAGIC calibrated data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output DL1 data file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
-    process_run: bool
+    max_events : int
+        Maximum number of events to process
+    magic_only : bool, optional
+        If `True`, it will store subarray information only for the MAGIC
+        telescopes. This is needed if the pipeline will be used for
+        MAGIC-only analysis.
+    process_run : bool, optional
         If `True`, it processes the events of all the subrun files
         found in the same directory of the input subrun file at once
         (applicable only to real data)
@@ -95,14 +115,15 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
-    event_source = MAGICEventSource(input_file, process_run=process_run)
+    event_source = MAGICEventSource(
+        input_file, process_run=process_run, max_events=max_events
+    )
 
     is_simulation = event_source.is_simulation
     logger.info(f"\nIs simulation: {is_simulation}")
 
     obs_id = event_source.obs_ids[0]
     tel_id = event_source.telescope
-
     logger.info(f"\nObservation ID: {obs_id}")
     logger.info(f"Telescope ID: {tel_id}")
 
@@ -159,6 +180,45 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         else:
             subrun_id = event_source.metadata["subrun_number"][0]
             output_file = f"{output_dir}/dl1_M{tel_id}.Run{obs_id:08}.{subrun_id:03}.h5"
+
+    assigned_tel_ids = config[
+        "mc_tel_ids"
+    ]  # This variable becomes the dictionary {'LST-1': 1, 'MAGIC-I': 2, 'MAGIC-II': 3} or similar
+
+    subarray_lst = LSTEventSource.create_subarray()
+
+    # Reset the telescope IDs of the subarray description
+    if not magic_only:
+        tel_positions_magic_lst = {
+            assigned_tel_ids["LST-1"]: [-8.09, 77.13, 0.78] * u.m,  # LST-1
+            assigned_tel_ids["MAGIC-I"]: [39.3, -62.55, -0.97] * u.m,  # MAGIC-I
+            assigned_tel_ids["MAGIC-II"]: [-31.21, -14.57, 0.2] * u.m,  # MAGIC-II
+        }
+
+        tel_descriptions_magic_lst = {
+            # dummy telescope description for LST-1, same as MAGIC-I
+            assigned_tel_ids["LST-1"]: subarray_lst.tel[1],  # LST-1
+            assigned_tel_ids["MAGIC-I"]: subarray.tel[1],  # MAGIC-I
+            assigned_tel_ids["MAGIC-II"]: subarray.tel[2],  # MAGIC-II
+        }
+
+        subarray_magic = SubarrayDescription(
+            "MAGIC-LST-Array", tel_positions_magic_lst, tel_descriptions_magic_lst
+        )
+    else:
+        tel_positions_magic = {
+            assigned_tel_ids["MAGIC-I"]: subarray.positions[1],  # MAGIC-I
+            assigned_tel_ids["MAGIC-II"]: subarray.positions[2],  # MAGIC-II
+        }
+
+        tel_descriptions_magic = {
+            assigned_tel_ids["MAGIC-I"]: subarray.tel[1],  # MAGIC-I
+            assigned_tel_ids["MAGIC-II"]: subarray.tel[2],  # MAGIC-II
+        }
+
+        subarray_magic = SubarrayDescription(
+            "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
+        )
 
     # Loop over every shower event
     logger.info("\nProcessing the events...")
@@ -302,12 +362,30 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
                     n_islands=n_islands,
                 )
 
-            # Reset the telescope IDs
-            if tel_id == 1:
-                event_info.tel_id = 2  # MAGIC-I
+            tel_ids_new_assignments = {
+                1: assigned_tel_ids["MAGIC-I"],
+                2: assigned_tel_ids["MAGIC-II"],
+                3: assigned_tel_ids["LST-1"],
+            }
 
-            elif tel_id == 2:
-                event_info.tel_id = 3  # MAGIC-II
+            # Reset the telescope IDs
+            event_info.tel_id = tel_ids_new_assignments[tel_id]
+
+            # encode tels_with_trigger as an int value
+            # that can be decoded later as a binary
+            # tels_with_trigger = sum_{tel_id} 2**tel_id
+            # where tel_id is only for those triggered
+            tels_with_trigger_binary_int = np.sum(
+                2
+                ** np.array(
+                    [
+                        tel_ids_new_assignments[tel_idx]
+                        for tel_idx in event.trigger.tels_with_trigger
+                    ]
+                )
+            )
+
+            event_info.tels_with_trigger = tels_with_trigger_binary_int
 
             # Save the parameters to the output file
             # Setting all the prefixes except of concentration to empty string
@@ -323,21 +401,6 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
 
-    # Reset the telescope IDs of the subarray description
-    tel_positions_magic = {
-        2: subarray.positions[1],  # MAGIC-I
-        3: subarray.positions[2],  # MAGIC-II
-    }
-
-    tel_descriptions_magic = {
-        2: subarray.tel[1],  # MAGIC-I
-        3: subarray.tel[2],  # MAGIC-II
-    }
-
-    subarray_magic = SubarrayDescription(
-        "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
-    )
-
     # Save the subarray description
     subarray_magic.to_hdf(output_file)
 
@@ -350,6 +413,7 @@ def magic_calib_to_dl1(input_file, output_dir, config, process_run=False):
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()
@@ -382,6 +446,22 @@ def main():
     )
 
     parser.add_argument(
+        "--max-evt",
+        "-m",
+        dest="max_events",
+        type=int,
+        default=None,
+        help="Max. number of processed showers",
+    )
+
+    parser.add_argument(
+        "--magic-only",
+        dest="magic_only",
+        action="store_true",
+        help="Process file(s) for MAGIC-only analysis",
+    )
+
+    parser.add_argument(
         "--process-run",
         dest="process_run",
         action="store_true",
@@ -393,9 +473,18 @@ def main():
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
-    # Process the input data
-    magic_calib_to_dl1(args.input_file, args.output_dir, config, args.process_run)
+    # Checking if the input telescope list is properly organized:
+    check_input_list(config)
 
+    # Process the input data
+    magic_calib_to_dl1(
+        args.input_file,
+        args.output_dir,
+        config,
+        args.max_events,
+        args.magic_only,
+        args.process_run,
+    )
     logger.info("\nDone.")
 
     process_time = time.time() - start_time

@@ -1,6 +1,9 @@
 [build-system]
-requires = ["setuptools >= 40.6.0", "wheel", "setuptools_scm[toml]>=3.4"]
+requires = ["setuptools>=64", "setuptools_scm[toml]>=8"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+write_to = "magicctapipe/_version.py"
 
 [tool.black]
 line-length = 88
@@ -19,3 +22,35 @@ exclude = '''
   | build
 )/
 '''
+
+[tool.pytest.ini_options]
+minversion = "7"
+testpaths = ["magicctapipe"]
+log_cli_level = "INFO"
+xfail_strict = true
+
+# print summar of failed tests, force errors if settings are misspelled
+addopts = ["-ra", "--strict-config", "--strict-markers"]
+
+filterwarnings = [
+    "error::astropy.utils.exceptions.AstropyDeprecationWarning",
+]
+norecursedirs = [
+    ".git",
+    "_build",
+    "auto_examples",
+]
+
+[tool.numpydoc_validation]
+checks = [
+    "all",
+    "EX01",
+    "ES01",
+    "GL01",
+    "PR09",
+    "RT05",
+    "SA01",
+    "SS03",
+    "SS05",
+    "SS06",
+]

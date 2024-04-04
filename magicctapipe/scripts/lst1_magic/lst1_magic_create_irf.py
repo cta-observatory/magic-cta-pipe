@@ -52,7 +52,6 @@ import yaml
 from astropy import units as u
 from astropy.io import fits
 from astropy.table import QTable, vstack
-from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
 from pyirf.cuts import calculate_percentile_cut, evaluate_binned_cut
 from pyirf.io.gadf import (
     create_aeff2d_hdu,
@@ -75,6 +74,8 @@ from pyirf.spectral import (
     calculate_event_weights,
 )
 
+from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
+
 __all__ = ["create_irf"]
 
 logger = logging.getLogger(__name__)
@@ -90,15 +91,15 @@ def create_irf(
 
     Parameters
     ----------
-    input_file_gamma: str
+    input_file_gamma : str
         Path to an input gamma MC DL2 data file
-    input_file_proton: str
+    input_file_proton : str
         Path to an input proton MC DL2 data file
-    input_file_electron: str
+    input_file_electron : str
         Path to an input electron MC DL2 data file
-    output_dir: str
+    output_dir : str
         Path to a directory where to save an output IRF file
-    config: dict
+    config : dict
         Configuration for the LST-1 + MAGIC analysis
 
     Raises
@@ -125,8 +126,10 @@ def create_irf(
     event_table_gamma, pnt_gamma, sim_info_gamma = load_mc_dl2_data_file(
         input_file_gamma, quality_cuts, event_type, weight_type_dl2
     )
-
-    is_diffuse_mc = sim_info_gamma.viewcone.to_value("deg") > 0
+    viewcone = sim_info_gamma.viewcone_max.to_value(
+        "deg"
+    ) - sim_info_gamma.viewcone_min.to_value("deg")
+    is_diffuse_mc = viewcone > 0
     logger.info(f"\nIs diffuse MC: {is_diffuse_mc}")
 
     if is_diffuse_mc:
@@ -591,6 +594,7 @@ def create_irf(
 
 
 def main():
+    """Main function."""
     start_time = time.time()
 
     parser = argparse.ArgumentParser()

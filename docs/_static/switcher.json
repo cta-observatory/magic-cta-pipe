@@ -1,0 +1,17 @@
+[
+    {
+        "name": "dev",
+        "version": "latest",
+        "url": "https://magic-cta-pipe.readthedocs.io/en/latest/"
+    },
+    {
+        "name": "stable",
+        "version": "stable",
+        "url": "https://magic-cta-pipe.readthedocs.io/en/stable/"
+    },
+    {
+        "name": "v0.4.1",
+        "version": "v0.4.1",
+        "url": "https://magic-cta-pipe.readthedocs.io/en/v0.4.1/"
+    }
+]

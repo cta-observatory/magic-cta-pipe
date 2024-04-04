@@ -1,9 +1,10 @@
-import numpy as np
+"""Calculate effective area as in MARS.
+"""
 
-from astropy.table import QTable, vstack
 import astropy.units as u
-
+import numpy as np
 import uproot
+from astropy.table import QTable, vstack
 from pyirf.simulations import SimulatedEventsInfo
 
 melibea_columns = {
@@ -25,6 +26,18 @@ melibea_columns = {
 
 
 def read_dl2_files(paths):
+    """Read Dl2 files.
+
+    Parameters
+    ----------
+    paths : list
+        File list.
+
+    Returns
+    -------
+    tuple
+        Events and simulation info.
+    """
     events = []
     sim_info = None
 
@@ -54,6 +67,18 @@ def read_dl2_files(paths):
 
 
 def read_dl2_file(path):
+    """Read a single DL2 file.
+
+    Parameters
+    ----------
+    path : str
+        File name.
+
+    Returns
+    -------
+    tuple
+        Events and simulation info.
+    """
     f = uproot.open(path)
 
     events_tree = f["Events"]
@@ -125,6 +150,38 @@ def find_hadronness_cuts(
     maxH=0.95,
     hadEff=0.9,
 ):
+    """Find hadronness cuts.
+
+    Parameters
+    ----------
+    events : list
+        Events list.
+    minsize : float
+        Minimum size.
+    minzen : float
+        Minimum zenith.
+    maxzen : float
+        Maximum size.
+    mineest : float
+        Minimum reconstructed energy.
+    maxeest : float
+        Maximum reconstructed energy.
+    nbinsE : int
+        Bins in reconstructed energy.
+    nbinsH : int
+        Bins in hadronness.
+    minH : float, optional
+        Minimum hadronness, by default 0.15
+    maxH : float, optional
+        Maximum hadronness, by default 0.95
+    hadEff : float, optional
+        Hadronness efficiency, by default 0.9
+
+    Returns
+    -------
+    tuple
+        Hadronness cuts as a function of the energy.
+    """
     print("=========== HADRONNESS CUTS CALCULATION ===========")
     print(f"Number of events before events selection: {len(events.index)}")
 
@@ -198,6 +255,42 @@ def find_theta2_cuts(
     maxTH=0.2,
     thEff=0.75,
 ):
+    """Find hadronness cuts.
+
+    Parameters
+    ----------
+    events : list
+        Events list.
+    minsize : float
+        Minimum size.
+    minzen : float
+        Minimum zenith.
+    maxzen : float
+        Maximum size.
+    mineest : float
+        Minimum reconstructed energy.
+    maxeest : float
+        Maximum reconstructed energy.
+    nbinsE : int
+        Bins in reconstructed energy.
+    nbinsTH : int
+        Bins in theta^2.
+    hadcuts : list
+        Hadronness cuts as a function of the energy.
+    had_vs_e : list
+        Hadronness cuts as a function of the energy.
+    minTH : float, optional
+        Minimum theta^2, by default 0.15
+    maxTH : float, optional
+        Maximum theta^2, by default 0.95
+    thEff : float, optional
+        Theta^2 efficiency, by default 0.9
+
+    Returns
+    -------
+    list
+        Theta^2 cuts as a function of the energy.
+    """
     print("=========== THETA2 CUTS CALCULATION ===========")
     print(f"Number of events before events selection: {len(events.index)}")
 
