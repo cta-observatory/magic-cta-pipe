@@ -1,6 +1,6 @@
 from .coincident_events import configfile_coincidence, linking_bash_lst
 from .LSTnsb import nsb
-from .merging_runs_and_splitting_training_samples import (
+from .merging_runs import (
     cleaning,
     merge,
     mergeMC,
