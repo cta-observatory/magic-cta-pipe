@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import pandas as pd
 import pytest
+from ctapipe_io_lst import REFERENCE_LOCATION
 
 from magicctapipe.io.io import (
     check_input_list,
@@ -522,6 +523,20 @@ class TestIRF:
 
 
 class TestDL1LST:
+    def test_load_lst_dl1_data_file_old(self, dl1_lst_old):
+        """
+        Check on LST DL1
+        """
+        events, subarray = load_lst_dl1_data_file(str(dl1_lst_old))
+        assert "event_type" in events.columns
+        assert "slope" in events.columns
+        assert "az_tel" not in events.columns
+        events = events.reset_index()
+        s = events.duplicated(subset=["obs_id_lst", "event_id_lst"])
+        assert np.all(s == False)
+        assert subarray.name == "LST-1 subarray"
+        assert subarray.reference_location == REFERENCE_LOCATION
+
     @pytest.mark.dependency()
     def test_load_lst_dl1_data_file(self, dl1_lst):
         """
