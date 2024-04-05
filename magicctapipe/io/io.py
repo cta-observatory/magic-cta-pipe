@@ -1,6 +1,7 @@
 """
 I/O utilities
 """
+
 import glob
 import logging
 import pprint
@@ -16,6 +17,7 @@ from astropy.time import Time
 from ctapipe.containers import EventType
 from ctapipe.coordinates import CameraFrame
 from ctapipe.instrument import SubarrayDescription
+from ctapipe_io_lst import REFERENCE_LOCATION, LSTEventSource
 from lstchain.reco.utils import add_delta_t_key
 from pyirf.binning import join_bin_lo_hi
 from pyirf.simulations import SimulatedEventsInfo
@@ -607,7 +609,16 @@ def load_lst_dl1_data_file(input_file):
     event_data["psi"] = np.rad2deg(event_data["psi"])
 
     # Read the subarray description
-    subarray = SubarrayDescription.from_hdf(input_file)
+    try:
+        subarray = SubarrayDescription.from_hdf(input_file)
+    except OSError:
+        logger.warning(
+            "SubarrayDescription couldn't be loaded from the LST-1 file.\n"
+            "It is likely not from lstchain v0.10. A default one will replace it."
+        )
+        subarray = LSTEventSource.create_subarray(
+            tel_id=1, reference_location=REFERENCE_LOCATION
+        )
 
     if focal_length == EQUIVALENT_FOCLEN_LST:
         # Set the effective focal length to the subarray description
