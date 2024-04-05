@@ -32,8 +32,8 @@ import yaml
 from astropy.coordinates import Angle, angular_separation
 from ctapipe.calib import CameraCalibrator
 from ctapipe.image import (
-    hillas_parameters,
     concentration_parameters,
+    hillas_parameters,
     leakage_parameters,
     number_of_islands,
     timing_parameters,

@@ -47,9 +47,9 @@ import yaml
 from astropy import units as u
 from astropy.coordinates import angular_separation
 from ctapipe.image import (
+    concentration_parameters,
     hillas_parameters,
     leakage_parameters,
-    concentration_parameters,
     number_of_islands,
     timing_parameters,
 )
