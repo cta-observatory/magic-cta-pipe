@@ -218,7 +218,6 @@ def test_conc_mc(gamma_l1):
         # out of 3 concentration parameter the only sanity check we can do if pixel one is > 0
         # while it is unlikely to have value > 1 it is also possible,
         # and the other two concentration parameters in particular can be <=0 or > 1
-        print(d.groupby("tel_id").min()[["concentration_pixel"]])
         assert np.all(d.groupby("tel_id").min()[["concentration_pixel"]] > 0)
 
 
@@ -577,7 +576,6 @@ def test_conc_data(merge_magic):
     """
     for file in glob.glob(f"{str(merge_magic)}/*"):
         d = pd.read_hdf(file, "/events/parameters")
-        print(d.groupby("tel_id").min()[["concentration_pixel"]])
         assert np.all(d.groupby("tel_id").min()[["concentration_pixel"]] > 0)
 
 
