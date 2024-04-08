@@ -25,6 +25,9 @@ import yaml
 
 from magicctapipe import __version__
 
+from magicctapipe.io import resource_file
+
+
 __all__ = [
     "nsb_avg",
     "collect_nsb",
@@ -183,7 +186,8 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match):
     noise_value : list
         Extra noise in dim and bright pixels, Extra bias in dim pixels
     """
-    config_file = "../config.yaml"
+
+    config_file = resource_file("config.yaml")
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
@@ -192,9 +196,9 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match):
     MAGIC_config = config_dict["MAGIC"]
 
     if not NSB_match:
-        LST_config["increase_nsb"]["extra_noise_in_dim_pixels"] = {noise_value[0]}
-        LST_config["increase_nsb"]["extra_bias_in_dim_pixels"] = {noise_value[2]}
-        LST_config["increase_nsb"]["extra_noise_in_bright_pixels"] = {noise_value[1]}
+        LST_config["increase_nsb"]["extra_noise_in_dim_pixels"] = noise_value[0]
+        LST_config["increase_nsb"]["extra_bias_in_dim_pixels"] = noise_value[2]
+        LST_config["increase_nsb"]["extra_noise_in_bright_pixels"] = noise_value[1]
     conf = {}
     conf["LST"] = LST_config
 

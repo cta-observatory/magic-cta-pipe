@@ -39,7 +39,7 @@ def bash_scripts(run, date, config, source, env_name):
 
     lines = [
         "#!/bin/sh\n\n",
-        "#SBATCH -p long\n",
+        "#SBATCH -p short,long\n",
         "#SBATCH -J nsb\n",
         "#SBATCH -N 1\n\n",
         "ulimit -l unlimited\n",
@@ -75,7 +75,7 @@ def main():
     source = config["directories"]["target_name"]
     lst_runs_filename = config["general"]["LST_runs"]
     env_name = config["general"]["env_name"]
-
+    
     with open(str(lst_runs_filename), "r") as LSTfile:
         run_list = LSTfile.readlines()
     print("***** Generating bashscripts...")
@@ -101,7 +101,7 @@ def main():
 
     # print(launch_jobs)
     os.system(launch_jobs)
-
+    
 
 if __name__ == "__main__":
     main()
