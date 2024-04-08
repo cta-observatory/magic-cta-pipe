@@ -531,6 +531,7 @@ def main():
     print(
         f"To check the jobs submitted to the cluster, type: squeue -n merging_{target_dir.split('/')[-2:][1]}"
     )
+    print("This process will take about 10 to 30 min to run.")
 
 
 if __name__ == "__main__":
