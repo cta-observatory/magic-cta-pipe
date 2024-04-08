@@ -432,7 +432,7 @@ def lists_and_bash_gen_MAGIC(
                                 continue
                             lines = [
                                 "#!/bin/sh\n\n",
-                                "#SBATCH -p long\n",
+                                "#SBATCH -p short\n",
                                 f"#SBATCH -J {process_name}\n",
                                 f"#SBATCH --array=0-{number_of_nodes}\n",
                                 "#SBATCH -N 1\n\n",
@@ -459,7 +459,7 @@ def lists_and_bash_gen_MAGIC(
                                 continue
                             lines = [
                                 "#!/bin/sh\n\n",
-                                "#SBATCH -p long\n",
+                                "#SBATCH -p short\n",
                                 f"#SBATCH -J {process_name}\n",
                                 f"#SBATCH --array=0-{number_of_nodes}\n",
                                 "#SBATCH -N 1\n\n",
@@ -722,11 +722,12 @@ def main():
     else:
         collect_nsb(config)
 
-    print("*** Reducing DL0 to DL1 data***")
+    print("*** Converting DL0 into DL1 data ***")
     print(f'Process name: {target_dir.split("/")[-2:][1]}')
     print(
         f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}'
     )
+    print("This process will take about 10 min to run if the IT cluster is free.")
 
     directories_generator(
         target_dir, telescope_ids, MAGIC_runs, NSB_match
