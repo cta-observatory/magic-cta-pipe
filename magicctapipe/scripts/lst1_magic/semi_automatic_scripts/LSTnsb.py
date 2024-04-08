@@ -10,11 +10,6 @@ import numpy as np
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
-try:
-    from importlib.resources import files
-except ImportError:
-    from importlib_resources import files
-
 __all__ = ["nsb"]
 
 logger = logging.getLogger(__name__)
@@ -124,10 +119,13 @@ def main():
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
     nsb_limit.insert(0, 0)
-    conda_path= os.environ['CONDA_PREFIX']
-    
-    lst_config = str(conda_path)+"/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
-   
+    conda_path = os.environ["CONDA_PREFIX"]
+
+    lst_config = (
+        str(conda_path)
+        + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
+    )
+
     if NSB_match:
         LST_files = np.sort(glob.glob(f"{source}_LST_[0-9]*_{run_number}.txt"))
 

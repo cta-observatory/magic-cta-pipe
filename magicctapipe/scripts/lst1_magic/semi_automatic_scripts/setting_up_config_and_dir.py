@@ -24,9 +24,7 @@ import numpy as np
 import yaml
 
 from magicctapipe import __version__
-
 from magicctapipe.io import resource_file
-
 
 __all__ = [
     "nsb_avg",
