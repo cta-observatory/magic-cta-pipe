@@ -144,20 +144,21 @@ To convert the MAGIC data into DL1 format, you simply do:
 
 The output in the terminal will be something like this:
 ```
-*** Reducing DL0 to DL1 data - this can take many hours ***
-Process name: yourprojectname_Crab
-To check the jobs submitted to the cluster, type: squeue -n yourprojectname_Crab
+*** Converting DL0 into DL1 data ***
+Process name: yourprojectname
+To check the jobs submitted to the cluster, type: squeue -n yourprojectname
+This process will take about 10 min to run if the IT cluster is free.
 ```
 
 The command `setting_up_config_and_dir` does a series of things:
 - Creates a directory with your target name within the directory `yourprojectname` and several subdirectories inside it that are necessary for the rest of the data reduction. The main directories are:
 ```
 /fefs/aswg/workspace/yourname/yourprojectname/Crab/
-/fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1
-/fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1/[subdirectories]
+/fefs/aswg/workspace/yourname/yourprojectname/Crab/VERSION/DL1
+/fefs/aswg/workspace/yourname/yourprojectname/Crab/VERSION/DL1/[subdirectories]
 ```
 where [subdirectories] stands for several subdirectories containing the MAGIC subruns in the DL1 format.
-- Generates a configuration file called `config_step1.yaml` with telescope ID information and adopted imaging/cleaning cuts, and puts it in the directory `[...]/yourprojectname/Crab/` created in the previous step.
+- Generates a configuration file called `config_DL0_to_DL1.yaml` with telescope ID information and adopted imaging/cleaning cuts, and puts it in the directory `[...]/yourprojectname/Crab/` created in the previous step.
 - Links the MAGIC data addresses to their respective subdirectories defined in the previous steps.
 - Runs the script `magic_calib_to_dl1.py` for each one of the linked data files.
 
@@ -170,17 +171,18 @@ or
 
 > $ squeue -u your_user_name
 
-Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/Crab/DL1/` will be filled with files of the type `dl1_MX.RunXXXXXX.0XX.h5` for each MAGIC subrun. The next step of the conversion from DL0 to DL1 is to merge all the MAGIC data files such that in the end, we have only one datafile per night. To do so, we run the following command (always in the directory `yourprojectname`):
+Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/Crab/VERSION/DL1/` will be filled with files of the type `dl1_MX.RunXXXXXX.0XX.h5` for each MAGIC subrun. The next step of the conversion from DL0 to DL1 is to merge all the MAGIC data files such that in the end, we have only one datafile per night. To do so, we run the following command (always in the directory `yourprojectname`):
 
 > $ merging_runs (-c config_general.yaml)
 
 **The command inside parenthesis is not mandatory**. By the way, it is better if you don't use it unless you know what you are doing. 
 The output in the terminal will be something like this:
 ```
-***** Generating merge bashscripts...  
+***** Generating merge_MAGIC bashscripts...  
 ***** Running merge_hdf_files.py in the MAGIC data files...  
 Process name: merging_Crab  
 To check the jobs submitted to the cluster, type: squeue -n merging_Crab
+This process will take about 10 to 30 min to run.
 ```
 
 This script will merge the MAGIC data files in the following order:
