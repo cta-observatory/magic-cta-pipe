@@ -150,9 +150,9 @@ def linking_bash_lst(
                         list_of_subruns = np.sort(
                             glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5")
                         )
-                        if os.path.exists(f"{outputdir}/logs/list_LST.txt"):
+                        if os.path.exists(f"{outputdir}/logs/list_LST"):
                             with open(
-                                f"{outputdir}/logs/list_LST.txt", "a"
+                                f"{outputdir}/logs/list_LST", "a"
                             ) as LSTdataPathFile:
                                 for subrun in list_of_subruns:
                                     LSTdataPathFile.write(
@@ -303,7 +303,7 @@ def main():
         print("***** Generating the bashscript...")
         linking_bash_lst(
             target_dir, LST_runs, nsblvl, date, source, LST_version, env_name, NSB_match
-        )  # linking the data paths to current working directory
+        )  # linking the data paths to the current working directory
 
         print("***** Submitting processess to the cluster...")
         print(f"Process name: {target_dir.split('/')[-2:][1]}_coincidence")
