@@ -39,6 +39,9 @@ pip install .
 ```
 
 ## Analysis
+### WARNING
+
+During the analysis some files (txt, dat) are automatically produced by the scripts and are needed by the folllowing steps. All the script can be called as console scripts, so that you don't need to launch them from their directory in the cloned repository or from a directory where you copied them, but it is mandatory that you always launch them from the same directory (e.g., you can create a working directory somewhere in your workspace and use it as your 'base' directory) so that the scripts save there their output files and read them from there as input files. As fpr the `config_general.yaml` file, you can store it in the same directory or not, but provide its full path to the script `-c` option if it is not in the same folder!
 
 ### DL0 to DL1
 

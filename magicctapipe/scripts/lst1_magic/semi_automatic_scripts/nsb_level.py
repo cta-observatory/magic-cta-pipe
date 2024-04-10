@@ -1,4 +1,6 @@
 """
+TO BE FIXED AND ADAPTED TO NEW TABLE/DATABASE
+
 Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
 
 Usage: python nsb_level.py (-c config.yaml)

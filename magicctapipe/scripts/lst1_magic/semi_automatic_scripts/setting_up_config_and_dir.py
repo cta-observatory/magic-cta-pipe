@@ -22,6 +22,7 @@ from pathlib import Path
 
 import numpy as np
 import yaml
+import json
 
 from magicctapipe import __version__
 from magicctapipe.io import resource_file
@@ -39,17 +40,10 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-ST_list = ["ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
-ST_begin = ["2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
-ST_end = [
-    "2024_01_01",
-    "2023_03_09",
-    "2022_08_31",
-    "2022_06_09",
-    "2021_09_29",
-]  # ST0320 ongoing -> 'service' end date
 
 
+# TODO
+'''
 def nsb_avg(source, config, LST_list):
 
     """
@@ -130,8 +124,9 @@ def nsb_avg(source, config, LST_list):
                 f.write(i)
         f.write(f"nsb_value: {nsb}\n")
     return (continue_process, nsb)
-
-
+'''
+# TODO
+'''
 def collect_nsb(config):
     """
     Here we split the LST runs in NSB-wise .txt files
@@ -154,7 +149,7 @@ def collect_nsb(config):
                 with open(f"{source}_LST_{nsblvl}_.txt", "a+") as f:
                     f.write(f"{line.rstrip()}\n")
 
-
+'''
 def config_file_gen(ids, target_dir, noise_value, NSB_match):
 
     """
@@ -367,30 +362,23 @@ def lists_and_bash_gen_MAGIC(
                 MAGIC_runs.append(MAGIC)
 
             for i in MAGIC_runs:
-                for p in range(len(ST_begin)):
-                    if (
-                        time.strptime(i[0], "%Y_%m_%d")
-                        >= time.strptime(ST_begin[p], "%Y_%m_%d")
-                    ) and (
-                        time.strptime(i[0], "%Y_%m_%d")
-                        <= time.strptime(ST_end[p], "%Y_%m_%d")
-                    ):
-                        if telescope_ids[-1] > 0:
-                            lines = [
-                                f'export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
-                                f"export OUT1={target_dir}/v{__version__}/DL1/{ST_list[p]}/M2/{i[0]}/{i[1]}/logs \n",
-                                f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
-                            ]
-                            f.writelines(lines)
+                
+                if telescope_ids[-1] > 0:
+                    lines = [
+                        f'export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
+                        f"export OUT1=v{__version__}/{target_dir}/DL1/M2/{i[0]}/{i[1]}/logs \n",
+                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
+                    ]
+                    f.writelines(lines)
 
-                        f.write("\n")
-                        if telescope_ids[-2] > 0:
-                            lines = [
-                                f'export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
-                                f"export OUT1={target_dir}/v{__version__}/DL1/{ST_list[p]}/M1/{i[0]}/{i[1]}/logs \n",
-                                f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
-                            ]
-                            f.writelines(lines)
+                f.write("\n")
+                if telescope_ids[-2] > 0:
+                    lines = [
+                        f'export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
+                        f"export OUT1=v{__version__}/{target_dir}/DL1/M1/{i[0]}/{i[1]}/logs \n",
+                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
+                    ]
+                    f.writelines(lines)
         else:
             if telescope_ids[-1] > 0:
                 for i in MAGIC_runs:
@@ -414,68 +402,60 @@ def lists_and_bash_gen_MAGIC(
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             for i in MAGIC_runs:
 
-                for p in range(len(ST_begin)):
-                    if (
-                        time.strptime(i[0], "%Y_%m_%d")
-                        >= time.strptime(ST_begin[p], "%Y_%m_%d")
-                    ) and (
-                        time.strptime(i[0], "%Y_%m_%d")
-                        <= time.strptime(ST_end[p], "%Y_%m_%d")
-                    ):
+        
+                if telescope_ids[-1] > 0:
+                    number_of_nodes = glob.glob(
+                        f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                    )
+                    number_of_nodes = len(number_of_nodes) - 1
+                    if number_of_nodes < 0:
+                        continue
+                    lines = [
+                        "#!/bin/sh\n\n",
+                        "#SBATCH -p short\n",
+                        f"#SBATCH -J {process_name}\n",
+                        f"#SBATCH --array=0-{number_of_nodes}\n",
+                        "#SBATCH -N 1\n\n",
+                        "ulimit -l unlimited\n",
+                        "ulimit -s unlimited\n",
+                        "ulimit -a\n\n",
+                        f"export OUTPUTDIR=v{__version__}/{target_dir}/DL1/M2/{i[0]}/{i[1]}\n",
+                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
+                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
+                        "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                    ]
+                    with open(
+                        f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w"
+                    ) as f:
+                        f.writelines(lines)
 
-                        if telescope_ids[-1] > 0:
-                            number_of_nodes = glob.glob(
-                                f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                            )
-                            number_of_nodes = len(number_of_nodes) - 1
-                            if number_of_nodes < 0:
-                                continue
-                            lines = [
-                                "#!/bin/sh\n\n",
-                                "#SBATCH -p short\n",
-                                f"#SBATCH -J {process_name}\n",
-                                f"#SBATCH --array=0-{number_of_nodes}\n",
-                                "#SBATCH -N 1\n\n",
-                                "ulimit -l unlimited\n",
-                                "ulimit -s unlimited\n",
-                                "ulimit -a\n\n",
-                                f"export OUTPUTDIR={target_dir}/v{__version__}/DL1/{ST_list[p]}/M2/{i[0]}/{i[1]}\n",
-                                "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
-                                "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                                "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                                f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                            ]
-                            with open(
-                                f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w"
-                            ) as f:
-                                f.writelines(lines)
-
-                        if telescope_ids[-2] > 0:
-                            number_of_nodes = glob.glob(
-                                f'/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                            )
-                            number_of_nodes = len(number_of_nodes) - 1
-                            if number_of_nodes < 0:
-                                continue
-                            lines = [
-                                "#!/bin/sh\n\n",
-                                "#SBATCH -p short\n",
-                                f"#SBATCH -J {process_name}\n",
-                                f"#SBATCH --array=0-{number_of_nodes}\n",
-                                "#SBATCH -N 1\n\n",
-                                "ulimit -l unlimited\n",
-                                "ulimit -s unlimited\n",
-                                "ulimit -a\n\n",
-                                f"export OUTPUTDIR={target_dir}/v{__version__}/DL1/{ST_list[p]}/M1/{i[0]}/{i[1]}\n",
-                                "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
-                                "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                                "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                                f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                            ]
-                            with open(
-                                f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w"
-                            ) as f:
-                                f.writelines(lines)
+                if telescope_ids[-2] > 0:
+                    number_of_nodes = glob.glob(
+                        f'/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                    )
+                    number_of_nodes = len(number_of_nodes) - 1
+                    if number_of_nodes < 0:
+                        continue
+                    lines = [
+                        "#!/bin/sh\n\n",
+                        "#SBATCH -p short\n",
+                        f"#SBATCH -J {process_name}\n",
+                        f"#SBATCH --array=0-{number_of_nodes}\n",
+                        "#SBATCH -N 1\n\n",
+                        "ulimit -l unlimited\n",
+                        "ulimit -s unlimited\n",
+                        "ulimit -a\n\n",
+                        f"export OUTPUTDIR=v{__version__}/{target_dir}/DL1/M1/{i[0]}/{i[1]}\n",
+                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
+                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
+                        "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                    ]
+                    with open(
+                        f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w"
+                    ) as f:
+                        f.writelines(lines)
     else:
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             for i in MAGIC_runs:
@@ -550,13 +530,13 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs, NSB_match):
     """
 
     if NSB_match:
-        if not os.path.exists(target_dir):
-            os.mkdir(target_dir)
-        if not os.path.exists(f"{target_dir}/v{__version__}"):
-            os.mkdir(f"{target_dir}/v{__version__}")
-        if not os.path.exists(f"{target_dir}/v{__version__}/DL1"):
-            os.mkdir(f"{target_dir}/v{__version__}/DL1")
-        dl1_dir = str(f"{target_dir}/v{__version__}/DL1")
+        if not os.path.exists(f"v{__version__}"):
+            os.mkdir(f"v{__version__}")
+        if not os.path.exists(f"v{__version__}/{target_dir}"):
+            os.mkdir(f"v{__version__}/{target_dir}")
+        if not os.path.exists(f"v{__version__}/{target_dir}/DL1"):
+            os.mkdir(f"v{__version__}/{target_dir}/DL1")
+        dl1_dir = str(f"v{__version__}/{target_dir}/DL1")
     else:
         if not os.path.exists(target_dir):
             os.mkdir(target_dir)
@@ -596,46 +576,39 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs, NSB_match):
         MAGIC_runs.append(MAGIC)
     if NSB_match:
         for i in MAGIC_runs:
-            for p in range(len(ST_begin)):
-                if (
-                    time.strptime(i[0], "%Y_%m_%d")
-                    >= time.strptime(ST_begin[p], "%Y_%m_%d")
-                ) and (
-                    time.strptime(i[0], "%Y_%m_%d")
-                    <= time.strptime(ST_end[p], "%Y_%m_%d")
+            
+            if telescope_ids[-1] > 0:
+                if not os.path.exists(f"{dl1_dir}"):
+                    os.mkdir(f"{dl1_dir}")
+                if not os.path.exists(f"{dl1_dir}/M2"):
+                    os.mkdir(f"{dl1_dir}/M2")
+                if not os.path.exists(f"{dl1_dir}/M2/{i[0]}"):
+                    os.mkdir(f"{dl1_dir}/M2/{i[0]}")
+
+                if not os.path.exists(
+                    f"{dl1_dir}/M2/{i[0]}/{i[1]}"
                 ):
-                    if telescope_ids[-1] > 0:
-                        if not os.path.exists(f"{dl1_dir}/{ST_list[p]}"):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}")
-                        if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M2"):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M2")
-                        if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}"):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}")
+                    os.mkdir(f"{dl1_dir}/M2/{i[0]}/{i[1]}")
+                if not os.path.exists(
+                    f"{dl1_dir}/M2/{i[0]}/{i[1]}/logs"
+                ):
+                    os.mkdir(f"{dl1_dir}/M2/{i[0]}/{i[1]}/logs")
+            if telescope_ids[-2] > 0:
+                if not os.path.exists(f"{dl1_dir}"):
+                    os.mkdir(f"{dl1_dir}")
+                if not os.path.exists(f"{dl1_dir}/M1"):
+                    os.mkdir(f"{dl1_dir}/M1")
+                if not os.path.exists(f"{dl1_dir}/M1/{i[0]}"):
+                    os.mkdir(f"{dl1_dir}/M1/{i[0]}")
 
-                        if not os.path.exists(
-                            f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}"
-                        ):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}")
-                        if not os.path.exists(
-                            f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}/logs"
-                        ):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M2/{i[0]}/{i[1]}/logs")
-                    if telescope_ids[-2] > 0:
-                        if not os.path.exists(f"{dl1_dir}/{ST_list[p]}"):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}")
-                        if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M1"):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M1")
-                        if not os.path.exists(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}"):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}")
-
-                        if not os.path.exists(
-                            f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}"
-                        ):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}")
-                        if not os.path.exists(
-                            f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}/logs"
-                        ):
-                            os.mkdir(f"{dl1_dir}/{ST_list[p]}/M1/{i[0]}/{i[1]}/logs")
+                if not os.path.exists(
+                    f"{dl1_dir}/M1/{i[0]}/{i[1]}"
+                ):
+                    os.mkdir(f"{dl1_dir}/M1/{i[0]}/{i[1]}")
+                if not os.path.exists(
+                    f"{dl1_dir}/M1/{i[0]}/{i[1]}/logs"
+                ):
+                    os.mkdir(f"{dl1_dir}/M1/{i[0]}/{i[1]}/logs")
     else:
         if telescope_ids[-1] > 0:
             if not os.path.exists(f"{target_dir}/DL1/Observations/M2"):
@@ -698,10 +671,8 @@ def main():
     MAGIC_runs = np.genfromtxt(
         MAGIC_runs_and_dates, dtype=str, delimiter=","
     )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
-    target_dir = str(
-        Path(config["directories"]["workspace_dir"])
-        / config["directories"]["target_name"]
-    )
+    
+    
     LST_runs_and_dates = config["general"]["LST_runs"]
     MC_gammas = str(Path(config["directories"]["MC_gammas"]))
     MC_electrons = str(Path(config["directories"]["MC_electrons"]))
@@ -710,101 +681,112 @@ def main():
     MC_gammadiff = str(Path(config["directories"]["MC_gammadiff"]))
     focal_length = config["general"]["focal_length"]
     source = config["directories"]["target_name"]
-    noise_value = [0, 0, 0]
-    if not NSB_match:
-        running, nsb = nsb_avg(source, args.config_file, LST_runs_and_dates)
-        if running != "y":
-            print("OK... The script was terminated by the user choice.")
-            return
-        noisebright = 1.15 * pow(nsb, 1.115)
-        biasdim = 0.358 * pow(nsb, 0.805)
-        noise_value = [nsb, noisebright, biasdim]
+
+    source_list=[]
+    if source is not None:
+        source_list=json.load('list_sources.dat')
+        
     else:
-        collect_nsb(config)
+        source_list.append(source)
+    for source_name in source_list:
+        target_dir = str(
+            Path(config["directories"]["workspace_dir"])
+            / source_name
+        )
+        
+        noise_value = [0, 0, 0]
+        if not NSB_match:
+            nsb = config["general"]["NSB_MC"]
+            
+            noisebright = 1.15 * pow(nsb, 1.115)
+            biasdim = 0.358 * pow(nsb, 0.805)
+            noise_value = [nsb, noisebright, biasdim]
+        
+        
+        #TODO: fix here above
+        print("*** Converting DL0 into DL1 data ***")
+        print(f'Process name: {target_dir.split("/")[-2:][1]}')
+        print(
+            f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}'
+        )
+        print("This process will take about 10 min to run if the IT cluster is free.")
 
-    print("*** Converting DL0 into DL1 data ***")
-    print(f'Process name: {target_dir.split("/")[-2:][1]}')
-    print(
-        f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}'
-    )
-    print("This process will take about 10 min to run if the IT cluster is free.")
+        directories_generator(
+            target_dir, telescope_ids, MAGIC_runs, NSB_match
+        )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
+        config_file_gen(telescope_ids, target_dir, noise_value, NSB_match)#TODO: fix here
 
-    directories_generator(
-        target_dir, telescope_ids, MAGIC_runs, NSB_match
-    )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
-    config_file_gen(telescope_ids, target_dir, noise_value, NSB_match)
+        if not NSB_match:
+            # Below we run the analysis on the MC data
+            if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
+                lists_and_bash_generator(
+                    "gammas", target_dir, MC_gammas, SimTel_version, focal_length, env_name
+                )  # gammas
+                lists_and_bash_generator(
+                    "electrons",
+                    target_dir,
+                    MC_electrons,
+                    SimTel_version,
+                    focal_length,
+                    env_name,
+                )  # electrons
+                lists_and_bash_generator(
+                    "helium", target_dir, MC_helium, SimTel_version, focal_length, env_name
+                )  # helium
+                lists_and_bash_generator(
+                    "protons",
+                    target_dir,
+                    MC_protons,
+                    SimTel_version,
+                    focal_length,
+                    env_name,
+                )  # protons
+                lists_and_bash_generator(
+                    "gammadiffuse",
+                    target_dir,
+                    MC_gammadiff,
+                    SimTel_version,
+                    focal_length,
+                    env_name,
+                )  # gammadiffuse
 
-    if not NSB_match:
-        # Below we run the analysis on the MC data
-        if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
-            lists_and_bash_generator(
-                "gammas", target_dir, MC_gammas, SimTel_version, focal_length, env_name
-            )  # gammas
-            lists_and_bash_generator(
-                "electrons",
-                target_dir,
-                MC_electrons,
-                SimTel_version,
-                focal_length,
-                env_name,
-            )  # electrons
-            lists_and_bash_generator(
-                "helium", target_dir, MC_helium, SimTel_version, focal_length, env_name
-            )  # helium
-            lists_and_bash_generator(
-                "protons",
-                target_dir,
-                MC_protons,
-                SimTel_version,
-                focal_length,
-                env_name,
-            )  # protons
-            lists_and_bash_generator(
-                "gammadiffuse",
-                target_dir,
-                MC_gammadiff,
-                SimTel_version,
-                focal_length,
-                env_name,
-            )  # gammadiffuse
+                # Here we do the MC DL0 to DL1 conversion:
+                list_of_MC = glob.glob("linking_MC_*s.sh")
 
-            # Here we do the MC DL0 to DL1 conversion:
-            list_of_MC = glob.glob("linking_MC_*s.sh")
+                # os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
 
-            # os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
+                for n, run in enumerate(list_of_MC):
+                    if n == 0:
+                        launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+                    else:
+                        launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
 
-            for n, run in enumerate(list_of_MC):
-                if n == 0:
-                    launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
-                else:
-                    launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+                os.system(launch_jobs_MC)
 
-            os.system(launch_jobs_MC)
+        # Below we run the analysis on the MAGIC data
+        if (
+            (args.analysis_type == "onlyMAGIC")
+            or (args.analysis_type == "doEverything")
+            or (NSB_match)
+        ):
+            lists_and_bash_gen_MAGIC(
+                target_dir, telescope_ids, MAGIC_runs, source_name, env_name, NSB_match
+            )  # MAGIC real data
+            if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
+                list_of_MAGIC_runs = glob.glob(f"{source_name}_MAGIC-*.sh")
+                if len(list_of_MAGIC_runs) < 1:
+                    print(
+                        "Warning: no bash script has been produced. Please check the provided MAGIC_runs.txt and the MAGIC calibrated data"
+                    )
+                    return
 
-    # Below we run the analysis on the MAGIC data
-    if (
-        (args.analysis_type == "onlyMAGIC")
-        or (args.analysis_type == "doEverything")
-        or (NSB_match)
-    ):
-        lists_and_bash_gen_MAGIC(
-            target_dir, telescope_ids, MAGIC_runs, source, env_name, NSB_match
-        )  # MAGIC real data
-        if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
-            list_of_MAGIC_runs = glob.glob(f"{source}_MAGIC-*.sh")
-            if len(list_of_MAGIC_runs) < 1:
-                print(
-                    "Warning: no bash script has been produced. Please check the provided MAGIC_runs.txt and the MAGIC calibrated data"
-                )
-                return
+                for n, run in enumerate(list_of_MAGIC_runs):
+                    if n == 0:
+                        launch_jobs = f"linking=$(sbatch --parsable {source_name}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
+                    else:
+                        launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
 
-            for n, run in enumerate(list_of_MAGIC_runs):
-                if n == 0:
-                    launch_jobs = f"linking=$(sbatch --parsable {source}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
-                else:
-                    launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
-
-            os.system(launch_jobs)
+                os.system(launch_jobs)
 
 
 if __name__ == "__main__":
