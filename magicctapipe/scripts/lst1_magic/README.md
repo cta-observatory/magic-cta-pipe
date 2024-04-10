@@ -139,6 +139,10 @@ The columns here represent the night and run in which you want to select data. P
 ```
 Note that the LST nights appear as being one day before MAGIC's!!! This is because LST saves the date at the beginning of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
 
+These files can by automatically created (from a table stored on the IT) by the list_from_h5.py scripts: to do so, you have to fill-in the config_h5.yaml file with the list of dates (or range of dates) to be processed, MAGIC and LST runs to be skipped (if there are some runs to be skipped in the dates to be processed) and the name of the target source in the database: in case you want to analyze only one source, put its name in the database and the name you want to assign it (e.g., you would like to call the CrabNebula as Crab in the rest of the analysis) into this configuration file; if you want to analyze all the sources in the given time range, put source_name_database = null and source_name_output won't be considered by the script 
+
+> $ list_from_h5
+
 First, you have to evaluate the NSB level for each LST run (in the future this information will be provided in a database):
 
 > $ nsb_level -c config_general.yaml

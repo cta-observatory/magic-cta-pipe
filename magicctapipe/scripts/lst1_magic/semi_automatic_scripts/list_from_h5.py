@@ -5,10 +5,10 @@ By using this scrip, the list of MAGIC and LST runs (date and run number) can be
 import os
 from datetime import datetime
 
+import joblib
+import numpy as np
 import pandas as pd
 import yaml
-import numpy as np
-import joblib
 
 
 def split_lst_date(df):
@@ -66,6 +66,8 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC):
 
     Parameters
     ----------
+    source_in : str or null
+        Name of the source in the database of joint observations. null to process all sources in a given time range
     source_out : str
         Name of the source to be used in the output file name
     df : :class:`pandas.DataFrame`
@@ -75,12 +77,12 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC):
     skip_MAGIC : list
         List of the MAGIC runs not to be added to the files
     """
-    source_list=[]
+    source_list = []
     if source_in is None:
-        source_list=np.unique(df['source'])
+        source_list = np.unique(df["source"])
     else:
         source_list.append(source_out)
-    joblib.dump(source_list, 'list_sources.dat')
+    joblib.dump(source_list, "list_sources.dat")
     print(source_list)
     for source_name in source_list:
         print(source_name)
@@ -96,21 +98,20 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC):
         MAGIC_listed = []
         LST_listed = []
         if source_in is None:
-            df_source=df[df['source']==source_name]
+            df_source = df[df["source"] == source_name]
         else:
-            df_source=df[df['source']==source_in]
-        
+            df_source = df[df["source"] == source_in]
+
         print(df_source)
         LST_run = df_source["LST1_run"].tolist()
-        MAGIC_run_first=df_source["MAGIC_first_run"].tolist()
-        MAGIC_run_last=df_source["MAGIC_last_run"].tolist()
+        MAGIC_run_first = df_source["MAGIC_first_run"].tolist()
+        MAGIC_run_last = df_source["MAGIC_last_run"].tolist()
         LST_date = df_source["date_LST"].tolist()
-        MAGIC_date=df_source["date_MAGIC"].tolist()
+        MAGIC_date = df_source["date_MAGIC"].tolist()
 
         for k in range(len(df_source)):
             skip = False
-            
-            
+
             if (int(LST_run[k]) in skip_LST) or (int(LST_run[k]) in LST_listed):
                 skip = True
 
@@ -131,7 +132,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC):
                     with open(file_list[1], "a+") as f:
                         f.write(f"{MAGIC_date[k].replace('-','_')},{z}\n")
                     MAGIC_listed.append(int(z))
-            
+
 
 def main():
 
@@ -164,9 +165,9 @@ def main():
     stereo = True
     if source_in is None:
         df.query(
-        f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
-        inplace=True,
-    )  #
+            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
+            inplace=True,
+        )  #
     else:
         df.query(
             f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
