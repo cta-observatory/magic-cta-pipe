@@ -1,10 +1,10 @@
 data_selection_and_lists:
     time_range : True  #Search for all runs in a LST range (e.g., 2020_01_01 -> 2022_01_01)
-    min : "2019_11_17"
-    max : "2020_03_19"   
+    min : "2020_11_17"
+    max : "2021_03_19"   
     date_list : ['2020_12_15','2021_03_11']
                        #LST list of days to be processed (time_range=False), format: YYYY_MM_DD 
-    skipped_LST_runs: [2919,2923]
-    skipped_MAGIC_runs: [5088421,5088503]   #MAGIC and LST runs not to be processed (why?)
-    source_name_database: 'CrabNebula'  #MUST BE THE SAME AS IN THE DATABASE
-    source_name_output: 'Crab'  #Name to be used in the analysis (will be used in the name of the txt output files), best idea: the same as in the analysis config_general.yaml, WARNING: ONLY ALPHANUMERIC, NO SPECIAL CHARACTERS (special characters can interfere with the analysis scripts)
+    skipped_LST_runs: [3216,3217]
+    skipped_MAGIC_runs: [5094658]   #MAGIC and LST runs not to be processed (why?)
+    source_name_database: null  #MUST BE THE SAME AS IN THE DATABASE; null to process all sources in time range
+    source_name_output: 'Crabtest'  #Name to be used in the analysis (will be used in the name of the txt output files), best idea: the same as in the analysis config_general.yaml, WARNING: ONLY ALPHANUMERIC, NO SPECIAL CHARACTERS (special characters can interfere with the analysis scripts); Used only if a source name (not null) set above

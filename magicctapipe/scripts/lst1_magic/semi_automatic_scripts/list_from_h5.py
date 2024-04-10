@@ -7,6 +7,8 @@ from datetime import datetime
 
 import pandas as pd
 import yaml
+import numpy as np
+import joblib
 
 
 def split_lst_date(df):
@@ -57,7 +59,7 @@ def magic_date(df):
     return df
 
 
-def list_run(source_out, df, skip_LST, skip_MAGIC):
+def list_run(source_in, source_out, df, skip_LST, skip_MAGIC):
 
     """
     This function create the MAGIC_runs.txt and LST_runs.txt files, which contain the list of runs (with date) to be processed
@@ -73,42 +75,63 @@ def list_run(source_out, df, skip_LST, skip_MAGIC):
     skip_MAGIC : list
         List of the MAGIC runs not to be added to the files
     """
+    source_list=[]
+    if source_in is None:
+        source_list=np.unique(df['source'])
+    else:
+        source_list.append(source_out)
+    joblib.dump(source_list, 'list_sources.dat')
+    print(source_list)
+    for source_name in source_list:
+        print(source_name)
+        file_list = [
+            f"{source_name}_LST_runs.txt",
+            f"{source_name}_MAGIC_runs.txt",
+        ]  # LST, MAGIC!!!!
+        print(file_list)
+        for j in file_list:
+            if os.path.isfile(j):
+                os.remove(j)
+                print(f"{j} deleted.")
+        MAGIC_listed = []
+        LST_listed = []
+        if source_in is None:
+            df_source=df[df['source']==source_name]
+        else:
+            df_source=df[df['source']==source_in]
+        
+        print(df_source)
+        LST_run = df_source["LST1_run"].tolist()
+        MAGIC_run_first=df_source["MAGIC_first_run"].tolist()
+        MAGIC_run_last=df_source["MAGIC_last_run"].tolist()
+        LST_date = df_source["date_LST"].tolist()
+        MAGIC_date=df_source["date_MAGIC"].tolist()
 
-    file_list = [
-        f"{source_out}_LST_runs.txt",
-        f"{source_out}_MAGIC_runs.txt",
-    ]  # LST, MAGIC!!!!
-    for j in file_list:
-        if os.path.isfile(j):
-            os.remove(j)
-            print(f"{j} deleted.")
-    MAGIC_listed = []
-    LST_listed = []
-    for k in range(len(df)):
-        skip = False
-        LST = df["LST1_run"]
-
-        if (int(LST[k]) in skip_LST) or (int(LST[k]) in LST_listed):
-            skip = True
-
-        if not skip:
-            with open(file_list[0], "a+") as f:
-                f.write(
-                    f"{df['date_LST'][k].replace('-','_')},{str(LST[k]).lstrip('0')}\n"
-                )
-            LST_listed.append(int(LST[k]))
-        MAGIC_min = int(df["MAGIC_first_run"][k])
-        MAGIC_max = int(df["MAGIC_last_run"][k])
-        for z in range(MAGIC_min, MAGIC_max + 1):
+        for k in range(len(df_source)):
             skip = False
-
-            if (int(z) in skip_MAGIC) or (int(z) in MAGIC_listed):
+            
+            
+            if (int(LST_run[k]) in skip_LST) or (int(LST_run[k]) in LST_listed):
                 skip = True
-            if not skip:
-                with open(file_list[1], "a+") as f:
-                    f.write(f"{df['date_MAGIC'][k].replace('-','_')},{z}\n")
-                MAGIC_listed.append(int(z))
 
+            if not skip:
+                with open(file_list[0], "a+") as f:
+                    f.write(
+                        f"{LST_date[k].replace('-','_')},{str(LST_run[k]).lstrip('0')}\n"
+                    )
+                LST_listed.append(int(LST_run[k]))
+            MAGIC_min = int(MAGIC_run_first[k])
+            MAGIC_max = int(MAGIC_run_last[k])
+            for z in range(MAGIC_min, MAGIC_max + 1):
+                skip = False
+
+                if (int(z) in skip_MAGIC) or (int(z) in MAGIC_listed):
+                    skip = True
+                if not skip:
+                    with open(file_list[1], "a+") as f:
+                        f.write(f"{MAGIC_date[k].replace('-','_')},{z}\n")
+                    MAGIC_listed.append(int(z))
+            
 
 def main():
 
@@ -139,11 +162,16 @@ def main():
     df = df.astype({"YY_LST": int, "MM_LST": int, "DD_LST": int})
 
     stereo = True
-
-    df.query(
-        f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
+    if source_in is None:
+        df.query(
+        f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
         inplace=True,
     )  #
+    else:
+        df.query(
+            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
+            inplace=True,
+        )  #
 
     if range:
         min = str(config["data_selection_and_lists"]["min"])
@@ -164,7 +192,7 @@ def main():
     df = df.drop("index", axis=1)
 
     df.to_hdf("observations_query.h5", key="joint_obs", mode="w")
-    list_run(source_out, df, skip_LST, skip_MAGIC)
+    list_run(source_in, source_out, df, skip_LST, skip_MAGIC)
 
 
 if __name__ == "__main__":
