@@ -136,8 +136,10 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             MAGIC_date = df_source["date_MAGIC"].tolist()
             M2_run=df_source['Run ID'].tolist()
             print(M2_run)
+            print(M2_run)
             for k in range(len(df_source)):
                 skip = False
+
 
                 if (int(M2_run[k]) in skip_MAGIC) or (int(M2_run[k]) in run_listed):
                     skip = True
@@ -147,7 +149,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
                     with open(file_list[1], "a+") as f:
                         print(file_list[1])
                         f.write(
-                            f"{MAGIC_date[k].replace('-','_')},{str(M2_run[k]).rstrip('.0')}\n"
+                            f"{MAGIC_date[k].replace('-','_')},{int(M2_run[k])}\n"
                         )
                     run_listed.append(int(M2_run[k]))
 
