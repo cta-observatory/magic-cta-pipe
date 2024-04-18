@@ -66,6 +66,7 @@ def clear_files(source_in, source_out, df):
         source_list.append(source_out)
    
     print(source_list)
+    joblib.dump(source_list, "list_sources.dat")
     for source_name in source_list:
         print(source_name)
         file_list = [
@@ -77,6 +78,7 @@ def clear_files(source_in, source_out, df):
             if os.path.isfile(j):
                 os.remove(j)
                 print(f"{j} deleted.")
+    
 
 def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_list=None):
 
@@ -102,7 +104,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         
     else:
         source_list.append(source_out)
-    joblib.dump(source_list, "list_sources.dat")
+    
     print(source_list)
     for source_name in source_list:
         file_list = [
@@ -121,9 +123,12 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             LST_date = df_source["date_LST"].tolist()
             for k in range(len(df_source)):
                 skip = False
+                if LST_run[k]!=LST_run[k]:
+                    skip = True
 
                 if (int(LST_run[k]) in skip_LST) or (int(LST_run[k]) in run_listed):
                     skip = True
+                
 
                 if not skip:
                     with open(file_list[0], "a+") as f:
@@ -139,12 +144,14 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             print(M2_run)
             for k in range(len(df_source)):
                 skip = False
-
+                if M2_run[k]!=M2_run[k]:  #TODO check if ok for nan
+                    skip = True
 
                 if (int(M2_run[k]) in skip_MAGIC) or (int(M2_run[k]) in run_listed):
                     skip = True
                 if float(M2_run[k]) not in M1_run_list:
                     skip = True
+
                 if not skip:
                     with open(file_list[1], "a+") as f:
                         print(file_list[1])
