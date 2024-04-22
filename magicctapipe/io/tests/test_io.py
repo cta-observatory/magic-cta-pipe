@@ -210,6 +210,19 @@ def test_exist_dl1_mc(gamma_l1, p_l1):
 
 
 @pytest.mark.dependency(depends=["test_exist_dl1_mc"])
+def test_conc_mc(gamma_l1):
+    """
+    Check if DL1 MC files have computed concentration
+    """
+    for file in glob.glob(f"{gamma_l1}/*"):
+        d = pd.read_hdf(file, "/events/parameters")
+        # out of 3 concentration parameter the only sanity check we can do if pixel one is > 0
+        # while it is unlikely to have value > 1 it is also possible,
+        # and the other two concentration parameters in particular can be <=0 or > 1
+        assert np.all(d.groupby("tel_id").min()[["concentration_pixel"]] > 0)
+
+
+@pytest.mark.dependency(depends=["test_exist_dl1_mc"])
 def test_exist_dl1_stereo_mc(gamma_stereo, p_stereo):
     """
     Check if DL1 stereo MC produced
@@ -569,6 +582,16 @@ def test_exist_merged_magic(merge_magic):
     """
 
     assert len(glob.glob(f"{merge_magic}/*")) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_merged_magic"])
+def test_conc_data(merge_magic):
+    """
+    Check if DL1 data files have computed concentration
+    """
+    for file in glob.glob(f"{str(merge_magic)}/*"):
+        d = pd.read_hdf(file, "/events/parameters")
+        assert np.all(d.groupby("tel_id").min()[["concentration_pixel"]] > 0)
 
 
 @pytest.mark.dependency(depends=["test_exist_merged_magic"])

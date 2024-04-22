@@ -32,6 +32,7 @@ import yaml
 from astropy.coordinates import Angle, angular_separation
 from ctapipe.calib import CameraCalibrator
 from ctapipe.image import (
+    concentration_parameters,
     hillas_parameters,
     leakage_parameters,
     number_of_islands,
@@ -223,7 +224,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 
-    with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
+    with HDF5TableWriter(
+        output_file, group_name="events", mode="w", add_prefix=True
+    ) as writer:
         for event in event_source:
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
@@ -314,6 +317,9 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                 leakage_params = leakage_parameters(
                     camera_geoms[tel_id], image, signal_pixels
                 )
+                conc_params = concentration_parameters(
+                    camera_geoms[tel_id], image, hillas_params
+                )
 
                 # Calculate additional parameters
                 true_disp = calculate_disp(
@@ -383,9 +389,20 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                 event_info.tel_id = tel_id
 
                 # Save the parameters to the output file
+                # Setting all the prefixes except of concentration to empty string
+                event_info.prefix = ""
+                hillas_params.prefix = ""
+                timing_params.prefix = ""
+                leakage_params.prefix = ""
                 writer.write(
                     "parameters",
-                    (event_info, hillas_params, timing_params, leakage_params),
+                    (
+                        event_info,
+                        hillas_params,
+                        timing_params,
+                        leakage_params,
+                        conc_params,
+                    ),
                 )
 
         n_events_processed = event.count + 1
