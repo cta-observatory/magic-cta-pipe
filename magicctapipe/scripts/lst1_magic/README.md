@@ -28,7 +28,7 @@ From DL3 on, the analysis is done with gammapy.
 
 Authorized institute server (Client) &rarr;  ssh connection to CTALaPalma &rarr; ssh connection to cp01/02.
 
-2) Once connected to the IT Container, install magic-cta-pipe (e.g. in your home directory in the IT Container) with the following commands (if you have mamba installed, we recommend yo uuse it instead of conda. The installation process will be much faster.):
+2) Once connected to the IT Container, install magic-cta-pipe (e.g. in your home directory in the IT Container) with the following commands (if you have mamba installed, we recommend you to use it instead of conda. The installation process will be much faster.):
 
 ```
 git clone -b Torino_auto_MCP https://github.com/cta-observatory/magic-cta-pipe.git
@@ -39,122 +39,75 @@ pip install .
 ```
 
 ## Analysis
-### WARNING
 
-During the analysis some files (txt, dat) are automatically produced by the scripts and are needed by the folllowing steps. All the script can be called as console scripts, so that you don't need to launch them from their directory in the cloned repository or from a directory where you copied them, but it is mandatory that you always launch them from the same directory (e.g., you can create a working directory somewhere in your workspace and use it as your 'base' directory) so that the scripts save there their output files and read them from there as input files. As fpr the `config_general.yaml` file, you can store it in the same directory or not, but provide its full path to the script `-c` option if it is not in the same folder!
+During the analysis, some files are automatically produced by the scripts and are saved on your working directory. These files are necessary for the subsequent steps in the analysis chain. It is furthermore mandatory that you always launch the scripts from the same working directory since the output files stored there can be correctly read as input files at the subsequent analysis steps.
 
 ### DL0 to DL1
 
 In this step, we will convert the MAGIC and Monte Carlo (MC) Data Level (DL) 0 to DL1 (our goal is to reach DL3).
 
-In your working IT Container directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname), open the magic-lst environment with the command `conda activate magic-lst` and create the files `config_general.yaml`, `MAGIC_runs.txt` and `LST_runs.txt`.
+In your working IT Container directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname), open the magic-lst environment with the command `conda activate magic-lst` and update the file `config_general.yaml` according to your analysis.
 
-The file `config_general.yaml` must contain the telescope IDs and the directories with the MC data, as shown below:
+The file `config_general.yaml` must contain the telescope IDs and the directories with the MC data, as shown below, as well as the data selection and some information on the night sky background (NSB) level and software versions:
+
 ```
 mc_tel_ids:
     LST-1: 1
-    LST-2: 0  # If the telescope ID is set to 0, this means that this telescope is not used in the analysis.
+    LST-2: 0
     LST-3: 0
     LST-4: 0
     MAGIC-I: 2
     MAGIC-II: 3
 
 directories:
-    workspace_dir : "/fefs/aswg/workspace/yourname/yourprojectname/" 
-    target_name   : "Crab"
-    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"
+    workspace_dir : "/fefs/aswg/workspace/yourname/yourprojectname/"  # Output directory where all the data products will be saved.
+    # MC paths below are ignored if you set NSB_matching = true.
+    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"  # set to "" if you don't want to process these Monte Carlo simulations.
     MC_electrons  : "" 
     MC_helium     : "" 
-    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray"
+    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray" 
     MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
-
+    
+data_selection:
+    source_name_database: "CrabNebula"  # MUST BE THE SAME AS IN THE DATABASE; Set to null to process all sources in the given time range.
+    source_name_output: 'Crabtest'  # Name tag of your target. Used only if source_name_database != null.
+    target_RA_deg : 83.629  # RA in degrees; Please set it to null if source_name_database=null.
+    target_Dec_deg: 22.015  # Dec in degrees; Please set it to null if source_name_database=null.
+    time_range : True  # Search for all runs in a LST time range (e.g., 2020_01_01 -> 2022_01_01).
+    min : "2023_11_17"
+    max : "2024_03_03"   
+    date_list : ['2020_12_15','2021_03_11']  # LST list of days to be processed (only if time_range=False), format: YYYY_MM_DD.
+    skip_LST_runs: [3216,3217]  # LST runs to ignore.
+    skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
+    
 general:
-    target_RA_deg : 83.629  # RA in degrees, the coordinates are useful only if the target name is not found in the catalogs.
-    target_Dec_deg: 22.015  # Dec in degrees 
     SimTel_version: "v1.4"  
-    LST_version   : "v0.9"
+    LST_version   : "v0.10"
     LST_tailcut   : "tailcut84"
     focal_length  : "effective"
-    MAGIC_runs    : "MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
-    LST_runs      : "LST_runs.txt"
-    proton_train_fraction  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest  
-    nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]  # NSB = night sky background. This will be useful if NSB_matching = True
-    env_name      : magic-lst
-    cluster       : "SLURM"
-    NSB_matching  : true
+    proton_train_fraction  : 0.8  # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest.
+    nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
+    env_name      : auto_MCP_PR  # name of the conda environment to be used to process data.
+    cluster       : "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
+    NSB_matching  : true  # Set to false to process also the MCs. Set to true if adequate MC productions (DLx) are already available on the IT Container.
+    NSB_MC        : 0.5  # extra noise in dim pixels used to process MCs; e.g., you could put here the average NSB value of the processed LST runs. Ignored if NSB_matching=true.
+    
     
 ```
 
-The file `MAGIC_runs.txt` looks like that:
-```
-2020_11_19,5093174
-2020_11_19,5093175
-2020_12_08,5093491
-2020_12_08,5093492
-2020_12_16,5093711
-2020_12_16,5093712
-2020_12_16,5093713
-2020_12_16,5093714
-2021_02_14,5094483
-2021_02_14,5094484
-2021_02_14,5094485
-2021_02_14,5094486
-2021_02_14,5094487
-2021_02_14,5094488
-2021_03_16,5095265
-2021_03_16,5095266
-2021_03_16,5095267
-2021_03_16,5095268
-2021_03_16,5095271
-2021_03_16,5095272
-2021_03_16,5095273
-2021_03_16,5095277
-2021_03_16,5095278
-2021_03_16,5095281
-2021_03_18,5095376
-2021_03_18,5095377
-2021_03_18,5095380
-2021_03_18,5095381
-2021_03_18,5095382
-2021_03_18,5095383
-```
+Now that the configuration file is ready, lets create a list with all the MAGIC+LST1 runs for the chosen time window (or list of nights):
 
+> $ list_from_h5 -c config_general.yaml
 
-The columns here represent the night and run in which you want to select data. Please **do not add blank spaces** in the rows, as these names will be used to i) find the MAGIC data in the IT Container and ii) create the subdirectories in your working directory. If there is no MAGIC data, please fill this file with "0,0". Similarly, the `LST_runs.txt` file looks like this:
-
-```
-2020_11_18,2923
-2020_11_18,2924
-2020_12_07,3093
-2020_12_15,3265
-2020_12_15,3266
-2020_12_15,3267
-2020_12_15,3268
-2021_02_13,3631
-2021_02_13,3633
-2021_02_13,3634
-2021_02_13,3635
-2021_02_13,3636
-2021_03_15,4069
-2021_03_15,4070
-2021_03_15,4071
-2021_03_17,4125
-```
-Note that the LST nights appear as being one day before MAGIC's!!! This is because LST saves the date at the beginning of the night, while MAGIC saves it at the end. If there is no LST data, please fill this file with "0,0". These files are the only ones we need to modify in order to convert DL0 into DL1 data.
-
-These files can by automatically created (from a table stored on the IT) by the list_from_h5.py scripts: to do so, you have to fill-in the config_h5.yaml file with the list of dates (or range of dates) to be processed, MAGIC and LST runs to be skipped (if there are some runs to be skipped in the dates to be processed) and the name of the target source in the database: in case you want to analyze only one source, put its name in the database and the name you want to assign it (e.g., you would like to call the CrabNebula as Crab in the rest of the analysis) into this configuration file; if you want to analyze all the sources in the given time range, put source_name_database = null and source_name_output won't be considered by the script 
-
-> $ list_from_h5
-
-First, you have to evaluate the NSB level for each LST run (in the future this information will be provided in a database):
+Now we evaluate the NSB level for each LST run (in the future this information will be provided in a database):
 
 > $ nsb_level -c config_general.yaml
 
-This will launch a set of parallel jobs, one per LST run, that use an lstchain function to evaluate the NSB over (approx.) 25 subruns per run and then calculate the median of these 25 values. According to this median, the run is associated to a bin in the NSB range (standard bins (center and range) are 0.5=(0, 0.75), 1.0=(0.75,1.25), 1.5=(1.25,1.75), 2.0=(1.75,2.25), 2.5=(2.25,2.75), 3.0=(2.75,3.25))
+This will launch a number of parallel jobs, one per LST run, that use an lstchain function to evaluate the NSB over (approx.) 25 subruns per run and then calculate the median of these 25 values. According to this median, the run is associated to a bin in the NSB range. The standard bins (center and range) are 0.5=(0, 0.75), 1.0=(0.75,1.25), 1.5=(1.25,1.75), 2.0=(1.75,2.25), 2.5=(2.25,2.75), 3.0=(2.75,3.25).
 
-The output is a set of txt files (e.g., `LST_1.5_1234.txt` for run 1234), one per LST run, whose title contains the NSB bin assignet to the run and whose content is the string `date,run`
+The output is a set of txt files (e.g., `LST_1.5_1234.txt` for run 1234), one per LST run, whose title contains the NSB bin assigned to the run and whose content is the string `date,run`
 
-You can check if this process is done with the following commands:
+You can follow up this process is done with the following commands:
 
 > $ squeue -n nsb
 
@@ -162,7 +115,8 @@ or
 
 > $ squeue -u your_user_name
 
-To convert the MAGIC data into DL1 format, you simply do:
+
+At this point we can convert the MAGIC data into DL1 format with the following command:
 > $ setting_up_config_and_dir -c config_general.yaml
 
 The output in the terminal will be something like this:
@@ -174,20 +128,9 @@ This process will take about 10 min to run if the IT cluster is free.
 ```
 
 The command `setting_up_config_and_dir` does a series of things:
-- Collects the txt files produced above into one txt file per NSB bin (e.g., `LST_1.5_.txt`), whose content is a list of all the `date,runs` couples associated to this background value
-- According to the date of the MAGIC runs to be analyzed, it associates each run (actually, each day, but here it is done run-wise) to the corresponding MAGIC observation period ST...
-```
-ST_list = ["ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
-ST_begin = ["2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
-ST_end = [
-    "2024_01_01",
-    "2023_03_09",
-    "2022_08_31",
-    "2022_06_09",
-    "2021_09_29",
-]  # ST0320 ongoing -> 'service' end date
-```
-- Creates a directory with your target name within the directory `yourprojectname` and several subdirectories inside it that are necessary for the rest of the data reduction. The main directories are:
+- Collects the txt files produced above into a single txt file per NSB bin (e.g., `LST_1.5_.txt`), whose content is a list of all the `date,runs` couples associated to this background value.
+- According to the date of the selected MAGIC runs, each run is associated (actually, each day, but here it is done run-wise) to the corresponding MAGIC observation period ST_XXXX.
+- Creates a directory with the target name within the directory `yourprojectname` and several subdirectories inside it that are necessary for the rest of the data reduction. The main directories are:
 ```
 /fefs/aswg/workspace/yourname/yourprojectname/Crab/
 /fefs/aswg/workspace/yourname/yourprojectname/Crab/VERSION/DL1
@@ -212,7 +155,7 @@ Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/you
 
 > $ merging_runs (-c config_general.yaml)
 
-**The command inside parenthesis is not mandatory**. By the way, it is better if you don't use it unless you know what you are doing. 
+**The command inside parenthesis is not mandatory if you are running the command in the working directory**. By the way, it is better if you don't use it unless you know what you are doing. 
 The output in the terminal will be something like this:
 ```
 ***** Generating merge_MAGIC bashscripts...  

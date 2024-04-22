@@ -136,7 +136,7 @@ def collect_nsb(config):
     config : dict
         Configuration file
     """
-    source = config["directories"]["target_name"]
+    source = config["data_selection"]["source_name_database"]
 
     nsb = config["general"]["nsb"]
     for nsblvl in nsb:
@@ -680,7 +680,7 @@ def main():
     MC_protons = str(Path(config["directories"]["MC_protons"]))
     MC_gammadiff = str(Path(config["directories"]["MC_gammadiff"]))
     focal_length = config["general"]["focal_length"]
-    source = config["directories"]["target_name"]
+    source = config["data_selection"]["source_name_output"]
 
     source_list=[]
     if source is not None:

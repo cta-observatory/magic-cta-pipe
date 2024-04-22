@@ -7,29 +7,34 @@ mc_tel_ids:
     MAGIC-II: 3
 
 directories:
-    workspace_dir : "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/" #where to create the output folders `MCP_version/TARGET/DLx/...`
-    target_name   : "Crab"   # here put null to analyse all the sources in a given time range (see list_from_h5)
-    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"  #put "" if you don't want to process these simulated particles 
-    MC_electrons  : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Electrons/sim_telarray/" #put "" if you don't want to process these simulated particles 
-    MC_helium     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/Helium/sim_telarray/" #put "" if you don't want to process these simulated particles 
-    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray" #put "" if you don't want to process these simulated particles 
-    MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/" #put "" if you don't want to process these simulated particles 
-                            # MC paths are ignored if you put NSB_matching = true
-
+    workspace_dir : "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/"  # Output directory where all the data products will be saved.
+    # MC paths below are ignored if you set NSB_matching = true.
+    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"  # set to "" if you don't want to process these Monte Carlo simulations.
+    MC_electrons  : "" 
+    MC_helium     : "" 
+    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray" 
+    MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
+    
+data_selection:
+    source_name_database: "CrabNebula"  # MUST BE THE SAME AS IN THE DATABASE; Set to null to process all sources in the given time range.
+    source_name_output: 'Crabtest'  # Name tag of your target. Used only if source_name_database != null.
+    target_RA_deg : 83.629  # RA in degrees; Set to null if source_name_database=null.
+    target_Dec_deg: 22.015  # Dec in degrees; set to null if source_name_database=null.
+    time_range : True  # Search for all runs in a LST time range (e.g., 2020_01_01 -> 2022_01_01).
+    min : "2023_11_17"
+    max : "2024_03_03"   
+    date_list : ['2020_12_15','2021_03_11']  # LST list of days to be processed (only if time_range=False), format: YYYY_MM_DD.
+    skip_LST_runs: [3216,3217]  # LST runs to ignore.
+    skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
+    
 general:
-    target_RA_deg : 83.629 #RA in degrees; Put null if target_name=null (i.e., fill it with the source coordinatets only if you are analyzing only one source)
-    target_Dec_deg: 22.015   #Dec in degrees; Put null if target_name=null (i.e., fill it with the source coordinatets only if you are analyzing only one source)
-    SimTel_version         : "v1.4"  
+    SimTel_version: "v1.4"  
     LST_version   : "v0.10"
     LST_tailcut   : "tailcut84"
     focal_length  : "effective"
-    MAGIC_runs    : "Crab_MAGIC_runs.txt"  #If there is no MAGIC data, please fill this file with "0, 0"
-    LST_runs      : "Crab_LST_runs.txt"
-    proton_train_fraction  : 0.8 # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest  
+    proton_train_fraction  : 0.8  # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest.
     nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
-    env_name      : auto_MCP_PR   # name of the conda environment to be used to process data
-    cluster       : "SLURM" # cluster management system on which data are processed: now only  SLURM available (almost all of the data on the IT cluster), in the future maybe also condor (PIC, CNAF)
-    NSB_matching  : true  # put false to process also the MCs (see below): not recommended if adequate MC productions (DLx) already available on the IT because it requires a lot of time and memory!
-                        # if true, only real data are processed and are later matched to the available MC (see /fefs/aswg/LST1MAGIC/mc)
-    NSB_MC        : 0.5  # extra noise in dim pixels used to process MCs; e.g., you could put here the average NSB value of the processed LST runs. Ignored if NSB_matching=true
-    
+    env_name      : auto_MCP_PR  # name of the conda environment to be used to process data.
+    cluster       : "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
+    NSB_matching  : true  # Set to false to process also the MCs. Set to true if adequate MC productions (DLx) are already available on the IT Container.
+    NSB_MC        : 0.5  # extra noise in dim pixels used to process MCs; e.g., you could put here the average NSB value of the processed LST runs. Ignored if NSB_matching=true.
