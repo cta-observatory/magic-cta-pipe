@@ -34,7 +34,7 @@ general:
     focal_length  : "effective"
     proton_train_fraction  : 0.8  # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest.
     nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
-    env_name      : auto_MCP_PR  # name of the conda environment to be used to process data.
+    env_name      : magic-lst  # name of the conda environment to be used to process data.
     cluster       : "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
     NSB_matching  : true  # Set to false to process also the MCs. Set to true if adequate MC productions (DLx) are already available on the IT Container.
     NSB_MC        : 0.5  # extra noise in dim pixels used to process MCs; e.g., you could put here the average NSB value of the processed LST runs. Ignored if NSB_matching=true.

@@ -8,7 +8,6 @@ from .setting_up_config_and_dir import (
     directories_generator,
     lists_and_bash_gen_MAGIC,
     lists_and_bash_generator,
-    nsb_avg,
 )
 from .stereo_events import bash_stereo, bash_stereoMC, configfile_stereo
 
@@ -19,7 +18,6 @@ __all__ = [
     "merge",
     "mergeMC",
     "bash_scripts",
-    "nsb_avg",
     "collect_nsb",
     "config_file_gen",
     "lists_and_bash_generator",

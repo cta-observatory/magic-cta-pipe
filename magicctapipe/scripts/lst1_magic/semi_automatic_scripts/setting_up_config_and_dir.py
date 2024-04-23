@@ -28,8 +28,6 @@ from magicctapipe import __version__
 from magicctapipe.io import resource_file
 
 __all__ = [
-    "nsb_avg",
-    "collect_nsb",
     "config_file_gen",
     "lists_and_bash_generator",
     "lists_and_bash_gen_MAGIC",
@@ -41,115 +39,6 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-
-# TODO
-'''
-def nsb_avg(source, config, LST_list):
-
-    """
-    This function evaluates the average of the NSB levels that have been evaluated by LSTnsb_MC.py (one value per run).
-
-    Parameters
-    ----------
-    source : str
-        Source name
-    config : str
-        Config file
-    LST_list : str
-        Name of the file where the adopted LST runs are listed
-
-    Returns
-    -------
-    continue_process : string
-        If 'y', data processing will continue, otherwise it will be stopped
-    nsb : double
-        NSB value (average over the runs)
-    """
-    allfile = np.sort(
-        glob.glob(f"{source}_LST_nsb_*.txt")
-    )  # List with the names of all files containing the NSB values for each run
-    if len(allfile) == 0:
-        print(
-            "Warning: no file (containing the NSB value) exists for any of the LST runs to be processed. Check the input list"
-        )
-        return
-    noise = []
-    for j in allfile:
-        with open(j) as ff:
-            line_str = ff.readline().rstrip("\n")
-            line = float(line_str)
-            noise.append(line)
-    nsb = np.average(noise)
-    std = np.std(noise)
-    continue_process = "y"
-    if std > 0.2:
-        continue_process = input(
-            f'The standard deviation of the NSB levels is {std}. We recommend using NSB-matching scripts always that the standard deviation of NSB is > 0.2. Would you like to continue the current analysis anyway? [only "y" or "n"]: '
-        )
-    delete_index = []
-    for n, j in enumerate(allfile):
-        run = j.split("_")[3].rstrip(".txt")
-        if abs(noise[n] - nsb) > 3 * std:
-            sigma_range = input(
-                f'Run {run} has an NSB value of {noise[n]}, which is more than 3*sigma (i.e. {3*std}) away from the average (i.e. {nsb}). Would you like to continue the current analysis anyway? [only "y" or "n"]: '
-            )
-            if sigma_range != "y":
-                return (sigma_range, 0)
-
-            sigma_range = input(
-                f'Would you like to keep this run (i.e. {run}) in the analysis? [only "y" or "n"]:'
-            )
-            if sigma_range != "y":
-                delete_index.append(n)
-                with open(LST_list, "r") as f:
-                    lines = f.readlines()
-                with open(LST_list, "w") as f:
-                    for i in lines:
-                        if not i.endswith(f"{run}\n"):
-                            f.write(i)
-
-    if len(delete_index) > 0:
-        index = (
-            delete_index.reverse()
-        )  # Here we reverse the list of indexes associated with out-of-the-average NSB values, such that after deleting one element (below), the indexes of the array do not change.
-        for k in index:
-            np.delete(noise, k)
-
-    nsb = np.average(noise)
-    with open(config, "r") as f:
-        lines = f.readlines()
-    with open(config, "w") as f:
-        for i in lines:
-            if not i.startswith("nsb_value"):
-                f.write(i)
-        f.write(f"nsb_value: {nsb}\n")
-    return (continue_process, nsb)
-'''
-# TODO
-'''
-def collect_nsb(config):
-    """
-    Here we split the LST runs in NSB-wise .txt files
-
-    Parameters
-    ----------
-    config : dict
-        Configuration file
-    """
-    source = config["data_selection"]["source_name_database"]
-
-    nsb = config["general"]["nsb"]
-    for nsblvl in nsb:
-        allfile = np.sort(glob.glob(f"{source}_LST_{nsblvl}_*.txt"))
-        if len(allfile) == 0:
-            continue
-        for j in allfile:
-            with open(j) as ff:
-                line = ff.readline()
-                with open(f"{source}_LST_{nsblvl}_.txt", "a+") as f:
-                    f.write(f"{line.rstrip()}\n")
-
-'''
 def config_file_gen(ids, target_dir, noise_value, NSB_match):
 
     """

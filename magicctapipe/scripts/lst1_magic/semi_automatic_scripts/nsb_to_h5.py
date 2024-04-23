@@ -21,40 +21,30 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-
-
-
-
-
-def bash_scripts(run, date, config, env_name):
-
-    """Here we create the bash scripts (one per LST run)
+def collect_nsb(df_LST):
+    """
+    Here we split the LST runs in NSB-wise .txt files
 
     Parameters
     ----------
-    run : str
-        LST run number
-    date : str
-        LST date
-    config : str
-        Name of the configuration file
-
-    env_name : str
-        Name of the environment
+    config : dict
+        Configuration file
     """
+    nsb_files=glob.glob('nsb_LST_*.txt')
+    for file_nsb in nsb_files:
+        run=file_nsb.split('_')[3]
+        nsb=np.nan
+        with open(file_nsb) as ff:
+            line_str = ff.readline().rstrip("\n")
+            nsb=line_str.split(',')[2]
+        df_LST=df_LST.set_index("LST1_run")
+        df_LST.loc[df_LST.index[run], 'nsb']=nsb
+        df_LST=df_LST.reset_index()
+        
 
-    lines = [
-        "#!/bin/sh\n\n",
-        "#SBATCH -p short,long\n",
-        "#SBATCH -J nsb\n",
-        "#SBATCH -N 1\n\n",
-        "ulimit -l unlimited\n",
-        "ulimit -s unlimited\n",
-        "ulimit -a\n\n",
-        f"time conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}.log 2>&1 \n\n",
-    ]
-    with open(f"nsb_{date}_run_{run}.sh", "w") as f:
-        f.writelines(lines)
+
+
+
 
 
 def main():
@@ -104,31 +94,14 @@ def main():
     df_LST = df_LST[df_LST["date"] >= min]
     df_LST = df_LST[df_LST["date"] <= max]
     
-    df_LST=df_LST.drop('date')
-    run_LST=df_LST["LST1_run"]
-    date_LST=df_LST["date_LST"]
-    print("***** Generating bashscripts...")
-    for run_number, date in zip(run_LST, date_LST):
-        bash_scripts(run_number, date, args.config_file, env_name)
-    print("Process name: nsb")
-    print("To check the jobs submitted to the cluster, type: squeue -n nsb")
-    list_of_bash_scripts = np.sort(glob.glob(f"nsb_*_run_*.sh"))
 
-    if len(list_of_bash_scripts) < 1:
-        print(
-            "Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
-        )
-        return
-    for n, run in enumerate(list_of_bash_scripts):
-        if n == 0:
-            launch_jobs = f"nsb{n}=$(sbatch --parsable {run})"
-        else:
-            launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
+    df_new=collect_nsb(df_LST)
 
-    # print(launch_jobs)
-    os.system(launch_jobs)
+    df_old=pd.read_hdf('/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5', key="joint_obs")
+    df_new=pd.concat([df_old, df_new]).drop_duplicates(keep='first')
+    df_new= df_new.sort_values(by=["DATE","source"])
+    
 
-
-
+    df_new.to_hdf("/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5", key="joint_obs", mode="w")
 if __name__ == "__main__":
     main()
