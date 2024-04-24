@@ -1,9 +1,9 @@
 #This script allows us to get information about every MAGIC run ID (and subruns) in files used for common data analysis (MAGIC1, MAGIC2, LST1). 
 
 #The MAGIC files that can be used for analysis are located in the IT cluster in the following directory:
-#/fefs/onsite/common/MAGIC/data/M{tel_id}/event/Calibrated/{year}/{month}/{day}
+#/fefs/onsite/common/MAGIC/data/M{tel_id}/event/Calibrated/{YYYY}/{MM}/{DD}
 
-#In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2. 'Year,' 'month,' and 'day' specify the date.
+#In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2. 'YYYY', 'MM', and 'DD' specify the date.
 
 #In the first step, we have to load a dataframe that contains information about the date, the name of the source, and the range of MAGIC #runs. The file in file_path was generated using the spreadsheet "Common MAGIC LST1 data".
 
@@ -38,13 +38,13 @@ def check_directory(date, source, first_run, last_run, tel_id):
     
     #Between 2022/09/04 - 2022/12/14 MAGIC 1 had a failure.
     
-    year = new_date[:4]
-    month = new_date[4:6]
-    day = new_date[6:8]
+    YYYY = new_date[:4]
+    MM = new_date[4:6]
+    DD = new_date[6:8]
     
     results_count = {}
 
-    path = f"/fefs/onsite/common/MAGIC/data/M{tel_id}/event/Calibrated/{year}/{month}/{day}"
+    path = f"/fefs/onsite/common/MAGIC/data/M{tel_id}/event/Calibrated/{YYYY}/{MM}/{DD}"
     
 
     if os.path.exists(path):
