@@ -63,20 +63,13 @@ def check_directory(date, source, first_run, last_run, tel_id):
         print(f"No such file or directory: {date}")
     
     for result, count in results_count.items():
-        print(f"{result} \t {count}")
-    
-print(f'For the MAGIC 1 telescope:')
-print(f"Date (LST convention) \t Source \t Run ID \t Subruns")
+        print(f"M{tel_id} \t {result} \t {count}")
 
-for index, row in df.iterrows():
-    check_directory(row['Date (LST conv.)'], row['Source'], row['First run'], row['Last run'], tel_id=1)
+tel_id = [1, 2]
 
-print()
-print()
-print(f'For the MAGIC 2 telescope:')
-print(f"Date (LST convention) \t Source \t Run ID \t Subruns")
-
-for index, row in df.iterrows():
-    check_directory(row['Date (LST conv.)'], row['Source'], row['First run'], row['Last run'], tel_id=2)
-
-
+for tel in tel_id:
+    print()
+    print(f"Telescope ID \t Date (LST convention) \t Source \t Run ID \t Subruns")
+    for index, row in df.iterrows():
+        check_directory(row['Date (LST conv.)'], row['Source'], row['First run'], row['Last run'], tel)
+        
