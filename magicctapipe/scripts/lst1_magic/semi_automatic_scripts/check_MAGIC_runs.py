@@ -1,13 +1,11 @@
-#This script allows us to get information about every MAGIC run ID (and subruns) in files used for common data analysis (MAGIC1, MAGIC2, #LST1). You can also run the script using Jupyter Notebook.
+#This script allows us to get information about every MAGIC run ID (and subruns) in files used for common data analysis (MAGIC1, MAGIC2, LST1). 
 
-#The MAGIC files that can be used for analysis are located here:
+#The MAGIC files that can be used for analysis are located in the IT cluster in the following directory:
 #/fefs/onsite/common/MAGIC/data/M{tel_id}/event/Calibrated/{year}/{month}/{day}
 
 #In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2. 'Year,' 'month,' and 'day' specify the date.
 
-#In the first step, we have to load a dataframe that contains information about the date, the name of the source, and the range of MAGIC #runs. The file in file_path was generated using the spreadsheet (Common MAGIC LST1 data) from the following link:
-
-#https://docs.google.com/spreadsheets/d/1Tya0tlK-3fuN6_vXOU5FwJruis5vBA9FALAPLFHOfBQ/edit#gid=1066216668
+#In the first step, we have to load a dataframe that contains information about the date, the name of the source, and the range of MAGIC #runs. The file in file_path was generated using the spreadsheet "Common MAGIC LST1 data".
 
 import pandas as pd
 from datetime import datetime, timedelta
@@ -16,8 +14,6 @@ import re
 
 file_path = '/fefs/aswg/workspace/joanna.wojtowicz/data/magic_first_and_last_runs.csv'
 df = pd.read_csv(file_path,sep='\t', dtype={'Date (LST conv.)': str, 'Source': str, 'First run': int, 'Last run': int})
-
-#df
 
 def check_run_ID(path, filename, first_run, last_run, date, source):
     # Extract numbers from filename and check range
@@ -40,9 +36,7 @@ def check_directory(date, source, first_run, last_run, tel_id):
     date_obj += timedelta(days=1)
     new_date = datetime.strftime(date_obj, '%Y%m%d')
     
-    #Between 2022/09/04 - 2022/12/14 MAGIC 1 had a failure. Therefore we have to skip the range when we want to get information about missing files.
-    M1_start_failure = datetime.strptime('20220904', '%Y%m%d')
-    M1_end_failure = datetime.strptime('20221214', '%Y%m%d')
+    #Between 2022/09/04 - 2022/12/14 MAGIC 1 had a failure.
     
     year = new_date[:4]
     month = new_date[4:6]
@@ -58,15 +52,15 @@ def check_directory(date, source, first_run, last_run, tel_id):
         for filename in files:
             if source in filename:
                 results = check_run_ID(path, filename, first_run, last_run, date, source)
-                #We will see many results becuse a file with a run ID has subruns.
+                #We will see many results because a file with a run ID has subruns.
                 #We must count the same results to get information how many subruns we have.
                 for result in results:
                     if result in results_count:
                         results_count[result] += 1
                     else:
                         results_count[result] = 1
-    #else:
-        #print(f"No such file or directory: {date}")
+    else:
+        print(f"No such file or directory: {date}")
     
     for result, count in results_count.items():
         print(f"{result} \t {count}")
