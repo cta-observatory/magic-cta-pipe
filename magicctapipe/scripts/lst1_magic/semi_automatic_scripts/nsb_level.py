@@ -8,10 +8,10 @@ import argparse
 import glob
 import logging
 import os
-import pandas as pd
 from datetime import datetime
 
 import numpy as np
+import pandas as pd
 import yaml
 
 __all__ = ["bash_scripts"]
@@ -19,11 +19,6 @@ __all__ = ["bash_scripts"]
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-
-
-
-
 
 
 def bash_scripts(run, date, config, env_name):
@@ -91,28 +86,31 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    
+
     env_name = config["general"]["env_name"]
 
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5", key="joint_obs"
+        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
+        key="joint_obs",
     )
+
     min = datetime.strptime(args.begin_date, "%Y_%m_%d")
     max = datetime.strptime(args.end_date, "%Y_%m_%d")
-    lst = pd.to_datetime(df_LST["date_LST"].str.replace("_", "-"))
+    lst = pd.to_datetime(df_LST["DATE"].str.replace("_", "-"))
     df_LST["date"] = lst
+    print(df_LST.columns)
     df_LST = df_LST[df_LST["date"] >= min]
     df_LST = df_LST[df_LST["date"] <= max]
-    
-    df_LST=df_LST.drop('date')
-    run_LST=df_LST["LST1_run"]
-    date_LST=df_LST["date_LST"]
+
+    df_LST = df_LST.drop(columns="date")
+    run_LST = df_LST["LST1_run"]
+    date_LST = df_LST["DATE"]
     print("***** Generating bashscripts...")
     for run_number, date in zip(run_LST, date_LST):
         bash_scripts(run_number, date, args.config_file, env_name)
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
-    list_of_bash_scripts = np.sort(glob.glob(f"nsb_*_run_*.sh"))
+    list_of_bash_scripts = np.sort(glob.glob("nsb_*_run_*.sh"))
 
     if len(list_of_bash_scripts) < 1:
         print(
@@ -127,7 +125,6 @@ def main():
 
     # print(launch_jobs)
     os.system(launch_jobs)
-
 
 
 if __name__ == "__main__":

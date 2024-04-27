@@ -3,7 +3,6 @@ from .LSTnsb import nsb
 from .merging_runs import cleaning, merge, mergeMC, split_train_test
 from .nsb_level import bash_scripts
 from .setting_up_config_and_dir import (
-    collect_nsb,
     config_file_gen,
     directories_generator,
     lists_and_bash_gen_MAGIC,
@@ -18,7 +17,6 @@ __all__ = [
     "merge",
     "mergeMC",
     "bash_scripts",
-    "collect_nsb",
     "config_file_gen",
     "lists_and_bash_generator",
     "lists_and_bash_gen_MAGIC",
