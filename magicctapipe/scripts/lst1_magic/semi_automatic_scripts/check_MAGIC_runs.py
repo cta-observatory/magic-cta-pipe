@@ -16,17 +16,21 @@ file_path = '/fefs/aswg/workspace/joanna.wojtowicz/data/magic_first_and_last_run
 df = pd.read_csv(file_path,sep='\t', dtype={'Date (LST conv.)': str, 'Source': str, 'First run': int, 'Last run': int})
 
 def check_run_ID(path, filename, first_run, last_run, date, source):
-    # Extract numbers from filename and check range
-    run_ids = [int(s) for s in re.findall(r'\d+', filename)]
-    matched = False
-    magic_runs = []
+    Y = f'_Y_{source}' 
+    #'Y' because we have to be sure that the function counts right filename.
+
+    if Y in filename:
+        # Extract numbers from filename and check range
+        run_ids = [int(s) for s in re.findall(r'\d+', filename)]
+        matched = False
+        magic_runs = []
     
-    for id in run_ids:
-        if first_run <= id <= last_run:
-            matched = True
-            magic_runs.append(f"{date} \t {source} \t {id}")
-            #print(f"{date} \t {source} \t {id}")
-    return magic_runs
+        for id in run_ids:
+            if first_run <= id <= last_run:
+                matched = True
+                magic_runs.append(f"{date} \t {source} \t {id}")
+                #print(f"{date} \t {source} \t {id}")
+        return magic_runs
         
 def check_directory(date, source, first_run, last_run, tel_id):
      # In the table date are written as follows: YYYYMMDD, for example '20191123' We need a datetime object.
@@ -36,8 +40,6 @@ def check_directory(date, source, first_run, last_run, tel_id):
     date_obj += timedelta(days=1)
     new_date = datetime.strftime(date_obj, '%Y%m%d')
     
-    #Between 2022/09/04 - 2022/12/14 MAGIC 1 had a failure.
-    
     YYYY = new_date[:4]
     MM = new_date[4:6]
     DD = new_date[6:8]
@@ -46,11 +48,12 @@ def check_directory(date, source, first_run, last_run, tel_id):
 
     path = f"/fefs/onsite/common/MAGIC/data/M{tel_id}/event/Calibrated/{YYYY}/{MM}/{DD}"
     
-
     if os.path.exists(path):
         files = os.listdir(path)
+        count_with_source = 0 
         for filename in files:
             if source in filename:
+                count_with_source += 1
                 results = check_run_ID(path, filename, first_run, last_run, date, source)
                 #We will see many results because a file with a run ID has subruns.
                 #We must count the same results to get information how many subruns we have.
@@ -59,6 +62,14 @@ def check_directory(date, source, first_run, last_run, tel_id):
                         results_count[result] += 1
                     else:
                         results_count[result] = 1
+        if count_with_source == 0:  
+            if(tel_id == 1):
+                #Between 2022/09/04 - 2022/12/14 MAGIC 1 had a failure. Therefore we have to skip the range when we want to get information about missing files.
+                if(date<'20220904' or date>'20221214'):
+                    print(f"No files found containing the source '{source}' on {date}, (M{tel_id})")
+            if(tel_id == 2):
+                print(f"No files found containing the source '{source}' on {date}, (M{tel_id})")
+                        
     else:
         print(f"No such file or directory: {date}")
     
