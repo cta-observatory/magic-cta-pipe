@@ -147,7 +147,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             for k in range(len(df_source)):
                 skip = False
                 if np.isnan(LST_run[k]):
-                    skip = True
+                    continue
 
                 if (int(LST_run[k]) in skip_LST) or (int(LST_run[k]) in run_listed):
                     skip = True
@@ -166,7 +166,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             for k in range(len(df_source)):
                 skip = False
                 if np.isnan(M2_run[k]):
-                    skip = True
+                    continue
 
                 if (int(M2_run[k]) in skip_MAGIC) or (int(M2_run[k]) in run_listed):
                     skip = True
@@ -215,17 +215,19 @@ def main():
     )  # TODO: put this file in a shared folder
 
     df_LST = split_lst_date(df_LST)
-    df_LST = df_LST.astype({"YY_LST": int, "MM_LST": int, "DD_LST": int})
+    df_LST = df_LST.astype(
+        {"YY_LST": int, "MM_LST": int, "DD_LST": int, "nsb": float, "LST1_run": int}
+    )
 
     stereo = True
     if source_in is None:
         df_LST.query(
-            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
+            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & nsb <=3.0 & error_code.isnull()',
             inplace=True,
         )
     else:
         df_LST.query(
-            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo}',
+            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & nsb <=3.0 & error_code.isnull()',
             inplace=True,
         )
 
@@ -236,6 +238,8 @@ def main():
         max = datetime.strptime(max, "%Y_%m_%d")
         lst = pd.to_datetime(df_LST["date_LST"].str.replace("_", "-"))
         df_LST["date"] = lst
+        print("lst", lst)
+        print(min, max)
         df_LST = df_LST[df_LST["date"] >= min]
         df_LST = df_LST[df_LST["date"] <= max]
 

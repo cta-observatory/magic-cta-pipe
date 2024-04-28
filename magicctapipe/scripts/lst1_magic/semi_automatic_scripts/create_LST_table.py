@@ -31,6 +31,11 @@ def main():
     df_cut = df[needed_cols]
     print(df_cut.columns)
     df_cut["nsb"] = np.repeat(np.nan, len(df_cut))
+
+    df_cut["lstchain_0.9"] = np.zeros(len(df_cut), dtype=bool)
+
+    df_cut["lstchain_0.10"] = np.zeros(len(df_cut), dtype=bool)
+
     df_cut["error_code"] = np.repeat(np.nan, len(df_cut))
     print(df_cut)
     if os.path.isfile(

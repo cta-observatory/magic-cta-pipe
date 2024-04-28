@@ -66,6 +66,10 @@ def main():
         subset="LST1_run", keep="first"
     )
     df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
+
+    df_new["error_code"] = df_new["error_code"].replace("000", np.nan)
+
+    df_new["error_code"] = np.where(df_new["nsb"] <= 3.0, df_new["error_code"], "001")
     df_new["error_code"] = np.where(df_new["nsb"].notna(), df_new["error_code"], "000")
     df_new = df_new[
         [
@@ -76,6 +80,8 @@ def main():
             "MAGIC_trigger",
             "MAGIC_HV",
             "nsb",
+            "lstchain_0.9",
+            "lstchain_0.10",
             "error_code",
         ]
     ]
