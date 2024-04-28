@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import pandas as pd
 import pytest
+from ctapipe_io_lst import REFERENCE_LOCATION
 
 from magicctapipe.io.io import (
     check_input_list,
@@ -206,6 +207,19 @@ def test_exist_dl1_mc(gamma_l1, p_l1):
 
     assert len(glob.glob(f"{gamma_l1}/*")) == 4
     assert len(glob.glob(f"{p_l1}/*")) == 2
+
+
+@pytest.mark.dependency(depends=["test_exist_dl1_mc"])
+def test_conc_mc(gamma_l1):
+    """
+    Check if DL1 MC files have computed concentration
+    """
+    for file in glob.glob(f"{gamma_l1}/*"):
+        d = pd.read_hdf(file, "/events/parameters")
+        # out of 3 concentration parameter the only sanity check we can do if pixel one is > 0
+        # while it is unlikely to have value > 1 it is also possible,
+        # and the other two concentration parameters in particular can be <=0 or > 1
+        assert np.all(d.groupby("tel_id").min()[["concentration_pixel"]] > 0)
 
 
 @pytest.mark.dependency(depends=["test_exist_dl1_mc"])
@@ -522,6 +536,20 @@ class TestIRF:
 
 
 class TestDL1LST:
+    def test_load_lst_dl1_data_file_old(self, dl1_lst_old):
+        """
+        Check on LST DL1
+        """
+        events, subarray = load_lst_dl1_data_file(str(dl1_lst_old))
+        assert "event_type" in events.columns
+        assert "slope" in events.columns
+        assert "az_tel" not in events.columns
+        events = events.reset_index()
+        s = events.duplicated(subset=["obs_id_lst", "event_id_lst"])
+        assert np.all(s == False)
+        assert subarray.name == "LST-1 subarray"
+        assert subarray.reference_location == REFERENCE_LOCATION
+
     @pytest.mark.dependency()
     def test_load_lst_dl1_data_file(self, dl1_lst):
         """
@@ -554,6 +582,16 @@ def test_exist_merged_magic(merge_magic):
     """
 
     assert len(glob.glob(f"{merge_magic}/*")) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_merged_magic"])
+def test_conc_data(merge_magic):
+    """
+    Check if DL1 data files have computed concentration
+    """
+    for file in glob.glob(f"{str(merge_magic)}/*"):
+        d = pd.read_hdf(file, "/events/parameters")
+        assert np.all(d.groupby("tel_id").min()[["concentration_pixel"]] > 0)
 
 
 @pytest.mark.dependency(depends=["test_exist_merged_magic"])
