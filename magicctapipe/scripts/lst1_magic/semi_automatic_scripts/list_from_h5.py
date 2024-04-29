@@ -89,7 +89,6 @@ def clear_files(source_in, source_out, df):
             f"{source_name}_LST_runs.txt",
             f"{source_name}_MAGIC_runs.txt",
         ]  # The order here must be LST before MAGIC!
-        print(file_list)
         for j in file_list:
             if os.path.isfile(j):
                 os.remove(j)
@@ -238,8 +237,7 @@ def main():
         max = datetime.strptime(max, "%Y_%m_%d")
         lst = pd.to_datetime(df_LST["date_LST"].str.replace("_", "-"))
         df_LST["date"] = lst
-        print("lst", lst)
-        print(min, max)
+
         df_LST = df_LST[df_LST["date"] >= min]
         df_LST = df_LST[df_LST["date"] <= max]
 
@@ -255,7 +253,6 @@ def main():
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]
 
-    print(list_date_LST_low)
     df_MAGIC1 = pd.read_hdf(
         "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
         key="MAGIC1/runs_M1",
@@ -265,15 +262,12 @@ def main():
         key="MAGIC2/runs_M2",
     )
 
-    print(list_date_LST)
     df_MAGIC1 = df_MAGIC1[df_MAGIC1["Date (LST convention)"].isin(list_date_LST_low)]
     df_MAGIC2 = df_MAGIC2[df_MAGIC2["Date (LST convention)"].isin(list_date_LST_low)]
-    print(df_MAGIC2)
 
     df_MAGIC2 = magic_date(df_MAGIC2)
     df_MAGIC1 = magic_date(df_MAGIC1)
     df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
-    print(df_MAGIC2)
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
     list_run(source_in, source_out, df_MAGIC2, skip_LST, skip_MAGIC, False, M1_runs)

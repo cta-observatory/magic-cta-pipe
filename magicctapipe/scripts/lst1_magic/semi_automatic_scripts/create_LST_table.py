@@ -29,7 +29,7 @@ def main():
         "MAGIC_HV",
     ]
     df_cut = df[needed_cols]
-    print(df_cut.columns)
+
     df_cut["nsb"] = np.repeat(np.nan, len(df_cut))
 
     df_cut["lstchain_0.9"] = np.zeros(len(df_cut), dtype=bool)
@@ -37,7 +37,6 @@ def main():
     df_cut["lstchain_0.10"] = np.zeros(len(df_cut), dtype=bool)
 
     df_cut["error_code"] = np.repeat(np.nan, len(df_cut))
-    print(df_cut)
     if os.path.isfile(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5"
     ):
@@ -49,7 +48,7 @@ def main():
             subset="LST1_run", keep="first"
         )
         df_cut = df_cut.sort_values(by=["DATE", "source"])
-        print(df_cut)  # TODO check if fine with update and nsb
+        # TODO check if fine with update and nsb
 
     df_cut.to_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",

@@ -98,7 +98,6 @@ def main():
     max = datetime.strptime(args.end_date, "%Y_%m_%d")
     lst = pd.to_datetime(df_LST["DATE"].str.replace("_", "-"))
     df_LST["date"] = lst
-    print(df_LST.columns)
     df_LST = df_LST[df_LST["date"] >= min]
     df_LST = df_LST[df_LST["date"] <= max]
 
@@ -123,7 +122,6 @@ def main():
         else:
             launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
 
-    # print(launch_jobs)
     os.system(launch_jobs)
 
 

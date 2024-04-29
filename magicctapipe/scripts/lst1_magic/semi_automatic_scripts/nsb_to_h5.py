@@ -58,13 +58,6 @@ def main():
 
     df_new = collect_nsb(df_LST)
 
-    df_old = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
-    )
-    df_new = pd.concat([df_new, df_old]).drop_duplicates(
-        subset="LST1_run", keep="first"
-    )
     df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
 
     df_new["error_code"] = df_new["error_code"].replace("000", np.nan)

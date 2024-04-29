@@ -52,7 +52,6 @@ def nsb(run_list, simtel, lst_config, run_number):
         mod = int(len(run_list) / denominator)
     failed = 0
     for ii in range(0, len(run_list)):
-        print(mod)
         subrun = run_list[ii].split(".")[-2]
         if mod == 0:
             break
@@ -155,8 +154,6 @@ def main():
     # date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
-    print(inputdir)
-    print(run_list)
     noise = nsb(run_list, simtel, lst_config, run_number)
     if len(noise) == 0:
         logger.warning(
