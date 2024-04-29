@@ -99,23 +99,6 @@ Now that the configuration file is ready, lets create a list with all the MAGIC+
 
 > $ list_from_h5 -c config_general.yaml
 
-Now we evaluate the NSB level for each LST run (in the future this information will be provided in a database):
-
-> $ nsb_level -c config_general.yaml
-
-This will launch a number of parallel jobs, one per LST run, that use an lstchain function to evaluate the NSB over (approx.) 25 subruns per run and then calculate the median of these 25 values. According to this median, the run is associated to a bin in the NSB range. The standard bins (center and range) are 0.5=(0, 0.75), 1.0=(0.75,1.25), 1.5=(1.25,1.75), 2.0=(1.75,2.25), 2.5=(2.25,2.75), 3.0=(2.75,3.25).
-
-The output is a set of txt files (e.g., `LST_1.5_1234.txt` for run 1234), one per LST run, whose title contains the NSB bin assigned to the run and whose content is the string `date,run`
-
-You can follow up this process is done with the following commands:
-
-> $ squeue -n nsb
-
-or
-
-> $ squeue -u your_user_name
-
-
 At this point we can convert the MAGIC data into DL1 format with the following command:
 > $ setting_up_config_and_dir -c config_general.yaml
 
@@ -218,3 +201,26 @@ Since the DL3 may have only a few MBs, it is typically convenient to download it
 We prepared a [Jupyter Notebook](https://github.com/ranieremenezes/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/SED_and_LC_from_DL3.ipynb) that quickly creates a counts map, a significance curve, an SED, and a light curve. You can give it a try. 
 
 The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs. Note that the notebooks run with gammapy v0.20 or higher, while the gammapy version adopted in the MAGIC+LST-1 pipeline is v0.19.
+
+
+## For mainteiners (creation of MAGIC adn LST databases)
+
+To create and update the MAGIC and LST databases (from the one produced by AB and FDP) you should use the scripts in `database_production`
+
+- `create_lst_table`: creates the LST database (1 row per LST run) by dropping some columns from the parent one (AB, FDP) and adding columns for NSB value (NaN by default), lstchain version (one column per version, False by default) and error codes (NaN by default). Launched as `python create_lst_table.py`
+
+- `nsb_level`: evaluates, for every LST run, the respective NSB value (i.e., the median over the NSB estimated by lstchain over approx. 25 sub-runs per run). This scripts launch a set of jobs (one per run; each job calls the `LSTnsb` script) and each jobs produces an output txt file containing a string like `date,run,NSB`; in the title of these files, both the run number and the NSB range are indicated (0.5=(0,0.75), 1.0=(0.75, 1.25),...., 2.5=(2.25,2.75), 3.0=(2.75,3.25), `high`=(3.25,Infinity) ). To limit the number of simultaneous jobs running on SLURM, you should always provide a begin and a end date (format YYYY_MM_DD) in the options. Launched as `python nsb_level.py -c config_general.yaml -b begin_date -e end_date`
+
+- `LSTnsb`: called by `nsb_level`, it gathers all the subruns for a run, evaluates the NSB for approx. 25 of them (using the lstchain `calculate_noise_parameters` function), evaluates the median over these values and the approximate NSB level (0.5, 1.0, 1.5, ...., 2.5, 3.0, `high`) and then creates one txt file per run. These files contain the value of the NSB (i.e., the median over subruns) and are needed to fill the database `nsb` column
+
+- `nsb_to_h5`: this script reads the txt files created by `nsb_level` to know the NSB value for each run. This value is used to fill the `nsb` column of the database at the location of the respective run number. It also put '000' as an error code in case the NSB is NaN (i.e., not evaluated for the LST run), '001' in case NSB>3.0 (too high NSB to be processed with a standard analysis!). Launched as `python nsb_to_h5.py`
+
+- `lstchain_version`: this scripts loop over all the rows of the database, estract date and run number from the table and look for the data saved in the IT (i.e., which version of lstchain has been used to process a run). For each run, it sets to True the lstchain_0.9(0.10) cell if this run has been processed up to DL1 with lstchain 0.9(0.10). It sets error code '002' in case none of the two versions has been used to process the run. Launched as `python lstchain_version.py`
+
+Error codes:
+
+- 000: no NSB
+
+- 001: NSB>3.0
+
+- 002: neither 0.9 nor 0.10 lstchain version
