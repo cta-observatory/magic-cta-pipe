@@ -20,9 +20,8 @@ def check_run_ID(path, filename, first_run, last_run, date, source):
     #'Y' because we have to be sure that the function counts right filename.
 
     if Y in filename:
-        # Extract numbers from filename and check range
-        run_ids = [int(s) for s in re.findall(r'\d+', filename)]
-        matched = False
+        # Extract run_ids from filename and check range
+        run_ids = [int(filename.split("_")[2].split(".")[0])]
         magic_runs = []
     
         for id in run_ids:
