@@ -15,7 +15,7 @@ $ python setting_up_config_and_dir.py (-c config_file.yaml)
 """
 import argparse
 import glob
-import json
+import joblib
 import logging
 import os
 
@@ -557,7 +557,7 @@ def main():
 
     source_list = []
     if source is not None:
-        source_list = json.load("list_sources.dat")
+        source_list = joblib.load("list_sources.dat")
 
     else:
         source_list.append(source)
