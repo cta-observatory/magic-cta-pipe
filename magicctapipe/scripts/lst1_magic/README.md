@@ -40,7 +40,7 @@ pip install .
 
 ## Analysis
 
-During the analysis, some files are automatically produced by the scripts and are saved on your working directory. These files are necessary for the subsequent steps in the analysis chain. It is furthermore mandatory that you always launch the scripts from the same working directory since the output files stored there can be correctly read as input files at the subsequent analysis steps.
+During the analysis, some files are automatically produced by the scripts and are saved in your working directory. These files are necessary for the subsequent steps in the analysis chain. It is therefore mandatory to always launch the scripts from the same working directory so that the output files stored there can be correctly assigned as input files at the subsequent analysis steps.
 
 ### DL0 to DL1
 
@@ -48,7 +48,7 @@ In this step, we will convert the MAGIC and Monte Carlo (MC) Data Level (DL) 0 t
 
 In your working IT Container directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname), open the magic-lst environment with the command `conda activate magic-lst` and update the file `config_general.yaml` according to your analysis.
 
-The file `config_general.yaml` must contain the telescope IDs and the directories with the MC data, as shown below, as well as the data selection and some information on the night sky background (NSB) level and software versions:
+The file `config_general.yaml` must contain the telescope IDs, the directories with the MC data (mandatory only if NSB_matching = False), the data selection, and some information on the night sky background (NSB) level and software versions:
 
 ```
 mc_tel_ids:
@@ -95,11 +95,11 @@ general:
     
 ```
 
-Now that the configuration file is ready, lets create a list with all the MAGIC+LST1 runs for the chosen time window (or list of nights):
+Now that the configuration file is ready, let's create a list with all the MAGIC+LST1 runs for the time window (or list of nights) defined on the config_general.yaml file:
 
 > $ list_from_h5 -c config_general.yaml
 
-At this point we can convert the MAGIC data into DL1 format with the following command:
+At this point, we can convert the MAGIC data into DL1 format with the following command:
 > $ setting_up_config_and_dir -c config_general.yaml
 
 The output in the terminal will be something like this:
