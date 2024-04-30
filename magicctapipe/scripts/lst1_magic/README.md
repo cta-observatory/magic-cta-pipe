@@ -74,8 +74,8 @@ data_selection:
     target_RA_deg : 83.629  # RA in degrees; Please set it to null if source_name_database=null.
     target_Dec_deg: 22.015  # Dec in degrees; Please set it to null if source_name_database=null.
     time_range : True  # Search for all runs in a LST time range (e.g., 2020_01_01 -> 2022_01_01).
-    min : "2023_11_17"
-    max : "2024_03_03"   
+    min : "2021_01_17"
+    max : "2022_12_03"   
     date_list : ['2020_12_15','2021_03_11']  # LST list of days to be processed (only if time_range=False), format: YYYY_MM_DD.
     skip_LST_runs: [3216,3217]  # LST runs to ignore.
     skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
@@ -98,6 +98,14 @@ general:
 Now that the configuration file is ready, let's create a list with all the MAGIC+LST1 runs for the time window (or list of nights) defined on the config_general.yaml file:
 
 > $ list_from_h5 -c config_general.yaml
+
+The output in the terminal should look like this:
+```
+Cleaning pre-existing *_LST_runs.txt and *_MAGIC_runs.txt files
+Finding LST runs...
+Finding MAGIC runs...
+```
+And it will save the files TARGET_LST_runs.txt, TARGET_MAGIC_runs.txt, and list_sources.dat in your working directory.
 
 At this point, we can convert the MAGIC data into DL1 format with the following command:
 > $ setting_up_config_and_dir -c config_general.yaml
