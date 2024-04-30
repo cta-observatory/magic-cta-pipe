@@ -223,7 +223,7 @@ def lists_and_bash_gen_MAGIC(
         Directory to store the results
     telescope_ids : list
         List of the telescope IDs (set by the user)
-    MAGIC_runs : str
+    MAGIC_runs : array
         MAGIC dates and runs to be processed
     source : str
         Name of the target
@@ -408,7 +408,7 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs, NSB_match):
         Directory to store the results
     telescope_ids : list
         List of the telescope IDs (set by the user)
-    MAGIC_runs : str
+    MAGIC_runs : array
         MAGIC dates and runs to be processed
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
@@ -544,10 +544,7 @@ def main():
     SimTel_version = config["general"]["SimTel_version"]
     env_name = config["general"]["env_name"]
     NSB_match = config["general"]["NSB_matching"]
-    MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
-    MAGIC_runs = np.genfromtxt(
-        MAGIC_runs_and_dates, dtype=str, delimiter=","
-    )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
+    
 
     # LST_runs_and_dates = config["general"]["LST_runs"]
     MC_gammas = str(Path(config["directories"]["MC_gammas"]))
@@ -567,6 +564,11 @@ def main():
     for source_name in source_list:
         target_dir = str(Path(config["directories"]["workspace_dir"]) / source_name)
 
+        MAGIC_runs_and_dates = f'{source_name}_MAGIC_runs.txt'
+        MAGIC_runs = np.genfromtxt(
+            MAGIC_runs_and_dates, dtype=str, delimiter=","
+        )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
+    
         noise_value = [0, 0, 0]
         if not NSB_match:
             nsb = config["general"]["NSB_MC"]
