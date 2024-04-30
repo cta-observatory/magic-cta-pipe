@@ -33,6 +33,7 @@ import glob
 import logging
 import os
 from pathlib import Path
+import joblib
 
 import numpy as np
 import yaml
@@ -68,7 +69,7 @@ def cleaning(list_of_nodes, cwd):
     print("Cleaning done.")
 
 
-def split_train_test(target_dir, train_fraction):
+def split_train_test(target_dir, train_fraction, source_name):
 
     """
     This function splits the MC proton sample in 2, i.e. the "test" and the "train" subsamples.
@@ -83,7 +84,7 @@ def split_train_test(target_dir, train_fraction):
         Fraction of proton MC files to be used in the training RF dataset
     """
 
-    proton_dir = f"{target_dir}/DL1/MC/protons"
+    proton_dir = f"{target_dir}/{source_name}/DL1/MC/protons"
 
     if not os.path.exists(f"{proton_dir}/train"):
         os.mkdir(f"{proton_dir}/train")
@@ -147,9 +148,9 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
         If real data are matched to pre-processed MCs or not
     """
 
-    process_name = f"merging_{target_dir.split('/')[-2:][1]}"
+    process_name = f"merging_{source}"
     if not NSB_match:
-        MAGIC_DL1_dir = f"{target_dir}/DL1/Observations"
+        MAGIC_DL1_dir = f"{target_dir}/{source}/DL1/Observations"
         if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(
             f"{MAGIC_DL1_dir}/M2"
         ):
@@ -219,9 +220,9 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
 
     else:
         
-        process_name = f'merging_{target_dir.split("/")[-2:][1]}'
+        process_name = f'merging_{source}'
 
-        MAGIC_DL1_dir = f"v{__version__}/{target_dir}/DL1/{p}"
+        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
 
         if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(
             f"{MAGIC_DL1_dir}/M2"
@@ -237,7 +238,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
             "ulimit -s unlimited\n",
             "ulimit -a\n\n",
         ]
-        with open(f"{source}_Merge_MAGIC_{identification}_{p}.sh", "w") as f:
+        with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
             f.writelines(lines)
             if identification == "0_subruns":
 
@@ -357,7 +358,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                     )
 
 
-def mergeMC(target_dir, identification, env_name, cwd):
+def mergeMC(target_dir, identification, env_name, cwd, source_name):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
@@ -374,9 +375,9 @@ def mergeMC(target_dir, identification, env_name, cwd):
         Current working directory
     """
 
-    process_name = f"merging_{target_dir.split('/')[-2:][1]}"
+    process_name = f"merging_{source_name}"
 
-    MC_DL1_dir = f"{target_dir}/DL1/MC"
+    MC_DL1_dir = f"{target_dir}/{source_name}/DL1/MC"
     if not os.path.exists(f"{MC_DL1_dir}/{identification}/Merged"):
         os.mkdir(f"{MC_DL1_dir}/{identification}/Merged")
 
@@ -446,7 +447,7 @@ def main():
         config = yaml.safe_load(f)
     cwd = os.getcwd()
 
-    target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
+    target_dir = Path(config["directories"]["workspace_dir"])
 
     
     NSB_match = config["general"]["NSB_matching"]
@@ -457,7 +458,7 @@ def main():
 
     source_list = []
     if source is not None:
-        source_list = json.load("list_sources.dat")
+        source_list = joblib.load("list_sources.dat")
 
     else:
         source_list.append(source)
@@ -468,21 +469,21 @@ def main():
         if not NSB_match:
             if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
                 # Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
-                if not os.path.exists(f"{target_dir}/DL1/MC/protons_test"):
+                if not os.path.exists(f"{target_dir}/{source_name}/DL1/MC/protons_test"):
                     print("***** Splitting protons into 'train' and 'test' datasets...")
-                    split_train_test(target_dir, train_fraction)
+                    split_train_test(target_dir, train_fraction, source_name)
 
                 print("***** Generating merge_MC bashscripts...")
                 mergeMC(
-                    target_dir, "protons", env_name, cwd
+                    target_dir, "protons", env_name, cwd, source_name
                 )  # generating the bash script to merge the files
                 mergeMC(
-                    target_dir, "gammadiffuse", env_name, cwd
+                    target_dir, "gammadiffuse", env_name, cwd, source_name
                 )  # generating the bash script to merge the files
                 mergeMC(
-                    target_dir, "gammas", env_name, cwd
+                    target_dir, "gammas", env_name, cwd, source_name
                 )  # generating the bash script to merge the files
-                mergeMC(target_dir, "protons_test", env_name, cwd)
+                mergeMC(target_dir, "protons_test", env_name, cwd, source_name)
 
                 print("***** Running merge_hdf_files.py on the MC data files...")
 
@@ -507,13 +508,13 @@ def main():
         ):
             print("***** Generating merge_MAGIC bashscripts...")
             merge(
-                target_dir, "0_subruns", MAGIC_runs, env_name, source, NSB_match
+                target_dir, "0_subruns", MAGIC_runs, env_name, source_name, NSB_match
             )  # generating the bash script to merge the subruns
             merge(
-                target_dir, "1_M1M2", MAGIC_runs, env_name, source, NSB_match
+                target_dir, "1_M1M2", MAGIC_runs, env_name, source_name, NSB_match
             )  # generating the bash script to merge the M1 and M2 runs
             merge(
-                target_dir, "2_nights", MAGIC_runs, env_name, source, NSB_match
+                target_dir, "2_nights", MAGIC_runs, env_name, source_name, NSB_match
             )  # generating the bash script to merge all runs per night
 
             print("***** Running merge_hdf_files.py on the MAGIC data files...")
@@ -531,9 +532,9 @@ def main():
 
             os.system(launch_jobs)
 
-        print(f"Process name: merging_{target_dir.split('/')[-2:][1]}")
+        print(f"Process name: merging_{source_name}")
         print(
-            f"To check the jobs submitted to the cluster, type: squeue -n merging_{target_dir.split('/')[-2:][1]}"
+            f"To check the jobs submitted to the cluster, type: squeue -n merging_{source_name}"
         )
         print("This process will take about 10 to 30 min to run.")
 
