@@ -448,8 +448,7 @@ def main():
 
     target_dir = f'{Path(config["directories"]["workspace_dir"])}/{config["directories"]["target_name"]}'
 
-    MAGIC_runs_and_dates = config["general"]["MAGIC_runs"]
-    MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates, dtype=str, delimiter=",")
+    
     NSB_match = config["general"]["NSB_matching"]
     train_fraction = float(config["general"]["proton_train_fraction"])
    
@@ -464,6 +463,8 @@ def main():
         source_list.append(source)
     for source_name in source_list:
     # Below we run the analysis on the MC data
+        MAGIC_runs_and_dates = f'{source_name}_MAGIC_runs.txt'
+        MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates, dtype=str, delimiter=",")
         if not NSB_match:
             if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
                 # Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
