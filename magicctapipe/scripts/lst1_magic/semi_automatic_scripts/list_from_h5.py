@@ -126,7 +126,6 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         source_list.append(source_out)
         
     for source_name in source_list:
-        print("Target name: ", source_name)
         file_list = [
             f"{source_name}_LST_runs.txt",
             f"{source_name}_MAGIC_runs.txt",
