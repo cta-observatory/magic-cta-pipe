@@ -33,8 +33,8 @@ Authorized institute server (Client) &rarr;  ssh connection to CTALaPalma &rarr;
 ```
 git clone -b Torino_auto_MCP https://github.com/cta-observatory/magic-cta-pipe.git
 cd magic-cta-pipe
-conda env create -n magic-lst -f environment.yml
-conda activate magic-lst
+mamba env create -n magic-lst -f environment.yml
+mamba activate magic-lst
 pip install .
 ```
 
