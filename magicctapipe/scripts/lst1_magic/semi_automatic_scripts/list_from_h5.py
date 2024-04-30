@@ -81,10 +81,9 @@ def clear_files(source_in, source_out, df):
     else:
         source_list.append(source_out)
 
-    print("Source list: ", source_list)
     joblib.dump(source_list, "list_sources.dat")
+    print("Cleaning pre-existing *_LST_runs.txt and *_MAGIC_runs.txt files")
     for source_name in source_list:
-        print("Target name: ", source_name)
         file_list = [
             f"{source_name}_LST_runs.txt",
             f"{source_name}_MAGIC_runs.txt",
@@ -113,10 +112,10 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
     skip_MAGIC : list
         List of the MAGIC runs to be ignored.
     is_LST : bool
-        If you are looking for LST runs, set to True. For MAGIC set False.
+        If you are looking for LST runs, set it to True. For MAGIC set False.
     M1_run_list : list
         If you are looking for MAGIC runs, pass the list of MAGIC-1 runs here, and the MAGIC-2 database as df.
-        Only the runs both in the list and in the dataframe (i.e., stereo MAGIC observations) will be saved in the output txt files
+        Only the runs both in the list and in the data frame (i.e., stereo MAGIC observations) will be saved in the output txt files
     """
 
     source_list = []
@@ -125,9 +124,9 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
 
     else:
         source_list.append(source_out)
-
-    print("List of sources: ", source_list)
+        
     for source_name in source_list:
+        print("Target name: ", source_name)
         file_list = [
             f"{source_name}_LST_runs.txt",
             f"{source_name}_MAGIC_runs.txt",
@@ -140,7 +139,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             df_source = df[df["source"] == source_in]
 
         if is_LST:
-            print("LST")
+            print("Finding LST runs...")
             LST_run = df_source["LST1_run"].tolist()  # List with runs as strings
             LST_date = df_source["date_LST"].tolist()
             for k in range(len(df_source)):
@@ -159,7 +158,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
                     run_listed.append(int(LST_run[k]))
 
         if not is_LST:
-            print("MAGIC")
+            print("Finding MAGIC runs...")
             MAGIC_date = df_source["date_MAGIC"].tolist()
             M2_run = df_source["Run ID"].tolist()
             for k in range(len(df_source)):
@@ -181,7 +180,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
 def main():
 
     """
-    This function is automatically called whe script is launched.
+    This function is automatically called when the script is launched.
     It calls the functions above to create the files XXXXXX_LST_runs.txt and XXXXX_MAGIC_runs.txt for the desired targets.
     """
 
