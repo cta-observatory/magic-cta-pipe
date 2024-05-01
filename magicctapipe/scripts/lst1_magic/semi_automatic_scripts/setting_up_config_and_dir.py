@@ -316,7 +316,7 @@ def lists_and_bash_gen_MAGIC(
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                         "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                     ]
                     with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
                         f.writelines(lines)
@@ -337,11 +337,11 @@ def lists_and_bash_gen_MAGIC(
                         "ulimit -l unlimited\n",
                         "ulimit -s unlimited\n",
                         "ulimit -a\n\n",
-                        f"export OUTPUTDIR=v{__version__}/{target_dir}/{source}/DL1/M1/{i[0]}/{i[1]}\n",
+                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                         "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                     ]
                     with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
                         f.writelines(lines)
