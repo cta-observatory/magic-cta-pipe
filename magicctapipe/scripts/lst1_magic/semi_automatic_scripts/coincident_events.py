@@ -103,9 +103,8 @@ def linking_bash_lst(
         if not os.path.exists(f"{coincidence_DL1_dir}/DL1Coincident/"):
             os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident")
     
-        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/DL1"
-        if not os.path.exists(f"{coincidence_DL1_dir}/DL1Coincident"):
-            os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident")
+        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
+        
         dates = [
             os.path.basename(x)
             for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")
@@ -125,13 +124,7 @@ def linking_bash_lst(
                 D_L = i[0].split("_")[2]
                 day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
                 if day_MAGIC == day_LST + delta:
-                    if not os.path.exists(
-                        f"{coincidence_DL1_dir}/DL1Coincident/"
-                    ):
-                        os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1Coincident/"
-                        )
-
+                    
                     lstObsDir = (
                         i[0].split("_")[0] + i[0].split("_")[1] + i[0].split("_")[2]
                     )
