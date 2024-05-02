@@ -12,8 +12,27 @@ from datetime import datetime, timedelta
 import os
 import re
 
-file_path = '/fefs/aswg/workspace/joanna.wojtowicz/data/magic_first_and_last_runs.csv'
-df = pd.read_csv(file_path,sep='\t', dtype={'Date (LST conv.)': str, 'Source': str, 'First run': int, 'Last run': int})
+def table_first_last_run(df):
+    df_selected_data = df.iloc[:, [2, 1, 5, 6]]
+    df_selected_data.columns = ['DATE','source', 'MAGIC_first_run', 'MAGIC_last_run']
+    grouped_data = df_selected_data.groupby(['DATE', 'source'])
+    
+    result_table = []
+
+    for (date, source), group in grouped_data:
+        First_run = group['MAGIC_first_run'].min()
+        Last_run = group['MAGIC_last_run'].max()
+    
+        result_table.append({
+            'Date (LST conv.)': date,
+            'Source': source,
+            'First run': First_run,
+            'Last run': Last_run
+        })
+    
+    result = pd.DataFrame(result_table)
+    
+    return(result)
 
 def check_run_ID(path, filename, first_run, last_run, date, source):
     Y = f'_Y_{source}' 
@@ -75,11 +94,13 @@ def check_directory(date, source, first_run, last_run, tel_id):
     for result, count in results_count.items():
         print(f"M{tel_id} \t {result} \t {count}")
 
+df = pd.read_hdf( '/fefs/aswg/workspace/federico.dipierro/simultaneous_obs_summary.h5', key='str/table')
+database = table_first_last_run(df)
 tel_id = [1, 2]
 
 for tel in tel_id:
     print()
     print(f"Telescope ID \t Date (LST convention) \t Source \t Run ID \t Subruns")
-    for index, row in df.iterrows():
+    for index, row in database.iterrows():
         check_directory(row['Date (LST conv.)'], row['Source'], row['First run'], row['Last run'], tel)
         
