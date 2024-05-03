@@ -42,7 +42,7 @@ def bash_scripts(run, date, config, env_name):
         "#!/bin/sh\n\n",
         "#SBATCH -p short,long\n",
         "#SBATCH -J nsb\n",
-        "#SBATCH -N 1\n\n",
+        "#SBATCH -n 1\n\n",
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
