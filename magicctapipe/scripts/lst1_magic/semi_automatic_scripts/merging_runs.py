@@ -423,15 +423,15 @@ def mergeMC(target_dir, identification, env_name, cwd, source_name):
             f"#SBATCH --array=0-{process_size}%50\n",
             "#SBATCH --mem=7g\n",
             "#SBATCH -n 1\n\n",
-            f"#SBATCH --output={MC_DL1_dir}/{identification}/Merged/slurm-%x.%j.out"
-            f"#SBATCH --error={MC_DL1_dir}/{identification}/Merged/slurm-%x.%j.err"
+            f"#SBATCH --output={MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a.out"
+            f"#SBATCH --error={MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a.err"
             "ulimit -l unlimited\n",
             "ulimit -s unlimited\n",
             "ulimit -a\n\n",
             f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             f"export LOG={MC_DL1_dir}/{identification}/Merged"
-            + "/merged_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+            + "/merged_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
             f"conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n",
         ]
         f.writelines(lines_bash_file)

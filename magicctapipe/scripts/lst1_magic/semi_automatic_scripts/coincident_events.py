@@ -172,8 +172,8 @@ def linking_bash_lst(
                         f"#SBATCH --array=0-{process_size}\n",
                         "#SBATCH --mem=8g\n",
                         "#SBATCH -n 1\n\n",
-                        f"#SBATCH --output={outputdir}/logs/slurm-%x.%j.out"
-                        f"#SBATCH --error={outputdir}/logs/slurm-%x.%j.err"
+                        f"#SBATCH --output={outputdir}/logs/slurm-%x.%A_%a.out"
+                        f"#SBATCH --error={outputdir}/logs/slurm-%x.%A_%a.err"
                         "ulimit -l unlimited\n",
                         "ulimit -s unlimited\n",
                         "ulimit -a\n\n",
@@ -181,7 +181,7 @@ def linking_bash_lst(
                         f"export OUTPUTDIR={outputdir}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                         f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1",
                     ]
                     with open(
@@ -233,8 +233,8 @@ def linking_bash_lst(
                     f"#SBATCH --array=0-{process_size}%50\n",
                     "#SBATCH --mem=8g\n",
                     "#SBATCH -n 1\n\n",
-                    f"#SBATCH --output={nightLST}/slurm-%x.%j.out"
-                    f"#SBATCH --error={nightLST}/slurm-%x.%j.err"
+                    f"#SBATCH --output={nightLST}/slurm-%x.%A_%a.out"
+                    f"#SBATCH --error={nightLST}/slurm-%x.%A_%a.err"
                     "ulimit -l unlimited\n",
                     "ulimit -s unlimited\n",
                     "ulimit -a\n\n",
@@ -242,7 +242,7 @@ def linking_bash_lst(
                     f"export OUTPUTDIR={nightLST}\n",
                     "SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                    "export LOG=$OUTPUTDIR/coincidence_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                    "export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                     f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/{source_name}/config_coincidence.yaml >$LOG 2>&1",
                 ]
                 f.writelines(lines)
