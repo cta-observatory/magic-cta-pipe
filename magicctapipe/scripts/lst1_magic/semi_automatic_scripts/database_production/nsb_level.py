@@ -43,10 +43,13 @@ def bash_scripts(run, date, config, env_name):
         "#SBATCH -p short,long\n",
         "#SBATCH -J nsb\n",
         "#SBATCH -n 1\n\n",
+        "#SBATCH --output=slurm-nsb-%x.%j.out"
+        "#SBATCH --error=slurm-nsb-%x.%j.err"
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
-        f"time conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}.log 2>&1 \n\n",
+        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_"
+        + "${SLURM_JOB_ID}.log 2>&1 \n\n",
     ]
     with open(f"nsb_{date}_run_{run}.sh", "w") as f:
         f.writelines(lines)

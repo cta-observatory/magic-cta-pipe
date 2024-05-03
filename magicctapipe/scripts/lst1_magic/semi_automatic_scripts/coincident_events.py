@@ -160,12 +160,8 @@ def linking_bash_lst(
 
                     if not os.path.exists(f"{outputdir}/logs/list_LST.txt"):
                         continue
-                    process_size = (
-                        len(
-                            np.genfromtxt(f"{outputdir}/logs/list_LST.txt", dtype="str")
-                        )
-                        - 1
-                    )
+                    with open(f"{outputdir}/logs/list_LST.txt", "r") as f:
+                        process_size = len(f.readlines()) - 1
 
                     if process_size < 0:
                         continue
@@ -176,6 +172,8 @@ def linking_bash_lst(
                         f"#SBATCH --array=0-{process_size}\n",
                         "#SBATCH --mem=8g\n",
                         "#SBATCH -n 1\n\n",
+                        f"#SBATCH --output={outputdir}/logs/slurm-%x.%j.out"
+                        f"#SBATCH --error={outputdir}/logs/slurm-%x.%j.err"
                         "ulimit -l unlimited\n",
                         "ulimit -s unlimited\n",
                         "ulimit -a\n\n",
@@ -183,8 +181,8 @@ def linking_bash_lst(
                         f"export OUTPUTDIR={outputdir}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"time conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1",
+                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1",
                     ]
                     with open(
                         f"{source_name}_LST_coincident_{outputdir.split('/')[-1]}.sh",
@@ -224,9 +222,8 @@ def linking_bash_lst(
         )
 
         for nightMAGIC, nightLST in zip(listOfNightsMAGIC, listOfNightsLST):
-            process_size = (
-                len(np.genfromtxt(f"{nightLST}/list_LST.txt", dtype="str")) - 1
-            )
+            with open(f"{nightLST}/list_LST.txt", "r") as f:
+                process_size = len(f.readlines()) - 1
 
             with open(f"LST_coincident_{nightLST.split('/')[-1]}.sh", "w") as f:
                 lines = [
@@ -234,7 +231,10 @@ def linking_bash_lst(
                     "#SBATCH -p short\n",
                     f"#SBATCH -J {process_name}_coincidence\n",
                     f"#SBATCH --array=0-{process_size}%50\n",
+                    "#SBATCH --mem=8g\n",
                     "#SBATCH -n 1\n\n",
+                    f"#SBATCH --output={nightLST}/slurm-%x.%j.out"
+                    f"#SBATCH --error={nightLST}/slurm-%x.%j.err"
                     "ulimit -l unlimited\n",
                     "ulimit -s unlimited\n",
                     "ulimit -a\n\n",
@@ -242,7 +242,7 @@ def linking_bash_lst(
                     f"export OUTPUTDIR={nightLST}\n",
                     "SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                    "export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n",
+                    "export LOG=$OUTPUTDIR/coincidence_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                     f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/{source_name}/config_coincidence.yaml >$LOG 2>&1",
                 ]
                 f.writelines(lines)

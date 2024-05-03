@@ -168,6 +168,8 @@ def lists_and_bash_generator(
             "#SBATCH -p short\n",
             f"#SBATCH -J {process_name}\n\n",
             "#SBATCH -n 1\n\n",
+            f"#SBATCH --output={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-linkMC-%x.%j.out"
+            f"#SBATCH --error={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-linkMC-%x.%j.err"
             "ulimit -l unlimited\n",
             "ulimit -s unlimited\n",
             "ulimit -a\n\n",
@@ -202,6 +204,8 @@ def lists_and_bash_generator(
             f"#SBATCH -J {process_name}\n",
             f"#SBATCH --array=0-{number_of_nodes}%50\n",
             "#SBATCH --mem=10g\n",
+            f"#SBATCH --output={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-%x.%j.out"
+            f"#SBATCH --error={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-%x.%j.err"
             "#SBATCH -n 1\n\n",
             "ulimit -l unlimited\n",
             "ulimit -s unlimited\n",
@@ -212,7 +216,7 @@ def lists_and_bash_generator(
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             "cd $SAMPLE\n\n",
             f"export LOG={target_dir}/{source_name}/DL1/MC/{particle_type}"
-            + "/simtel_{$SAMPLE}_all.log\n",
+            + "/simtel_{$SAMPLE}_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}_all.log\n",
             "cat list_dl0_ok.txt | while read line\n",
             "do\n",
             f"    cd {target_dir}/{source_name}/../\n",
@@ -251,6 +255,8 @@ def lists_and_bash_gen_MAGIC(
         "#SBATCH -p short\n",
         f"#SBATCH -J {process_name}\n",
         "#SBATCH -n 1\n\n",
+        f"#SBATCH --output={target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j.out"
+        f"#SBATCH --error={target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j.err"
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n",
@@ -319,6 +325,8 @@ def lists_and_bash_gen_MAGIC(
                         f"#SBATCH -J {process_name}\n",
                         f"#SBATCH --array=0-{number_of_nodes}\n",
                         "#SBATCH -n 1\n\n",
+                        f"#SBATCH --output={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs/slurm-%x.%j.out"
+                        f"#SBATCH --error={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs/slurm-%x.%j.err"
                         "#SBATCH --mem 2g\n\n",
                         "ulimit -l unlimited\n",
                         "ulimit -s unlimited\n",
@@ -326,7 +334,7 @@ def lists_and_bash_gen_MAGIC(
                         f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                        "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
+                        "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                         f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                     ]
                     with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
@@ -345,6 +353,8 @@ def lists_and_bash_gen_MAGIC(
                         f"#SBATCH -J {process_name}\n",
                         f"#SBATCH --array=0-{number_of_nodes}\n",
                         "#SBATCH -n 1\n\n",
+                        f"#SBATCH --output={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs/slurm-%x.%j.out"
+                        f"#SBATCH --error={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs/slurm-%x.%j.err"
                         "#SBATCH --mem 2g\n\n",
                         "ulimit -l unlimited\n",
                         "ulimit -s unlimited\n",
@@ -352,7 +362,7 @@ def lists_and_bash_gen_MAGIC(
                         f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                        "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
+                        "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                         f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                     ]
                     with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
@@ -373,6 +383,8 @@ def lists_and_bash_gen_MAGIC(
                             f"#SBATCH -J {process_name}\n",
                             f"#SBATCH --array=0-{number_of_nodes}\n",
                             "#SBATCH -n 1\n\n",
+                            f"#SBATCH --output={target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}/slurm-%x.%j.out"
+                            f"#SBATCH --error={target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}/slurm-%x.%j.err"
                             "ulimit -l unlimited\n",
                             "ulimit -s unlimited\n",
                             "ulimit -a\n\n",
@@ -380,7 +392,7 @@ def lists_and_bash_gen_MAGIC(
                             f"cd {target_dir}/{source}/../\n",
                             "SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n",
                             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                            "export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
+                            "export LOG=$OUTPUTDIR/real_0_1_task_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                             f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                             "",
                         ]
@@ -399,6 +411,8 @@ def lists_and_bash_gen_MAGIC(
                             f"#SBATCH -J {process_name}\n",
                             f"#SBATCH --array=0-{number_of_nodes}\n",
                             "#SBATCH -n 1\n\n",
+                            f"#SBATCH --output={target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}/slurm-%x.%j.out"
+                            f"#SBATCH --error={target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}/slurm-%x.%j.err"
                             "ulimit -l unlimited\n",
                             "ulimit -s unlimited\n",
                             "ulimit -a\n\n",
@@ -406,7 +420,7 @@ def lists_and_bash_gen_MAGIC(
                             f"cd {target_dir}/{source}/../\n",
                             "SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n",
                             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                            "export LOG=$OUTPUTDIR/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
+                            "export LOG=$OUTPUTDIR/real_0_1_task_${SLURM_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                             f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                             "",
                         ]
