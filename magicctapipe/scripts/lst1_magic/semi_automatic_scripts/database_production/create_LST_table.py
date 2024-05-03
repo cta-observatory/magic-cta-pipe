@@ -19,7 +19,11 @@ def main():
     df = pd.read_hdf(
         "/fefs/aswg/workspace/federico.dipierro/simultaneous_obs_summary.h5", key="/str"
     )  # TODO: put this file in a shared folder
-
+    df2 = pd.read_hdf(
+        "/home/alessio.berti/MAGIC-LST_common/runfile/simultaneous_obs_summary.h5",
+        key="/str",
+    )  # TODO: put this file in a shared folder
+    df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
     needed_cols = [
         "source",
         "DATE",

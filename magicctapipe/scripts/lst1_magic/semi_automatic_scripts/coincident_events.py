@@ -16,11 +16,11 @@ import argparse
 import glob
 import logging
 import os
-import joblib
 from datetime import date as dtdt
 from datetime import timedelta
 from pathlib import Path
 
+import joblib
 import numpy as np
 import yaml
 
@@ -44,6 +44,10 @@ def configfile_coincidence(ids, target_dir, source_name, NSB_match):
         List of telescope IDs
     target_dir : str
         Path to the working directory
+    source_name : str
+        Name of the target source
+    NSB_match : bool
+        If real data are matched to pre-processed MCs or not
     """
 
     lines = [
@@ -52,10 +56,10 @@ def configfile_coincidence(ids, target_dir, source_name, NSB_match):
         '    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n',
     ]
     if not NSB_match:
-        file_name=f"{target_dir}/{source_name}/config_coincidence.yaml"
-    else: 
-        file_name=f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
-    
+        file_name = f"{target_dir}/{source_name}/config_coincidence.yaml"
+    else:
+        file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
+
     with open(file_name, "w") as f:
         f.writelines(lines)
 
@@ -72,11 +76,7 @@ def linking_bash_lst(
     target_dir : str
         Path to the working directory
     LST_runs : matrix of strings
-        This matrix is imported from config_general.yaml and tells the function where to find the LST data and link them to our working directory
-    nsb : int
-        NSB level
-    date : numpy array
-        Array of lists [date run] for all the LST runs (before the NSB splitting)
+        This matrix ([['date','run'],['date','run']...]) is imported from *_LST_runs.txt files and tells the function where to find the LST data and link them to our working directory
     source_name : str
         Target name
     LST_version : str
@@ -87,7 +87,6 @@ def linking_bash_lst(
         If real data are matched to pre-processed MCs or not
     """
 
-    
     if (len(LST_runs) == 2) and (len(LST_runs[0]) == 10):
         LST = LST_runs
 
@@ -102,14 +101,13 @@ def linking_bash_lst(
         coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
         if not os.path.exists(f"{coincidence_DL1_dir}/DL1Coincident/"):
             os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident")
-    
+
         MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
-        
+
         dates = [
-            os.path.basename(x)
-            for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")
+            os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")
         ]
-        
+
         for d in dates:
             Y_M = int(d.split("_")[1])
             M_M = int(d.split("_")[2])
@@ -124,18 +122,18 @@ def linking_bash_lst(
                 D_L = i[0].split("_")[2]
                 day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
                 if day_MAGIC == day_LST + delta:
-                    
+
                     lstObsDir = (
                         i[0].split("_")[0] + i[0].split("_")[1] + i[0].split("_")[2]
                     )
 
-                    inputdir = f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                    inputdir = (
+                        f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                    )
                     if not os.path.exists(
                         f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
                     ):
-                        os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
-                        )
+                        os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}")
                     if not os.path.exists(
                         f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs"
                     ):
@@ -148,9 +146,7 @@ def linking_bash_lst(
                         glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5")
                     )
                     if os.path.exists(f"{outputdir}/logs/list_LST"):
-                        with open(
-                            f"{outputdir}/logs/list_LST", "a"
-                        ) as LSTdataPathFile:
+                        with open(f"{outputdir}/logs/list_LST", "a") as LSTdataPathFile:
                             for subrun in list_of_subruns:
                                 LSTdataPathFile.write(
                                     f"{subrun}\n"
@@ -166,9 +162,7 @@ def linking_bash_lst(
                         continue
                     process_size = (
                         len(
-                            np.genfromtxt(
-                                f"{outputdir}/logs/list_LST.txt", dtype="str"
-                            )
+                            np.genfromtxt(f"{outputdir}/logs/list_LST.txt", dtype="str")
                         )
                         - 1
                     )
@@ -178,7 +172,7 @@ def linking_bash_lst(
                     lines = [
                         "#!/bin/sh\n\n",
                         "#SBATCH -p short\n",
-                        f'#SBATCH -J {source_name}_coincidence\n',
+                        f"#SBATCH -J {source_name}_coincidence\n",
                         f"#SBATCH --array=0-{process_size}\n",
                         "#SBATCH --mem=30g\n",
                         "#SBATCH -N 1\n\n",
@@ -278,7 +272,7 @@ def main():
 
     telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = Path(config["directories"]["workspace_dir"])
-        
+
     NSB_match = config["general"]["NSB_matching"]
     env_name = config["general"]["env_name"]
     LST_version = config["general"]["LST_version"]
@@ -295,12 +289,10 @@ def main():
 
         print("***** Generating file config_coincidence.yaml...")
         configfile_coincidence(telescope_ids, target_dir, source_name, NSB_match)
-        
-        
-        LST_runs_and_dates = f'{source_name}_LST_runs.txt'
+
+        LST_runs_and_dates = f"{source_name}_LST_runs.txt"
         LST_runs = np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",")
-          
-        
+
         if not NSB_match:
             print("***** Linking the paths to LST data files...")
 
@@ -328,9 +320,8 @@ def main():
 
             os.system(launch_jobs)
         else:
-            
+
             try:
-                
 
                 print("***** Linking the paths to LST data files...")
 
@@ -345,11 +336,9 @@ def main():
                 )  # linking the data paths to current working directory
 
                 print("***** Submitting processess to the cluster...")
+                print(f"Process name: {source_name}_coincidence")
                 print(
-                    f'Process name: {source_name}_coincidence'
-                )
-                print(
-                    f'To check the jobs submitted to the cluster, type: squeue -n {source_name}_coincidence'
+                    f"To check the jobs submitted to the cluster, type: squeue -n {source_name}_coincidence"
                 )
 
                 # Below we run the bash scripts to find the coincident events

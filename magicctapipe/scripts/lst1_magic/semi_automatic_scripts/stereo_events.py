@@ -21,8 +21,8 @@ import glob
 import logging
 import os
 from pathlib import Path
-import joblib
 
+import joblib
 import numpy as np
 import yaml
 
@@ -46,11 +46,15 @@ def configfile_stereo(ids, target_dir, source_name, NSB_match):
         List of telescope IDs
     target_dir : str
         Path to the working directory
+    source_name : str
+        Name of the target source
+    NSB_match : bool
+        If real data are matched to pre-processed MCs or not
     """
     if not NSB_match:
-        file_name=f"{target_dir}/{source_name}/config_stereo.yaml"
-    else: 
-        file_name=f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
+        file_name = f"{target_dir}/{source_name}/config_stereo.yaml"
+    else:
+        file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
     with open(file_name, "w") as f:
         lines = [
             f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
@@ -69,8 +73,6 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
     ----------
     target_dir : str
         Path to the working directory
-    nsb : float
-        NSB level of the LST run(s)
     source : str
         Target name
     env_name : str
@@ -81,7 +83,9 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
 
     process_name = source
     if not NSB_match:
-        if not os.path.exists(f"{target_dir}/{source}/DL1/Observations/Coincident_stereo"):
+        if not os.path.exists(
+            f"{target_dir}/{source}/DL1/Observations/Coincident_stereo"
+        ):
             os.mkdir(f"{target_dir}/{source}/DL1/Observations/Coincident_stereo")
 
         listOfNightsLST = np.sort(
@@ -119,12 +123,11 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
                 ]
                 f.writelines(lines)
     else:
-        if not os.path.exists(f"{target_dir}/v{__version__}/{source}/DL1CoincidentStereo"):
+        if not os.path.exists(
+            f"{target_dir}/v{__version__}/{source}/DL1CoincidentStereo"
+        ):
             os.mkdir(f"{target_dir}/v{__version__}/{source}/DL1CoincidentStereo")
 
-        
-
-        
         listOfNightsLST = np.sort(
             glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Coincident/*")
         )
@@ -142,12 +145,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
                 f"ls {nightLST}/*LST*.h5 >  {stereoDir}/logs/list_coin.txt"
             )  # generating a list with the DL1 coincident data files.
             process_size = (
-                len(
-                    np.genfromtxt(
-                        f"{stereoDir}/logs/list_coin.txt", dtype="str"
-                    )
-                )
-                - 1
+                len(np.genfromtxt(f"{stereoDir}/logs/list_coin.txt", dtype="str")) - 1
             )
             if process_size < 0:
                 continue
@@ -162,14 +160,12 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
                 "ulimit -a\n\n",
                 f"export INPUTDIR={nightLST}\n",
                 f"export OUTPUTDIR={stereoDir}\n",
-                f"SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin.txt))\n",
+                "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin.txt))\n",
                 "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                 "export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_TASK_ID}.log\n",
                 f"time conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_stereo.yaml >$LOG 2>&1",
             ]
-            with open(
-                f"{source}_StereoEvents_{nightLST.split('/')[-1]}.sh", "w"
-            ) as f:
+            with open(f"{source}_StereoEvents_{nightLST.split('/')[-1]}.sh", "w") as f:
                 f.writelines(lines)
 
 
@@ -183,14 +179,18 @@ def bash_stereoMC(target_dir, identification, env_name, source):
     target_dir : str
         Path to the working directory
     identification : str
-        Particle name. Options: protons, gammadiffuse
+        Particle name. Options: protons, gammadiffuse, gammas, protons_test
     env_name : str
         Name of the environment
+    source : str
+        Name of the target source
     """
 
     process_name = source
 
-    if not os.path.exists(f"{target_dir}/{source}/DL1/MC/{identification}/Merged/StereoMerged"):
+    if not os.path.exists(
+        f"{target_dir}/{source}/DL1/MC/{identification}/Merged/StereoMerged"
+    ):
         os.mkdir(f"{target_dir}/{source}/DL1/MC/{identification}/Merged/StereoMerged")
 
     inputdir = f"{target_dir}/{source}/DL1/MC/{identification}/Merged"
@@ -256,7 +256,7 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
 
     env_name = config["general"]["env_name"]
-    
+
     NSB_match = config["general"]["NSB_matching"]
     telescope_ids = list(config["mc_tel_ids"].values())
     source = config["data_selection"]["source_name_output"]
@@ -268,7 +268,6 @@ def main():
     else:
         source_list.append(source)
     for source_name in source_list:
-
 
         print("***** Generating file config_stereo.yaml...")
         configfile_stereo(telescope_ids, target_dir, source_name, NSB_match)
@@ -297,7 +296,7 @@ def main():
 
         # Below we run the analysis on the real data
         if not NSB_match:
-            
+
             if (
                 (args.analysis_type == "onlyReal")
                 or (args.analysis_type == "doEverything")
@@ -321,16 +320,14 @@ def main():
                 os.system(launch_jobs)
 
         else:
-            
 
-            
             print("***** Generating the bashscript...")
             bash_stereo(target_dir, source_name, env_name, NSB_match)
 
             print("***** Submitting processess to the cluster...")
-            print(f'Process name: {source_name}_stereo')
+            print(f"Process name: {source_name}_stereo")
             print(
-                f'To check the jobs submitted to the cluster, type: squeue -n {source_name}_stereo'
+                f"To check the jobs submitted to the cluster, type: squeue -n {source_name}_stereo"
             )
 
             # Below we run the bash scripts to find the stereo events

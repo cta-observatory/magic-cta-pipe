@@ -33,8 +33,8 @@ import glob
 import logging
 import os
 from pathlib import Path
-import joblib
 
+import joblib
 import numpy as np
 import yaml
 from tqdm import tqdm
@@ -82,6 +82,8 @@ def split_train_test(target_dir, train_fraction, source_name):
         Path to the working directory
     train_fraction : float
         Fraction of proton MC files to be used in the training RF dataset
+    source_name : str
+        Name of the target source
     """
 
     proton_dir = f"{target_dir}/{source_name}/DL1/MC/protons"
@@ -219,8 +221,8 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                     )
 
     else:
-        
-        process_name = f'merging_{source}'
+
+        process_name = f"merging_{source}"
 
         MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
 
@@ -244,8 +246,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
 
                 if os.path.exists(f"{MAGIC_DL1_dir}/M1"):
                     dates = [
-                        os.path.basename(x)
-                        for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
+                        os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
                     ]
                     for i in dates:
                         runs = [
@@ -257,9 +258,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                                 f"{MAGIC_DL1_dir}/Merged/{i}"
                             )  # Creating a merged directory for the respective night
                         for r in runs:
-                            if not os.path.exists(
-                                f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
-                            ):
+                            if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/{r}"):
                                 os.mkdir(
                                     f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
                                 )  # Creating a merged directory for the respective run
@@ -276,8 +275,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
 
                 if os.path.exists(f"{MAGIC_DL1_dir}/M2"):
                     dates = [
-                        os.path.basename(x)
-                        for x in glob.glob(f"{MAGIC_DL1_dir}/M2/*")
+                        os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M2/*")
                     ]
 
                     for i in dates:
@@ -290,9 +288,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                                 f"{MAGIC_DL1_dir}/Merged/{i}"
                             )  # Creating a merged directory for the respective night
                         for r in runs:
-                            if not os.path.exists(
-                                f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
-                            ):
+                            if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/{r}"):
                                 os.mkdir(
                                     f"{MAGIC_DL1_dir}/Merged/{i}/{r}"
                                 )  # Creating a merged directory for the respective run
@@ -311,8 +307,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                     f"{MAGIC_DL1_dir}/M2"
                 ):
                     dates = [
-                        os.path.basename(x)
-                        for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
+                        os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
                     ]
                     for i in dates:
                         runs = [
@@ -320,9 +315,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                             for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
                         ]
                         for r in runs:
-                            if (
-                                len(glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/{r}")) > 0
-                            ) and (
+                            if (len(glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/{r}")) > 0) and (
                                 len(glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/{r}"))
                             ) > 0:
                                 if not os.path.exists(
@@ -332,9 +325,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                                 if not os.path.exists(
                                     f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs"
                                 ):
-                                    os.mkdir(
-                                        f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs"
-                                    )
+                                    os.mkdir(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs")
                                 f.write(
                                     f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}.log \n"
                                 )
@@ -349,9 +340,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                         os.mkdir(
                             f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
                         )  # Creating a merged directory for each night
-                    if not os.path.exists(
-                        f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs"
-                    ):
+                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs"):
                         os.mkdir(f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs")
                     f.write(
                         f"time conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}.log \n"
@@ -373,6 +362,8 @@ def mergeMC(target_dir, identification, env_name, cwd, source_name):
         Name of the environment
     cwd : Path
         Current working directory
+    source_name : str
+        Name of the target source
     """
 
     process_name = f"merging_{source_name}"
@@ -449,10 +440,9 @@ def main():
 
     target_dir = Path(config["directories"]["workspace_dir"])
 
-    
     NSB_match = config["general"]["NSB_matching"]
     train_fraction = float(config["general"]["proton_train_fraction"])
-   
+
     env_name = config["general"]["env_name"]
     source = config["data_selection"]["source_name_output"]
 
@@ -463,13 +453,17 @@ def main():
     else:
         source_list.append(source)
     for source_name in source_list:
-    # Below we run the analysis on the MC data
-        MAGIC_runs_and_dates = f'{source_name}_MAGIC_runs.txt'
+        # Below we run the analysis on the MC data
+        MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(MAGIC_runs_and_dates, dtype=str, delimiter=",")
         if not NSB_match:
-            if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
+            if (args.analysis_type == "onlyMC") or (
+                args.analysis_type == "doEverything"
+            ):
                 # Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
-                if not os.path.exists(f"{target_dir}/{source_name}/DL1/MC/protons_test"):
+                if not os.path.exists(
+                    f"{target_dir}/{source_name}/DL1/MC/protons_test"
+                ):
                     print("***** Splitting protons into 'train' and 'test' datasets...")
                     split_train_test(target_dir, train_fraction, source_name)
 

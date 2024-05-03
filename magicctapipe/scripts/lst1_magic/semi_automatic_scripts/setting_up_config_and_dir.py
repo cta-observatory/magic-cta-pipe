@@ -15,13 +15,13 @@ $ python setting_up_config_and_dir.py (-c config_file.yaml)
 """
 import argparse
 import glob
-import joblib
 import logging
 import os
 
 # import time
 from pathlib import Path
 
+import joblib
 import numpy as np
 import yaml
 
@@ -55,6 +55,8 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match, source_name):
         List of the noise correction values for LST
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
+    source_name : str
+        Name of the target source
     """
 
     """
@@ -87,9 +89,9 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match, source_name):
 
     conf["MAGIC"] = MAGIC_config
     if not NSB_match:
-        file_name=f"{target_dir}/{source_name}/config_DL0_to_DL1.yaml"
-    else: 
-        file_name=f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
+        file_name = f"{target_dir}/{source_name}/config_DL0_to_DL1.yaml"
+    else:
+        file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
     with open(file_name, "w") as f:
         lines = [
             "mc_tel_ids:",
@@ -106,7 +108,13 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match, source_name):
 
 
 def lists_and_bash_generator(
-    particle_type, target_dir, MC_path, SimTel_version, focal_length, env_name, source_name
+    particle_type,
+    target_dir,
+    MC_path,
+    SimTel_version,
+    focal_length,
+    env_name,
+    source_name,
 ):
 
     """
@@ -128,6 +136,8 @@ def lists_and_bash_generator(
         Focal length to be used to process MCs (e.g., 'nominal')
     env_name : str
         Name of the environment
+    source_name : str
+        Name of the target source
     """
 
     if MC_path == "":
@@ -401,7 +411,9 @@ def lists_and_bash_gen_MAGIC(
                         f.writelines(lines)
 
 
-def directories_generator(target_dir, telescope_ids, MAGIC_runs, NSB_match, source_name):
+def directories_generator(
+    target_dir, telescope_ids, MAGIC_runs, NSB_match, source_name
+):
 
     """
     Here we create all subdirectories for a given workspace and target name.
@@ -416,6 +428,8 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs, NSB_match, sour
         MAGIC dates and runs to be processed
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
+    source_name : str
+        Name of the target source
     """
 
     if NSB_match:
@@ -495,21 +509,37 @@ def directories_generator(target_dir, telescope_ids, MAGIC_runs, NSB_match, sour
             if not os.path.exists(f"{target_dir}/{source_name}/DL1/Observations/M2"):
                 os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M2")
                 for i in MAGIC_runs:
-                    if not os.path.exists(f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}"):
-                        os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}")
-                        os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}/{i[1]}")
+                    if not os.path.exists(
+                        f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}"
+                    ):
+                        os.mkdir(
+                            f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}"
+                        )
+                        os.mkdir(
+                            f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}/{i[1]}"
+                        )
                     else:
-                        os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}/{i[1]}")
+                        os.mkdir(
+                            f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}/{i[1]}"
+                        )
 
         if telescope_ids[-2] > 0:
             if not os.path.exists(f"{target_dir}/{source_name}/DL1/Observations/M1"):
                 os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M1")
                 for i in MAGIC_runs:
-                    if not os.path.exists(f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}"):
-                        os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}")
-                        os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}/{i[1]}")
+                    if not os.path.exists(
+                        f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}"
+                    ):
+                        os.mkdir(
+                            f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}"
+                        )
+                        os.mkdir(
+                            f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}/{i[1]}"
+                        )
                     else:
-                        os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}/{i[1]}")
+                        os.mkdir(
+                            f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}/{i[1]}"
+                        )
 
 
 def main():
@@ -548,7 +578,6 @@ def main():
     SimTel_version = config["general"]["SimTel_version"]
     env_name = config["general"]["env_name"]
     NSB_match = config["general"]["NSB_matching"]
-    
 
     # LST_runs_and_dates = config["general"]["LST_runs"]
     MC_gammas = str(Path(config["directories"]["MC_gammas"]))
@@ -568,11 +597,11 @@ def main():
     for source_name in source_list:
         target_dir = Path(config["directories"]["workspace_dir"])
 
-        MAGIC_runs_and_dates = f'{source_name}_MAGIC_runs.txt'
+        MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=","
         )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
-    
+
         noise_value = [0, 0, 0]
         if not NSB_match:
             nsb = config["general"]["NSB_MC"]
@@ -583,9 +612,9 @@ def main():
 
         # TODO: fix here above
         print("*** Converting DL0 into DL1 data ***")
-        print(f'Process name: {source_name}')
+        print(f"Process name: {source_name}")
         print(
-            f'To check the jobs submitted to the cluster, type: squeue -n {source_name}'
+            f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
         )
         print("This process will take about 10 min to run if the IT cluster is free.")
 
@@ -667,7 +696,12 @@ def main():
             or (NSB_match)
         ):
             lists_and_bash_gen_MAGIC(
-                target_dir, telescope_ids, MAGIC_runs, source_name, env_name, NSB_match,
+                target_dir,
+                telescope_ids,
+                MAGIC_runs,
+                source_name,
+                env_name,
+                NSB_match,
             )  # MAGIC real data
             if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
                 list_of_MAGIC_runs = glob.glob(f"{source_name}_MAGIC-*.sh")
