@@ -319,6 +319,7 @@ def lists_and_bash_gen_MAGIC(
                         f"#SBATCH -J {process_name}\n",
                         f"#SBATCH --array=0-{number_of_nodes}\n",
                         "#SBATCH -n 1\n\n",
+                        "#SBATCH --mem 2g\n\n",
                         "ulimit -l unlimited\n",
                         "ulimit -s unlimited\n",
                         "ulimit -a\n\n",
@@ -326,7 +327,7 @@ def lists_and_bash_gen_MAGIC(
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                         "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                        f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                     ]
                     with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
                         f.writelines(lines)
@@ -344,6 +345,7 @@ def lists_and_bash_gen_MAGIC(
                         f"#SBATCH -J {process_name}\n",
                         f"#SBATCH --array=0-{number_of_nodes}\n",
                         "#SBATCH -n 1\n\n",
+                        "#SBATCH --mem 2g\n\n",
                         "ulimit -l unlimited\n",
                         "ulimit -s unlimited\n",
                         "ulimit -a\n\n",
@@ -351,7 +353,7 @@ def lists_and_bash_gen_MAGIC(
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                         "export LOG=$OUTPUTDIR/logs/real_0_1_task${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"time conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                        f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
                     ]
                     with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
                         f.writelines(lines)
@@ -709,7 +711,7 @@ def main():
                     print(
                         "Warning: no bash script has been produced. Please check the provided MAGIC_runs.txt and the MAGIC calibrated data"
                     )
-                    return
+                    continue
 
                 for n, run in enumerate(list_of_MAGIC_runs):
                     if n == 0:

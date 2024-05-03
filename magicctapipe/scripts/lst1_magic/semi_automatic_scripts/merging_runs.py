@@ -514,10 +514,10 @@ def main():
             print("***** Running merge_hdf_files.py on the MAGIC data files...")
 
             # Below we run the bash scripts to merge the MAGIC files
-            list_of_merging_scripts = np.sort(glob.glob(f"{source}_Merge_MAGIC_*.sh"))
+            list_of_merging_scripts = np.sort(glob.glob(f"{source_name}_Merge_MAGIC_*.sh"))
             if len(list_of_merging_scripts) < 1:
                 logger.warning("no bash scripts")
-                return
+                continue
             for n, run in enumerate(list_of_merging_scripts):
                 if n == 0:
                     launch_jobs = f"merging{n}=$(sbatch --parsable {run})"

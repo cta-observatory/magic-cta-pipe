@@ -335,7 +335,7 @@ def main():
                 glob.glob(f"{source_name}_StereoEvents*.sh")
             )
             if len(list_of_stereo_scripts) < 1:
-                return
+                continue
             for n, run in enumerate(list_of_stereo_scripts):
                 if n == 0:
                     launch_jobs = f"stereo{n}=$(sbatch --parsable {run})"
