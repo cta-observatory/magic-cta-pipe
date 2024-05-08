@@ -30,6 +30,7 @@ def slurm_lines(p, J, array=None, mem=None, out_err=None):
         f"#SBATCH -p {p}\n",
         f"#SBATCH -J {J}\n",
         f"#SBATCH --array=0-{array}\n" if array is not None else "",
+        f"#SBATCH --mem {mem}\n" if mem is not None else "",
         "#SBATCH -n 1\n\n",
         f"#SBATCH --output={out_err}.out\n" if out_err is not None else "",
         f"#SBATCH --error={out_err}.err\n\n" if out_err is not None else "",
