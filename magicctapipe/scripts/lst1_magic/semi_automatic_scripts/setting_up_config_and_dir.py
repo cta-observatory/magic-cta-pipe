@@ -676,6 +676,7 @@ def main():
                         launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
                     else:
                         launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+
                 os.system(launch_jobs_MC)
 
         # Below we run the analysis on the MAGIC data
