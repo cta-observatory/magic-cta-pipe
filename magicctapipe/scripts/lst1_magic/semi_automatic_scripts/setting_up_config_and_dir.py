@@ -27,6 +27,7 @@ import yaml
 
 from magicctapipe import __version__
 from magicctapipe.io import resource_file
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
 __all__ = [
     "config_file_gen",
@@ -163,16 +164,12 @@ def lists_and_bash_generator(
     ####################################################################################
 
     with open(f"linking_MC_{particle_type}_paths.sh", "w") as f:
-        lines_of_config_file = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p short\n",
-            f"#SBATCH -J {process_name}\n\n",
-            "#SBATCH -n 1\n\n",
-            f"#SBATCH --output={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-linkMC-%x.%j.out"
-            f"#SBATCH --error={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-linkMC-%x.%j.err"
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n\n",
+        slurm = slurm_lines(
+            p="short",
+            J=process_name,
+            out_err=f"{target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-linkMC-%x.%j",
+        )
+        lines_of_config_file = slurm + [
             "while read -r -u 3 lineA && read -r -u 4 lineB\n",
             "do\n",
             f"    cd {target_dir}/{source_name}/DL1/MC/{particle_type}\n",
@@ -198,18 +195,14 @@ def lists_and_bash_generator(
     number_of_nodes = len(number_of_nodes) - 1
 
     with open(f"linking_MC_{particle_type}_paths_r.sh", "w") as f:
-        lines_of_config_file = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p xxl\n",
-            f"#SBATCH -J {process_name}\n",
-            f"#SBATCH --array=0-{number_of_nodes}%50\n",
-            "#SBATCH --mem=10g\n",
-            f"#SBATCH --output={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-%x.%A_%a.out"
-            f"#SBATCH --error={target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-%x.%A_%a.err"
-            "#SBATCH -n 1\n\n",
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n",
+        slurm = slurm_lines(
+            p="xxl",
+            J=process_name,
+            array=number_of_nodes,
+            mem="10g",
+            out_err=f"{target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-%x.%A_%a",
+        )
+        lines_of_config_file = slurm + [
             f"cd {target_dir}/{source_name}/DL1/MC/{particle_type}\n\n",
             f"export INF={target_dir}/{source_name}\n",
             f"SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n",
@@ -250,17 +243,12 @@ def lists_and_bash_gen_MAGIC(
         If real data are matched to pre-processed MCs or not
     """
     process_name = source
-    lines = [
-        "#!/bin/sh\n\n",
-        "#SBATCH -p short\n",
-        f"#SBATCH -J {process_name}\n",
-        "#SBATCH -n 1\n\n",
-        f"#SBATCH --output={target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j.out"
-        f"#SBATCH --error={target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j.err"
-        "ulimit -l unlimited\n",
-        "ulimit -s unlimited\n",
-        "ulimit -a\n",
-    ]
+    lines = slurm_lines(
+        p="short",
+        J=process_name,
+        out_err=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
+    )
+
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         if NSB_match:
@@ -319,18 +307,14 @@ def lists_and_bash_gen_MAGIC(
                     number_of_nodes = len(number_of_nodes) - 1
                     if number_of_nodes < 0:
                         continue
-                    lines = [
-                        "#!/bin/sh\n\n",
-                        "#SBATCH -p short\n",
-                        f"#SBATCH -J {process_name}\n",
-                        f"#SBATCH --array=0-{number_of_nodes}\n",
-                        "#SBATCH -n 1\n\n",
-                        f"#SBATCH --output={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a.out"
-                        f"#SBATCH --error={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a.err"
-                        "#SBATCH --mem 2g\n\n",
-                        "ulimit -l unlimited\n",
-                        "ulimit -s unlimited\n",
-                        "ulimit -a\n\n",
+                    slurm = slurm_lines(
+                        p="short",
+                        J=process_name,
+                        array=number_of_nodes,
+                        mem="2g",
+                        out_err=f"{target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
+                    )
+                    lines = slurm + [
                         f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
@@ -347,18 +331,14 @@ def lists_and_bash_gen_MAGIC(
                     number_of_nodes = len(number_of_nodes) - 1
                     if number_of_nodes < 0:
                         continue
-                    lines = [
-                        "#!/bin/sh\n\n",
-                        "#SBATCH -p short\n",
-                        f"#SBATCH -J {process_name}\n",
-                        f"#SBATCH --array=0-{number_of_nodes}\n",
-                        "#SBATCH -n 1\n\n",
-                        f"#SBATCH --output={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a.out"
-                        f"#SBATCH --error={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a.err"
-                        "#SBATCH --mem 2g\n\n",
-                        "ulimit -l unlimited\n",
-                        "ulimit -s unlimited\n",
-                        "ulimit -a\n\n",
+                    slurm = slurm_lines(
+                        p="short",
+                        J=process_name,
+                        array=number_of_nodes,
+                        mem="2g",
+                        out_err=f"{target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
+                    )
+                    lines = slurm + [
                         f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
@@ -377,17 +357,14 @@ def lists_and_bash_gen_MAGIC(
                     number_of_nodes = len(number_of_nodes) - 1
 
                     with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
-                        lines = [
-                            "#!/bin/sh\n\n",
-                            "#SBATCH -p long\n",
-                            f"#SBATCH -J {process_name}\n",
-                            f"#SBATCH --array=0-{number_of_nodes}\n",
-                            "#SBATCH -n 1\n\n",
-                            f"#SBATCH --output={target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}/slurm-%x.%A_%a.out"
-                            f"#SBATCH --error={target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}/slurm-%x.%A_%a.err"
-                            "ulimit -l unlimited\n",
-                            "ulimit -s unlimited\n",
-                            "ulimit -a\n\n",
+                        slurm = slurm_lines(
+                            p="long",
+                            J=process_name,
+                            array=number_of_nodes,
+                            mem="2g",
+                            out_err=f"{target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}/slurm-%x.%A_%a",
+                        )
+                        lines = slurm + [
                             f"export OUTPUTDIR={target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}\n",
                             f"cd {target_dir}/{source}/../\n",
                             "SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n",
@@ -405,17 +382,14 @@ def lists_and_bash_gen_MAGIC(
                     number_of_nodes = len(number_of_nodes) - 1
 
                     with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
-                        lines = [
-                            "#!/bin/sh\n\n",
-                            "#SBATCH -p long\n",
-                            f"#SBATCH -J {process_name}\n",
-                            f"#SBATCH --array=0-{number_of_nodes}\n",
-                            "#SBATCH -n 1\n\n",
-                            f"#SBATCH --output={target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}/slurm-%x.%A_%a.out"
-                            f"#SBATCH --error={target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}/slurm-%x.%A_%a.err"
-                            "ulimit -l unlimited\n",
-                            "ulimit -s unlimited\n",
-                            "ulimit -a\n\n",
+                        slurm = slurm_lines(
+                            p="long",
+                            J=process_name,
+                            array=number_of_nodes,
+                            mem="2g",
+                            out_err=f"{target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}/slurm-%x.%A_%a",
+                        )
+                        lines = slurm + [
                             f"export OUTPUTDIR={target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}\n",
                             f"cd {target_dir}/{source}/../\n",
                             "SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n",
@@ -702,7 +676,6 @@ def main():
                         launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
                     else:
                         launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
-
                 os.system(launch_jobs_MC)
 
         # Below we run the analysis on the MAGIC data
