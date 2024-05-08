@@ -25,6 +25,7 @@ import numpy as np
 import yaml
 
 from magicctapipe import __version__
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
 __all__ = ["configfile_coincidence", "linking_bash_lst"]
 
@@ -165,18 +166,14 @@ def linking_bash_lst(
 
                     if process_size < 0:
                         continue
-                    lines = [
-                        "#!/bin/sh\n\n",
-                        "#SBATCH -p short\n",
-                        f"#SBATCH -J {source_name}_coincidence\n",
-                        f"#SBATCH --array=0-{process_size}\n",
-                        "#SBATCH --mem=8g\n",
-                        "#SBATCH -n 1\n\n",
-                        f"#SBATCH --output={outputdir}/logs/slurm-%x.%A_%a.out"
-                        f"#SBATCH --error={outputdir}/logs/slurm-%x.%A_%a.err"
-                        "ulimit -l unlimited\n",
-                        "ulimit -s unlimited\n",
-                        "ulimit -a\n\n",
+                    slurm = slurm_lines(
+                        p="short",
+                        J=f"{source_name}_coincidence",
+                        array=process_size,
+                        mem="8g",
+                        out_err=f"{outputdir}/logs/slurm-%x.%A_%a",
+                    )
+                    lines = slurm + [
                         f"export INM={MAGIC_DL1_dir}/Merged/Merged_{str(Y_M).zfill(4)}_{str(M_M).zfill(2)}_{str(D_M).zfill(2)}\n",
                         f"export OUTPUTDIR={outputdir}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
@@ -226,18 +223,14 @@ def linking_bash_lst(
                 process_size = len(f.readlines()) - 1
 
             with open(f"LST_coincident_{nightLST.split('/')[-1]}.sh", "w") as f:
-                lines = [
-                    "#!/bin/sh\n\n",
-                    "#SBATCH -p short\n",
-                    f"#SBATCH -J {process_name}_coincidence\n",
-                    f"#SBATCH --array=0-{process_size}%50\n",
-                    "#SBATCH --mem=8g\n",
-                    "#SBATCH -n 1\n\n",
-                    f"#SBATCH --output={nightLST}/slurm-%x.%A_%a.out"
-                    f"#SBATCH --error={nightLST}/slurm-%x.%A_%a.err"
-                    "ulimit -l unlimited\n",
-                    "ulimit -s unlimited\n",
-                    "ulimit -a\n\n",
+                slurm = slurm_lines(
+                    p="short",
+                    J=f"{process_name}_coincidence",
+                    array=process_size,
+                    mem="8g",
+                    out_err=f"{nightLST}/slurm-%x.%A_%a",
+                )
+                lines = slurm + [
                     f"export INM={nightMAGIC}\n",
                     f"export OUTPUTDIR={nightLST}\n",
                     "SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n",

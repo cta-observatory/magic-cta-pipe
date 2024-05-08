@@ -40,6 +40,7 @@ import yaml
 from tqdm import tqdm
 
 from magicctapipe import __version__
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
 __all__ = ["cleaning", "split_train_test", "merge", "mergeMC"]
 
@@ -160,17 +161,11 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                 os.mkdir(f"{MAGIC_DL1_dir}/Merged")
 
         with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
-            lines = [
-                "#!/bin/sh\n\n",
-                "#SBATCH -p short\n",
-                f"#SBATCH -J {process_name}\n",
-                "#SBATCH -n 1\n\n",
-                f"#SBATCH --output={MAGIC_DL1_dir}/Merged/slurm-%x.%j.out"
-                f"#SBATCH --error={MAGIC_DL1_dir}/Merged/slurm-%x.%j.err"
-                "ulimit -l unlimited\n",
-                "ulimit -s unlimited\n",
-                "ulimit -a\n\n",
-            ]
+            lines = slurm_lines(
+                p="short",
+                J=process_name,
+                out_err=f"{MAGIC_DL1_dir}/Merged/slurm-%x.%j",
+            )
             f.writelines(lines)
 
             if identification == "0_subruns":
@@ -243,18 +238,12 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
         ):
             if not os.path.exists(f"{MAGIC_DL1_dir}/Merged"):
                 os.mkdir(f"{MAGIC_DL1_dir}/Merged")
-        lines = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p short\n",
-            f"#SBATCH -J {process_name}\n",
-            "#SBATCH -n 1\n\n",
-            f"#SBATCH --output={MAGIC_DL1_dir}/Merged/slurm-%x.%j.out"
-            f"#SBATCH --error={MAGIC_DL1_dir}/Merged/slurm-%x.%j.err"
-            "#SBATCH --mem 2g\n\n",
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n\n",
-        ]
+        lines = slurm_lines(
+            p="short",
+            J=process_name,
+            mem="2g",
+            out_err=f"{MAGIC_DL1_dir}/Merged/slurm-%x.%j",
+        )
         with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
             f.writelines(lines)
             if identification == "0_subruns":
@@ -416,18 +405,14 @@ def mergeMC(target_dir, identification, env_name, cwd, source_name):
     cleaning(list_of_nodes, cwd)  # This will delete the (possibly) failed runs.
 
     with open(f"Merge_MC_{identification}.sh", "w") as f:
-        lines_bash_file = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p short\n",
-            f"#SBATCH -J {process_name}\n",
-            f"#SBATCH --array=0-{process_size}%50\n",
-            "#SBATCH --mem=7g\n",
-            "#SBATCH -n 1\n\n",
-            f"#SBATCH --output={MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a.out"
-            f"#SBATCH --error={MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a.err"
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n\n",
+        slurm = slurm_lines(
+            p="short",
+            array=process_size,
+            mem="7g",
+            J=process_name,
+            out_err=f"{MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a",
+        )
+        lines_bash_file = slurm + [
             f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             f"export LOG={MC_DL1_dir}/{identification}/Merged"
