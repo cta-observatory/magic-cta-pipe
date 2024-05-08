@@ -34,13 +34,18 @@ def main():
     ]
     df_cut = df[needed_cols]
 
-    df_cut["nsb"] = np.repeat(np.nan, len(df_cut))
-
-    df_cut["lstchain_0.9"] = np.zeros(len(df_cut), dtype=bool)
-
-    df_cut["lstchain_0.10"] = np.zeros(len(df_cut), dtype=bool)
-
-    df_cut["error_code"] = np.repeat(np.nan, len(df_cut))
+    df_cut=df_cut.assign(nsb = np.nan)
+    df_cut=df_cut.assign(lstchain_versions = '[]')
+    df_cut=df_cut.assign(last_lstchain_file = '')
+    df_cut=df_cut.assign(processed_lstchain_file = '')
+    df_cut=df_cut.assign(error_code_nsb = -1)
+   
+    df_cut=df_cut.assign(error_code_coincidence = -1)
+    df_cut=df_cut.assign(error_code_stereo = -1)
+   
+    
+    
+    
     if os.path.isfile(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5"
     ):
@@ -53,11 +58,12 @@ def main():
         )
         df_cut = df_cut.sort_values(by=["DATE", "source"])
         # TODO check if fine with update and nsb
-
+    df_cut=df_cut.reset_index(drop=True)
     df_cut.to_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
         mode="w",
+        min_itemsize={'lstchain_versions':20, 'last_lstchain_file':90,'processed_lstchain_file':90}
     )
 
 

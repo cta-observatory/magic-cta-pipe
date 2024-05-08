@@ -96,6 +96,9 @@ def main():
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
     )
+    lstchain_version=config["general"]["LST_version"]
+
+    
 
     min = datetime.strptime(args.begin_date, "%Y_%m_%d")
     max = datetime.strptime(args.end_date, "%Y_%m_%d")
@@ -105,11 +108,17 @@ def main():
     df_LST = df_LST[df_LST["date"] <= max]
 
     df_LST = df_LST.drop(columns="date")
-    run_LST = df_LST["LST1_run"]
-    date_LST = df_LST["DATE"]
+    
     print("***** Generating bashscripts...")
-    for run_number, date in zip(run_LST, date_LST):
+    for i, row in df_LST.iterrows():
+        if lstchain_version not in str(row['lstchain_versions'].replace(']','').replace('[','').split(',')):
+            continue
+        run_number = row["LST1_run"]        
+        date = row["DATE"]
+        df_LST.loc[i,'processed_lstchain_file']=f"/fefs/aswg/data/real/DL1/{date}/{lstchain_version}/tailcut84/dl1_LST-1.Run{run_number}.h5"
+        df_LST.loc[i,'error_code_nsb']=np.nan
         bash_scripts(run_number, date, args.config_file, env_name)
+
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob("nsb_*_run_*.sh"))
@@ -118,7 +127,23 @@ def main():
         print(
             "Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
         )
-        return
+        return    print("Update database and launch jobs")
+    df_old = pd.read_hdf(
+        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
+        key="joint_obs",
+    )
+    df_LST = pd.concat([df_LST, df_old]).drop_duplicates(
+        subset="LST1_run", keep="first"
+    )
+    df_LST = df_LST.sort_values(by=["DATE", "source","LST1_run"])
+    
+    
+    df_LST.to_hdf(
+        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
+        key="joint_obs",
+        mode="w",
+        min_itemsize={'lstchain_versions':20, 'last_lstchain_file':90,'processed_lstchain_file':90}
+    )
     for n, run in enumerate(list_of_bash_scripts):
         if n == 0:
             launch_jobs = f"nsb{n}=$(sbatch --parsable {run})"
@@ -126,6 +151,8 @@ def main():
             launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
 
     os.system(launch_jobs)
+    
+    
 
 
 if __name__ == "__main__":
