@@ -8,7 +8,8 @@ import os
 import pandas as pd
 import numpy as np
 import glob
-from string import ascii_letters
+
+lstchain_versions=['v0.9','v0.10']
 
 def main():
 
@@ -30,33 +31,34 @@ def main():
         date = row["DATE"]
         directories_version=[i.split('/')[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/v*")]
         
-        v_number=np.sort([float(i.replace('v0.','').rstrip(ascii_letters).split('_')[0]) for i in directories_version]).tolist()
         
+       
         
-        
-        v_number=[str(i).replace('.0','') for i in v_number]
-        
-        for vers in v_number:
+        for vers in directories_version:
             
             if os.path.isfile(
-                f"/fefs/aswg/data/real/DL1/{date}/v0.{vers}/tailcut84/dl1_LST-1.Run{run}.h5"
+                f"/fefs/aswg/data/real/DL1/{date}/{vers}/tailcut84/dl1_LST-1.Run{run}.h5"
             ):
                 if vers not in version:
                     version.append(vers)
-        
+                
         version=list(version)
-        
-       
-        version=[f'v0.{i}'for i in version]
-        
-        if len(version)>0:
-            
-            df_LST.loc[i,'last_lstchain_file']=f"/fefs/aswg/data/real/DL1/{date}/{version[-1]}/tailcut84/dl1_LST-1.Run{run}.h5"
-        else:
-            df_LST.loc[i,'last_lstchain_file']=f"/fefs/aswg/data/real/DL1/{date}/{version}/tailcut84/dl1_LST-1.Run{run}.h5"
-        
         df_LST.loc[i, "lstchain_versions"] = str(version)
-   
+        max_version=None
+        
+        for j in range(len(lstchain_versions)):
+            
+            
+            if lstchain_versions[j] in version:
+                
+                max_version=lstchain_versions[j] 
+        
+        if max_version is None:
+            raise ValueError('issue with lstchain versions')
+        name=f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut84/dl1_LST-1.Run{run}.h5"   
+            
+        df_LST.loc[i,'last_lstchain_file']= name
+    
     df_LST.to_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
