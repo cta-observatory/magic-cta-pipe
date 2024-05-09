@@ -1,3 +1,4 @@
+from .clusters import slurm_lines
 from .coincident_events import configfile_coincidence, linking_bash_lst
 from .merging_runs import cleaning, merge, mergeMC, split_train_test
 from .setting_up_config_and_dir import (
@@ -22,4 +23,5 @@ __all__ = [
     "configfile_stereo",
     "bash_stereo",
     "bash_stereoMC",
+    "slurm_lines",
 ]
