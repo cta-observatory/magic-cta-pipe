@@ -296,13 +296,12 @@ def lists_and_bash_gen_MAGIC(
                     ]
                     f.writelines(lines)
     if NSB_match:
-
-        if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
-            for i in MAGIC_runs:
-
-                if telescope_ids[-1] > 0:
+        for magic in [1, 2]:
+            # if 1 then magic is second from last, if 2 then last
+            if telescope_ids[magic - 3] > 0:
+                for i in MAGIC_runs:
                     number_of_nodes = glob.glob(
-                        f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                        f'/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
                     )
                     number_of_nodes = len(number_of_nodes) - 1
                     if number_of_nodes < 0:
@@ -312,40 +311,24 @@ def lists_and_bash_gen_MAGIC(
                         J=process_name,
                         array=number_of_nodes,
                         mem="2g",
-                        out_err=f"{target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
+                        out_err=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
                     )
                     lines = slurm + [
-                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}\n",
+                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                         "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                         f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                        "rc=$?\n",
+                        'if [ "$rc" -ne "0" ]; then\n',
+                        "  echo $SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID} $rc >> $OUTPUTDIR/logs/list_failed.log\n",
+                        "fi\n",
+                        "echo $SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID} $rc >> $OUTPUTDIR/logs/list_return.log\n",
                     ]
-                    with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
-                        f.writelines(lines)
-
-                if telescope_ids[-2] > 0:
-                    number_of_nodes = glob.glob(
-                        f'/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                    )
-                    number_of_nodes = len(number_of_nodes) - 1
-                    if number_of_nodes < 0:
-                        continue
-                    slurm = slurm_lines(
-                        p="short",
-                        J=process_name,
-                        array=number_of_nodes,
-                        mem="2g",
-                        out_err=f"{target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
-                    )
-                    lines = slurm + [
-                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}\n",
-                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
-                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                        "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                    ]
-                    with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
+                    with open(
+                        f"{source}_MAGIC-" + "I" * magic + f"_dl0_to_dl1_run_{i[1]}.sh",
+                        "w",
+                    ) as f:
                         f.writelines(lines)
     else:
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
@@ -677,7 +660,7 @@ def main():
                     else:
                         launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
 
-                os.system(launch_jobs_MC)
+                # os.system(launch_jobs_MC)
 
         # Below we run the analysis on the MAGIC data
         if (
@@ -701,11 +684,9 @@ def main():
                     )
                     continue
 
+                launch_jobs = f"linking=$(sbatch --parsable {source_name}_linking_MAGIC_data_paths.sh)"
                 for n, run in enumerate(list_of_MAGIC_runs):
-                    if n == 0:
-                        launch_jobs = f"linking=$(sbatch --parsable {source_name}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
-                    else:
-                        launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
+                    launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
 
                 os.system(launch_jobs)
 
