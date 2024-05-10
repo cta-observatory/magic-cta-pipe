@@ -10,19 +10,8 @@ import numpy as np
 import glob
 
 lstchain_versions=['v0.9','v0.10']
-
-def main():
-
-    """
-    Main function
-    """
-
-    df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
-    )
-    
-    
+__all__ = ["version_lstchain"]
+def version_lstchain(df_LST):
     for i, row in df_LST.iterrows():
 
         version=[]
@@ -58,6 +47,19 @@ def main():
         name=f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut84/dl1_LST-1.Run{run}.h5"   
             
         df_LST.loc[i,'last_lstchain_file']= name
+def main():
+
+    """
+    Main function
+    """
+
+    df_LST = pd.read_hdf(
+        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
+        key="joint_obs",
+    )
+    
+    version_lstchain(df_LST)
+    
     
     df_LST.to_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
