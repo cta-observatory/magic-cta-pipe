@@ -13,7 +13,9 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import yaml
+
 from .lstchain_version import lstchain_versions
+
 __all__ = ["bash_scripts"]
 
 logger = logging.getLogger(__name__)
@@ -96,9 +98,7 @@ def main():
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
     )
-    lstchain_v=config["general"]["LST_version"]
-
-    
+    lstchain_v = config["general"]["LST_version"]
 
     min = datetime.strptime(args.begin_date, "%Y_%m_%d")
     max = datetime.strptime(args.end_date, "%Y_%m_%d")
@@ -108,30 +108,32 @@ def main():
     df_LST = df_LST[df_LST["date"] <= max]
 
     df_LST = df_LST.drop(columns="date")
-    
+
     print("***** Generating bashscripts...")
     for i, row in df_LST.iterrows():
-        
-        #list_v=list(str(row['lstchain_versions'].replace('"]','').replace('["','').split('",')).rstrip('"]').lstrip('["'))
-        list_v = [eval(i) for i in row['lstchain_versions'].strip("][").split(', ')]
-        #list_v=list_v..rstrip('"]').lstrip('["')
-        
+
+        # list_v=list(str(row['lstchain_versions'].replace('"]','').replace('["','').split('",')).rstrip('"]').lstrip('["'))
+        list_v = [eval(i) for i in row["lstchain_versions"].strip("][").split(", ")]
+        # list_v=list_v..rstrip('"]').lstrip('["')
+
         if str(lstchain_v) not in list_v:
             continue
-        if len(list_v)>1:
-            common_v=[i for i in (set(lstchain_versions).intersection(list_v))]
-           
-            max_common=common_v
-            if len(common_v)>1:
-                max_common=common_v[-1]
-            
-            if lstchain_v!=max_common:
+        if len(list_v) > 1:
+            common_v = [i for i in (set(lstchain_versions).intersection(list_v))]
+
+            max_common = common_v
+            if len(common_v) > 1:
+                max_common = common_v[-1]
+
+            if lstchain_v != max_common:
                 continue
-        run_number = row["LST1_run"]        
+        run_number = row["LST1_run"]
         date = row["DATE"]
 
-        df_LST.loc[i,'processed_lstchain_file']=f"/fefs/aswg/data/real/DL1/{date}/{lstchain_v}/tailcut84/dl1_LST-1.Run{run_number}.h5"
-        df_LST.loc[i,'error_code_nsb']=np.nan
+        df_LST.loc[
+            i, "processed_lstchain_file"
+        ] = f"/fefs/aswg/data/real/DL1/{date}/{lstchain_v}/tailcut84/dl1_LST-1.Run{run_number}.h5"
+        df_LST.loc[i, "error_code_nsb"] = np.nan
         bash_scripts(run_number, date, args.config_file, env_name)
 
     print("Process name: nsb")
@@ -142,7 +144,8 @@ def main():
         print(
             "Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
         )
-        return    print("Update database and launch jobs")
+        return
+    print("Update database and launch jobs")
     df_old = pd.read_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
@@ -150,10 +153,8 @@ def main():
     df_LST = pd.concat([df_LST, df_old]).drop_duplicates(
         subset="LST1_run", keep="first"
     )
-    df_LST = df_LST.sort_values(by=["DATE", "source","LST1_run"])
-    
-    
-   
+    df_LST = df_LST.sort_values(by=["DATE", "source", "LST1_run"])
+
     for n, run in enumerate(list_of_bash_scripts):
         if n == 0:
             launch_jobs = f"nsb{n}=$(sbatch --parsable {run})"
@@ -165,10 +166,12 @@ def main():
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
         mode="w",
-        min_itemsize={'lstchain_versions':20, 'last_lstchain_file':90,'processed_lstchain_file':90}
+        min_itemsize={
+            "lstchain_versions": 20,
+            "last_lstchain_file": 90,
+            "processed_lstchain_file": 90,
+        },
     )
-    
-    
 
 
 if __name__ == "__main__":

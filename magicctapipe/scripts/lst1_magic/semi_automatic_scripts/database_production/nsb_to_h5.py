@@ -60,12 +60,11 @@ def main():
 
     df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
 
-    df_new.loc[df_new['error_code_nsb'].isna(),"error_code_nsb"] = '1'
-    
-    df_new.loc[df_new['nsb'].notna(),"error_code_nsb"] = '0'
-    df_new.loc[df_new['nsb'] > 3.0,"error_code_nsb"] = '2'
-    
-    
+    df_new.loc[df_new["error_code_nsb"].isna(), "error_code_nsb"] = "1"
+
+    df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
+    df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
+
     df_new = df_new[
         [
             "source",
@@ -76,11 +75,11 @@ def main():
             "MAGIC_HV",
             "nsb",
             "lstchain_versions",
-         	"last_lstchain_file",
-         	"processed_lstchain_file",
+            "last_lstchain_file",
+            "processed_lstchain_file",
             "error_code_nsb",
-          	"error_code_coincidence",
-         	"error_code_stereo",
+            "error_code_coincidence",
+            "error_code_stereo",
         ]
     ]
     df_new.to_hdf(

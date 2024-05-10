@@ -345,17 +345,17 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                     os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
                 ]
                 for i in dates:
+                    
                     if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
+                        
                         continue
                     if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/Merged_{i}"):
                         os.mkdir(
                             f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
                         )  # Creating a merged directory for each night
-                    if (
-                        len(glob.glob(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/*M1*.h5")) > 0
-                    ) and (
-                        len(glob.glob(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/*M2*.h5")) > 0
-                    ):
+                    if len(glob.glob(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/*MAGIC*.h5")) > 0:
+                    
+                        
                         if not os.path.exists(
                             f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs"
                         ):
