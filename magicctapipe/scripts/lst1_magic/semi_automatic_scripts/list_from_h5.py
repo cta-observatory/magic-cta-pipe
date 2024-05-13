@@ -254,6 +254,9 @@ def main():
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
     clear_files(source_in, source_out, df_LST)
+    if len(df_LST)==0:
+        print('NO LST run found. Exiting...')
+        return
     list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]
@@ -275,6 +278,9 @@ def main():
     df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
+    if (len(M1_runs)==0) or (len(df_MAGIC2)==0):
+        print('NO MAGIC stereo run found. Exiting...')
+        return
     list_run(source_in, source_out, df_MAGIC2, skip_LST, skip_MAGIC, False, M1_runs)
 
 
