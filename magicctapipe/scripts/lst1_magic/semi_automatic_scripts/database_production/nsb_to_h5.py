@@ -1,7 +1,7 @@
 """
-Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
+Script to fill the 'nsb' column of the LST database. To be called after nsb_level.py
 
-Usage: python nsb_level.py (-c config.yaml)
+Usage: python nsb_to_h5.py 
 """
 
 import glob
@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 
 def collect_nsb(df_LST):
     """
-    Here we split the LST runs in NSB-wise .txt files
+    Here we collect NSB values from .txt files and store them into the dataframe
 
     Parameters
     ----------
