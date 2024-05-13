@@ -148,7 +148,6 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
                 if (int(LST_run[k]) in skip_LST) or (int(LST_run[k]) in run_listed):
                     continue
 
-                
                 with open(file_list[0], "a+") as f:
                     f.write(
                         f"{LST_date[k].replace('-','_')},{str(LST_run[k]).lstrip('0')}\n"
@@ -168,7 +167,6 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
                 if int(M2_run[k]) not in M1_run_list:
                     continue
 
-                
                 with open(file_list[1], "a+") as f:
                     f.write(f"{MAGIC_date[k].replace('-','_')},{int(M2_run[k])}\n")
                 run_listed.append(int(M2_run[k]))
@@ -216,13 +214,12 @@ def main():
 
     stereo = True
     lstchain_version = config["general"]["LST_version"]
-   
-    
-    processed_v=df_LST["processed_lstchain_file"].str.split("/").str[-3]
-    
-    mask = (processed_v== lstchain_version)
+
+    processed_v = df_LST["processed_lstchain_file"].str.split("/").str[-3]
+
+    mask = processed_v == lstchain_version
     df_LST = df_LST[mask]
-   
+
     if source_in is None:
         df_LST.query(
             f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & error_code_nsb=="0"',
@@ -233,7 +230,7 @@ def main():
             f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & error_code_nsb=="0"',
             inplace=True,
         )
-    
+
     if range:
         min = str(config["data_selection"]["min"])
         max = str(config["data_selection"]["max"])
@@ -252,8 +249,8 @@ def main():
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
     clear_files(source_in, source_out, df_LST)
-    if len(df_LST)==0:
-        print('NO LST run found. Exiting...')
+    if len(df_LST) == 0:
+        print("NO LST run found. Exiting...")
         return
     list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
     list_date_LST = np.unique(df_LST["date_LST"])
@@ -276,8 +273,8 @@ def main():
     df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
-    if (len(M1_runs)==0) or (len(df_MAGIC2)==0):
-        print('NO MAGIC stereo run found. Exiting...')
+    if (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):
+        print("NO MAGIC stereo run found. Exiting...")
         return
     list_run(source_in, source_out, df_MAGIC2, skip_LST, skip_MAGIC, False, M1_runs)
 

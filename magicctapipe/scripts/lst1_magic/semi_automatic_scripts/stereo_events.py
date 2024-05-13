@@ -83,7 +83,6 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
 
     process_name = source
     if not NSB_match:
-        
 
         listOfNightsLST = np.sort(
             glob.glob(f"{target_dir}/{source}/DL1/Observations/Coincident/*")
@@ -120,7 +119,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
                 ]
                 f.writelines(lines)
     else:
-        
+
         listOfNightsLST = np.sort(
             glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Coincident/*")
         )

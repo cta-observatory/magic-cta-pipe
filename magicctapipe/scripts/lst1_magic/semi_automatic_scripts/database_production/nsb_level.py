@@ -160,7 +160,7 @@ def main():
             launch_jobs = f"nsb{n}=$(sbatch --parsable {run})"
         else:
             launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
-    
+
     os.system(launch_jobs)
     df_LST.to_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",

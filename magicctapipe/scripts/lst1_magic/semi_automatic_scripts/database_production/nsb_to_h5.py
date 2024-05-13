@@ -1,7 +1,7 @@
 """
 Script to fill the 'nsb' column of the LST database. To be called after nsb_level.py
 
-Usage: python nsb_to_h5.py 
+Usage: python nsb_to_h5.py
 """
 
 import glob
@@ -40,7 +40,7 @@ def collect_nsb(df_LST):
         with open(file_nsb) as ff:
             line_str = ff.readline().rstrip("\n")
             nsb = line_str.split(",")[2]
-        
+
         df_LST.loc[run, "nsb"] = float(nsb)
     df_LST = df_LST.reset_index()
     return df_LST

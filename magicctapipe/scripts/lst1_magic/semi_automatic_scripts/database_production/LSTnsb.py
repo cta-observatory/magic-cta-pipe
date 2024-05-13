@@ -10,6 +10,8 @@ import numpy as np
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
+from magicctapipe.io import resource_file
+
 __all__ = ["nsb"]
 
 logger = logging.getLogger(__name__)
@@ -118,12 +120,14 @@ def main():
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
     nsb_limit.insert(0, 0)
     conda_path = os.environ["CONDA_PREFIX"]
-
+    lstchain_modified = config["general"]["lstchain_modified_config"]
     lst_config = (
         str(conda_path)
         + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
     )
-
+    if lstchain_modified:
+        lst_config = resource_file("lstchain_standard_config_modified.json")
+    print(lst_config)
     if NSB_match:
         LST_files = np.sort(glob.glob(f"nsb_LST_[0-9]*_{run_number}.txt"))
 
