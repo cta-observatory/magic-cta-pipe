@@ -142,38 +142,34 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             LST_run = df_source["LST1_run"].tolist()  # List with runs as strings
             LST_date = df_source["date_LST"].tolist()
             for k in range(len(df_source)):
-                skip = False
                 if np.isnan(LST_run[k]):
                     continue
 
                 if (int(LST_run[k]) in skip_LST) or (int(LST_run[k]) in run_listed):
-                    skip = True
+                    continue
 
-                if skip is False:
-                    with open(file_list[0], "a+") as f:
-                        f.write(
-                            f"{LST_date[k].replace('-','_')},{str(LST_run[k]).lstrip('0')}\n"
-                        )
-                    run_listed.append(int(LST_run[k]))
+                with open(file_list[0], "a+") as f:
+                    f.write(
+                        f"{LST_date[k].replace('-','_')},{str(LST_run[k]).lstrip('0')}\n"
+                    )
+                run_listed.append(int(LST_run[k]))
 
         if not is_LST:
             print("Finding MAGIC runs...")
             MAGIC_date = df_source["date_MAGIC"].tolist()
             M2_run = df_source["Run ID"].tolist()
             for k in range(len(df_source)):
-                skip = False
                 if np.isnan(M2_run[k]):
                     continue
 
                 if (int(M2_run[k]) in skip_MAGIC) or (int(M2_run[k]) in run_listed):
-                    skip = True
+                    continue
                 if int(M2_run[k]) not in M1_run_list:
-                    skip = True
+                    continue
 
-                if skip is False:
-                    with open(file_list[1], "a+") as f:
-                        f.write(f"{MAGIC_date[k].replace('-','_')},{int(M2_run[k])}\n")
-                    run_listed.append(int(M2_run[k]))
+                with open(file_list[1], "a+") as f:
+                    f.write(f"{MAGIC_date[k].replace('-','_')},{int(M2_run[k])}\n")
+                run_listed.append(int(M2_run[k]))
 
 
 def main():
@@ -210,24 +206,28 @@ def main():
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
     )  # TODO: put this file in a shared folder
-    df_LST(subset=["LST1_run"], inplace=True)
+    df_LST.dropna(subset=["LST1_run"], inplace=True)
     df_LST = split_lst_date(df_LST)
     df_LST = df_LST.astype(
         {"YY_LST": int, "MM_LST": int, "DD_LST": int, "nsb": float, "LST1_run": int}
     )
 
     stereo = True
-    lstchain_version=config["general"]["LST_version"]
-    mask=(df_LST['processed_lstchain_file'].str.split('/')[-3]==lstchain_version)
-    df_LST=df_LST[mask]
+    lstchain_version = config["general"]["LST_version"]
+
+    processed_v = df_LST["processed_lstchain_file"].str.split("/").str[-3]
+
+    mask = processed_v == lstchain_version
+    df_LST = df_LST[mask]
+
     if source_in is None:
         df_LST.query(
-            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & nsb <=3.0 & error_code_nsb==0',
+            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & error_code_nsb=="0"',
             inplace=True,
         )
     else:
         df_LST.query(
-            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & nsb <=3.0 & error_code_nsb==0',
+            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & error_code_nsb=="0"',
             inplace=True,
         )
 
@@ -248,8 +248,10 @@ def main():
 
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
-
     clear_files(source_in, source_out, df_LST)
+    if len(df_LST) == 0:
+        print("NO LST run found. Exiting...")
+        return
     list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]
@@ -271,6 +273,9 @@ def main():
     df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
+    if (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):
+        print("NO MAGIC stereo run found. Exiting...")
+        return
     list_run(source_in, source_out, df_MAGIC2, skip_LST, skip_MAGIC, False, M1_runs)
 
 

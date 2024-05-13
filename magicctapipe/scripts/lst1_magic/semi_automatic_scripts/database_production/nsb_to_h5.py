@@ -1,7 +1,7 @@
 """
-Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
+Script to fill the 'nsb' column of the LST database. To be called after nsb_level.py
 
-Usage: python nsb_level.py (-c config.yaml)
+Usage: python nsb_to_h5.py
 """
 
 import glob
@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 
 def collect_nsb(df_LST):
     """
-    Here we split the LST runs in NSB-wise .txt files
+    Here we collect NSB values from .txt files and store them into the dataframe
 
     Parameters
     ----------
@@ -32,6 +32,7 @@ def collect_nsb(df_LST):
         Same dataframe as the input one, but with NSB values added in the 'nsb' column (for the runs processed by nsb_level.py)
     """
     nsb_files = glob.glob("nsb_LST_*.txt")
+    df_LST = df_LST.set_index("LST1_run")
     for file_nsb in nsb_files:
         run = file_nsb.split("_")[3]
         run = run.split(".")[0]
@@ -39,9 +40,9 @@ def collect_nsb(df_LST):
         with open(file_nsb) as ff:
             line_str = ff.readline().rstrip("\n")
             nsb = line_str.split(",")[2]
-        df_LST = df_LST.set_index("LST1_run")
+
         df_LST.loc[run, "nsb"] = float(nsb)
-        df_LST = df_LST.reset_index()
+    df_LST = df_LST.reset_index()
     return df_LST
 
 
@@ -60,12 +61,11 @@ def main():
 
     df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
 
-    df_new.loc[df_new['error_code_nsb'].isna(),"error_code_nsb"] = '1'
-    
-    df_new.loc[df_new['nsb'].notna(),"error_code_nsb"] = '0'
-    df_new.loc[df_new['nsb'] > 3.0,"error_code_nsb"] = '2'
-    
-    
+    df_new.loc[df_new["error_code_nsb"].isna(), "error_code_nsb"] = "1"
+
+    df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
+    df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
+
     df_new = df_new[
         [
             "source",
@@ -76,11 +76,11 @@ def main():
             "MAGIC_HV",
             "nsb",
             "lstchain_versions",
-         	"last_lstchain_file",
-         	"processed_lstchain_file",
+            "last_lstchain_file",
+            "processed_lstchain_file",
             "error_code_nsb",
-          	"error_code_coincidence",
-         	"error_code_stereo",
+            "error_code_coincidence",
+            "error_code_stereo",
         ]
     ]
     df_new.to_hdf(
