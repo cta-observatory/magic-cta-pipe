@@ -83,10 +83,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
 
     process_name = source
     if not NSB_match:
-        if not os.path.exists(
-            f"{target_dir}/{source}/DL1/Observations/Coincident_stereo"
-        ):
-            os.mkdir(f"{target_dir}/{source}/DL1/Observations/Coincident_stereo")
+        
 
         listOfNightsLST = np.sort(
             glob.glob(f"{target_dir}/{source}/DL1/Observations/Coincident/*")
@@ -94,8 +91,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
 
         for nightLST in listOfNightsLST:
             stereoDir = f"{target_dir}/{source}/DL1/Observations/Coincident_stereo/{nightLST.split('/')[-1]}"
-            if not os.path.exists(stereoDir):
-                os.mkdir(stereoDir)
+            os.makedirs(stereoDir)
 
             os.system(
                 f"ls {nightLST}/*LST*.h5 >  {nightLST}/list_coin.txt"
@@ -124,20 +120,13 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
                 ]
                 f.writelines(lines)
     else:
-        if not os.path.exists(
-            f"{target_dir}/v{__version__}/{source}/DL1CoincidentStereo"
-        ):
-            os.mkdir(f"{target_dir}/v{__version__}/{source}/DL1CoincidentStereo")
-
+        
         listOfNightsLST = np.sort(
             glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Coincident/*")
         )
         for nightLST in listOfNightsLST:
             stereoDir = f'{target_dir}/v{__version__}/{source}/DL1CoincidentStereo/{nightLST.split("/")[-1]}'
-            if not os.path.exists(stereoDir):
-                os.mkdir(stereoDir)
-            if not os.path.exists(f"{stereoDir}/logs"):
-                os.mkdir(f"{stereoDir}/logs")
+            os.makedirs(f"{stereoDir}/logs")
             if not os.listdir(f"{nightLST}"):
                 continue
             if len(os.listdir(nightLST)) < 2:
@@ -191,10 +180,7 @@ def bash_stereoMC(target_dir, identification, env_name, source):
 
     process_name = source
 
-    if not os.path.exists(
-        f"{target_dir}/{source}/DL1/MC/{identification}/Merged/StereoMerged"
-    ):
-        os.mkdir(f"{target_dir}/{source}/DL1/MC/{identification}/Merged/StereoMerged")
+    os.makedirs(f"{target_dir}/{source}/DL1/MC/{identification}/Merged/StereoMerged")
 
     inputdir = f"{target_dir}/{source}/DL1/MC/{identification}/Merged"
 

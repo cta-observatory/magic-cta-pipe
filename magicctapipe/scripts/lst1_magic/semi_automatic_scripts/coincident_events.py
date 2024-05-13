@@ -100,8 +100,7 @@ def linking_bash_lst(
         LST_runs.append(dt)
     if NSB_match:
         coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
-        if not os.path.exists(f"{coincidence_DL1_dir}/DL1Coincident/"):
-            os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident")
+        
 
         MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
 
@@ -131,16 +130,10 @@ def linking_bash_lst(
                     inputdir = (
                         f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
                     )
-                    if not os.path.exists(
-                        f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
-                    ):
-                        os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}")
-                    if not os.path.exists(
+                   
+                    os.makedirs(
                         f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs"
-                    ):
-                        os.mkdir(
-                            f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs"
-                        )
+                    )
 
                     outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
                     list_of_subruns = np.sort(
@@ -188,27 +181,21 @@ def linking_bash_lst(
                         f.writelines(lines)
     else:
         coincidence_DL1_dir = f"{target_dir}/{source_name}/DL1/Observations"
-        if not os.path.exists(f"{coincidence_DL1_dir}/Coincident"):
-            os.mkdir(f"{coincidence_DL1_dir}/Coincident")
-
+       
         for i in LST_runs:
             lstObsDir = i[0].split("_")[0] + i[0].split("_")[1] + i[0].split("_")[2]
             inputdir = f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
             outputdir = f"{coincidence_DL1_dir}/Coincident/{lstObsDir}"
             list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
-            if os.path.exists(f"{outputdir}/list_LST.txt"):
-                with open(f"{outputdir}/list_LST.txt", "a") as LSTdataPathFile:
-                    for subrun in list_of_subruns:
-                        LSTdataPathFile.write(
-                            f"{subrun}\n"
-                        )  # If this files already exists, simply append the new information
-            else:
-                os.mkdir(outputdir)
-                with open(
-                    f"{outputdir}/list_LST.txt", "w"
-                ) as f:  # If the file list_LST.txt does not exist, it will be created here
-                    for subrun in list_of_subruns:
-                        f.write(f"{subrun}\n")
+            os.makedirs(outputdir)
+            
+            
+            with open(f"{outputdir}/list_LST.txt", "a+") as LSTdataPathFile:
+                for subrun in list_of_subruns:
+                    LSTdataPathFile.write(
+                        f"{subrun}\n"
+                    )  # If this files already exists, simply append the new information
+           
         process_name = source_name
 
         listOfNightsLST = np.sort(
