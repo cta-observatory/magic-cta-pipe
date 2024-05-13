@@ -32,6 +32,7 @@ def collect_nsb(df_LST):
         Same dataframe as the input one, but with NSB values added in the 'nsb' column (for the runs processed by nsb_level.py)
     """
     nsb_files = glob.glob("nsb_LST_*.txt")
+    df_LST = df_LST.set_index("LST1_run")
     for file_nsb in nsb_files:
         run = file_nsb.split("_")[3]
         run = run.split(".")[0]
@@ -39,9 +40,9 @@ def collect_nsb(df_LST):
         with open(file_nsb) as ff:
             line_str = ff.readline().rstrip("\n")
             nsb = line_str.split(",")[2]
-        df_LST = df_LST.set_index("LST1_run")
+        
         df_LST.loc[run, "nsb"] = float(nsb)
-        df_LST = df_LST.reset_index()
+    df_LST = df_LST.reset_index()
     return df_LST
 
 
