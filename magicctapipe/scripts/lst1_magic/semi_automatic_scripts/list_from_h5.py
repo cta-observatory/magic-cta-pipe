@@ -142,38 +142,36 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
             LST_run = df_source["LST1_run"].tolist()  # List with runs as strings
             LST_date = df_source["date_LST"].tolist()
             for k in range(len(df_source)):
-                skip = False
                 if np.isnan(LST_run[k]):
                     continue
 
                 if (int(LST_run[k]) in skip_LST) or (int(LST_run[k]) in run_listed):
-                    skip = True
+                    continue
 
-                if skip is False:
-                    with open(file_list[0], "a+") as f:
-                        f.write(
-                            f"{LST_date[k].replace('-','_')},{str(LST_run[k]).lstrip('0')}\n"
-                        )
-                    run_listed.append(int(LST_run[k]))
+                
+                with open(file_list[0], "a+") as f:
+                    f.write(
+                        f"{LST_date[k].replace('-','_')},{str(LST_run[k]).lstrip('0')}\n"
+                    )
+                run_listed.append(int(LST_run[k]))
 
         if not is_LST:
             print("Finding MAGIC runs...")
             MAGIC_date = df_source["date_MAGIC"].tolist()
             M2_run = df_source["Run ID"].tolist()
             for k in range(len(df_source)):
-                skip = False
                 if np.isnan(M2_run[k]):
                     continue
 
                 if (int(M2_run[k]) in skip_MAGIC) or (int(M2_run[k]) in run_listed):
-                    skip = True
+                    continue
                 if int(M2_run[k]) not in M1_run_list:
-                    skip = True
+                    continue
 
-                if skip is False:
-                    with open(file_list[1], "a+") as f:
-                        f.write(f"{MAGIC_date[k].replace('-','_')},{int(M2_run[k])}\n")
-                    run_listed.append(int(M2_run[k]))
+                
+                with open(file_list[1], "a+") as f:
+                    f.write(f"{MAGIC_date[k].replace('-','_')},{int(M2_run[k])}\n")
+                run_listed.append(int(M2_run[k]))
 
 
 def main():
