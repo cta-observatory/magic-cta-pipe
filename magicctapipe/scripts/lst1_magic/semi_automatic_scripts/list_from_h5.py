@@ -210,27 +210,32 @@ def main():
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
     )  # TODO: put this file in a shared folder
-    df_LST(subset=["LST1_run"], inplace=True)
+    df_LST.dropna(subset=["LST1_run"], inplace=True)
     df_LST = split_lst_date(df_LST)
     df_LST = df_LST.astype(
         {"YY_LST": int, "MM_LST": int, "DD_LST": int, "nsb": float, "LST1_run": int}
     )
 
     stereo = True
-    lstchain_version=config["general"]["LST_version"]
-    mask=(df_LST['processed_lstchain_file'].str.split('/')[-3]==lstchain_version)
-    df_LST=df_LST[mask]
+    lstchain_version = config["general"]["LST_version"]
+   
+    
+    processed_v=df_LST["processed_lstchain_file"].str.split("/").str[-3]
+    
+    mask = (processed_v== lstchain_version)
+    df_LST = df_LST[mask]
+   
     if source_in is None:
         df_LST.query(
-            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & nsb <=3.0 & error_code_nsb==0',
+            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & error_code_nsb=="0"',
             inplace=True,
         )
     else:
         df_LST.query(
-            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & nsb <=3.0 & error_code_nsb==0',
+            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & MAGIC_stereo == {stereo} & error_code_nsb=="0"',
             inplace=True,
         )
-
+    
     if range:
         min = str(config["data_selection"]["min"])
         max = str(config["data_selection"]["max"])
@@ -248,7 +253,6 @@ def main():
 
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
-
     clear_files(source_in, source_out, df_LST)
     list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
     list_date_LST = np.unique(df_LST["date_LST"])

@@ -42,11 +42,11 @@ def bash_scripts(run, date, config, env_name):
 
     lines = [
         "#!/bin/sh\n\n",
-        "#SBATCH -p short,long\n",
+        "#SBATCH -p long\n",
         "#SBATCH -J nsb\n",
         "#SBATCH -n 1\n\n",
-        "#SBATCH --output=slurm-nsb-%x.%j.out"
-        "#SBATCH --error=slurm-nsb-%x.%j.err"
+        f"#SBATCH --output=slurm-nsb_{run}-%x.%j.out\n"
+        f"#SBATCH --error=slurm-nsb_{run}-%x.%j.err\n"
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
@@ -160,7 +160,7 @@ def main():
             launch_jobs = f"nsb{n}=$(sbatch --parsable {run})"
         else:
             launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
-
+    
     os.system(launch_jobs)
     df_LST.to_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
