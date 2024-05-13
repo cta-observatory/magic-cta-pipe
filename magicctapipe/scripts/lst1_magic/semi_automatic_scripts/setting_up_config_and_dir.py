@@ -140,18 +140,19 @@ def lists_and_bash_generator(
 
     if MC_path == "":
         return
-
+    print(f"running {particle_type} from {MC_path}")
     process_name = source_name
 
     list_of_nodes = glob.glob(f"{MC_path}/node*")
+    dir1 = f"{target_dir}/v{__version__}/{source_name}"
     with open(
-        f"{target_dir}/{source_name}/list_nodes_{particle_type}_complete.txt", "w"
+        f"{dir1}/logs/list_nodes_{particle_type}_complete.txt", "w"
     ) as f:  # creating list_nodes_gammas_complete.txt
         for i in list_of_nodes:
-            f.write(f"{i}/output_{SimTel_version}\n")
+            f.write(f"{i}/output{SimTel_version}\n")
 
     with open(
-        f"{target_dir}/{source_name}/list_folder_{particle_type}.txt", "w"
+        f"{dir1}/logs/list_folder_{particle_type}.txt", "w"
     ) as f:  # creating list_folder_gammas.txt
         for i in list_of_nodes:
             f.write(f'{i.split("/")[-1]}\n')
@@ -164,22 +165,23 @@ def lists_and_bash_generator(
         slurm = slurm_lines(
             p="short",
             J=process_name,
-            out_err=f"{target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-linkMC-%x.%j",
+            out_err=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-linkMC-%x.%j",
         )
         lines_of_config_file = slurm + [
             "while read -r -u 3 lineA && read -r -u 4 lineB\n",
             "do\n",
-            f"    cd {target_dir}/{source_name}/DL1/MC/{particle_type}\n",
+            f"    cd {dir1}/DL1/MC/{particle_type}\n",
             "    mkdir $lineB\n",
             "    cd $lineA\n",
             "    ls -lR *.gz |wc -l\n",
-            f"    ls *.gz > {target_dir}/{source_name}/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n",
+            f"    mkdir -p {dir1}/DL1/MC/{particle_type}/$lineB/logs/\n",
+            f"    ls *.gz > {dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n",
             '    string=$lineA"/"\n',
-            f"    export file={target_dir}/{source_name}/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n\n",
+            f"    export file={dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n\n",
             "    cat $file | while read line; do echo $string${line}"
-            + f" >>{target_dir}/{source_name}/DL1/MC/{particle_type}/$lineB/list_dl0_ok.txt; done\n\n",
+            + f" >>{dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0_ok.txt; done\n\n",
             '    echo "folder $lineB  and node $lineA"\n',
-            f'done 3<"{target_dir}/{source_name}/list_nodes_{particle_type}_complete.txt" 4<"{target_dir}/{source_name}/list_folder_{particle_type}.txt"\n',
+            f'done 3<"{dir1}/logs/list_nodes_{particle_type}_complete.txt" 4<"{dir1}/logs/list_folder_{particle_type}.txt"\n',
             "",
         ]
         f.writelines(lines_of_config_file)
@@ -197,20 +199,20 @@ def lists_and_bash_generator(
             J=process_name,
             array=number_of_nodes,
             mem="10g",
-            out_err=f"{target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-%x.%A_%a",
+            out_err=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-%x.%A_%a",
         )
         lines_of_config_file = slurm + [
-            f"cd {target_dir}/{source_name}/DL1/MC/{particle_type}\n\n",
-            f"export INF={target_dir}/{source_name}\n",
+            f"cd {dir1}/DL1/MC/{particle_type}\n\n",
+            f"export INF={dir1}/logs\n",
             f"SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             "cd $SAMPLE\n\n",
-            f"export LOG={target_dir}/{source_name}/DL1/MC/{particle_type}"
+            f"export LOG={dir1}/DL1/MC/{particle_type}/logs"
             + "/simtel_{$SAMPLE}_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}_all.log\n",
             "cat list_dl0_ok.txt | while read line\n",
             "do\n",
-            f"    cd {target_dir}/{source_name}/../\n",
-            f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {target_dir}/{source_name}/DL1/MC/{particle_type}/$SAMPLE --config-file {target_dir}/{source_name}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
+            f"    cd {dir1}/../\n",
+            f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {dir1}/DL1/MC/{particle_type}/$SAMPLE --config-file {dir1}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
             "done\n",
             "",
         ]
@@ -339,16 +341,20 @@ def directories_generator(
             "MC/helium",
         ]
         if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
+            os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs")
             for dir in dir_list:
-                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}")
+                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs")
         else:
             overwrite = input(
                 f'MC&data directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
             )
             if overwrite == "y":
                 os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
+                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs")
                 for dir in dir_list:
-                    os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}")
+                    os.makedirs(
+                        f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs"
+                    )
             else:
                 print("Directory not modified.")
 
@@ -454,51 +460,23 @@ def main():
             if (args.analysis_type == "onlyMC") or (
                 args.analysis_type == "doEverything"
             ):
-                lists_and_bash_generator(
-                    "gammas",
-                    target_dir,
-                    MC_gammas,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # gammas
-                lists_and_bash_generator(
-                    "electrons",
-                    target_dir,
-                    MC_electrons,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # electrons
-                lists_and_bash_generator(
-                    "helium",
-                    target_dir,
-                    MC_helium,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # helium
-                lists_and_bash_generator(
-                    "protons",
-                    target_dir,
-                    MC_protons,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # protons
-                lists_and_bash_generator(
-                    "gammadiffuse",
-                    target_dir,
-                    MC_gammadiff,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # gammadiffuse
+                to_process = {
+                    "gammas": MC_gammas,
+                    "electrons": MC_electrons,
+                    "helium": MC_helium,
+                    "protons": MC_protons,
+                    "gammadiffuse": MC_gammadiff,
+                }
+                for particle in to_process.keys():
+                    lists_and_bash_generator(
+                        particle,
+                        target_dir,
+                        to_process[particle],
+                        SimTel_version,
+                        focal_length,
+                        env_name,
+                        source_name,
+                    )
 
                 # Here we do the MC DL0 to DL1 conversion:
                 list_of_MC = glob.glob("linking_MC_*s.sh")
