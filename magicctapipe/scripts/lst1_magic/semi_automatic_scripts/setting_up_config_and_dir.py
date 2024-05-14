@@ -163,9 +163,9 @@ def lists_and_bash_generator(
 
     with open(f"linking_MC_{particle_type}_paths.sh", "w") as f:
         slurm = slurm_lines(
-            p="short",
-            J=process_name,
-            out_err=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-linkMC-%x.%j",
+            queue="short",
+            job_name=process_name,
+            out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-linkMC-%x.%j",
         )
         lines_of_config_file = slurm + [
             "while read -r -u 3 lineA && read -r -u 4 lineB\n",
@@ -194,11 +194,11 @@ def lists_and_bash_generator(
     number_of_nodes = len(number_of_nodes) - 1
     with open(f"linking_MC_{particle_type}_paths_r.sh", "w") as f:
         slurm = slurm_lines(
-            p="xxl",
-            J=process_name,
+            queue="xxl",
+            job_name=process_name,
             array=number_of_nodes,
             mem="10g",
-            out_err=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-%x.%A_%a",
+            out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-%x.%A_%a",
         )
         lines_of_config_file = slurm + [
             f"cd {dir1}/DL1/MC/{particle_type}\n\n",
@@ -242,9 +242,9 @@ def lists_and_bash_gen_MAGIC(
     """
     process_name = source
     lines = slurm_lines(
-        p="short",
-        J=process_name,
-        out_err=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
+        queue="short",
+        job_name=process_name,
+        out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
     obs_tag = "" if NSB_match else "Observations"
@@ -280,11 +280,11 @@ def lists_and_bash_gen_MAGIC(
                 if number_of_nodes < 0:
                     continue
                 slurm = slurm_lines(
-                    p="short",  # was long for no NSB_match
-                    J=process_name,
+                    queue="short",  # was long for no NSB_match
+                    job_name=process_name,
                     array=number_of_nodes,
                     mem="2g",
-                    out_err=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
+                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
                 )
                 lines = slurm + [  # without version for no NSB_match
                     f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
