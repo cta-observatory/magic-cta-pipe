@@ -69,6 +69,12 @@ def main():
         help="MCP version (used for subdirectory name)",
     )
 
+    parser.add_argument(
+        "--no-accounting",
+        action="store_true",
+        help="No CPU/Memory usage check (faster)",
+    )
+
     args = parser.parse_args()
     with open(args.config_file, "r") as f:
         config = yaml.safe_load(f)
@@ -118,20 +124,21 @@ def main():
                 returns = fp.readlines()
                 this_return = len(returns)
                 for line in returns:
-                    file_in, slurm_id, task_id, rc = line[0:-1].split(" ")
+                    file_in, slurm_id, task_id, rc = line.split()
                     if rc == "0":
                         this_good += 1
                         # now check accounting
-                        out = run_shell(
-                            f'sacct --format="JobID,CPUTime,MaxRSS" --units=M  -j {slurm_id}_{task_id}| tail -1'
-                        )
-                        _, cpu, mem = out.split()
-                        hh, mm, ss = (int(x) for x in str(cpu).split(":"))
-                        delta = timedelta(
-                            days=hh // 24, hours=hh % 24, minutes=mm, seconds=ss
-                        )
-                        this_cpu.append(delta)
-                        this_mem.append(float(mem[0:-1]))
+                        if not args.no_accounting:
+                            out = run_shell(
+                                f'sacct --format="JobID,CPUTime,MaxRSS" --units=M  -j {slurm_id}_{task_id}| tail -1'
+                            )
+                            _, cpu, mem = out.split()
+                            hh, mm, ss = (int(x) for x in str(cpu).split(":"))
+                            delta = timedelta(
+                                days=hh // 24, hours=hh % 24, minutes=mm, seconds=ss
+                            )
+                            this_cpu.append(delta)
+                            this_mem.append(float(mem[0:-1]))
                     else:
                         print(f"file {file_in} failed with error {rc}")
                 if len(this_cpu) > 0:
@@ -162,7 +169,7 @@ def main():
                 f"{status}to do: {this_todo}, finished: {this_return}, no errors: {this_good}{ENDC}"
             )
 
-    print("SUMMARY")
+    print("\nSUMMARY")
     if all_good < all_return:
         status = RED  # there are errors in processing
     elif all_return < all_todo:
