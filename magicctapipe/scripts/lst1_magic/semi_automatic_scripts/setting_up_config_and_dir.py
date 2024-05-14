@@ -89,10 +89,7 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match, source_name):
     conf["LST"] = LST_config
 
     conf["MAGIC"] = MAGIC_config
-    if not NSB_match:
-        file_name = f"{target_dir}/{source_name}/config_DL0_to_DL1.yaml"
-    else:
-        file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
+    file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
     with open(file_name, "w") as f:
         lines = [
             "mc_tel_ids:",
@@ -143,18 +140,19 @@ def lists_and_bash_generator(
 
     if MC_path == "":
         return
-
+    print(f"running {particle_type} from {MC_path}")
     process_name = source_name
 
     list_of_nodes = glob.glob(f"{MC_path}/node*")
+    dir1 = f"{target_dir}/v{__version__}/{source_name}"
     with open(
-        f"{target_dir}/{source_name}/list_nodes_{particle_type}_complete.txt", "w"
+        f"{dir1}/logs/list_nodes_{particle_type}_complete.txt", "w"
     ) as f:  # creating list_nodes_gammas_complete.txt
         for i in list_of_nodes:
-            f.write(f"{i}/output_{SimTel_version}\n")
+            f.write(f"{i}/output{SimTel_version}\n")
 
     with open(
-        f"{target_dir}/{source_name}/list_folder_{particle_type}.txt", "w"
+        f"{dir1}/logs/list_folder_{particle_type}.txt", "w"
     ) as f:  # creating list_folder_gammas.txt
         for i in list_of_nodes:
             f.write(f'{i.split("/")[-1]}\n')
@@ -167,22 +165,23 @@ def lists_and_bash_generator(
         slurm = slurm_lines(
             p="short",
             J=process_name,
-            out_err=f"{target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-linkMC-%x.%j",
+            out_err=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-linkMC-%x.%j",
         )
         lines_of_config_file = slurm + [
             "while read -r -u 3 lineA && read -r -u 4 lineB\n",
             "do\n",
-            f"    cd {target_dir}/{source_name}/DL1/MC/{particle_type}\n",
+            f"    cd {dir1}/DL1/MC/{particle_type}\n",
             "    mkdir $lineB\n",
             "    cd $lineA\n",
             "    ls -lR *.gz |wc -l\n",
-            f"    ls *.gz > {target_dir}/{source_name}/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n",
+            f"    mkdir -p {dir1}/DL1/MC/{particle_type}/$lineB/logs/\n",
+            f"    ls *.gz > {dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n",
             '    string=$lineA"/"\n',
-            f"    export file={target_dir}/{source_name}/DL1/MC/{particle_type}/$lineB/list_dl0.txt\n\n",
+            f"    export file={dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n\n",
             "    cat $file | while read line; do echo $string${line}"
-            + f" >>{target_dir}/{source_name}/DL1/MC/{particle_type}/$lineB/list_dl0_ok.txt; done\n\n",
+            + f" >>{dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0_ok.txt; done\n\n",
             '    echo "folder $lineB  and node $lineA"\n',
-            f'done 3<"{target_dir}/{source_name}/list_nodes_{particle_type}_complete.txt" 4<"{target_dir}/{source_name}/list_folder_{particle_type}.txt"\n',
+            f'done 3<"{dir1}/logs/list_nodes_{particle_type}_complete.txt" 4<"{dir1}/logs/list_folder_{particle_type}.txt"\n',
             "",
         ]
         f.writelines(lines_of_config_file)
@@ -193,27 +192,26 @@ def lists_and_bash_generator(
 
     number_of_nodes = glob.glob(f"{MC_path}/node*")
     number_of_nodes = len(number_of_nodes) - 1
-
     with open(f"linking_MC_{particle_type}_paths_r.sh", "w") as f:
         slurm = slurm_lines(
             p="xxl",
             J=process_name,
             array=number_of_nodes,
             mem="10g",
-            out_err=f"{target_dir}/{source_name}/DL1/MC/{particle_type}/slurm-%x.%A_%a",
+            out_err=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-%x.%A_%a",
         )
         lines_of_config_file = slurm + [
-            f"cd {target_dir}/{source_name}/DL1/MC/{particle_type}\n\n",
-            f"export INF={target_dir}/{source_name}\n",
+            f"cd {dir1}/DL1/MC/{particle_type}\n\n",
+            f"export INF={dir1}/logs\n",
             f"SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             "cd $SAMPLE\n\n",
-            f"export LOG={target_dir}/{source_name}/DL1/MC/{particle_type}"
+            f"export LOG={dir1}/DL1/MC/{particle_type}/logs"
             + "/simtel_{$SAMPLE}_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}_all.log\n",
-            "cat list_dl0_ok.txt | while read line\n",
+            "cat logs/list_dl0_ok.txt | while read line\n",
             "do\n",
-            f"    cd {target_dir}/{source_name}/../\n",
-            f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {target_dir}/{source_name}/DL1/MC/{particle_type}/$SAMPLE --config-file {target_dir}/{source_name}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
+            f"    cd {dir1}/../\n",
+            f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {dir1}/DL1/MC/{particle_type}/$SAMPLE --config-file {dir1}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
             "done\n",
             "",
         ]
@@ -249,6 +247,7 @@ def lists_and_bash_gen_MAGIC(
         out_err=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
+    obs_tag = "" if NSB_match else "Observations"
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         if NSB_match:
@@ -259,146 +258,51 @@ def lists_and_bash_gen_MAGIC(
                 MAGIC_runs = []
                 MAGIC_runs.append(MAGIC)
 
+        for i in MAGIC_runs:
+            for magic in [1, 2]:
+                # if 1 then magic is second from last, if 2 then last
+                if telescope_ids[magic - 3] > 0:
+                    lines = [
+                        f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
+                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs \n",
+                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n\n",
+                    ]
+                    f.writelines(lines)
+
+    for magic in [1, 2]:
+        # if 1 then magic is second from last, if 2 then last
+        if telescope_ids[magic - 3] > 0:
             for i in MAGIC_runs:
-
-                if telescope_ids[-1] > 0:
-                    lines = [
-                        f'export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
-                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs \n",
-                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
-                    ]
+                number_of_nodes = glob.glob(
+                    f'/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                )
+                number_of_nodes = len(number_of_nodes) - 1
+                if number_of_nodes < 0:
+                    continue
+                slurm = slurm_lines(
+                    p="short",  # was long for no NSB_match
+                    J=process_name,
+                    array=number_of_nodes,
+                    mem="2g",
+                    out_err=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
+                )
+                lines = slurm + [  # without version for no NSB_match
+                    f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
+                    "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
+                    "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
+                    "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                    f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                    "rc=$?\n",
+                    'if [ "$rc" -ne "0" ]; then\n',
+                    "  echo $SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID} $rc >> $OUTPUTDIR/logs/list_failed.log\n",
+                    "fi\n",
+                    "echo $SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID} $rc >> $OUTPUTDIR/logs/list_return.log\n",
+                ]
+                with open(
+                    f"{source}_MAGIC-" + "I" * magic + f"_dl0_to_dl1_run_{i[1]}.sh",
+                    "w",
+                ) as f:
                     f.writelines(lines)
-
-                f.write("\n")
-                if telescope_ids[-2] > 0:
-                    lines = [
-                        f'export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
-                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs \n",
-                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
-                    ]
-                    f.writelines(lines)
-        else:
-            if telescope_ids[-1] > 0:
-                for i in MAGIC_runs:
-                    lines = [
-                        f'export IN1=/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
-                        f"export OUT1={target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}\n",
-                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
-                    ]
-                    f.writelines(lines)
-            f.write("\n")
-            if telescope_ids[-2] > 0:
-                for i in MAGIC_runs:
-                    lines = [
-                        f'export IN1=/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
-                        f"export OUT1={target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}\n",
-                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n",
-                    ]
-                    f.writelines(lines)
-    if NSB_match:
-
-        if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
-            for i in MAGIC_runs:
-
-                if telescope_ids[-1] > 0:
-                    number_of_nodes = glob.glob(
-                        f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                    )
-                    number_of_nodes = len(number_of_nodes) - 1
-                    if number_of_nodes < 0:
-                        continue
-                    slurm = slurm_lines(
-                        p="short",
-                        J=process_name,
-                        array=number_of_nodes,
-                        mem="2g",
-                        out_err=f"{target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
-                    )
-                    lines = slurm + [
-                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M2/{i[0]}/{i[1]}\n",
-                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
-                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                        "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                    ]
-                    with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
-                        f.writelines(lines)
-
-                if telescope_ids[-2] > 0:
-                    number_of_nodes = glob.glob(
-                        f'/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                    )
-                    number_of_nodes = len(number_of_nodes) - 1
-                    if number_of_nodes < 0:
-                        continue
-                    slurm = slurm_lines(
-                        p="short",
-                        J=process_name,
-                        array=number_of_nodes,
-                        mem="2g",
-                        out_err=f"{target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
-                    )
-                    lines = slurm + [
-                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M1/{i[0]}/{i[1]}\n",
-                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
-                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                        "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                        f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                    ]
-                    with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
-                        f.writelines(lines)
-    else:
-        if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
-            for i in MAGIC_runs:
-                if telescope_ids[-1] > 0:
-                    number_of_nodes = glob.glob(
-                        f'/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                    )
-                    number_of_nodes = len(number_of_nodes) - 1
-
-                    with open(f"{source}_MAGIC-II_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
-                        slurm = slurm_lines(
-                            p="long",
-                            J=process_name,
-                            array=number_of_nodes,
-                            mem="2g",
-                            out_err=f"{target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}/slurm-%x.%A_%a",
-                        )
-                        lines = slurm + [
-                            f"export OUTPUTDIR={target_dir}/{source}/DL1/Observations/M2/{i[0]}/{i[1]}\n",
-                            f"cd {target_dir}/{source}/../\n",
-                            "SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n",
-                            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                            "export LOG=$OUTPUTDIR/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                            f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                            "",
-                        ]
-                        f.writelines(lines)
-
-                if telescope_ids[-2] > 0:
-                    number_of_nodes = glob.glob(
-                        f'/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                    )
-                    number_of_nodes = len(number_of_nodes) - 1
-
-                    with open(f"{source}_MAGIC-I_dl0_to_dl1_run_{i[1]}.sh", "w") as f:
-                        slurm = slurm_lines(
-                            p="long",
-                            J=process_name,
-                            array=number_of_nodes,
-                            mem="2g",
-                            out_err=f"{target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}/slurm-%x.%A_%a",
-                        )
-                        lines = slurm + [
-                            f"export OUTPUTDIR={target_dir}/{source}/DL1/Observations/M1/{i[0]}/{i[1]}\n",
-                            f"cd {target_dir}/{source}/../\n",
-                            "SAMPLE_LIST=($(<$OUTPUTDIR/list_dl0.txt))\n",
-                            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                            "export LOG=$OUTPUTDIR/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                            f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                            "",
-                        ]
-                        f.writelines(lines)
 
 
 def directories_generator(
@@ -423,39 +327,33 @@ def directories_generator(
     """
 
     if NSB_match:
-        if not os.path.exists(f"{target_dir}/v{__version__}"):
-            os.mkdir(f"{target_dir}/v{__version__}")
-        if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
-            os.mkdir(f"{target_dir}/v{__version__}/{source_name}")
-        if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}/DL1"):
-            os.mkdir(f"{target_dir}/v{__version__}/{source_name}/DL1")
+        os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1")
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
     else:
-        if not os.path.exists(target_dir):
-            os.mkdir(target_dir)
-            os.mkdir(f"{target_dir}/{source_name}/DL1")
-            os.mkdir(f"{target_dir}/{source_name}/DL1/Observations")
-            os.mkdir(f"{target_dir}/{source_name}/DL1/MC")
-            os.mkdir(f"{target_dir}/{source_name}/DL1/MC/gammas")
-            os.mkdir(f"{target_dir}/{source_name}/DL1/MC/gammadiffuse")
-            os.mkdir(f"{target_dir}/{source_name}/DL1/MC/electrons")
-            os.mkdir(f"{target_dir}/{source_name}/DL1/MC/protons")
-            os.mkdir(f"{target_dir}/{source_name}/DL1/MC/helium")
+        dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations")
+        dir_list = [
+            "Observations",
+            "MC/gammas",
+            "MC/gammadiffuse",
+            "MC/electrons",
+            "MC/protons",
+            "MC/helium",
+        ]
+        if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
+            os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs")
+            for dir in dir_list:
+                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs")
         else:
             overwrite = input(
-                f'MC directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
+                f'MC&data directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
             )
             if overwrite == "y":
-                os.system(f"rm -r {target_dir}/{source_name}")
-                os.mkdir(target_dir)
-                os.mkdir(f"{target_dir}/{source_name}/DL1")
-                os.mkdir(f"{target_dir}/{source_name}/DL1/Observations")
-                os.mkdir(f"{target_dir}/{source_name}/DL1/MC")
-                os.mkdir(f"{target_dir}/{source_name}/DL1/MC/gammas")
-                os.mkdir(f"{target_dir}/{source_name}/DL1/MC/gammadiffuse")
-                os.mkdir(f"{target_dir}/{source_name}/DL1/MC/electrons")
-                os.mkdir(f"{target_dir}/{source_name}/DL1/MC/protons")
-                os.mkdir(f"{target_dir}/{source_name}/DL1/MC/helium")
+                os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
+                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs")
+                for dir in dir_list:
+                    os.makedirs(
+                        f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs"
+                    )
             else:
                 print("Directory not modified.")
 
@@ -467,69 +365,10 @@ def directories_generator(
 
         MAGIC_runs = []
         MAGIC_runs.append(MAGIC)
-    if NSB_match:
-        for i in MAGIC_runs:
-
-            if telescope_ids[-1] > 0:
-                if not os.path.exists(f"{dl1_dir}"):
-                    os.mkdir(f"{dl1_dir}")
-                if not os.path.exists(f"{dl1_dir}/M2"):
-                    os.mkdir(f"{dl1_dir}/M2")
-                if not os.path.exists(f"{dl1_dir}/M2/{i[0]}"):
-                    os.mkdir(f"{dl1_dir}/M2/{i[0]}")
-
-                if not os.path.exists(f"{dl1_dir}/M2/{i[0]}/{i[1]}"):
-                    os.mkdir(f"{dl1_dir}/M2/{i[0]}/{i[1]}")
-                if not os.path.exists(f"{dl1_dir}/M2/{i[0]}/{i[1]}/logs"):
-                    os.mkdir(f"{dl1_dir}/M2/{i[0]}/{i[1]}/logs")
-            if telescope_ids[-2] > 0:
-                if not os.path.exists(f"{dl1_dir}"):
-                    os.mkdir(f"{dl1_dir}")
-                if not os.path.exists(f"{dl1_dir}/M1"):
-                    os.mkdir(f"{dl1_dir}/M1")
-                if not os.path.exists(f"{dl1_dir}/M1/{i[0]}"):
-                    os.mkdir(f"{dl1_dir}/M1/{i[0]}")
-
-                if not os.path.exists(f"{dl1_dir}/M1/{i[0]}/{i[1]}"):
-                    os.mkdir(f"{dl1_dir}/M1/{i[0]}/{i[1]}")
-                if not os.path.exists(f"{dl1_dir}/M1/{i[0]}/{i[1]}/logs"):
-                    os.mkdir(f"{dl1_dir}/M1/{i[0]}/{i[1]}/logs")
-    else:
-        if telescope_ids[-1] > 0:
-            if not os.path.exists(f"{target_dir}/{source_name}/DL1/Observations/M2"):
-                os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M2")
-                for i in MAGIC_runs:
-                    if not os.path.exists(
-                        f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}"
-                    ):
-                        os.mkdir(
-                            f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}"
-                        )
-                        os.mkdir(
-                            f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}/{i[1]}"
-                        )
-                    else:
-                        os.mkdir(
-                            f"{target_dir}/{source_name}/DL1/Observations/M2/{i[0]}/{i[1]}"
-                        )
-
-        if telescope_ids[-2] > 0:
-            if not os.path.exists(f"{target_dir}/{source_name}/DL1/Observations/M1"):
-                os.mkdir(f"{target_dir}/{source_name}/DL1/Observations/M1")
-                for i in MAGIC_runs:
-                    if not os.path.exists(
-                        f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}"
-                    ):
-                        os.mkdir(
-                            f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}"
-                        )
-                        os.mkdir(
-                            f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}/{i[1]}"
-                        )
-                    else:
-                        os.mkdir(
-                            f"{target_dir}/{source_name}/DL1/Observations/M1/{i[0]}/{i[1]}"
-                        )
+    for i in MAGIC_runs:
+        for magic in [1, 2]:
+            if telescope_ids[magic - 3] > 0:
+                os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs")
 
 
 def main():
@@ -570,11 +409,11 @@ def main():
     NSB_match = config["general"]["NSB_matching"]
 
     # LST_runs_and_dates = config["general"]["LST_runs"]
-    MC_gammas = str(Path(config["directories"]["MC_gammas"]))
-    MC_electrons = str(Path(config["directories"]["MC_electrons"]))
-    MC_helium = str(Path(config["directories"]["MC_helium"]))
-    MC_protons = str(Path(config["directories"]["MC_protons"]))
-    MC_gammadiff = str(Path(config["directories"]["MC_gammadiff"]))
+    MC_gammas = config["directories"]["MC_gammas"]
+    MC_electrons = config["directories"]["MC_electrons"]
+    MC_helium = config["directories"]["MC_helium"]
+    MC_protons = config["directories"]["MC_protons"]
+    MC_gammadiff = config["directories"]["MC_gammadiff"]
     focal_length = config["general"]["focal_length"]
     source = config["data_selection"]["source_name_output"]
 
@@ -609,7 +448,7 @@ def main():
         print("This process will take about 10 min to run if the IT cluster is free.")
 
         directories_generator(
-            target_dir, telescope_ids, MAGIC_runs, NSB_match, source_name
+            str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
         config_file_gen(
             telescope_ids, target_dir, noise_value, NSB_match, source_name
@@ -620,51 +459,23 @@ def main():
             if (args.analysis_type == "onlyMC") or (
                 args.analysis_type == "doEverything"
             ):
-                lists_and_bash_generator(
-                    "gammas",
-                    target_dir,
-                    MC_gammas,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # gammas
-                lists_and_bash_generator(
-                    "electrons",
-                    target_dir,
-                    MC_electrons,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # electrons
-                lists_and_bash_generator(
-                    "helium",
-                    target_dir,
-                    MC_helium,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # helium
-                lists_and_bash_generator(
-                    "protons",
-                    target_dir,
-                    MC_protons,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # protons
-                lists_and_bash_generator(
-                    "gammadiffuse",
-                    target_dir,
-                    MC_gammadiff,
-                    SimTel_version,
-                    focal_length,
-                    env_name,
-                    source_name,
-                )  # gammadiffuse
+                to_process = {
+                    "gammas": MC_gammas,
+                    "electrons": MC_electrons,
+                    "helium": MC_helium,
+                    "protons": MC_protons,
+                    "gammadiffuse": MC_gammadiff,
+                }
+                for particle in to_process.keys():
+                    lists_and_bash_generator(
+                        particle,
+                        target_dir,
+                        to_process[particle],
+                        SimTel_version,
+                        focal_length,
+                        env_name,
+                        source_name,
+                    )
 
                 # Here we do the MC DL0 to DL1 conversion:
                 list_of_MC = glob.glob("linking_MC_*s.sh")
@@ -701,11 +512,9 @@ def main():
                     )
                     continue
 
+                launch_jobs = f"linking=$(sbatch --parsable {source_name}_linking_MAGIC_data_paths.sh)"
                 for n, run in enumerate(list_of_MAGIC_runs):
-                    if n == 0:
-                        launch_jobs = f"linking=$(sbatch --parsable {source_name}_linking_MAGIC_data_paths.sh)  &&  RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
-                    else:
-                        launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
+                    launch_jobs = f"{launch_jobs} && RES{n}=$(sbatch --parsable --dependency=afterany:$linking {run})"
 
                 os.system(launch_jobs)
 
