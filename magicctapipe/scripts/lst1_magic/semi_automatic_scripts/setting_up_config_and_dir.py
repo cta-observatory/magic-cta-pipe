@@ -192,7 +192,6 @@ def lists_and_bash_generator(
 
     number_of_nodes = glob.glob(f"{MC_path}/node*")
     number_of_nodes = len(number_of_nodes) - 1
-
     with open(f"linking_MC_{particle_type}_paths_r.sh", "w") as f:
         slurm = slurm_lines(
             p="xxl",
@@ -209,7 +208,7 @@ def lists_and_bash_generator(
             "cd $SAMPLE\n\n",
             f"export LOG={dir1}/DL1/MC/{particle_type}/logs"
             + "/simtel_{$SAMPLE}_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}_all.log\n",
-            "cat list_dl0_ok.txt | while read line\n",
+            "cat logs/list_dl0_ok.txt | while read line\n",
             "do\n",
             f"    cd {dir1}/../\n",
             f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {dir1}/DL1/MC/{particle_type}/$SAMPLE --config-file {dir1}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
@@ -410,11 +409,11 @@ def main():
     NSB_match = config["general"]["NSB_matching"]
 
     # LST_runs_and_dates = config["general"]["LST_runs"]
-    MC_gammas = str(Path(config["directories"]["MC_gammas"]))
-    MC_electrons = str(Path(config["directories"]["MC_electrons"]))
-    MC_helium = str(Path(config["directories"]["MC_helium"]))
-    MC_protons = str(Path(config["directories"]["MC_protons"]))
-    MC_gammadiff = str(Path(config["directories"]["MC_gammadiff"]))
+    MC_gammas = config["directories"]["MC_gammas"]
+    MC_electrons = config["directories"]["MC_electrons"]
+    MC_helium = config["directories"]["MC_helium"]
+    MC_protons = config["directories"]["MC_protons"]
+    MC_gammadiff = config["directories"]["MC_gammadiff"]
     focal_length = config["general"]["focal_length"]
     source = config["data_selection"]["source_name_output"]
 
