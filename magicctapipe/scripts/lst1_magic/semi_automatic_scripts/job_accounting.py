@@ -79,10 +79,19 @@ def main():
     # timerange = config["data_selection"]["time_range"]
     # skip_LST = config["data_selection"]["skip_LST_runs"]
     # skip_MAGIC = config["data_selection"]["skip_MAGIC_runs"]
+    NSB_matching = config["general"]["NSB_matching"]
     work_dir = config["directories"]["workspace_dir"]
 
     print(f"Checking progress of jobs stored in {work_dir}")
     dirs = sorted(glob.glob(f"{work_dir}/v{args.version}/*/{args.data_level}/*/*"))
+    if dirs == []:
+        versions = [x.split("/v")[-1] for x in glob.glob(f"{work_dir}/v*")]
+        print("Error, no directories found")
+        print(f"for path {work_dir} found in {args.config_file} this is available")
+        print(f"Versions {versions}")
+        tag = "" if NSB_matching else "/Observations"
+        print(f"Supported data types: DL1{tag}/M1, DL1{tag}/M2")
+        exit(1)
 
     all_todo = 0
     all_return = 0
