@@ -1,6 +1,7 @@
 """
 Module for generating bash script lines for running analysis in different clusters
 """
+__all__ = ["slurm_lines"]
 
 
 def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
@@ -16,14 +17,14 @@ def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
     array : None or int
         If not none array of jobs from 0 to array will be made
     mem : None or str
-        Requested memory
+        Requested memory. If None cluster default (5 GB) will be used
     out_name : None or str
         If the output should be written to a specific output file
 
     Returns
     -------
     list
-        List of strings
+        List of strings to submit a SLURM job.
     """
     lines = [
         "#!/bin/sh\n\n",
