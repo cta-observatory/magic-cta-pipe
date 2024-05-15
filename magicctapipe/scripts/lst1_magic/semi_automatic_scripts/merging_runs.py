@@ -170,7 +170,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                                 f'find  {MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
                             )
                             f.write(
-                                f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} >{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}/merge_M{magic}_{i[0]}_{i[1]}_"
+                                f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} >{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}/logs/merge_M{magic}_{i[0]}_{i[1]}_"
                                 + "${SLURM_JOB_ID}.log\n"
                             )
 
@@ -198,80 +198,62 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
 
         else:
             if identification == "0_subruns":
-                if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(
-                    f"{MAGIC_DL1_dir}/M2"
-                ):
-                    for magic in [1, 2]:
-                        dates = [
-                            os.path.basename(x)
-                            for x in glob.glob(f"{MAGIC_DL1_dir}/M{magic}/*")
-                        ]
-
-                        for i in dates:
-                            runs = [
-                                os.path.basename(x)
-                                for x in glob.glob(f"{MAGIC_DL1_dir}/M{2}/{i}/*")
-                            ]
-
-                            for r in runs:
-                                os.makedirs(
-                                    f"{MAGIC_DL1_dir}/Merged/{i}/{r}/logs",
-                                    exist_ok=True,
-                                )  # Creating a merged directory for the respective run
-                                os.system(
-                                    f'find  {MAGIC_DL1_dir}/M{magic}/{i}/{r} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
-                                )
-                                f.write(
-                                    f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M{magic}/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/{r} >{MAGIC_DL1_dir}/Merged/{i}/{r}/logs/merge_M{magic}_{i}_{r}_"
-                                    + "${SLURM_JOB_ID}.log \n"
-                                )
+                for magic in [1, 2]:
+                    for i in MAGIC_runs:
+                        # Here is a difference w.r.t. original code. If only one telescope data are available they will be merged now for this telescope
+                        if os.path.exists(f"{MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]}"):
+                            os.makedirs(
+                                f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}/logs",
+                                exist_ok=True,
+                            )  # Creating a merged directory for the respective run
+                            os.system(
+                                f'find  {MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
+                            )
+                            f.write(
+                                f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} >{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}/logs/merge_M{magic}_{i[0]}_{i[1]}_"
+                                + "${SLURM_JOB_ID}.log\n"
+                            )
+                        else:
+                            print(
+                                f"ERROR: {MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]} does not exist"
+                            )
 
             elif identification == "1_M1M2":
-                if os.path.exists(f"{MAGIC_DL1_dir}/M1") & os.path.exists(
-                    f"{MAGIC_DL1_dir}/M2"
-                ):
-                    dates = [
-                        os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
-                    ]
-                    for i in dates:
-                        runs = [
-                            os.path.basename(x)
-                            for x in glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/*")
-                        ]
-                        for r in runs:
-                            if (len(glob.glob(f"{MAGIC_DL1_dir}/M1/{i}/{r}")) > 0) and (
-                                len(glob.glob(f"{MAGIC_DL1_dir}/M2/{i}/{r}")) > 0
-                            ):
-                                os.makedirs(
-                                    f"{MAGIC_DL1_dir}/Merged/{i}/Merged/logs",
-                                    exist_ok=True,
-                                )
-                                f.write(
-                                    f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/{r} --output-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i}/Merged/logs/merge_{i}_{r}_"
-                                    + "${SLURM_JOB_ID}.log \n"
-                                )
-            else:
-                dates = [
-                    os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/M1/*")
-                ]
-                for i in dates:
-
-                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
-
-                        continue
-
-                    if (
-                        len(glob.glob(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/*MAGIC*.h5"))
-                        > 0
-                    ):
-
+                for i in MAGIC_runs:
+                    if os.path.exists(
+                        f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]}"
+                    ) & os.path.exists(f"{MAGIC_DL1_dir}/M2/{i[0]}/{i[1]}"):
                         os.makedirs(
-                            f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs", exist_ok=True
+                            f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged/logs",
+                            exist_ok=True,
                         )
                         f.write(
-                            f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}_"
+                            f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]} --output-dir {MAGIC_DL1_dir}/Merged/{i[0]}/Merged --run-wise >{MAGIC_DL1_dir}/Merged/{i[0]}/Merged/logs/merge_{i[0]}_{i[1]}_"
                             + "${SLURM_JOB_ID}.log \n"
                         )
+                    else:
+                        print(
+                            f"ERROR {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
+                        )
+            else:
+                dates = np.unique(MAGIC_runs.T[0])
+                for i in dates:
+                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
+                        continue
+
+                    # if (
+                    #    len(glob.glob(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/*MAGIC*.h5"))
+                    #    > 0
+                    # ): # this is strange, those files should not be there yet at the moment of creating of this script
+                    # runs = MAGIC_runs.T[1][MAGIC_runs.T[0]==i]
+
+                    os.makedirs(
+                        f"{MAGIC_DL1_dir}/Merged/Merged_{i}/logs", exist_ok=True
+                    )
+                    f.write(
+                        f"conda run -n {env_name} merge_hdf_files --input-dir {MAGIC_DL1_dir}/Merged/{i}/Merged --output-dir {MAGIC_DL1_dir}/Merged/Merged_{i} >{MAGIC_DL1_dir}/Merged/Merged_{i}/logs/merge_night_{i}_"
+                        + "${SLURM_JOB_ID}.log \n"
+                    )
 
 
 def mergeMC(target_dir, identification, env_name, cwd, source_name):
