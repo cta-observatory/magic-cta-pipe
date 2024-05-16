@@ -208,7 +208,7 @@ Since the DL3 may have only a few MBs, it is typically convenient to download it
 
 We prepared a [Jupyter Notebook](https://github.com/ranieremenezes/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/SED_and_LC_from_DL3.ipynb) that quickly creates a counts map, a significance curve, an SED, and a light curve. You can give it a try. 
 
-The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs. Note that the notebooks run with gammapy v0.20 or higher, while the gammapy version adopted in the MAGIC+LST-1 pipeline is v0.19.
+The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs.
 
 
 ## For mainteiners (creation of MAGIC adn LST databases)

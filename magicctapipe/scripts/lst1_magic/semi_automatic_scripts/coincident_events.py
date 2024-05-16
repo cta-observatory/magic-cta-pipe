@@ -154,11 +154,11 @@ def linking_bash_lst(
                 if process_size < 0:
                     continue
                 slurm = slurm_lines(
-                    p="short",
-                    J=f"{source_name}_coincidence",
+                    queue="short",
+                    job_name=f"{source_name}_coincidence",
                     array=process_size,
                     mem="8g",
-                    out_err=f"{outputdir}/logs/slurm-%x.%A_%a",
+                    out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
                 )
                 lines = slurm + [
                     f"export INM={MAGIC_DL1_dir}/Merged/Merged_{d}\n",

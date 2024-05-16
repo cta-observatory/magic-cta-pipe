@@ -147,9 +147,9 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
 
         with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
             lines = slurm_lines(
-                p="short",
-                J=process_name,
-                out_err=f"{MAGIC_DL1_dir}/Merged/slurm-%x.%j",
+                queue="short",
+                job_name=process_name,
+                out_name=f"{MAGIC_DL1_dir}/Merged/slurm-%x.%j",
             )
             f.writelines(lines)
 
@@ -205,10 +205,10 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
         MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
 
         lines = slurm_lines(
-            p="short",
-            J=process_name,
+            queue="short",
+            job_name=process_name,
             mem="2g",
-            out_err=f"{MAGIC_DL1_dir}/Merged/slurm-%x.%j",
+            out_name=f"{MAGIC_DL1_dir}/Merged/slurm-%x.%j",
         )
         with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
             f.writelines(lines)
@@ -342,11 +342,11 @@ def mergeMC(target_dir, identification, env_name, cwd, source_name):
 
     with open(f"Merge_MC_{identification}.sh", "w") as f:
         slurm = slurm_lines(
-            p="short",
+            queue="short",
             array=process_size,
             mem="7g",
-            J=process_name,
-            out_err=f"{MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a",
+            job_name=process_name,
+            out_name=f"{MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a",
         )
         lines_bash_file = slurm + [
             f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
