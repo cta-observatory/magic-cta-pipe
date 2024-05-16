@@ -175,9 +175,11 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                             f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
                         )
                         rc = rc_lines(
-                            store=f"{indir} ${{SLURM_JOB_ID}}", out="{outdir}/logs/list"
+                            store=f"{indir} ${{SLURM_JOB_ID}}",
+                            out=f"{outdir}/logs/list",
                         )
                         f.writelines(rc)
+                        os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
                     else:
                         print(f"ERROR: {indir} does not exist")
 
@@ -193,9 +195,10 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                         f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} --run-wise >{outdir}/logs/merge_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
                     )
                     rc = rc_lines(
-                        store=f"{indir} ${{SLURM_JOB_ID}}", out="{outdir}/logs/list"
+                        store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
                     )
                     f.writelines(rc)
+                    os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
                 else:
                     print(
                         f"ERROR {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
@@ -206,11 +209,6 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                 if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
                     continue
 
-                # if (
-                #    len(glob.glob(f"{MAGIC_DL1_dir}/Merged/{i}/Merged/*MAGIC*.h5"))
-                #    > 0
-                # ): # this is strange, those files should not be there yet at the moment of creating of this script
-                # runs = MAGIC_runs.T[1][MAGIC_runs.T[0]==i]
                 indir = f"{MAGIC_DL1_dir}/Merged/{i}/Merged"
                 outdir = f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
                 os.makedirs(f"{outdir}/logs", exist_ok=True)
@@ -218,9 +216,10 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match):
                     f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_night_{i}_${{SLURM_JOB_ID}}.log\n"
                 )
                 rc = rc_lines(
-                    store=f"{indir} ${{SLURM_JOB_ID}}", out="{outdir}/logs/list"
+                    store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
                 )
                 f.writelines(rc)
+                os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
 
 
 def mergeMC(target_dir, identification, env_name, cwd, source_name):
