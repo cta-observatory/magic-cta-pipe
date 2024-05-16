@@ -107,6 +107,8 @@ def main():
     all_good = 0
     all_cpu = []
     all_mem = []
+    total_time = 0
+    all_jobs = []
     for dir in dirs:
         print(dir)
         # fixme list_dl0.txt is only available for DL1/M[12] processing
@@ -140,18 +142,25 @@ def main():
                             ).split()
                             if len(out) == 3:
                                 _, cpu, mem = out
-                            else:
+                            elif (
+                                len(out) == 2
+                            ):  # MaxRSS sometimes is missing in the output
                                 cpu = out[1]
                                 mem = None
-                            hh, mm, ss = (int(x) for x in str(cpu).split(":"))
-                            delta = timedelta(
-                                days=hh // 24, hours=hh % 24, minutes=mm, seconds=ss
-                            )
-                            this_cpu.append(delta)
+                                print("Memory usage information is missing")
+                            else:
+                                print("Unexpected sacct output: {out}")
+                            if cpu is not None:
+                                hh, mm, ss = (int(x) for x in str(cpu).split(":"))
+                                delta = timedelta(
+                                    days=hh // 24, hours=hh % 24, minutes=mm, seconds=ss
+                                )
+                                if slurm_id not in all_jobs:
+                                    total_time += delta.total_seconds() / 3600
+                                    all_jobs += [slurm_id]
+                                this_cpu.append(delta)
                             if mem is not None:
                                 this_mem.append(float(mem[0:-1]))
-                            else:
-                                print("Memory usage information is missing")
                     else:
                         print(f"file {file_in} failed with error {rc}")
                 if len(this_cpu) > 0:
@@ -204,7 +213,7 @@ def main():
         all_cpu = np.array(all_cpu)
         all_mem = np.array(all_mem)
         print(
-            f"CPU: median={np.median(all_cpu)}, max={all_cpu.max()}; memory [M]: median={np.median(all_mem)}, max={all_mem.max()}"
+            f"CPU: median={np.median(all_cpu)}, max={all_cpu.max()}, total={total_time:.2f} CPU hrs; memory [M]: median={np.median(all_mem)}, max={all_mem.max()}"
         )
 
 
