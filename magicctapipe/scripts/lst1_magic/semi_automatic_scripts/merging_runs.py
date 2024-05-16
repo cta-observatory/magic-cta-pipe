@@ -397,10 +397,11 @@ def main():
     train_fraction = float(config["general"]["proton_train_fraction"])
 
     env_name = config["general"]["env_name"]
+    source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
     source_list = []
-    if source is not None:
+    if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:
