@@ -1,7 +1,7 @@
 """
 Module for generating bash script lines for running analysis in different clusters
 """
-__all__ = ["slurm_lines"]
+__all__ = ["slurm_lines", "rc_lines"]
 
 
 def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
@@ -38,5 +38,31 @@ def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",
+    ]
+    return lines
+
+
+def rc_lines(store, out):
+    """
+    Function for creating the general lines for error tracking.
+
+    Parameters
+    ----------
+    store : str
+        String what to store in addition to $rc
+    out : str
+        Base name for the log files with return codes, all output will go into {out}_return.log, only errors to {out}_failed.log
+
+    Returns
+    -------
+    list
+        List of strings to attach to a shell script
+    """
+    lines = [
+        "rc=$?\n",
+        'if [ "$rc" -ne "0" ]; then\n',
+        f"  echo {store} $rc >> {out}_failed.log\n",
+        "fi\n",
+        f"echo {store} $rc >> {out}_return.log\n",
     ]
     return lines
