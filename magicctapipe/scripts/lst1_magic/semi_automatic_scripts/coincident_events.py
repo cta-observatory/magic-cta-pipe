@@ -133,12 +133,12 @@ def linking_bash_lst(
                     f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
                 )
 
-                os.makedirs(f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs")
+                os.makedirs(f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs", exist_ok=True)
 
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
                 list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
 
-                with open(f"{outputdir}/logs/list_LST", "a+") as LSTdataPathFile:
+                with open(f"{outputdir}/logs/list_LST.txt", "a+") as LSTdataPathFile:
                     for subrun in list_of_subruns:
                         LSTdataPathFile.write(f"{subrun}\n")
 
