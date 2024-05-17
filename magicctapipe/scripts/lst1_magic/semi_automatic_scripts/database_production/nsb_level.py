@@ -119,9 +119,9 @@ def main():
             continue
         
        
-        common_v = [i for i in (set(lstchain_versions).intersection(list_v))]
+        common_v = [value for value in lstchain_versions if value in list_v]
 
-        max_common = common_v[0]
+        max_common = common_v[-1]
         
         
         if lstchain_v != str(max_common):
