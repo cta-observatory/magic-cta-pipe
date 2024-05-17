@@ -112,30 +112,27 @@ def main():
     print("***** Generating bashscripts...")
     for i, row in df_LST.iterrows():
 
-        
         list_v = [eval(i) for i in row["lstchain_versions"].strip("][").split(", ")]
-        
+
         if str(lstchain_v) not in list_v:
             continue
-        
-       
+
         common_v = [value for value in lstchain_versions if value in list_v]
 
         max_common = common_v[-1]
-        
-        
+
         if lstchain_v != str(max_common):
 
             continue
-            
+
         run_number = row["LST1_run"]
         date = row["DATE"]
-        
+
         df_LST.loc[
             i, "processed_lstchain_file"
         ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
         df_LST.loc[i, "error_code_nsb"] = np.nan
-   
+
         bash_scripts(run_number, date, args.config_file, env_name)
 
     print("Process name: nsb")
@@ -164,7 +161,7 @@ def main():
             launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
 
     os.system(launch_jobs)
-   
+
     df_LST.to_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
         key="joint_obs",
@@ -175,7 +172,7 @@ def main():
             "processed_lstchain_file": 90,
         },
     )
-    
+
 
 if __name__ == "__main__":
     main()

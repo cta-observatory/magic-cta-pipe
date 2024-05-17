@@ -34,6 +34,8 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
         LST configuration file (cf. lstchain)
     run_number : int
         LST run number
+    denominator : int
+        Number of subruns to be used to evaluate NSB for a run
 
     Returns
     -------
@@ -42,7 +44,7 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
     """
 
     noise = []
-    
+
     if len(run_list) == 0:
         logger.warning(
             "There is no subrun matching the provided run number. Check the list of the LST runs (LST_runs.txt)"
@@ -65,7 +67,7 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
             except IndexError:
                 failed = failed + 1
                 if len(run_list) > denominator:
-                    mod = (len(run_list) - ii) // (denominator -len(noise))
+                    mod = (len(run_list) - ii) // (denominator - len(noise))
                 logger.warning(
                     f"Subrun {subrun} caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
                 )
@@ -138,13 +140,13 @@ def main():
     print(lst_config)
     if NSB_match:
         LST_files = np.sort(glob.glob(f"nsb_LST_[0-9]*_{run_number}.txt"))
-        
+
         if len(LST_files) == 1:
             logger.info(f"Run {run_number} already processed")
             return
     else:
         LST_files = np.sort(glob.glob(f"nsb_LST_nsb_*{run_number}*.txt"))
-        
+
         if len(LST_files) == 1:
             logger.info(f"Run {run_number} already processed.")
             return
