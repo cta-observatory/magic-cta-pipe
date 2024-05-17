@@ -157,7 +157,7 @@ def linking_bash_lst(
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
                 )
                 lines = slurm + [
-                    f"export INM={MAGIC_DL1_dir}/Merged/Merged_{d}\n",
+                    f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
                     f"export OUTPUTDIR={outputdir}\n",
                     "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
