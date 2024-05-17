@@ -32,6 +32,7 @@ general:
     LST_version   : "v0.10"
     LST_tailcut   : "tailcut84"
     focal_length  : "effective"
+    lstchain_modified_config : true
     proton_train_fraction  : 0.8  # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest.
     nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
     env_name      : magic-lst  # name of the conda environment to be used to process data.

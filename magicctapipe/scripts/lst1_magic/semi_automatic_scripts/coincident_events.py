@@ -104,19 +104,15 @@ def linking_bash_lst(
         If real data are matched to pre-processed MCs or not
     """
 
-    if (len(LST_runs) == 2) and (len(LST_runs[0]) == 10):
-        LST = LST_runs
-
-        LST_runs = []
-        LST_runs.append(LST)
-
     if NSB_match:
         coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
         MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
     else:
-        coincidence_DL1_dir = f"{target_dir}/{source_name}/DL1/Observations"
-        MAGIC_DL1_dir = f"{target_dir}/{source_name}/DL1/Observations/"
+        coincidence_DL1_dir = (
+            f"{target_dir}/v{__version__}/{source_name}/DL1/Observations"
+        )
+        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1/Observations/"
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
 
@@ -219,7 +215,7 @@ def main():
         configfile_coincidence(telescope_ids, target_dir, source_name, NSB_match)
 
         LST_runs_and_dates = f"{source_name}_LST_runs.txt"
-        LST_runs = np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",")
+        LST_runs = np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2)
 
         try:
 

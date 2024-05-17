@@ -27,7 +27,10 @@ import yaml
 
 from magicctapipe import __version__
 from magicctapipe.io import resource_file
-from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
+    rc_lines,
+    slurm_lines,
+)
 
 __all__ = [
     "config_file_gen",
@@ -206,8 +209,7 @@ def lists_and_bash_generator(
             f"SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             "cd $SAMPLE\n\n",
-            f"export LOG={dir1}/DL1/MC/{particle_type}/logs"
-            + "/simtel_{$SAMPLE}_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}_all.log\n",
+            f"export LOG={dir1}/DL1/MC/{particle_type}/logs/simtel_{{$SAMPLE}}_${{SLURM_ARRAY_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}_all.log\n",
             "cat logs/list_dl0_ok.txt | while read line\n",
             "do\n",
             f"    cd {dir1}/../\n",
@@ -250,14 +252,6 @@ def lists_and_bash_gen_MAGIC(
     obs_tag = "" if NSB_match else "Observations"
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
-        if NSB_match:
-
-            if (len(MAGIC_runs) == 2) and (len(MAGIC_runs[0]) == 10):
-                MAGIC = MAGIC_runs
-
-                MAGIC_runs = []
-                MAGIC_runs.append(MAGIC)
-
         for i in MAGIC_runs:
             for magic in [1, 2]:
                 # if 1 then magic is second from last, if 2 then last
@@ -286,18 +280,21 @@ def lists_and_bash_gen_MAGIC(
                     mem="2g",
                     out_name=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
                 )
-                lines = slurm + [  # without version for no NSB_match
-                    f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
-                    "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
-                    "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                    "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                    "rc=$?\n",
-                    'if [ "$rc" -ne "0" ]; then\n',
-                    "  echo $SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID} $rc >> $OUTPUTDIR/logs/list_failed.log\n",
-                    "fi\n",
-                    "echo $SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID} $rc >> $OUTPUTDIR/logs/list_return.log\n",
-                ]
+                rc = rc_lines(
+                    store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+                    out="$OUTPUTDIR/logs/list",
+                )
+                lines = (
+                    slurm
+                    + [  # without version for no NSB_match
+                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
+                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
+                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
+                        "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                    ]
+                    + rc
+                )
                 with open(
                     f"{source}_MAGIC-" + "I" * magic + f"_dl0_to_dl1_run_{i[1]}.sh",
                     "w",
@@ -360,11 +357,6 @@ def directories_generator(
     ###########################################
     # MAGIC
     ###########################################
-    if (len(MAGIC_runs) == 2) and (len(MAGIC_runs[0]) == 10):
-        MAGIC = MAGIC_runs
-
-        MAGIC_runs = []
-        MAGIC_runs.append(MAGIC)
     for i in MAGIC_runs:
         for magic in [1, 2]:
             if telescope_ids[magic - 3] > 0:
@@ -429,7 +421,7 @@ def main():
 
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
-            MAGIC_runs_and_dates, dtype=str, delimiter=","
+            MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
         )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
 
         noise_value = [0, 0, 0]
