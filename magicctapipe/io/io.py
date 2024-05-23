@@ -375,6 +375,21 @@ def get_stereo_events(
     # Extract stereo events
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
     event_data_stereo.query("multiplicity > 1", inplace=True)
+
+    # exclude events in which more than one (LST-1) image gets matched to the same event
+    multimatch = event_data_stereo.groupby(group_index + ["tel_id"]).size() > 1
+    if sum(multimatch) > 0:
+        print(f"{sum(multimatch)} events with multiple matches")
+        print(event_data_stereo[multimatch])
+        if sum(multimatch) > 5:
+            print("this is too much, exiting")
+            exit(11)
+        event_data_stereo = event_data_stereo[~multimatch]
+        # if we exclude 2 LST-1 images we would still have the MAGIC images left for which we need to recompute multiplicity
+        event_data_stereo.loc[
+            event_data_stereo.index, "multiplicity"
+        ] = event_data_stereo.groupby(group_index).size()
+
     if eval_multi_combo:
         # Check the total number of events
         n_events_total = len(event_data_stereo.groupby(group_index).size())
@@ -411,7 +426,6 @@ def get_stereo_events(
             value = f"{n_events:.0f} events ({percentage:.1f}%)"
 
             n_events_per_combo[key] = value
-
         event_data_stereo = event_data_stereo.astype({"combo_type": int})
 
         # Show the number of events per combination type
