@@ -239,10 +239,11 @@ def main():
 
     NSB_match = config["general"]["NSB_matching"]
     telescope_ids = list(config["mc_tel_ids"].values())
+    source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
     source_list = []
-    if source is not None:
+    if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:

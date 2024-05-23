@@ -98,9 +98,9 @@ def split_train_test(target_dir, train_fraction, source_name):
         range(len(list_of_dir))
     ):  # tqdm allows us to print a progessbar in the terminal
 
-        os.makedirs(f"{proton_dir}/train/{list_of_dir[directory].split('/')[-2]}")
+        os.makedirs(f"{proton_dir}/train/{list_of_dir[directory].split('/')[-2]}", exist_ok = True)
         os.makedirs(
-            f'{proton_dir}/../protons_test/{list_of_dir[directory].split("/")[-2]}'
+            f'{proton_dir}/../protons_test/{list_of_dir[directory].split("/")[-2]}', exist_ok = True
         )
         list_of_runs = np.sort(
             glob.glob(f'{proton_dir}/{list_of_dir[directory].split("/")[-2]}/*.h5')
@@ -316,10 +316,11 @@ def main():
     train_fraction = float(config["general"]["proton_train_fraction"])
 
     env_name = config["general"]["env_name"]
+    source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
     source_list = []
-    if source is not None:
+    if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:

@@ -133,12 +133,12 @@ def linking_bash_lst(
                     f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
                 )
 
-                os.makedirs(f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs")
+                os.makedirs(f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs", exist_ok=True)
 
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
                 list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
 
-                with open(f"{outputdir}/logs/list_LST", "a+") as LSTdataPathFile:
+                with open(f"{outputdir}/logs/list_LST.txt", "a+") as LSTdataPathFile:
                     for subrun in list_of_subruns:
                         LSTdataPathFile.write(f"{subrun}\n")
 
@@ -157,7 +157,7 @@ def linking_bash_lst(
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
                 )
                 lines = slurm + [
-                    f"export INM={MAGIC_DL1_dir}/Merged/Merged_{d}\n",
+                    f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
                     f"export OUTPUTDIR={outputdir}\n",
                     "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
@@ -200,10 +200,11 @@ def main():
     env_name = config["general"]["env_name"]
     LST_version = config["general"]["LST_version"]
 
+    source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
     source_list = []
-    if source is not None:
+    if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:
