@@ -28,6 +28,10 @@ import yaml
 
 from magicctapipe import __version__
 from magicctapipe.io import resource_file
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
+    rc_lines,
+    slurm_lines,
+)
 
 __all__ = ["configfile_stereo", "bash_stereo", "bash_stereoMC"]
 
@@ -58,15 +62,9 @@ def configfile_stereo(ids, target_dir, source_name, NSB_match):
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
-    coincidence = config_dict["stereo_reco"]
+    conf = {"stereo_reco": config_dict["stereo_reco"]}
 
-    conf = {}
-    conf["stereo_reco"] = coincidence
-
-    if not NSB_match:
-        file_name = f"{target_dir}/{source_name}/config_stereo.yaml"
-    else:
-        file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
+    file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
     with open(file_name, "w") as f:
         lines = [
             "mc_tel_ids:",
@@ -103,9 +101,8 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
 
     if NSB_match:
         coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}"
-
     else:
-        coincidence_DL1_dir = f"{target_dir}/{source}/DL1/Observations"
+        coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/Observations"
 
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
 
@@ -113,7 +110,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
         stereoDir = (
             f"{coincidence_DL1_dir}/DL1CoincidentStereo/{nightLST.split('/')[-1]}"
         )
-        os.makedirs(f"{stereoDir}/logs")
+        os.makedirs(f"{stereoDir}/logs", exist_ok=True)
         if not os.listdir(f"{nightLST}"):
             continue
         if len(os.listdir(nightLST)) < 2:
@@ -127,24 +124,29 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
 
         if process_size < 0:
             continue
-        lines = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p short\n",
-            f"#SBATCH -J {process_name}_stereo\n",
-            f"#SBATCH --array=0-{process_size}\n",
-            "#SBATCH -n 1\n\n",
-            f"#SBATCH --output={stereoDir}/logs/slurm-%x.%A_%a.out"
-            f"#SBATCH --error={stereoDir}/logs/slurm-%x.%A_%a.err"
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n\n",
-            f"export INPUTDIR={nightLST}\n",
-            f"export OUTPUTDIR={stereoDir}\n",
-            "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin.txt))\n",
-            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-            "export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-            f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_stereo.yaml >$LOG 2>&1",
-        ]
+
+        slurm = slurm_lines(
+            queue="short",
+            job_name=f"{process_name}_stereo",
+            array=process_size,
+            out_name=f"{stereoDir}/logs/slurm-%x.%A_%a",
+        )
+        rc = rc_lines(
+            store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+            out="$OUTPUTDIR/logs/list",
+        )
+        lines = (
+            slurm
+            + [
+                f"export INPUTDIR={nightLST}\n",
+                f"export OUTPUTDIR={stereoDir}\n",
+                "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_coin.txt))\n",
+                "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+                "export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_stereo.yaml >$LOG 2>&1\n",
+            ]
+            + rc
+        )
         with open(f"{source}_StereoEvents_{nightLST.split('/')[-1]}.sh", "w") as f:
             f.writelines(lines)
 
@@ -168,9 +170,8 @@ def bash_stereoMC(target_dir, identification, env_name, source):
 
     process_name = source
 
-    os.makedirs(f"{target_dir}/{source}/DL1/MC/{identification}/Merged/StereoMerged")
-
     inputdir = f"{target_dir}/{source}/DL1/MC/{identification}/Merged"
+    os.makedirs(f"{inputdir}/StereoMerged", exist_ok=True)
 
     os.system(
         f"ls {inputdir}/dl1*.h5 >  {inputdir}/list_coin.txt"
@@ -179,18 +180,14 @@ def bash_stereoMC(target_dir, identification, env_name, source):
         process_size = len(f.readlines()) - 1
 
     with open(f"StereoEvents_MC_{identification}.sh", "w") as f:
-        lines = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p xxl\n",
-            f"#SBATCH -J {process_name}_stereo\n",
-            f"#SBATCH --array=0-{process_size}%100\n",
-            "#SBATCH --mem=8g\n",
-            "#SBATCH -n 1\n\n",
-            f"#SBATCH --output={inputdir}/StereoMerged/logs/slurm-%x.%A_%a.out"
-            f"#SBATCH --error={inputdir}/StereoMerged/logs/slurm-%x.%A_%a.err"
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n\n",
+        slurm = slurm_lines(
+            queue="xxl",
+            job_name=f"{process_name}_stereo",
+            array=f"{process_size}%100",
+            mem="8g",
+            out_name=f"{inputdir}/StereoMerged/logs/slurm-%x.%A_%a",
+        )
+        lines = slurm + [
             f"export INPUTDIR={inputdir}\n",
             f"export OUTPUTDIR={inputdir}/StereoMerged\n",
             "SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n",
@@ -242,12 +239,10 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
-    source_list = []
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
-
     else:
-        source_list.append(source)
+        source_list = [source]
     for source_name in source_list:
 
         print("***** Generating file config_stereo.yaml...")
@@ -260,10 +255,8 @@ def main():
             and not NSB_match
         ):
             print("***** Generating the bashscript for MCs...")
-            bash_stereoMC(target_dir, "gammadiffuse", env_name, source_name)
-            bash_stereoMC(target_dir, "gammas", env_name, source_name)
-            bash_stereoMC(target_dir, "protons", env_name, source_name)
-            bash_stereoMC(target_dir, "protons_test", env_name, source_name)
+            for part in ["gammadiffuse", "gammas", "protons", "protons_test"]:
+                bash_stereoMC(target_dir, part, env_name, source_name)
 
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
 
