@@ -101,7 +101,9 @@ def main():
         print(f"for path {work_dir} found in {args.config_file} this is available")
         print(f"Versions {versions}")
         tag = "" if NSB_matching else "/Observations"
-        print(f"Supported data types: DL1{tag}/M1, DL1{tag}/M2, DL1{tag}/Merged")
+        print(
+            f"Supported data types: DL1{tag}/M1, DL1{tag}/M2, DL1{tag}/Merged, DL1Coincident, DL1CoincidentStereo"
+        )
         exit(1)
 
     all_todo = 0
@@ -114,14 +116,15 @@ def main():
     for dir in dirs:
         print(dir)
         list_dl0 = ""
-        for file in ["list_dl0.txt", "list_LST.txt"]:
+        ins = ["list_dl0.txt", "list_LST.txt", "list_coin.txt"]
+        for file in ins:
             if os.path.exists(f"{dir}/logs/{file}"):
                 list_dl0 = f"{dir}/logs/{file}"
         if list_dl0 != "":
             with open(list_dl0, "r") as fp:
                 this_todo = len(fp.readlines())
         else:
-            print(f"{RED}File {list_dl0} is missing{ENDC}")
+            print(f"{RED}No {ins} files {ENDC}")
             this_todo = 0
 
         list_return = f"{dir}/logs/list_return.log"
