@@ -4,6 +4,7 @@ It also does accounting of memory and CPU usage
 """
 import argparse
 import glob
+import os
 from datetime import timedelta
 from subprocess import PIPE, run
 
@@ -92,6 +93,7 @@ def main():
     dirs = sorted(
         glob.glob(f"{work_dir}/v{args.version}/*/{args.data_level}/[0-9]*/[M0-9]*")
         + glob.glob(f"{work_dir}/v{args.version}/*/{args.data_level}/Merged_[0-9]*")
+        + glob.glob(f"{work_dir}/v{args.version}/*/{args.data_level}/" + "[0-9]" * 8)
     )
     if dirs == []:
         versions = [x.split("/v")[-1] for x in glob.glob(f"{work_dir}/v*")]
@@ -111,12 +113,14 @@ def main():
     all_jobs = []
     for dir in dirs:
         print(dir)
-        # fixme list_dl0.txt is only available for DL1/M[12] processing
-        list_dl0 = f"{dir}/logs/list_dl0.txt"
-        try:
+        list_dl0 = ""
+        for file in ["list_dl0.txt", "list_LST.txt"]:
+            if os.path.exists(f"{dir}/logs/{file}"):
+                list_dl0 = f"{dir}/logs/{file}"
+        if list_dl0 != "":
             with open(list_dl0, "r") as fp:
                 this_todo = len(fp.readlines())
-        except IOError:
+        else:
             print(f"{RED}File {list_dl0} is missing{ENDC}")
             this_todo = 0
 
