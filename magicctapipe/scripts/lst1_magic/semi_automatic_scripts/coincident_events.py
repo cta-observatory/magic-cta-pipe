@@ -26,7 +26,10 @@ import yaml
 
 from magicctapipe import __version__
 from magicctapipe.io import resource_file
-from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
+    rc_lines,
+    slurm_lines,
+)
 
 __all__ = ["configfile_coincidence", "linking_bash_lst"]
 
@@ -63,7 +66,7 @@ def configfile_coincidence(ids, target_dir, source_name, NSB_match):
     conf["event_coincidence"] = coincidence
 
     if not NSB_match:
-        file_name = f"{target_dir}/{source_name}/config_coincidence.yaml"
+        file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
     else:
         file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
     with open(file_name, "w") as f:
@@ -133,9 +136,9 @@ def linking_bash_lst(
                     f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
                 )
 
-                os.makedirs(f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}/logs", exist_ok=True)
-
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
+                os.makedirs(f"{outputdir}/logs", exist_ok=True)
+
                 list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
 
                 with open(f"{outputdir}/logs/list_LST.txt", "a+") as LSTdataPathFile:
@@ -156,14 +159,23 @@ def linking_bash_lst(
                     mem="8g",
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
                 )
-                lines = slurm + [
-                    f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
-                    f"export OUTPUTDIR={outputdir}\n",
-                    "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
-                    "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                    "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1",
-                ]
+                rc = rc_lines(
+                    store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+                    out="$OUTPUTDIR/logs/list",
+                )
+
+                lines = (
+                    slurm
+                    + [
+                        f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
+                        f"export OUTPUTDIR={outputdir}\n",
+                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
+                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1\n",
+                    ]
+                    + rc
+                )
                 with open(
                     f"{source_name}_LST_coincident_{outputdir.split('/')[-1]}.sh",
                     "w",
