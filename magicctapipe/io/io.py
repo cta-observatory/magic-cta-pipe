@@ -375,10 +375,10 @@ def get_stereo_events(
     # exclude events in which more than one (LST-1) image gets matched to the same event
     multimatch = event_data_stereo.groupby(group_index + ["tel_id"]).size() > 1
     if sum(multimatch) > 0:
-        print(f"{sum(multimatch)} events with multiple matches")
-        print(event_data_stereo[multimatch])
+        logger.info(f"{sum(multimatch)} events with multiple matches")
+        logger.info(event_data_stereo[multimatch])
         if sum(multimatch) > 5:
-            print("this is too much, exiting")
+            logger.error("this is too much, exiting")
             exit(11)
         event_data_stereo = event_data_stereo[~multimatch]
 
