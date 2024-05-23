@@ -261,7 +261,6 @@ def main():
                     " && " if n > 0 else ""
                 ) + f"coincidence{n}=$(sbatch --parsable {run})"
 
-            # print (launch_jobs)
             os.system(launch_jobs)
 
         except OSError as exc:
