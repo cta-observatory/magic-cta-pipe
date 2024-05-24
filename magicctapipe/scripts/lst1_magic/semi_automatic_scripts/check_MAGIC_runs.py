@@ -34,18 +34,22 @@ def table_first_last_run(df):
     
     return(result)
 
-def check_run_ID(path, filename, first_run, last_run, date, source):
-    Y = f'_Y_{source}' 
-    #'Y' because we have to be sure that the function counts right filename.
+def check_run_ID(path, filename, first_run, last_run, date, source, tel_id):
 
-    if Y in filename:
+    #We have to be sure that the function counts right filename.
+    date_obs = filename.split("_")[0]
+    run = filename.split("_")[2].split(".")[0]
+    subrun = filename.split("_")[2].split(".")[1]
+    Y = f'{date_obs}_M{tel_id}_{run}.{subrun}_Y_{source}' 
+    r = f".root"
+
+    if Y and r in filename:
         # Extract run_ids from filename and check range
         run_ids = [int(filename.split("_")[2].split(".")[0])]
         magic_runs = []
     
         for id in run_ids:
             if first_run <= id <= last_run:
-                matched = True
                 magic_runs.append(f"{date} \t {source} \t {id}")
                 #print(f"{date} \t {source} \t {id}")
         return magic_runs
@@ -72,7 +76,7 @@ def check_directory(date, source, first_run, last_run, tel_id):
         for filename in files:
             if source in filename:
                 count_with_source += 1
-                results = check_run_ID(path, filename, first_run, last_run, date, source)
+                results = check_run_ID(path, filename, first_run, last_run, date, source, tel_id)
                 #We will see many results because a file with a run ID has subruns.
                 #We must count the same results to get information how many subruns we have.
                 for result in results:
@@ -85,6 +89,8 @@ def check_directory(date, source, first_run, last_run, tel_id):
                 #Between 2022/09/04 - 2022/12/14 MAGIC 1 had a failure. Therefore we have to skip the range when we want to get information about missing files.
                 if(date<'20220904' or date>'20221214'):
                     print(f"No files found containing the source '{source}' on {date}, (M{tel_id})")
+                else:
+                    print(f"M1 failure. No files found containing the source '{source}' on {date}.")
             if(tel_id == 2):
                 print(f"No files found containing the source '{source}' on {date}, (M{tel_id})")
                         
