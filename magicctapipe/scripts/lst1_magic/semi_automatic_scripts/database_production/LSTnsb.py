@@ -116,11 +116,10 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    NSB_match = config["general"]["NSB_matching"]
     run_number = args.run
     date = args.day
     denominator = args.denominator
-    simtel = "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz"
+    simtel = config["general"]["simtel_nsb"]
 
     nsb_list = config["general"]["nsb"]
     lst_version = config["general"]["LST_version"]
@@ -138,18 +137,13 @@ def main():
     if lstchain_modified:
         lst_config = resource_file("lstchain_standard_config_modified.json")
     print(lst_config)
-    if NSB_match:
-        LST_files = np.sort(glob.glob(f"nsb_LST_[0-9]*_{run_number}.txt"))
+
+    LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
         if len(LST_files) == 1:
             logger.info(f"Run {run_number} already processed")
             return
-    else:
-        LST_files = np.sort(glob.glob(f"nsb_LST_nsb_*{run_number}*.txt"))
-
-        if len(LST_files) == 1:
-            logger.info(f"Run {run_number} already processed.")
-            return
+    
 
     # date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
@@ -162,18 +156,16 @@ def main():
         return
     median_NSB = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {median_NSB}")
-    if NSB_match:
-        for j in range(0, len(nsb_list)):
-            if (median_NSB < nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
-                with open(f"nsb_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
-                    f.write(f"{date},{run_number},{median_NSB}\n")
-            if median_NSB > nsb_limit[-1]:
-                with open(f"nsb_LST_high_{run_number}.txt", "a+") as f:
-                    f.write(f"{date},{run_number},{median_NSB}\n")
+    
+    for j in range(0, len(nsb_list)):
+        if (median_NSB < nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
+            with open(f"nsb_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
+                f.write(f"{date},{run_number},{median_NSB}\n")
+        if median_NSB > nsb_limit[-1]:
+            with open(f"nsb_LST_high_{run_number}.txt", "a+") as f:
+                f.write(f"{date},{run_number},{median_NSB}\n")
 
-    else:
-        with open(f"nsb_LST_nsb_{run_number}.txt", "a+") as f:
-            f.write(f"{median_NSB}\n")
+    
 
 
 if __name__ == "__main__":

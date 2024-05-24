@@ -23,7 +23,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def bash_scripts(run, date, config, env_name):
+def bash_scripts(run, date, config, env_name, cluster):
 
     """Here we create the bash scripts (one per LST run)
 
@@ -39,23 +39,25 @@ def bash_scripts(run, date, config, env_name):
     env_name : str
         Name of the environment
     """
-
-    lines = [
-        "#!/bin/sh\n\n",
-        "#SBATCH -p long\n",
-        "#SBATCH -J nsb\n",
-        "#SBATCH -n 1\n\n",
-        f"#SBATCH --output=slurm-nsb_{run}-%x.%j.out\n"
-        f"#SBATCH --error=slurm-nsb_{run}-%x.%j.err\n"
-        "ulimit -l unlimited\n",
-        "ulimit -s unlimited\n",
-        "ulimit -a\n\n",
-        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_"
-        + "${SLURM_JOB_ID}.log 2>&1 \n\n",
-    ]
-    with open(f"nsb_{date}_run_{run}.sh", "w") as f:
-        f.writelines(lines)
-
+    if cluster == 'SLURM':
+        lines = [
+            "#!/bin/sh\n\n",
+            "#SBATCH -p long\n",
+            "#SBATCH -J nsb\n",
+            "#SBATCH -n 1\n\n",
+            f"#SBATCH --output=slurm-nsb_{run}-%x.%j.out\n"
+            f"#SBATCH --error=slurm-nsb_{run}-%x.%j.err\n"
+            "ulimit -l unlimited\n",
+            "ulimit -s unlimited\n",
+            "ulimit -a\n\n",
+            f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_"
+            + "${SLURM_JOB_ID}.log 2>&1 \n\n",
+        ]
+        with open(f"nsb_{date}_run_{run}.sh", "w") as f:
+            f.writelines(lines)
+    else:
+        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+        return
 
 def main():
 
@@ -93,6 +95,9 @@ def main():
         config = yaml.safe_load(f)
 
     env_name = config["general"]["env_name"]
+    
+    cluster = config["general"]["cluster"]
+
 
     df_LST = pd.read_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
@@ -133,15 +138,15 @@ def main():
         ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
-        bash_scripts(run_number, date, args.config_file, env_name)
+        bash_scripts(run_number, date, args.config_file, env_name, cluster)
 
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob("nsb_*_run_*.sh"))
 
     if len(list_of_bash_scripts) < 1:
-        print(
-            "Warning: no bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
+        logger.warning(
+            "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
         )
         return
     print("Update database and launch jobs")
@@ -154,11 +159,11 @@ def main():
     )
     df_LST = df_LST.sort_values(by=["DATE", "source", "LST1_run"])
 
+    launch_jobs = ""
     for n, run in enumerate(list_of_bash_scripts):
-        if n == 0:
-            launch_jobs = f"nsb{n}=$(sbatch --parsable {run})"
-        else:
-            launch_jobs = f"{launch_jobs} && nsb{n}=$(sbatch --parsable {run})"
+        launch_jobs += (
+            " && " if n > 0 else ""
+        ) + f"nsb{n}=$(sbatch --parsable {run})"
 
     os.system(launch_jobs)
 

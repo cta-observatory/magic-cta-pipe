@@ -32,7 +32,8 @@ general:
     LST_version   : "v0.10"
     LST_tailcut   : "tailcut84"
     focal_length  : "effective"
-    lstchain_modified_config : true
+    simtel_nsb    : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
+    lstchain_modified_config : true # use_flatfield_heuristic = True to evaluate NSB
     proton_train_fraction  : 0.8  # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest.
     nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
     env_name      : magic-lst  # name of the conda environment to be used to process data.
