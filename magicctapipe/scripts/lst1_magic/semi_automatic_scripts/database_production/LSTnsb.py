@@ -120,7 +120,6 @@ def main():
     date = args.day
     denominator = args.denominator
     simtel = config["general"]["simtel_nsb"]
-
     nsb_list = config["general"]["nsb"]
     lst_version = config["general"]["LST_version"]
     lst_tailcut = config["general"]["LST_tailcut"]
@@ -140,10 +139,10 @@ def main():
 
     LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
-        if len(LST_files) == 1:
-            logger.info(f"Run {run_number} already processed")
-            return
-    
+    if len(LST_files) == 1:
+        logger.info(f"Run {run_number} already processed")
+        return
+
 
     # date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
