@@ -134,11 +134,16 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         run_listed = []
         if source_in is None:
             df_source = df[df["source"] == source_name]
+            print('Source: ', source_name)
         else:
             df_source = df[df["source"] == source_in]
+            print('Source: ', source_in)
 
         if is_LST:
             print("Finding LST runs...")
+            if len(df_source) == 0:
+                print("NO LST run found. Exiting...")
+                continue
             LST_run = df_source["LST1_run"].tolist()  # List with runs as strings
             LST_date = df_source["date_LST"].tolist()
             for k in range(len(df_source)):
@@ -156,6 +161,9 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
 
         if not is_LST:
             print("Finding MAGIC runs...")
+            if len(df_source) == 0:
+                print("NO MAGIC run found. Exiting...")
+                continue
             MAGIC_date = df_source["date_MAGIC"].tolist()
             M2_run = df_source["Run ID"].tolist()
             for k in range(len(df_source)):
@@ -249,9 +257,7 @@ def main():
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
     clear_files(source_in, source_out, df_LST)
-    if len(df_LST) == 0:
-        print("NO LST run found. Exiting...")
-        return
+    
     list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]

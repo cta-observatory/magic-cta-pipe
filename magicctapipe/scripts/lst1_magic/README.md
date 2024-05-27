@@ -12,26 +12,24 @@ MAGIC+LST analysis starts from MAGIC calibrated data (\_Y\_ files), LST  data le
 
 Behind the scenes, the semi-automatic scripts will run:
 - `magic_calib_to_dl1` on real MAGIC data, to convert them into DL1 format.
-- `merge_hdf_files.py` on MAGIC data to merge subruns and/or runs together.
-- `lst1_magic_event_coincidence.py` to find coincident events between MAGIC and LST-1, starting from DL1 data.
-- `lst1_magic_stereo_reco.py` to add stereo parameters to the DL1 data.
-- `lst1_magic_train_rfs.py` to train the RFs (energy, direction, classification) on train gamma MCs and protons.
-- `lst1_magic_dl1_stereo_to_dl2.py` to apply the RFs to stereo DL1 data (real and test MCs) and produce DL2 data.
-- `lst1_magic_create_irf.py` to create the IRF.
-- `lst1_magic_dl2_to_dl3.py` to create DL3 files, and `create_dl3_index_files.py` to create DL3 HDU and index files.
+- `merge_hdf_files` on MAGIC data to merge subruns and/or runs together.
+- `lst1_magic_event_coincidence` to find coincident events between MAGIC and LST-1, starting from DL1 data.
+- `lst1_magic_stereo_reco` to add stereo parameters to the DL1 data.
+- `lst1_magic_train_rfs` to train the RFs (energy, direction, classification) on train gamma MCs and protons.
+- `lst1_magic_dl1_stereo_to_dl2` to apply the RFs to stereo DL1 data (real and test MCs) and produce DL2 data.
+- `lst1_magic_create_irf` to create the IRF.
+- `lst1_magic_dl2_to_dl3` to create DL3 files, and `create_dl3_index_files` to create DL3 HDU and index files.
 
 From DL3 on, the analysis is done with gammapy.
 
 ## Installation
 
-1) The very first step to reduce MAGIC-LST data is to have remote access/credentials to the IT Container, so provide one. Once you have it, the connection steps are the following:
+1) The very first step to reduce MAGIC-LST data is to have remote access/credentials to the IT Container. If you do not have it, please write an email to request it to <admin-ctan@cta-observatory.org>, and the admin will send you the instructions to connect to the IT container.
 
-Authorized institute server (Client) &rarr;  ssh connection to CTALaPalma &rarr; ssh connection to cp01/02.
-
-2) Once connected to the IT Container, install magic-cta-pipe (e.g. in your home directory in the IT Container) with the following commands (if you have mamba installed, we recommend you to use it instead of conda. The installation process will be much faster.):
+2) Once connected to the IT Container, install magic-cta-pipe (e.g. in your home directory in the IT Container) with the following commands (if you have mamba installed, we recommend you to use it instead of conda, so that the installation process will be much faster; if you don't have anaconda/miniconda/miniforge, please install one of them into your workspace directory):
 
 ```
-git clone -b Torino_auto_MCP https://github.com/cta-observatory/magic-cta-pipe.git
+git clone https://github.com/cta-observatory/magic-cta-pipe.git
 cd magic-cta-pipe
 mamba env create -n magic-lst -f environment.yml
 mamba activate magic-lst
@@ -105,7 +103,7 @@ Cleaning pre-existing *_LST_runs.txt and *_MAGIC_runs.txt files
 Finding LST runs...
 Finding MAGIC runs...
 ```
-And it will save the files TARGET_LST_runs.txt, TARGET_MAGIC_runs.txt, and list_sources.dat in your working directory.
+And it will save the files TARGET_LST_runs.txt, TARGET_MAGIC_runs.txt, and list_sources.dat in your working directory. In case no runs are found for MAGIC and/or LST (for a source and a given time range/list of dates), a warning will be printed and no output text file will be produced for the given source and telescope(s).
 
 At this point, we can convert the MAGIC data into DL1 format with the following command:
 > $ setting_up_config_and_dir -c config_general.yaml
@@ -206,8 +204,6 @@ TBD.
 
 Since the DL3 may have only a few MBs, it is typically convenient to download it to your own computer at this point. It will be necessary to have astropy and gammapy (version > 0.20) installed before proceeding. 
 
-We prepared a [Jupyter Notebook](https://github.com/ranieremenezes/magic-cta-pipe/blob/master/magicctapipe/scripts/lst1_magic/SED_and_LC_from_DL3.ipynb) that quickly creates a counts map, a significance curve, an SED, and a light curve. You can give it a try. 
-
 The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/master/notebooks) contains Jupyter notebooks to perform checks on the IRF, to produce theta2 plots and SEDs.
 
 
@@ -225,10 +221,3 @@ To create and update the MAGIC and LST databases (from the one produced by AB an
 
 - `lstchain_version`: this scripts loop over all the rows of the database, estract date and run number from the table and look for the data saved in the IT (i.e., which version of lstchain has been used to process a run). For each run, it sets to True the lstchain_0.9(0.10) cell if this run has been processed up to DL1 with lstchain 0.9(0.10). It sets error code '002' in case none of the two versions has been used to process the run. Launched as `python lstchain_version.py`
 
-Error codes:
-
-- 000: no NSB
-
-- 001: NSB>3.0
-
-- 002: neither 0.9 nor 0.10 lstchain version
