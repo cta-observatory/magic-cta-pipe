@@ -46,6 +46,7 @@ import numpy as np
 import yaml
 from astropy import units as u
 from astropy.coordinates import angular_separation
+from ctapipe.containers import DL1CameraContainer
 from ctapipe.image import (
     concentration_parameters,
     hillas_parameters,
@@ -220,6 +221,11 @@ def magic_calib_to_dl1(
             "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
         )
 
+    save_images = False
+    if "save_images" in config["MAGIC"]:
+        save_images = config["MAGIC"]["save_images"]
+        if save_images:
+            dl1cont = DL1CameraContainer(prefix="")
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 
@@ -397,6 +403,12 @@ def magic_calib_to_dl1(
                 "parameters",
                 (event_info, hillas_params, timing_params, leakage_params, conc_params),
             )
+
+            if save_images:
+                dl1cont.image = image
+                dl1cont.peak_time = peak_time
+                dl1cont.is_valid = True
+                writer.write(table_name="dl1/image", containers=dl1cont)
 
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
