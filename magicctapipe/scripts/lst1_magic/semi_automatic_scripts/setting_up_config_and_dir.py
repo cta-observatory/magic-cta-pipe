@@ -4,7 +4,7 @@ This script facilitates the usage of
 "manager" that organizes the analysis process by:
 1) Creating the necessary directories and subdirectories.
 2) Generating all the bash script files that convert the
-MAGIC files from DL0 to DL1.
+MAGIC files from Calibrated (`_Y_`) to DL1.
 3) Launching these jobs in the IT container.
 
 Notice that in this stage we only use MAGIC data.
@@ -61,19 +61,6 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match, source_name):
         If real data are matched to pre-processed MCs or not
     source_name : str
         Name of the target source
-    """
-
-    """
-    Here we create the configuration file needed for transforming DL0 into DL1
-
-    Parameters
-    ----------
-    ids : list
-        Telescope IDs
-    target_dir : path
-        Directory to store the results
-    noise_value : list
-        Extra noise in dim and bright pixels, Extra bias in dim pixels
     """
 
     config_file = resource_file("config.yaml")
@@ -264,7 +251,7 @@ def lists_and_bash_gen_MAGIC(
                         lines = [
                             f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
                             f"export OUT1={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs \n",
-                            f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_dl0.txt\n\n",
+                            f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_cal.txt\n\n",
                         ]
                         f.writelines(lines)
 
@@ -293,7 +280,7 @@ def lists_and_bash_gen_MAGIC(
                         slurm
                         + [  # without version for no NSB_match
                             f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
-                            "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_dl0.txt))\n",
+                            "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_cal.txt))\n",
                             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                             "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                             f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
@@ -301,7 +288,7 @@ def lists_and_bash_gen_MAGIC(
                         + rc
                     )
                     with open(
-                        f"{source}_MAGIC-" + "I" * magic + f"_dl0_to_dl1_run_{i[1]}.sh",
+                        f"{source}_MAGIC-" + "I" * magic + f"_cal_to_dl1_run_{i[1]}.sh",
                         "w",
                     ) as f:
                         f.writelines(lines)
@@ -442,7 +429,7 @@ def main():
             noise_value = [nsb, noisebright, biasdim]
 
         # TODO: fix here above
-        print("*** Converting DL0 into DL1 data ***")
+        print("*** Converting Calibrated into DL1 data ***")
         print(f"Process name: {source_name}")
         print(
             f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
