@@ -107,9 +107,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match):
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
 
     for nightLST in listOfNightsLST:
-        stereoDir = (
-            f"{coincidence_DL1_dir}/DL1CoincidentStereo/{nightLST.split('/')[-1]}"
-        )
+        stereoDir = f"{coincidence_DL1_dir}/DL1Stereo/{nightLST.split('/')[-1]}"
         os.makedirs(f"{stereoDir}/logs", exist_ok=True)
         if not os.listdir(f"{nightLST}"):
             continue
