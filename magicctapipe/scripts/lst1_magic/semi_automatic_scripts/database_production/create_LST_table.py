@@ -1,7 +1,7 @@
 """
 Create a new h5 table from the one of joint observations.
 
-Only the columns needed to produce the lists of LST runs to be processed are presenved, and two columns are added to store NSB level and error codes
+Only the columns needed to produce the lists of LST runs to be processed are preserved, and two columns are added to store NSB level and error codes
 """
 
 import os

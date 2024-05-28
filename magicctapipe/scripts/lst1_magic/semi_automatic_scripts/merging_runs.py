@@ -52,7 +52,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def cleaning(list_of_nodes, cwd):
+def cleaning(list_of_nodes):
 
     """
     This function looks for failed runs in each node and remove them.
@@ -60,11 +60,10 @@ def cleaning(list_of_nodes, cwd):
     Parameters
     ----------
     list_of_nodes : array of str
-        List of nodes where the function will look for failed runs.
-    cwd : Path
-        Current working directory
+        List of nodes where the function will look for failed runs.    
     """
 
+    cwd = os.getcwd()
     for i in tqdm(range(len(list_of_nodes)), desc="Cleaning failed runs"):
         os.chdir(list_of_nodes[i])
         os.system('find . -type f -name "*.h5" -size -1k -delete')
@@ -76,9 +75,9 @@ def cleaning(list_of_nodes, cwd):
 def split_train_test(target_dir, train_fraction, source_name):
 
     """
-    This function splits the MC proton sample in 2, i.e. the "test" and the "train" subsamples.
+    This function splits the MC proton sample in 2, i.e. the "test" and the "train" subsamples, in case you want to make performance studies on MC. For regular analyses, you can/should use the whole MC sample for training.
     It generates 2 subdirectories in the directory .../DL1/MC/protons named "test" and "train" and creates sub-sub-directories with the names of all nodes.
-    For each node sub-sub-directory we move 80% of the .h5 files (if it is in the "test" subdirectory) or 20% of the .h5 files (if it is in the "train" subdirectory).
+    For each node sub-sub-directory we move `train_fraction` of the .h5 files to the "train" subdirectory and `1-train_fraction` of the .h5 files to the "test" subdirectory.
 
     Parameters
     ----------
@@ -105,8 +104,8 @@ def split_train_test(target_dir, train_fraction, source_name):
         list_of_runs = np.sort(
             glob.glob(f'{proton_dir}/{list_of_dir[directory].split("/")[-2]}/*.h5')
         )
-        split_percent = int(len(list_of_runs) * train_fraction)
-        for j in list_of_runs[0:split_percent]:
+        number_train_runs = int(len(list_of_runs) * train_fraction)
+        for j in list_of_runs[0:number_train_runs]:
             os.system(
                 f"mv {j} {proton_dir}/train/{list_of_dir[directory].split('/')[-2]}"
             )
@@ -224,7 +223,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
         logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
         return
 
-def mergeMC(target_dir, identification, env_name, cwd, source_name, cluster):
+def mergeMC(target_dir, identification, env_name, source_name, cluster):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
@@ -237,8 +236,6 @@ def mergeMC(target_dir, identification, env_name, cwd, source_name, cluster):
         Tells which batch to create. Options: protons, gammadiffuse
     env_name : str
         Name of the environment
-    cwd : Path
-        Current working directory
     source_name : str
         Name of the target source
     """
@@ -259,7 +256,7 @@ def mergeMC(target_dir, identification, env_name, cwd, source_name, cluster):
 
     process_size = len(list_of_nodes) - 1
 
-    cleaning(list_of_nodes, cwd)  # This will delete the (possibly) failed runs.
+    cleaning(list_of_nodes)  # This will delete the (possibly) failed runs.
     if cluster == 'SLURM':
         with open(f"Merge_MC_{identification}.sh", "w") as f:
             slurm = slurm_lines(
@@ -284,7 +281,7 @@ def mergeMC(target_dir, identification, env_name, cwd, source_name, cluster):
 def main():
 
     """
-    Here we read the config_general.yaml file, split the pronton sample into "test" and "train", and merge the MAGIC files.
+    Here we read the config_general.yaml file, split the proton sample into "test" and "train", and merge the MAGIC files.
     """
 
     parser = argparse.ArgumentParser()
@@ -312,7 +309,6 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    cwd = os.getcwd()
 
     target_dir = Path(config["directories"]["workspace_dir"])
 
@@ -349,15 +345,15 @@ def main():
 
                 print("***** Generating merge_MC bashscripts...")
                 mergeMC(
-                    target_dir, "protons", env_name, cwd, source_name, cluster
+                    target_dir, "protons", env_name, source_name, cluster
                 )  # generating the bash script to merge the files
                 mergeMC(
-                    target_dir, "gammadiffuse", env_name, cwd, source_name, cluster
+                    target_dir, "gammadiffuse", env_name, source_name, cluster
                 )  # generating the bash script to merge the files
                 mergeMC(
-                    target_dir, "gammas", env_name, cwd, source_name, cluster
+                    target_dir, "gammas", env_name, source_name, cluster
                 )  # generating the bash script to merge the files
-                mergeMC(target_dir, "protons_test", env_name, cwd, source_name, cluster)
+                mergeMC(target_dir, "protons_test", env_name, source_name, cluster)
 
                 print("***** Running merge_hdf_files.py on the MC data files...")
 

@@ -264,7 +264,7 @@ def main():
                 if n == 0:
                     launch_jobs = f"stereo{n}=$(sbatch --parsable {run})"
                 else:
-                    launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable --dependency=afterany:$stereo{n-1} {run})"
+                    launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
 
             os.system(launch_jobs)
 
