@@ -56,6 +56,7 @@ If you want to analyse a target, this is the way to go. See this other script fo
 """
 
 import argparse
+import glob
 import logging
 import sys
 import time
@@ -66,7 +67,11 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
+from astropy.table import vstack
 from ctapipe.instrument import SubarrayDescription
+from ctapipe.io import read_table, write_table
+from lstchain.io import HDF5_ZSTD_FILTERS
+from lstchain.io.io import dl1_images_lstcam_key
 
 from magicctapipe.io import (
     check_input_list,
@@ -157,6 +162,10 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     config_coinc = config["event_coincidence"]
 
+    save_images = False
+    if "save_images" in config["MAGIC"]:
+        save_images = config["MAGIC"]["save_images"]
+
     TEL_NAMES, _ = telescope_combinations(config)
 
     TEL_POSITIONS = telescope_positions(config)
@@ -164,6 +173,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     logger.info(f"\nInput LST DL1 data file: {input_file_lst}")
 
     event_data_lst, subarray_lst = load_lst_dl1_data_file(input_file_lst)
+    if save_images:
+        l_image = read_table(input_file_lst, dl1_images_lstcam_key)
 
     # Load the input MAGIC DL1 data files
     logger.info(f"\nInput MAGIC directory: {input_dir_magic}")
@@ -171,6 +182,18 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     event_data_magic, subarray_magic = load_magic_dl1_data_files(
         input_dir_magic, config
     )
+
+    if save_images:
+        input_files = glob.glob(f"{input_dir_magic}/dl1_*.h5")
+        input_files.sort()
+
+        m_image = []
+        for input_file in input_files:
+            m_image.append(read_table(input_file, "/events/dl1/image"))
+
+        m_image = vstack(m_image)
+        m1_image = m_image[m_image["tel_id"] == config["mc_tel_ids"]["MAGIC-I"]]
+        m2_image = m_image[m_image["tel_id"] == config["mc_tel_ids"]["MAGIC-II"]]
 
     # Exclude the parameters non-common to LST and MAGIC data
     timestamp_type_lst = config_coinc["timestamp_type_lst"]
@@ -556,6 +579,29 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
     save_pandas_data_in_table(
         profiles, output_file, group_name="/coincidence", table_name="profile", mode="a"
     )
+    if save_images:
+        iimage = [["LST-1", l_image], ["MAGIC-I", m1_image], ["MAGIC-II", m2_image]]
+        for name, image in iimage:
+            tel_id = config["mc_tel_ids"][name]
+            # first we need to prune the table to keep only the images corresponding to stereo events
+            mask = np.zeros(len(image), dtype=bool)
+            tag = "lst" if name == "LST-1" else "magic"
+            obs_evt_ids = event_data.query(f"tel_id=={tel_id}")[
+                [f"obs_id_{tag}", f"event_id_{tag}"]
+            ].to_numpy()
+            for obs_id, evt_id in obs_evt_ids:
+                this_mask = np.logical_and(
+                    image["obs_id"] == obs_id, image["event_id"] == evt_id
+                )
+                mask = np.logical_or(mask, this_mask)
+            logger.info(f"found {sum(mask)} images of {name}")
+            write_table(
+                image[mask],
+                output_file,
+                f"/events/dl1/image_{tel_id}",
+                overwrite=True,
+                filters=HDF5_ZSTD_FILTERS,
+            )
 
     # Create the subarray description with the telescope coordinates
     # relative to the center of the LST and MAGIC positions
