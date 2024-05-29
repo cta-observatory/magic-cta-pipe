@@ -1419,3 +1419,81 @@ def resource_file(filename):
         Absolute path of the input filename
     """
     return files("magicctapipe").joinpath("resources", filename)
+
+
+def find_offset(data_magic_,data_lst_,N_start=0,N_end=20,initial_time_offset=None):
+    if initial_time_offset==None:
+        time_offset_width1, time_offset_width2 = -4, 4
+        time_select = (
+             (data_lst_['trigger_time'].values > (data_magic_['trigger_time'][N_start] + time_offset_width1)) &
+             (data_lst_['trigger_time'].values < (data_magic_['trigger_time'][N_end] + time_offset_width2))
+        )
+        select = data_lst_['event_type'] == 32
+        if max(time_select)==True:
+            t_lst_all = data_lst_['trigger_time'].values[time_select & select]
+            print("size of LST time array ", len(t_lst_all))
+            t_magic_all = data_magic_[N_start:N_end]['trigger_time'] #.values
+
+            # compute time difference with all the combinations
+            array_1 = t_lst_all
+            array_2 = t_magic_all
+            comb_array = np.array(np.meshgrid(array_1, array_2)).reshape(2, -1)
+            time_offsets = comb_array[0] - comb_array[1]
+            print("size of combination array: ", np.shape(time_offsets))
+            time_window = 500e-9
+            b = np.array([np.sum(np.abs(time_offsets - T) < time_window) for T in time_offsets])
+            n_coincident = np.max(b)
+            time_offset_best = np.mean(time_offsets[b == np.max(b)])
+            std_b = np.std(b)
+            print("time offset: ", time_offset_best)
+            print("# of coincident events: ", n_coincident)
+            print("standard deviation: ", std_b)
+            return t_magic_all, N_start, time_offset_best, n_coincident
+        else:
+            print("No event was found")
+            return 0, 0, 0, 0
+
+    else:
+       EVENT_STEP = 15
+       N_ITR = len(data_magic_['trigger_time'].values[N_start:N_end])//EVENT_STEP
+       t_magic_ave = np.zeros(N_ITR)
+       event_id_magic_ave = np.zeros(N_ITR)
+       time_offset_best = np.zeros(N_ITR)
+       n_coincident = np.zeros(N_ITR)
+
+       for n in range(N_ITR):
+           if n==0:
+               time_offset_center = initial_time_offset
+           N_start_2 = n * EVENT_STEP
+           N_end_2 = (n+1) * EVENT_STEP
+           time_offset_width1, time_offset_width2 = time_offset_center-1.6e-6, time_offset_center+1.6e-6
+           time_select = (
+            (data_lst_['trigger_time'].values > (data_magic_['trigger_time'].values[N_start_2] + time_offset_width1)) &
+            (data_lst_['trigger_time'].values < (data_magic_['trigger_time'].values[N_end_2] + time_offset_width2))
+           )
+           if max(time_select)==True:
+               select = data_lst_['event_type'] == 32
+               t_lst_all = data_lst_['trigger_time'].values[time_select & select]
+               t_magic_all = data_magic_['trigger_time'].values[N_start_2:N_end_2]
+               t_magic_ave[n] = np.mean(t_magic_all)
+               event_id_magic_ave[n] = np.mean(data_magic_['event_id'].values[N_start_2:N_end_2])
+               array_1 = t_lst_all
+               array_2 = t_magic_all
+               comb_array = np.array(np.meshgrid(array_1, array_2)).reshape(2, -1)
+               time_offsets = comb_array[0] - comb_array[1]
+               time_window = 500e-9
+               b = np.array([np.sum(np.abs(time_offsets - T) < time_window) for T in time_offsets])
+               n_coincident[n] = np.max(b)
+               time_offset_best[n] = np.mean(time_offsets[b == np.max(b)])
+               print(f"new time offset = {time_offset_best[n]}, drift  = {int((time_offset_best[n] - time_offset_center) * 1e9)} ns, n_coinc = {n_coincident[n]}")
+               time_offset_center = time_offset_best[n]
+           else:
+               t_magic_ave[n] = np.mean(data_magic_['trigger_time'].values)
+               event_id_magic_ave[n] = np.mean(data_magic_['event_id'].values[N_start_2:N_end_2])
+               n_coincident[n] = 0
+               if n==0:
+                   time_offset_best[n] = initial_time_offset
+               else:
+                   time_offset_best[n] = time_offset_best[n-1]
+
+    return t_magic_ave, event_id_magic_ave, time_offset_best, n_coincident
