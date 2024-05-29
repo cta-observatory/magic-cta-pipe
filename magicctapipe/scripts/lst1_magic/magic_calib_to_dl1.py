@@ -408,7 +408,7 @@ def magic_calib_to_dl1(
                 dl1cont.image = image
                 dl1cont.peak_time = peak_time
                 dl1cont.is_valid = True
-                writer.write(table_name="dl1/image", containers=dl1cont)
+                writer.write(table_name="dl1/image", containers=[event_info, dl1cont])
 
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
