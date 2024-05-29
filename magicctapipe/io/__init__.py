@@ -28,6 +28,7 @@ from .io import (
     resource_file,
     save_pandas_data_in_table,
     telescope_combinations,
+    find_offset,
 )
 
 __all__ = [
