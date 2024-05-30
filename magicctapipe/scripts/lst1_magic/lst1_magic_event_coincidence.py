@@ -47,6 +47,7 @@ Usage per single LST data file (indicated if you want to do tests):
 $ python lst1_magic_event_coincidence.py
 --input-file-lst dl1/LST/dl1_LST.Run03265.0040.h5
 --input-dir-magic dl1/MAGIC
+(--input-dir_toff time_offset)
 (--output-dir dl1_coincidence)
 (--config-file config.yaml)
 
