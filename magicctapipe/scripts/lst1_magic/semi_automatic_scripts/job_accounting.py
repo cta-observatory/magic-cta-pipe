@@ -102,7 +102,7 @@ def main():
         print(f"Versions {versions}")
         tag = "" if NSB_matching else "/Observations"
         print(
-            f"Supported data types: DL1{tag}/M1, DL1{tag}/M2, DL1{tag}/Merged, DL1Coincident, DL1CoincidentStereo"
+            f"Supported data types: DL1{tag}/M1, DL1{tag}/M2, DL1{tag}/Merged, DL1Coincident, DL1Stereo"
         )
         exit(1)
 
@@ -116,7 +116,7 @@ def main():
     for dir in dirs:
         print(dir)
         list_dl0 = ""
-        ins = ["list_dl0.txt", "list_LST.txt", "list_coin.txt"]
+        ins = ["list_dl0.txt", "list_LST.txt", "list_coin.txt", "list_cal.txt"]
         for file in ins:
             if os.path.exists(f"{dir}/logs/{file}"):
                 list_dl0 = f"{dir}/logs/{file}"
