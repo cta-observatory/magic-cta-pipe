@@ -60,7 +60,7 @@ def magic_date(df):
     return df
 
 
-def clear_files(source_in, source_out, df):
+def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
 
     """
     This function deletes any file named XXXX_LST_runs.txt and XXXX_MAGIC_runs.txt from the working directory.
@@ -76,8 +76,8 @@ def clear_files(source_in, source_out, df):
     """
 
     source_list = []
-    if source_in is None:
-        source_list = np.unique(df["source"])
+    if source_in is None:       
+        source_list = np.intersect1d(np.intersect1d(np.unique(df_LST["source"]),np.unique(df_MAGIC1["Source"])),np.unique(df_MAGIC2["Source"]))
     else:
         source_list.append(source_out)
 
@@ -256,12 +256,6 @@ def main():
 
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
-    clear_files(source_in, source_out, df_LST)
-    
-    list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
-    list_date_LST = np.unique(df_LST["date_LST"])
-    list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]
-
     df_MAGIC1 = pd.read_hdf(
         "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
         key="MAGIC1/runs_M1",
@@ -270,9 +264,17 @@ def main():
         "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
         key="MAGIC2/runs_M2",
     )
+    list_date_LST = np.unique(df_LST["date_LST"])
+    list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]
+
+   
 
     df_MAGIC1 = df_MAGIC1[df_MAGIC1["Date (LST convention)"].isin(list_date_LST_low)]
     df_MAGIC2 = df_MAGIC2[df_MAGIC2["Date (LST convention)"].isin(list_date_LST_low)]
+    clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2)
+    
+    list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
+   
 
     df_MAGIC2 = magic_date(df_MAGIC2)
     df_MAGIC1 = magic_date(df_MAGIC1)

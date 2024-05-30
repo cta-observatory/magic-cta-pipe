@@ -216,7 +216,7 @@ def lists_and_bash_gen_MAGIC(
 ):
 
     """
-    Below we create a bash script that links the the MAGIC data paths to each subdirectory.
+    Below we create a bash script that links the MAGIC data paths to each subdirectory.
 
     Parameters
     ----------
@@ -319,7 +319,7 @@ def directories_generator(
     """
 
     if NSB_match:
-        os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1")
+        os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1", exist_ok=True)
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
     else:
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations")
@@ -332,19 +332,19 @@ def directories_generator(
             "MC/helium",
         ]
         if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
-            os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs")
+            os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True)
             for dir in dir_list:
-                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs")
+                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs", exist_ok=True)
         else:
             overwrite = input(
                 f'MC&data directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
             )
             if overwrite == "y":
                 os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
-                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs")
+                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True)
                 for dir in dir_list:
                     os.makedirs(
-                        f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs"
+                        f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs", exist_ok=True
                     )
             else:
                 print("Directory not modified.")
@@ -355,7 +355,7 @@ def directories_generator(
     for i in MAGIC_runs:
         for magic in [1, 2]:
             if telescope_ids[magic - 3] > 0:
-                os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs")
+                os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs", exist_ok=True)
 
 
 def main():
