@@ -54,4 +54,5 @@ __all__ = [
     "save_pandas_data_in_table",
     "telescope_combinations",
     "resource_file",
+    "find_offset",
 ]
