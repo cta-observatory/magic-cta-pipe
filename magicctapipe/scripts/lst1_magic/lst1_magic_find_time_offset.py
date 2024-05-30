@@ -22,8 +22,6 @@ for lst_subrun_file in sorted(glob.glob(file_dl1_dir+"/LST1/dl1_LST*h5")):
     else:
     	df_lst_subrun_file_2 = df_lst_subrun_file
     i=i+1
-#lst_merged_file = file_dl1_dir+"/LST1/"+lst_run+".h5"
-#df_lst_subrun_file_2.to_hdf(lst_merged_file, key="/dl1/event/telescope/parameters/LST_LSTCam")
 
 outdir="init_time_offset"
 try:
@@ -41,8 +39,8 @@ for magic_subrun_file in sorted(glob.glob(file_dl1_dir+"/MAGIC/dl1_MAGIC.Run"+ma
     data_magic_m2.reset_index(inplace=True)
     magic_subrun_base = magic_subrun_file.split("/")[-1].split(".h5")[0]
     
-    data_lst = df_lst_subrun_file_2#pd.read_hdf(lst_merged_file, key="/dl1/event/telescope/parameters/LST_LSTCam")
-    
+    data_lst = df_lst_subrun_file_2
+
     for M1_M2 in ["M1","M2"]:
         if M1_M2 == "M1":
             data_magic = data_magic_m1
@@ -62,7 +60,7 @@ for magic_subrun_file in sorted(glob.glob(file_dl1_dir+"/MAGIC/dl1_MAGIC.Run"+ma
             N_begin = data_magic.index[0]
             N_final = data_magic.index[-1]
        
-            N_start_ = N_begin#*n_bin
+            N_start_ = N_begin
             N_end_  = N_start_+15
             outfile = outdir+"/"+magic_subrun_base+"_"+str(N_start_)+"_init.npy"
             t_magic_all, N_start_out, time_offset_best, n_coincident = find_offset(data_magic,data_lst,N_start=N_start_,N_end=N_end_)
@@ -70,7 +68,7 @@ for magic_subrun_file in sorted(glob.glob(file_dl1_dir+"/MAGIC/dl1_MAGIC.Run"+ma
             if n_coincident!=0:
                 np.save(outfile.replace("MAGIC",M1_M2), np.array([np.mean(t_magic_all), time_offset_best, time_offset_best, n_coincident]))
                 time_offset_center = np.load(outfile.replace("MAGIC",M1_M2))[2]
-                N_end_of_run = N_final #N_end_+(n_bin-15)
+                N_end_of_run = N_final
                 print("Simultaneous MAGIC+LST1 obs from MAGIC evt index",N_start_,"to",N_end_of_run)
                 outfile2 = outdir+"/"+magic_subrun_base+"_"+str(N_start_)+"_"+str(N_end_of_run)+"_detail.npy"
                 t_magic_all, time_offset_best, time_offset_best, n_coincident = find_offset(data_magic,data_lst,N_start=N_start_,N_end=N_end_of_run,initial_time_offset=time_offset_center)
