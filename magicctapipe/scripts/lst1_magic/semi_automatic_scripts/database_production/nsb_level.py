@@ -15,6 +15,10 @@ import pandas as pd
 import yaml
 
 from .lstchain_version import lstchain_versions
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
+    slurm_lines,
+) 
+
 
 __all__ = ["bash_scripts"]
 
@@ -39,26 +43,26 @@ def bash_scripts(run, date, config, env_name, cluster):
     env_name : str
         Name of the environment
     """
-    if cluster == 'SLURM':
-        lines = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p long\n",
-            "#SBATCH -J nsb\n",
-            "#SBATCH -n 1\n\n",
-            f"#SBATCH --output=slurm-nsb_{run}-%x.%j.out\n"
-            f"#SBATCH --error=slurm-nsb_{run}-%x.%j.err\n"
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n\n",
-            f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_"
-            + "${SLURM_JOB_ID}.log 2>&1 \n\n",
-        ]
-        with open(f"nsb_{date}_run_{run}.sh", "w") as f:
-            f.writelines(lines)
-    else:
+    if cluster != 'SLURM':
         logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
         return
+    slurm = slurm_lines(
+        queue="long",
+        job_name="nsb",
+        out_name=f"slurm-nsb_{run}-%x.%j",
+    )
+    lines = (
+        slurm
+        + [
+            f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_",
+            "${SLURM_JOB_ID}.log 2>&1 \n\n",
+        ]       
+    )    
+    
+    with open(f"nsb_{date}_run_{run}.sh", "w") as f:
+        f.writelines(lines)
 
+    
 def main():
 
     """

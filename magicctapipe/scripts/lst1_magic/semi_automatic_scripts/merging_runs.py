@@ -148,80 +148,80 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
     MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
     if not NSB_match:
         MAGIC_DL1_dir += "Observations/"
-    if cluster == 'SLURM':
-        lines = slurm_lines(
-            queue="short",
-            job_name=process_name,
-            mem="2g",
-            out_name=f"{MAGIC_DL1_dir}/Merged/logs/slurm-%x.%j",
-        )
-        os.makedirs(f"{MAGIC_DL1_dir}/Merged/logs", exist_ok=True)
+    if cluster != 'SLURM':
+        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+        return
+    lines = slurm_lines(
+        queue="short",
+        job_name=process_name,
+        mem="2g",
+        out_name=f"{MAGIC_DL1_dir}/Merged/logs/slurm-%x.%j",
+    )
+    os.makedirs(f"{MAGIC_DL1_dir}/Merged/logs", exist_ok=True)
 
-        with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
-            f.writelines(lines)
-            if identification == "0_subruns":
-                for magic in [1, 2]:
-                    for i in MAGIC_runs:
-                        # Here is a difference w.r.t. original code. If only one telescope data are available they will be merged now for this telescope
-                        indir = f"{MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]}"
-                        if os.path.exists(f"{indir}"):
-                            outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"
-                            os.makedirs(f"{outdir}/logs", exist_ok=True)
-                            os.system(
-                                f'find  {indir} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
-                            )
-                            f.write(
-                                f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
-                            )
-                            rc = rc_lines(
-                                store=f"{indir} ${{SLURM_JOB_ID}}",
-                                out=f"{outdir}/logs/list",
-                            )
-                            f.writelines(rc)
-                            os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
-                        else:
-                            print(f"ERROR: {indir} does not exist")
-
-            elif identification == "1_M1M2":
+    with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
+        f.writelines(lines)
+        if identification == "0_subruns":
+            for magic in [1, 2]:
                 for i in MAGIC_runs:
-                    if os.path.exists(f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]}") & os.path.exists(
-                        f"{MAGIC_DL1_dir}/M2/{i[0]}/{i[1]}"
-                    ):
-                        indir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"
-                        outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged"
+                    # Here is a difference w.r.t. original code. If only one telescope data are available they will be merged now for this telescope
+                    indir = f"{MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]}"
+                    if os.path.exists(f"{indir}"):
+                        outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"
                         os.makedirs(f"{outdir}/logs", exist_ok=True)
+                        os.system(
+                            f'find  {indir} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
+                        )
                         f.write(
-                            f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} --run-wise >{outdir}/logs/merge_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
+                            f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
                         )
                         rc = rc_lines(
-                            store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
+                            store=f"{indir} ${{SLURM_JOB_ID}}",
+                            out=f"{outdir}/logs/list",
                         )
                         f.writelines(rc)
                         os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
                     else:
-                        print(
-                            f"ERROR {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
-                        )
-            else:
-                dates = np.unique(MAGIC_runs.T[0])
-                for i in dates:
-                    if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
-                        continue
+                        print(f"ERROR: {indir} does not exist")
 
-                    indir = f"{MAGIC_DL1_dir}/Merged/{i}/Merged"
-                    outdir = f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
+        elif identification == "1_M1M2":
+            for i in MAGIC_runs:
+                if os.path.exists(f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]}") & os.path.exists(
+                    f"{MAGIC_DL1_dir}/M2/{i[0]}/{i[1]}"
+                ):
+                    indir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"
+                    outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged"
                     os.makedirs(f"{outdir}/logs", exist_ok=True)
                     f.write(
-                        f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_night_{i}_${{SLURM_JOB_ID}}.log\n"
+                        f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} --run-wise >{outdir}/logs/merge_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
                     )
                     rc = rc_lines(
                         store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
                     )
                     f.writelines(rc)
                     os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
-    else:
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
-        return
+                else:
+                    print(
+                        f"ERROR {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
+                    )
+        else:
+            dates = np.unique(MAGIC_runs.T[0])
+            for i in dates:
+                if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
+                    continue
+
+                indir = f"{MAGIC_DL1_dir}/Merged/{i}/Merged"
+                outdir = f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
+                os.makedirs(f"{outdir}/logs", exist_ok=True)
+                f.write(
+                    f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_night_{i}_${{SLURM_JOB_ID}}.log\n"
+                )
+                rc = rc_lines(
+                    store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
+                )
+                f.writelines(rc)
+                os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
+    
 
 def mergeMC(target_dir, identification, env_name, source_name, cluster):
 
@@ -257,26 +257,26 @@ def mergeMC(target_dir, identification, env_name, source_name, cluster):
     process_size = len(list_of_nodes) - 1
 
     cleaning(list_of_nodes)  # This will delete the (possibly) failed runs.
-    if cluster == 'SLURM':
-        with open(f"Merge_MC_{identification}.sh", "w") as f:
-            slurm = slurm_lines(
-                queue="short",
-                array=process_size,
-                mem="7g",
-                job_name=process_name,
-                out_name=f"{MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a",
-            )
-            lines_bash_file = slurm + [
-                f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
-                "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                f"export LOG={MC_DL1_dir}/{identification}/Merged"
-                + "/merged_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                f"conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n",
-            ]
-            f.writelines(lines_bash_file)
-    else:
+    if cluster != 'SLURM':
         logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
         return
+    with open(f"Merge_MC_{identification}.sh", "w") as f:
+        slurm = slurm_lines(
+            queue="short",
+            array=process_size,
+            mem="7g",
+            job_name=process_name,
+            out_name=f"{MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a",
+        )
+        lines_bash_file = slurm + [
+            f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
+            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+            f"export LOG={MC_DL1_dir}/{identification}/Merged"
+            + "/merged_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+            f"conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n",
+        ]
+        f.writelines(lines_bash_file)
+    
 
 def main():
 

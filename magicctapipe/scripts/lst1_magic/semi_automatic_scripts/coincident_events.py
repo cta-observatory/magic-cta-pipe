@@ -118,73 +118,72 @@ def linking_bash_lst(
         MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1/Observations/"
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
-    if cluster == 'SLURM':
-        for d in dates:
-            Y_M, M_M, D_M = [int(x) for x in d.split("_")[1:]]
-
-            day_MAGIC = dtdt(Y_M, M_M, D_M)
-
-            delta = timedelta(days=1)
-            for i in LST_runs:
-                Y_L, M_L, D_L = [int(x) for x in i[0].split("_")]
-
-                day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
-                if day_MAGIC == day_LST + delta:
-
-                    lstObsDir = i[0].replace("_", "")
-                    inputdir = (
-                        f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
-                    )
-
-                    outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
-                    os.makedirs(f"{outputdir}/logs", exist_ok=True)
-
-                    list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
-
-                    with open(f"{outputdir}/logs/list_LST.txt", "a+") as LSTdataPathFile:
-                        for subrun in list_of_subruns:
-                            LSTdataPathFile.write(f"{subrun}\n")
-
-                    if not os.path.exists(f"{outputdir}/logs/list_LST.txt"):
-                        continue
-                    with open(f"{outputdir}/logs/list_LST.txt", "r") as f:
-                        process_size = len(f.readlines()) - 1
-
-                    if process_size < 0:
-                        continue
-                    slurm = slurm_lines(
-                        queue="short",
-                        job_name=f"{source_name}_coincidence",
-                        array=process_size,
-                        mem="8g",
-                        out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
-                    )
-                    rc = rc_lines(
-                        store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                        out="$OUTPUTDIR/logs/list",
-                    )
-
-                    lines = (
-                        slurm
-                        + [
-                            f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
-                            f"export OUTPUTDIR={outputdir}\n",
-                            "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
-                            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                            "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                            f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1\n",
-                        ]
-                        + rc
-                    )
-                    with open(
-                        f"{source_name}_LST_coincident_{outputdir.split('/')[-1]}.sh",
-                        "w",
-                    ) as f:
-                        f.writelines(lines)
-    else:
+    if cluster != 'SLURM':
         logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
         return
+    for d in dates:
+        Y_M, M_M, D_M = [int(x) for x in d.split("_")[1:]]
 
+        day_MAGIC = dtdt(Y_M, M_M, D_M)
+
+        delta = timedelta(days=1)
+        for i in LST_runs:
+            Y_L, M_L, D_L = [int(x) for x in i[0].split("_")]
+
+            day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
+            if day_MAGIC == day_LST + delta:
+
+                lstObsDir = i[0].replace("_", "")
+                inputdir = (
+                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                )
+
+                outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
+                os.makedirs(f"{outputdir}/logs", exist_ok=True)
+
+                list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
+
+                with open(f"{outputdir}/logs/list_LST.txt", "a+") as LSTdataPathFile:
+                    for subrun in list_of_subruns:
+                        LSTdataPathFile.write(f"{subrun}\n")
+
+                if not os.path.exists(f"{outputdir}/logs/list_LST.txt"):
+                    continue
+                with open(f"{outputdir}/logs/list_LST.txt", "r") as f:
+                    process_size = len(f.readlines()) - 1
+
+                if process_size < 0:
+                    continue
+                slurm = slurm_lines(
+                    queue="short",
+                    job_name=f"{source_name}_coincidence",
+                    array=process_size,
+                    mem="8g",
+                    out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
+                )
+                rc = rc_lines(
+                    store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+                    out="$OUTPUTDIR/logs/list",
+                )
+
+                lines = (
+                    slurm
+                    + [
+                        f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
+                        f"export OUTPUTDIR={outputdir}\n",
+                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
+                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1\n",
+                    ]
+                    + rc
+                )
+                with open(
+                    f"{source_name}_LST_coincident_{outputdir.split('/')[-1]}.sh",
+                    "w",
+                ) as f:
+                    f.writelines(lines)
+    
 def main():
 
     """

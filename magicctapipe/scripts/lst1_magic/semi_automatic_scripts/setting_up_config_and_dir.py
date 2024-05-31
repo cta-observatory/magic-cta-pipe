@@ -151,64 +151,64 @@ def lists_and_bash_generator(
     ####################################################################################
     # bash scripts that link the MC paths to each subdirectory.
     ####################################################################################
-    if cluster == 'SLURM':
-        with open(f"linking_MC_{particle_type}_paths.sh", "w") as f:
-            slurm = slurm_lines(
-                queue="short",
-                job_name=process_name,
-                out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-linkMC-%x.%j",
-            )
-            lines_of_config_file = slurm + [
-                "while read -r -u 3 lineA && read -r -u 4 lineB\n",
-                "do\n",
-                f"    cd {dir1}/DL1/MC/{particle_type}\n",
-                "    mkdir $lineB\n",
-                "    cd $lineA\n",
-                "    ls -lR *.gz |wc -l\n",
-                f"    mkdir -p {dir1}/DL1/MC/{particle_type}/$lineB/logs/\n",
-                f"    ls *.gz > {dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n",
-                '    string=$lineA"/"\n',
-                f"    export file={dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n\n",
-                "    cat $file | while read line; do echo $string${line}"
-                + f" >>{dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0_ok.txt; done\n\n",
-                '    echo "folder $lineB  and node $lineA"\n',
-                f'done 3<"{dir1}/logs/list_nodes_{particle_type}_complete.txt" 4<"{dir1}/logs/list_folder_{particle_type}.txt"\n',
-                "",
-            ]
-            f.writelines(lines_of_config_file)
-
-        ################################################################################################################
-        # bash script that applies lst1_magic_mc_dl0_to_dl1.py to all MC data files.
-        ################################################################################################################
-
-        number_of_nodes = glob.glob(f"{MC_path}/node*")
-        number_of_nodes = len(number_of_nodes) - 1
-        with open(f"linking_MC_{particle_type}_paths_r.sh", "w") as f:
-            slurm = slurm_lines(
-                queue="xxl",
-                job_name=process_name,
-                array=number_of_nodes,
-                mem="10g",
-                out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-%x.%A_%a",
-            )
-            lines_of_config_file = slurm + [
-                f"cd {dir1}/DL1/MC/{particle_type}\n\n",
-                f"export INF={dir1}/logs\n",
-                f"SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n",
-                "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                "cd $SAMPLE\n\n",
-                f"export LOG={dir1}/DL1/MC/{particle_type}/logs/simtel_{{$SAMPLE}}_${{SLURM_ARRAY_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}_all.log\n",
-                "cat logs/list_dl0_ok.txt | while read line\n",
-                "do\n",
-                f"    cd {dir1}/../\n",
-                f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {dir1}/DL1/MC/{particle_type}/$SAMPLE --config-file {dir1}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
-                "done\n",
-                "",
-            ]
-            f.writelines(lines_of_config_file)
-    else:
+    if cluster != 'SLURM':
         logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
         return
+    with open(f"linking_MC_{particle_type}_paths.sh", "w") as f:
+        slurm = slurm_lines(
+            queue="short",
+            job_name=process_name,
+            out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-linkMC-%x.%j",
+        )
+        lines_of_config_file = slurm + [
+            "while read -r -u 3 lineA && read -r -u 4 lineB\n",
+            "do\n",
+            f"    cd {dir1}/DL1/MC/{particle_type}\n",
+            "    mkdir $lineB\n",
+            "    cd $lineA\n",
+            "    ls -lR *.gz |wc -l\n",
+            f"    mkdir -p {dir1}/DL1/MC/{particle_type}/$lineB/logs/\n",
+            f"    ls *.gz > {dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n",
+            '    string=$lineA"/"\n',
+            f"    export file={dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n\n",
+            "    cat $file | while read line; do echo $string${line}"
+            + f" >>{dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0_ok.txt; done\n\n",
+            '    echo "folder $lineB  and node $lineA"\n',
+            f'done 3<"{dir1}/logs/list_nodes_{particle_type}_complete.txt" 4<"{dir1}/logs/list_folder_{particle_type}.txt"\n',
+            "",
+        ]
+        f.writelines(lines_of_config_file)
+
+    ################################################################################################################
+    # bash script that applies lst1_magic_mc_dl0_to_dl1.py to all MC data files.
+    ################################################################################################################
+
+    number_of_nodes = glob.glob(f"{MC_path}/node*")
+    number_of_nodes = len(number_of_nodes) - 1
+    with open(f"linking_MC_{particle_type}_paths_r.sh", "w") as f:
+        slurm = slurm_lines(
+            queue="xxl",
+            job_name=process_name,
+            array=number_of_nodes,
+            mem="10g",
+            out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-%x.%A_%a",
+        )
+        lines_of_config_file = slurm + [
+            f"cd {dir1}/DL1/MC/{particle_type}\n\n",
+            f"export INF={dir1}/logs\n",
+            f"SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n",
+            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+            "cd $SAMPLE\n\n",
+            f"export LOG={dir1}/DL1/MC/{particle_type}/logs/simtel_{{$SAMPLE}}_${{SLURM_ARRAY_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}_all.log\n",
+            "cat logs/list_dl0_ok.txt | while read line\n",
+            "do\n",
+            f"    cd {dir1}/../\n",
+            f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {dir1}/DL1/MC/{particle_type}/$SAMPLE --config-file {dir1}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
+            "done\n",
+            "",
+        ]
+        f.writelines(lines_of_config_file)
+    
 
 
 def lists_and_bash_gen_MAGIC(
@@ -233,70 +233,68 @@ def lists_and_bash_gen_MAGIC(
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
     """
-    if cluster == 'SLURM':
-        process_name = source
-        lines = slurm_lines(
-            queue="short",
-            job_name=process_name,
-            out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
-        )
-
-        obs_tag = "" if NSB_match else "Observations"
-        with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
-            f.writelines(lines)
-            for i in MAGIC_runs:
-                for magic in [1, 2]:
-                    # if 1 then magic is second from last, if 2 then last
-                    if telescope_ids[magic - 3] > 0:
-                        lines = [
-                            f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
-                            f"export OUT1={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs \n",
-                            f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_cal.txt\n\n",
-                        ]
-                        f.writelines(lines)
-
-        for magic in [1, 2]:
-            # if 1 then magic is second from last, if 2 then last
-            if telescope_ids[magic - 3] > 0:
-                for i in MAGIC_runs:
-                    number_of_nodes = glob.glob(
-                        f'/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
-                    )
-                    number_of_nodes = len(number_of_nodes) - 1
-                    if number_of_nodes < 0:
-                        continue
-                    slurm = slurm_lines(
-                        queue="short",  # was long for no NSB_match
-                        job_name=process_name,
-                        array=number_of_nodes,
-                        mem="2g",
-                        out_name=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
-                    )
-                    rc = rc_lines(
-                        store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                        out="$OUTPUTDIR/logs/list",
-                    )
-                    lines = (
-                        slurm
-                        + [  # without version for no NSB_match
-                            f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
-                            "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_cal.txt))\n",
-                            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
-                            "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                            f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
-                        ]
-                        + rc
-                    )
-                    with open(
-                        f"{source}_MAGIC-" + "I" * magic + f"_cal_to_dl1_run_{i[1]}.sh",
-                        "w",
-                    ) as f:
-                        f.writelines(lines)
-    else:
+    if cluster != 'SLURM':
         logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
         return
+    process_name = source
+    lines = slurm_lines(
+        queue="short",
+        job_name=process_name,
+        out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
+    )
 
+    obs_tag = "" if NSB_match else "Observations"
+    with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
+        f.writelines(lines)
+        for i in MAGIC_runs:
+            for magic in [1, 2]:
+                # if 1 then magic is second from last, if 2 then last
+                if telescope_ids[magic - 3] > 0:
+                    lines = [
+                        f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
+                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs \n",
+                        f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_cal.txt\n\n",
+                    ]
+                    f.writelines(lines)
 
+    for magic in [1, 2]:
+        # if 1 then magic is second from last, if 2 then last
+        if telescope_ids[magic - 3] > 0:
+            for i in MAGIC_runs:
+                number_of_nodes = glob.glob(
+                    f'/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                )
+                number_of_nodes = len(number_of_nodes) - 1
+                if number_of_nodes < 0:
+                    continue
+                slurm = slurm_lines(
+                    queue="short",  # was long for no NSB_match
+                    job_name=process_name,
+                    array=number_of_nodes,
+                    mem="2g",
+                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
+                )
+                rc = rc_lines(
+                    store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+                    out="$OUTPUTDIR/logs/list",
+                )
+                lines = (
+                    slurm
+                    + [  # without version for no NSB_match
+                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
+                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_cal.txt))\n",
+                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
+                        "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"conda run -n {env_name} magic_calib_to_dl1 --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source}/config_DL0_to_DL1.yaml >$LOG 2>&1\n",
+                    ]
+                    + rc
+                )
+                with open(
+                    f"{source}_MAGIC-" + "I" * magic + f"_cal_to_dl1_run_{i[1]}.sh",
+                    "w",
+                ) as f:
+                    f.writelines(lines)
+    
 def directories_generator(
     target_dir, telescope_ids, MAGIC_runs, NSB_match, source_name
 ):
