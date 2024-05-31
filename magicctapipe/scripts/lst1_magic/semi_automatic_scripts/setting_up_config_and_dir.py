@@ -127,6 +127,8 @@ def lists_and_bash_generator(
         Name of the environment
     source_name : str
         Name of the target source
+    cluster : str
+        Cluster system
     """
 
     if MC_path == "":
@@ -151,8 +153,10 @@ def lists_and_bash_generator(
     ####################################################################################
     # bash scripts that link the MC paths to each subdirectory.
     ####################################################################################
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     with open(f"linking_MC_{particle_type}_paths.sh", "w") as f:
         slurm = slurm_lines(
@@ -208,7 +212,6 @@ def lists_and_bash_generator(
             "",
         ]
         f.writelines(lines_of_config_file)
-    
 
 
 def lists_and_bash_gen_MAGIC(
@@ -232,9 +235,13 @@ def lists_and_bash_gen_MAGIC(
         Name of the environment
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
+    cluster : str
+        Cluster system
     """
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     process_name = source
     lines = slurm_lines(
@@ -294,7 +301,8 @@ def lists_and_bash_gen_MAGIC(
                     "w",
                 ) as f:
                     f.writelines(lines)
-    
+
+
 def directories_generator(
     target_dir, telescope_ids, MAGIC_runs, NSB_match, source_name
 ):
@@ -330,19 +338,27 @@ def directories_generator(
             "MC/helium",
         ]
         if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
-            os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True)
+            os.makedirs(
+                f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True
+            )
             for dir in dir_list:
-                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs", exist_ok=True)
+                os.makedirs(
+                    f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs",
+                    exist_ok=True,
+                )
         else:
             overwrite = input(
                 f'MC&data directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
             )
             if overwrite == "y":
                 os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
-                os.makedirs(f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True)
+                os.makedirs(
+                    f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True
+                )
                 for dir in dir_list:
                     os.makedirs(
-                        f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs", exist_ok=True
+                        f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs",
+                        exist_ok=True,
                     )
             else:
                 print("Directory not modified.")
@@ -462,7 +478,7 @@ def main():
                         focal_length,
                         env_name,
                         source_name,
-                        cluster,                        
+                        cluster,
                     )
 
                 # Here we do the MC DL0 to DL1 conversion:

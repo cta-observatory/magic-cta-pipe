@@ -105,6 +105,8 @@ def linking_bash_lst(
         Name of the conda environment
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
+    cluster : str
+        Cluster system
     """
 
     if NSB_match:
@@ -118,8 +120,10 @@ def linking_bash_lst(
         MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1/Observations/"
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     for d in dates:
         Y_M, M_M, D_M = [int(x) for x in d.split("_")[1:]]
@@ -183,7 +187,8 @@ def linking_bash_lst(
                     "w",
                 ) as f:
                     f.writelines(lines)
-    
+
+
 def main():
 
     """
@@ -243,7 +248,7 @@ def main():
                 LST_version,
                 env_name,
                 NSB_match,
-                cluster
+                cluster,
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")

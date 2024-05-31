@@ -71,13 +71,20 @@ def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
         Target name in the database. If None, it stands for all the sources observed in a pre-set time interval.
     source_out : str
         Name tag for the target. Used only if source_in is not None.
-    df : :class:`pandas.DataFrame`
-        Dataframe of the joint MAGIC+LST-1 observations based on the .h5 table.
+    df_LST : :class:`pandas.DataFrame`
+        LST-1 dataframe of the joint MAGIC+LST-1 observations.
+    df_MAGIC1 : :class:`pandas.DataFrame`
+        MAGIC-1 dataframe of the joint MAGIC+LST-1 observations.
+    df_MAGIC2 : :class:`pandas.DataFrame`
+        MAGIC-2 dataframe of the joint MAGIC+LST-1 observations.
     """
 
     source_list = []
-    if source_in is None:       
-        source_list = np.intersect1d(np.intersect1d(np.unique(df_LST["source"]),np.unique(df_MAGIC1["Source"])),np.unique(df_MAGIC2["Source"]))
+    if source_in is None:
+        source_list = np.intersect1d(
+            np.intersect1d(np.unique(df_LST["source"]), np.unique(df_MAGIC1["Source"])),
+            np.unique(df_MAGIC2["Source"]),
+        )
     else:
         source_list.append(source_out)
 
@@ -134,10 +141,10 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         run_listed = []
         if source_in is None:
             df_source = df[df["source"] == source_name]
-            print('Source: ', source_name)
+            print("Source: ", source_name)
         else:
             df_source = df[df["source"] == source_in]
-            print('Source: ', source_in)
+            print("Source: ", source_in)
 
         if is_LST:
             print("Finding LST runs...")
@@ -267,14 +274,11 @@ def main():
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]
 
-   
-
     df_MAGIC1 = df_MAGIC1[df_MAGIC1["Date (LST convention)"].isin(list_date_LST_low)]
     df_MAGIC2 = df_MAGIC2[df_MAGIC2["Date (LST convention)"].isin(list_date_LST_low)]
     clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2)
-    
+
     list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
-   
 
     df_MAGIC2 = magic_date(df_MAGIC2)
     df_MAGIC1 = magic_date(df_MAGIC1)

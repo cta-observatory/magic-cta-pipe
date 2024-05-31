@@ -14,11 +14,9 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from .lstchain_version import lstchain_versions
-from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
-    slurm_lines,
-) 
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
+from .lstchain_version import lstchain_versions
 
 __all__ = ["bash_scripts"]
 
@@ -39,30 +37,30 @@ def bash_scripts(run, date, config, env_name, cluster):
         LST date
     config : str
         Name of the configuration file
-
     env_name : str
         Name of the environment
+    cluster : str
+        Cluster system
     """
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     slurm = slurm_lines(
         queue="long",
         job_name="nsb",
         out_name=f"slurm-nsb_{run}-%x.%j",
     )
-    lines = (
-        slurm
-        + [
-            f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_",
-            "${SLURM_JOB_ID}.log 2>&1 \n\n",
-        ]       
-    )    
-    
+    lines = slurm + [
+        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_",
+        "${SLURM_JOB_ID}.log 2>&1 \n\n",
+    ]
+
     with open(f"nsb_{date}_run_{run}.sh", "w") as f:
         f.writelines(lines)
 
-    
+
 def main():
 
     """
@@ -99,9 +97,8 @@ def main():
         config = yaml.safe_load(f)
 
     env_name = config["general"]["env_name"]
-    
-    cluster = config["general"]["cluster"]
 
+    cluster = config["general"]["cluster"]
 
     df_LST = pd.read_hdf(
         "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
@@ -165,9 +162,7 @@ def main():
 
     launch_jobs = ""
     for n, run in enumerate(list_of_bash_scripts):
-        launch_jobs += (
-            " && " if n > 0 else ""
-        ) + f"nsb{n}=$(sbatch --parsable {run})"
+        launch_jobs += (" && " if n > 0 else "") + f"nsb{n}=$(sbatch --parsable {run})"
 
     os.system(launch_jobs)
 

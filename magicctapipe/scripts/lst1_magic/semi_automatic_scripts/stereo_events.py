@@ -95,6 +95,8 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
         Name of the environment
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
+    cluster : str
+        Cluster system
     """
 
     process_name = source
@@ -105,8 +107,10 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
         coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/Observations"
 
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     for nightLST in listOfNightsLST:
         stereoDir = f"{coincidence_DL1_dir}/DL1Stereo/{nightLST.split('/')[-1]}"
@@ -166,6 +170,8 @@ def bash_stereoMC(target_dir, identification, env_name, source, cluster):
         Name of the environment
     source : str
         Name of the target source
+    cluster : str
+        Cluster system
     """
 
     process_name = source
@@ -178,8 +184,10 @@ def bash_stereoMC(target_dir, identification, env_name, source, cluster):
     )  # generating a list with the DL1 coincident data files.
     with open(f"{inputdir}/list_coin.txt", "r") as f:
         process_size = len(f.readlines()) - 1
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     with open(f"StereoEvents_MC_{identification}.sh", "w") as f:
         slurm = slurm_lines(
@@ -243,7 +251,6 @@ def main():
 
     cluster = config["general"]["cluster"]
 
-
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
     else:
@@ -269,7 +276,9 @@ def main():
                 if n == 0:
                     launch_jobs = f"stereo{n}=$(sbatch --parsable {run})"
                 else:
-                    launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+                    launch_jobs = (
+                        f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+                    )
 
             os.system(launch_jobs)
 

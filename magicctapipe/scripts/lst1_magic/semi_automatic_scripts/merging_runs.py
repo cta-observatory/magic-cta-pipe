@@ -60,7 +60,7 @@ def cleaning(list_of_nodes):
     Parameters
     ----------
     list_of_nodes : array of str
-        List of nodes where the function will look for failed runs.    
+        List of nodes where the function will look for failed runs.
     """
 
     cwd = os.getcwd()
@@ -97,9 +97,12 @@ def split_train_test(target_dir, train_fraction, source_name):
         range(len(list_of_dir))
     ):  # tqdm allows us to print a progessbar in the terminal
 
-        os.makedirs(f"{proton_dir}/train/{list_of_dir[directory].split('/')[-2]}", exist_ok = True)
         os.makedirs(
-            f'{proton_dir}/../protons_test/{list_of_dir[directory].split("/")[-2]}', exist_ok = True
+            f"{proton_dir}/train/{list_of_dir[directory].split('/')[-2]}", exist_ok=True
+        )
+        os.makedirs(
+            f'{proton_dir}/../protons_test/{list_of_dir[directory].split("/")[-2]}',
+            exist_ok=True,
         )
         list_of_runs = np.sort(
             glob.glob(f'{proton_dir}/{list_of_dir[directory].split("/")[-2]}/*.h5')
@@ -141,6 +144,8 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
         Target name
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
+    cluster : str
+        Cluster system
     """
 
     process_name = f"merging_{source}"
@@ -148,8 +153,10 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
     MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
     if not NSB_match:
         MAGIC_DL1_dir += "Observations/"
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     lines = slurm_lines(
         queue="short",
@@ -221,7 +228,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                 )
                 f.writelines(rc)
                 os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
-    
+
 
 def mergeMC(target_dir, identification, env_name, source_name, cluster):
 
@@ -238,6 +245,8 @@ def mergeMC(target_dir, identification, env_name, source_name, cluster):
         Name of the environment
     source_name : str
         Name of the target source
+    cluster : str
+        Cluster system
     """
 
     process_name = f"merging_{source_name}"
@@ -257,8 +266,10 @@ def mergeMC(target_dir, identification, env_name, source_name, cluster):
     process_size = len(list_of_nodes) - 1
 
     cleaning(list_of_nodes)  # This will delete the (possibly) failed runs.
-    if cluster != 'SLURM':
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
     with open(f"Merge_MC_{identification}.sh", "w") as f:
         slurm = slurm_lines(
@@ -276,7 +287,7 @@ def mergeMC(target_dir, identification, env_name, source_name, cluster):
             f"conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n",
         ]
         f.writelines(lines_bash_file)
-    
+
 
 def main():
 
@@ -378,13 +389,31 @@ def main():
         ):
             print("***** Generating merge_MAGIC bashscripts...")
             merge(
-                target_dir, "0_subruns", MAGIC_runs, env_name, source_name, NSB_match, cluster
+                target_dir,
+                "0_subruns",
+                MAGIC_runs,
+                env_name,
+                source_name,
+                NSB_match,
+                cluster,
             )  # generating the bash script to merge the subruns
             merge(
-                target_dir, "1_M1M2", MAGIC_runs, env_name, source_name, NSB_match, cluster
+                target_dir,
+                "1_M1M2",
+                MAGIC_runs,
+                env_name,
+                source_name,
+                NSB_match,
+                cluster,
             )  # generating the bash script to merge the M1 and M2 runs
             merge(
-                target_dir, "2_nights", MAGIC_runs, env_name, source_name, NSB_match, cluster
+                target_dir,
+                "2_nights",
+                MAGIC_runs,
+                env_name,
+                source_name,
+                NSB_match,
+                cluster,
             )  # generating the bash script to merge all runs per night
 
             print("***** Running merge_hdf_files.py on the MAGIC data files...")

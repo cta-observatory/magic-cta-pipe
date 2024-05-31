@@ -143,7 +143,6 @@ def main():
         logger.info(f"Run {run_number} already processed")
         return
 
-
     # date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
@@ -155,7 +154,7 @@ def main():
         return
     median_NSB = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {median_NSB}")
-    
+
     for j in range(0, len(nsb_list)):
         if (median_NSB < nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
             with open(f"nsb_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
@@ -163,8 +162,6 @@ def main():
         if median_NSB > nsb_limit[-1]:
             with open(f"nsb_LST_high_{run_number}.txt", "a+") as f:
                 f.write(f"{date},{run_number},{median_NSB}\n")
-
-    
 
 
 if __name__ == "__main__":
