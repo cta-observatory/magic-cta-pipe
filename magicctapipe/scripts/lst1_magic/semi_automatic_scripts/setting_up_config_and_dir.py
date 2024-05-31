@@ -258,7 +258,7 @@ def lists_and_bash_gen_MAGIC(
                 # if 1 then magic is second from last, if 2 then last
                 if telescope_ids[magic - 3] > 0:
                     lines = [
-                        f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}\n',
+                        f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].replace("_","/")}\n',
                         f"export OUT1={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs \n",
                         f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_cal.txt\n\n",
                     ]
@@ -269,7 +269,7 @@ def lists_and_bash_gen_MAGIC(
         if telescope_ids[magic - 3] > 0:
             for i in MAGIC_runs:
                 number_of_nodes = glob.glob(
-                    f'/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].split("_")[0]}/{i[0].split("_")[1]}/{i[0].split("_")[2]}/*{i[1]}.*_Y_*.root'
+                    f'/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].replace("_","/")}/*{i[1]}.*_Y_*.root'
                 )
                 number_of_nodes = len(number_of_nodes) - 1
                 if number_of_nodes < 0:

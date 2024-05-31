@@ -113,7 +113,8 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
         )
         return
     for nightLST in listOfNightsLST:
-        stereoDir = f"{coincidence_DL1_dir}/DL1Stereo/{nightLST.split('/')[-1]}"
+        night=nightLST.split('/')[-1]
+        stereoDir = f"{coincidence_DL1_dir}/DL1Stereo/{night}"
         os.makedirs(f"{stereoDir}/logs", exist_ok=True)
         if not os.listdir(f"{nightLST}"):
             continue
@@ -151,7 +152,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
             ]
             + rc
         )
-        with open(f"{source}_StereoEvents_{nightLST.split('/')[-1]}.sh", "w") as f:
+        with open(f"{source}_StereoEvents_{night}.sh", "w") as f:
             f.writelines(lines)
 
 
