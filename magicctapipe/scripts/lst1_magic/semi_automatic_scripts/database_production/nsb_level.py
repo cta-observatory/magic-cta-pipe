@@ -9,10 +9,11 @@ import glob
 import logging
 import os
 from datetime import datetime
-
+import json
 import numpy as np
 import pandas as pd
 import yaml
+
 
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
@@ -25,7 +26,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def bash_scripts(run, date, config, env_name, cluster):
+def bash_scripts(run, date, config, env_name, cluster, lst_config):
 
     """Here we create the bash scripts (one per LST run)
 
@@ -41,6 +42,8 @@ def bash_scripts(run, date, config, env_name, cluster):
         Name of the environment
     cluster : str
         Cluster system
+    lst_config : str
+        Configuration file lstchain
     """
     if cluster != "SLURM":
         logger.warning(
@@ -53,7 +56,7 @@ def bash_scripts(run, date, config, env_name, cluster):
         out_name=f"slurm-nsb_{run}-%x.%j",
     )
     lines = slurm + [
-        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_",
+        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} -l {lst_config} > nsblog_{date}_{run}_",
         "${SLURM_JOB_ID}.log 2>&1 \n\n",
     ]
 
@@ -105,6 +108,19 @@ def main():
         key="joint_obs",
     )
     lstchain_v = config["general"]["LST_version"]
+    lstchain_modified = config["general"]["lstchain_modified_config"]
+    conda_path = os.environ["CONDA_PREFIX"]
+    lst_config_orig = (
+        str(conda_path)
+        + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
+    )
+    with open(lst_config_orig, 'r') as f_lst:
+        lst_dict=json.load(f_lst)
+    if lstchain_modified:
+        lst_dict["source_config"]['LSTEventSource']['use_flatfield_heuristic'] = True
+    with open("lstchain.json", "w+") as outfile: 
+        json.dump(lst_dict, outfile)
+    lst_config = "lstchain.json"
 
     min = datetime.strptime(args.begin_date, "%Y_%m_%d")
     max = datetime.strptime(args.end_date, "%Y_%m_%d")
@@ -139,7 +155,7 @@ def main():
         ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
-        bash_scripts(run_number, date, args.config_file, env_name, cluster)
+        bash_scripts(run_number, date, args.config_file, env_name, cluster, lst_config)
 
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
@@ -147,7 +163,7 @@ def main():
 
     if len(list_of_bash_scripts) < 1:
         logger.warning(
-            "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
+            "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input dates"
         )
         return
     print("Update database and launch jobs")

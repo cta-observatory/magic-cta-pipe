@@ -104,6 +104,13 @@ def main():
         help="Day of the run to be processed",
     )
     parser.add_argument(
+        "--lstchain-config",
+        "-l",
+        dest="lst_conf",
+        type=str,
+        help="lstchain configuration file",
+    )
+    parser.add_argument(
         "--denominator",
         "-s",
         dest="denominator",
@@ -119,6 +126,7 @@ def main():
     run_number = args.run
     date = args.day
     denominator = args.denominator
+    lst_config = args.lst_conf
     simtel = config["general"]["simtel_nsb"]
     nsb_list = config["general"]["nsb"]
     lst_version = config["general"]["LST_version"]
@@ -127,15 +135,8 @@ def main():
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
     nsb_limit.insert(0, 0)
-    conda_path = os.environ["CONDA_PREFIX"]
-    lstchain_modified = config["general"]["lstchain_modified_config"]
-    lst_config = (
-        str(conda_path)
-        + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
-    )
-    if lstchain_modified:
-        lst_config = resource_file("lstchain_standard_config_modified.json")
-    print(lst_config)
+    
+    
 
     LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
