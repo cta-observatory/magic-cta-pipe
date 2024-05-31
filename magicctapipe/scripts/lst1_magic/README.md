@@ -93,6 +93,8 @@ general:
     
 ```
 
+WARNING: the `LST_version` parameter must match the `processed_lstchain_file` version in the LST database (i.e., generally the last available and processable version of a run), which is the one used to evaluate the NSB level
+
 Now that the configuration file is ready, let's create a list with all the MAGIC+LST1 runs for the time window (or list of nights) defined on the config_general.yaml file:
 
 > $ list_from_h5 -c config_general.yaml
