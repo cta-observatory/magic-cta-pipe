@@ -1,0 +1,37 @@
+ST_list = ["ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
+ST_begin = ["2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"
+]
+ST_end = [
+    "2025_01_30",
+    "2023_03_09",
+    "2022_08_31",
+    "2022_06_09",
+    "2021_09_29",
+]  # ST0320 ongoing -> 'service' end date
+
+
+
+-------------------------------------------------------------------
+
+
+for p in range(len(ST_begin)):
+                    if (
+                        time.strptime(i[0], "%Y_%m_%d")
+                        >= time.strptime(ST_begin[p], "%Y_%m_%d")
+                    ) and (
+                        time.strptime(i[0], "%Y_%m_%d")
+                        <= time.strptime(ST_end[p], "%Y_%m_%d")
+                    ):
+
+
+----------------------------------------------------------------
+
+date_lst = pd.to_datetime(df["date_LST"])
+    delta = pd.Timedelta("1 day")
+    date_magic = date_lst + delta
+    date_magic = date_magic.dt.strftime("%Y-%m-%d")
+    df["date_MAGIC"] = date_magic
+    return df
+
+
+                        
