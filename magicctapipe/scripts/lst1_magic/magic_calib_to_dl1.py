@@ -407,6 +407,7 @@ def magic_calib_to_dl1(
             if save_images:
                 dl1cont.image = image
                 dl1cont.peak_time = peak_time
+                dl1cont.image_mask = signal_pixels
                 dl1cont.is_valid = True
                 writer.write(table_name="dl1/image", containers=[event_info, dl1cont])
 
