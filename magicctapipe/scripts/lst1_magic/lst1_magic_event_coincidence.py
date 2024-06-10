@@ -63,14 +63,14 @@ import sys
 import time
 from decimal import Decimal
 from pathlib import Path
-
+import os
 import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
 from scipy.optimize import curve_fit
-import os
+
 
 from magicctapipe.io import (
     check_input_list,
@@ -635,7 +635,7 @@ def event_coincidence(
     event_data = event_data.astype({"obs_id": int, "event_id": int})
 
     # Save the data in an output file
-    if os.path.splitext(output_dir)[1]==".h5":
+    if os.path.splitext(output_dir)[1] == ".h5":
         Path(os.path.dirname(output_dir)).mkdir(exist_ok=True, parents=True)
         output_file = output_dir
 
