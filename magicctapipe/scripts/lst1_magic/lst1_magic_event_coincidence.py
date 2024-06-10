@@ -56,9 +56,8 @@ This script is called automatically from the script "coincident_events.py".
 If you want to analyse a target, this is the way to go. See this other script for more details.
 """
 
-import glob
-from scipy.optimize import curve_fit
 import argparse
+import glob
 import logging
 import sys
 import time
@@ -70,6 +69,8 @@ import pandas as pd
 import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
+from scipy.optimize import curve_fit
+import os
 
 from magicctapipe.io import (
     check_input_list,
@@ -140,11 +141,33 @@ def telescope_positions(config):
         TEL_POSITIONS[k] = list(np.round(np.asarray(v) - average_xyz, 2)) * u.m
     return TEL_POSITIONS
 
+
 def func1(X, a, b):
+    """
+    The linear function to fit the MAGIC timestamp and difference from LST.
+
+    Parameters
+    ----------
+    X : numpy array
+        MAGIC timestamp
+    a : float
+        Intersept
+    b : float
+        Slope
+
+    Returns
+    -------
+    float
+        The time offset value obtained from the MAGIC timestamp
+    """
+
     Y = a + b * X
     return Y
 
-def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_toff, config):
+
+def event_coincidence(
+    input_file_lst, input_dir_magic, output_dir, input_dir_toff, config
+):
     """
     Searches for coincident events from LST and MAGIC joint
     observation data offline using their timestamps.
@@ -157,6 +180,8 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_tof
         Path to a directory where input MAGIC DL1 data files are stored
     output_dir : str
         Path to a directory where to save an output DL1 data file
+    input_dir_toff : str
+        Path to a directory where input timestamp data files are stored
     config : dict
         Configuration for the LST + MAGIC combined analysis
     """
@@ -238,7 +263,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_tof
     tel_ids = np.unique(event_data_magic.index.get_level_values("tel_id"))
 
     for tel_id in tel_ids:
-        print("tel_id",tel_id)
+        print("tel_id", tel_id)
         tel_name = TEL_NAMES[tel_id]
         df_magic = event_data_magic.query(f"tel_id == {tel_id}").copy()
 
@@ -247,50 +272,64 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_tof
         nseconds = np.array([Decimal(str(time)) for time in df_magic["time_nanosec"]])
         timestamps_magic = seconds * SEC2NSEC + nseconds
 
-        if input_dir_toff!=None:
-           files_toff = glob.glob(input_dir_toff+"/*M"+str(tel_id-1)+"*_detail.npy")
-           #files_toff = glob.glob(input_dir_toff)
-           print(files_toff)
-           i=0
-           for file_toff in files_toff:
-               file_npy=np.load(file_toff)
-               if i==0:
-                   file_npy_ = file_npy
-               if i!=0:
-                   file_npy_ = np.hstack([file_npy, file_npy_])
-               i+=1
-           df_toff = pd.DataFrame(file_npy_.T, columns=["timestamp","toff1","toff2","n"])
-           timestamps_magic_min, timestamps_magic_max = float(min(timestamps_magic))/1e9, float(max(timestamps_magic))/1e9
-           df_toff = df_toff.query("@timestamps_magic_min<timestamp<@timestamps_magic_max")
-           t_plus = df_toff["timestamp"].values
-           time_offset_plus = df_toff["toff1"].values
-           n_coinc_plus = df_toff["n"].values
-           select = n_coinc_plus > 7
-           x = t_plus[select]
-           t0 = min(x)
-           x = x - t0
-           y = time_offset_plus[select]
-           offset0 = y[0]
-           popt, pcov = curve_fit(func1, x, y)
-           df_save = pd.DataFrame({"x":x,"y":y, "x_cov":pcov[0][0], "y_cov":pcov[1][1]})     
-           zero_offset = popt[0] #sec
-           drift_speed = popt[1] #sec/sec
-           global_offset = offset0
-   
-           df_magic["time_sec_sum"] = df_magic["time_sec"] + df_magic["time_nanosec"]*1e-9 - t0
-           df_magic["time_shift"] = df_magic["time_sec_sum"] + (zero_offset + df_magic["time_sec_sum"]*drift_speed) 
-           seconds = np.array([Decimal(str(time)) for time in df_magic["time_shift"]])
-    
-           timestamps_magic = seconds * SEC2NSEC
-           #import matplotlib.pyplot as plt
-           #plt.scatter(x,y)
-           #plt.plot(np.linspace(min(x),max(x),100),(np.linspace(min(x),max(x),100)*drift_speed+zero_offset))
-           #plt.show()
-        
-           t0_sec = [Decimal(str(time)) for time in [t0]]
-           t0_sec = np.array(t0_sec) * SEC2NSEC
-           t0_sec = u.Quantity(t0_sec, unit="ns", dtype=int)
-           timestamps_lst = timestamps_lst_arr[tel_id-2] - t0_sec
+        if input_dir_toff is not None:
+            files_toff = glob.glob(
+                input_dir_toff + "/*M" + str(tel_id - 1) + "*_detail.npy"
+            )
+            # files_toff = glob.glob(input_dir_toff)
+            print(files_toff)
+            i = 0
+            for file_toff in files_toff:
+                file_npy = np.load(file_toff)
+                if i == 0:
+                    file_npy_ = file_npy
+                if i != 0:
+                    file_npy_ = np.hstack([file_npy, file_npy_])
+                i += 1
+            df_toff = pd.DataFrame(
+                file_npy_.T, columns=["timestamp", "toff1", "toff2", "n"]
+            )
+            timestamps_magic_min, timestamps_magic_max = (
+                float(min(timestamps_magic)) / 1e9,
+                float(max(timestamps_magic)) / 1e9,
+            )
+            timestamps_magic_min, timestamps_magic_max = (
+                timestamps_magic_min,
+                timestamps_magic_max,
+            )
+            df_toff = df_toff.query(
+                "@timestamps_magic_min<timestamp<@timestamps_magic_max"
+            )
+            t_plus = df_toff["timestamp"].values
+            time_offset_plus = df_toff["toff1"].values
+            n_coinc_plus = df_toff["n"].values
+            select = n_coinc_plus > 7
+            x = t_plus[select]
+            t0 = min(x)
+            x = x - t0
+            y = time_offset_plus[select]
+            popt, pcov = curve_fit(func1, x, y)
+            zero_offset = popt[0]  # sec
+            drift_speed = popt[1]  # sec/sec
+
+            df_magic["time_sec_sum"] = (
+                df_magic["time_sec"] + df_magic["time_nanosec"] * 1e-9 - t0
+            )
+            df_magic["time_shift"] = df_magic["time_sec_sum"] + (
+                zero_offset + df_magic["time_sec_sum"] * drift_speed
+            )
+            seconds = np.array([Decimal(str(time)) for time in df_magic["time_shift"]])
+
+            timestamps_magic = seconds * SEC2NSEC
+            # import matplotlib.pyplot as plt
+            # plt.scatter(x,y)
+            # plt.plot(np.linspace(min(x),max(x),100),(np.linspace(min(x),max(x),100)*drift_speed+zero_offset))
+            # plt.show()
+
+            t0_sec = [Decimal(str(time)) for time in [t0]]
+            t0_sec = np.array(t0_sec) * SEC2NSEC
+            t0_sec = u.Quantity(t0_sec, unit="ns", dtype=int)
+            timestamps_lst = timestamps_lst_arr[tel_id - 2] - t0_sec
 
         timestamps_magic = u.Quantity(timestamps_magic, unit="ns", dtype=int)
 
@@ -418,7 +457,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_tof
         time_uplim = timestamps_lst[-1] + time_offsets[-1] + window_half_width
         cond_lolim = timestamps_magic >= time_lolim
         cond_uplim = timestamps_magic <= time_uplim
-      
+
         mask = np.logical_and(cond_lolim, cond_uplim)
         n_events_magic = np.count_nonzero(mask)
 
@@ -528,9 +567,9 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_tof
         # Arrange the data frames
         coincidence_id = "1" + str(tel_id)  # Combination of the telescope IDs
 
-        if input_dir_toff!=None:
+        if input_dir_toff is not None:
             df_magic["timestamp"] = df_magic["timestamp"] + t0
-       
+
         df_feature = pd.DataFrame(
             data={
                 "coincidence_id": [int(coincidence_id)],
@@ -564,7 +603,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_tof
 
     event_data.sort_index(inplace=True)
     event_data.drop_duplicates(inplace=True)
-    if input_dir_toff!=None:
+    if input_dir_toff is not None:
         event_data.drop(["time_sec_sum", "time_shift"], axis=1, inplace=True)
 
     # It sometimes happen that even if it is a MAGIC-stereo event, only
@@ -596,12 +635,17 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, input_dir_tof
     event_data = event_data.astype({"obs_id": int, "event_id": int})
 
     # Save the data in an output file
-    Path(output_dir).mkdir(exist_ok=True, parents=True)
+    if os.path.splitext(output_dir)[1]==".h5":
+        Path(os.path.dirname(output_dir)).mkdir(exist_ok=True, parents=True)
+        output_file = output_dir
 
-    input_file_name = Path(input_file_lst).name
+    else:
+        Path(output_dir).mkdir(exist_ok=True, parents=True)
 
-    output_file_name = input_file_name.replace("LST", "MAGIC_LST")
-    output_file = f"{output_dir}/{output_file_name}"
+        input_file_name = Path(input_file_lst).name
+
+        output_file_name = input_file_name.replace("LST", "MAGIC_LST")
+        output_file = f"{output_dir}/{output_file_name}"
 
     save_pandas_data_in_table(
         event_data, output_file, group_name="/events", table_name="parameters", mode="w"
@@ -689,7 +733,7 @@ def main():
         default=None,
         help="Path to a directory where input time offset npy files",
     )
-    
+
     args = parser.parse_args()
 
     with open(args.config_file, "rb") as f:
@@ -700,7 +744,11 @@ def main():
 
     # Check the event coincidence
     event_coincidence(
-        args.input_file_lst, args.input_dir_magic, args.output_dir, args.input_dir_toff, config
+        args.input_file_lst,
+        args.input_dir_magic,
+        args.output_dir,
+        args.input_dir_toff,
+        config,
     )
 
     logger.info("\nDone.")
