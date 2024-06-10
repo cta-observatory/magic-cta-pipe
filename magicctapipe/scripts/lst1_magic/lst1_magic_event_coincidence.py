@@ -59,18 +59,18 @@ If you want to analyse a target, this is the way to go. See this other script fo
 import argparse
 import glob
 import logging
+import os
 import sys
 import time
 from decimal import Decimal
 from pathlib import Path
-import os
+
 import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
 from ctapipe.instrument import SubarrayDescription
 from scipy.optimize import curve_fit
-
 
 from magicctapipe.io import (
     check_input_list,
