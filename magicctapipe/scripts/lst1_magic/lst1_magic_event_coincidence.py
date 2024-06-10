@@ -263,7 +263,6 @@ def event_coincidence(
     tel_ids = np.unique(event_data_magic.index.get_level_values("tel_id"))
 
     for tel_id in tel_ids:
-        print("tel_id", tel_id)
         tel_name = TEL_NAMES[tel_id]
         df_magic = event_data_magic.query(f"tel_id == {tel_id}").copy()
 
