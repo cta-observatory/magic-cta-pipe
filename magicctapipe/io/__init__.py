@@ -14,6 +14,7 @@ from .gadf import (
 )
 from .io import (
     check_input_list,
+    find_offset,
     format_object,
     get_dl2_mean,
     get_stereo_events,
@@ -28,7 +29,6 @@ from .io import (
     resource_file,
     save_pandas_data_in_table,
     telescope_combinations,
-    find_offset,
 )
 
 __all__ = [
