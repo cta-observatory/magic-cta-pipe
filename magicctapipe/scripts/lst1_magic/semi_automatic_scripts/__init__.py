@@ -3,7 +3,8 @@ from .coincident_events import configfile_coincidence, linking_bash_lst
 from .merging_runs import cleaning, merge, mergeMC, split_train_test
 from .setting_up_config_and_dir import (
     config_file_gen,
-    directories_generator,
+    directories_generator_real,
+    directories_generator_MC,
     lists_and_bash_gen_MAGIC,
     lists_and_bash_generator,
 )
@@ -17,7 +18,8 @@ __all__ = [
     "config_file_gen",
     "lists_and_bash_generator",
     "lists_and_bash_gen_MAGIC",
-    "directories_generator",
+    "directories_generator_real",
+    "directories_generator_MC",
     "configfile_coincidence",
     "linking_bash_lst",
     "configfile_stereo",

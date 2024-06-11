@@ -36,7 +36,8 @@ __all__ = [
     "config_file_gen",
     "lists_and_bash_generator",
     "lists_and_bash_gen_MAGIC",
-    "directories_generator",
+    "directories_generator_real",
+    "directories_generator_MC",
 ]
 
 logger = logging.getLogger(__name__)
@@ -78,8 +79,10 @@ def config_file_gen(target_dir, noise_value, NSB_match, source_name):
         "LST": LST_config,
         "MAGIC": MAGIC_config,
     }
-
-    file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
+    if source_name == 'MC':
+        file_name = f"{target_dir}/v{__version__}/MC/config_DL0_to_DL1.yaml"
+    else:
+        file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
     with open(file_name, "w") as f:
         yaml.dump(conf, f, default_flow_style=False)
 
@@ -91,7 +94,6 @@ def lists_and_bash_generator(
     SimTel_version,
     focal_length,
     env_name,
-    source_name,
     cluster,
 ):
 
@@ -123,15 +125,15 @@ def lists_and_bash_generator(
     if MC_path == "":
         return
     print(f"running {particle_type} from {MC_path}")
-    process_name = source_name
+    process_name = 'MC'
 
     list_of_nodes = glob.glob(f"{MC_path}/node*")
-    dir1 = f"{target_dir}/v{__version__}/{source_name}"
+    dir1 = f"{target_dir}/v{__version__}/MC"
     with open(
         f"{dir1}/logs/list_nodes_{particle_type}_complete.txt", "w"
     ) as f:  # creating list_nodes_gammas_complete.txt
         for i in list_of_nodes:
-            f.write(f"{i}/output{SimTel_version}\n")
+            f.write(f"{i}/output_{SimTel_version}\n")
 
     with open(
         f"{dir1}/logs/list_folder_{particle_type}.txt", "w"
@@ -151,21 +153,21 @@ def lists_and_bash_generator(
         slurm = slurm_lines(
             queue="short",
             job_name=process_name,
-            out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-linkMC-%x.%j",
+            out_name=f"{dir1}/DL1/{particle_type}/logs/slurm-linkMC-%x.%j",
         )
         lines_of_config_file = slurm + [
             "while read -r -u 3 lineA && read -r -u 4 lineB\n",
             "do\n",
-            f"    cd {dir1}/DL1/MC/{particle_type}\n",
+            f"    cd {dir1}/DL1/{particle_type}\n",
             "    mkdir $lineB\n",
             "    cd $lineA\n",
             "    ls -lR *.gz |wc -l\n",
-            f"    mkdir -p {dir1}/DL1/MC/{particle_type}/$lineB/logs/\n",
-            f"    ls *.gz > {dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n",
+            f"    mkdir -p {dir1}/DL1/{particle_type}/$lineB/logs/\n",
+            f"    ls *.gz > {dir1}/DL1/{particle_type}/$lineB/logs/list_dl0.txt\n",
             '    string=$lineA"/"\n',
-            f"    export file={dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0.txt\n\n",
+            f"    export file={dir1}/DL1/{particle_type}/$lineB/logs/list_dl0.txt\n\n",
             "    cat $file | while read line; do echo $string${line}"
-            + f" >>{dir1}/DL1/MC/{particle_type}/$lineB/logs/list_dl0_ok.txt; done\n\n",
+            + f" >>{dir1}/DL1/{particle_type}/$lineB/logs/list_dl0_ok.txt; done\n\n",
             '    echo "folder $lineB  and node $lineA"\n',
             f'done 3<"{dir1}/logs/list_nodes_{particle_type}_complete.txt" 4<"{dir1}/logs/list_folder_{particle_type}.txt"\n',
             "",
@@ -184,19 +186,19 @@ def lists_and_bash_generator(
             job_name=process_name,
             array=number_of_nodes,
             mem="10g",
-            out_name=f"{dir1}/DL1/MC/{particle_type}/logs/slurm-%x.%A_%a",
+            out_name=f"{dir1}/DL1/{particle_type}/logs/slurm-%x.%A_%a",
         )
         lines_of_config_file = slurm + [
-            f"cd {dir1}/DL1/MC/{particle_type}\n\n",
+            f"cd {dir1}/DL1/{particle_type}\n\n",
             f"export INF={dir1}/logs\n",
             f"SAMPLE_LIST=($(<$INF/list_folder_{particle_type}.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             "cd $SAMPLE\n\n",
-            f"export LOG={dir1}/DL1/MC/{particle_type}/logs/simtel_{{$SAMPLE}}_${{SLURM_ARRAY_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}_all.log\n",
+            f"export LOG={dir1}/DL1/{particle_type}/logs/simtel_{{$SAMPLE}}_${{SLURM_ARRAY_JOB_ID}}_${{SLURM_ARRAY_TASK_ID}}_all.log\n",
             "cat logs/list_dl0_ok.txt | while read line\n",
             "do\n",
             f"    cd {dir1}/../\n",
-            f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {dir1}/DL1/MC/{particle_type}/$SAMPLE --config-file {dir1}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
+            f"    conda run -n {env_name} lst1_magic_mc_dl0_to_dl1 --input-file $line --output-dir {dir1}/DL1/{particle_type}/$SAMPLE --config-file {dir1}/config_DL0_to_DL1.yaml --focal_length_choice {focal_length}>>$LOG 2>&1\n\n",
             "done\n",
             "",
         ]
@@ -292,10 +294,9 @@ def lists_and_bash_gen_MAGIC(
                     f.writelines(lines)
 
 
-def directories_generator(
+def directories_generator_real(
     target_dir, telescope_ids, MAGIC_runs, NSB_match, source_name
 ):
-
     """
     Here we create all subdirectories for a given workspace and target name.
 
@@ -317,38 +318,21 @@ def directories_generator(
         os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1", exist_ok=True)
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
     else:
+        
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations")
-        dir_list = [
-            "Observations",
-            "MC/gammas",
-            "MC/gammadiffuse",
-            "MC/electrons",
-            "MC/protons",
-            "MC/helium",
-        ]
         if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
-            os.makedirs(
-                f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True
-            )
-            for dir in dir_list:
-                os.makedirs(
-                    f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs",
-                    exist_ok=True,
-                )
+            os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations", exist_ok=True)
+          
         else:
             overwrite = input(
-                f'MC&data directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
+                f'data directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
             )
             if overwrite == "y":
                 os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
                 os.makedirs(
-                    f"{target_dir}/v{__version__}/{source_name}/logs", exist_ok=True
+                    f"{target_dir}/v{__version__}/{source_name}/DL1/Observations", exist_ok=True
                 )
-                for dir in dir_list:
-                    os.makedirs(
-                        f"{target_dir}/v{__version__}/{source_name}/DL1/{dir}/logs",
-                        exist_ok=True,
-                    )
+                
             else:
                 print("Directory not modified.")
 
@@ -359,6 +343,57 @@ def directories_generator(
         for magic in [1, 2]:
             if telescope_ids[magic - 3] > 0:
                 os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs", exist_ok=True)
+def directories_generator_MC(
+    target_dir, telescope_ids, NSB_match
+):
+
+    """
+    Here we create all subdirectories for a given workspace and target name.
+
+    Parameters
+    ----------
+    target_dir : str
+        Directory to store the results
+    telescope_ids : list
+        List of the telescope IDs (set by the user)
+    NSB_match : bool
+        If real data are matched to pre-processed MCs or not
+    """
+
+    
+    dl1_dir = str(f"{target_dir}/v{__version__}/MC/DL1")
+    
+    dir_list = [
+        "gammas",
+        "gammadiffuse",
+        "electrons",
+        "protons",
+        "helium",
+    ]
+    if not os.path.exists(f'{target_dir}/v{__version__}/MC'):
+        os.makedirs(f"{target_dir}/v{__version__}/MC/logs", exist_ok=True)
+        os.makedirs(f"{target_dir}/v{__version__}/MC/DL1", exist_ok=True)
+        for dir in dir_list:
+            os.makedirs(
+                f"{target_dir}/v{__version__}/MC/DL1/{dir}/logs",
+                exist_ok=True,
+            )
+    else:
+        overwrite = input(
+            f'MC directory already exists. Would you like to overwrite it? [only "y" or "n"]: '
+        )
+        if overwrite == "y":
+            os.system(f"rm -r {target_dir}/v{__version__}/MC")
+            for dir in dir_list:
+                os.makedirs(
+                    f"{target_dir}/v{__version__}/MC/DL1/{dir}/logs",
+                    exist_ok=True,
+                )
+        else:
+            print("Directory not modified.")
+
+    
+
 
 
 def main():
@@ -408,29 +443,71 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
-
+    target_dir = Path(config["directories"]["workspace_dir"])
     source_list = []
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:
         source_list.append(source)
+    noise_value = [0, 0, 0]
+    if not NSB_match:
+        nsb = config["general"]["NSB_MC"]
+
+        noisebright = 1.15 * pow(nsb, 1.115)
+        biasdim = 0.358 * pow(nsb, 0.805)
+        noise_value = [nsb, noisebright, biasdim]
+    directories_generator_MC(
+        str(target_dir), telescope_ids, NSB_match
+    )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
+    if not NSB_match:
+        # Below we run the analysis on the MC data
+        if (args.analysis_type == "onlyMC") or (
+            args.analysis_type == "doEverything"
+        ):
+            config_file_gen(
+                target_dir, noise_value, NSB_match, 'MC'
+            )  # TODO: fix here
+            to_process = {
+                "gammas": MC_gammas,
+                "electrons": MC_electrons,
+                "helium": MC_helium,
+                "protons": MC_protons,
+                "gammadiffuse": MC_gammadiff,
+            }
+            for particle in to_process.keys():
+                lists_and_bash_generator(
+                    particle,
+                    target_dir,
+                    to_process[particle],
+                    SimTel_version,
+                    focal_length,
+                    env_name,
+                    
+                    cluster,
+                )
+
+            # Here we do the MC DL0 to DL1 conversion:
+            list_of_MC = glob.glob("linking_MC_*s.sh")
+
+            # os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
+
+            for n, run in enumerate(list_of_MC):
+                if n == 0:
+                    launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+                else:
+                    launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
+
+            os.system(launch_jobs_MC)
     for source_name in source_list:
-        target_dir = Path(config["directories"]["workspace_dir"])
+        
 
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
         )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
 
-        noise_value = [0, 0, 0]
-        if not NSB_match:
-            nsb = config["general"]["NSB_MC"]
-
-            noisebright = 1.15 * pow(nsb, 1.115)
-            biasdim = 0.358 * pow(nsb, 0.805)
-            noise_value = [nsb, noisebright, biasdim]
-
+        
         # TODO: fix here above
         print("*** Converting Calibrated into DL1 data ***")
         print(f"Process name: {source_name}")
@@ -439,49 +516,14 @@ def main():
         )
         print("This process will take about 10 min to run if the IT cluster is free.")
 
-        directories_generator(
+        directories_generator_real(
             str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
         config_file_gen(
             target_dir, noise_value, NSB_match, source_name
         )  # TODO: fix here
 
-        if not NSB_match:
-            # Below we run the analysis on the MC data
-            if (args.analysis_type == "onlyMC") or (
-                args.analysis_type == "doEverything"
-            ):
-                to_process = {
-                    "gammas": MC_gammas,
-                    "electrons": MC_electrons,
-                    "helium": MC_helium,
-                    "protons": MC_protons,
-                    "gammadiffuse": MC_gammadiff,
-                }
-                for particle in to_process.keys():
-                    lists_and_bash_generator(
-                        particle,
-                        target_dir,
-                        to_process[particle],
-                        SimTel_version,
-                        focal_length,
-                        env_name,
-                        source_name,
-                        cluster,
-                    )
-
-                # Here we do the MC DL0 to DL1 conversion:
-                list_of_MC = glob.glob("linking_MC_*s.sh")
-
-                # os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
-
-                for n, run in enumerate(list_of_MC):
-                    if n == 0:
-                        launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
-                    else:
-                        launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
-
-                os.system(launch_jobs_MC)
+        
 
         # Below we run the analysis on the MAGIC data
         if (
