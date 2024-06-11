@@ -6,14 +6,14 @@ Usage: python nsb_level.py (-c config.yaml)
 
 import argparse
 import glob
+import json
 import logging
 import os
 from datetime import datetime
-import json
+
 import numpy as np
 import pandas as pd
 import yaml
-
 
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
@@ -114,11 +114,11 @@ def main():
         str(conda_path)
         + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
     )
-    with open(lst_config_orig, 'r') as f_lst:
-        lst_dict=json.load(f_lst)
+    with open(lst_config_orig, "r") as f_lst:
+        lst_dict = json.load(f_lst)
     if lstchain_modified:
-        lst_dict["source_config"]['LSTEventSource']['use_flatfield_heuristic'] = True
-    with open("lstchain.json", "w+") as outfile: 
+        lst_dict["source_config"]["LSTEventSource"]["use_flatfield_heuristic"] = True
+    with open("lstchain.json", "w+") as outfile:
         json.dump(lst_dict, outfile)
     lst_config = "lstchain.json"
 

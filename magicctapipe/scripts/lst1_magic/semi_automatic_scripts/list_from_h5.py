@@ -133,7 +133,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         source_list.append(source_out)
 
     for source_name in source_list:
-        
+
         file_list = [
             f"{source_name}_LST_runs.txt",
             f"{source_name}_MAGIC_runs.txt",
@@ -184,7 +184,9 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
                     continue
 
                 with open(file_list[1], "a+") as f:
-                    f.write(f"{MAGIC_date[k][0:4]}_{MAGIC_date[k][4:6]}_{MAGIC_date[k][6:8]},{int(M2_run[k])}\n")
+                    f.write(
+                        f"{MAGIC_date[k][0:4]}_{MAGIC_date[k][4:6]}_{MAGIC_date[k][6:8]},{int(M2_run[k])}\n"
+                    )
                 run_listed.append(int(M2_run[k]))
 
 
@@ -272,15 +274,14 @@ def main():
         "/fefs/aswg/workspace/joanna.wojtowicz/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
         key="MAGIC2/runs_M2",
     )
-    df_MAGIC1['Source'] = df_MAGIC1['Source'].str.replace(' ','')
-    df_MAGIC2['Source'] = df_MAGIC2['Source'].str.replace(' ','')
+    df_MAGIC1["Source"] = df_MAGIC1["Source"].str.replace(" ", "")
+    df_MAGIC2["Source"] = df_MAGIC2["Source"].str.replace(" ", "")
 
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [int(sub.replace("-", "")) for sub in list_date_LST]
- 
+
     df_MAGIC1 = df_MAGIC1[df_MAGIC1["Date (LST convention)"].isin(list_date_LST_low)]
     df_MAGIC2 = df_MAGIC2[df_MAGIC2["Date (LST convention)"].isin(list_date_LST_low)]
-  
 
     clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2)
 

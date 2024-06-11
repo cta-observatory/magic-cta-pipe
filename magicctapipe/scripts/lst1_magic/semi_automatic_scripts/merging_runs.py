@@ -96,10 +96,8 @@ def split_train_test(target_dir, train_fraction, source_name):
     for directory in tqdm(
         range(len(list_of_dir))
     ):  # tqdm allows us to print a progessbar in the terminal
-        node = list_of_dir[directory].split('/')[-2]
-        os.makedirs(
-            f"{proton_dir}/train/{node}", exist_ok=True
-        )
+        node = list_of_dir[directory].split("/")[-2]
+        os.makedirs(f"{proton_dir}/train/{node}", exist_ok=True)
         os.makedirs(
             f'{proton_dir}/../protons_test/{list_of_dir[directory].split("/")[-2]}',
             exist_ok=True,
@@ -109,13 +107,9 @@ def split_train_test(target_dir, train_fraction, source_name):
         )
         number_train_runs = int(len(list_of_runs) * train_fraction)
         for j in list_of_runs[0:number_train_runs]:
-            os.system(
-                f"mv {j} {proton_dir}/train/{node}"
-            )
+            os.system(f"mv {j} {proton_dir}/train/{node}")
 
-        os.system(
-            f"cp {list_of_dir[directory]}*.txt {proton_dir}/train/{node}"
-        )
+        os.system(f"cp {list_of_dir[directory]}*.txt {proton_dir}/train/{node}")
         os.system(
             f"mv {list_of_dir[directory]}*.txt {proton_dir}/../protons_test/{node}"
         )
@@ -437,7 +431,7 @@ def main():
         print(
             f"To check the jobs submitted to the cluster, type: squeue -n merging_{source_name}"
         )
-        
+
 
 if __name__ == "__main__":
     main()

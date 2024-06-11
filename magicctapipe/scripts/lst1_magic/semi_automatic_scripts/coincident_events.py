@@ -38,21 +38,17 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configfile_coincidence(ids, target_dir, source_name, NSB_match):
+def configfile_coincidence(target_dir, source_name):
 
     """
     This function creates the configuration file needed for the event coincidence step
 
     Parameters
     ----------
-    ids : list
-        List of telescope IDs
     target_dir : str
         Path to the working directory
     source_name : str
         Name of the target source
-    NSB_match : bool
-        If real data are matched to pre-processed MCs or not
     """
 
     config_file = resource_file("config.yaml")
@@ -60,27 +56,16 @@ def configfile_coincidence(ids, target_dir, source_name, NSB_match):
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
-    coincidence = config_dict["event_coincidence"]
 
-    conf = {}
-    conf["event_coincidence"] = coincidence
+    conf = {
+        "mc_tel_ids": config_dict["mc_tel_ids"],
+        "event_coincidence": config_dict["event_coincidence"],
+    }
 
-    if not NSB_match:
-        file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
-    else:
-        file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
+    file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
+
     with open(file_name, "w") as f:
-        lines = [
-            "mc_tel_ids:",
-            f"\n    LST-1: {ids[0]}",
-            f"\n    LST-2: {ids[1]}",
-            f"\n    LST-3: {ids[2]}",
-            f"\n    LST-4: {ids[3]}",
-            f"\n    MAGIC-I: {ids[4]}",
-            f"\n    MAGIC-II: {ids[5]}",
-            "\n",
-        ]
-        f.writelines(lines)
+
         yaml.dump(conf, f, default_flow_style=False)
 
 
@@ -210,8 +195,6 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-
-    telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = Path(config["directories"]["workspace_dir"])
 
     NSB_match = config["general"]["NSB_matching"]
@@ -231,7 +214,7 @@ def main():
     for source_name in source_list:
 
         print("***** Generating file config_coincidence.yaml...")
-        configfile_coincidence(telescope_ids, target_dir, source_name, NSB_match)
+        configfile_coincidence(target_dir, source_name)
 
         LST_runs_and_dates = f"{source_name}_LST_runs.txt"
         LST_runs = np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2)

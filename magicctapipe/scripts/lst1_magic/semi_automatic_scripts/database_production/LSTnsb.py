@@ -4,13 +4,10 @@ Evaluates NSB level for a LST run
 import argparse
 import glob
 import logging
-import os
 
 import numpy as np
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
-
-from magicctapipe.io import resource_file
 
 __all__ = ["nsb"]
 
@@ -135,8 +132,6 @@ def main():
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
     nsb_limit.insert(0, 0)
-    
-    
 
     LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 

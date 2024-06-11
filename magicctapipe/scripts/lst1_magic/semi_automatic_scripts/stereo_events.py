@@ -40,21 +40,17 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configfile_stereo(ids, target_dir, source_name, NSB_match):
+def configfile_stereo(target_dir, source_name):
 
     """
     This function creates the configuration file needed for the event stereo step
 
     Parameters
     ----------
-    ids : list
-        List of telescope IDs
     target_dir : str
         Path to the working directory
     source_name : str
         Name of the target source
-    NSB_match : bool
-        If real data are matched to pre-processed MCs or not
     """
 
     config_file = resource_file("config.yaml")
@@ -62,21 +58,14 @@ def configfile_stereo(ids, target_dir, source_name, NSB_match):
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
-    conf = {"stereo_reco": config_dict["stereo_reco"]}
+    conf = {
+        "mc_tel_ids": config_dict["mc_tel_ids"],
+        "stereo_reco": config_dict["stereo_reco"],
+    }
 
     file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
     with open(file_name, "w") as f:
-        lines = [
-            "mc_tel_ids:",
-            f"\n    LST-1: {ids[0]}",
-            f"\n    LST-2: {ids[1]}",
-            f"\n    LST-3: {ids[2]}",
-            f"\n    LST-4: {ids[3]}",
-            f"\n    MAGIC-I: {ids[4]}",
-            f"\n    MAGIC-II: {ids[5]}",
-            "\n",
-        ]
-        f.writelines(lines)
+
         yaml.dump(conf, f, default_flow_style=False)
 
 
@@ -113,7 +102,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
         )
         return
     for nightLST in listOfNightsLST:
-        night=nightLST.split('/')[-1]
+        night = nightLST.split("/")[-1]
         stereoDir = f"{coincidence_DL1_dir}/DL1Stereo/{night}"
         os.makedirs(f"{stereoDir}/logs", exist_ok=True)
         if not os.listdir(f"{nightLST}"):
@@ -246,7 +235,6 @@ def main():
     env_name = config["general"]["env_name"]
 
     NSB_match = config["general"]["NSB_matching"]
-    telescope_ids = list(config["mc_tel_ids"].values())
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
@@ -259,7 +247,7 @@ def main():
     for source_name in source_list:
 
         print("***** Generating file config_stereo.yaml...")
-        configfile_stereo(telescope_ids, target_dir, source_name, NSB_match)
+        configfile_stereo(target_dir, source_name)
 
         # Below we run the analysis on the MC data
         if (

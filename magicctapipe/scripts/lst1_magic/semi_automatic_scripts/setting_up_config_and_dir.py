@@ -44,15 +44,13 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def config_file_gen(ids, target_dir, noise_value, NSB_match, source_name):
+def config_file_gen(target_dir, noise_value, NSB_match, source_name):
 
     """
     Here we create the configuration file needed for transforming DL0 into DL1
 
     Parameters
     ----------
-    ids : list
-        Telescope IDs
     target_dir : path
         Directory to store the results
     noise_value : list
@@ -75,23 +73,14 @@ def config_file_gen(ids, target_dir, noise_value, NSB_match, source_name):
         LST_config["increase_nsb"]["extra_noise_in_dim_pixels"] = noise_value[0]
         LST_config["increase_nsb"]["extra_bias_in_dim_pixels"] = noise_value[2]
         LST_config["increase_nsb"]["extra_noise_in_bright_pixels"] = noise_value[1]
-    conf = {}
-    conf["LST"] = LST_config
+    conf = {
+        "mc_tel_ids": config_dict["mc_tel_ids"],
+        "LST": LST_config,
+        "MAGIC": MAGIC_config,
+    }
 
-    conf["MAGIC"] = MAGIC_config
     file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
     with open(file_name, "w") as f:
-        lines = [
-            "mc_tel_ids:",
-            f"\n    LST-1: {ids[0]}",
-            f"\n    LST-2: {ids[1]}",
-            f"\n    LST-3: {ids[2]}",
-            f"\n    LST-4: {ids[3]}",
-            f"\n    MAGIC-I: {ids[4]}",
-            f"\n    MAGIC-II: {ids[5]}",
-            "\n",
-        ]
-        f.writelines(lines)
         yaml.dump(conf, f, default_flow_style=False)
 
 
@@ -454,7 +443,7 @@ def main():
             str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
         config_file_gen(
-            telescope_ids, target_dir, noise_value, NSB_match, source_name
+            target_dir, noise_value, NSB_match, source_name
         )  # TODO: fix here
 
         if not NSB_match:
