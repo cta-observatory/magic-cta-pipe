@@ -45,7 +45,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def config_file_gen(target_dir, noise_value, NSB_match, source_name):
+def config_file_gen(target_dir, noise_value, NSB_match, source_name, config_gen):
 
     """
     Here we create the configuration file needed for transforming DL0 into DL1
@@ -61,8 +61,9 @@ def config_file_gen(target_dir, noise_value, NSB_match, source_name):
     source_name : str
         Name of the target source
     """
-
-    config_file = resource_file("config.yaml")
+    config_file = config_gen['general']['base_config_file']
+    if config_file=='':
+        config_file = resource_file("config.yaml")
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
@@ -75,7 +76,7 @@ def config_file_gen(target_dir, noise_value, NSB_match, source_name):
         LST_config["increase_nsb"]["extra_bias_in_dim_pixels"] = noise_value[2]
         LST_config["increase_nsb"]["extra_noise_in_bright_pixels"] = noise_value[1]
     conf = {
-        "mc_tel_ids": config_dict["mc_tel_ids"],
+        "mc_tel_ids": config_gen["mc_tel_ids"],
         "LST": LST_config,
         "MAGIC": MAGIC_config,
     }
@@ -466,7 +467,7 @@ def main():
             args.analysis_type == "doEverything"
         ):
             config_file_gen(
-                target_dir, noise_value, NSB_match, 'MC'
+                target_dir, noise_value, NSB_match, 'MC', config
             )  # TODO: fix here
             to_process = {
                 "gammas": MC_gammas,
@@ -520,7 +521,7 @@ def main():
             str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
         config_file_gen(
-            target_dir, noise_value, NSB_match, source_name
+            target_dir, noise_value, NSB_match, source_name, config
         )  # TODO: fix here
 
         

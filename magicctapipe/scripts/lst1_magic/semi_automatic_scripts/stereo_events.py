@@ -40,7 +40,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configfile_stereo(target_dir, source_name):
+def configfile_stereo(target_dir, source_name, config_gen):
 
     """
     This function creates the configuration file needed for the event stereo step
@@ -53,13 +53,16 @@ def configfile_stereo(target_dir, source_name):
         Name of the target source
     """
 
-    config_file = resource_file("config.yaml")
+    config_file = config_gen['general']['base_config_file']
+    if config_file=='':
+        config_file = resource_file("config.yaml")
+    
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
     conf = {
-        "mc_tel_ids": config_dict["mc_tel_ids"],
+        "mc_tel_ids": config_gen["mc_tel_ids"],
         "stereo_reco": config_dict["stereo_reco"],
     }
 
@@ -247,7 +250,7 @@ def main():
     for source_name in source_list:
 
         print("***** Generating file config_stereo.yaml...")
-        configfile_stereo(target_dir, source_name)
+        configfile_stereo(target_dir, source_name, config)
 
         # Below we run the analysis on the MC data
         if (

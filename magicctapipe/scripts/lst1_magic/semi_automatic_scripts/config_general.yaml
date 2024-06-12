@@ -28,6 +28,7 @@ data_selection:
     skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
     
 general:
+    base_config_file: ''    # path + name to a custom MCP config file. If not provided, the default config.yaml file will be used 
     SimTel_version: "v1.4"  
     LST_version   : "v0.10" # check the `processed_lstchain_file` version in the LST database!
     LST_tailcut   : "tailcut84"

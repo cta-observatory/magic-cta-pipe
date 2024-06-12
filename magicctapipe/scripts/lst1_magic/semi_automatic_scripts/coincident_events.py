@@ -38,7 +38,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configfile_coincidence(target_dir, source_name):
+def configfile_coincidence(target_dir, source_name, config_gen):
 
     """
     This function creates the configuration file needed for the event coincidence step
@@ -50,15 +50,17 @@ def configfile_coincidence(target_dir, source_name):
     source_name : str
         Name of the target source
     """
-
-    config_file = resource_file("config.yaml")
+    config_file = config_gen['general']['base_config_file']
+    if config_file=='':
+        config_file = resource_file("config.yaml")
+    
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
     conf = {
-        "mc_tel_ids": config_dict["mc_tel_ids"],
+        "mc_tel_ids": config_gen["mc_tel_ids"],
         "event_coincidence": config_dict["event_coincidence"],
     }
 
@@ -214,7 +216,7 @@ def main():
     for source_name in source_list:
 
         print("***** Generating file config_coincidence.yaml...")
-        configfile_coincidence(target_dir, source_name)
+        configfile_coincidence(target_dir, source_name, config)
 
         LST_runs_and_dates = f"{source_name}_LST_runs.txt"
         LST_runs = np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2)
