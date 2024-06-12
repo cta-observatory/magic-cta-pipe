@@ -458,14 +458,15 @@ def main():
         noisebright = 1.15 * pow(nsb, 1.115)
         biasdim = 0.358 * pow(nsb, 0.805)
         noise_value = [nsb, noisebright, biasdim]
-    directories_generator_MC(
-        str(target_dir), telescope_ids, NSB_match
-    )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
+    
     if not NSB_match:
         # Below we run the analysis on the MC data
         if (args.analysis_type == "onlyMC") or (
             args.analysis_type == "doEverything"
         ):
+            directories_generator_MC(
+                str(target_dir), telescope_ids, NSB_match
+            )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
             config_file_gen(
                 target_dir, noise_value, NSB_match, 'MC', config
             )  # TODO: fix here
