@@ -133,7 +133,7 @@ def lists_and_bash_generator(
         for i in list_of_nodes:
             out_list=glob.glob(f"{i}/output*\n")
             if len(out_list)==0:
-                logging.error(f'No output file for node {i}, or the directory structure is not the usual one. Skipping...')
+                logger.error(f'No output file for node {i}, or the directory structure is not the usual one. Skipping...')
                 continue
             elif len(out_list)==1:
                 f.write(f"{out_list[0]}\n")
