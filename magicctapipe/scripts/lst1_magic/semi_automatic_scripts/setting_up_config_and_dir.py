@@ -92,7 +92,6 @@ def lists_and_bash_generator(
     particle_type,
     target_dir,
     MC_path,
-    SimTel_version,
     focal_length,
     env_name,
     cluster,
@@ -111,8 +110,6 @@ def lists_and_bash_generator(
         Directory to store the results
     MC_path : str
         Path to the MCs DL0s
-    SimTel_version : str
-        Version of SimTel (used to produce MCs)
     focal_length : str
         Focal length to be used to process MCs (e.g., 'nominal')
     env_name : str
@@ -134,7 +131,17 @@ def lists_and_bash_generator(
         f"{dir1}/logs/list_nodes_{particle_type}_complete.txt", "w"
     ) as f:  # creating list_nodes_gammas_complete.txt
         for i in list_of_nodes:
-            f.write(f"{i}/output_{SimTel_version}\n")
+            out_list=glob.glob(f"{i}/output*\n")
+            if len(out_list)==0:
+                logging.error(f'No output file for node {i}, or the directory structure is not the usual one. Skipping...')
+                continue
+            elif len(out_list)==1:
+                f.write(f"{out_list[0]}\n")
+            else:
+                output_index = input(f"The available outputs are {out_list}, please provide the array index of the desired one:")
+                f.write(f"{out_list[output_index]}\n")
+                
+            
 
     with open(
         f"{dir1}/logs/list_folder_{particle_type}.txt", "w"
@@ -430,7 +437,6 @@ def main():
         config = yaml.safe_load(f)
 
     telescope_ids = list(config["mc_tel_ids"].values())
-    SimTel_version = config["general"]["SimTel_version"]
     env_name = config["general"]["env_name"]
     NSB_match = config["general"]["NSB_matching"]
 
@@ -482,7 +488,6 @@ def main():
                     particle,
                     target_dir,
                     to_process[particle],
-                    SimTel_version,
                     focal_length,
                     env_name,
                     
