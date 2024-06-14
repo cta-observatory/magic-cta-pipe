@@ -8,7 +8,7 @@ This script processes MAGIC calibrated data (*_Y_*.root) to perform the muon rin
 Current naming allows LST but first implementation will only handle MAGIC as script for LST are available in lstchain.
 
 Usage:
-$ python muon_analysis_LST_or_MAGIC_data.py
+$ python muon_analysis_MAGIC_data.py
 --input-file ./data/calibrated/20201216_M1_05093711.001_Y_CrabNebula-W0.40+035.root
 --output-dir ./data/muons
 --config-file ./config.yaml
@@ -63,6 +63,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
     # Create the table which will contain the selected muon ring parameters
     muon_parameters = create_muon_table()
     muon_parameters["telescope_name"] = []
+    muon_parameters["MARS_radial_stdev"] = []
 
     logger.info(f"\nProcess the following data (process_run = {process_run}):")
 
@@ -83,13 +84,12 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
 
     # Prepare for saving muons data to an output file:
     Path(output_dir).mkdir(exist_ok=True, parents=True)
-
     if process_run:
-        output_file = f"{output_dir}/muons_M{tel_id}.Run{obs_id:08}.fits"
+        output_file = f"{output_dir}/muons_M{tel_id}.Run{obs_id[0]:08}.fits"
     else:
         subrun_id = event_source.metadata["subrun_number"]
         output_file = (
-            f"{output_dir}/muons_M{tel_id}.Run{obs_id:08}.{subrun_id[0]:03}.fits"
+            f"{output_dir}/muons_M{tel_id}.Run{obs_id[0]:08}.{subrun_id[0]:03}.fits"
         )
 
     # Start processing events:

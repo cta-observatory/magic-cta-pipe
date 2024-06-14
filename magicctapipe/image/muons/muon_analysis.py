@@ -1,11 +1,83 @@
 """Script for the muon analysis."""
 
 import numpy as np
-from lstchain.image.muon import analyze_muon_event, fill_muon_event, tag_pix_thr
+from lstchain.image.muon import (
+    analyze_muon_event,
+    fill_muon_event,
+    tag_pix_thr,
+    pixel_coords_to_telescope,
+)
+import astropy.units as u
+from iminuit import Minuit
+
+from scipy.stats import poisson
 
 __all__ = [
     "perform_muon_analysis",
 ]
+
+
+def MARS_radial_light_distribution(
+    center_x, center_y, pixel_x, pixel_y, image, seed_radius, seed_width
+):
+    """
+    Calculate the radial distribution of the muon ring
+
+    Parameters
+    ----------
+    center_x : `astropy.Quantity`
+        Center of muon ring in the field of view from circle fitting
+    center_y : `astropy.Quantity`
+        Center of muon ring in the field of view from circle fitting
+    pixel_x : `ndarray`
+        X position of pixels in image
+    pixel_y : `ndarray`
+        Y position of pixel in image
+    image : `ndarray`
+        Amplitude of image pixels
+    seed_radius: `float`
+        Muon ring radius from ctapipe
+    seed_width: `float`
+        Muon ring width from ctapipe
+
+    Returns
+    -------
+    standard_dev, skewness
+
+    """
+
+    if np.sum(image) == 0:
+        return {
+            "standard_dev": np.nan * u.deg,
+        }
+
+    # Convert everything to degrees:
+    x0 = center_x.to_value(u.deg)
+    y0 = center_y.to_value(u.deg)
+    pix_x = pixel_x.to_value(u.deg)
+    pix_y = pixel_y.to_value(u.deg)
+
+    pix_r = np.sqrt((pix_x - x0) ** 2 + (pix_y - y0) ** 2)
+    r_edges = np.linspace(
+        seed_radius - 3 * seed_width,
+        seed_radius + 3 * seed_width,
+        int(6 * seed_width / 0.05) + 1,
+    )
+    r = (r_edges[1:] + r_edges[:-1]) / 2
+    n_pix_hist = np.histogram(pix_r, bins=r_edges)[0]
+    width_hist = np.histogram(pix_r, weights=image, bins=r_edges)[0] / n_pix_hist
+    inte_seed = np.sum(width_hist) * seed_width
+    r0_seed = seed_radius
+    standard_dev_seed = seed_width
+
+    def f(inte, r0, mu):
+        gauss = inte * np.exp(-((r - r0) ** 2 / mu**2) / 2) / (np.sqrt(2 * np.pi) * mu)
+        return -np.sum(poisson._logpmf(width_hist, gauss))
+
+    m = Minuit(f, inte=inte_seed, r0=r0_seed, mu=standard_dev_seed)
+    m.errordef = Minuit.LIKELIHOOD
+    m.simplex().migrad()
+    return {"standard_dev": m.values["mu"] * u.deg}
 
 
 def perform_muon_analysis(
@@ -112,6 +184,23 @@ def perform_muon_analysis(
                 plot_rings=plot_rings,
                 plots_path=plots_path,
             )
+            if good_ring and "MAGIC" in telescope_name:
+                # Perform MARS-like width extraction
+
+                tel_description = subarray.tels[telescope_id]
+                geom = tel_description.camera.geometry
+                equivalent_focal_length = tel_description.optics.equivalent_focal_length
+
+                x, y = pixel_coords_to_telescope(geom, equivalent_focal_length)
+                MARS_radial_distribution = MARS_radial_light_distribution(
+                    muonringparam.center_fov_lon,
+                    muonringparam.center_fov_lat,
+                    x,
+                    y,
+                    image,
+                    muonringparam.radius.value,
+                    radial_distribution["standard_dev"].value,
+                )
 
             if r1_dl1_calibrator_for_muon_rings is not None:
                 # Now we want to obtain the waveform sample (in HG & LG) at which the ring light peaks:
@@ -156,3 +245,9 @@ def perform_muon_analysis(
                 lg_peak_sample,
             )
             muon_parameters["telescope_name"].append(telescope_name)
+            if "MAGIC" in telescope_name:
+                muon_parameters["MARS_radial_stdev"].append(
+                    MARS_radial_distribution["standard_dev"].value
+                )
+            else:
+                muon_parameters["MARS_radial_stdev"].append(np.nan * u.deg)
