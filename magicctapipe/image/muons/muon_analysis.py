@@ -86,6 +86,7 @@ def perform_muon_analysis(
     telescope_id,
     telescope_name,
     image,
+    peak_time,
     subarray,
     r1_dl1_calibrator_for_muon_rings,
     good_ring_config,
@@ -110,6 +111,8 @@ def perform_muon_analysis(
         Name of the telescope
     image : np.ndarray
         Number of photoelectrons in each pixel
+    peak_time:  `np.ndarray`
+        Time of maximum in pixels after cleaning
     subarray : ctapipe.instrument.subarray.SubarrayDescription
         Subarray
     r1_dl1_calibrator_for_muon_rings : ctapipe.calib.camera.CameraCalibrator
@@ -245,6 +248,7 @@ def perform_muon_analysis(
                 lg_peak_sample,
             )
             muon_parameters["telescope_name"].append(telescope_name)
+            muon_parameters["time_rms"].append(np.std(peak_time))
             if "MAGIC" in telescope_name:
                 muon_parameters["MARS_radial_stdev"].append(
                     MARS_radial_distribution["standard_dev"].value

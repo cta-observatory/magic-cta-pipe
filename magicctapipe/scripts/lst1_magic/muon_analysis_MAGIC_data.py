@@ -63,6 +63,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
     # Create the table which will contain the selected muon ring parameters
     muon_parameters = create_muon_table()
     muon_parameters["telescope_name"] = []
+    muon_parameters["time_rms"] = []
     muon_parameters["MARS_radial_stdev"] = []
 
     logger.info(f"\nProcess the following data (process_run = {process_run}):")
@@ -129,6 +130,7 @@ def magic_muons_from_cal(input_file, output_dir, config, process_run, plots_path
             telescope_id=tel_id,
             telescope_name=tel_name,
             image=image,
+            peak_time=peak_time[signal_pixels],
             subarray=subarray,
             r1_dl1_calibrator_for_muon_rings=None,
             good_ring_config=muon_config,

@@ -142,6 +142,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
     # Configure the muon analysis:
     muon_parameters = create_muon_table()
     muon_parameters["telescope_name"] = []
+    muon_parameters["time_rms"] = []
     r1_dl1_calibrator_for_muon_rings = {}
 
     extractor_muon_name_lst = "GlobalPeakWindowSum"
@@ -151,7 +152,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
     r1_dl1_calibrator_for_muon_rings["LST"] = CameraCalibrator(
         subarray, image_extractor=extractor_lst_muons
     )
-    # Use the standard MAGIC calibration and charextraction to be comparable with MAGIC data
+    # Use the standard MAGIC calibration and charge extraction to be comparable with MAGIC data
     extractor_magic_muons = ImageExtractor.from_name(
         extractor_type_magic, config=config_extractor_magic, subarray=subarray
     )
@@ -226,9 +227,9 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                         camera_geoms[tel_id], signal_pixels
                     )
                     n_pixels_on_island = np.bincount(island_labels.astype(np.int64))
-                    n_pixels_on_island[
-                        0
-                    ] = 0  # first island is no-island and should not be considered
+                    n_pixels_on_island[0] = (
+                        0  # first island is no-island and should not be considered
+                    )
                     max_island_label = np.argmax(n_pixels_on_island)
                     signal_pixels[island_labels != max_island_label] = False
 
@@ -276,6 +277,7 @@ def mc_dl0_to_muons(input_file, output_dir, config, plots_path):
                 telescope_id=tel_id,
                 telescope_name=subarray.tel[tel_id].name,
                 image=image,
+                peak_time=peak_time[signal_pixels],
                 subarray=subarray,
                 r1_dl1_calibrator_for_muon_rings=r1_dl1_calibrator_for_muon_rings[name],
                 good_ring_config=muon_config[name],
