@@ -221,11 +221,9 @@ def magic_calib_to_dl1(
             "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
         )
 
-    save_images = False
-    if "save_images" in config["MAGIC"]:
-        save_images = config["MAGIC"]["save_images"]
-        if save_images:
-            dl1cont = DL1CameraContainer(prefix="")
+    save_images = config.get("save_images", False)
+    if save_images:
+        dl1cont = DL1CameraContainer(prefix="")
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 

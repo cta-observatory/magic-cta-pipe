@@ -63,13 +63,12 @@ MAGIC:
         find_hotpixels: true
         pedestal_type: "from_extractor_rndm"
 
-    save_images: false
-
     muon_ring:
         thr_low: 25
         tailcut: [12, 8]
         ring_completeness_threshold: 25
 
+save_images: false
 
 event_coincidence:
     # History of the time offset between LST-1 and MAGIC

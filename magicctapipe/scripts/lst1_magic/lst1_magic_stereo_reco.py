@@ -144,9 +144,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         "mc_tel_ids"
     ]  # This variable becomes a dictionary, e.g.: {'LST-1': 1, 'LST-2': 0, 'LST-3': 0, 'LST-4': 0, 'MAGIC-I': 2, 'MAGIC-II': 3}
 
-    save_images = False
-    if "save_images" in config["MAGIC"]:
-        save_images = config["MAGIC"]["save_images"]
+    save_images = config.get("save_images", False)
 
     # Load the input file
     logger.info(f"\nInput file: {input_file}")

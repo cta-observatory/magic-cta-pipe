@@ -162,9 +162,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     config_coinc = config["event_coincidence"]
 
-    save_images = False
-    if "save_images" in config["MAGIC"]:
-        save_images = config["MAGIC"]["save_images"]
+    save_images = config.get("save_images", False)
 
     TEL_NAMES, _ = telescope_combinations(config)
 
