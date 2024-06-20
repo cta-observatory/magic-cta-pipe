@@ -1,11 +1,14 @@
 """
 This script does checks of status of jobs based on the log files generated during the execution.
 It also does accounting of memory and CPU usage
+It loads the config_general file to figure out what files it should look for and processes source name and time range
+For the moment it ignores date_list and skip_*_runs
 """
 import argparse
 import glob
 import os
-from datetime import timedelta
+import re
+from datetime import datetime, timedelta
 from subprocess import PIPE, run
 
 import numpy as np
@@ -81,19 +84,23 @@ def main():
         config = yaml.safe_load(f)
 
     # TODO: those variables will be needed when more features are implemented
-    # source_in = config["data_selection"]["source_name_database"]
-    # source_out = config["data_selection"]["source_name_output"]
-    # timerange = config["data_selection"]["time_range"]
+    source_out = config["data_selection"]["source_name_output"]
+    timerange = config["data_selection"]["time_range"]
+
     # skip_LST = config["data_selection"]["skip_LST_runs"]
     # skip_MAGIC = config["data_selection"]["skip_MAGIC_runs"]
     NSB_matching = config["general"]["NSB_matching"]
     work_dir = config["directories"]["workspace_dir"]
 
     print(f"Checking progress of jobs stored in {work_dir}")
+    if source_out is None:
+        source_out = "*"
+
+    indir = f"{work_dir}/v{args.version}/{source_out}/{args.data_level}"
     dirs = sorted(
-        glob.glob(f"{work_dir}/v{args.version}/*/{args.data_level}/[0-9]*/[M0-9]*")
-        + glob.glob(f"{work_dir}/v{args.version}/*/{args.data_level}/Merged_[0-9]*")
-        + glob.glob(f"{work_dir}/v{args.version}/*/{args.data_level}/" + "[0-9]" * 8)
+        glob.glob(f"{indir}/[0-9]*/[M0-9]*")
+        + glob.glob(f"{indir}/Merged_[0-9]*")
+        + glob.glob(f"{indir}/" + "[0-9]" * 8)
     )
     if dirs == []:
         versions = [x.split("/v")[-1] for x in glob.glob(f"{work_dir}/v*")]
@@ -106,6 +113,12 @@ def main():
         )
         exit(1)
 
+    if timerange:
+        timemin = str(config["data_selection"]["min"])
+        timemax = str(config["data_selection"]["max"])
+        timemin = datetime.strptime(timemin, "%Y_%m_%d")
+        timemax = datetime.strptime(timemax, "%Y_%m_%d")
+
     all_todo = 0
     all_return = 0
     all_good = 0
@@ -114,6 +127,12 @@ def main():
     total_time = 0
     all_jobs = []
     for dir in dirs:
+        this_date = re.sub(f".+/{args.data_level}/", "", dir)
+        this_date = re.sub(r"\D", "", this_date.split("/")[0])
+        this_date = datetime.strptime(this_date, "%Y%m%d")
+        if timerange and (this_date < timemin or this_date > timemax):
+            continue
+
         print(dir)
         list_dl0 = ""
         ins = ["list_dl0.txt", "list_LST.txt", "list_coin.txt", "list_cal.txt"]
@@ -154,7 +173,6 @@ def main():
                             ):  # MaxRSS sometimes is missing in the output
                                 cpu = out[1]
                                 mem = None
-                                print("Memory usage information is missing")
                             else:
                                 print("Unexpected sacct output: {out}")
                             if cpu is not None:
@@ -166,8 +184,10 @@ def main():
                                     total_time += delta.total_seconds() / 3600
                                     all_jobs += [slurm_id]
                                 this_cpu.append(delta)
-                            if mem is not None:
+                            if mem is not None and mem.endswith("M"):
                                 this_mem.append(float(mem[0:-1]))
+                            else:
+                                print("Memory usage information is missing")
                     else:
                         print(f"file {file_in} failed with error {rc}")
                 if len(this_cpu) > 0:
