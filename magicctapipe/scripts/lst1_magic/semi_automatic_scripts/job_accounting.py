@@ -95,16 +95,12 @@ def main():
     print(f"Checking progress of jobs stored in {work_dir}")
     if source_out is None:
         source_out = "*"
+
+    indir = f"{work_dir}/v{args.version}/{source_out}/{args.data_level}"
     dirs = sorted(
-        glob.glob(
-            f"{work_dir}/v{args.version}/{source_out}/{args.data_level}/[0-9]*/[M0-9]*"
-        )
-        + glob.glob(
-            f"{work_dir}/v{args.version}/{source_out}/{args.data_level}/Merged_[0-9]*"
-        )
-        + glob.glob(
-            f"{work_dir}/v{args.version}/{source_out}/{args.data_level}/" + "[0-9]" * 8
-        )
+        glob.glob(f"{indir}/[0-9]*/[M0-9]*")
+        + glob.glob(f"{indir}/Merged_[0-9]*")
+        + glob.glob(f"{indir}/" + "[0-9]" * 8)
     )
     if dirs == []:
         versions = [x.split("/v")[-1] for x in glob.glob(f"{work_dir}/v*")]
