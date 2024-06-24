@@ -100,20 +100,19 @@ def main():
         try:
             h5key = "joint_obs"
             run_key = "LST1_run"
+            ismagic = False
             for magic in [1, 2]:
                 if args.data_level[-2:] == f"M{magic}":
                     h5key = f"MAGIC{magic}/runs_M{magic}"
                     run_key = "Run ID"
+                    ismagic = True
 
             h5runs = pd.read_hdf(args.run_list, key=h5key)
         except (FileNotFoundError, KeyError):
             print(f"Cannot open {h5key} in  {args.run_list}")
             exit(1)
 
-        if h5key != "joint_obs":
-            rc_col = "DL1_rc"
-        else:
-            rc_col = args.data_level + "_rc"
+        rc_col = "DL1_rc" if ismagic else args.data_level + "_rc"
 
         if rc_col not in h5runs.keys():
             h5runs[rc_col] = "{}"
@@ -202,7 +201,7 @@ def main():
                     rc = line[-1]
 
                     if args.run_list is not None:
-                        if h5key != "joint_obs":  # DL1/M[12]
+                        if ismagic:
                             run_subrun = file_in.split("/")[-1].split("_")[2]
                             this_run = int(run_subrun.split(".")[0])
                             this_subrun = int(run_subrun.split(".")[1])
@@ -302,10 +301,10 @@ def main():
         for rrun in rc_dicts.keys():
             idx = h5runs[run_key] == rrun
             h5runs.loc[idx, rc_col] = json.dumps(rc_dicts[rrun])
-            if h5key == "joint_obs":
-                all_subruns = len(rc_dicts[rrun])
-            else:
+            if ismagic:
                 all_subruns = np.array(h5runs[idx]["number of subruns"])[0]
+            else:
+                all_subruns = len(rc_dicts[rrun])
             good_subruns = sum(np.array(list(rc_dicts[rrun].values())) == "0")
             isgood = np.logical_and(good_subruns == all_subruns, good_subruns > 0)
             h5runs.loc[idx, rc_col + "_all"] = isgood
