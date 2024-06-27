@@ -39,7 +39,9 @@ for the joint analysis.
 Installation for users
 ----------------------
 
-*magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system. We recommend creating a conda virtual environment
+The very first step to reduce MAGIC-LST data is to have remote access/credentials to the IT Container. If you do not have it, please write an email to request it to <admin-ctan@cta-observatory.org>, and the admin will send you the instructions to connect to the IT container.
+
+*magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system (if you have mamba installed, we recommend you to use it instead of conda, so that the installation process will be much faster; if you don't have anaconda/miniconda/miniforge, please install one of them into your workspace directory). We recommend creating a conda virtual environment
 first, to isolate the installed version and dependencies from your master environment (this is optional).
 
 The following command will set up a conda virtual environment, add the necessary package channels, and install *magic-cta-pipe* and its dependencies::
