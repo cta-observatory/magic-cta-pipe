@@ -1,7 +1,7 @@
 from .clusters import slurm_lines
 from .coincident_events import configfile_coincidence, linking_bash_lst
 from .merging_runs import cleaning, merge, mergeMC, split_train_test
-from .setting_up_config_and_dir import (
+from .dl1_production import (
     config_file_gen,
     directories_generator_real,
     directories_generator_MC,

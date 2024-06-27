@@ -11,7 +11,7 @@ Notice that in this stage we only use MAGIC data.
 No LST data is used here.
 
 Standard usage:
-$ python setting_up_config_and_dir.py (-c config_file.yaml)
+$ python dl1_production.py (-c config_file.yaml)
 """
 import argparse
 import glob
@@ -498,7 +498,8 @@ def main():
             list_of_MC = glob.glob("linking_MC_*s.sh")
 
             # os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
-
+            
+            
             for n, run in enumerate(list_of_MC):
                 if n == 0:
                     launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"

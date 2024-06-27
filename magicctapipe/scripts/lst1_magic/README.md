@@ -99,7 +99,7 @@ Finding MAGIC runs...
 And it will save the files TARGET_LST_runs.txt, TARGET_MAGIC_runs.txt, and list_sources.dat in your current working directory. In case no runs are found for MAGIC and/or LST (for a source and a given time range/list of dates), a warning will be printed and no output text file will be produced for the given source and telescope(s).
 
 At this point, we can convert the MAGIC data into DL1 format with the following command:
-> $ setting_up_config_and_dir -c config_general.yaml
+> $ dl1_production -c config_general.yaml
 
 The output in the terminal will be something like this:
 ```
@@ -109,7 +109,7 @@ To check the jobs submitted to the cluster, type: squeue -n {source}
 This process will take about 10 min to run if the IT cluster is free.
 ```
 
-The command `setting_up_config_and_dir` does a series of things:
+The command `dl1_production` does a series of things:
 
 - Creates a directory with the target name within the directory `yourprojectname/{MCP_version}` and several subdirectories inside it that are necessary for the rest of the data reduction. The main directories are:
 ```
