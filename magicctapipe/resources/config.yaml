@@ -68,6 +68,7 @@ MAGIC:
         tailcut: [12, 8]
         ring_completeness_threshold: 25
 
+save_images: false
 
 event_coincidence:
     # History of the time offset between LST-1 and MAGIC
