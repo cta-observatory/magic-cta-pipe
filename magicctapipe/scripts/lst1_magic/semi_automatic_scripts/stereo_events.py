@@ -51,12 +51,14 @@ def configfile_stereo(target_dir, source_name, config_gen):
         Path to the working directory
     source_name : str
         Name of the target source
+    config_gen : dict
+        Dictionary of the entries of the general configuration file
     """
 
-    config_file = config_gen['general']['base_config_file']
-    if config_file=='':
+    config_file = config_gen["general"]["base_config_file"]
+    if config_file == "":
         config_file = resource_file("config.yaml")
-    
+
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
@@ -259,19 +261,24 @@ def main():
             and not NSB_match
         ):
             print("***** Generating the bashscript for MCs...")
-            for part in ["gammadiffuse", "gammas", "protons", "protons_test", "helium", "electrons"]:
+            for part in [
+                "gammadiffuse",
+                "gammas",
+                "protons",
+                "protons_test",
+                "helium",
+                "electrons",
+            ]:
                 bash_stereoMC(target_dir, part, env_name, source_name, cluster)
 
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
             launch_jobs = ""
-            
-            
+
             os.system(launch_jobs)
             for n, run in enumerate(list_of_stereo_scripts):
                 launch_jobs += (
                     " && " if n > 0 else ""
                 ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
-                
 
             os.system(launch_jobs)
 

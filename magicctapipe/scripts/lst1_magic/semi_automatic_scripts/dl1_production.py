@@ -60,9 +60,11 @@ def config_file_gen(target_dir, noise_value, NSB_match, source_name, config_gen)
         If real data are matched to pre-processed MCs or not
     source_name : str
         Name of the target source
+    config_gen : dict
+        Dictionary of the entries of the general configuration file
     """
-    config_file = config_gen['general']['base_config_file']
-    if config_file=='':
+    config_file = config_gen["general"]["base_config_file"]
+    if config_file == "":
         config_file = resource_file("config.yaml")
     with open(
         config_file, "rb"
@@ -80,7 +82,7 @@ def config_file_gen(target_dir, noise_value, NSB_match, source_name, config_gen)
         "LST": LST_config,
         "MAGIC": MAGIC_config,
     }
-    if source_name == 'MC':
+    if source_name == "MC":
         file_name = f"{target_dir}/v{__version__}/MC/config_DL0_to_DL1.yaml"
     else:
         file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
@@ -114,8 +116,6 @@ def lists_and_bash_generator(
         Focal length to be used to process MCs (e.g., 'nominal')
     env_name : str
         Name of the environment
-    source_name : str
-        Name of the target source
     cluster : str
         Cluster system
     """
@@ -123,7 +123,7 @@ def lists_and_bash_generator(
     if MC_path == "":
         return
     print(f"running {particle_type} from {MC_path}")
-    process_name = 'MC'
+    process_name = "MC"
 
     list_of_nodes = glob.glob(f"{MC_path}/node*")
     dir1 = f"{target_dir}/v{__version__}/MC"
@@ -131,17 +131,19 @@ def lists_and_bash_generator(
         f"{dir1}/logs/list_nodes_{particle_type}_complete.txt", "w"
     ) as f:  # creating list_nodes_gammas_complete.txt
         for i in list_of_nodes:
-            out_list=glob.glob(f"{i}/output*\n")
-            if len(out_list)==0:
-                logger.error(f'No output file for node {i}, or the directory structure is not the usual one. Skipping...')
+            out_list = glob.glob(f"{i}/output*\n")
+            if len(out_list) == 0:
+                logger.error(
+                    f"No output file for node {i}, or the directory structure is not the usual one. Skipping..."
+                )
                 continue
-            elif len(out_list)==1:
+            elif len(out_list) == 1:
                 f.write(f"{out_list[0]}\n")
             else:
-                output_index = input(f"The available outputs are {out_list}, please provide the array index of the desired one:")
+                output_index = input(
+                    f"The available outputs are {out_list}, please provide the array index of the desired one:"
+                )
                 f.write(f"{out_list[output_index]}\n")
-                
-            
 
     with open(
         f"{dir1}/logs/list_folder_{particle_type}.txt", "w"
@@ -326,11 +328,14 @@ def directories_generator_real(
         os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1", exist_ok=True)
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
     else:
-        
+
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations")
         if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
-            os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations", exist_ok=True)
-          
+            os.makedirs(
+                f"{target_dir}/v{__version__}/{source_name}/DL1/Observations",
+                exist_ok=True,
+            )
+
         else:
             overwrite = input(
                 f'data directory for {target_dir.split("/")[-1]} already exists. Would you like to overwrite it? [only "y" or "n"]: '
@@ -338,9 +343,10 @@ def directories_generator_real(
             if overwrite == "y":
                 os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
                 os.makedirs(
-                    f"{target_dir}/v{__version__}/{source_name}/DL1/Observations", exist_ok=True
+                    f"{target_dir}/v{__version__}/{source_name}/DL1/Observations",
+                    exist_ok=True,
                 )
-                
+
             else:
                 print("Directory not modified.")
 
@@ -351,9 +357,9 @@ def directories_generator_real(
         for magic in [1, 2]:
             if telescope_ids[magic - 3] > 0:
                 os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs", exist_ok=True)
-def directories_generator_MC(
-    target_dir, telescope_ids, NSB_match
-):
+
+
+def directories_generator_MC(target_dir, telescope_ids, NSB_match):
 
     """
     Here we create all subdirectories for a given workspace and target name.
@@ -368,9 +374,6 @@ def directories_generator_MC(
         If real data are matched to pre-processed MCs or not
     """
 
-    
-    dl1_dir = str(f"{target_dir}/v{__version__}/MC/DL1")
-    
     dir_list = [
         "gammas",
         "gammadiffuse",
@@ -378,7 +381,7 @@ def directories_generator_MC(
         "protons",
         "helium",
     ]
-    if not os.path.exists(f'{target_dir}/v{__version__}/MC'):
+    if not os.path.exists(f"{target_dir}/v{__version__}/MC"):
         os.makedirs(f"{target_dir}/v{__version__}/MC/logs", exist_ok=True)
         os.makedirs(f"{target_dir}/v{__version__}/MC/DL1", exist_ok=True)
         for dir in dir_list:
@@ -388,7 +391,7 @@ def directories_generator_MC(
             )
     else:
         overwrite = input(
-            f'MC directory already exists. Would you like to overwrite it? [only "y" or "n"]: '
+            'MC directory already exists. Would you like to overwrite it? [only "y" or "n"]: '
         )
         if overwrite == "y":
             os.system(f"rm -r {target_dir}/v{__version__}/MC")
@@ -399,9 +402,6 @@ def directories_generator_MC(
                 )
         else:
             print("Directory not modified.")
-
-    
-
 
 
 def main():
@@ -464,17 +464,15 @@ def main():
         noisebright = 1.15 * pow(nsb, 1.115)
         biasdim = 0.358 * pow(nsb, 0.805)
         noise_value = [nsb, noisebright, biasdim]
-    
+
     if not NSB_match:
         # Below we run the analysis on the MC data
-        if (args.analysis_type == "onlyMC") or (
-            args.analysis_type == "doEverything"
-        ):
+        if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
             directories_generator_MC(
                 str(target_dir), telescope_ids, NSB_match
             )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
             config_file_gen(
-                target_dir, noise_value, NSB_match, 'MC', config
+                target_dir, noise_value, NSB_match, "MC", config
             )  # TODO: fix here
             to_process = {
                 "gammas": MC_gammas,
@@ -490,7 +488,6 @@ def main():
                     to_process[particle],
                     focal_length,
                     env_name,
-                    
                     cluster,
                 )
 
@@ -498,8 +495,7 @@ def main():
             list_of_MC = glob.glob("linking_MC_*s.sh")
 
             # os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
-            
-            
+
             for n, run in enumerate(list_of_MC):
                 if n == 0:
                     launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
@@ -508,14 +504,12 @@ def main():
 
             os.system(launch_jobs_MC)
     for source_name in source_list:
-        
 
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
         )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
 
-        
         # TODO: fix here above
         print("*** Converting Calibrated into DL1 data ***")
         print(f"Process name: {source_name}")
@@ -530,8 +524,6 @@ def main():
         config_file_gen(
             target_dir, noise_value, NSB_match, source_name, config
         )  # TODO: fix here
-
-        
 
         # Below we run the analysis on the MAGIC data
         if (

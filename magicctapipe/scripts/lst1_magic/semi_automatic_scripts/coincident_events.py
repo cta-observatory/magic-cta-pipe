@@ -49,11 +49,13 @@ def configfile_coincidence(target_dir, source_name, config_gen):
         Path to the working directory
     source_name : str
         Name of the target source
+    config_gen : dict
+        Dictionary of the entries of the general configuration file
     """
-    config_file = config_gen['general']['base_config_file']
-    if config_file=='':
+    config_file = config_gen["general"]["base_config_file"]
+    if config_file == "":
         config_file = resource_file("config.yaml")
-    
+
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading

@@ -170,9 +170,9 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                     if os.path.exists(f"{indir}"):
                         outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"
                         os.makedirs(f"{outdir}/logs", exist_ok=True)
-                        #os.system(
+                        # os.system(
                         #    f'find  {indir} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
-                        #)
+                        # )
                         f.write(
                             f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
                         )
