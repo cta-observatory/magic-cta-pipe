@@ -273,7 +273,7 @@ def main():
 
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
             launch_jobs = ""
-
+            #TODO: check on N. bash scripts
             os.system(launch_jobs)
             for n, run in enumerate(list_of_stereo_scripts):
                 launch_jobs += (
@@ -296,6 +296,7 @@ def main():
         # Below we run the bash scripts to find the stereo events
         list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_StereoEvents*.sh"))
         if len(list_of_stereo_scripts) < 1:
+            logger.warning("No bash scripts for real data")
             continue
         for n, run in enumerate(list_of_stereo_scripts):
             if n == 0:

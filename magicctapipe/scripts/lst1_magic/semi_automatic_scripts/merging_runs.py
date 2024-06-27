@@ -183,7 +183,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                         f.writelines(rc)
                         os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
                     else:
-                        print(f"ERROR: {indir} does not exist")
+                        logger.error(f"{indir} does not exist")
 
         elif identification == "1_M1M2":
             for i in MAGIC_runs:
@@ -202,8 +202,8 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                     f.writelines(rc)
                     os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
                 else:
-                    print(
-                        f"ERROR {MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
+                    logger.error(
+                        f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
                     )
         else:
             dates = np.unique(MAGIC_runs.T[0])
@@ -366,16 +366,22 @@ def main():
 
                 # Below we run the bash scripts to merge the MC files
                 list_of_merging_scripts = np.sort(glob.glob("Merge_MC_*.sh"))
+                if len(list_of_merging_scripts) < 1:
+                    logger.warning(
+                        "No bash script has been produced for MC"
+                    )
+                # TODO: check
 
-                for n, run in enumerate(list_of_merging_scripts):
-                    if n == 0:
-                        launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
-                    else:
-                        launch_jobs = (
-                            f"{launch_jobs} && merging{n}=$(sbatch --parsable {run})"
-                        )
+                else:
+                    for n, run in enumerate(list_of_merging_scripts):
+                        if n == 0:
+                            launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
+                        else:
+                            launch_jobs = (
+                                f"{launch_jobs} && merging{n}=$(sbatch --parsable {run})"
+                            )
 
-                os.system(launch_jobs)
+                    os.system(launch_jobs)
 
         # Below we run the analysis on the MAGIC data
         if (
@@ -419,7 +425,7 @@ def main():
                 glob.glob(f"{source_name}_Merge_MAGIC_*.sh")
             )
             if len(list_of_merging_scripts) < 1:
-                logger.warning("no bash scripts")
+                logger.warning("No bash scripts for real data")
                 continue
             for n, run in enumerate(list_of_merging_scripts):
                 if n == 0:

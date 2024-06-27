@@ -249,6 +249,7 @@ def main():
                 glob.glob(f"{source_name}_LST_coincident*.sh")
             )
             if len(list_of_coincidence_scripts) < 1:
+                logger.warning("No bash scripts")
                 continue
             launch_jobs = ""
             for n, run in enumerate(list_of_coincidence_scripts):
@@ -259,7 +260,7 @@ def main():
             os.system(launch_jobs)
 
         except OSError as exc:
-            print(exc)
+            logger.error(exc)
 
 
 if __name__ == "__main__":
