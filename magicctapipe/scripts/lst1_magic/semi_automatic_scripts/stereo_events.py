@@ -259,18 +259,19 @@ def main():
             and not NSB_match
         ):
             print("***** Generating the bashscript for MCs...")
-            for part in ["gammadiffuse", "gammas", "protons", "protons_test"]:
+            for part in ["gammadiffuse", "gammas", "protons", "protons_test", "helium", "electrons"]:
                 bash_stereoMC(target_dir, part, env_name, source_name, cluster)
 
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
-
+            launch_jobs = ""
+            
+            
+            os.system(launch_jobs)
             for n, run in enumerate(list_of_stereo_scripts):
-                if n == 0:
-                    launch_jobs = f"stereo{n}=$(sbatch --parsable {run})"
-                else:
-                    launch_jobs = (
-                        f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
-                    )
+                launch_jobs += (
+                    " && " if n > 0 else ""
+                ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+                
 
             os.system(launch_jobs)
 

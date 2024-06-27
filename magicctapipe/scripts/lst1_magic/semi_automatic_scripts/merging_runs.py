@@ -359,6 +359,8 @@ def main():
                     target_dir, "gammas", env_name, source_name, cluster
                 )  # generating the bash script to merge the files
                 mergeMC(target_dir, "protons_test", env_name, source_name, cluster)
+                mergeMC(target_dir, "helium", env_name, source_name, cluster)
+                mergeMC(target_dir, "electrons", env_name, source_name, cluster)
 
                 print("***** Running merge_hdf_files.py on the MC data files...")
 
