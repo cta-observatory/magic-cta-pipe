@@ -490,22 +490,17 @@ def main():
                     env_name,
                     cluster,
                 )
-
+                list_of_MC = glob.glob(f"linking_MC_{particle}_*.sh")
+                if len(list_of_MC) < 2:
+                    logger.warning(
+                        f"No bash script has been produced for processing {particle}"
+                    )
+                else:
+                    launch_jobs_MC = f"linking=$(sbatch --parsable linking_MC_{particle}_paths.sh) && running=$(sbatch --parsable --dependency=afterany:$linking linking_MC_{particle}_paths_r.sh)"
+                    os.system(launch_jobs_MC)
             # Here we do the MC DL0 to DL1 conversion:
-            list_of_MC = glob.glob("linking_MC_*s.sh")
-            if len(list_of_MC) < 1:
-                logger.warning(
-                    "No bash script has been produced for MC"
-                )
-            # os.system("RES=$(sbatch --parsable linking_MC_gammas_paths.sh) && sbatch --dependency=afterok:$RES MC_dl0_to_dl1.sh")
-            else:
-                for n, run in enumerate(list_of_MC):
-                    if n == 0:
-                        launch_jobs_MC = f"linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
-                    else:
-                        launch_jobs_MC = f"{launch_jobs_MC} && linking{n}=$(sbatch --parsable {run}) && running{n}=$(sbatch --parsable --dependency=afterany:$linking{n} {run[0:-3]}_r.sh)"
-
-                os.system(launch_jobs_MC)
+            
+                
     for source_name in source_list:
 
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"

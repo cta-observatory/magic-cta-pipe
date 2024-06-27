@@ -274,7 +274,7 @@ def main():
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
             launch_jobs = ""
             #TODO: check on N. bash scripts
-            os.system(launch_jobs)
+            
             for n, run in enumerate(list_of_stereo_scripts):
                 launch_jobs += (
                     " && " if n > 0 else ""
@@ -298,13 +298,16 @@ def main():
         if len(list_of_stereo_scripts) < 1:
             logger.warning("No bash scripts for real data")
             continue
+        launch_jobs = ""
+       
+        
         for n, run in enumerate(list_of_stereo_scripts):
-            if n == 0:
-                launch_jobs = f"stereo{n}=$(sbatch --parsable {run})"
-            else:
-                launch_jobs = f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+            launch_jobs += (
+                " && " if n > 0 else ""
+            ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
 
         os.system(launch_jobs)
+      
 
 
 if __name__ == "__main__":

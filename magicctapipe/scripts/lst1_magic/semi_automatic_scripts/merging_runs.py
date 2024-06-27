@@ -373,16 +373,14 @@ def main():
                 # TODO: check
 
                 else:
+                    launch_jobs = ""
                     for n, run in enumerate(list_of_merging_scripts):
-                        if n == 0:
-                            launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
-                        else:
-                            launch_jobs = (
-                                f"{launch_jobs} && merging{n}=$(sbatch --parsable {run})"
-                            )
+                        launch_jobs += (
+                            " && " if n > 0 else ""
+                        ) + f"merging{n}=$(sbatch --parsable {run})"
 
                     os.system(launch_jobs)
-
+             
         # Below we run the analysis on the MAGIC data
         if (
             (args.analysis_type == "onlyMAGIC")
@@ -427,13 +425,15 @@ def main():
             if len(list_of_merging_scripts) < 1:
                 logger.warning("No bash scripts for real data")
                 continue
+            launch_jobs = ""
             for n, run in enumerate(list_of_merging_scripts):
-                if n == 0:
-                    launch_jobs = f"merging{n}=$(sbatch --parsable {run})"
-                else:
-                    launch_jobs = f"{launch_jobs} && merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
+                launch_jobs += (
+                    " && " if n > 0 else ""
+                ) + f"merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
 
-            os.system(launch_jobs)
+            os.system(launch_jobs)            
+            
+                
 
         print(f"Process name: merging_{source_name}")
         print(
