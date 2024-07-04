@@ -131,7 +131,7 @@ def lists_and_bash_generator(
         f"{dir1}/logs/list_nodes_{particle_type}_complete.txt", "w"
     ) as f:  # creating list_nodes_gammas_complete.txt
         for i in list_of_nodes:
-            out_list = glob.glob(f"{i}/output*\n")
+            out_list = glob.glob(f"{i}/output*")
             if len(out_list) == 0:
                 logger.error(
                     f"No output file for node {i}, or the directory structure is not the usual one. Skipping..."
@@ -395,6 +395,7 @@ def directories_generator_MC(target_dir, telescope_ids, NSB_match):
         )
         if overwrite == "y":
             os.system(f"rm -r {target_dir}/v{__version__}/MC")
+            os.makedirs(f"{target_dir}/v{__version__}/MC/logs", exist_ok=True)
             for dir in dir_list:
                 os.makedirs(
                     f"{target_dir}/v{__version__}/MC/DL1/{dir}/logs",
@@ -499,36 +500,36 @@ def main():
                     launch_jobs_MC = f"linking=$(sbatch --parsable linking_MC_{particle}_paths.sh) && running=$(sbatch --parsable --dependency=afterany:$linking linking_MC_{particle}_paths_r.sh)"
                     os.system(launch_jobs_MC)
             # Here we do the MC DL0 to DL1 conversion:
-            
-                
-    for source_name in source_list:
-
-        MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
-        MAGIC_runs = np.genfromtxt(
-            MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
-        )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
-
-        # TODO: fix here above
-        print("*** Converting Calibrated into DL1 data ***")
-        print(f"Process name: {source_name}")
-        print(
-            f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
-        )
-        print("This process will take about 10 min to run if the IT cluster is free.")
-
-        directories_generator_real(
-            str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
-        )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
-        config_file_gen(
-            target_dir, noise_value, NSB_match, source_name, config
-        )  # TODO: fix here
-
-        # Below we run the analysis on the MAGIC data
-        if (
+    if (
             (args.analysis_type == "onlyMAGIC")
             or (args.analysis_type == "doEverything")
             or (NSB_match)
-        ):
+        ):    
+                
+        for source_name in source_list:
+
+            MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
+            MAGIC_runs = np.genfromtxt(
+                MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
+            )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
+
+            # TODO: fix here above
+            print("*** Converting Calibrated into DL1 data ***")
+            print(f"Process name: {source_name}")
+            print(
+                f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
+            )
+            print("This process will take about 10 min to run if the IT cluster is free.")
+
+            directories_generator_real(
+                str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
+            )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
+            config_file_gen(
+                target_dir, noise_value, NSB_match, source_name, config
+            )  # TODO: fix here
+
+            # Below we run the analysis on the MAGIC data
+        
             lists_and_bash_gen_MAGIC(
                 target_dir,
                 telescope_ids,
