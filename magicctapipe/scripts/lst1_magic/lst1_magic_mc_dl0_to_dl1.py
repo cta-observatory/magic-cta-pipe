@@ -119,6 +119,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     # Configure the LST event processors
     config_lst = config["LST"]
+    config_lst["mc_tel_ids"] = assigned_tel_ids
 
     logger.info("\nLST image extractor:")
     logger.info(format_object(config_lst["image_extractor"]))
@@ -152,9 +153,14 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     # Configure the MAGIC event processors
     config_magic = config["MAGIC"]
+    config_magic["mc_tel_ids"] = assigned_tel_ids
 
     logger.info("\nMAGIC image extractor:")
     logger.info(format_object(config_magic["image_extractor"]))
+
+    logger.info("\nMAGIC NSB modifier:")
+    logger.info(format_object(config_magic["increase_nsb_m1"]))
+    logger.info(format_object(config_magic["increase_nsb_m2"]))
 
     extractor_type_magic = config_magic["image_extractor"].pop("type")
     config_extractor_magic = {extractor_type_magic: config_magic["image_extractor"]}
@@ -257,6 +263,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                     signal_pixels, image, peak_time = calibrate(
                         event=event,
                         tel_id=tel_id,
+                        obs_id=obs_id,
                         config=config_magic,
                         magic_clean=magic_clean,
                         calibrator=calibrator_magic,
