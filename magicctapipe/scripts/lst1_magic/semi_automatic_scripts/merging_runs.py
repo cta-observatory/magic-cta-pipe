@@ -72,7 +72,7 @@ def cleaning(list_of_nodes):
     print("Cleaning done.")
 
 
-def split_train_test(target_dir, train_fraction, source_name):
+def split_train_test(target_dir, train_fraction):
 
     """
     This function splits the MC proton sample in 2, i.e. the "test" and the "train" subsamples, in case you want to make performance studies on MC. For regular analyses, you can/should use the whole MC sample for training.
@@ -89,7 +89,7 @@ def split_train_test(target_dir, train_fraction, source_name):
         Name of the target source
     """
 
-    proton_dir = f"{target_dir}/{source_name}/DL1/MC/protons"
+    proton_dir = f"{target_dir}/v{__version__}/MC/DL1/protons"
 
     list_of_dir = np.sort(glob.glob(f"{proton_dir}/node*{os.path.sep}"))
 
@@ -224,7 +224,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                 os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
 
 
-def mergeMC(target_dir, identification, env_name, source_name, cluster):
+def mergeMC(target_dir, identification, env_name, cluster):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
@@ -243,9 +243,9 @@ def mergeMC(target_dir, identification, env_name, source_name, cluster):
         Cluster system
     """
 
-    process_name = f"merging_{source_name}"
+    process_name = f"merging_MC"
 
-    MC_DL1_dir = f"{target_dir}/{source_name}/DL1/MC"
+    MC_DL1_dir = f"{target_dir}/v{__version__}/MC/DL1"
     os.makedirs(f"{MC_DL1_dir}/{identification}/Merged", exist_ok=True)
 
     if identification == "protons":
@@ -331,56 +331,57 @@ def main():
 
     else:
         source_list.append(source)
+    if not NSB_match:
+        if (args.analysis_type == "onlyMC") or (
+            args.analysis_type == "doEverything"
+        ):
+            # Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
+            if not os.path.exists(
+                f"{target_dir}/v{__version__}/MC/DL1/protons_test"
+            ):
+                print("***** Splitting protons into 'train' and 'test' datasets...")
+                split_train_test(target_dir, train_fraction)
+
+            print("***** Generating merge_MC bashscripts...")
+            mergeMC(
+                target_dir, "protons", env_name,cluster
+            )  # generating the bash script to merge the files
+            mergeMC(
+                target_dir, "gammadiffuse", env_name, cluster
+            )  # generating the bash script to merge the files
+            mergeMC(
+                target_dir, "gammas", env_name, cluster
+            )  # generating the bash script to merge the files
+            mergeMC(target_dir, "protons_test", env_name, cluster)
+            mergeMC(target_dir, "helium", env_name, cluster)
+            mergeMC(target_dir, "electrons", env_name, cluster)
+
+            print("***** Running merge_hdf_files.py on the MC data files...")
+
+            # Below we run the bash scripts to merge the MC files
+            list_of_merging_scripts = np.sort(glob.glob("Merge_MC_*.sh"))
+            if len(list_of_merging_scripts) < 1:
+                logger.warning(
+                    "No bash script has been produced for MC"
+                )
+            # TODO: check
+
+            else:
+                launch_jobs = ""
+                for n, run in enumerate(list_of_merging_scripts):
+                    launch_jobs += (
+                        " && " if n > 0 else ""
+                    ) + f"merging{n}=$(sbatch --parsable {run})"
+
+                os.system(launch_jobs)
+             
     for source_name in source_list:
         # Below we run the analysis on the MC data
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
         )
-        if not NSB_match:
-            if (args.analysis_type == "onlyMC") or (
-                args.analysis_type == "doEverything"
-            ):
-                # Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
-                if not os.path.exists(
-                    f"{target_dir}/{source_name}/DL1/MC/protons_test"
-                ):
-                    print("***** Splitting protons into 'train' and 'test' datasets...")
-                    split_train_test(target_dir, train_fraction, source_name)
-
-                print("***** Generating merge_MC bashscripts...")
-                mergeMC(
-                    target_dir, "protons", env_name, source_name, cluster
-                )  # generating the bash script to merge the files
-                mergeMC(
-                    target_dir, "gammadiffuse", env_name, source_name, cluster
-                )  # generating the bash script to merge the files
-                mergeMC(
-                    target_dir, "gammas", env_name, source_name, cluster
-                )  # generating the bash script to merge the files
-                mergeMC(target_dir, "protons_test", env_name, source_name, cluster)
-                mergeMC(target_dir, "helium", env_name, source_name, cluster)
-                mergeMC(target_dir, "electrons", env_name, source_name, cluster)
-
-                print("***** Running merge_hdf_files.py on the MC data files...")
-
-                # Below we run the bash scripts to merge the MC files
-                list_of_merging_scripts = np.sort(glob.glob("Merge_MC_*.sh"))
-                if len(list_of_merging_scripts) < 1:
-                    logger.warning(
-                        "No bash script has been produced for MC"
-                    )
-                # TODO: check
-
-                else:
-                    launch_jobs = ""
-                    for n, run in enumerate(list_of_merging_scripts):
-                        launch_jobs += (
-                            " && " if n > 0 else ""
-                        ) + f"merging{n}=$(sbatch --parsable {run})"
-
-                    os.system(launch_jobs)
-             
+        
         # Below we run the analysis on the MAGIC data
         if (
             (args.analysis_type == "onlyMAGIC")
