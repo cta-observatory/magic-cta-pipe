@@ -87,6 +87,7 @@ def test_calibrate_MAGIC(dl0_gamma, config_calib, tel_id_MAGIC):
 
         config_magic = config_calib["MAGIC"]
         config_magic["magic_clean"].update({"find_hotpixels": False})
+        config_magic["mc_tel_ids"] = config_calib["mc_tel_ids"]
 
         extractor_type_magic = config_magic["image_extractor"].pop("type")
         config_extractor_magic = {extractor_type_magic: config_magic["image_extractor"]}

@@ -102,12 +102,13 @@ def calibrate(
         if config["mc_tel_ids"]["MAGIC-II"] == tel_id:
             nsb_dict += "_m2"
 
-    increase_nsb = config[nsb_dict].pop("use")
-    if increase_nsb:
-        rng = np.random.default_rng(obs_id + event.index.event_id)
-        # Add extra noise in pixels
-        image = add_noise_in_pixels(rng, image, **config[nsb_dict])
-        config[nsb_dict]["use"] = increase_nsb
+    if nsb_dict in config:
+        increase_nsb = config[nsb_dict].pop("use")
+        if increase_nsb:
+            rng = np.random.default_rng(obs_id + event.index.event_id)
+            # Add extra noise in pixels
+            image = add_noise_in_pixels(rng, image, **config[nsb_dict])
+            config[nsb_dict]["use"] = increase_nsb
 
     if is_lst:
         increase_psf = config["increase_psf"]["use"]
