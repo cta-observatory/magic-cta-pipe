@@ -158,9 +158,10 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     logger.info("\nMAGIC image extractor:")
     logger.info(format_object(config_magic["image_extractor"]))
 
-    logger.info("\nMAGIC NSB modifier:")
-    logger.info(format_object(config_magic["increase_nsb_m1"]))
-    logger.info(format_object(config_magic["increase_nsb_m2"]))
+    for imagic in [1, 2]:
+        if f"increase_nsb_m{imagic}" in config_magic:
+            logger.info("\nMAGIC-" + imagic * "I" + " NSB modifier:")
+            logger.info(format_object(config_magic[f"increase_nsb_m{imagic}"]))
 
     extractor_type_magic = config_magic["image_extractor"].pop("type")
     config_extractor_magic = {extractor_type_magic: config_magic["image_extractor"]}
