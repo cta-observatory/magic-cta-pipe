@@ -33,41 +33,6 @@ from traitlets.config import Config
 
 log = logging.getLogger(__name__)
 
-parser = argparse.ArgumentParser(description="Tune MAGIC NSB")
-
-# Required arguments
-parser.add_argument(
-    "--config",
-    "-c",
-    type=Path,
-    help="Path to the configuration file for the production (MCP general config)",
-    required=True,
-)
-
-parser.add_argument(
-    "--input-mc",
-    "-m",
-    type=Path,
-    help="Path to a simtel file of the production (must include the true "
-    "p.e. images)",
-    required=True,
-)
-
-parser.add_argument(
-    "--input-data",
-    "-d",
-    type=Path,
-    help="Path to a data _Y_ MARS file",
-    required=True,
-)
-
-parser.add_argument(
-    "--output-file",
-    "-o",
-    type=Path,
-    help="Path to a output file where to dump the update config",
-)
-
 
 def calculate_MAGIC_noise(simtel_filename, magic_filename, config_filename):
     """
@@ -284,6 +249,42 @@ def calculate_MAGIC_noise(simtel_filename, magic_filename, config_filename):
 
 def main():
     """Main function for getting the MAGIC added NSB noise parameters."""
+
+    parser = argparse.ArgumentParser(description="Tune MAGIC NSB")
+
+    # Required arguments
+    parser.add_argument(
+        "--config",
+        "-c",
+        type=Path,
+        help="Path to the configuration file for the production (MCP general config)",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--input-mc",
+        "-m",
+        type=Path,
+        help="Path to a simtel file of the production (must include the true "
+        "p.e. images)",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--input-data",
+        "-d",
+        type=Path,
+        help="Path to a data _Y_ MARS file",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--output-file",
+        "-o",
+        type=Path,
+        help="Path to a output file where to dump the update config",
+    )
+
     args = parser.parse_args()
 
     if not args.config.is_file():
