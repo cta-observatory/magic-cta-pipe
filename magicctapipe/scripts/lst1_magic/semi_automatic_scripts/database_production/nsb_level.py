@@ -14,6 +14,7 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import yaml
+from magicctapipe.io import resource_file
 
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
@@ -98,14 +99,22 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+    config_db = resource_file("database_config.yaml")
 
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5=config_dict['database_paths']['LST']
+    LST_key=config_dict['database_keys']['LST']
     env_name = config["general"]["env_name"]
 
     cluster = config["general"]["cluster"]
 
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )
     lstchain_v = config["general"]["LST_version"]
     lstchain_modified = config["general"]["lstchain_modified_config"]
@@ -168,8 +177,8 @@ def main():
         return
     print("Update database and launch jobs")
     df_old = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )
     df_LST = pd.concat([df_LST, df_old]).drop_duplicates(
         subset="LST1_run", keep="first"
@@ -183,8 +192,8 @@ def main():
     os.system(launch_jobs)
 
     df_LST.to_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,

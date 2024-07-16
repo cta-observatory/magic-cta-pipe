@@ -7,6 +7,7 @@ import glob
 import os
 
 import pandas as pd
+from magicctapipe.io import resource_file
 
 lstchain_versions = ["v0.9", "v0.10"]
 __all__ = ["version_lstchain"]
@@ -61,17 +62,25 @@ def main():
     """
     Main function
     """
+    config_file = resource_file("database_config.yaml")
 
+    with open(
+        config_file, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5=config_dict['database_paths']['LST']
+    LST_key=config_dict['database_keys']['LST']
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key
     )
 
     version_lstchain(df_LST)
 
     df_LST.to_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,

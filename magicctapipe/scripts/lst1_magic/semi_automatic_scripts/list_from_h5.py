@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import yaml
+from magicctapipe.io import resource_file
 
 
 def split_lst_date(df):
@@ -213,7 +214,18 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+    config_db = resource_file("database_config.yaml")
 
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5=config_dict['database_paths']['LST']
+    LST_key=config_dict['database_keys']['LST']
+    MAGIC_h5=config_dict['database_paths']['MAGIC']
+    MAGIC1_key=config_dict['database_keys']['MAGIC-I']
+    MAGIC2_key=config_dict['database_keys']['MAGIC-II']
     source_in = config["data_selection"]["source_name_database"]
     source_out = config["data_selection"]["source_name_output"]
     range = config["data_selection"]["time_range"]
@@ -221,8 +233,8 @@ def main():
     skip_MAGIC = config["data_selection"]["skip_MAGIC_runs"]
 
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )  # TODO: put this file in a shared folder
     df_LST.dropna(subset=["LST1_run"], inplace=True)
     df_LST = split_lst_date(df_LST)
@@ -267,12 +279,12 @@ def main():
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
     df_MAGIC1 = pd.read_hdf(
-        "/fefs/aswg/workspace/joanna.wojtowicz/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
-        key="MAGIC1/runs_M1",
+        MAGIC_h5,
+        key=MAGIC1_key,
     )
     df_MAGIC2 = pd.read_hdf(
-        "/fefs/aswg/workspace/joanna.wojtowicz/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
-        key="MAGIC2/runs_M2",
+        MAGIC_h5,
+        key=MAGIC2_key,
     )
     df_MAGIC1["Source"] = df_MAGIC1["Source"].str.replace(" ", "")
     df_MAGIC2["Source"] = df_MAGIC2["Source"].str.replace(" ", "")

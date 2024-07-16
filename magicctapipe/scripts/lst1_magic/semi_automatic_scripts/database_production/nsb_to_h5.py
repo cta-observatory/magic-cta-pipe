@@ -9,6 +9,7 @@ import logging
 
 import numpy as np
 import pandas as pd
+from magicctapipe.io import resource_file
 
 __all__ = ["collect_nsb"]
 
@@ -43,7 +44,7 @@ def collect_nsb(df_LST):
 
         df_LST.loc[run, "nsb"] = float(nsb)
     df_LST = df_LST.reset_index()
-    return df_LST
+    return df_LSTreading/
 
 
 def main():
@@ -51,10 +52,18 @@ def main():
     """
     Main function
     """
+    config_file = resource_file("database_config.yaml")
 
+    with open(
+        config_file, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5=config_dict['database_paths']['LST']
+    LST_key=config_dict['database_keys']['LST']
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )
 
     df_new = collect_nsb(df_LST)
@@ -84,8 +93,8 @@ def main():
         ]
     ]
     df_new.to_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
         mode="w",
     )
 

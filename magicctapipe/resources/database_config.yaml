@@ -1,0 +1,11 @@
+database_paths:
+    input_1: "/fefs/aswg/workspace/federico.dipierro/simultaneous_obs_summary.h5"
+    input_2: "/home/alessio.berti/MAGIC-LST_common/runfile/simultaneous_obs_summary.h5"
+    MAGIC: '/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_runs_subruns.h5'
+    LST: "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5"
+database_keys:
+    input_1: '/str'
+    input_2: '/str'
+    MAGIC-I: "MAGIC1/runs_M1"
+    MAGIC-II: "MAGIC2/runs_M2"
+    LST: "joint_obs"
