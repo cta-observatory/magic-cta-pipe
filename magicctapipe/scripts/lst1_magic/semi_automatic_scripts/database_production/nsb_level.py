@@ -6,6 +6,7 @@ Usage: python nsb_level.py (-c config.yaml)
 
 import argparse
 import glob
+import json
 import logging
 import os
 from datetime import datetime
@@ -13,6 +14,9 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import yaml
+from magicctapipe.io import resource_file
+
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
 from .lstchain_version import lstchain_versions
 
@@ -23,7 +27,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def bash_scripts(run, date, config, env_name, cluster):
+def bash_scripts(run, date, config, env_name, cluster, lst_config):
 
     """Here we create the bash scripts (one per LST run)
 
@@ -35,29 +39,31 @@ def bash_scripts(run, date, config, env_name, cluster):
         LST date
     config : str
         Name of the configuration file
-
     env_name : str
         Name of the environment
+    cluster : str
+        Cluster system
+    lst_config : str
+        Configuration file lstchain
     """
-    if cluster == 'SLURM':
-        lines = [
-            "#!/bin/sh\n\n",
-            "#SBATCH -p long\n",
-            "#SBATCH -J nsb\n",
-            "#SBATCH -n 1\n\n",
-            f"#SBATCH --output=slurm-nsb_{run}-%x.%j.out\n"
-            f"#SBATCH --error=slurm-nsb_{run}-%x.%j.err\n"
-            "ulimit -l unlimited\n",
-            "ulimit -s unlimited\n",
-            "ulimit -a\n\n",
-            f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} > nsblog_{date}_{run}_"
-            + "${SLURM_JOB_ID}.log 2>&1 \n\n",
-        ]
-        with open(f"nsb_{date}_run_{run}.sh", "w") as f:
-            f.writelines(lines)
-    else:
-        logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
         return
+    slurm = slurm_lines(
+        queue="long",
+        job_name="nsb",
+        out_name=f"slurm-nsb_{run}-%x.%j",
+    )
+    lines = slurm + [
+        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} -l {lst_config} > nsblog_{date}_{run}_",
+        "${SLURM_JOB_ID}.log 2>&1 \n\n",
+    ]
+
+    with open(f"nsb_{date}_run_{run}.sh", "w") as f:
+        f.writelines(lines)
+
 
 def main():
 
@@ -93,17 +99,37 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+    config_db = resource_file("database_config.yaml")
 
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5=config_dict['database_paths']['LST']
+    LST_key=config_dict['database_keys']['LST']
     env_name = config["general"]["env_name"]
-    
+
     cluster = config["general"]["cluster"]
 
-
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )
     lstchain_v = config["general"]["LST_version"]
+    lstchain_modified = config["general"]["lstchain_modified_config"]
+    conda_path = os.environ["CONDA_PREFIX"]
+    lst_config_orig = (
+        str(conda_path)
+        + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
+    )
+    with open(lst_config_orig, "r") as f_lst:
+        lst_dict = json.load(f_lst)
+    if lstchain_modified:
+        lst_dict["source_config"]["LSTEventSource"]["use_flatfield_heuristic"] = True
+    with open("lstchain.json", "w+") as outfile:
+        json.dump(lst_dict, outfile)
+    lst_config = "lstchain.json"
 
     min = datetime.strptime(args.begin_date, "%Y_%m_%d")
     max = datetime.strptime(args.end_date, "%Y_%m_%d")
@@ -138,7 +164,7 @@ def main():
         ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
-        bash_scripts(run_number, date, args.config_file, env_name, cluster)
+        bash_scripts(run_number, date, args.config_file, env_name, cluster, lst_config)
 
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
@@ -146,13 +172,13 @@ def main():
 
     if len(list_of_bash_scripts) < 1:
         logger.warning(
-            "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input list"
+            "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input dates"
         )
         return
     print("Update database and launch jobs")
     df_old = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )
     df_LST = pd.concat([df_LST, df_old]).drop_duplicates(
         subset="LST1_run", keep="first"
@@ -161,15 +187,13 @@ def main():
 
     launch_jobs = ""
     for n, run in enumerate(list_of_bash_scripts):
-        launch_jobs += (
-            " && " if n > 0 else ""
-        ) + f"nsb{n}=$(sbatch --parsable {run})"
+        launch_jobs += (" && " if n > 0 else "") + f"nsb{n}=$(sbatch --parsable {run})"
 
     os.system(launch_jobs)
 
     df_LST.to_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,

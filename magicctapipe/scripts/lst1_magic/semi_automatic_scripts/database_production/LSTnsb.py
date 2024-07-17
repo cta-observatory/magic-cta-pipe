@@ -4,13 +4,10 @@ Evaluates NSB level for a LST run
 import argparse
 import glob
 import logging
-import os
 
 import numpy as np
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
-
-from magicctapipe.io import resource_file
 
 __all__ = ["nsb"]
 
@@ -104,6 +101,13 @@ def main():
         help="Day of the run to be processed",
     )
     parser.add_argument(
+        "--lstchain-config",
+        "-l",
+        dest="lst_conf",
+        type=str,
+        help="lstchain configuration file",
+    )
+    parser.add_argument(
         "--denominator",
         "-s",
         dest="denominator",
@@ -119,6 +123,7 @@ def main():
     run_number = args.run
     date = args.day
     denominator = args.denominator
+    lst_config = args.lst_conf
     simtel = config["general"]["simtel_nsb"]
     nsb_list = config["general"]["nsb"]
     lst_version = config["general"]["LST_version"]
@@ -127,22 +132,12 @@ def main():
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
     nsb_limit.insert(0, 0)
-    conda_path = os.environ["CONDA_PREFIX"]
-    lstchain_modified = config["general"]["lstchain_modified_config"]
-    lst_config = (
-        str(conda_path)
-        + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
-    )
-    if lstchain_modified:
-        lst_config = resource_file("lstchain_standard_config_modified.json")
-    print(lst_config)
 
     LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
     if len(LST_files) == 1:
         logger.info(f"Run {run_number} already processed")
         return
-
 
     # date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
@@ -155,7 +150,7 @@ def main():
         return
     median_NSB = np.median(noise)
     logger.info(f"Run n. {run_number}, nsb median {median_NSB}")
-    
+
     for j in range(0, len(nsb_list)):
         if (median_NSB < nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
             with open(f"nsb_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
@@ -163,8 +158,6 @@ def main():
         if median_NSB > nsb_limit[-1]:
             with open(f"nsb_LST_high_{run_number}.txt", "a+") as f:
                 f.write(f"{date},{run_number},{median_NSB}\n")
-
-    
 
 
 if __name__ == "__main__":

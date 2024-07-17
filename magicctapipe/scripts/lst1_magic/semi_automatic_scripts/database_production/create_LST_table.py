@@ -1,14 +1,14 @@
 """
 Create a new h5 table from the one of joint observations.
 
-Only the columns needed to produce the lists of LST runs to be processed are presenved, and two columns are added to store NSB level and error codes
+Only the columns needed to produce the lists of LST runs to be processed are preserved, and two columns are added to store NSB level and error codes
 """
 
 import os
 
 import numpy as np
 import pandas as pd
-
+from magicctapipe.io import resource_file
 
 def main():
 
@@ -16,14 +16,48 @@ def main():
     Main function
     """
 
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--begin-date",
+        "-b",
+        dest="begin",
+        type=int,
+        default=0,
+        help="First date to update database (YYYYMMDD)",
+    )
+    parser.add_argument(
+        "--end-date",
+        "-e",
+        dest="end",
+        type=int,
+        default=0,
+        help="End date to update database (YYYYMMDD)",
+    )
+
+    args = parser.parse_args()
+    config_file = resource_file("database_config.yaml")
+
+    with open(
+        config_file, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    out_h5=config_dict['database_paths']['LST']
+    out_key=config_dict['database_keys']['LST']
+    
     df = pd.read_hdf(
-        "/fefs/aswg/workspace/federico.dipierro/simultaneous_obs_summary.h5", key="/str"
+        config_dict['database_paths']['input_1'], key=config_dict['database_keys']['input_1']
     )  # TODO: put this file in a shared folder
     df2 = pd.read_hdf(
-        "/home/alessio.berti/MAGIC-LST_common/runfile/simultaneous_obs_summary.h5",
-        key="/str",
+        config_dict['database_paths']['input_2'], key=config_dict['database_keys']['input_2']
     )  # TODO: put this file in a shared folder
     df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
+    if args.begin != 0:
+        df = df[df["DATE"] >= args.begin]
+    if args.end != 0:
+        df = df[df["DATE"] <= args.end]
+
     needed_cols = [
         "source",
         "DATE",
@@ -44,11 +78,11 @@ def main():
     df_cut = df_cut.assign(error_code_stereo=-1)
 
     if os.path.isfile(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5"
+        out_h5
     ):
         df_old = pd.read_hdf(
-            "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-            key="joint_obs",
+            out_h5,
+            key=out_key,
         )
         df_cut = pd.concat([df_old, df_cut]).drop_duplicates(
             subset="LST1_run", keep="first"
@@ -57,8 +91,8 @@ def main():
         # TODO check if fine with update and nsb
     df_cut = df_cut.reset_index(drop=True)
     df_cut.to_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        out_h5,
+        key=out_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,

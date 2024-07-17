@@ -639,6 +639,21 @@ def test_exist_coincidence_stereo(coincidence_stereo):
     assert len(glob.glob(f"{coincidence_stereo}/*")) == 1
 
 
+def test_get_stereo_events_multimatch(config_gen):
+    """
+    Check if multiple matched events are removed
+    """
+    d = {
+        "obs_id": [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        "tel_id": [1, 2, 1, 1, 3, 1, 1, 2, 3],
+        "event_id": [1, 1, 2, 2, 2, 3, 3, 3, 3],
+    }
+    event_data = pd.DataFrame(data=d)
+    event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+    data = get_stereo_events(event_data, config_gen)
+    assert np.all(data["multiplicity"] == [2, 2, 2, 2])
+
+
 @pytest.mark.dependency(depends=["test_exist_coincidence_stereo"])
 class TestStereoData:
     def test_get_stereo_events_data(self, coincidence_stereo, config_gen):
