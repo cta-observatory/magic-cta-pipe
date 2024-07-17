@@ -500,13 +500,13 @@ def main():
                     launch_jobs_MC = f"linking=$(sbatch --parsable linking_MC_{particle}_paths.sh) && running=$(sbatch --parsable --dependency=afterany:$linking linking_MC_{particle}_paths_r.sh)"
                     os.system(launch_jobs_MC)
             # Here we do the MC DL0 to DL1 conversion:
-    if (
-        (args.analysis_type == "onlyMAGIC")
-        or (args.analysis_type == "doEverything")
-        or (NSB_match)
-    ):
-
-        for source_name in source_list:
+    
+    for source_name in source_list:
+        if (
+            (args.analysis_type == "onlyMAGIC")
+            or (args.analysis_type == "doEverything")
+            or (NSB_match)
+        ):
 
             MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
             MAGIC_runs = np.genfromtxt(
