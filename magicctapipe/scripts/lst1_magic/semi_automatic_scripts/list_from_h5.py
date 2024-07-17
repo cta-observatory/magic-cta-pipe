@@ -53,7 +53,7 @@ def magic_date(df):
         The input dataframe with an added column.
     """
 
-    date_lst = pd.to_datetime(df["Date (LST convention)"], format="%Y%m%d")
+    date_lst = pd.to_datetime(df["DATE"], format="%Y%m%d")
     delta = pd.Timedelta("1 day")
     date_magic = date_lst + delta
     date_magic = date_magic.dt.strftime("%Y%m%d")
@@ -83,8 +83,8 @@ def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
     source_list = []
     if source_in is None:
         source_list = np.intersect1d(
-            np.intersect1d(np.unique(df_LST["source"]), np.unique(df_MAGIC1["Source"])),
-            np.unique(df_MAGIC2["Source"]),
+            np.intersect1d(np.unique(df_LST["source"]), np.unique(df_MAGIC1["source"])),
+            np.unique(df_MAGIC2["source"]),
         )
     else:
         source_list.append(source_out)
@@ -286,14 +286,14 @@ def main():
         MAGIC_h5,
         key=MAGIC2_key,
     )
-    df_MAGIC1["Source"] = df_MAGIC1["Source"].str.replace(" ", "")
-    df_MAGIC2["Source"] = df_MAGIC2["Source"].str.replace(" ", "")
+    #df_MAGIC1["Source"] = df_MAGIC1["Source"].str.replace(" ", "")
+    #df_MAGIC2["Source"] = df_MAGIC2["Source"].str.replace(" ", "")
 
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [int(sub.replace("-", "")) for sub in list_date_LST]
 
-    df_MAGIC1 = df_MAGIC1[df_MAGIC1["Date (LST convention)"].isin(list_date_LST_low)]
-    df_MAGIC2 = df_MAGIC2[df_MAGIC2["Date (LST convention)"].isin(list_date_LST_low)]
+    df_MAGIC1 = df_MAGIC1[df_MAGIC1["DATE"].isin(list_date_LST_low)]
+    df_MAGIC2 = df_MAGIC2[df_MAGIC2["DATE"].isin(list_date_LST_low)]
 
     clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2)
 
@@ -301,7 +301,7 @@ def main():
 
     df_MAGIC2 = magic_date(df_MAGIC2)
     df_MAGIC1 = magic_date(df_MAGIC1)
-    df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
+    #df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
     if (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):
