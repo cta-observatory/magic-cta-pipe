@@ -4,11 +4,15 @@ Create a new h5 table from the one of joint observations.
 Only the columns needed to produce the lists of LST runs to be processed are preserved, and two columns are added to store NSB level and error codes
 """
 
+import argparse
 import os
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from magicctapipe.io import resource_file
+
 
 def main():
 
@@ -43,14 +47,16 @@ def main():
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
-    out_h5=config_dict['database_paths']['LST']
-    out_key=config_dict['database_keys']['LST']
-    
+    out_h5 = config_dict["database_paths"]["LST"]
+    out_key = config_dict["database_keys"]["LST"]
+
     df = pd.read_hdf(
-        config_dict['database_paths']['input_1'], key=config_dict['database_keys']['input_1']
+        config_dict["database_paths"]["input_1"],
+        key=config_dict["database_keys"]["input_1"],
     )  # TODO: put this file in a shared folder
     df2 = pd.read_hdf(
-        config_dict['database_paths']['input_2'], key=config_dict['database_keys']['input_2']
+        config_dict["database_paths"]["input_2"],
+        key=config_dict["database_keys"]["input_2"],
     )  # TODO: put this file in a shared folder
     df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
     if args.begin != 0:
@@ -77,9 +83,7 @@ def main():
     df_cut = df_cut.assign(error_code_coincidence=-1)
     df_cut = df_cut.assign(error_code_stereo=-1)
 
-    if os.path.isfile(
-        out_h5
-    ):
+    if os.path.isfile(out_h5):
         df_old = pd.read_hdf(
             out_h5,
             key=out_key,

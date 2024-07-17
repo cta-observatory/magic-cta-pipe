@@ -85,8 +85,6 @@ def split_train_test(target_dir, train_fraction):
         Path to the working directory
     train_fraction : float
         Fraction of proton MC files to be used in the training RF dataset
-    source_name : str
-        Name of the target source
     """
 
     proton_dir = f"{target_dir}/v{__version__}/MC/DL1/protons"
@@ -237,13 +235,11 @@ def mergeMC(target_dir, identification, env_name, cluster):
         Tells which batch to create. Options: protons, gammadiffuse
     env_name : str
         Name of the environment
-    source_name : str
-        Name of the target source
     cluster : str
         Cluster system
     """
 
-    process_name = f"merging_MC"
+    process_name = "merging_MC"
 
     MC_DL1_dir = f"{target_dir}/v{__version__}/MC/DL1"
     os.makedirs(f"{MC_DL1_dir}/{identification}/Merged", exist_ok=True)
@@ -332,19 +328,15 @@ def main():
     else:
         source_list.append(source)
     if not NSB_match:
-        if (args.analysis_type == "onlyMC") or (
-            args.analysis_type == "doEverything"
-        ):
+        if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
             # Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):
-            if not os.path.exists(
-                f"{target_dir}/v{__version__}/MC/DL1/protons_test"
-            ):
+            if not os.path.exists(f"{target_dir}/v{__version__}/MC/DL1/protons_test"):
                 print("***** Splitting protons into 'train' and 'test' datasets...")
                 split_train_test(target_dir, train_fraction)
 
             print("***** Generating merge_MC bashscripts...")
             mergeMC(
-                target_dir, "protons", env_name,cluster
+                target_dir, "protons", env_name, cluster
             )  # generating the bash script to merge the files
             mergeMC(
                 target_dir, "gammadiffuse", env_name, cluster
@@ -361,9 +353,7 @@ def main():
             # Below we run the bash scripts to merge the MC files
             list_of_merging_scripts = np.sort(glob.glob("Merge_MC_*.sh"))
             if len(list_of_merging_scripts) < 1:
-                logger.warning(
-                    "No bash script has been produced for MC"
-                )
+                logger.warning("No bash script has been produced for MC")
             # TODO: check
 
             else:
@@ -374,14 +364,14 @@ def main():
                     ) + f"merging{n}=$(sbatch --parsable {run})"
 
                 os.system(launch_jobs)
-             
+
     for source_name in source_list:
         # Below we run the analysis on the MC data
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
         )
-        
+
         # Below we run the analysis on the MAGIC data
         if (
             (args.analysis_type == "onlyMAGIC")
@@ -429,12 +419,11 @@ def main():
             launch_jobs = ""
             for n, run in enumerate(list_of_merging_scripts):
                 launch_jobs += (
-                    " && " if n > 0 else ""
-                ) + f"merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
+                    (" && " if n > 0 else "")
+                    + f"merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
+                )
 
-            os.system(launch_jobs)            
-            
-                
+            os.system(launch_jobs)
 
         print(f"Process name: merging_{source_name}")
         print(

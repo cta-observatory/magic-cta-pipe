@@ -501,11 +501,11 @@ def main():
                     os.system(launch_jobs_MC)
             # Here we do the MC DL0 to DL1 conversion:
     if (
-            (args.analysis_type == "onlyMAGIC")
-            or (args.analysis_type == "doEverything")
-            or (NSB_match)
-        ):    
-                
+        (args.analysis_type == "onlyMAGIC")
+        or (args.analysis_type == "doEverything")
+        or (NSB_match)
+    ):
+
         for source_name in source_list:
 
             MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
@@ -519,7 +519,9 @@ def main():
             print(
                 f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
             )
-            print("This process will take about 10 min to run if the IT cluster is free.")
+            print(
+                "This process will take about 10 min to run if the IT cluster is free."
+            )
 
             directories_generator_real(
                 str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
@@ -529,7 +531,7 @@ def main():
             )  # TODO: fix here
 
             # Below we run the analysis on the MAGIC data
-        
+
             lists_and_bash_gen_MAGIC(
                 target_dir,
                 telescope_ids,
