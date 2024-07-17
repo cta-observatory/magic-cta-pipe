@@ -19,7 +19,7 @@ logger.setLevel(logging.INFO)
 
 def MergeStereo(target_dir, env_name, source, NSB_match, cluster):
     """
-    This function creates the bash scripts to run merge_hdf_files.py in all DL2 subruns.
+    This function creates the bash scripts to run merge_hdf_files.py in all DL1Stereo subruns.
 
     Parameters
     ----------
@@ -36,13 +36,14 @@ def MergeStereo(target_dir, env_name, source, NSB_match, cluster):
     listOfNightsLST = np.sort(glob.glob(f"{stereo_DL1_dir}/DL1Stereo/*"))
     if cluster == 'SLURM':
         for nightLST in listOfNightsLST:
+            night = nightLST.split('/')[-1]
             stereoMergeDir = (
-                f"{stereo_DL1_dir}/DL1Stereo/{nightLST.split('/')[-1]}/Merged"
+                f"{stereo_DL1_dir}/DL1Stereo/{night}/Merged"
             )
             os.makedirs(f"{stereoMergeDir}/logs", exist_ok=True)
             if not os.listdir(f"{nightLST}"):
                 continue
-            if len(os.listdir(nightLST)) < 3:
+            if len(glob.glob("f{nightLST}/dl1_stereo*.h5") < 1:
                 continue
 
         
@@ -58,12 +59,12 @@ def MergeStereo(target_dir, env_name, source, NSB_match, cluster):
             lines = (
                 slurm
                 + [
-                    f"conda run -n {env_name} merge_hdf_files --input-dir {nightLST} --output-dir {stereoMergeDir} --run-wise >{stereoMergeDir}/logs/merge_{nightLST.split('/')[-1]}_${{SLURM_JOB_ID}}.log\n"
+                    f"conda run -n {env_name} merge_hdf_files --input-dir {nightLST} --output-dir {stereoMergeDir} --run-wise >{stereoMergeDir}/logs/merge_{night}_${{SLURM_JOB_ID}}.log\n"
                 ]
                 + rc
             )
             
-            with open(f"{source}_StereoMerge_{nightLST.split('/')[-1]}.sh", "w") as f:
+            with open(f"{source}_StereoMerge_{night}.sh", "w") as f:
                 f.writelines(lines)
     else:
         logger.warning('Automatic processing not implemented for the cluster indicated in the config file')
@@ -111,7 +112,7 @@ def main():
         source_list.append(source)
     for source_name in source_list:
     
-        print("***** Merging DL2 files run-wise...")
+        print("***** Merging DL1Stereo files run-wise...")
         MergeStereo(target_dir, env_name, source, NSB_match, cluster)
 
         list_of_merge = glob.glob(f"{source_name}_StereoMerge_*.sh")
