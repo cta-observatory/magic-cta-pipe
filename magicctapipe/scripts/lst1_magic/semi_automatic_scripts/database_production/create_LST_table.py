@@ -15,6 +15,27 @@ def main():
     """
     Main function
     """
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--begin-date",
+        "-b",
+        dest="begin",
+        type=int,
+        default=0,
+        help="First date to update database (YYYYMMDD)",
+    )
+    parser.add_argument(
+        "--end-date",
+        "-e",
+        dest="end",
+        type=int,
+        default=0,
+        help="End date to update database (YYYYMMDD)",
+    )
+
+    args = parser.parse_args()
     config_file = resource_file("database_config.yaml")
 
     with open(
@@ -32,6 +53,11 @@ def main():
         config_dict['database_paths']['input_2'], key=config_dict['database_keys']['input_2']
     )  # TODO: put this file in a shared folder
     df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
+    if args.begin != 0:
+        df = df[df["DATE"] >= args.begin]
+    if args.end != 0:
+        df = df[df["DATE"] <= args.end]
+
     needed_cols = [
         "source",
         "DATE",
