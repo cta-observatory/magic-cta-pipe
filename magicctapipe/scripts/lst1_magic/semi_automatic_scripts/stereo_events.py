@@ -130,6 +130,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
             queue="short",
             job_name=f"{process_name}_stereo",
             array=process_size,
+            mem="2g",
             out_name=f"{stereoDir}/logs/slurm-%x.%A_%a",
         )
         rc = rc_lines(
@@ -164,12 +165,12 @@ def bash_stereoMC(target_dir, identification, env_name, cluster):
     identification : str
         Particle name. Options: protons, gammadiffuse, gammas, protons_test
     env_name : str
-        Name of the environment    
+        Name of the environment
     cluster : str
         Cluster system
     """
 
-    process_name = source
+    process_name = "stereo_MC"
 
     inputdir = f"{target_dir}/v{__version__}/MC/DL1/{identification}/Merged"
     os.makedirs(f"{inputdir}/StereoMerged", exist_ok=True)
@@ -189,7 +190,7 @@ def bash_stereoMC(target_dir, identification, env_name, cluster):
             queue="xxl",
             job_name=f"{process_name}_stereo",
             array=f"{process_size}%100",
-            mem="8g",
+            mem="7g",
             out_name=f"{inputdir}/StereoMerged/logs/slurm-%x.%A_%a",
         )
         lines = slurm + [
@@ -255,7 +256,7 @@ def main():
             or (args.analysis_type == "doEverything")
             and not NSB_match
         ):
-            configfile_stereo(target_dir, 'MC', config)
+            configfile_stereo(target_dir, "MC", config)
             print("***** Generating the bashscript for MCs...")
             for part in [
                 "gammadiffuse",
@@ -286,9 +287,6 @@ def main():
             print("***** Generating file config_stereo.yaml...")
             configfile_stereo(target_dir, source_name, config)
 
-            
-            
-
             # Below we run the analysis on the real data
 
             print("***** Generating the bashscript...")
@@ -301,7 +299,9 @@ def main():
             )
 
             # Below we run the bash scripts to find the stereo events
-            list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_StereoEvents*.sh"))
+            list_of_stereo_scripts = np.sort(
+                glob.glob(f"{source_name}_StereoEvents*.sh")
+            )
             if len(list_of_stereo_scripts) < 1:
                 logger.warning("No bash scripts for real data")
                 continue
