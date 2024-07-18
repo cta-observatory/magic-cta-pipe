@@ -67,8 +67,10 @@ def configfile_stereo(target_dir, source_name, config_gen):
         "mc_tel_ids": config_gen["mc_tel_ids"],
         "stereo_reco": config_dict["stereo_reco"],
     }
-
-    file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
+    if source_name == "MC":
+        file_name = f"{target_dir}/v{__version__}/MC/config_stereo.yaml"
+    else:
+        file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
     with open(file_name, "w") as f:
 
         yaml.dump(conf, f, default_flow_style=False)
@@ -95,10 +97,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
 
     process_name = source
 
-    if NSB_match:
-        coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}"
-    else:
-        coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/Observations"
+    coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}"
 
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
     if cluster != "SLURM":
@@ -128,6 +127,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
             queue="short",
             job_name=f"{process_name}_stereo",
             array=process_size,
+            mem="2g",
             out_name=f"{stereoDir}/logs/slurm-%x.%A_%a",
         )
         rc = rc_lines(
@@ -150,7 +150,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
             f.writelines(lines)
 
 
-def bash_stereoMC(target_dir, identification, env_name, source, cluster):
+def bash_stereoMC(target_dir, identification, env_name, cluster):
 
     """
     This function generates the bashscript for running the stereo analysis.
@@ -163,15 +163,13 @@ def bash_stereoMC(target_dir, identification, env_name, source, cluster):
         Particle name. Options: protons, gammadiffuse, gammas, protons_test
     env_name : str
         Name of the environment
-    source : str
-        Name of the target source
     cluster : str
         Cluster system
     """
 
-    process_name = source
+    process_name = "stereo_MC"
 
-    inputdir = f"{target_dir}/{source}/DL1/MC/{identification}/Merged"
+    inputdir = f"{target_dir}/v{__version__}/MC/DL1/{identification}/Merged"
     os.makedirs(f"{inputdir}/StereoMerged", exist_ok=True)
 
     os.system(
@@ -189,7 +187,7 @@ def bash_stereoMC(target_dir, identification, env_name, source, cluster):
             queue="xxl",
             job_name=f"{process_name}_stereo",
             array=f"{process_size}%100",
-            mem="8g",
+            mem="7g",
             out_name=f"{inputdir}/StereoMerged/logs/slurm-%x.%A_%a",
         )
         lines = slurm + [
@@ -198,7 +196,7 @@ def bash_stereoMC(target_dir, identification, env_name, source, cluster):
             "SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
             "export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-            f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/{source}/config_stereo.yaml >$LOG 2>&1",
+            f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/MC/config_stereo.yaml >$LOG 2>&1",
         ]
         f.writelines(lines)
 
@@ -249,17 +247,13 @@ def main():
         source_list = joblib.load("list_sources.dat")
     else:
         source_list = [source]
-    for source_name in source_list:
-
-        print("***** Generating file config_stereo.yaml...")
-        configfile_stereo(target_dir, source_name, config)
-
-        # Below we run the analysis on the MC data
+    if not NSB_match:
         if (
             (args.analysis_type == "onlyMC")
             or (args.analysis_type == "doEverything")
             and not NSB_match
         ):
+            configfile_stereo(target_dir, "MC", config)
             print("***** Generating the bashscript for MCs...")
             for part in [
                 "gammadiffuse",
@@ -269,45 +263,53 @@ def main():
                 "helium",
                 "electrons",
             ]:
-                bash_stereoMC(target_dir, part, env_name, source_name, cluster)
+                bash_stereoMC(target_dir, part, env_name, cluster)
 
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
             launch_jobs = ""
-            #TODO: check on N. bash scripts
-            
+            # TODO: check on N. bash scripts
+
             for n, run in enumerate(list_of_stereo_scripts):
                 launch_jobs += (
                     " && " if n > 0 else ""
                 ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
 
             os.system(launch_jobs)
+    for source_name in source_list:
+        if (
+            (args.analysis_type == "onlyMAGIC")
+            or (args.analysis_type == "doEverything")
+            or (NSB_match)
+        ):
+            print("***** Generating file config_stereo.yaml...")
+            configfile_stereo(target_dir, source_name, config)
 
-        # Below we run the analysis on the real data
+            # Below we run the analysis on the real data
 
-        print("***** Generating the bashscript...")
-        bash_stereo(target_dir, source_name, env_name, NSB_match, cluster)
+            print("***** Generating the bashscript...")
+            bash_stereo(target_dir, source_name, env_name, NSB_match, cluster)
 
-        print("***** Submitting processess to the cluster...")
-        print(f"Process name: {source_name}_stereo")
-        print(
-            f"To check the jobs submitted to the cluster, type: squeue -n {source_name}_stereo"
-        )
+            print("***** Submitting processess to the cluster...")
+            print(f"Process name: {source_name}_stereo")
+            print(
+                f"To check the jobs submitted to the cluster, type: squeue -n {source_name}_stereo"
+            )
 
-        # Below we run the bash scripts to find the stereo events
-        list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_StereoEvents*.sh"))
-        if len(list_of_stereo_scripts) < 1:
-            logger.warning("No bash scripts for real data")
-            continue
-        launch_jobs = ""
-       
-        
-        for n, run in enumerate(list_of_stereo_scripts):
-            launch_jobs += (
-                " && " if n > 0 else ""
-            ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+            # Below we run the bash scripts to find the stereo events
+            list_of_stereo_scripts = np.sort(
+                glob.glob(f"{source_name}_StereoEvents*.sh")
+            )
+            if len(list_of_stereo_scripts) < 1:
+                logger.warning("No bash scripts for real data")
+                continue
+            launch_jobs = ""
 
-        os.system(launch_jobs)
-      
+            for n, run in enumerate(list_of_stereo_scripts):
+                launch_jobs += (
+                    " && " if n > 0 else ""
+                ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+
+            os.system(launch_jobs)
 
 
 if __name__ == "__main__":

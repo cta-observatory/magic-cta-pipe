@@ -10,6 +10,7 @@ import joblib
 import numpy as np
 import pandas as pd
 import yaml
+
 from magicctapipe.io import resource_file
 
 
@@ -221,11 +222,11 @@ def main():
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
-    LST_h5=config_dict['database_paths']['LST']
-    LST_key=config_dict['database_keys']['LST']
-    MAGIC_h5=config_dict['database_paths']['MAGIC']
-    MAGIC1_key=config_dict['database_keys']['MAGIC-I']
-    MAGIC2_key=config_dict['database_keys']['MAGIC-II']
+    LST_h5 = config_dict["database_paths"]["LST"]
+    LST_key = config_dict["database_keys"]["LST"]
+    MAGIC_h5 = config_dict["database_paths"]["MAGIC"]
+    MAGIC1_key = config_dict["database_keys"]["MAGIC-I"]
+    MAGIC2_key = config_dict["database_keys"]["MAGIC-II"]
     source_in = config["data_selection"]["source_name_database"]
     source_out = config["data_selection"]["source_name_output"]
     range = config["data_selection"]["time_range"]
@@ -286,8 +287,8 @@ def main():
         MAGIC_h5,
         key=MAGIC2_key,
     )
-    #df_MAGIC1["Source"] = df_MAGIC1["Source"].str.replace(" ", "")
-    #df_MAGIC2["Source"] = df_MAGIC2["Source"].str.replace(" ", "")
+    # df_MAGIC1["Source"] = df_MAGIC1["Source"].str.replace(" ", "")
+    # df_MAGIC2["Source"] = df_MAGIC2["Source"].str.replace(" ", "")
 
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [int(sub.replace("-", "")) for sub in list_date_LST]
@@ -301,7 +302,7 @@ def main():
 
     df_MAGIC2 = magic_date(df_MAGIC2)
     df_MAGIC1 = magic_date(df_MAGIC1)
-    #df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
+    # df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
     if (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):

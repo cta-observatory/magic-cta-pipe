@@ -251,7 +251,6 @@ def lists_and_bash_gen_MAGIC(
         out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
-    obs_tag = "" if NSB_match else "Observations"
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         for i in MAGIC_runs:
@@ -260,7 +259,7 @@ def lists_and_bash_gen_MAGIC(
                 if telescope_ids[magic - 3] > 0:
                     lines = [
                         f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].replace("_","/")}\n',
-                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs \n",
+                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs \n",
                         f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_cal.txt\n\n",
                     ]
                     f.writelines(lines)
@@ -280,7 +279,7 @@ def lists_and_bash_gen_MAGIC(
                     job_name=process_name,
                     array=number_of_nodes,
                     mem="2g",
-                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
+                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
@@ -289,7 +288,7 @@ def lists_and_bash_gen_MAGIC(
                 lines = (
                     slurm
                     + [  # without version for no NSB_match
-                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
+                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_cal.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                         "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
@@ -329,10 +328,10 @@ def directories_generator_real(
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
     else:
 
-        dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations")
+        dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
         if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
             os.makedirs(
-                f"{target_dir}/v{__version__}/{source_name}/DL1/Observations",
+                f"{target_dir}/v{__version__}/{source_name}/DL1",
                 exist_ok=True,
             )
 
@@ -343,7 +342,7 @@ def directories_generator_real(
             if overwrite == "y":
                 os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
                 os.makedirs(
-                    f"{target_dir}/v{__version__}/{source_name}/DL1/Observations",
+                    f"{target_dir}/v{__version__}/{source_name}/DL1",
                     exist_ok=True,
                 )
 
@@ -500,13 +499,13 @@ def main():
                     launch_jobs_MC = f"linking=$(sbatch --parsable linking_MC_{particle}_paths.sh) && running=$(sbatch --parsable --dependency=afterany:$linking linking_MC_{particle}_paths_r.sh)"
                     os.system(launch_jobs_MC)
             # Here we do the MC DL0 to DL1 conversion:
-    if (
+
+    for source_name in source_list:
+        if (
             (args.analysis_type == "onlyMAGIC")
             or (args.analysis_type == "doEverything")
             or (NSB_match)
-        ):    
-                
-        for source_name in source_list:
+        ):
 
             MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
             MAGIC_runs = np.genfromtxt(
@@ -519,7 +518,9 @@ def main():
             print(
                 f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
             )
-            print("This process will take about 10 min to run if the IT cluster is free.")
+            print(
+                "This process will take about 10 min to run if the IT cluster is free."
+            )
 
             directories_generator_real(
                 str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
@@ -529,7 +530,7 @@ def main():
             )  # TODO: fix here
 
             # Below we run the analysis on the MAGIC data
-        
+
             lists_and_bash_gen_MAGIC(
                 target_dir,
                 telescope_ids,

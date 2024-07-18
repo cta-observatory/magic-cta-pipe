@@ -14,8 +14,8 @@ from datetime import datetime
 import numpy as np
 import pandas as pd
 import yaml
-from magicctapipe.io import resource_file
 
+from magicctapipe.io import resource_file
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
 from .lstchain_version import lstchain_versions
@@ -106,8 +106,8 @@ def main():
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
-    LST_h5=config_dict['database_paths']['LST']
-    LST_key=config_dict['database_keys']['LST']
+    LST_h5 = config_dict["database_paths"]["LST"]
+    LST_key = config_dict["database_keys"]["LST"]
     env_name = config["general"]["env_name"]
 
     cluster = config["general"]["cluster"]

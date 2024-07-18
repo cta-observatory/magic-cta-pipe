@@ -98,15 +98,9 @@ def linking_bash_lst(
         Cluster system
     """
 
-    if NSB_match:
-        coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
+    coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
-        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
-    else:
-        coincidence_DL1_dir = (
-            f"{target_dir}/v{__version__}/{source_name}/DL1/Observations"
-        )
-        MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1/Observations/"
+    MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
     if cluster != "SLURM":

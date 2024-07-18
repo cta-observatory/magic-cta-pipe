@@ -9,6 +9,8 @@ import logging
 
 import numpy as np
 import pandas as pd
+import yaml
+
 from magicctapipe.io import resource_file
 
 __all__ = ["collect_nsb"]
@@ -44,7 +46,7 @@ def collect_nsb(df_LST):
 
         df_LST.loc[run, "nsb"] = float(nsb)
     df_LST = df_LST.reset_index()
-    return df_LSTreading/
+    return df_LST
 
 
 def main():
@@ -59,8 +61,8 @@ def main():
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
-    LST_h5=config_dict['database_paths']['LST']
-    LST_key=config_dict['database_keys']['LST']
+    LST_h5 = config_dict["database_paths"]["LST"]
+    LST_key = config_dict["database_keys"]["LST"]
     df_LST = pd.read_hdf(
         LST_h5,
         key=LST_key,

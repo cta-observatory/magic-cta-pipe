@@ -7,6 +7,8 @@ import glob
 import os
 
 import pandas as pd
+import yaml
+
 from magicctapipe.io import resource_file
 
 lstchain_versions = ["v0.9", "v0.10"]
@@ -69,12 +71,9 @@ def main():
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
-    LST_h5=config_dict['database_paths']['LST']
-    LST_key=config_dict['database_keys']['LST']
-    df_LST = pd.read_hdf(
-        LST_h5,
-        key=LST_key
-    )
+    LST_h5 = config_dict["database_paths"]["LST"]
+    LST_key = config_dict["database_keys"]["LST"]
+    df_LST = pd.read_hdf(LST_h5, key=LST_key)
 
     version_lstchain(df_LST)
 
