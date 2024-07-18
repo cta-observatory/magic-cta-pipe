@@ -251,7 +251,7 @@ def lists_and_bash_gen_MAGIC(
         out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
-    obs_tag = "" if NSB_match else "Observations"
+    
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         for i in MAGIC_runs:
@@ -260,7 +260,7 @@ def lists_and_bash_gen_MAGIC(
                 if telescope_ids[magic - 3] > 0:
                     lines = [
                         f'export IN1=/fefs/onsite/common/MAGIC/data/M{magic}/event/Calibrated/{i[0].replace("_","/")}\n',
-                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs \n",
+                        f"export OUT1={target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs \n",
                         f"ls $IN1/*{i[1][-2:]}.*_Y_*.root > $OUT1/list_cal.txt\n\n",
                     ]
                     f.writelines(lines)
@@ -280,7 +280,7 @@ def lists_and_bash_gen_MAGIC(
                     job_name=process_name,
                     array=number_of_nodes,
                     mem="2g",
-                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
+                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
@@ -289,7 +289,7 @@ def lists_and_bash_gen_MAGIC(
                 lines = (
                     slurm
                     + [  # without version for no NSB_match
-                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/{obs_tag}/M{magic}/{i[0]}/{i[1]}\n",
+                        f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_cal.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
                         "export LOG=$OUTPUTDIR/logs/real_0_1_task_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
@@ -329,10 +329,10 @@ def directories_generator_real(
         dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
     else:
 
-        dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1/Observations")
+        dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
         if not os.path.exists(f"{target_dir}/v{__version__}/{source_name}"):
             os.makedirs(
-                f"{target_dir}/v{__version__}/{source_name}/DL1/Observations",
+                f"{target_dir}/v{__version__}/{source_name}/DL1",
                 exist_ok=True,
             )
 
@@ -343,7 +343,7 @@ def directories_generator_real(
             if overwrite == "y":
                 os.system(f"rm -r {target_dir}/v{__version__}/{source_name}")
                 os.makedirs(
-                    f"{target_dir}/v{__version__}/{source_name}/DL1/Observations",
+                    f"{target_dir}/v{__version__}/{source_name}/DL1",
                     exist_ok=True,
                 )
 

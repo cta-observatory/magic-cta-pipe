@@ -107,9 +107,9 @@ def main():
         print("Error, no directories found")
         print(f"for path {work_dir} found in {args.config_file} this is available")
         print(f"Versions {versions}")
-        tag = "" if NSB_matching else "/Observations"
+        
         print(
-            f"Supported data types: DL1{tag}/M1, DL1{tag}/M2, DL1{tag}/Merged, DL1Coincident, DL1Stereo"
+            f"Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo"
         )
         exit(1)
 
