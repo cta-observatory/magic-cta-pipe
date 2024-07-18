@@ -95,17 +95,26 @@ def calibrate(
             event_image=image, event_pulse_time=peak_time
         )
 
-    else:
-        increase_nsb = config["increase_nsb"].pop("use")
+    nsb_dict = "increase_nsb"
+    if not is_lst:
+        if config["mc_tel_ids"]["MAGIC-I"] == tel_id:
+            nsb_dict += "_m1"
+        if config["mc_tel_ids"]["MAGIC-II"] == tel_id:
+            nsb_dict += "_m2"
+
+    if nsb_dict in config:
+        increase_nsb = config[nsb_dict].pop("use")
+        if increase_nsb:
+            rng = np.random.default_rng(event.index.event_id)
+            # Add extra noise in pixels
+            image = add_noise_in_pixels(rng, image, **config[nsb_dict])
+            config[nsb_dict]["use"] = increase_nsb
+
+    if is_lst:
         increase_psf = config["increase_psf"]["use"]
         use_time_delta_cleaning = config["time_delta_cleaning"].pop("use")
         use_dynamic_cleaning = config["dynamic_cleaning"].pop("use")
         use_only_main_island = config["use_only_main_island"]
-
-        if increase_nsb:
-            rng = np.random.default_rng(obs_id)
-            # Add extra noise in pixels
-            image = add_noise_in_pixels(rng, image, **config["increase_nsb"])
 
         if increase_psf:
             set_numba_seed(obs_id)
@@ -145,7 +154,6 @@ def calibrate(
             max_island_label = np.argmax(n_pixels_on_island)
             signal_pixels[island_labels != max_island_label] = False
 
-        config["increase_nsb"]["use"] = increase_nsb
         config["time_delta_cleaning"]["use"] = use_time_delta_cleaning
         config["dynamic_cleaning"]["use"] = use_dynamic_cleaning
 

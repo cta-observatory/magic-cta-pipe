@@ -46,7 +46,9 @@ import numpy as np
 import yaml
 from astropy import units as u
 from astropy.coordinates import angular_separation
+from ctapipe.containers import DL1CameraContainer
 from ctapipe.image import (
+    concentration_parameters,
     hillas_parameters,
     leakage_parameters,
     number_of_islands,
@@ -213,10 +215,15 @@ def magic_calib_to_dl1(
             "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
         )
 
+    save_images = config.get("save_images", False)
+    if save_images:
+        dl1cont = DL1CameraContainer(prefix="")
     # Loop over every shower event
     logger.info("\nProcessing the events...")
 
-    with HDF5TableWriter(output_file, group_name="events", mode="w") as writer:
+    with HDF5TableWriter(
+        output_file, group_name="events", mode="w", add_prefix=True
+    ) as writer:
         for event in event_source:
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
@@ -275,6 +282,7 @@ def magic_calib_to_dl1(
                 continue
 
             leakage_params = leakage_parameters(camera_geom, image, signal_pixels)
+            conc_params = concentration_parameters(camera_geom, image, hillas_params)
 
             if is_simulation:
                 # Calculate additional parameters
@@ -378,9 +386,22 @@ def magic_calib_to_dl1(
             event_info.tels_with_trigger = tels_with_trigger_binary_int
 
             # Save the parameters to the output file
+            # Setting all the prefixes except of concentration to empty string
+            event_info.prefix = ""
+            hillas_params.prefix = ""
+            timing_params.prefix = ""
+            leakage_params.prefix = ""
             writer.write(
-                "parameters", (event_info, hillas_params, timing_params, leakage_params)
+                "parameters",
+                (event_info, hillas_params, timing_params, leakage_params, conc_params),
             )
+
+            if save_images:
+                dl1cont.image = image
+                dl1cont.peak_time = peak_time
+                dl1cont.image_mask = signal_pixels
+                dl1cont.is_valid = True
+                writer.write(table_name="dl1/image", containers=[event_info, dl1cont])
 
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
