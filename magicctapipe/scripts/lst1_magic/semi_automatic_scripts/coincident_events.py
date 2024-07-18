@@ -20,10 +20,16 @@ from datetime import date as dtdt
 from datetime import timedelta
 from pathlib import Path
 
+import joblib
 import numpy as np
 import yaml
 
 from magicctapipe import __version__
+from magicctapipe.io import resource_file
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
+    rc_lines,
+    slurm_lines,
+)
 
 __all__ = ["configfile_coincidence", "linking_bash_lst"]
 
@@ -32,30 +38,43 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configfile_coincidence(ids, target_dir):
+def configfile_coincidence(target_dir, source_name, config_gen):
 
     """
     This function creates the configuration file needed for the event coincidence step
 
     Parameters
     ----------
-    ids : list
-        List of telescope IDs
     target_dir : str
         Path to the working directory
+    source_name : str
+        Name of the target source
+    config_gen : dict
+        Dictionary of the entries of the general configuration file
     """
+    config_file = config_gen["general"]["base_config_file"]
+    if config_file == "":
+        config_file = resource_file("config.yaml")
 
-    lines = [
-        f"mc_tel_ids:\n    LST-1: {ids[0]}\n    LST-2: {ids[1]}\n    LST-3: {ids[2]}\n    LST-4: {ids[3]}\n    MAGIC-I: {ids[4]}\n    MAGIC-II: {ids[5]}\n\n",
-        'event_coincidence:\n    timestamp_type_lst: "dragon_time"  # select "dragon_time", "tib_time" or "ucts_time"\n    pre_offset_search: true\n    n_pre_offset_search_events: 100\n    window_half_width: "300 ns"\n',
-        '    time_offset:\n        start: "-10 us"\n        stop: "0 us"\n',
-    ]
-    with open(f"{target_dir}/config_coincidence.yaml", "w") as f:
-        f.writelines(lines)
+    with open(
+        config_file, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    conf = {
+        "mc_tel_ids": config_gen["mc_tel_ids"],
+        "event_coincidence": config_dict["event_coincidence"],
+    }
+
+    file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
+
+    with open(file_name, "w") as f:
+
+        yaml.dump(conf, f, default_flow_style=False)
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, nsb, date, source, LST_version, env_name, NSB_match
+    target_dir, LST_runs, source_name, LST_version, env_name, NSB_match, cluster
 ):
 
     """
@@ -66,12 +85,8 @@ def linking_bash_lst(
     target_dir : str
         Path to the working directory
     LST_runs : matrix of strings
-        This matrix is imported from config_general.yaml and tells the function where to find the LST data and link them to our working directory
-    nsb : int
-        NSB level
-    date : numpy array
-        Array of lists [date run] for all the LST runs (before the NSB splitting)
-    source : str
+        This matrix ([['date','run'],['date','run']...]) is imported from *_LST_runs.txt files and tells the function where to find the LST data and link them to our working directory
+    source_name : str
         Target name
     LST_version : str
         The lstchain version used to process the LST data
@@ -79,182 +94,82 @@ def linking_bash_lst(
         Name of the conda environment
     NSB_match : bool
         If real data are matched to pre-processed MCs or not
+    cluster : str
+        Cluster system
     """
 
-    ST_list = [
-        os.path.basename(x) for x in glob.glob(f"{target_dir}/v{__version__}/DL1/*")
-    ]
+    coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
-    if (len(LST_runs) == 2) and (len(LST_runs[0]) == 10):
-        LST = LST_runs
+    MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
 
-        LST_runs = []
-        LST_runs.append(LST)
+    dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
+        return
+    for d in dates:
+        Y_M, M_M, D_M = [int(x) for x in d.split("_")[1:]]
 
-    if (len(date) == 2) and (len(date[0]) == 10):
-        dt = date
-        date = []
-        date.append(dt)
-    if NSB_match:
-        coincidence_DL1_dir = f"{target_dir}/v{__version__}"
-        if not os.path.exists(f"{coincidence_DL1_dir}/DL1Coincident/"):
-            os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident")
-        for p in ST_list:
-            MAGIC_DL1_dir = f"{target_dir}/v{__version__}/DL1/{p}"
-            if not os.path.exists(f"{coincidence_DL1_dir}/DL1Coincident/{p}"):
-                os.mkdir(f"{coincidence_DL1_dir}/DL1Coincident/{p}")
-            dates = [
-                os.path.basename(x)
-                for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")
-            ]
-            for d in dates:
-                Y_M = int(d.split("_")[1])
-                M_M = int(d.split("_")[2])
-                D_M = int(d.split("_")[3])
+        day_MAGIC = dtdt(Y_M, M_M, D_M)
 
-                day_MAGIC = dtdt(Y_M, M_M, D_M)
-
-                delta = timedelta(days=1)
-                for i in LST_runs:
-                    Y_L = i[0].split("_")[0]
-                    M_L = i[0].split("_")[1]
-                    D_L = i[0].split("_")[2]
-                    day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
-                    if day_MAGIC == day_LST + delta:
-                        if not os.path.exists(
-                            f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}"
-                        ):
-                            os.mkdir(
-                                f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}"
-                            )
-
-                        lstObsDir = (
-                            i[0].split("_")[0] + i[0].split("_")[1] + i[0].split("_")[2]
-                        )
-
-                        inputdir = f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
-                        if not os.path.exists(
-                            f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}/{lstObsDir}"
-                        ):
-                            os.mkdir(
-                                f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}/{lstObsDir}"
-                            )
-                        if not os.path.exists(
-                            f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}/{lstObsDir}/logs"
-                        ):
-                            os.mkdir(
-                                f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}/{lstObsDir}/logs"
-                            )
-
-                        outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{p}/NSB{nsb}/{lstObsDir}"
-                        list_of_subruns = np.sort(
-                            glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5")
-                        )
-                        if os.path.exists(f"{outputdir}/logs/list_LST"):
-                            with open(
-                                f"{outputdir}/logs/list_LST", "a"
-                            ) as LSTdataPathFile:
-                                for subrun in list_of_subruns:
-                                    LSTdataPathFile.write(
-                                        f"{subrun}\n"
-                                    )  # If this files already exists, simply append the new information
-                        else:
-                            with open(
-                                f"{outputdir}/logs/list_LST.txt", "w"
-                            ) as f:  # If the file list_LST.txt does not exist, it will be created here
-                                for subrun in list_of_subruns:
-                                    f.write(f"{subrun}\n")
-
-                        if not os.path.exists(f"{outputdir}/logs/list_LST.txt"):
-                            continue
-                        process_size = (
-                            len(
-                                np.genfromtxt(
-                                    f"{outputdir}/logs/list_LST.txt", dtype="str"
-                                )
-                            )
-                            - 1
-                        )
-
-                        if process_size < 0:
-                            continue
-                        lines = [
-                            "#!/bin/sh\n\n",
-                            "#SBATCH -p short\n",
-                            f'#SBATCH -J {target_dir.split("/")[-2:][1]}_coincidence_{nsb}\n',
-                            f"#SBATCH --array=0-{process_size}\n",
-                            "#SBATCH --mem=30g\n",
-                            "#SBATCH -N 1\n\n",
-                            "ulimit -l unlimited\n",
-                            "ulimit -s unlimited\n",
-                            "ulimit -a\n\n",
-                            f"export INM={MAGIC_DL1_dir}/Merged/Merged_{str(Y_M).zfill(4)}_{str(M_M).zfill(2)}_{str(D_M).zfill(2)}\n",
-                            f"export OUTPUTDIR={outputdir}\n",
-                            "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
-                            "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                            "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_TASK_ID}.log\n",
-                            f"time conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1",
-                        ]
-                        with open(
-                            f"{source}_LST_coincident_{nsb}_{outputdir.split('/')[-1]}.sh",
-                            "w",
-                        ) as f:
-                            f.writelines(lines)
-    else:
-        coincidence_DL1_dir = f"{target_dir}/DL1/Observations"
-        if not os.path.exists(f"{coincidence_DL1_dir}/Coincident"):
-            os.mkdir(f"{coincidence_DL1_dir}/Coincident")
-
+        delta = timedelta(days=1)
         for i in LST_runs:
-            lstObsDir = i[0].split("_")[0] + i[0].split("_")[1] + i[0].split("_")[2]
-            inputdir = f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
-            outputdir = f"{coincidence_DL1_dir}/Coincident/{lstObsDir}"
-            list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
-            if os.path.exists(f"{outputdir}/list_LST.txt"):
-                with open(f"{outputdir}/list_LST.txt", "a") as LSTdataPathFile:
+            Y_L, M_L, D_L = [int(x) for x in i[0].split("_")]
+
+            day_LST = dtdt(int(Y_L), int(M_L), int(D_L))
+            if day_MAGIC == day_LST + delta:
+
+                lstObsDir = i[0].replace("_", "")
+                inputdir = (
+                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                )
+
+                outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
+                os.makedirs(f"{outputdir}/logs", exist_ok=True)
+
+                list_of_subruns = np.sort(glob.glob(f"{inputdir}/dl1*Run*{i[1]}*.*.h5"))
+
+                with open(f"{outputdir}/logs/list_LST.txt", "a+") as LSTdataPathFile:
                     for subrun in list_of_subruns:
-                        LSTdataPathFile.write(
-                            f"{subrun}\n"
-                        )  # If this files already exists, simply append the new information
-            else:
-                os.mkdir(outputdir)
+                        LSTdataPathFile.write(f"{subrun}\n")
+
+                if not os.path.exists(f"{outputdir}/logs/list_LST.txt"):
+                    continue
+                with open(f"{outputdir}/logs/list_LST.txt", "r") as f:
+                    process_size = len(f.readlines()) - 1
+
+                if process_size < 0:
+                    continue
+                slurm = slurm_lines(
+                    queue="short",
+                    job_name=f"{source_name}_coincidence",
+                    array=process_size,
+                    mem="8g",
+                    out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
+                )
+                rc = rc_lines(
+                    store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+                    out="$OUTPUTDIR/logs/list",
+                )
+
+                lines = (
+                    slurm
+                    + [
+                        f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
+                        f"export OUTPUTDIR={outputdir}\n",
+                        "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
+                        "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+                        "export LOG=$OUTPUTDIR/logs/coincidence_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                        f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/{source_name}/config_coincidence.yaml >$LOG 2>&1\n",
+                    ]
+                    + rc
+                )
                 with open(
-                    f"{outputdir}/list_LST.txt", "w"
-                ) as f:  # If the file list_LST.txt does not exist, it will be created here
-                    for subrun in list_of_subruns:
-                        f.write(f"{subrun}\n")
-        process_name = target_dir.split("/")[-2:][1]
-
-        listOfNightsLST = np.sort(
-            glob.glob(f"{target_dir}/DL1/Observations/Coincident/*")
-        )
-        listOfNightsMAGIC = np.sort(
-            glob.glob(f"{target_dir}/DL1/Observations/Merged/Merged*")
-        )
-
-        for nightMAGIC, nightLST in zip(listOfNightsMAGIC, listOfNightsLST):
-            process_size = (
-                len(np.genfromtxt(f"{nightLST}/list_LST.txt", dtype="str")) - 1
-            )
-
-            with open(f"LST_coincident_{nightLST.split('/')[-1]}.sh", "w") as f:
-                lines = [
-                    "#!/bin/sh\n\n",
-                    "#SBATCH -p short\n",
-                    f"#SBATCH -J {process_name}_coincidence\n",
-                    f"#SBATCH --array=0-{process_size}%50\n",
-                    "#SBATCH -N 1\n\n",
-                    "ulimit -l unlimited\n",
-                    "ulimit -s unlimited\n",
-                    "ulimit -a\n\n",
-                    f"export INM={nightMAGIC}\n",
-                    f"export OUTPUTDIR={nightLST}\n",
-                    "SAMPLE_LIST=($(<$OUTPUTDIR/list_LST.txt))\n",
-                    "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                    "export LOG=$OUTPUTDIR/coincidence_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_event_coincidence --input-file-lst $SAMPLE --input-dir-magic $INM --output-dir $OUTPUTDIR --config-file {target_dir}/config_coincidence.yaml >$LOG 2>&1",
-                ]
-                f.writelines(lines)
+                    f"{source_name}_LST_coincident_{outputdir.split('/')[-1]}.sh",
+                    "w",
+                ) as f:
+                    f.writelines(lines)
 
 
 def main():
@@ -278,96 +193,68 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+    target_dir = Path(config["directories"]["workspace_dir"])
 
-    telescope_ids = list(config["mc_tel_ids"].values())
-    target_dir = str(
-        Path(config["directories"]["workspace_dir"])
-        / config["directories"]["target_name"]
-    )
     NSB_match = config["general"]["NSB_matching"]
     env_name = config["general"]["env_name"]
-    source = config["directories"]["target_name"]
     LST_version = config["general"]["LST_version"]
-    print("***** Generating file config_coincidence.yaml...")
-    print("***** This file can be found in ", target_dir)
-    configfile_coincidence(telescope_ids, target_dir)
-    nsb = config["general"]["nsb"]
-    runs_all = config["general"]["LST_runs"]
-    date = np.genfromtxt(runs_all, dtype=str, delimiter=",")
-    if not NSB_match:
-        nsblvl = 0
-        LST_runs_and_dates = config["general"]["LST_runs"]
-        LST_runs = np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",")
-        print("***** Linking the paths to LST data files...")
 
-        print("***** Generating the bashscript...")
-        linking_bash_lst(
-            target_dir, LST_runs, nsblvl, date, source, LST_version, env_name, NSB_match
-        )  # linking the data paths to the current working directory
+    source_in = config["data_selection"]["source_name_database"]
+    source = config["data_selection"]["source_name_output"]
+    cluster = config["general"]["cluster"]
 
-        print("***** Submitting processess to the cluster...")
-        print(f"Process name: {target_dir.split('/')[-2:][1]}_coincidence")
-        print(
-            f"To check the jobs submitted to the cluster, type: squeue -n {target_dir.split('/')[-2:][1]}_coincidence"
-        )
+    source_list = []
+    if source_in is None:
+        source_list = joblib.load("list_sources.dat")
 
-        # Below we run the bash scripts to find the coincident events
-        list_of_coincidence_scripts = np.sort(glob.glob("LST_coincident*.sh"))
-
-        for n, run in enumerate(list_of_coincidence_scripts):
-            if n == 0:
-                launch_jobs = f"coincidence{n}=$(sbatch --parsable {run})"
-            else:
-                launch_jobs = (
-                    f"{launch_jobs} && coincidence{n}=$(sbatch --parsable {run})"
-                )
-
-        os.system(launch_jobs)
     else:
-        for nsblvl in nsb:
-            try:
-                LST_runs = np.genfromtxt(
-                    f"{source}_LST_{nsblvl}_.txt", dtype=str, delimiter=","
-                )
+        source_list.append(source)
+    for source_name in source_list:
 
-                print("***** Linking the paths to LST data files...")
+        print("***** Generating file config_coincidence.yaml...")
+        configfile_coincidence(target_dir, source_name, config)
 
-                print("***** Generating the bashscript...")
-                linking_bash_lst(
-                    target_dir,
-                    LST_runs,
-                    nsblvl,
-                    date,
-                    source,
-                    LST_version,
-                    env_name,
-                    NSB_match,
-                )  # linking the data paths to current working directory
+        LST_runs_and_dates = f"{source_name}_LST_runs.txt"
+        LST_runs = np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2)
 
-                print("***** Submitting processess to the cluster...")
-                print(
-                    f'Process name: {target_dir.split("/")[-2:][1]}_coincidence_{nsblvl}'
-                )
-                print(
-                    f'To check the jobs submitted to the cluster, type: squeue -n {target_dir.split("/")[-2:][1]}_coincidence_{nsblvl}'
-                )
+        try:
 
-                # Below we run the bash scripts to find the coincident events
-                list_of_coincidence_scripts = np.sort(
-                    glob.glob(f"{source}_LST_coincident_{nsblvl}*.sh")
-                )
-                if len(list_of_coincidence_scripts) < 1:
-                    continue
-                for n, run in enumerate(list_of_coincidence_scripts):
-                    if n == 0:
-                        launch_jobs = f"coincidence{n}=$(sbatch --parsable {run})"
-                    else:
-                        launch_jobs = f"{launch_jobs} && coincidence{n}=$(sbatch --parsable {run})"
+            print("***** Linking the paths to LST data files...")
 
-                os.system(launch_jobs)
+            print("***** Generating the bashscript...")
+            linking_bash_lst(
+                target_dir,
+                LST_runs,
+                source_name,
+                LST_version,
+                env_name,
+                NSB_match,
+                cluster,
+            )  # linking the data paths to current working directory
 
-            except OSError as exc:
-                print(exc)
+            print("***** Submitting processess to the cluster...")
+            print(f"Process name: {source_name}_coincidence")
+            print(
+                f"To check the jobs submitted to the cluster, type: squeue -n {source_name}_coincidence"
+            )
+
+            # Below we run the bash scripts to find the coincident events
+            list_of_coincidence_scripts = np.sort(
+                glob.glob(f"{source_name}_LST_coincident*.sh")
+            )
+            if len(list_of_coincidence_scripts) < 1:
+                logger.warning("No bash scripts")
+                continue
+            launch_jobs = ""
+            for n, run in enumerate(list_of_coincidence_scripts):
+                launch_jobs += (
+                    " && " if n > 0 else ""
+                ) + f"coincidence{n}=$(sbatch --parsable {run})"
+
+            os.system(launch_jobs)
+
+        except OSError as exc:
+            logger.error(exc)
 
 
 if __name__ == "__main__":

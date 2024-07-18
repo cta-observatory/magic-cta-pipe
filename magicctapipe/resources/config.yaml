@@ -15,10 +15,10 @@ LST:
 
     increase_nsb:
         use: true
-        extra_noise_in_dim_pixels: 1.27
-        extra_bias_in_dim_pixels: 0.665
+        extra_noise_in_dim_pixels: 1.6
+        extra_bias_in_dim_pixels: 0.52
         transition_charge: 8
-        extra_noise_in_bright_pixels: 2.08
+        extra_noise_in_bright_pixels: 1.92
 
     increase_psf:
         use: false
@@ -53,6 +53,20 @@ MAGIC:
         use: true
         factor: 1.143
 
+    increase_nsb_m1:
+        use: true
+        extra_noise_in_dim_pixels: 0.04
+        extra_bias_in_dim_pixels: 0.60
+        transition_charge: 8
+        extra_noise_in_bright_pixels: 0.80
+
+    increase_nsb_m2:
+        use: true
+        extra_noise_in_dim_pixels: 0.07
+        extra_bias_in_dim_pixels: 0.14
+        transition_charge: 8
+        extra_noise_in_bright_pixels: 0.82
+
     magic_clean:
         use_time: true
         use_sum: true
@@ -68,6 +82,7 @@ MAGIC:
         tailcut: [12, 8]
         ring_completeness_threshold: 25
 
+save_images: false
 
 event_coincidence:
     # History of the time offset between LST-1 and MAGIC
