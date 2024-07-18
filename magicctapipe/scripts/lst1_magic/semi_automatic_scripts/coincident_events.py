@@ -98,11 +98,10 @@ def linking_bash_lst(
         Cluster system
     """
 
-    
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
     MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
-    
+
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
     if cluster != "SLURM":
         logger.warning(

@@ -10,9 +10,8 @@ MAGIC:
 2) Merge the runs of M1 and M2 into M1-M2 runs.
 3) Merge all the M1-M2 runs for a given night.
 
-
 MC:
-1) Merges all MC runs in a node 
+1) Merges all MC runs in a node
 
 Usage:
 $ merging_runs (-c config.yaml)
@@ -142,7 +141,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
     process_name = f"merging_{source}"
 
     MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
-    
+
     if cluster != "SLURM":
         logger.warning(
             "Automatic processing not implemented for the cluster indicated in the config file"

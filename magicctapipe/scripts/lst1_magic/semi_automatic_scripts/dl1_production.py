@@ -251,7 +251,6 @@ def lists_and_bash_gen_MAGIC(
         out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
-    
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         for i in MAGIC_runs:

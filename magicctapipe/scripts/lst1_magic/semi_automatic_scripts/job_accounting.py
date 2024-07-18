@@ -89,7 +89,6 @@ def main():
 
     # skip_LST = config["data_selection"]["skip_LST_runs"]
     # skip_MAGIC = config["data_selection"]["skip_MAGIC_runs"]
-    NSB_matching = config["general"]["NSB_matching"]
     work_dir = config["directories"]["workspace_dir"]
 
     print(f"Checking progress of jobs stored in {work_dir}")
@@ -107,9 +106,9 @@ def main():
         print("Error, no directories found")
         print(f"for path {work_dir} found in {args.config_file} this is available")
         print(f"Versions {versions}")
-        
+
         print(
-            f"Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo"
+            "Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo"
         )
         exit(1)
 

@@ -97,9 +97,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
 
     process_name = source
 
-    
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}"
-    
 
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
     if cluster != "SLURM":
