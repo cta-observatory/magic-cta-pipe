@@ -39,7 +39,7 @@ from magicctapipe.io import find_offset
 
 file_dl1_dir = sys.argv[1]
 outdir = "time_offset"
-config = "config.yaml"
+config = "../../config_dyn.yaml"
 
 magic_run = int(
     pd.read_hdf(
@@ -72,7 +72,6 @@ try:
 except FileExistsError:
     pass
 
-
 # Find the time offset for each subrun combination
 for magic_subrun_file in sorted(
     glob.glob(file_dl1_dir + "/MAGIC/dl1_MAGIC.Run" + magic_run + ".*.h5")
@@ -83,9 +82,9 @@ for magic_subrun_file in sorted(
         data_magic["time_sec"] + data_magic["time_nanosec"] * 1e-9
     )
     data_magic_m1 = data_magic.query("tel_id==2")
-    data_magic_m1.reset_index(inplace=True)
+    data_magic_m1.reset_index(inplace=True,drop=True)
     data_magic_m2 = data_magic.query("tel_id==3")
-    data_magic_m2.reset_index(inplace=True)
+    data_magic_m2.reset_index(inplace=True,drop=True)
     magic_subrun_base = magic_subrun_file.split("/")[-1].split(".h5")[0]
 
     data_lst = df_lst_subrun_file_2
@@ -96,6 +95,7 @@ for magic_subrun_file in sorted(
         else:
             data_magic = data_magic_m2
 
+        data_magic.reset_index(inplace=True,drop=True)
         min_t_magic, max_t_magic = min(data_magic["trigger_time"]), max(
             data_magic["trigger_time"]
         )
@@ -110,14 +110,17 @@ for magic_subrun_file in sorted(
                 )
             else:
                 data_magic = data_magic.query("@min_t_lst < trigger_time < @max_t_lst")
+                data_magic.reset_index(inplace=True,drop=True)
 
         if len(data_magic) > 0:
-            N_begin = data_magic.index[0]
-            N_final = data_magic.index[-1]
+            N_begin = data_magic.index[0] - data_magic.index[0]
+            N_final = data_magic.index[-1] - data_magic.index[0]
 
             N_start_ = N_begin
             N_end_ = N_start_ + 15
 
+            print(N_start_, N_end_)
+            print(data_magic[N_start_:N_end_]) 
             # This output file will be used for the next detailed offset search
             outfile = (
                 outdir + "/" + magic_subrun_base + "_" + str(N_start_) + "_init.npy"
@@ -177,7 +180,6 @@ for magic_subrun_file in sorted(
                     ),
                 )
 
-
 # Create the coincident dl1 files
 magic_dir_name = file_dl1_dir + "/MAGIC/"
 lst_dir_name = file_dl1_dir + "/LST1/"
@@ -204,7 +206,7 @@ for magic_data in magic_dataset:
     run_m.append(int(data_magic["obs_id"].mean()))
 
 df_magic = pd.DataFrame({"start": start_m, "stop": stop_m, "run": run_m})
-df_magic = df_magic.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()
+df_magic = df_magic.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()#drop=True)
 
 print(df_magic)
 
@@ -218,7 +220,7 @@ for lst_data in lst_dataset:
     run_l.append(int(data_lst["obs_id"].mean()))
 
 df_lst = pd.DataFrame({"start": start_l, "stop": stop_l, "run": run_l})
-df_lst = df_lst.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()
+df_lst = df_lst.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()#drop=True)
 
 print(df_lst)
 
@@ -351,6 +353,7 @@ for subrun_comb in subrun_combs:
                 + magic_path
             )
 
+        """
         # Run the coincidence script
         # PLEASE REWRITE THIS according to your analysis environment (e.g., SLURM)
         output = subprocess.run(
@@ -412,4 +415,4 @@ for subrun_comb in subrun_combs:
 
         ## job_wrapper.sh is,
         # python lst1_magic_event_coincidence.py -l $1 -m $2 -c $3 -t $4 -o $5
-        """
+        
