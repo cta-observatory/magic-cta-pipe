@@ -39,6 +39,7 @@ def fix_lists_and_convert(cell):
     parts = cell.replace("][", ",").strip("[]").split(",")
     return list(dict.fromkeys(int(item) for item in parts))
 
+
 def table_magic_runs(df, date_min, date_max):
 
     """
@@ -58,14 +59,14 @@ def table_magic_runs(df, date_min, date_max):
     pandas.DataFrame
         A DataFrame filtered by the specified date range.
     """
-    
+
     df_selected_data = df.iloc[:, [2, 1, 25]]
     df_selected_data.columns = ["DATE", "source", "MAGIC_runs"]
     grouped_data = df_selected_data.groupby(["DATE", "source"])
     result_table = []
 
     for (date, source), group in grouped_data:
-         if date >= date_min and date <= date_max: 
+        if date >= date_min and date <= date_max: 
             runs_combined = group["MAGIC_runs"].sum()
 
             result_table.append(
@@ -336,7 +337,7 @@ def main():
 
         try:
             database_M1.to_hdf(
-                new_database_file_path, key="MAGIC1/runs_M1", mode="w", format="table"
+            	new_database_file_path, key="MAGIC1/runs_M1", mode="w", format="table"
             )
             database_M2.to_hdf(
             	new_database_file_path, key="MAGIC2/runs_M2", mode="a", format="table"
