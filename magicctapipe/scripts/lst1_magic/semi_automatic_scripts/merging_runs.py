@@ -105,9 +105,9 @@ def split_train_test(target_dir, train_fraction):
         for j in list_of_runs[0:number_train_runs]:
             os.system(f"mv {j} {proton_dir}/train/{node}")
 
-        os.system(f"cp {list_of_dir[directory]}*.txt {proton_dir}/train/{node}")
+        os.system(f"cp {list_of_dir[directory]}logs/*.txt {proton_dir}/train/{node}")
         os.system(
-            f"mv {list_of_dir[directory]}*.txt {proton_dir}/../protons_test/{node}"
+            f"mv {list_of_dir[directory]}logs/*.txt {proton_dir}/../protons_test/{node}"
         )
         os.system(
             f"mv {list_of_dir[directory]}*.h5 {proton_dir}/../protons_test/{node}"
