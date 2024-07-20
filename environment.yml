@@ -38,7 +38,7 @@ dependencies:
   - pyyaml
   - scipy~=1.11.4
   - scikit-learn=1.2
-  - setuptools
+  - setuptools<=71
   - sphinx
   - sphinx-automodapi
   - sphinx-design
