@@ -1461,7 +1461,7 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
         if max(time_select) == True:
             t_lst_all = data_lst_["trigger_time"].values[time_select & select]
             print("size of LST time array ", len(t_lst_all))
-            t_magic_all = data_magic_[N_start:N_end]["trigger_time"]  # .values
+            t_magic_all = data_magic_[N_start:N_end]["trigger_time"].values
 
             # compute time difference with all the combinations
             array_1 = t_lst_all
