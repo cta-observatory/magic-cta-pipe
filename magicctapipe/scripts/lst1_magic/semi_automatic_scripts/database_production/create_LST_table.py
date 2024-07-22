@@ -80,8 +80,8 @@ def main():
     df_cut = df_cut.assign(processed_lstchain_file="")
     df_cut = df_cut.assign(error_code_nsb=-1)
 
-    df_cut = df_cut.assign(error_code_coincidence=-1)
-    df_cut = df_cut.assign(error_code_stereo=-1)
+    #df_cut = df_cut.assign(error_code_coincidence=-1)
+    #df_cut = df_cut.assign(error_code_stereo=-1)
 
     if os.path.isfile(out_h5):
         df_old = pd.read_hdf(
