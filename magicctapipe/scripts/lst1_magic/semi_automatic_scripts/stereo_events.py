@@ -266,15 +266,18 @@ def main():
                 bash_stereoMC(target_dir, part, env_name, cluster)
 
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
-            launch_jobs = ""
-            # TODO: check on N. bash scripts
+            if len(list_of_stereo_scripts) < 1:
+                logger.warning("No bash script has been produced for processing MCs")
+            else:
+                launch_jobs = ""
+                # TODO: check on N. bash scripts
 
-            for n, run in enumerate(list_of_stereo_scripts):
-                launch_jobs += (
-                    " && " if n > 0 else ""
-                ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+                for n, run in enumerate(list_of_stereo_scripts):
+                    launch_jobs += (
+                        " && " if n > 0 else ""
+                    ) + f"stereo{n}=$(sbatch --parsable {run})"
 
-            os.system(launch_jobs)
+                os.system(launch_jobs)
     for source_name in source_list:
         if (
             (args.analysis_type == "onlyMAGIC")
@@ -303,11 +306,10 @@ def main():
                 logger.warning("No bash scripts for real data")
                 continue
             launch_jobs = ""
-
             for n, run in enumerate(list_of_stereo_scripts):
                 launch_jobs += (
                     " && " if n > 0 else ""
-                ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+                ) + f"stereo{n}=$(sbatch --parsable {run})"
 
             os.system(launch_jobs)
 
