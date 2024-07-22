@@ -110,7 +110,7 @@ for magic_subrun_file in sorted(
                 )
             else:
                 data_magic = data_magic.query("@min_t_lst < trigger_time < @max_t_lst")
-                data_magic.reset_index(inplace=True,drop=True)
+                data_magic.reset_index(inplace=True)#,drop=True)
 
         if len(data_magic) > 0:
             N_begin = data_magic.index[0] - data_magic.index[0]

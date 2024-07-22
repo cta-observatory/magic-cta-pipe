@@ -1450,15 +1450,19 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
     """
     if initial_time_offset is None:
         time_offset_width1, time_offset_width2 = -4, 4
+        print(data_magic_["trigger_time"])
+        print(N_start)
         time_select = (
             data_lst_["trigger_time"].values
-            > (data_magic_["trigger_time"][N_start] + time_offset_width1)
+            > (data_magic_["trigger_time"].values[N_start] + time_offset_width1)
         ) & (
             data_lst_["trigger_time"].values
-            < (data_magic_["trigger_time"][N_end] + time_offset_width2)
+            < (data_magic_["trigger_time"].values[N_end] + time_offset_width2)
         )
         select = data_lst_["event_type"] == 32
         if max(time_select) == True:
+            #N_start_ = N_start - len(data_magic_)
+            #N_end_ = N_end - len(data_lst_)
             t_lst_all = data_lst_["trigger_time"].values[time_select & select]
             print("size of LST time array ", len(t_lst_all))
             t_magic_all = data_magic_[N_start:N_end]["trigger_time"].values
