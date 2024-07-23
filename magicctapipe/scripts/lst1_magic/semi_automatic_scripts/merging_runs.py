@@ -239,7 +239,7 @@ def mergeMC(target_dir, identification, env_name, cluster):
     process_name = "merging_MC"
 
     MC_DL1_dir = f"{target_dir}/v{__version__}/MC/DL1"
-    os.makedirs(f"{MC_DL1_dir}/{identification}/Merged", exist_ok=True)
+    os.makedirs(f"{MC_DL1_dir}/{identification}/Merged/logs", exist_ok=True)
 
     if identification == "protons":
         list_of_nodes = np.sort(glob.glob(f"{MC_DL1_dir}/{identification}/train/node*"))
@@ -264,12 +264,12 @@ def mergeMC(target_dir, identification, env_name, cluster):
             array=process_size,
             mem="7g",
             job_name=process_name,
-            out_name=f"{MC_DL1_dir}/{identification}/Merged/slurm-%x.%A_%a",
+            out_name=f"{MC_DL1_dir}/{identification}/Merged/logs/slurm-%x.%A_%a",
         )
         lines_bash_file = slurm + [
             f"SAMPLE_LIST=($(<{MC_DL1_dir}/{identification}/list_of_nodes.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-            f"export LOG={MC_DL1_dir}/{identification}/Merged"
+            f"export LOG={MC_DL1_dir}/{identification}/Merged/logs"
             + "/merged_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
             f"conda run -n {env_name} merge_hdf_files --input-dir $SAMPLE --output-dir {MC_DL1_dir}/{identification}/Merged >$LOG 2>&1\n",
         ]
