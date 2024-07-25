@@ -170,7 +170,7 @@ def bash_stereoMC(target_dir, identification, env_name, cluster):
     process_name = "stereo_MC"
 
     inputdir = f"{target_dir}/v{__version__}/MC/DL1/{identification}/Merged"
-    os.makedirs(f"{inputdir}/StereoMerged", exist_ok=True)
+    os.makedirs(f"{inputdir}/StereoMerged/logs", exist_ok=True)
 
     os.system(
         f"ls {inputdir}/dl1*.h5 >  {inputdir}/list_coin.txt"
@@ -186,7 +186,7 @@ def bash_stereoMC(target_dir, identification, env_name, cluster):
         slurm = slurm_lines(
             queue="xxl",
             job_name=f"{process_name}_stereo",
-            array=f"{process_size}%100",
+            array=process_size,
             mem="7g",
             out_name=f"{inputdir}/StereoMerged/logs/slurm-%x.%A_%a",
         )
@@ -195,7 +195,7 @@ def bash_stereoMC(target_dir, identification, env_name, cluster):
             f"export OUTPUTDIR={inputdir}/StereoMerged\n",
             "SAMPLE_LIST=($(<$INPUTDIR/list_coin.txt))\n",
             "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-            "export LOG=$OUTPUTDIR/stereo_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+            "export LOG=$OUTPUTDIR/logs/stereo_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
             f"conda run -n {env_name} lst1_magic_stereo_reco --input-file $SAMPLE --output-dir $OUTPUTDIR --config-file {target_dir}/v{__version__}/MC/config_stereo.yaml >$LOG 2>&1",
         ]
         f.writelines(lines)
@@ -266,15 +266,19 @@ def main():
                 bash_stereoMC(target_dir, part, env_name, cluster)
 
             list_of_stereo_scripts = np.sort(glob.glob("StereoEvents_MC_*.sh"))
-            launch_jobs = ""
-            # TODO: check on N. bash scripts
+            if len(list_of_stereo_scripts) < 1:
+                logger.warning("No bash script has been produced for processing MCs")
+            else:
+                launch_jobs = ""
+                # TODO: check on N. bash scripts
 
-            for n, run in enumerate(list_of_stereo_scripts):
-                launch_jobs += (
-                    " && " if n > 0 else ""
-                ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+                for n, run in enumerate(list_of_stereo_scripts):
+                    launch_jobs += (
+                        " && " if n > 0 else ""
+                    ) + f"stereo{n}=$(sbatch --parsable {run})"
 
-            os.system(launch_jobs)
+                os.system(launch_jobs)
+
     for source_name in source_list:
         if (
             (args.analysis_type == "onlyMAGIC")
@@ -303,11 +307,10 @@ def main():
                 logger.warning("No bash scripts for real data")
                 continue
             launch_jobs = ""
-
             for n, run in enumerate(list_of_stereo_scripts):
                 launch_jobs += (
                     " && " if n > 0 else ""
-                ) + f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
+                ) + f"stereo{n}=$(sbatch --parsable {run})"
 
             os.system(launch_jobs)
 
