@@ -169,7 +169,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                         #    f'find  {indir} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
                         # )
                         f.write(
-                            f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
+                            f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log 2>&1\n"
                         )
                         rc = rc_lines(
                             store=f"{indir} ${{SLURM_JOB_ID}}",
@@ -189,7 +189,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                     outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged"
                     os.makedirs(f"{outdir}/logs", exist_ok=True)
                     f.write(
-                        f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} --run-wise >{outdir}/logs/merge_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log\n"
+                        f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} --run-wise >{outdir}/logs/merge_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log 2>&1\n"
                     )
                     rc = rc_lines(
                         store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
@@ -210,7 +210,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                 outdir = f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
                 os.makedirs(f"{outdir}/logs", exist_ok=True)
                 f.write(
-                    f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_night_{i}_${{SLURM_JOB_ID}}.log\n"
+                    f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_night_{i}_${{SLURM_JOB_ID}}.log 2>&1\n"
                 )
                 rc = rc_lines(
                     store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"

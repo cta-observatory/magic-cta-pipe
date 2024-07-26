@@ -96,11 +96,17 @@ def main():
         source_out = "*"
 
     indir = f"{work_dir}/v{args.version}/{source_out}/{args.data_level}"
-    dirs = sorted(
-        glob.glob(f"{indir}/[0-9]*/[M0-9]*")
-        + glob.glob(f"{indir}/Merged_[0-9]*")
-        + glob.glob(f"{indir}/" + "[0-9]" * 8)
-    )
+    
+    if args.data_level == 'MergedStereo':
+        dirs = sorted(glob.glob(f'{work_dir}/v{args.version}/{source_out}/DL1Stereo/[0-9]*/Merged'))
+    
+    else: 
+        dirs = sorted(
+            glob.glob(f"{indir}/[0-9]*/[M0-9]*")
+            + glob.glob(f"{indir}/Merged_[0-9]*")
+            + glob.glob(f"{indir}/" + "[0-9]" * 8)
+        )
+    
     if dirs == []:
         versions = [x.split("/v")[-1] for x in glob.glob(f"{work_dir}/v*")]
         print("Error, no directories found")
@@ -108,7 +114,7 @@ def main():
         print(f"Versions {versions}")
 
         print(
-            "Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo"
+            "Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo, MergedStereo"
         )
         exit(1)
 
@@ -126,8 +132,11 @@ def main():
     total_time = 0
     all_jobs = []
     for dir in dirs:
-        this_date = re.sub(f".+/{args.data_level}/", "", dir)
-        this_date = re.sub(r"\D", "", this_date.split("/")[0])
+        if args.data_level == 'MergedStereo':
+            this_date=dir.split('/')[-2]
+        else:
+            this_date = re.sub(f".+/{args.data_level}/", "", dir)
+            this_date = re.sub(r"\D", "", this_date.split("/")[0])
         this_date = datetime.strptime(this_date, "%Y%m%d")
         if timerange and (this_date < timemin or this_date > timemax):
             continue
@@ -135,6 +144,7 @@ def main():
         print(dir)
         list_dl0 = ""
         ins = ["list_dl0.txt", "list_LST.txt", "list_coin.txt", "list_cal.txt"]
+        
         for file in ins:
             if os.path.exists(f"{dir}/logs/{file}"):
                 list_dl0 = f"{dir}/logs/{file}"

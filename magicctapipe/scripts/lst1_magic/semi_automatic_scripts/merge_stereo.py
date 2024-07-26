@@ -71,7 +71,7 @@ def MergeStereo(target_dir, env_name, source, cluster):
         lines = (
             slurm
             + [
-                f"conda run -n {env_name} merge_hdf_files --input-dir {nightLST} --output-dir {stereoMergeDir} --run-wise >{stereoMergeDir}/logs/merge_{night}_${{SLURM_JOB_ID}}.log\n"
+                f"conda run -n {env_name} merge_hdf_files --input-dir {nightLST} --output-dir {stereoMergeDir} --run-wise >{stereoMergeDir}/logs/merge_{night}_${{SLURM_JOB_ID}}.log 2>&1\n"
             ]
             + rc
         )
