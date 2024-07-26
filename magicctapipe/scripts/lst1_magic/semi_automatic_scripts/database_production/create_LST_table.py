@@ -60,13 +60,13 @@ def main():
     )  # TODO: put this file in a shared folder
     df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
     if args.begin != 0:
-        df = df[df["DATE"] >= args.begin]
+        df = df[df["DATE"].astype(int) >= args.begin]
     if args.end != 0:
-        df = df[df["DATE"] <= args.end]
+        df = df[df["DATE"].astype(int) <= args.end]
 
-    needed_cols = [
-        "source",
+    needed_cols = [        
         "DATE",
+        "source",
         "LST1_run",
         "MAGIC_stereo",
         "MAGIC_trigger",
@@ -80,8 +80,7 @@ def main():
     df_cut = df_cut.assign(processed_lstchain_file="")
     df_cut = df_cut.assign(error_code_nsb=-1)
 
-    df_cut = df_cut.assign(error_code_coincidence=-1)
-    df_cut = df_cut.assign(error_code_stereo=-1)
+    
 
     if os.path.isfile(out_h5):
         df_old = pd.read_hdf(
