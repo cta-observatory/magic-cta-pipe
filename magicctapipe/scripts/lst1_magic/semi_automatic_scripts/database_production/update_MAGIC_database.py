@@ -254,10 +254,10 @@ def create_new_database(df, date_min, date_max, tel_id):
             if count_with_run_id != 0:
                 new_rows.append(
                     {
-                        "DATE": date,
-                        "source": source,
-                        "Run ID": run_id,
-                        "number of subruns": count_with_run_id,
+                        "DATE": int(date),
+                        "source": str(source),
+                        "Run ID": int(run_id),
+                        "number of subruns": int(count_with_run_id),
                     }
                 )
 
