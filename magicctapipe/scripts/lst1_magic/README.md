@@ -65,8 +65,7 @@ data_selection:
     skip_LST_runs: [3216,3217]  # LST runs to ignore.
     skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
     
-general:
-    SimTel_version: "v1.4"  
+general:  
     LST_version   : "v0.10" # check the `processed_lstchain_file` version in the LST database!
     LST_tailcut   : "tailcut84"
     focal_length  : "effective"
@@ -84,6 +83,8 @@ general:
 
 WARNING: Only the runs for which the `LST_version` parameter matches the `processed_lstchain_file` version in the LST database (i.e., the version used to evaluate the NSB level; generally the last available and processable version of a run) will be processed.
 
+WARNING: `env_name` must be the same as the name of the environment in which you installed this version of the pipeline
+
 Now that the configuration file is ready, let's create a list with all the MAGIC+LST1 runs for the time window (or list of nights) defined on the config_general.yaml file:
 
 > $ list_from_h5 -c config_general.yaml
@@ -96,7 +97,7 @@ Finding LST runs...
 Source: XXX
 Finding MAGIC runs...
 ```
-And it will save the files TARGET_LST_runs.txt, TARGET_MAGIC_runs.txt, and list_sources.dat in your current working directory. In case no runs are found for MAGIC and/or LST (for a source and a given time range/list of dates), a warning will be printed and no output text file will be produced for the given source and telescope(s).
+And it will save the files {TARGET}_LST_runs.txt, {TARGET}_MAGIC_runs.txt, and list_sources.dat (i.e., the list of all the sources found in the database according to user and default options) in your current working directory. In case no runs are found for MAGIC and/or LST (for a source and a given time range/list of dates), a warning will be printed and no output text file will be produced for the given source and telescope(s).
 
 At this point, we can convert the MAGIC data into DL1 format with the following command:
 > $ dl1_production -c config_general.yaml
@@ -186,7 +187,7 @@ The folder [Notebooks](https://github.com/cta-observatory/magic-cta-pipe/tree/ma
 
 To create and update the MAGIC and LST databases (from the one produced by AB and FDP) you should use the scripts in `database_production`
 
-- `create_lst_table`: creates the LST database (1 row per LST run) by dropping some columns from the parent one (AB, FDP) and adding columns for NSB value (-1 by default), lstchain available versions, most recent lstchain version, processed file and error codes (-1 by default). Launched as `python create_lst_table.py`
+- `create_lst_table`: creates the LST database (1 row per LST run) by dropping some columns from the parent one (AB, FDP) and adding columns for NSB value (-1 by default), lstchain available versions, most recent lstchain version, processed file and NSB error codes (-1 by default). It could also be used to update the given database, possibly selecting a given time range from the parent databases (by the -b and -e parameters, which stand for begin and end date of the range). Launched as `python create_lst_table.py (-b YYYYMMDD -e YYYYMMDD)`
 
 - `lstchain_version`: this scripts loop over all the rows of the database, estract date and run number from the table and look for the data saved in the IT (i.e., which version of lstchain has been used to process a run). It evaluates all the versions used to process a run and the most recent MCP-compatible one according to a hard-coded, ordered list. Launched as `python lstchain_version.py`
 

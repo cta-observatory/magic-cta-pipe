@@ -48,8 +48,8 @@ The following command will set up a conda virtual environment, add the necessary
 
     git clone https://github.com/cta-observatory/magic-cta-pipe.git
     cd magic-cta-pipe
-    conda env create -n magic-lst1 -f environment.yml
-    conda activate magic-lst1
+    conda env create -n magic-lst -f environment.yml
+    conda activate magic-lst
     pip install .
 
 In general, *magic-cta-pipe* is still in heavy development phase, so expect large changes between different releases.
