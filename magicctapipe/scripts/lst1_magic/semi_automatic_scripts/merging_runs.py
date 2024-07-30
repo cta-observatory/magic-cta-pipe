@@ -180,7 +180,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                     else:
                         logger.error(f"{indir} does not exist")
 
-        elif identification == "1_M1M2":
+        else:
             for i in MAGIC_runs:
                 if os.path.exists(f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]}") & os.path.exists(
                     f"{MAGIC_DL1_dir}/M2/{i[0]}/{i[1]}"
@@ -200,23 +200,7 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                     logger.error(
                         f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
                     )
-        else:
-            dates = np.unique(MAGIC_runs.T[0])
-            for i in dates:
-                if not os.path.exists(f"{MAGIC_DL1_dir}/Merged/{i}/Merged"):
-                    continue
-
-                indir = f"{MAGIC_DL1_dir}/Merged/{i}/Merged"
-                outdir = f"{MAGIC_DL1_dir}/Merged/Merged_{i}"
-                os.makedirs(f"{outdir}/logs", exist_ok=True)
-                f.write(
-                    f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_night_{i}_${{SLURM_JOB_ID}}.log 2>&1\n"
-                )
-                rc = rc_lines(
-                    store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
-                )
-                f.writelines(rc)
-                os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
+        
 
 
 def mergeMC(target_dir, identification, env_name, cluster):
@@ -358,7 +342,7 @@ def main():
                 for n, run in enumerate(list_of_merging_scripts):
                     launch_jobs += (
                         " && " if n > 0 else ""
-                    ) + f"merging{n}=$(sbatch --parsable {run})"
+                    ) + f"sbatch {run}"
 
                 os.system(launch_jobs)
 
@@ -394,16 +378,7 @@ def main():
                 NSB_match,
                 cluster,
             )  # generating the bash script to merge the M1 and M2 runs
-            merge(
-                target_dir,
-                "2_nights",
-                MAGIC_runs,
-                env_name,
-                source_name,
-                NSB_match,
-                cluster,
-            )  # generating the bash script to merge all runs per night
-
+            
             print("***** Running merge_hdf_files.py on the MAGIC data files...")
 
             # Below we run the bash scripts to merge the MAGIC files
