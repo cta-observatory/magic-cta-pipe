@@ -309,9 +309,9 @@ def main():
             isgood = np.logical_and(good_subruns == all_subruns, good_subruns > 0)
             h5runs.loc[idx, rc_col + "_all"] = isgood
 
-    # fixme: for DL1/M[12] files since htere are two dataframes in the file, we need to append it
-    # and this causes increase in the file size every time the file is updated
-    h5runs.to_hdf(args.run_list, key=h5key, mode="r+")
+        # fixme: for DL1/M[12] files since htere are two dataframes in the file, we need to append it
+        # and this causes increase in the file size every time the file is updated
+        h5runs.to_hdf(args.run_list, key=h5key, mode="r+")
 
 
 if __name__ == "__main__":
