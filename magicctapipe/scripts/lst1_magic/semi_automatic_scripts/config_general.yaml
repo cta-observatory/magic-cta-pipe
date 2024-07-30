@@ -17,9 +17,7 @@ directories:
     
 data_selection:
     source_name_database: "CrabNebula"  # MUST BE THE SAME AS IN THE DATABASE; Set to null to process all sources in the given time range.
-    source_name_output: 'Crabtest'  # Name tag of your target. Used only if source_name_database != null. Set it to null if source_name_database = null
-    target_RA_deg : 83.629  # RA in degrees; Set to null if source_name_database=null.
-    target_Dec_deg: 22.015  # Dec in degrees; set to null if source_name_database=null.
+    source_name_output: 'Crabtest'  # Name tag of your target. Used only if source_name_database != null.
     time_range : True  # Search for all runs in a LST time range (e.g., 2020_01_01 -> 2022_01_01).
     min : "2023_11_17"
     max : "2024_03_03"   

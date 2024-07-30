@@ -7,6 +7,7 @@ from .dl1_production import (
     lists_and_bash_gen_MAGIC,
     lists_and_bash_generator,
 )
+from .merge_stereo import MergeStereo
 from .merging_runs import cleaning, merge, mergeMC, split_train_test
 from .stereo_events import bash_stereo, bash_stereoMC, configfile_stereo
 
@@ -26,4 +27,5 @@ __all__ = [
     "bash_stereo",
     "bash_stereoMC",
     "slurm_lines",
+    "MergeStereo",
 ]

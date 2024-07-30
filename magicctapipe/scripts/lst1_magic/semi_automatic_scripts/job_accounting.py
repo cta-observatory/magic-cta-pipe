@@ -135,11 +135,11 @@ def main():
         source_out = "*"
 
     indir = f"{work_dir}/v{args.version}/{source_out}/{args.data_level}"
+
     dirs = sorted(
-        glob.glob(f"{indir}/[0-9]*/[M0-9]*")
-        + glob.glob(f"{indir}/Merged_[0-9]*")
-        + glob.glob(f"{indir}/" + "[0-9]" * 8)
+        glob.glob(f"{indir}/[0-9]*/[M0-9]*") + glob.glob(f"{indir}/" + "[0-9]" * 8)
     )
+
     if dirs == []:
         versions = [x.split("/v")[-1] for x in glob.glob(f"{work_dir}/v*")]
         print("Error, no directories found")
@@ -147,7 +147,7 @@ def main():
         print(f"Versions {versions}")
 
         print(
-            "Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo"
+            "Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo, DL1Stereo/Merged"
         )
         exit(1)
 
@@ -168,13 +168,13 @@ def main():
         this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
         this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
         this_date = datetime.strptime(this_date_str, "%Y%m%d")
-
         if timerange and (this_date < timemin or this_date > timemax):
             continue
 
         print(dir)
         list_dl0 = ""
         ins = ["list_dl0.txt", "list_LST.txt", "list_coin.txt", "list_cal.txt"]
+
         for file in ins:
             if os.path.exists(f"{dir}/logs/{file}"):
                 list_dl0 = f"{dir}/logs/{file}"

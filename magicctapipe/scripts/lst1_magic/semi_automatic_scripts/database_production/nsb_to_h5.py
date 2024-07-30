@@ -77,23 +77,6 @@ def main():
     df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
     df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
 
-    df_new = df_new[
-        [
-            "source",
-            "DATE",
-            "LST1_run",
-            "MAGIC_stereo",
-            "MAGIC_trigger",
-            "MAGIC_HV",
-            "nsb",
-            "lstchain_versions",
-            "last_lstchain_file",
-            "processed_lstchain_file",
-            "error_code_nsb",
-            "error_code_coincidence",
-            "error_code_stereo",
-        ]
-    ]
     df_new.to_hdf(
         LST_h5,
         key=LST_key,

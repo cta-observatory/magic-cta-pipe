@@ -52,6 +52,7 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
     else:
         mod = len(run_list) // denominator
     failed = 0
+    logger.info("NSB levels (sub-runs): \n")
     for ii in range(0, len(run_list)):
         subrun = run_list[ii].split(".")[-2]
         if mod == 0:
@@ -149,7 +150,8 @@ def main():
         )
         return
     median_NSB = np.median(noise)
-    logger.info(f"Run n. {run_number}, nsb median {median_NSB}")
+    logger.info("\n\n")
+    logger.info(f"Run n. {run_number}, NSB median {median_NSB}")
 
     for j in range(0, len(nsb_list)):
         if (median_NSB < nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
