@@ -136,10 +136,8 @@ def main():
 
     indir = f"{work_dir}/v{args.version}/{source_out}/{args.data_level}"
 
-    
     dirs = sorted(
-        glob.glob(f"{indir}/[0-9]*/[M0-9]*")
-        + glob.glob(f"{indir}/" + "[0-9]" * 8)
+        glob.glob(f"{indir}/[0-9]*/[M0-9]*") + glob.glob(f"{indir}/" + "[0-9]" * 8)
     )
 
     if dirs == []:

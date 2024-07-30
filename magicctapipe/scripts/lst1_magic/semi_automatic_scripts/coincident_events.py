@@ -247,9 +247,7 @@ def main():
                 continue
             launch_jobs = ""
             for n, run in enumerate(list_of_coincidence_scripts):
-                launch_jobs += (
-                    " && " if n > 0 else ""
-                ) + f"sbatch {run}"
+                launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
             os.system(launch_jobs)
 

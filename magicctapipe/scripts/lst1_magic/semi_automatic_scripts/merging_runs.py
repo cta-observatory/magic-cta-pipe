@@ -200,7 +200,6 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
                     logger.error(
                         f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
                     )
-        
 
 
 def mergeMC(target_dir, identification, env_name, cluster):
@@ -340,9 +339,7 @@ def main():
             else:
                 launch_jobs = ""
                 for n, run in enumerate(list_of_merging_scripts):
-                    launch_jobs += (
-                        " && " if n > 0 else ""
-                    ) + f"sbatch {run}"
+                    launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
                 os.system(launch_jobs)
 
@@ -378,7 +375,7 @@ def main():
                 NSB_match,
                 cluster,
             )  # generating the bash script to merge the M1 and M2 runs
-            
+
             print("***** Running merge_hdf_files.py on the MAGIC data files...")
 
             # Below we run the bash scripts to merge the MAGIC files
