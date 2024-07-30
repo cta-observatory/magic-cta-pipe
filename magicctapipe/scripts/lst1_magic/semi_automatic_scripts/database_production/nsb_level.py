@@ -187,7 +187,7 @@ def main():
 
     launch_jobs = ""
     for n, run in enumerate(list_of_bash_scripts):
-        launch_jobs += (" && " if n > 0 else "") + f"nsb{n}=$(sbatch --parsable {run})"
+        launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
     os.system(launch_jobs)
 
