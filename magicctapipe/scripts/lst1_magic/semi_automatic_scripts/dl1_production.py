@@ -518,7 +518,6 @@ def main():
             print(
                 f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
             )
-            
 
             directories_generator_real(
                 str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
