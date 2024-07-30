@@ -102,7 +102,7 @@ def linking_bash_lst(
 
     MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
 
-    dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/Merged_*")]
+    dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/[0-9]*")]
     if cluster != "SLURM":
         logger.warning(
             "Automatic processing not implemented for the cluster indicated in the config file"
@@ -249,7 +249,7 @@ def main():
             for n, run in enumerate(list_of_coincidence_scripts):
                 launch_jobs += (
                     " && " if n > 0 else ""
-                ) + f"coincidence{n}=$(sbatch --parsable {run})"
+                ) + f"sbatch {run}"
 
             os.system(launch_jobs)
 
