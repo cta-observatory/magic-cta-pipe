@@ -53,7 +53,7 @@ def MergeStereo(target_dir, env_name, source, cluster):
         return
     for nightLST in listOfNightsLST:
         night = nightLST.split("/")[-1]
-        stereoMergeDir = f"{stereo_DL1_dir}/DL1Stereo/{night}/Merged"
+        stereoMergeDir = f"{stereo_DL1_dir}/DL1Stereo/Merged/{night}"
         os.makedirs(f"{stereoMergeDir}/logs", exist_ok=True)
 
         if len(glob.glob(f"{nightLST}/dl1_stereo*.h5")) < 1:
@@ -132,7 +132,7 @@ def main():
         for n, run in enumerate(list_of_merge):
             launch_jobs += (
                 " && " if n > 0 else ""
-            ) + f"merge{n}=$(sbatch --parsable {run})"
+            ) + f"sbatch {run}"
 
         os.system(launch_jobs)
 
