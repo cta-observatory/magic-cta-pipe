@@ -518,9 +518,7 @@ def main():
             print(
                 f"To check the jobs submitted to the cluster, type: squeue -n {source_name}"
             )
-            print(
-                "This process will take about 10 min to run if the IT cluster is free."
-            )
+            
 
             directories_generator_real(
                 str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
