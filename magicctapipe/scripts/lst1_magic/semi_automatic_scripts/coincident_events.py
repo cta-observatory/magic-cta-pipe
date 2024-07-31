@@ -109,7 +109,7 @@ def linking_bash_lst(
         )
         return
     for d in dates:
-        Y_M, M_M, D_M = [int(x) for x in d.split("_")[1:]]
+        Y_M, M_M, D_M = [int(x) for x in d.split("_")[:]]
 
         day_MAGIC = dtdt(Y_M, M_M, D_M)
 
@@ -156,7 +156,7 @@ def linking_bash_lst(
                 lines = (
                     slurm
                     + [
-                        f"export INM={MAGIC_DL1_dir}/Merged/{d}\n",
+                        f"export INM={MAGIC_DL1_dir}/Merged/{d}/Merged\n",
                         f"export OUTPUTDIR={outputdir}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_LST.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
