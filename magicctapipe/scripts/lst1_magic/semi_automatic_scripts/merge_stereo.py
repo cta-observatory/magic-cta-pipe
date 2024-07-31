@@ -62,6 +62,7 @@ def MergeStereo(target_dir, env_name, source, cluster):
         slurm = slurm_lines(
             queue="short",
             job_name=f"{process_name}_stereo_merge",
+            mem="2g",
             out_name=f"{stereoMergeDir}/logs/slurm-%x.%A_%a",
         )
         rc = rc_lines(
