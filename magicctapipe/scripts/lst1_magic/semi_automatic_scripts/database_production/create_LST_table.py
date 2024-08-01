@@ -90,7 +90,15 @@ def main():
         )
         df_cut = df_cut.sort_values(by=["DATE", "source"])
         # TODO check if fine with update and nsb
+
     df_cut = df_cut.reset_index(drop=True)
+    df_cols=df_cut.columns.tolist()
+    for col in df_cols:
+        if '_rc_all' in col:
+            df_cut[col]=df_cut[col].fillna(False)
+        elif '_rc' in col:
+            df_cut[col]=df_cut[col].fillna('{}')
+        
     df_cut.to_hdf(
         out_h5,
         key=out_key,
