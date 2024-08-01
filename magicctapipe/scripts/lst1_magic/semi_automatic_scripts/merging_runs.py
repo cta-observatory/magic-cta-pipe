@@ -115,7 +115,7 @@ def split_train_test(target_dir, train_fraction):
         os.system(f"rm -r {list_of_dir[directory]}")
 
 
-def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, cluster):
+def merge(target_dir, MAGIC_runs, env_name, source, NSB_match, cluster):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py in all MAGIC subruns.
@@ -124,8 +124,6 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
     ----------
     target_dir : str
         Path to the working directory
-    identification : str
-        Tells which batch to create. Options: subruns, M1M2, nights
     MAGIC_runs : matrix of strings
         This matrix is imported from config_general.yaml and tells the function where to find the data and where to put the merged files
     env_name : str
@@ -155,51 +153,27 @@ def merge(target_dir, identification, MAGIC_runs, env_name, source, NSB_match, c
     )
     os.makedirs(f"{MAGIC_DL1_dir}/Merged/logs", exist_ok=True)
 
-    with open(f"{source}_Merge_MAGIC_{identification}.sh", "w") as f:
+    with open(f"{source}_Merge_MAGIC.sh", "w") as f:
         f.writelines(lines)
-        if identification == "0_subruns":
-            for magic in [1, 2]:
-                for i in MAGIC_runs:
-                    # Here is a difference w.r.t. original code. If only one telescope data are available they will be merged now for this telescope
-                    indir = f"{MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]}"
-                    if os.path.exists(f"{indir}"):
-                        outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"
-                        os.makedirs(f"{outdir}/logs", exist_ok=True)
-                        # os.system(
-                        #    f'find  {indir} -type f -name "dl1_M{magic}.Run*.h5" -size -3k -delete'
-                        # )
-                        f.write(
-                            f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log 2>&1\n"
-                        )
-                        rc = rc_lines(
-                            store=f"{indir} ${{SLURM_JOB_ID}}",
-                            out=f"{outdir}/logs/list",
-                        )
-                        f.writelines(rc)
-                        os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
-                    else:
-                        logger.error(f"{indir} does not exist")
-
-        else:
+        for magic in [1, 2]:
             for i in MAGIC_runs:
-                if os.path.exists(f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]}") & os.path.exists(
-                    f"{MAGIC_DL1_dir}/M2/{i[0]}/{i[1]}"
-                ):
-                    indir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/{i[1]}"
-                    outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}/Merged"
+                # Here is a difference w.r.t. original code. If only one telescope data are available they will be merged now for this telescope
+                indir = f"{MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]}"
+                if os.path.exists(f"{indir}"):
+                    outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}"
                     os.makedirs(f"{outdir}/logs", exist_ok=True)
+
                     f.write(
-                        f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} --run-wise >{outdir}/logs/merge_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log 2>&1\n"
+                        f"conda run -n {env_name} merge_hdf_files --input-dir {indir} --output-dir {outdir} >{outdir}/logs/merge_M{magic}_{i[0]}_{i[1]}_${{SLURM_JOB_ID}}.log 2>&1\n"
                     )
                     rc = rc_lines(
-                        store=f"{indir} ${{SLURM_JOB_ID}}", out=f"{outdir}/logs/list"
+                        store=f"{indir} ${{SLURM_JOB_ID}}",
+                        out=f"{outdir}/logs/list",
                     )
                     f.writelines(rc)
                     os.system(f"echo {indir} >> {outdir}/logs/list_dl0.txt")
                 else:
-                    logger.error(
-                        f"{MAGIC_DL1_dir}/M1/{i[0]}/{i[1]} or {MAGIC_DL1_dir}/M2/{i[0]}/{i[1]} does not exist"
-                    )
+                    logger.error(f"{indir} does not exist")
 
 
 def mergeMC(target_dir, identification, env_name, cluster):
@@ -359,38 +333,25 @@ def main():
             print("***** Generating merge_MAGIC bashscripts...")
             merge(
                 target_dir,
-                "0_subruns",
                 MAGIC_runs,
                 env_name,
                 source_name,
                 NSB_match,
                 cluster,
             )  # generating the bash script to merge the subruns
-            merge(
-                target_dir,
-                "1_M1M2",
-                MAGIC_runs,
-                env_name,
-                source_name,
-                NSB_match,
-                cluster,
-            )  # generating the bash script to merge the M1 and M2 runs
 
             print("***** Running merge_hdf_files.py on the MAGIC data files...")
 
             # Below we run the bash scripts to merge the MAGIC files
             list_of_merging_scripts = np.sort(
-                glob.glob(f"{source_name}_Merge_MAGIC_*.sh")
+                glob.glob(f"{source_name}_Merge_MAGIC*.sh")
             )
             if len(list_of_merging_scripts) < 1:
                 logger.warning("No bash scripts for real data")
                 continue
             launch_jobs = ""
             for n, run in enumerate(list_of_merging_scripts):
-                launch_jobs += (
-                    (" && " if n > 0 else "")
-                    + f"merging{n}=$(sbatch --parsable --dependency=afterany:$merging{n-1} {run})"
-                )
+                launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
             os.system(launch_jobs)
 

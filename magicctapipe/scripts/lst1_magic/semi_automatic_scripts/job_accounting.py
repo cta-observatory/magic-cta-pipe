@@ -136,9 +136,7 @@ def main():
 
     indir = f"{work_dir}/v{args.version}/{source_out}/{args.data_level}"
 
-    dirs = sorted(
-        glob.glob(f"{indir}/[0-9]*/[M0-9]*") + glob.glob(f"{indir}/" + "[0-9]" * 8)
-    )
+    dirs = sorted(glob.glob(f"{indir}/[0-9]*"))
 
     if dirs == []:
         versions = [x.split("/v")[-1] for x in glob.glob(f"{work_dir}/v*")]
