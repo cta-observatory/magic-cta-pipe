@@ -119,6 +119,7 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py for real data
+
     Parameters
     ----------
     target_dir : str

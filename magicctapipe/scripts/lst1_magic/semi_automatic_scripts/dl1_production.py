@@ -17,7 +17,6 @@ import argparse
 import glob
 import logging
 import os
-
 from pathlib import Path
 
 import joblib
@@ -272,11 +271,11 @@ def lists_and_bash_gen_MAGIC(
                 if number_of_nodes < 0:
                     continue
                 slurm = slurm_lines(
-                    queue="short",  
+                    queue="short",
                     job_name=process_name,
                     array=number_of_nodes,
                     mem="2g",
-                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  
+                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
@@ -284,7 +283,7 @@ def lists_and_bash_gen_MAGIC(
                 )
                 lines = (
                     slurm
-                    + [  
+                    + [
                         f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_cal.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",

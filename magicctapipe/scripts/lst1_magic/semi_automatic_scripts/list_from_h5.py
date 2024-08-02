@@ -286,7 +286,7 @@ def main():
         MAGIC_h5,
         key=MAGIC2_key,
     )
-    
+
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [int(sub.replace("-", "")) for sub in list_date_LST]
 

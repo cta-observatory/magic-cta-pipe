@@ -145,7 +145,6 @@ def main():
         logger.info(f"Run {run_number} already processed")
         return
 
-    
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number, denominator)

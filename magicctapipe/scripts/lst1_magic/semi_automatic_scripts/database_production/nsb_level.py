@@ -3,7 +3,7 @@ Creates bash scripts to run LSTnsb.py on all the LST runs, in the provided time 
 
 Moreover, it can modify the lstchain standard configuration file (used to evaluate NSB) by adding "use_flatfield_heuristic" = True
 
-Usage: 
+Usage:
 $ nsb_level (-c config.yaml -b begin -e end)
 """
 

@@ -73,9 +73,7 @@ def configfile_coincidence(target_dir, source_name, config_gen):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, cluster
-):
+def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, cluster):
 
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -193,7 +191,6 @@ def main():
         config = yaml.safe_load(f)
     target_dir = Path(config["directories"]["workspace_dir"])
 
-    
     env_name = config["general"]["env_name"]
     LST_version = config["general"]["LST_version"]
 

@@ -3,8 +3,8 @@ Script to fill the 'nsb' column of the LST database by using the txt files produ
 
 It also fills the error_code_nsb column by 0 if the NSB could be evaluated and is < 3.0, by 2 if the NSB is > 3.0 and by 1 if the NSB could not be evaluated (NSB = NaN)
 
-Usage: 
-$ nsb_to_h5 
+Usage:
+$ nsb_to_h5
 """
 
 import glob
