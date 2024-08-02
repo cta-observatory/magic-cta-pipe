@@ -182,7 +182,7 @@ def update_tables(database, DF, tel_id):
         for column in combined_df.columns[4:]:
             combined_df[column] = combined_df[column].replace(
                 r"^\s*$", np.nan, regex=True
-            )      
+            )
             not_null_data = combined_df[column].dropna()
             if not_null_data.empty:
                 continue  # Skip if all values are NaN
@@ -269,6 +269,7 @@ def main():
         database = table_magic_runs(df, date_min, date_max)
 
         for tel in tel_id:
+
             dat_key = "MAGIC-" + "I" * tel
             key = config_dict["database_keys"][dat_key]
 
@@ -298,7 +299,7 @@ def main():
         database_default = table_magic_runs(df, date_min_default, date_max_default)
 
         for tel in tel_id:
-            
+
             dat_key = "MAGIC-" + "I" * tel
             key = config_dict["database_keys"][dat_key]
 
@@ -320,6 +321,7 @@ def main():
 
             except Exception as e:
                 print(f"An error occurred: {e}")
+
 
 if __name__ == "__main__":
     main()
