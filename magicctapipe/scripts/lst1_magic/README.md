@@ -197,4 +197,4 @@ To create and update the MAGIC and LST databases (from the one produced by AB an
 
 - `nsb_to_h5`: this script reads the txt files created by `nsb_level` to know the NSB value for each run. This value is used to fill the `nsb` column of the database at the location of the respective run number. It also updates the error codes (0: fine, 1: nsb=NaN, 2: NSB>3.0). Launched as `python nsb_to_h5.py`
 
-
+- `job_accounting`: this script (in semi_automatic_scripts directory) allows to track progress of the submitted jobs, in particular listing errors. It also provides basic resource statistics (CPU and memory) of the completed jobs. Finally, it can be also used to update the database files with the progress of data processing
