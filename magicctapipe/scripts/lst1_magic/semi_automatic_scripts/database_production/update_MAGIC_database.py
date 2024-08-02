@@ -251,7 +251,7 @@ def main():
     df = pd.read_hdf(df_path, key=df_key)
 
     # Set "" to generate a new database.
-    previous_database_path = "" #config_dict["database_paths"]["MAGIC"]
+    previous_database_path = config_dict["database_paths"]["MAGIC"]
 
     tel_id = [1, 2]
 
@@ -285,7 +285,7 @@ def main():
                 new_h5_file_path,
                 key=key,
                 mode=("w" if tel == 1 else "a"),
-                format = "table",
+                format="table",
             )
             print(f"File saved successfully at {new_h5_file_path}")
 
@@ -313,7 +313,7 @@ def main():
                     new_h5_file_path,
                     key=key,
                     mode=("w" if tel == 1 else "a"),
-                    format = "table"
+                    format="table",
                 )
 
                 print(f"File saved successfully at {new_h5_file_path}")
