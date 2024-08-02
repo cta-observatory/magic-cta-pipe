@@ -1,5 +1,10 @@
 """
-Evaluates NSB level for a LST run
+Evaluates NSB level for a LST run (as a median over the NSB values for a subset of subruns)
+
+One txt file per run is created here: its content is a (date,run,NSB) n-tuple and its title contain an information about the NSB-bin to which the run belongs (according to the list of NSB values provided in the config file)
+
+Usage:
+$ LSTnsb (-c MCP_config) -i run -d date -l lstchain_config (-s N_subruns)
 """
 import argparse
 import glob
@@ -19,7 +24,7 @@ logger.setLevel(logging.INFO)
 def nsb(run_list, simtel, lst_config, run_number, denominator):
 
     """
-    Here we compute the NSB value for a run based on a subset of subruns.
+    Here we compute the NSB value for a run based on a subset of its subruns
 
     Parameters
     ----------
@@ -140,7 +145,7 @@ def main():
         logger.info(f"Run {run_number} already processed")
         return
 
-    # date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
+    
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number, denominator)

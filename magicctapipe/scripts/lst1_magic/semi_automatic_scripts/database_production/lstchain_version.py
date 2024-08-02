@@ -1,5 +1,10 @@
 """
-Fill the lstchain_0.9 and lstchain_0.10 columns of the LST database (i.e., which version of data is on the IT cluster)
+Fills the lstchain_versions column of the LST database with a list of the versions of LST data which are stored on the IT cluster
+
+Moreover, it fills the last_lstchain_files column of the LST database with the path to the LST DL1 file processed with the last available lstchain version (the name and order of the versions to be considered is stored in the lstchain_versions variable here defined)
+
+Usage:
+$ lstchain_version
 """
 
 
@@ -17,7 +22,7 @@ __all__ = ["version_lstchain"]
 
 def version_lstchain(df_LST):
     """
-    Evaluates all the versions used to process a given file and the last version of a file
+    Evaluates (and store in the database) all the versions used to process a given file and the last version of a file
 
     Parameters
     ----------

@@ -1,7 +1,10 @@
 """
-Bash scripts to run LSTnsb.py on all the LST runs by using parallel jobs
+Creates bash scripts to run LSTnsb.py on all the LST runs, in the provided time range (-b, -e), by using parallel jobs. It sets error_code_nsb = NaN for these runs
 
-Usage: python nsb_level.py (-c config.yaml)
+Moreover, it can modify the lstchain standard configuration file (used to evaluate NSB) by adding "use_flatfield_heuristic" = True
+
+Usage: 
+$ nsb_level (-c config.yaml -b begin -e end)
 """
 
 import argparse

@@ -1,7 +1,10 @@
 """
-Create a new h5 table from the one of joint observations.
+Create a new h5 table (or upgrades an existing database by adding data collected in the time range defined by the provided begin and end dates) from the one of joint observations.
 
-Only the columns needed to produce the lists of LST runs to be processed are preserved, and two columns are added to store NSB level and error codes
+Only the columns needed to produce the lists of LST runs to be processed are preserved, and columns are added to store NSB level (and related error code) and lstchain versions (available, last and processed)
+
+Usage:
+$ create_LST_table (-b YYYYMMDD -e YYYYMMDD)
 """
 
 import argparse
@@ -89,7 +92,6 @@ def main():
             subset="LST1_run", keep="first"
         )
         df_cut = df_cut.sort_values(by=["DATE", "source"])
-        # TODO check if fine with update and nsb
 
     df_cut = df_cut.reset_index(drop=True)
     df_cols = df_cut.columns.tolist()

@@ -1,7 +1,10 @@
 """
-Script to fill the 'nsb' column of the LST database. To be called after nsb_level.py
+Script to fill the 'nsb' column of the LST database by using the txt files produced by nsb_level
 
-Usage: python nsb_to_h5.py
+It also fills the error_code_nsb column by 0 if the NSB could be evaluated and is < 3.0, by 2 if the NSB is > 3.0 and by 1 if the NSB could not be evaluated (NSB = NaN)
+
+Usage: 
+$ nsb_to_h5 
 """
 
 import glob
@@ -22,7 +25,7 @@ logger.setLevel(logging.INFO)
 
 def collect_nsb(df_LST):
     """
-    Here we collect NSB values from .txt files and store them into the dataframe
+    Here we collect NSB values from txt files and store them into the dataframe
 
     Parameters
     ----------
