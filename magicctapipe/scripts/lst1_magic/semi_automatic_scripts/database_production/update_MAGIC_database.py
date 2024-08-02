@@ -281,17 +281,17 @@ def main():
             updated_df = update_tables(database, DF, tel)
             print(updated_df)
 
-        try:
-            updated_df.to_hdf(
-                new_h5_file_path,
-                key=key,
-                mode=("w" if tel == 1 else "a"),
-                format="table",
-            )
-            print(f"File saved successfully at {new_h5_file_path}")
+            try:
+                updated_df.to_hdf(
+                    new_h5_file_path,
+                    key=key,
+                    mode=("w" if tel == 1 else "a"),
+                    format="table",
+                )
+                print(f"File saved successfully at {new_h5_file_path}")
 
-        except Exception as e:
-            print(f"An error occurred: {e}")
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
     else:
         print("Database does not exist. Creating a new database...")
