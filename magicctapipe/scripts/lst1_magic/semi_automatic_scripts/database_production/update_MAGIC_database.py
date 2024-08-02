@@ -1,7 +1,9 @@
 """
 The script updates the common MAGIC database from a given time range.
 At the moment, to avoid accidentally destroying the previous database,
-we save the updated database as a new file. If the path to the database is not found,
+we save the updated database as a new file (see in main function new_h5_file_path
+and new_database_file_path).
+If the path to the previous database is not found,
 the script creates a new one. The start of the time interval
 is the date of the beginning of the common MAGIC+LST1 observations.
 The end of the time interval is the current date.
@@ -14,10 +16,16 @@ In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2.
 'YYYY', 'MM', and 'DD' specify the date.
 """
 
+import argparse
+import sys
 import os
 from datetime import datetime, timedelta
 
 import pandas as pd
+import yaml
+
+from magicctapipe.io import resource_file
+import numpy as np
 
 
 def fix_lists_and_convert(cell):
@@ -50,9 +58,9 @@ def table_magic_runs(df, date_min, date_max):
     df : pandas.DataFrame
         DataFrame with general information about MAGIC+LST1 observations.
     date_min : str
-        Start of the time interval (in LST convention).
+        Start of the time interval (in LST convention, format YYYYMMDD).
     date_max : str
-        End of the time interval (in LST convention).
+        End of the time interval (in LST convention, format YYYYMMDD).
 
     Returns
     -------
@@ -60,8 +68,7 @@ def table_magic_runs(df, date_min, date_max):
         A DataFrame filtered by the specified date range.
     """
 
-    df_selected_data = df.iloc[:, [2, 1, 25]]
-    df_selected_data.columns = ["DATE", "source", "MAGIC_runs"]
+    df_selected_data = df[["DATE", "source", "MAGIC_runs"]]
     grouped_data = df_selected_data.groupby(["DATE", "source"])
     result_table = []
 
@@ -88,7 +95,7 @@ def update_tables(database, DF, tel_id):
     Data are added chronologically.
 
     The updated table DF may include new rows that contain NaN values in some cells.
-    The function automatically filling NaN values withpredefined default values
+    The function automatically filling NaN values with predefined default values
     based on the column's data type.
 
     Parameters
@@ -121,18 +128,15 @@ def update_tables(database, DF, tel_id):
     )
 
     if non_matching_rows.empty:
-        raise Exception("There is no un-updated data for a given time interval. ")
+        raise Exception("There is no un-updated data for a given time interval.")
     else:
 
         non_matching_rows_reset = non_matching_rows.reset_index(drop=True)
         new_rows = []
 
-        for index, row in non_matching_rows_reset.iterrows():
-            date = row["DATE"]
-            source = row["source"]
-            run_id = row["Run ID"]
-            run_id = str(run_id)
+        for _, (date, source, run_id) in non_matching_rows_reset[["DATE", "source", "Run ID"]].iterrows(): 
 
+            run_id = str(run_id)
             date_obj = datetime.strptime(date, "%Y%m%d")
             date_obj += timedelta(days=1)
             new_date = datetime.strftime(date_obj, "%Y%m%d")
@@ -170,10 +174,13 @@ def update_tables(database, DF, tel_id):
         combined_df = combined_df.sort_values("DATE")
 
         combined_df["DATE"] = combined_df["DATE"].dt.strftime("%Y%m%d")
+        combined_df["DATE"] = combined_df["DATE"].astype(int)
+        combined_df["number of subruns"] = combined_df["number of subruns"].astype(int)
         combined_df["Run ID"] = combined_df["Run ID"].astype(int)
         combined_df.reset_index(drop=True, inplace=True)
 
         for column in combined_df.columns[4:]:
+            combined_df[column] = combined_df[column].replace(r'^\s*$', np.nan, regex=True)
             not_null_data = combined_df[column].dropna()
             if not_null_data.empty:
                 continue  # Skip if all values are NaN
@@ -201,90 +208,66 @@ def update_tables(database, DF, tel_id):
 
     return combined_df
 
-def create_new_database(df, date_min, date_max, tel_id):
-    """
-    Creating a new MAGIC database.
-
-    Parameters
-    -----------
-    df : pandas.DataFrame
-        Dataframe with general information about MAGIC+LST1 observations.
-    date_min : str
-        Start of the time interval (in LST convention).
-    date_max : str
-        End of the time interval (in LST convention).
-    tel_id : int
-        The telescope ID, which must be either 1 or 2.
-
-    Returns
-    -------
-    pandas.DataFrame
-        A DataFrame with a new MAGIC database for all common MAGIC+LST1 observations.
-    """
-
-    database = table_magic_runs(df, date_min, date_max)
-    new_rows = []
-
-    for index, row in database.iterrows():
-        date = row["DATE"]
-        source = row["source"]
-        run_id = row["Run ID"]
-        run_id = str(run_id)
-
-        date_obj = datetime.strptime(date, "%Y%m%d")
-        date_obj += timedelta(days=1)
-        new_date = datetime.strftime(date_obj, "%Y%m%d")
-        YYYY = new_date[:4]
-        MM = new_date[4:6]
-        DD = new_date[6:8]
-        Y = "_Y_"
-
-        path = f"/fefs/onsite/common/MAGIC/data/M{tel_id}/event/Calibrated/{YYYY}/{MM}/{DD}"
-
-        if os.path.exists(path):
-            files = os.listdir(path)
-            count_with_run_id = 0 
-            # Counter for files that include the run_id.
-            for filename in files:
-                if Y in filename:
-                    if new_date in filename:
-                        if source in filename:
-                            if run_id in filename:
-                                count_with_run_id += 1
-            if count_with_run_id != 0:
-                new_rows.append(
-                    {
-                        "DATE": int(date),
-                        "source": str(source),
-                        "Run ID": int(run_id),
-                        "number of subruns": int(count_with_run_id),
-                    }
-                )
-
-    new_rows = pd.DataFrame(new_rows)
-
-    return new_rows
-
 def main():
 
     """Main function."""
+    
+    parser = argparse.ArgumentParser()
+    
+    date_min_default = "20191101"
+    current_datetime = datetime.now()
+    date_max_default = current_datetime.strftime("%Y%m%d")
 
-    tel_id = [1, 2]
-
-    df = pd.read_hdf(
-        "/fefs/aswg/workspace/federico.dipierro/MAGIC_LST1_simultaneous_runs_info/simultaneous_obs_summary.h5",
-        key="str/table",
+    parser.add_argument(
+        "--date-min",
+        "-m",
+        dest="date_min",
+        type=str,
+        default=date_min_default,
+        help="Start of the time interval (in LST convention, format YYYYMMDD)."
     )
 
-    # Set "" to generate a new database.
-    previous_database_path = "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_runs_subruns.h5"
+    parser.add_argument(
+        "--date-max",
+        "-M",
+        dest="date_max",
+        type=str,
+        default=date_max_default,
+        help="End of the time interval (in LST convention, format YYYYMMDD)."
+    )
+
+    args = parser.parse_args()
+
+    config = resource_file("database_config.yaml")
+
+    with open(
+        config, "rb"
+    ) as bf:
+        config_dict = yaml.safe_load(bf)
+
+    df_path = config_dict["database_paths"]["MAGIC+LST1"]
+    df_key = config_dict["database_keys"]["MAGIC+LST1"]
+    df = pd.read_hdf(df_path, key=df_key)
+
+    #Set "" to generate a new database.
+    previous_database_path = config_dict["database_paths"]["MAGIC"]
+
+    tel_id = [1, 2]
+    roman_numerals = {
+            1: "I",
+            2: "II"
+    }
+
     file_exists = os.path.exists(previous_database_path)
 
     if file_exists:
 
-        # TO DO : set time interval - format YYYYMMDD
-        date_min = "20240601"
-        date_max = "20240718"
+        new_h5_file_path = (
+            "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_runs_subruns_UPDATED.h5"
+        )
+
+        date_min = args.date_min
+        date_max = args.date_max
 
         print("Updating database...")
 
@@ -292,29 +275,19 @@ def main():
 
         for tel in tel_id:
 
+            tel_roman = roman_numerals[tel]
+            key = config_dict["database_keys"][f"MAGIC-{tel_roman}"]
+
             DF = pd.read_hdf(
                 previous_database_path,
-                key=f"MAGIC{tel}/runs_M{tel}",
+                key=key,
             )
 
-            if tel == 1:
-                updated_df_1 = update_tables(database, DF, tel)
-                print(updated_df_1)
-            if tel == 2:
-                updated_df_2 = update_tables(database, DF, tel)
-                print(updated_df_2)
-        # TO DO : set a path to save new database
-        new_h5_file_path = (
-            "/fefs/aswg/workspace/joanna.wojtowicz/output/update_database.h5"
-        )
+            updated_df = update_tables(database, DF, tel)
+            print(updated_df)
 
         try:
-            updated_df_1.to_hdf(
-                new_h5_file_path, key="MAGIC1/runs_M1", mode="w", format="table"
-            )
-            updated_df_2.to_hdf(
-                new_h5_file_path, key="MAGIC2/runs_M2", mode="a", format="table"
-            )
+            updated_df.to_hdf(new_h5_file_path, key=key, mode=("w" if tel == 1 else "a"), format = "table")
             print(f"File saved successfully at {new_h5_file_path}")
 
         except Exception as e:
@@ -322,30 +295,28 @@ def main():
 
     else:
         print("Database does not exist. Creating a new database...")
+        
+        new_database_file_path = "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_runs_subruns_NEW.h5"
 
-        date_min = "20191101"
-        current_datetime = datetime.now()
-        date_max = current_datetime.strftime("%Y%m%d")
+        database_default = table_magic_runs(df, date_min_default, date_max_default)
 
-        tel_id_M1 = 1
-        tel_id_M2 = 2
-        database_M1 = create_new_database(df, date_min, date_max, tel_id_M1)
-        database_M2 = create_new_database(df, date_min, date_max, tel_id_M2)
+        for tel in tel_id:
+            
+            tel_roman = roman_numerals[tel]
+            key = config_dict["database_keys"][f"MAGIC-{tel_roman}"]
 
-        # TO DO : set a path to save a new database
-        new_database_file_path = "/fefs/aswg/workspace/joanna.wojtowicz/output/Common_MAGIC_LST1_data_MAGIC_runs_subruns.h5"
+            #an empty table filled by NaN
+            DF_empty = pd.DataFrame(columns=["DATE", "source", "Run ID"])
 
-        try:
-            database_M1.to_hdf(
-            	new_database_file_path, key="MAGIC1/runs_M1", mode="w", format="table"
-            )
-            database_M2.to_hdf(
-            	new_database_file_path, key="MAGIC2/runs_M2", mode="a", format="table"
-            )
-            print(f"File saved successfully at {new_database_file_path}")
+            new_database = update_tables(database_default, DF_empty, tel)
+            print(new_database)
 
-        except Exception as e:
-            print(f"An error occurred: {e}")
+            try:
+                new_database.to_hdf(new_database_file_path, key=key, mode=("w" if tel == 1 else "a"), format = "table")
+                print(f"File saved successfully at {new_database_file_path}")
+
+            except Exception as e:
+                print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     main()
