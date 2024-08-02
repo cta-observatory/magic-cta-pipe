@@ -1,29 +1,29 @@
 """
 This script splits the proton MC data sample into "train"
-and "test", deletes possible failed runs (only those files
+and "test", deletes possible MC failed runs (only those files
 that end up with a size < 1 kB), and generates the bash
-scripts to merge the data files calling the script "merge_hdf_files.py"
+scripts to merge MC and real data files by calling the script "merge_hdf_files.py"
 in the following order:
 
 MAGIC:
-1) Merge the subruns into runs for M1 and M2 individually.
-2) Merge the runs of M1 and M2 into M1-M2 runs.
-3) Merge all the M1-M2 runs for a given night.
+
+Merge the subruns into runs for M1 and M2 individually.
 
 MC:
-1) Merges all MC runs in a node
+
+Merges all MC runs in a node
 
 Usage:
-$ merging_runs (-c config.yaml)
+$ merging_runs (-c config.yaml) (-t analysis_type)
 
 If you want to merge only the MAGIC or only the MC data,
 you can do as follows:
 
 Only MAGIC:
-$ merging_runs --analysis-type onlyMAGIC (-c config.yaml)
+$ merging_runs -t onlyMAGIC (-c config.yaml)
 
 Only MC:
-$ merging_runs --analysis-type onlyMC (-c config.yaml)
+$ merging_runs -t onlyMC (-c config.yaml)
 """
 
 import argparse
@@ -53,7 +53,7 @@ logger.setLevel(logging.INFO)
 def cleaning(list_of_nodes):
 
     """
-    This function looks for failed runs in each node and remove them.
+    This function looks for failed runs in each MC node and remove them.
 
     Parameters
     ----------
@@ -82,7 +82,7 @@ def split_train_test(target_dir, train_fraction):
     target_dir : str
         Path to the working directory
     train_fraction : float
-        Fraction of proton MC files to be used in the training RF dataset
+        Fraction of proton MC files to be used in the training of RFs
     """
 
     proton_dir = f"{target_dir}/v{__version__}/MC/DL1/protons"
@@ -115,23 +115,20 @@ def split_train_test(target_dir, train_fraction):
         os.system(f"rm -r {list_of_dir[directory]}")
 
 
-def merge(target_dir, MAGIC_runs, env_name, source, NSB_match, cluster):
+def merge(target_dir, MAGIC_runs, env_name, source, cluster):
 
     """
-    This function creates the bash scripts to run merge_hdf_files.py in all MAGIC subruns.
-
+    This function creates the bash scripts to run merge_hdf_files.py for real data
     Parameters
     ----------
     target_dir : str
         Path to the working directory
     MAGIC_runs : matrix of strings
-        This matrix is imported from config_general.yaml and tells the function where to find the data and where to put the merged files
+        Matrix of [(date,run)] n-tuples
     env_name : str
         Name of the environment
     source : str
         Target name
-    NSB_match : bool
-        If real data are matched to pre-processed MCs or not
     cluster : str
         Cluster system
     """
@@ -179,14 +176,14 @@ def merge(target_dir, MAGIC_runs, env_name, source, NSB_match, cluster):
 def mergeMC(target_dir, identification, env_name, cluster):
 
     """
-    This function creates the bash scripts to run merge_hdf_files.py in all MC runs.
+    This function creates the bash scripts to run merge_hdf_files.py in all MC nodes.
 
     Parameters
     ----------
     target_dir : str
         Path to the working directory
     identification : str
-        Tells which batch to create. Options: protons, gammadiffuse
+        Tells which sample to process
     env_name : str
         Name of the environment
     cluster : str
@@ -236,7 +233,7 @@ def mergeMC(target_dir, identification, env_name, cluster):
 def main():
 
     """
-    Here we read the config_general.yaml file, split the proton sample into "test" and "train", and merge the MAGIC files.
+    Main function
     """
 
     parser = argparse.ArgumentParser()
@@ -336,7 +333,6 @@ def main():
                 MAGIC_runs,
                 env_name,
                 source_name,
-                NSB_match,
                 cluster,
             )  # generating the bash script to merge the subruns
 

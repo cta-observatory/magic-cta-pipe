@@ -11,14 +11,13 @@ Notice that in this stage we only use MAGIC data.
 No LST data is used here.
 
 Standard usage:
-$ python dl1_production.py (-c config_file.yaml)
+$ dl1_production (-t analysis_type) (-c config_file.yaml)
 """
 import argparse
 import glob
 import logging
 import os
 
-# import time
 from pathlib import Path
 
 import joblib
@@ -100,8 +99,8 @@ def lists_and_bash_generator(
 ):
 
     """
-    This function creates the lists list_nodes_gamma_complete.txt and list_folder_gamma.txt with the MC file paths.
-    After that, it generates a few bash scripts to link the MC paths to each subdirectory.
+    This function creates the lists list_nodes_*_complete.txt and list_folder_*.txt with the MC file paths.
+    After that, it generates a few bash scripts to link the MC paths to each subdirectory and to process them from DL0 to DL1.
     These bash scripts will be called later in the main() function below. This step will be skipped in case the MC path has not been provided (MC_path='')
 
     Parameters
@@ -216,11 +215,11 @@ def lists_and_bash_generator(
 
 
 def lists_and_bash_gen_MAGIC(
-    target_dir, telescope_ids, MAGIC_runs, source, env_name, NSB_match, cluster
+    target_dir, telescope_ids, MAGIC_runs, source, env_name, cluster
 ):
 
     """
-    Below we create a bash script that links the MAGIC data paths to each subdirectory.
+    Below we create bash scripts that link the MAGIC data paths to each subdirectory and process them from Calibrated to Dl1
 
     Parameters
     ----------
@@ -234,8 +233,6 @@ def lists_and_bash_gen_MAGIC(
         Name of the target
     env_name : str
         Name of the environment
-    NSB_match : bool
-        If real data are matched to pre-processed MCs or not
     cluster : str
         Cluster system
     """
@@ -275,11 +272,11 @@ def lists_and_bash_gen_MAGIC(
                 if number_of_nodes < 0:
                     continue
                 slurm = slurm_lines(
-                    queue="short",  # was long for no NSB_match
+                    queue="short",  
                     job_name=process_name,
                     array=number_of_nodes,
                     mem="2g",
-                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  # without version for no NSB_match
+                    out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",  
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
@@ -287,7 +284,7 @@ def lists_and_bash_gen_MAGIC(
                 )
                 lines = (
                     slurm
-                    + [  # without version for no NSB_match
+                    + [  
                         f"export OUTPUTDIR={target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}\n",
                         "SAMPLE_LIST=($(<$OUTPUTDIR/logs/list_cal.txt))\n",
                         "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n\n",
@@ -358,7 +355,7 @@ def directories_generator_real(
                 os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs", exist_ok=True)
 
 
-def directories_generator_MC(target_dir, telescope_ids, NSB_match):
+def directories_generator_MC(target_dir, telescope_ids):
 
     """
     Here we create all subdirectories for a given workspace and target name.
@@ -369,8 +366,6 @@ def directories_generator_MC(target_dir, telescope_ids, NSB_match):
         Directory to store the results
     telescope_ids : list
         List of the telescope IDs (set by the user)
-    NSB_match : bool
-        If real data are matched to pre-processed MCs or not
     """
 
     dir_list = [
@@ -406,7 +401,9 @@ def directories_generator_MC(target_dir, telescope_ids, NSB_match):
 
 def main():
 
-    """Here we read the config file and call the functions to generate the necessary directories, bash scripts and launching the jobs."""
+    """
+    Main function
+    """
 
     # Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file
 
@@ -469,7 +466,7 @@ def main():
         # Below we run the analysis on the MC data
         if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
             directories_generator_MC(
-                str(target_dir), telescope_ids, NSB_match
+                str(target_dir), telescope_ids
             )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
             config_file_gen(
                 target_dir, noise_value, NSB_match, "MC", config
@@ -534,7 +531,6 @@ def main():
                 MAGIC_runs,
                 source_name,
                 env_name,
-                NSB_match,
                 cluster,
             )  # MAGIC real data
             if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):

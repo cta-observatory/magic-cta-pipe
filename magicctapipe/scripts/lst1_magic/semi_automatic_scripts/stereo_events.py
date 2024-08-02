@@ -4,16 +4,16 @@ to compute the stereo parameters of DL1 MC and
 Coincident MAGIC+LST data files.
 
 Usage:
-$ python stereo_events.py (-c config.yaml)
+$ stereo_events (-c config.yaml) (-t analysis_type)
 
 If you want to compute the stereo parameters only the real data or only the MC data,
 you can do as follows:
 
 Only real data:
-$ python stereo_events.py --analysis-type onlyReal (-c config.yaml)
+$ stereo_events -t onlyMAGIC (-c config.yaml)
 
 Only MC:
-$ python stereo_events.py --analysis-type onlyMC (-c config.yaml)
+$ stereo_events -t onlyMC (-c config.yaml)
 """
 
 import argparse
@@ -43,7 +43,7 @@ logger.setLevel(logging.INFO)
 def configfile_stereo(target_dir, source_name, config_gen):
 
     """
-    This function creates the configuration file needed for the event stereo step
+    This function creates the configuration file needed for the stereo reconstruction step
 
     Parameters
     ----------
@@ -76,10 +76,10 @@ def configfile_stereo(target_dir, source_name, config_gen):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
+def bash_stereo(target_dir, source, env_name, cluster):
 
     """
-    This function generates the bashscript for running the stereo analysis.
+    This function generates the bashscripts for running the stereo analysis.
 
     Parameters
     ----------
@@ -89,8 +89,6 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
         Target name
     env_name : str
         Name of the environment
-    NSB_match : bool
-        If real data are matched to pre-processed MCs or not
     cluster : str
         Cluster system
     """
@@ -153,7 +151,7 @@ def bash_stereo(target_dir, source, env_name, NSB_match, cluster):
 def bash_stereoMC(target_dir, identification, env_name, cluster):
 
     """
-    This function generates the bashscript for running the stereo analysis.
+    This function generates the bashscripts for running the stereo analysis.
 
     Parameters
     ----------
@@ -204,7 +202,7 @@ def bash_stereoMC(target_dir, identification, env_name, cluster):
 def main():
 
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Main function
     """
 
     parser = argparse.ArgumentParser()
@@ -220,11 +218,11 @@ def main():
     parser.add_argument(
         "--analysis-type",
         "-t",
-        choices=["onlyReal", "onlyMC"],
+        choices=["onlyMAGIC", "onlyMC"],
         dest="analysis_type",
         type=str,
         default="doEverything",
-        help="You can type 'onlyReal' or 'onlyMC' to run this script only on real or MC data, respectively.",
+        help="You can type 'onlyMAGIC' or 'onlyMC' to run this script only on real or MC data, respectively.",
     )
 
     args = parser.parse_args()
@@ -289,7 +287,7 @@ def main():
             # Below we run the analysis on the real data
 
             print("***** Generating the bashscript...")
-            bash_stereo(target_dir, source_name, env_name, NSB_match, cluster)
+            bash_stereo(target_dir, source_name, env_name, cluster)
 
             print("***** Submitting processess to the cluster...")
             print(f"Process name: {source_name}_stereo")

@@ -2,7 +2,7 @@
 This scripts merges LST DL1Stereo subruns into runs
 
 Usage:
-$ python merge_stereo.py (-c config_file.yaml)
+$ merge_stereo (-c config_file.yaml)
 """
 import argparse
 import glob
@@ -83,7 +83,7 @@ def MergeStereo(target_dir, env_name, source, cluster):
 
 def main():
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Main function
     """
 
     parser = argparse.ArgumentParser()

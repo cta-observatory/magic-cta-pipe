@@ -10,7 +10,7 @@ night.
 event files.
 
 Usage:
-$ python coincident_events.py (-c config_file.yaml)
+$ coincident_events (-c config)
 """
 import argparse
 import glob
@@ -74,7 +74,7 @@ def configfile_coincidence(target_dir, source_name, config_gen):
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, NSB_match, cluster
+    target_dir, LST_runs, source_name, LST_version, env_name, cluster
 ):
 
     """
@@ -92,8 +92,6 @@ def linking_bash_lst(
         The lstchain version used to process the LST data
     env_name : str
         Name of the conda environment
-    NSB_match : bool
-        If real data are matched to pre-processed MCs or not
     cluster : str
         Cluster system
     """
@@ -175,7 +173,7 @@ def linking_bash_lst(
 def main():
 
     """
-    Here we read the config file and call the functions defined above.
+    Main function
     """
 
     parser = argparse.ArgumentParser()
@@ -195,7 +193,7 @@ def main():
         config = yaml.safe_load(f)
     target_dir = Path(config["directories"]["workspace_dir"])
 
-    NSB_match = config["general"]["NSB_matching"]
+    
     env_name = config["general"]["env_name"]
     LST_version = config["general"]["LST_version"]
 
@@ -228,7 +226,6 @@ def main():
                 source_name,
                 LST_version,
                 env_name,
-                NSB_match,
                 cluster,
             )  # linking the data paths to current working directory
 

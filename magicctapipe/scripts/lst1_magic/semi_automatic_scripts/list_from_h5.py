@@ -1,5 +1,5 @@
 """
-This script creates the lists of MAGIC and LST runs (date and run number) from a dataframe in the .h5 format for a specific time range.
+This script creates the lists of MAGIC and LST runs (date and run number) from a dataframe in the .h5 format for a specific time range (or specific dates).
 """
 
 import argparse
@@ -17,7 +17,7 @@ from magicctapipe.io import resource_file
 def split_lst_date(df):
 
     """
-    This function appends to the provided dataframe, which contains the LST date as YYYYMMDD in one of the columns, four new columns: the LST year, month and day and the date as YYYY_MM_DD
+    This function appends to the provided dataframe, which contains the LST date as YYYYMMDD in one of the columns, four new columns: the LST year, month and day and the date as YYYY-MM-DD
 
     Parameters
     ----------
@@ -41,7 +41,7 @@ def split_lst_date(df):
 def magic_date(df):
 
     """
-    This function appends to the provided dataframe (which contains the LST date, year, month and day) a column with the MAGIC dates (in the YYYY_MM_DD format).
+    This function appends to the provided dataframe (which contains the LST date, year, month and day) a column with the MAGIC dates (in the YYYYMMDD format).
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
 def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_list=None):
 
     """
-    This function creates the MAGIC_runs.txt and LST_runs.txt files, which contain the list of runs (with corresponding dates) to be processed.
+    This function creates the *_MAGIC_runs.txt and *_LST_runs.txt files, which contain the list of runs (with corresponding dates) to be processed for a given source.
 
     Parameters
     ----------
@@ -195,8 +195,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
 def main():
 
     """
-    This function is automatically called when the script is launched.
-    It calls the functions above to create the files XXXXXX_LST_runs.txt and XXXXX_MAGIC_runs.txt for the desired targets.
+    Main function
     """
 
     parser = argparse.ArgumentParser()
@@ -287,9 +286,7 @@ def main():
         MAGIC_h5,
         key=MAGIC2_key,
     )
-    # df_MAGIC1["Source"] = df_MAGIC1["Source"].str.replace(" ", "")
-    # df_MAGIC2["Source"] = df_MAGIC2["Source"].str.replace(" ", "")
-
+    
     list_date_LST = np.unique(df_LST["date_LST"])
     list_date_LST_low = [int(sub.replace("-", "")) for sub in list_date_LST]
 
