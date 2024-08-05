@@ -43,31 +43,14 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     slurm_lines,
 )
 
-__all__ = ["cleaning", "split_train_test", "merge", "mergeMC"]
+__all__ = ["split_train_test", "merge", "mergeMC"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def cleaning(list_of_nodes):
 
-    """
-    This function looks for failed runs in each MC node and remove them.
-
-    Parameters
-    ----------
-    list_of_nodes : array of str
-        List of nodes where the function will look for failed runs.
-    """
-
-    cwd = os.getcwd()
-    for i in tqdm(range(len(list_of_nodes)), desc="Cleaning failed runs"):
-        os.chdir(list_of_nodes[i])
-        os.system('find . -type f -name "dl1_[gphe]*_zd*_az*.h5" -size -1k -delete')
-
-    os.chdir(cwd)
-    print("Cleaning done.")
 
 
 def split_train_test(target_dir, train_fraction):
@@ -207,7 +190,7 @@ def mergeMC(target_dir, identification, env_name, cluster):
 
     process_size = len(list_of_nodes) - 1
 
-    cleaning(list_of_nodes)  # This will delete the (possibly) failed runs.
+    
     if cluster != "SLURM":
         logger.warning(
             "Automatic processing not implemented for the cluster indicated in the config file"
