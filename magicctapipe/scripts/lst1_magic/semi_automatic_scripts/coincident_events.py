@@ -141,7 +141,7 @@ def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, c
                     queue="short",
                     job_name=f"{source_name}_coincidence",
                     array=process_size,
-                    mem="8g",
+                    mem="6g",
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
                 )
                 rc = rc_lines(
