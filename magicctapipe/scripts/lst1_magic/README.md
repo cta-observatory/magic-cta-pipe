@@ -31,9 +31,9 @@ During the analysis, some files (i.e., bash scripts, lists of sources and runs) 
 
 In this step, we will convert the MAGIC Calibrated data to Data Level (DL) 1 (our goal is to reach DL3) and MC DL0 to DL1.
 
-In your working IT Container directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname), open your environment with the command `conda activate {env_name}` and update the file `config_general.yaml` according to your analysis.
+In your working IT Container directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname), open your environment with the command `conda activate {env_name}` and update the file `config_auto_MCP.yaml` according to your analysis.
 
-The file `config_general.yaml` must contain the telescope IDs, the directories with the MC data (ignored if you set NSB_matching = true), the data selection, and some information on the night sky background (NSB) level and software versions:
+The file `config_auto_MCP.yaml` must contain the telescope IDs, the directories with the MC data (ignored if you set NSB_matching = true), the data selection, and some information on the night sky background (NSB) level and software versions:
 
 ```
 mc_tel_ids:
@@ -85,9 +85,9 @@ WARNING: Only the runs for which the `LST_version` parameter matches the `proces
 
 WARNING: `env_name` must be the same as the name of the environment in which you installed this version of the pipeline
 
-Now that the configuration file is ready, let's create a list with all the MAGIC+LST1 runs for the time window (or list of nights) defined on the config_general.yaml file:
+Now that the configuration file is ready, let's create a list with all the MAGIC+LST1 runs for the time window (or list of nights) defined on the config_auto_MCP.yaml file:
 
-> $ list_from_h5 -c config_general.yaml
+> $ list_from_h5 -c config_auto_MCP.yaml
 
 The output in the terminal should look like this:
 ```
@@ -100,7 +100,7 @@ Finding MAGIC runs...
 And it will save the files {TARGET}_LST_runs.txt, {TARGET}_MAGIC_runs.txt, and list_sources.dat (i.e., the list of all the sources found in the database according to user and default options) in your current working directory. In case no runs are found for MAGIC and/or LST (for a source and a given time range/list of dates), a warning will be printed and no output text file will be produced for the given source and telescope(s).
 
 At this point, we can convert the MAGIC data into DL1 format with the following command:
-> $ dl1_production -c config_general.yaml
+> $ dl1_production -c config_auto_MCP.yaml
 
 The output in the terminal will be something like this:
 ```
@@ -134,7 +134,7 @@ or
 
 Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/VERSION/{source}/DL1` will be filled with files of the type `dl1_MX.RunXXXXXX.0XX.h5` for each MAGIC subrun. The next step of the conversion from calibrated to DL1 is to merge all the MAGIC data files such that in the end, we have only one datafile per night. To do so, we run the following command (always in the directory `yourprojectname`):
 
-> $ merging_runs (-c config_general.yaml)
+> $ merging_runs (-c config_auto_MCP.yaml)
 
 **The command inside parenthesis is not mandatory if you are running the command in the working directory**. By the way, it is better if you don't use it unless you know what you are doing. 
 The output in the terminal will be something like this:
@@ -154,7 +154,7 @@ This script will merge the MAGIC data files in the following order:
 
 To find coincident events between MAGIC and LST, starting from DL1 data, we run the following command in the working directory:
 
-> $ coincident_events (-c config_general.yaml)
+> $ coincident_events (-c config_auto_MCP.yaml)
 
 This script creates the file config_coincidence.yaml containing the telescope IDs and the coincidence parameters listed in the general config.yaml file (the one in magicctapipe/resources).
 
@@ -162,7 +162,7 @@ Then, matches LST and MAGIC dates and links the LST data files to the output dir
 
 Once it is done, we add stereo parameters to the MAGIC+LST coincident DL1 files by running:
 
-> $ stereo_events (-c config_general.yaml)
+> $ stereo_events (-c config_auto_MCP.yaml)
 
 This script creates the file config_stereo.yaml ontaining the telescope IDs and the stereo parameters listed in the general config.yaml file (the one in magicctapipe/resources).
 
@@ -191,7 +191,7 @@ To create and update the MAGIC and LST databases (from the one produced by AB an
 
 - `lstchain_version`: this scripts loop over all the rows of the database, estract date and run number from the table and look for the data saved in the IT (i.e., which version of lstchain has been used to process a run). It evaluates all the versions used to process a run and the most recent MCP-compatible one according to a hard-coded, ordered list. Launched as `python lstchain_version.py`
 
-- `nsb_level`: evaluates, for the last (MCP compatible) version of every LST run, the respective NSB value (i.e., the median over the NSB estimated by lstchain over approx. 25 sub-runs per run). This scripts launch a set of jobs (one per run; each job calls the `LSTnsb` script) and each jobs produces an output txt file containing a string like `date,run,NSB`; in the title of these files, both the run number and the NSB range are indicated (0.5=(0,0.75), 1.0=(0.75, 1.25),...., 2.5=(2.25,2.75), 3.0=(2.75,3.25), `high`=(3.25,Infinity) ). To limit the number of simultaneous jobs running on SLURM, you should always provide a begin and a end date (format YYYY_MM_DD) in the options. Launched as `python nsb_level.py -c config_general.yaml -b begin_date -e end_date`
+- `nsb_level`: evaluates, for the last (MCP compatible) version of every LST run, the respective NSB value (i.e., the median over the NSB estimated by lstchain over approx. 25 sub-runs per run). This scripts launch a set of jobs (one per run; each job calls the `LSTnsb` script) and each jobs produces an output txt file containing a string like `date,run,NSB`; in the title of these files, both the run number and the NSB range are indicated (0.5=(0,0.75), 1.0=(0.75, 1.25),...., 2.5=(2.25,2.75), 3.0=(2.75,3.25), `high`=(3.25,Infinity) ). To limit the number of simultaneous jobs running on SLURM, you should always provide a begin and a end date (format YYYY_MM_DD) in the options. Launched as `python nsb_level.py -c config_auto_MCP.yaml -b begin_date -e end_date`
 
 - `LSTnsb`: called by `nsb_level`, it gathers all the subruns for a run, evaluates the NSB for approx. 25 of them (using the lstchain `calculate_noise_parameters` function), evaluates the median over these values and the approximate NSB level (0.5, 1.0, 1.5, ...., 2.5, 3.0, `high`) and then creates one txt file per run. These files contain the value of the NSB (i.e., the median over subruns) and are needed to fill the database `nsb` column
 

@@ -1,7 +1,7 @@
 """
 This script does checks of status of jobs based on the log files generated during the execution.
 It also does accounting of memory and CPU usage
-It loads the config_general file to figure out what files it should look for and processes source name and time range
+It loads the config_auto_MCP file to figure out what files it should look for and processes source name and time range
 For the moment it ignores date_list and skip_*_runs
 
 It can also update the h5 file with the list of runs to process
@@ -55,8 +55,8 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
-        help="Path to a configuration file config_general.yaml",
+        default="./config_auto_MCP.yaml",
+        help="Path to a configuration file config_auto_MCP.yaml",
     )
 
     parser.add_argument(

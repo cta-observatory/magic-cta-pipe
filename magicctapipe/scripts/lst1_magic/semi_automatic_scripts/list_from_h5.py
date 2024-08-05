@@ -205,8 +205,8 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
-        help="Path to a configuration file config_general.yaml",
+        default="./config_auto_MCP.yaml",
+        help="Path to a configuration file config_auto_MCP.yaml",
     )
 
     args = parser.parse_args()
