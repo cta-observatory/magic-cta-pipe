@@ -50,9 +50,6 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-
-
-
 def split_train_test(target_dir, train_fraction):
 
     """
@@ -190,7 +187,6 @@ def mergeMC(target_dir, identification, env_name, cluster):
 
     process_size = len(list_of_nodes) - 1
 
-    
     if cluster != "SLURM":
         logger.warning(
             "Automatic processing not implemented for the cluster indicated in the config file"
