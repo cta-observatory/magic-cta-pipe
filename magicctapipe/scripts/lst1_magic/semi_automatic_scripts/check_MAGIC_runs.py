@@ -11,9 +11,12 @@ In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2.
 """
 
 import os
+import argparse
 from datetime import datetime, timedelta
 
 import pandas as pd
+
+from magicctapipe.io import resource_file
 
 
 def fix_lists_and_convert(cell):
@@ -175,16 +178,45 @@ def main():
 
     """Main function."""
 
-    # TO DO : set time interval - format YYYYMMDD
-    date_min = "20240601"
-    date_max = "20240630"
+    parser = argparse.ArgumentParser()
 
+    date_min_default = "20191101"
+    current_datetime = datetime.now()
+    date_max_default = current_datetime.strftime("%Y%m%d")
+
+    parser.add_argument(
+        "--date-min",
+        "-m",
+        dest="date_min",
+        type=str,
+        default=date_min_default,
+        help="Start of the time interval (in LST convention, format YYYYMMDD).",
+    )
+
+    parser.add_argument(
+        "--date-max",
+        "-M",
+        dest="date_max",
+        type=str,
+        default=date_max_default,
+        help="End of the time interval (in LST convention, format YYYYMMDD).",
+    )
+
+    args = parser.parse_args()
+
+    config = resource_file("database_config.yaml")
+
+    with open(config, "rb") as bf:
+        config_dict = yaml.safe_load(bf)
+    df_path = config_dict["database_paths"]["MAGIC+LST1"]
+    df_key = config_dict["database_keys"]["MAGIC+LST1"]
     df = pd.read_hdf(
-        "/fefs/aswg/workspace/federico.dipierro/MAGIC_LST1_simultaneous_runs_info/simultaneous_obs_summary.h5",
-        key="str/table",
+        df_path,
+        key=df_key,
     )
 
     tel_id = [1, 2]
+
     database = table_magic_runs(df, date_min, date_max)
     database_exploded = database.explode("MAGIC runs")
     database_exploded_reset = database_exploded.reset_index(drop=True)
