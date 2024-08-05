@@ -10,11 +10,12 @@ In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2.
 'YYYY', 'MM', and 'DD' specify the date.
 """
 
-import os
 import argparse
+import os
 from datetime import datetime, timedelta
 
 import pandas as pd
+import yaml
 
 from magicctapipe.io import resource_file
 
@@ -217,7 +218,7 @@ def main():
 
     tel_id = [1, 2]
 
-    database = table_magic_runs(df, date_min, date_max)
+    database = table_magic_runs(df, args.date_min, args.date_max)
     database_exploded = database.explode("MAGIC runs")
     database_exploded_reset = database_exploded.reset_index(drop=True)
 
