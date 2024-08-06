@@ -1,9 +1,7 @@
 """
 This script splits the proton MC data sample into "train"
-and "test", deletes possible MC failed runs (only those files
-that end up with a size < 1 kB), and generates the bash
-scripts to merge MC and real data files by calling the script "merge_hdf_files.py"
-in the following order:
+and "test" and generates the bash scripts to merge MC and
+real data files by calling the script "merge_hdf_files.py":
 
 MAGIC:
 
