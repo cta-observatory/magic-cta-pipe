@@ -11,7 +11,7 @@ Notice that in this stage we only use MAGIC data.
 No LST data is used here.
 
 Standard usage:
-$ dl1_production (-t analysis_type) (-c config_file.yaml)
+$ dl1_production (-c config_file.yaml)
 """
 import argparse
 import glob
@@ -229,7 +229,7 @@ def main():
     env_name = config["general"]["env_name"]
 
     
-    focal_length = config["general"]["focal_length"]
+    
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]

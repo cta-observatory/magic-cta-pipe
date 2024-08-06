@@ -1,29 +1,16 @@
 """
-This script splits the proton MC data sample into "train"
-and "test", deletes possible MC failed runs (only those files
-that end up with a size < 1 kB), and generates the bash
-scripts to merge MC and real data files by calling the script "merge_hdf_files.py"
-in the following order:
+This script generates the bash
+scripts to merge real data files by calling the script "merge_hdf_files.py":
 
 MAGIC:
 
 Merge the subruns into runs for M1 and M2 individually.
 
-MC:
-
-Merges all MC runs in a node
 
 Usage:
-$ merging_runs (-c config.yaml) (-t analysis_type)
+$ merging_runs (-c config.yaml) 
 
-If you want to merge only the MAGIC or only the MC data,
-you can do as follows:
 
-Only MAGIC:
-$ merging_runs -t onlyMAGIC (-c config.yaml)
-
-Only MC:
-$ merging_runs -t onlyMC (-c config.yaml)
 """
 
 import argparse
@@ -138,7 +125,7 @@ def main():
 
     target_dir = Path(config["directories"]["workspace_dir"])
 
-    NSB_match = config["general"]["NSB_matching"]
+    
     train_fraction = float(config["general"]["proton_train_fraction"])
 
     env_name = config["general"]["env_name"]
@@ -154,7 +141,6 @@ def main():
         source_list.append(source)
     
     for source_name in source_list:
-        # Below we run the analysis on the MC data
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2

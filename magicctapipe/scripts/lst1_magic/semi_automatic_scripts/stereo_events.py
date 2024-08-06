@@ -1,19 +1,11 @@
 """
 This scripts generates and runs the bashscripts
-to compute the stereo parameters of DL1 MC and
+to compute the stereo parameters of DL1 
 Coincident MAGIC+LST data files.
 
 Usage:
-$ stereo_events (-c config.yaml) (-t analysis_type)
+$ stereo_events (-c config.yaml) 
 
-If you want to compute the stereo parameters only the real data or only the MC data,
-you can do as follows:
-
-Only real data:
-$ stereo_events -t onlyMAGIC (-c config.yaml)
-
-Only MC:
-$ stereo_events -t onlyMC (-c config.yaml)
 """
 
 import argparse
@@ -174,7 +166,7 @@ def main():
 
     env_name = config["general"]["env_name"]
 
-    NSB_match = config["general"]["NSB_matching"]
+    
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
