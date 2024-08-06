@@ -293,7 +293,6 @@ def main():
                 os.system(launch_jobs)
 
     for source_name in source_list:
-        # Below we run the analysis on the MC data
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
