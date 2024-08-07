@@ -41,7 +41,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def config_file_gen(target_dir, noise_value, source_name, config_gen):
+def config_file_gen(target_dir, source_name, config_gen):
 
     """
     Here we create the configuration file needed for transforming DL0 into DL1
@@ -50,8 +50,6 @@ def config_file_gen(target_dir, noise_value, source_name, config_gen):
     ----------
     target_dir : path
         Directory to store the results
-    noise_value : list
-        List of the noise correction values for LST
     source_name : str
         Name of the target source
     config_gen : dict
@@ -240,7 +238,6 @@ def main():
 
     else:
         source_list.append(source)
-    noise_value = [0, 0, 0]
     
     
 
@@ -263,7 +260,7 @@ def main():
             str(target_dir), telescope_ids, MAGIC_runs, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
         config_file_gen(
-            target_dir, noise_value, source_name, config
+            target_dir, source_name, config
         )  # TODO: fix here
 
         # Below we run the analysis on the MAGIC data
