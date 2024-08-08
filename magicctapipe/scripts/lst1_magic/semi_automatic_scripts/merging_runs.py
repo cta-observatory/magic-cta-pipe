@@ -6,11 +6,8 @@ MAGIC:
 
 Merge the subruns into runs for M1 and M2 individually.
 
-
 Usage:
-$ merging_runs (-c config.yaml) 
-
-
+$ merging_runs (-c config.yaml)
 """
 
 import argparse
