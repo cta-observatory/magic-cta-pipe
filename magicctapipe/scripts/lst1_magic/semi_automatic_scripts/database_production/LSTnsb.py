@@ -20,6 +20,26 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
+def update_mod(mod, n_sub, denominator, index, n_noise)
+    """
+    Function to update the step used to extract the subruns for the NSB evaluation
+
+    Parameters
+    ----------
+    mod : int
+        Sampling step 
+    n_sub : int
+        Number of subruns in the run
+    denominator : int
+        Number of subruns to be used to evaluate NSB for a run
+    index : int
+        Index of the currently used subrun
+    n_noise : int
+        Number of NSB values already computed
+    """
+    if n_sub > denominator:
+        mod = (n_sub - index) // (denominator - n_noise)
+    return mod                    
 
 def nsb(run_list, simtel, lst_config, run_number, denominator):
 
@@ -56,7 +76,7 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
         mod = 1
     else:
         mod = len(run_list) // denominator
-    failed = 0
+    
     logger.info("NSB levels (sub-runs): \n")
     for ii in range(0, len(run_list)):
         subrun = run_list[ii].split(".")[-2]
@@ -65,12 +85,21 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
         if ii % mod == 0:
             try:
                 a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
-                noise.append(a)
-                logger.info(a)
+                if a is not None:
+                    if a>0.0:
+                        noise.append(a)
+                        logger.info(a)
+                    else:
+                        mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
+                        logger.warning(f'NSB level could not be adequately evaluated for subrun {subrun} (negative value or missing pedestal events): skipping this subrun...')
+                else: 
+                    mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
+                    logger.warning(f'NSB level is None for subrun {subrun} (missing interleaved FF): skipping this subrun...')
+            
+
             except IndexError:
-                failed = failed + 1
-                if len(run_list) > denominator:
-                    mod = (len(run_list) - ii) // (denominator - len(noise))
+                
+                mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
                 logger.warning(
                     f"Subrun {subrun} caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
                 )
