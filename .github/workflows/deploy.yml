@@ -2,14 +2,13 @@ name: Deploy to PyPI
 
 on:
   push:
-    branches:
-      - master
     tags:
       - 'v*'
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
