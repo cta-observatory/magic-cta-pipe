@@ -49,19 +49,21 @@ def collect_nsb(df_LST):
 
         df_LST.loc[run, "nsb"] = float(nsb)
     df_LST = df_LST.reset_index()
-    df_LST = df_LST[[
-        "DATE",
-        "source",
-        "LST1_run",
-        "MAGIC_stereo",
-        "MAGIC_trigger",
-        "MAGIC_HV",
-        "nsb",
-        "lstchain_versions",
-        "last_lstchain_file",
-        "processed_lstchain_file",
-        "error_code_nsb",
-    ]]
+    df_LST = df_LST[
+        [
+            "DATE",
+            "source",
+            "LST1_run",
+            "MAGIC_stereo",
+            "MAGIC_trigger",
+            "MAGIC_HV",
+            "nsb",
+            "lstchain_versions",
+            "last_lstchain_file",
+            "processed_lstchain_file",
+            "error_code_nsb",
+        ]
+    ]
     return df_LST
 
 
