@@ -411,7 +411,7 @@ def config_monly():
 
 @pytest.fixture(scope="session")
 def config_gen():
-    config_path = resource_file("test_config_general.yaml")
+    config_path = resource_file("test_config_auto_MCP.yaml")
     with open(config_path, "rb") as f:
         config = yaml.safe_load(f)
     return config
@@ -419,7 +419,7 @@ def config_gen():
 
 @pytest.fixture(scope="session")
 def config_gen_4lst():
-    config_path = resource_file("test_config_general_4LST.yaml")
+    config_path = resource_file("test_config_auto_MCP_4LST.yaml")
     with open(config_path, "rb") as f:
         config = yaml.safe_load(f)
     return config
