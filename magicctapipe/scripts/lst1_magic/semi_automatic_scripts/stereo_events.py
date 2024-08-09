@@ -245,7 +245,7 @@ def main():
         source_list = joblib.load("list_sources.dat")
     else:
         if source is None:
-            source=source_in
+            source = source_in
         source_list = [source]
     if not NSB_match:
         if (

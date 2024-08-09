@@ -231,7 +231,7 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source_out = config["data_selection"]["source_name_output"]
     if (source_out is None) and (source_in is not None):
-        source_out=source_in
+        source_out = source_in
     range = config["data_selection"]["time_range"]
     skip_LST = config["data_selection"]["skip_LST_runs"]
     skip_MAGIC = config["data_selection"]["skip_MAGIC_runs"]

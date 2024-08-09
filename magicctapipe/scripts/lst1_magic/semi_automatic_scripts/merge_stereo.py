@@ -115,7 +115,7 @@ def main():
 
     else:
         if source is None:
-            source=source_in
+            source = source_in
         source_list = [source]
 
     for source_name in source_list:
