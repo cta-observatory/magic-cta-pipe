@@ -19,6 +19,13 @@ import yaml
 
 from magicctapipe.io import resource_file
 
+__all__ = [
+    "fix_lists_and_convert",
+    "table_magic_runs",
+    "existing_files",
+    "missing_files",
+]
+
 
 def fix_lists_and_convert(cell):
     """

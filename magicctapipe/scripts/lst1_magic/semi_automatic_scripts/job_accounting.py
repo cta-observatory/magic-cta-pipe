@@ -25,6 +25,8 @@ YELLOW = "\033[33m"
 RED = "\033[31m"
 ENDC = "\033[0m"
 
+__all__ = ["run_shell"]
+
 
 def run_shell(command):
     """
