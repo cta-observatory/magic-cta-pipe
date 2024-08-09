@@ -9,8 +9,8 @@ $ LSTnsb (-c MCP_config) -i run -d date -l lstchain_config (-s N_subruns)
 import argparse
 import glob
 import logging
-
 import numpy as np
+import pandas as pd
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
@@ -97,12 +97,18 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
                         noise.append(a)
                         logger.info(a)
                     else:
-                        mod = update_mod(
-                            mod, len(run_list), denominator, ii, len(noise)
-                        )
-                        logger.warning(
-                            f"NSB level could not be adequately evaluated for subrun {subrun} (negative value or missing pedestal events): skipping this subrun..."
-                        )
+                        df_subrun=pd.read_hdf(run_list[ii], key="dl1/event/telescope/parameters/LST_LSTCam")
+                        n_ped=len(df_subrun[df_subrun['event_type']==2])
+                        if n_ped > 0:
+                            noise.append(a)
+                            logger.info(a)
+                        else:
+                            mod = update_mod(
+                                mod, len(run_list), denominator, ii, len(noise)
+                            )
+                            logger.warning(
+                                f"NSB level could not be adequately evaluated for subrun {subrun} (missing pedestal events): skipping this subrun..."
+                            )
                 else:
                     mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
                     logger.warning(
@@ -178,7 +184,7 @@ def main():
     width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
-    nsb_limit.insert(0, 0)
+    nsb_limit.insert(0,-0.01) #arbitrary small negative number so that 0.0 > nsb_limit[0]
 
     LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
