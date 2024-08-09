@@ -65,17 +65,15 @@ def config_file_gen(target_dir, source_name, config_gen):
     LST_config = config_dict["LST"]
     MAGIC_config = config_dict["MAGIC"]
 
-    
     conf = {
         "mc_tel_ids": config_gen["mc_tel_ids"],
         "LST": LST_config,
         "MAGIC": MAGIC_config,
     }
-    
+
     file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
     with open(file_name, "w") as f:
         yaml.dump(conf, f, default_flow_style=False)
-
 
 
 def lists_and_bash_gen_MAGIC(
@@ -164,9 +162,7 @@ def lists_and_bash_gen_MAGIC(
                     f.writelines(lines)
 
 
-def directories_generator_real(
-    target_dir, telescope_ids, MAGIC_runs, source_name
-):
+def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_name):
     """
     Here we create all subdirectories for a given workspace and target name.
 
@@ -182,10 +178,9 @@ def directories_generator_real(
         Name of the target source
     """
 
-    
     os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1", exist_ok=True)
     dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
-    
+
     ###########################################
     # MAGIC
     ###########################################
@@ -193,8 +188,6 @@ def directories_generator_real(
         for magic in [1, 2]:
             if telescope_ids[magic - 3] > 0:
                 os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs", exist_ok=True)
-
-
 
 
 def main():
@@ -206,7 +199,6 @@ def main():
     # Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file
 
     parser = argparse.ArgumentParser()
-    
 
     parser.add_argument(
         "--config-file",
@@ -226,8 +218,6 @@ def main():
     telescope_ids = list(config["mc_tel_ids"].values())
     env_name = config["general"]["env_name"]
 
-    
-    
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
@@ -238,11 +228,8 @@ def main():
 
     else:
         source_list.append(source)
-    
-    
 
     for source_name in source_list:
-        
 
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
@@ -259,9 +246,7 @@ def main():
         directories_generator_real(
             str(target_dir), telescope_ids, MAGIC_runs, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
-        config_file_gen(
-            target_dir, source_name, config
-        )  # TODO: fix here
+        config_file_gen(target_dir, source_name, config)  # TODO: fix here
 
         # Below we run the analysis on the MAGIC data
 

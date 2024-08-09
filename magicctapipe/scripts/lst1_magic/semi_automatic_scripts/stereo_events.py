@@ -1,11 +1,10 @@
 """
 This scripts generates and runs the bashscripts
-to compute the stereo parameters of DL1 
+to compute the stereo parameters of DL1
 Coincident MAGIC+LST data files.
 
 Usage:
-$ stereo_events (-c config.yaml) 
-
+$ stereo_events (-c config.yaml)
 """
 
 import argparse
@@ -137,8 +136,6 @@ def bash_stereo(target_dir, source, env_name, cluster):
             f.writelines(lines)
 
 
-
-
 def main():
 
     """
@@ -155,7 +152,6 @@ def main():
         help="Path to a configuration file",
     )
 
-    
     args = parser.parse_args()
     with open(
         args.config_file, "rb"
@@ -166,7 +162,6 @@ def main():
 
     env_name = config["general"]["env_name"]
 
-    
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
 
@@ -176,9 +171,9 @@ def main():
         source_list = joblib.load("list_sources.dat")
     else:
         source_list = [source]
-    
+
     for source_name in source_list:
-        
+
         print("***** Generating file config_stereo.yaml...")
         configfile_stereo(target_dir, source_name, config)
 
@@ -194,9 +189,7 @@ def main():
         )
 
         # Below we run the bash scripts to find the stereo events
-        list_of_stereo_scripts = np.sort(
-            glob.glob(f"{source_name}_StereoEvents*.sh")
-        )
+        list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_StereoEvents*.sh"))
         if len(list_of_stereo_scripts) < 1:
             logger.warning("No bash scripts for real data")
             continue

@@ -19,7 +19,6 @@ from pathlib import Path
 import joblib
 import numpy as np
 import yaml
-from tqdm import tqdm
 
 from magicctapipe import __version__
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
@@ -32,8 +31,6 @@ __all__ = ["merge"]
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-
 
 
 def merge(target_dir, MAGIC_runs, env_name, source, cluster):
@@ -95,8 +92,6 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster):
                     logger.error(f"{indir} does not exist")
 
 
-
-
 def main():
 
     """
@@ -113,7 +108,6 @@ def main():
         help="Path to a configuration file",
     )
 
-    
     args = parser.parse_args()
     with open(
         args.config_file, "rb"
@@ -121,9 +115,6 @@ def main():
         config = yaml.safe_load(f)
 
     target_dir = Path(config["directories"]["workspace_dir"])
-
-    
-    train_fraction = float(config["general"]["proton_train_fraction"])
 
     env_name = config["general"]["env_name"]
     source_in = config["data_selection"]["source_name_database"]
@@ -136,7 +127,7 @@ def main():
 
     else:
         source_list.append(source)
-    
+
     for source_name in source_list:
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
@@ -144,7 +135,7 @@ def main():
         )
 
         # Below we run the analysis on the MAGIC data
-       
+
         print("***** Generating merge_MAGIC bashscripts...")
         merge(
             target_dir,
@@ -157,9 +148,7 @@ def main():
         print("***** Running merge_hdf_files.py on the MAGIC data files...")
 
         # Below we run the bash scripts to merge the MAGIC files
-        list_of_merging_scripts = np.sort(
-            glob.glob(f"{source_name}_Merge_MAGIC*.sh")
-        )
+        list_of_merging_scripts = np.sort(glob.glob(f"{source_name}_Merge_MAGIC*.sh"))
         if len(list_of_merging_scripts) < 1:
             logger.warning("No bash scripts for real data")
             continue
