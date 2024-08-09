@@ -54,12 +54,12 @@ def main():
     out_key = config_dict["database_keys"]["LST"]
 
     df = pd.read_hdf(
-        config_dict["database_paths"]["input_1"],
-        key=config_dict["database_keys"]["input_1"],
+        config_dict["database_paths"]["MAGIC+LST1"],
+        key=config_dict["database_keys"]["MAGIC+LST1"],
     )  # TODO: put this file in a shared folder
     df2 = pd.read_hdf(
-        config_dict["database_paths"]["input_2"],
-        key=config_dict["database_keys"]["input_2"],
+        config_dict["database_paths"]["MAGIC+LST1_bis"],
+        key=config_dict["database_keys"]["MAGIC+LST1_bis"],
     )  # TODO: put this file in a shared folder
     df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
     if args.begin != 0:
