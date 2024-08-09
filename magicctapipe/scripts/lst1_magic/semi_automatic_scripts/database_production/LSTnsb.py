@@ -20,14 +20,15 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
-def update_mod(mod, n_sub, denominator, index, n_noise)
+
+def update_mod(mod, n_sub, denominator, index, n_noise):
     """
     Function to update the step used to extract the subruns for the NSB evaluation
 
     Parameters
     ----------
     mod : int
-        Sampling step 
+        Sampling step
     n_sub : int
         Number of subruns in the run
     denominator : int
@@ -36,10 +37,16 @@ def update_mod(mod, n_sub, denominator, index, n_noise)
         Index of the currently used subrun
     n_noise : int
         Number of NSB values already computed
+
+    Returns
+    -------
+    int
+        Sampling step
     """
     if n_sub > denominator:
         mod = (n_sub - index) // (denominator - n_noise)
-    return mod                    
+    return mod
+
 
 def nsb(run_list, simtel, lst_config, run_number, denominator):
 
@@ -72,11 +79,11 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
             "There is no subrun matching the provided run number. Check the list of the LST runs (LST_runs.txt)"
         )
         return
-    if len(run_list) < denominator:
+    if len(run_list) <= denominator:
         mod = 1
     else:
         mod = len(run_list) // denominator
-    
+
     logger.info("NSB levels (sub-runs): \n")
     for ii in range(0, len(run_list)):
         subrun = run_list[ii].split(".")[-2]
@@ -86,19 +93,24 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
             try:
                 a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
                 if a is not None:
-                    if a>0.0:
+                    if a > 0.0:
                         noise.append(a)
                         logger.info(a)
                     else:
-                        mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
-                        logger.warning(f'NSB level could not be adequately evaluated for subrun {subrun} (negative value or missing pedestal events): skipping this subrun...')
-                else: 
+                        mod = update_mod(
+                            mod, len(run_list), denominator, ii, len(noise)
+                        )
+                        logger.warning(
+                            f"NSB level could not be adequately evaluated for subrun {subrun} (negative value or missing pedestal events): skipping this subrun..."
+                        )
+                else:
                     mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
-                    logger.warning(f'NSB level is None for subrun {subrun} (missing interleaved FF): skipping this subrun...')
-            
+                    logger.warning(
+                        f"NSB level is None for subrun {subrun} (missing interleaved FF): skipping this subrun..."
+                    )
 
             except IndexError:
-                
+
                 mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
                 logger.warning(
                     f"Subrun {subrun} caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
@@ -187,7 +199,7 @@ def main():
     logger.info(f"Run n. {run_number}, NSB median {median_NSB}")
 
     for j in range(0, len(nsb_list)):
-        if (median_NSB < nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
+        if (median_NSB <= nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
             with open(f"nsb_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
                 f.write(f"{date},{run_number},{median_NSB}\n")
         if median_NSB > nsb_limit[-1]:
