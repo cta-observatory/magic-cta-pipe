@@ -250,12 +250,14 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
 
-    source_list = []
+    
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:
-        source_list.append(source)
+        if source is None:
+            source=source_in
+        source_list = [source]
     if not NSB_match:
         if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
             # Here we slice the proton MC data into "train" and "test" (but first we check if the directory already exists):

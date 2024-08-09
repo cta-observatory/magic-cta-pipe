@@ -447,12 +447,14 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     target_dir = Path(config["directories"]["workspace_dir"])
-    source_list = []
+    
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:
-        source_list.append(source)
+        if source is None:
+            source=source_in
+        source_list = [source]
     noise_value = [0, 0, 0]
     if not NSB_match:
         nsb = config["general"]["NSB_MC"]
