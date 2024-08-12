@@ -44,7 +44,7 @@ def update_mod(mod, n_sub, denominator, index, n_noise):
     int
         Sampling step
     """
-    if n_sub > denominator:
+    if (n_sub > denominator) and (denominator > n_noise):
         mod = (n_sub - index) // (denominator - n_noise)
     return mod
 
