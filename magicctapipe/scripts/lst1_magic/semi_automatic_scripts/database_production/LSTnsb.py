@@ -217,6 +217,7 @@ def main():
         if median_NSB > nsb_limit[-1]:
             with open(f"nsb_LST_high_{run_number}.txt", "a+") as f:
                 f.write(f"{date},{run_number},{median_NSB}\n")
+            break
 
 
 if __name__ == "__main__":
