@@ -177,7 +177,7 @@ def main():
     for source_name in source_list:
 
         print("***** Generating file config_stereo.yaml...")
-        configfile_stereo(target_dir, source_name, config)
+        configfile_stereo(target_dir, source_name, config_file)
 
         # Below we run the analysis on the real data
 
@@ -200,7 +200,6 @@ def main():
             launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
         os.system(launch_jobs)
-
 
 
 if __name__ == "__main__":

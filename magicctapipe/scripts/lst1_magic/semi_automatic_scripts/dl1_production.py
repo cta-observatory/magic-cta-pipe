@@ -41,7 +41,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def config_file_gen(target_dir, source_name, config_gen):
+def config_file_gen(target_dir, source_name, config_file):
 
     """
     Here we create the configuration file needed for transforming DL0 into DL1
@@ -64,7 +64,7 @@ def config_file_gen(target_dir, source_name, config_gen):
         config_dict = yaml.safe_load(fc)
 
     conf = {
-        "mc_tel_ids": config_gen["mc_tel_ids"],
+        "mc_tel_ids": config_dict["mc_tel_ids"],
         "LST": config_dict["LST"],
         "MAGIC": config_dict["MAGIC"],
     }
@@ -228,7 +228,7 @@ def main():
         if source is None:
             source = source_in
         source_list = [source]
-        
+
     for source_name in source_list:
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
@@ -244,7 +244,7 @@ def main():
         directories_generator_real(
             str(target_dir), telescope_ids, MAGIC_runs, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
-        config_file_gen(target_dir, source_name, config)
+        config_file_gen(target_dir, source_name, config_file)
 
         # Below we run the analysis on the MAGIC data
 
