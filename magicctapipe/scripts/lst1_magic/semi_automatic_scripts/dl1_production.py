@@ -43,7 +43,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def config_file_gen(target_dir, noise_value, NSB_match, source_name, config_gen):
+def config_file_gen(target_dir, noise_value, NSB_match, source_name, config_file):
 
     """
     Here we create the configuration file needed for transforming DL0 into DL1
@@ -58,16 +58,17 @@ def config_file_gen(target_dir, noise_value, NSB_match, source_name, config_gen)
         If real data are matched to pre-processed MCs or not
     source_name : str
         Name of the target source
-    config_gen : dict
-        Dictionary of the entries of the general configuration file
+    config_file : str
+        Path to MCP configuration file (e.g., resources/config.yaml)
     """
-    config_file = config_gen["general"]["base_config_file"]
+
     if config_file == "":
         config_file = resource_file("config.yaml")
     with open(
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
+
     LST_config = config_dict["LST"]
     MAGIC_config = config_dict["MAGIC"]
 
@@ -75,8 +76,9 @@ def config_file_gen(target_dir, noise_value, NSB_match, source_name, config_gen)
         LST_config["increase_nsb"]["extra_noise_in_dim_pixels"] = noise_value[0]
         LST_config["increase_nsb"]["extra_bias_in_dim_pixels"] = noise_value[2]
         LST_config["increase_nsb"]["extra_noise_in_bright_pixels"] = noise_value[1]
+
     conf = {
-        "mc_tel_ids": config_gen["mc_tel_ids"],
+        "mc_tel_ids": config_dict["mc_tel_ids"],
         "LST": LST_config,
         "MAGIC": MAGIC_config,
     }
@@ -435,8 +437,8 @@ def main():
     telescope_ids = list(config["mc_tel_ids"].values())
     env_name = config["general"]["env_name"]
     NSB_match = config["general"]["NSB_matching"]
+    config_file = config["general"]["base_config_file"]
 
-    # LST_runs_and_dates = config["general"]["LST_runs"]
     MC_gammas = config["directories"]["MC_gammas"]
     MC_electrons = config["directories"]["MC_electrons"]
     MC_helium = config["directories"]["MC_helium"]
@@ -455,6 +457,7 @@ def main():
         if source is None:
             source = source_in
         source_list = [source]
+
     noise_value = [0, 0, 0]
     if not NSB_match:
         nsb = config["general"]["NSB_MC"]
@@ -469,9 +472,7 @@ def main():
             directories_generator_MC(
                 str(target_dir), telescope_ids
             )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
-            config_file_gen(
-                target_dir, noise_value, NSB_match, "MC", config
-            )  # TODO: fix here
+            config_file_gen(target_dir, noise_value, NSB_match, "MC", config_file)
             to_process = {
                 "gammas": MC_gammas,
                 "electrons": MC_electrons,
@@ -521,9 +522,8 @@ def main():
                 str(target_dir), telescope_ids, MAGIC_runs, NSB_match, source_name
             )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
             config_file_gen(
-                target_dir, noise_value, NSB_match, source_name, config
-            )  # TODO: fix here
-
+                target_dir, noise_value, NSB_match, source_name, config_file
+            )
             # Below we run the analysis on the MAGIC data
 
             lists_and_bash_gen_MAGIC(
