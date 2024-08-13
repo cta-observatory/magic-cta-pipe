@@ -31,7 +31,7 @@ During the analysis, some files (i.e., bash scripts, lists of sources and runs) 
 
 In this step, we will convert the MAGIC Calibrated data to Data Level (DL) 1 (our goal is to reach DL3).
 
-In your working IT Container directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname), open your environment with the command `conda activate {env_name}` and update the file `config_auto_MCP.yaml` according to your analysis. If you need non-standard parameters (e.g., for the cleaning), take care that the `resources/config.yaml` file gets installed when you install the pipeline, so you will have to copy it, e.g. in your workspace, modify it and put the path to this new file in the `config_auto_MCP.yaml` (this way you don't need to install again the pipeline).
+In your working IT Container directory (i.e., `workspace_dir`), open your environment with the command `conda activate {env_name}` and update the file `config_auto_MCP.yaml` according to your analysis. If you need non-standard parameters (e.g., for the cleaning), take care that the `resources/config.yaml` file gets installed when you install the pipeline, so you will have to copy it, e.g. in your workspace, modify it and put the path to this new file in the `config_auto_MCP.yaml` (this way you don't need to install again the pipeline).
 
 The file `config_auto_MCP.yaml` must contain parameters for data selection and some information on the night sky background (NSB) level and software versions:
 
@@ -96,9 +96,9 @@ The command `dl1_production` does a series of things:
 
 - Creates a directory with the target name within the directory `yourprojectname/{MCP_version}` and several subdirectories inside it that are necessary for the rest of the data reduction. The main directories are:
 ```
-/fefs/aswg/workspace/yourname/yourprojectname/VERSION/
-/fefs/aswg/workspace/yourname/yourprojectname/VERSION/{source}/DL1
-/fefs/aswg/workspace/yourname/yourprojectname/VERSION/{source}/DL1/[subdirectories]
+workspace_dir/VERSION/
+workspace_dir/VERSION/{source}/DL1
+workspace_dir/VERSION/{source}/DL1/[subdirectories]
 ```
 where [subdirectories] stands for several subdirectories containing the MAGIC subruns in the DL1 format.
 - Generates a configuration file called `config_DL0_to_DL1.yaml` with telescope ID information and adopted imaging/cleaning cuts, and puts it in the directory `[...]/yourprojectname/VERSION/{source}/` created in the previous step.
@@ -114,7 +114,7 @@ or
 
 > $ squeue -u your_user_name
 
-Once it is done, all of the subdirectories in `/fefs/aswg/workspace/yourname/yourprojectname/VERSION/{source}/DL1` will be filled with files of the type `dl1_MX.RunXXXXXX.0XX.h5` for each MAGIC subrun. 
+Once it is done, all of the subdirectories in `workspace_dir/VERSION/{source}/DL1` will be filled with files of the type `dl1_MX.RunXXXXXX.0XX.h5` for each MAGIC subrun. 
 
 WARNING: some of these jobs could fail due to 'broken' input files: before moving to the next step, check for failed jobs (through `job_accounting` and/or log files) and remove the output files produced by these failed jobs (these output files will generally have a very small size, lower than few kB, and cannot be read in the following steps)
 
