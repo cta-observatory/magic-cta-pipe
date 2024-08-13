@@ -1,11 +1,3 @@
-mc_tel_ids:
-    LST-1: 1
-    LST-2: 0
-    LST-3: 0
-    LST-4: 0
-    MAGIC-I: 2
-    MAGIC-II: 3
-
 directories:
     workspace_dir : "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/"  # Output directory where all the data products will be saved.
     

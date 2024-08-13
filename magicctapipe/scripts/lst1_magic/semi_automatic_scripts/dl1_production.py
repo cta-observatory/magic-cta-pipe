@@ -52,10 +52,10 @@ def config_file_gen(target_dir, source_name, config_gen):
         Directory to store the results
     source_name : str
         Name of the target source
-    config_gen : dict
-        Dictionary of the entries of the general configuration file
+    config_file : str
+        Path to MCP configuration file (e.g., resources/config.yaml)
     """
-    config_file = config_gen["general"]["base_config_file"]
+
     if config_file == "":
         config_file = resource_file("config.yaml")
     with open(
@@ -215,7 +215,7 @@ def main():
 
     telescope_ids = list(config["mc_tel_ids"].values())
     env_name = config["general"]["env_name"]
-
+    config_file = config["general"]["base_config_file"]
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
@@ -228,9 +228,8 @@ def main():
         if source is None:
             source = source_in
         source_list = [source]
-
+        
     for source_name in source_list:
-
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
         MAGIC_runs = np.genfromtxt(
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2

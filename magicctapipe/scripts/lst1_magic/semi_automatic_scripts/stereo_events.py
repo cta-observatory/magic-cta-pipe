@@ -31,7 +31,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configfile_stereo(target_dir, source_name, config_gen):
+def configfile_stereo(target_dir, source_name, config_file):
 
     """
     This function creates the configuration file needed for the stereo reconstruction step
@@ -42,11 +42,10 @@ def configfile_stereo(target_dir, source_name, config_gen):
         Path to the working directory
     source_name : str
         Name of the target source
-    config_gen : dict
-        Dictionary of the entries of the general configuration file
+    config_file : str
+        Path to MCP configuration file (e.g., resources/config.yaml)
     """
 
-    config_file = config_gen["general"]["base_config_file"]
     if config_file == "":
         config_file = resource_file("config.yaml")
 
@@ -55,7 +54,7 @@ def configfile_stereo(target_dir, source_name, config_gen):
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
     conf = {
-        "mc_tel_ids": config_gen["mc_tel_ids"],
+        "mc_tel_ids": config_dict["mc_tel_ids"],
         "stereo_reco": config_dict["stereo_reco"],
     }
     file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
@@ -161,6 +160,7 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
 
     env_name = config["general"]["env_name"]
+    config_file = config["general"]["base_config_file"]
 
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
@@ -200,6 +200,7 @@ def main():
             launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
         os.system(launch_jobs)
+
 
 
 if __name__ == "__main__":
