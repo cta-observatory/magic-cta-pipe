@@ -176,8 +176,8 @@ def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_nam
         Name of the target source
     """
 
-    os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL1", exist_ok=True)
     dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
+    os.makedirs(dl1_dir, exist_ok=True)
 
     ###########################################
     # MAGIC
