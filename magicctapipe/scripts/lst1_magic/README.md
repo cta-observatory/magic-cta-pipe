@@ -29,30 +29,17 @@ During the analysis, some files (i.e., bash scripts, lists of sources and runs) 
 
 ### DL0 to DL1
 
-In this step, we will convert the MAGIC Calibrated data to Data Level (DL) 1 (our goal is to reach DL3) and MC DL0 to DL1.
+In this step, we will convert the MAGIC Calibrated data to Data Level (DL) 1 (our goal is to reach DL3).
 
 In your working IT Container directory (e.g. /fefs/aswg/workspace/yourname/yourprojectname), open your environment with the command `conda activate {env_name}` and update the file `config_auto_MCP.yaml` according to your analysis. If you need non-standard parameters (e.g., for the cleaning), take care that the `resources/config.yaml` file gets installed when you install the pipeline, so you will have to copy it, e.g. in your workspace, modify it and put the path to this new file in the `config_auto_MCP.yaml` (this way you don't need to install again the pipeline).
 
-The file `config_auto_MCP.yaml` must contain the telescope IDs, the directories with the MC data (ignored if you set NSB_matching = true), the data selection, and some information on the night sky background (NSB) level and software versions:
+The file `config_auto_MCP.yaml` must contain parameters for data selection and some information on the night sky background (NSB) level and software versions:
 
 ```
 
-    mc_tel_ids:
-    LST-1: 1
-    LST-2: 0
-    LST-3: 0
-    LST-4: 0
-    MAGIC-I: 2
-    MAGIC-II: 3
-
 directories:
     workspace_dir : "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/"  # Output directory where all the data products will be saved.
-    # MC paths below are ignored if you set NSB_matching = true.
-    MC_gammas     : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray"  # set to "" if you don't want to process these Monte Carlo simulations.
-    MC_electrons  : "" 
-    MC_helium     : "" 
-    MC_protons    : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/Protons/dec_2276/sim_telarray" 
-    MC_gammadiff  : "/fefs/aswg/data/mc/DL0/LSTProd2/TrainingDataset/GammaDiffuse/dec_2276/sim_telarray/"
+    
     
 data_selection:
     source_name_database: "CrabNebula"  # MUST BE THE SAME AS IN THE DATABASE; Set to null to process all sources in the given time range.
@@ -68,17 +55,13 @@ general:
     base_config_file: ''    # path + name to a custom MCP config file. If not provided, the default config.yaml file will be used 
     LST_version   : "v0.10" # check the `processed_lstchain_file` version in the LST database!
     LST_tailcut   : "tailcut84"
-    focal_length  : "effective"
     simtel_nsb    : "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
-    lstchain_modified_config : true # use_flatfield_heuristic = True to evaluate NSB
-    proton_train_fraction  : 0.8  # 0.8 means that 80% of the DL1 protons will be used for training the Random Forest.
+    lstchain_modified_config : true # use_flatfield_heuristic = True to evaluate NSB    
     nsb           : [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
     env_name      : magic-lst  # name of the conda environment to be used to process data.
     cluster       : "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
-    NSB_matching  : true  # Set to false to process also the MCs. Set to true if adequate MC productions (DLx) are already available on the IT Container.
-    NSB_MC        : 0.5  # extra noise in dim pixels used to process MCs; e.g., you could put here the average NSB value of the processed LST runs. Ignored if NSB_matching=true.
-
     
+
 ```
 
 WARNING: Only the runs for which the `LST_version` parameter matches the `processed_lstchain_file` version in the LST database (i.e., the version used to evaluate the NSB level; generally the last available and processable version of a run) will be processed.
