@@ -62,13 +62,11 @@ def config_file_gen(target_dir, source_name, config_gen):
         config_file, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
-    LST_config = config_dict["LST"]
-    MAGIC_config = config_dict["MAGIC"]
 
     conf = {
         "mc_tel_ids": config_gen["mc_tel_ids"],
-        "LST": LST_config,
-        "MAGIC": MAGIC_config,
+        "LST": config_dict["LST"],
+        "MAGIC": config_dict["MAGIC"],
     }
 
     file_name = f"{target_dir}/v{__version__}/{source_name}/config_DL0_to_DL1.yaml"
