@@ -439,13 +439,15 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     target_dir = Path(config["directories"]["workspace_dir"])
-    source_list = []
+
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
     else:
-        source_list.append(source)
-
+        if source is None:
+            source = source_in
+        source_list = [source]
+    
     if not NSB_match:
         # Below we run the analysis on the MC data
         if (args.analysis_type == "onlyMC") or (args.analysis_type == "doEverything"):
