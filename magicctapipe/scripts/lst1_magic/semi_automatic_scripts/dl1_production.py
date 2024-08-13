@@ -230,7 +230,7 @@ def main():
         if source is None:
             source = source_in
         source_list = [source]
-        
+
     for source_name in source_list:
 
         MAGIC_runs_and_dates = f"{source_name}_MAGIC_runs.txt"
