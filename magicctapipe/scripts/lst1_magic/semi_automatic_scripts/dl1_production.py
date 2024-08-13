@@ -236,7 +236,6 @@ def main():
             MAGIC_runs_and_dates, dtype=str, delimiter=",", ndmin=2
         )  # READ LIST OF DATES AND RUNS: format table where each line is like "2020_11_19,5093174"
 
-        # TODO: fix here above
         print("*** Converting Calibrated into DL1 data ***")
         print(f"Process name: {source_name}")
         print(
@@ -246,7 +245,7 @@ def main():
         directories_generator_real(
             str(target_dir), telescope_ids, MAGIC_runs, source_name
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
-        config_file_gen(target_dir, source_name, config)  # TODO: fix here
+        config_file_gen(target_dir, source_name, config)
 
         # Below we run the analysis on the MAGIC data
 
