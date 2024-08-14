@@ -58,21 +58,22 @@ def MARS_radial_light_distribution(
     pix_y = pixel_y.to_value(u.deg)
 
     pix_r = np.sqrt((pix_x - x0) ** 2 + (pix_y - y0) ** 2)
-    r_edges = np.linspace(
-        seed_radius - 3 * seed_width,
-        seed_radius + 3 * seed_width,
-        int(6 * seed_width / 0.05) + 1,
-    )
+    r_edges = np.linspace(0, 2, 41)
+    r_edges = r_edges[
+        (r_edges > seed_radius - 3 * seed_width)
+        & (r_edges < seed_radius + 3 * seed_width)
+    ]
     r = (r_edges[1:] + r_edges[:-1]) / 2
     n_pix_hist = np.histogram(pix_r, bins=r_edges)[0]
     width_hist = np.histogram(pix_r, weights=image, bins=r_edges)[0] / n_pix_hist
     inte_seed = np.sum(width_hist) * seed_width
     r0_seed = seed_radius
     standard_dev_seed = seed_width
+    width_hist_err = np.sqrt(width_hist / n_pix_hist)
 
     def f(inte, r0, mu):
         gauss = inte * np.exp(-((r - r0) ** 2 / mu**2) / 2) / (np.sqrt(2 * np.pi) * mu)
-        return -np.sum(poisson._logpmf(width_hist, gauss))
+        return np.sum(np.power(gauss - width_hist, 2) / np.power(width_hist_err, 2))
 
     m = Minuit(f, inte=inte_seed, r0=r0_seed, mu=standard_dev_seed)
     m.errordef = Minuit.LIKELIHOOD
