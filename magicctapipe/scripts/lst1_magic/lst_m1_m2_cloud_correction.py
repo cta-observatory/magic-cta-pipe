@@ -290,6 +290,15 @@ def main():
         help="Path to a directory where to save an output corrected DL1 file",
     )
 
+    parser.add_argument(
+        "--config_file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config.yaml",
+        help="Path to a configuration file",
+    )
+
     args = parser.parse_args()
 
     subarray_info = SubarrayDescription.from_hdf(args.input_file)
