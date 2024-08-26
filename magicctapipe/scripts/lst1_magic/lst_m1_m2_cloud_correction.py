@@ -15,6 +15,7 @@ import logging
 import astropy.units as u
 import numpy as np
 import pandas as pd
+import yaml
 from astropy.coordinates import AltAz, SkyCoord
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.image import (
@@ -309,11 +310,16 @@ def main():
             focal_length_eff = optics_row["effective_focal_length"][0]
             focal_eff[telid] = focal_length_eff * u.m
 
-    df_lst = process_telescope_data(args.input_file, args.config, 1, focal_eff, camgeom)
-    df_m1 = process_telescope_data(args.input_file, args.config, 2, focal_eff, camgeom)
-    df_m2 = process_telescope_data(args.input_file, args.config, 3, focal_eff, camgeom)
+    with open("config.yaml", "r") as file:
+        config = yaml.safe_load(file)
 
-    df_all = pd.concat([df_lst, df_m1, df_m2], ignore_index=True)
+    dfs = []  # Initialize an empty list to store DataFrames
+
+    for i in range(1, 4):
+        df = process_telescope_data(args.input_file, config, i, camgeom)
+        dfs.append(df)
+
+    df_all = pd.concat(dfs, ignore_index=True)
 
     columns_to_convert = [
         "x",
