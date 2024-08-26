@@ -313,11 +313,14 @@ def main():
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
 
+    tel_ids = config["mc_tel_ids"]
+
     dfs = []  # Initialize an empty list to store DataFrames
 
-    for i in range(1, 4):
-        df = process_telescope_data(args.input_file, config, i, camgeom)
-        dfs.append(df)
+    for tel_name, tel_id in tel_ids.items():
+        if tel_id != 0:  # Only process telescopes that have a non-zero ID
+            df = process_telescope_data(args.input_file, config, tel_id, camgeom)
+            dfs.append(df)
 
     df_all = pd.concat(dfs, ignore_index=True)
 
