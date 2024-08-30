@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This script corrects LST-1 and Magic data for the cloud affection.
+This script corrects LST-1 and MAGIC data for the cloud affection. The script works on DL 1 stereo files with saved images. As output, the script creates DL 1 files with corrected parameters.
 
 Usage:
 $ python lst_m1_m2_cloud_correction.py
@@ -41,9 +41,9 @@ def model0(imp, h, zd):
     Parameters
     ----------
     imp : astropy.units.quantity.Quantity
-        Impact in m
+        Impact
     h : astropy.units.quantity.Quantity
-        Height of each cloud layer a.g.l.
+        Array with heights of each cloud layer a.g.l.
     zd : numpy.float64
         Zenith distance in deg
 
@@ -63,15 +63,15 @@ def model2(imp, h, zd):
     Parameters
     ----------
     imp : astropy.units.quantity.Quantity
-        Impact in m
+        Impact
     h : astropy.units.quantity.Quantity
-        Height of each cloud layer a.g.l.
+        Array with heights of each cloud layer a.g.l.
     zd : numpy.float64
         Zenith distance in deg
 
     Returns
     -------
-    astropy.units.quantity.Quantity
+    numpy ndarray
         Angular distance corrected for bias in units of degrees
     """
     H0 = 2.2e3 * u.m
@@ -87,9 +87,9 @@ def trans_height(x, Hc, dHc, trans):
     Parameters
     ----------
     x : astropy.units.quantity.Quantity
-        Height of each cloud layer a.g.l. in m
+        Array with heights of each cloud layer a.g.l.
     Hc : astropy.units.quantity.Quantity
-        Height of the base of the cloud a.g.l. in m
+        Height of the base of the cloud a.g.l.
     dHc : astropy.units.quantity.Quantity
         Cloud thickness in m
     trans : numpy.float64
@@ -106,7 +106,7 @@ def trans_height(x, Hc, dHc, trans):
     return t
 
 
-def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
+def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
     """
     Corrects LST-1 and MAGIC data affected by a cloud presence
 
@@ -116,14 +116,14 @@ def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
         Path to an input .h5 DL1 file
     config : dict
         Configuration for the LST-1 + MAGIC analysis
-    telid : numpy.int16
+    tel_id : numpy.int16
         LST-1 and MAGIC telescope ids
-    focal_eff : dict
-        Effective focal length
-    camgeom : dict
+    camgeom : float
         An instance of the CameraGeometry class containing information about the
         camera's configuration, including pixel type, number of pixels, rotation
         angles, and the reference frame.
+    focal_eff : float
+        Effective focal length
 
     Returns
     -------
@@ -132,23 +132,28 @@ def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
     """
 
     correction_params = config.get("cloud_correction", {})
+    Hc = u.Quantity(correction_params.get("base_height"))
+    dHc = u.Quantity(correction_params.get("thickness"))
+    trans0 = correction_params.get("vertical_transmission")
+    nlayers = correction_params.get("number_of_layers")
+
     all_params_list = []
 
     dl1_params = read_table(input_file, "/events/parameters")
-    dl1_images = read_table(input_file, "/events/dl1/image_" + str(telid))
+    dl1_images = read_table(input_file, "/events/dl1/image_" + str(tel_id))
 
-    focal = focal_eff[telid]
+    focal = focal_eff[tel_id]
     m2deg = np.rad2deg(1) / focal * u.degree
 
     inds = np.where(
-        np.logical_and(dl1_params["intensity"] > 0.0, dl1_params["tel_id"] == telid)
+        np.logical_and(dl1_params["intensity"] > 0.0, dl1_params["tel_id"] == tel_id)
     )[0]
     for index in inds:
         event_id_lst = dl1_params["event_id_lst"][index]
         obs_id_lst = dl1_params["obs_id_lst"][index]
         event_id = dl1_params["event_id_magic"][index]
         obs_id = dl1_params["obs_id_magic"][index]
-        if telid == 1:
+        if tel_id == 1:
             event_id, obs_id = event_id_lst, obs_id_lst
 
         pointing_az = dl1_params["pointing_az"][index]
@@ -157,14 +162,9 @@ def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
         psi = dl1_params["psi"][index] * u.deg
         time_diff = dl1_params["time_diff"][index]
         n_islands = dl1_params["n_islands"][index]
-        n_pixels = dl1_params["n_pixels"][index]
         signal_pixels = dl1_params["n_pixels"][index]
 
-        Hc = correction_params.get("base_height") * u.m
-        dHc = correction_params.get("thickness") * u.m
-        trans = correction_params.get("vertical_transmission")
-        trans = trans ** (1 / np.cos(zenith))
-        nlayers = correction_params.get("number_of_layers")
+        trans = trans0 ** (1 / np.cos(zenith))
         Hcl = np.linspace(Hc, Hc + dHc, nlayers)  # position of each layer
         transl = trans_height(Hcl, Hc, dHc, trans)  # transmissions of each layer
         transl = np.append(transl, transl[-1])
@@ -178,7 +178,7 @@ def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
         cog_y = (dl1_params["y"][index] * m2deg).value * u.deg
 
         # Source position
-        pointing_altaz = SkyCoord(alt=alt_rad * u.rad, az=az_rad * u.rad, frame=AltAz())
+        reco_pos = SkyCoord(alt=alt_rad * u.rad, az=az_rad * u.rad, frame=AltAz())
         telescope_pointing = SkyCoord(
             alt=pointing_alt * u.rad,
             az=pointing_az * u.rad,
@@ -186,7 +186,7 @@ def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
         )
 
         tel_frame = TelescopeFrame(telescope_pointing=telescope_pointing)
-        tel = pointing_altaz.transform_to(tel_frame)
+        tel = reco_pos.transform_to(tel_frame)
 
         src_x = tel.fov_lat
         src_y = tel.fov_lon
@@ -195,8 +195,8 @@ def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
         src_x, src_y = -src_y, -src_x
         cog_x, cog_y = -cog_y, -cog_x
 
-        pix_x_tel = (camgeom[telid].pix_x * m2deg).to(u.deg)
-        pix_y_tel = (camgeom[telid].pix_y * m2deg).to(u.deg)
+        pix_x_tel = (camgeom.pix_x * m2deg).to(u.deg)
+        pix_y_tel = (camgeom.pix_y * m2deg).to(u.deg)
 
         distance = np.abs(
             (pix_y_tel - src_y) * np.cos(psi) + (pix_x_tel - src_x) * np.sin(psi)
@@ -211,58 +211,48 @@ def process_telescope_data(input_file, config, telid, focal_eff, camgeom):
 
         ilayer = np.digitize(distance, dist_corr_layer)
         trans_pixels = transl[ilayer]
-        if (trans_pixels == 0).any():
-            raise ValueError("trans_pixels must not contain any zero values")
 
         inds_img = np.where(
             (dl1_images["event_id"] == event_id)
-            & (dl1_images["tel_id"] == telid)
+            & (dl1_images["tel_id"] == tel_id)
             & (dl1_images["obs_id"] == obs_id)
         )[0]
 
-        if len(inds_img) > 0:
-            for index_img in inds_img:
-                image = dl1_images["image"][index_img]
-                cleanmask = dl1_images["image_mask"][index_img]
-                peak_time = dl1_images["peak_time"][index_img]
-                image /= trans_pixels
-                corr_image = image.copy()
-                corr_image[~cleanmask] = 0
-
-                hillas_params = hillas_parameters(camgeom[telid], corr_image)
-                timing_params = timing_parameters(
-                    camgeom[telid], corr_image, peak_time, hillas_params
-                )
-                leakage_params = leakage_parameters(
-                    camgeom[telid], corr_image, signal_pixels
-                )
-                conc_params = concentration_parameters(
-                    camgeom[telid], corr_image, hillas_params
-                )
-
-                event_params = {
-                    **hillas_params,
-                    **timing_params,
-                    **leakage_params,
-                    **conc_params,
-                }
-
-                # Add real event information (assuming it's also a dictionary-like object)
-                event_info_dict = {
-                    "obs_id": obs_id,
-                    "event_id": event_id,
-                    "pointing_alt": pointing_alt,
-                    "pointing_az": pointing_az,
-                    "time_diff": time_diff,
-                    "n_pixels": n_pixels,
-                    "n_islands": n_islands,
-                }
-                event_params.update(event_info_dict)
-
-                all_params_list.append(event_params)
-
-        else:
+        if len(inds_img) == 0:
             raise ValueError("Error: 'inds_img' list is empty!")
+        index_img = inds_img[0]
+        image = dl1_images["image"][index_img]
+        cleanmask = dl1_images["image_mask"][index_img]
+        peak_time = dl1_images["peak_time"][index_img]
+        image /= trans_pixels
+        corr_image = image
+        corr_image[~cleanmask] = 0
+
+        hillas_params = hillas_parameters(camgeom, corr_image)
+        timing_params = timing_parameters(camgeom, corr_image, peak_time, hillas_params)
+        leakage_params = leakage_parameters(camgeom, corr_image, cleanmask)
+        conc_params = concentration_parameters(camgeom, corr_image, hillas_params)
+
+        event_params = {
+            **hillas_params,
+            **timing_params,
+            **leakage_params,
+            **conc_params,
+        }
+
+        event_info_dict = {
+            "obs_id": obs_id,
+            "event_id": event_id,
+            "tel_id": tel_id,
+            "pointing_alt": pointing_alt,
+            "pointing_az": pointing_az,
+            "time_diff": time_diff,
+            "n_pixels": signal_pixels,
+            "n_islands": n_islands,
+        }
+        event_params.update(event_info_dict)
+
+        all_params_list.append(event_params)
 
     df = pd.DataFrame(all_params_list)
     return df
@@ -316,10 +306,11 @@ def main():
     for telid, telescope in tel_descriptions.items():
         optics_row = optics_table[optics_table["optics_name"] == telescope.name]
         if len(optics_row) > 0:
-            focal_length_eff = optics_row["effective_focal_length"][0]
-            focal_eff[telid] = focal_length_eff * u.m
+            focal_eff[telid] = optics_row["effective_focal_length"][0] * u.m
+        else:
+            raise ValueError(f"No optics data found for telescope: {telescope.name}")
 
-    with open("config.yaml", "r") as file:
+    with open("args.config", "r") as file:
         config = yaml.safe_load(file)
 
     tel_ids = config["mc_tel_ids"]
@@ -328,7 +319,9 @@ def main():
 
     for tel_name, tel_id in tel_ids.items():
         if tel_id != 0:  # Only process telescopes that have a non-zero ID
-            df = process_telescope_data(args.input_file, config, tel_id, camgeom)
+            df = process_telescope_data(
+                args.input_file, config, tel_id, camgeom[tel_id], focal_eff
+            )
             dfs.append(df)
 
     df_all = pd.concat(dfs, ignore_index=True)

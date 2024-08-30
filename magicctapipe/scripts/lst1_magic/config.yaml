@@ -267,8 +267,8 @@ dl2_to_dl3:
     
 cloud_correction:
     specify_cloud: yes
-    base_height: 5900
-    thickness: 1320
-    vertical_transmission: 0.58
+    base_height: "5900. m" 
+    thickness: "1320. m"
+    vertical_transmission: 1.0
     number_of_layers: 10
 
