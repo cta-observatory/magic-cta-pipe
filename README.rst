@@ -4,7 +4,7 @@ magic-cta-pipe
 
 .. container::
 
-    |Actions Status| |PyPI Status| |Documentation Status| |Pre-Commit| |isort Status| |black|
+    |Actions Status| |PyPI Status| |Conda Status| |Documentation Status| |Pre-Commit| |isort Status| |black|
 
 Repository for the analysis of MAGIC and MAGIC+LST1 data, based on `ctapipe <https://github.com/cta-observatory/ctapipe>`_.
 
@@ -64,6 +64,10 @@ Developers should follow the development install instructions found in the
 .. |PyPI Status| image:: https://badge.fury.io/py/magic-cta-pipe.svg
     :target: https://pypi.org/project/magic-cta-pipe
     :alt: magic-cta-pipe PyPI Status
+
+.. |Conda Status| image:: https://anaconda.org/conda-forge/magic-cta-pipe/badges/version.svg
+    :target: https://anaconda.org/conda-forge/magic-cta-pipe
+    :alt: magic-cta-pipe Conda Status
 
 .. |Documentation Status| image:: https://readthedocs.org/projects/magic-cta-pipe/badge/?version=latest&style=flat
     :target: https://magic-cta-pipe.readthedocs.io/en/latest/
