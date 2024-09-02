@@ -27,7 +27,7 @@ dependencies:
   - pre-commit
   - toml
   - tomli
-  - protobuf=3.20
+  - protozfits=2.5
   - pydata-sphinx-theme
   - pyparsing
   - psutil
