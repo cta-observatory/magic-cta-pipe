@@ -11,27 +11,27 @@ Repository for the analysis of MAGIC and MAGIC+LST1 data, based on `ctapipe <htt
 * Code: https://github.com/cta-observatory/magic-cta-pipe
 * Docs (preliminary): https://magic-cta-pipe.readthedocs.io/
 
-v0.5.0 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
+v0.5.1 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
 See `here <https://magic-cta-pipe.readthedocs.io/en/latest/user-guide/magic-lst-scripts.html>`_ for more details on how to run the analysis.
 
-v0.5.0 is based on *ctapipe* v0.19.x and *cta-lstchain* v0.10.x.
+v0.5.1 is based on *ctapipe* v0.19.x and *cta-lstchain* v0.10.x (with 5<=x<12).
 
 **NOTE ON OLD RELEASES**
 
 v0.3.1 of *magic-cta-pipe* was the last release before the cleanup of old files. Also, it was the last one supporting ctapipe v0.12.
-In order to exploit fully the new functionalities provided by *ctapipe*, use always the latest stable release of *magic-cta-pipe* (currently v0.5.0).
-v0.5.0 contains backward incompatible changes with respect to v0.3.1. Therefore, you cannot mix analyses performed with the two releases.
+In order to exploit fully the new functionalities provided by *ctapipe*, use always the latest stable release of *magic-cta-pipe* (currently v0.5.1).
+v0.5.1 contains backward incompatible changes with respect to v0.3.1. Therefore, you cannot mix analyses performed with the two releases.
 
 **COMPATIBILITY OF MAGIC-CTA-PIPE WITH LSTCHAIN DATA**
 
-At the moment of the release v0.5.0 of *magic-cta-pipe*, some LST-1 data are processed with *cta-lstchain* v0.9.x,
-while the most recent ones are processed with v0.10.x. v0.5.0 of *magic-cta-pipe* allows to read in LST data files
+At the moment of the release v0.5.1 of *magic-cta-pipe*, some LST-1 data are processed with *cta-lstchain* v0.9.x,
+while the most recent ones are processed with v0.10.x. v0.5.1 of *magic-cta-pipe* allows to read in LST data files
 created with both v0.9.x and v0.10.x, so that you do not need to use different versions of *magic-cta-pipe* to
 process LST data.
 
 Note that there are quite a lot of differences between v0.3.1 and v0.4.x, like for the telescope combinations definition,
 the way IRF are created (due to different *pyirf* versions) and so on. Therefore it may not be straightforward to stack the
-data at high level. We recommend to use only v0.5.0 for the processing, so that there will be no mismatches during the analysis.
+data at high level. We recommend to use only v0.5.1 for the processing, so that there will be no mismatches during the analysis.
 
 Installation for users
 ----------------------
