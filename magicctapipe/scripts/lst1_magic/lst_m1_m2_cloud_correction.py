@@ -6,8 +6,9 @@ This script corrects LST-1 and MAGIC data for the cloud affection. The script wo
 
 Usage:
 $ python lst_m1_m2_cloud_correction.py
---input-file dl1_stereo/dl1_LST-1_MAGIC.Run03265.0040.h5
-(--output-dir dl1_corrected)
+--input_file dl1_stereo/dl1_LST-1_MAGIC.Run03265.0040.h5
+(--output_dir dl1_corrected)
+(--config_file config.yaml)
 """
 import argparse
 import logging
@@ -118,7 +119,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         Configuration for the LST-1 + MAGIC analysis
     tel_id : numpy.int16
         LST-1 and MAGIC telescope ids
-    camgeom : float
+    camgeom : ctapipe.instrument.camera.geometry.CameraGeometry
         An instance of the CameraGeometry class containing information about the
         camera's configuration, including pixel type, number of pixels, rotation
         angles, and the reference frame.
@@ -285,7 +286,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config.yaml",
+        default="./resources/config.yaml",
         help="Path to a configuration file",
     )
 
