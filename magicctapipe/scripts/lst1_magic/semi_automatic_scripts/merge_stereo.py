@@ -55,7 +55,9 @@ def MergeStereo(target_dir, env_name, source, cluster, version):
         return
     for nightLST in listOfNightsLST:
         night = nightLST.split("/")[-1]
-        stereoMergeDir = f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/{night}"
+        stereoMergeDir = (
+            f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/{night}"
+        )
         os.makedirs(f"{stereoMergeDir}/logs", exist_ok=True)
 
         if len(glob.glob(f"{nightLST}/dl1_stereo*.h5")) < 1:
@@ -112,7 +114,7 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     in_version = config["directories"]["real_input_version"]
-    if in_version =="":
+    if in_version == "":
         in_version == __version__
 
     if source_in is None:

@@ -169,7 +169,7 @@ def main():
 
     cluster = config["general"]["cluster"]
     in_version = config["directories"]["real_input_version"]
-    if in_version =="":
+    if in_version == "":
         in_version == __version__
 
     if source_in is None:

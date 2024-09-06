@@ -73,7 +73,9 @@ def configfile_coincidence(target_dir, source_name, config_file):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, cluster, version):
+def linking_bash_lst(
+    target_dir, LST_runs, source_name, LST_version, env_name, cluster, version
+):
 
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -202,9 +204,8 @@ def main():
 
     cluster = config["general"]["cluster"]
     in_version = config["directories"]["real_input_version"]
-    if in_version =="":
+    if in_version == "":
         in_version == __version__
-
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")

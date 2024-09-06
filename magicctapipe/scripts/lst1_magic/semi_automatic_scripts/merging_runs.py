@@ -57,7 +57,7 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, version):
     process_name = f"merging_{source}"
 
     MAGIC_in_dir = f"{target_dir}/v{version}/{source}/DL1/"
-    MAGIC_out_dir= f"{target_dir}/v{__version__}/{source}/DL1/
+    MAGIC_out_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
 
     if cluster != "SLURM":
         logger.warning(
@@ -124,7 +124,7 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     in_version = config["directories"]["real_input_version"]
-    if in_version =="":
+    if in_version == "":
         in_version == __version__
 
     if source_in is None:
