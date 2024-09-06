@@ -233,6 +233,7 @@ def main():
                 LST_version,
                 env_name,
                 cluster,
+                in_version,
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")
