@@ -73,7 +73,7 @@ def configfile_coincidence(target_dir, source_name, config_file):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, cluster):
+def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, cluster, version):
 
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -92,11 +92,13 @@ def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, c
         Name of the conda environment
     cluster : str
         Cluster system
+    version : str
+        Version of the input (DL1 MAGIC runs) data
     """
 
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
-    MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
+    MAGIC_DL1_dir = f"{target_dir}/v{version}/{source_name}/DL1"
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/[0-9]*")]
     if cluster != "SLURM":
@@ -199,6 +201,10 @@ def main():
     source = config["data_selection"]["source_name_output"]
 
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version =="":
+        in_version == __version__
+
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
