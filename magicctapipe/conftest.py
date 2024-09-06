@@ -50,6 +50,8 @@ DL1_LST_data = [
     # "dl1_LST-1.Run15337.0001.h5",
     "dl1_LST-1.Run15337.0002.h5"
 ]
+DL1_LST_old_lstchain = "dl1_LST-1.Run03265.0094.h5"
+
 
 """
 Temporary paths
@@ -383,6 +385,19 @@ def dl1_lst(base_url, env_prefix):
 
 
 @pytest.fixture(scope="session")
+def dl1_lst_old(base_url, env_prefix):
+    download_path = download_file_cached(
+        name=f"LST/{DL1_LST_old_lstchain}",
+        cache_name="magicctapipe",
+        env_prefix=env_prefix,
+        auth=True,
+        default_url=base_url,
+        progress=True,
+    )
+    return download_path
+
+
+@pytest.fixture(scope="session")
 def config():
     config_path = resource_file("test_config.yaml")
     return config_path
@@ -396,7 +411,7 @@ def config_monly():
 
 @pytest.fixture(scope="session")
 def config_gen():
-    config_path = resource_file("test_config_general.yaml")
+    config_path = resource_file("test_config_auto_MCP.yaml")
     with open(config_path, "rb") as f:
         config = yaml.safe_load(f)
     return config
@@ -404,7 +419,7 @@ def config_gen():
 
 @pytest.fixture(scope="session")
 def config_gen_4lst():
-    config_path = resource_file("test_config_general_4LST.yaml")
+    config_path = resource_file("test_config_auto_MCP_4LST.yaml")
     with open(config_path, "rb") as f:
         config = yaml.safe_load(f)
     return config

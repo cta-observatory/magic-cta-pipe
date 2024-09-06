@@ -46,7 +46,9 @@ from ctapipe.containers import (
     TimingParametersContainer,
 )
 from ctapipe.instrument import SubarrayDescription
+from ctapipe.io import read_table, write_table
 from ctapipe.reco import HillasReconstructor
+from lstchain.io import HDF5_ZSTD_FILTERS
 from numpy.linalg import LinAlgError
 
 from magicctapipe.io import (
@@ -142,6 +144,8 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         "mc_tel_ids"
     ]  # This variable becomes a dictionary, e.g.: {'LST-1': 1, 'LST-2': 0, 'LST-3': 0, 'LST-4': 0, 'MAGIC-I': 2, 'MAGIC-II': 3}
 
+    save_images = config.get("save_images", False)
+
     # Load the input file
     logger.info(f"\nInput file: {input_file}")
 
@@ -201,7 +205,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         # Calculate the angular distance
         theta = calculate_pointing_separation(event_data, config)
         theta_uplim = u.Quantity(config_stereo["theta_uplim"])
-
         mask = u.Quantity(theta, unit="deg") < theta_uplim
 
         if all(mask):
@@ -370,6 +373,30 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
     save_pandas_data_in_table(
         event_data, output_file, group_name="/events", table_name="parameters"
     )
+
+    if save_images:
+        tel_ids = np.unique(event_data["tel_id"]).tolist()
+        for tel_id in tel_ids:
+            key = f"/events/dl1/image_{tel_id}"
+            image = read_table(input_file, key)
+            mask = np.zeros(len(image), dtype=bool)
+            tag = "lst" if tel_id in LSTs_IDs else "magic"
+            obs_evt_ids = event_data.query(f"tel_id=={tel_id}")[
+                [f"obs_id_{tag}", f"event_id_{tag}"]
+            ].to_numpy()
+            for obs_id, evt_id in obs_evt_ids:
+                this_mask = np.logical_and(
+                    image["obs_id"] == obs_id, image["event_id"] == evt_id
+                )
+                mask = np.logical_or(mask, this_mask)
+            logger.info(f"found {sum(mask)} images of tel_id={tel_id}")
+            write_table(
+                image[mask],
+                output_file,
+                key,
+                overwrite=True,
+                filters=HDF5_ZSTD_FILTERS,
+            )
 
     # Save the subarray description
     subarray.to_hdf(output_file)
