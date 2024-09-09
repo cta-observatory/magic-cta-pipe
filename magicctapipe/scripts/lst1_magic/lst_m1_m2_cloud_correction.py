@@ -119,7 +119,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         Configuration for the LST-1 + MAGIC analysis
     tel_id : numpy.int16
         LST-1 and MAGIC telescope ids
-    camgeom : str
+    camgeom : ctapipe.instrument.camera.geometry.CameraGeometry
         An instance of the CameraGeometry class containing information about the
         camera's configuration, including pixel type, number of pixels, rotation
         angles, and the reference frame.
