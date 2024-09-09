@@ -92,7 +92,7 @@ def trans_height(x, Hc, dHc, trans):
     Hc : astropy.units.quantity.Quantity
         Height of the base of the cloud a.g.l.
     dHc : astropy.units.quantity.Quantity
-        Cloud thickness in m
+        Cloud thickness
     trans : numpy.float64
         Transmission of the cloud
 
@@ -119,11 +119,11 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         Configuration for the LST-1 + MAGIC analysis
     tel_id : numpy.int16
         LST-1 and MAGIC telescope ids
-    camgeom : ctapipe.instrument.camera.geometry.CameraGeometry
+    camgeom : str
         An instance of the CameraGeometry class containing information about the
         camera's configuration, including pixel type, number of pixels, rotation
         angles, and the reference frame.
-    focal_eff : float
+    focal_eff : astropy.units.quantity.Quantity
         Effective focal length
 
     Returns
@@ -131,6 +131,8 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
     pandas.core.frame.DataFrame
         Data frame of corrected DL1 parameters
     """
+
+    assigned_tel_ids = config["mc_tel_ids"]
 
     correction_params = config.get("cloud_correction", {})
     Hc = u.Quantity(correction_params.get("base_height"))
@@ -143,8 +145,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
     dl1_params = read_table(input_file, "/events/parameters")
     dl1_images = read_table(input_file, "/events/dl1/image_" + str(tel_id))
 
-    focal = focal_eff[tel_id]
-    m2deg = np.rad2deg(1) / focal * u.degree
+    m2deg = np.rad2deg(1) / focal_eff * u.degree
 
     inds = np.where(
         np.logical_and(dl1_params["intensity"] > 0.0, dl1_params["tel_id"] == tel_id)
@@ -154,7 +155,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         obs_id_lst = dl1_params["obs_id_lst"][index]
         event_id = dl1_params["event_id_magic"][index]
         obs_id = dl1_params["obs_id_magic"][index]
-        if tel_id == 1:
+        if assigned_tel_ids["LST-1"] == tel_id:
             event_id, obs_id = event_id_lst, obs_id_lst
 
         pointing_az = dl1_params["pointing_az"][index]
@@ -321,7 +322,7 @@ def main():
     for tel_name, tel_id in tel_ids.items():
         if tel_id != 0:  # Only process telescopes that have a non-zero ID
             df = process_telescope_data(
-                args.input_file, config, tel_id, camgeom[tel_id], focal_eff
+                args.input_file, config, tel_id, camgeom[tel_id], focal_eff[tel_id]
             )
             dfs.append(df)
 
