@@ -155,6 +155,12 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         obs_id_lst = dl1_params["obs_id_lst"][index]
         event_id = dl1_params["event_id_magic"][index]
         obs_id = dl1_params["obs_id_magic"][index]
+        event_id_magic = dl1_params["event_id_magic"][index]
+        obs_id_magic = dl1_params["obs_id_magic"][index]
+        timestamp = dl1_params["timestamp"][index]
+        multiplicity = dl1_params["multiplicity"][index]
+        combo_type = dl1_params["combo_type"][index]
+
         if assigned_tel_ids["LST-1"] == tel_id:
             event_id, obs_id = event_id_lst, obs_id_lst
 
@@ -227,20 +233,34 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         cleanmask = dl1_images["image_mask"][index_img]
         peak_time = dl1_images["peak_time"][index_img]
         image /= trans_pixels
-        corr_image = image
+        corr_image = image.copy()
         corr_image[~cleanmask] = 0
 
         hillas_params = hillas_parameters(camgeom, corr_image)
-        timing_params = timing_parameters(camgeom, corr_image, peak_time, hillas_params)
+        timing_params = timing_parameters(
+            camgeom[cleanmask],
+            corr_image[cleanmask],
+            peak_time[cleanmask],
+            hillas_params,
+        )
         leakage_params = leakage_parameters(camgeom, corr_image, cleanmask)
-        conc_params = concentration_parameters(camgeom, corr_image, hillas_params)
+        if assigned_tel_ids["LST-1"] == tel_id:
+            conc_params = concentration_parameters(
+                camgeom[cleanmask], image[cleanmask], hillas_params
+            )
+        else:
+            conc_params = concentration_parameters(camgeom, image, hillas_params)
 
         event_params = {
             **hillas_params,
             **timing_params,
             **leakage_params,
-            **conc_params,
         }
+
+        prefixed_conc_params = {
+            f"concentration_{key}": value for key, value in conc_params.items()
+        }
+        event_params.update(prefixed_conc_params)
 
         event_info_dict = {
             "obs_id": obs_id,
@@ -251,6 +271,13 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
             "time_diff": time_diff,
             "n_pixels": signal_pixels,
             "n_islands": n_islands,
+            "event_id_lst": event_id_lst,
+            "obs_id_lst": obs_id_lst,
+            "event_id_magic": event_id_magic,
+            "obs_id_magic": obs_id_magic,
+            "combo_type": combo_type,
+            "timestamp": timestamp,
+            "multiplicity": multiplicity,
         }
         event_params.update(event_info_dict)
 
@@ -312,7 +339,7 @@ def main():
         else:
             raise ValueError(f"No optics data found for telescope: {telescope.name}")
 
-    with open("args.config", "r") as file:
+    with open(args.config_file, "r") as file:
         config = yaml.safe_load(file)
 
     tel_ids = config["mc_tel_ids"]
@@ -348,6 +375,8 @@ def main():
 
     for col in columns_to_convert:
         df_all[col] = pd.to_numeric(df_all[col], errors="coerce")
+
+    df_all = df_all.drop(columns=["deviation"], errors="ignore")
 
     save_pandas_data_in_table(
         df_all, args.output_file, group_name="/events", table_name="parameters"
