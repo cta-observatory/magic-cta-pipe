@@ -206,14 +206,13 @@ def main():
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
 
-    
     env_name = config["general"]["env_name"]
     config_file = config["general"]["base_config_file"]
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     target_dir = Path(config["directories"]["workspace_dir"])
-    
+
     if config_file == "":
         config_file = resource_file("config.yaml")
     with open(
