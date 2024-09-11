@@ -234,22 +234,21 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         peak_time = dl1_images["peak_time"][index_img]
         image /= trans_pixels
         corr_image = image.copy()
-        corr_image[~cleanmask] = 0
 
-        hillas_params = hillas_parameters(camgeom, corr_image)
+        clean_image = corr_image[cleanmask]
+        clean_camgeom = camgeom[cleanmask]
+
+        hillas_params = hillas_parameters(clean_camgeom, clean_image)
         timing_params = timing_parameters(
-            camgeom[cleanmask],
-            corr_image[cleanmask],
-            peak_time[cleanmask],
-            hillas_params,
+            clean_camgeom, clean_image, peak_time[cleanmask], hillas_params
         )
         leakage_params = leakage_parameters(camgeom, corr_image, cleanmask)
         if assigned_tel_ids["LST-1"] == tel_id:
             conc_params = concentration_parameters(
-                camgeom[cleanmask], image[cleanmask], hillas_params
-            )
+                clean_camgeom, clean_image, hillas_params
+            )  # "For LST-1 we compute concentration from the cleaned image and for MAGIC from the full image to reproduce the current behaviour in the standard code
         else:
-            conc_params = concentration_parameters(camgeom, image, hillas_params)
+            conc_params = concentration_parameters(camgeom, corr_image, hillas_params)
 
         event_params = {
             **hillas_params,
