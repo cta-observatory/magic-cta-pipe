@@ -88,8 +88,8 @@ def main():
             out_h5,
             key=out_key,
         )
-        if "wobble" in df_old:
-            df_cut["wobble"] = np.nan
+        if "wobble_offset" in df_old:
+            df_cut["wobble_offset"] = np.nan
         df_cut = pd.concat([df_old, df_cut]).drop_duplicates(
             subset="LST1_run", keep="first"
         )

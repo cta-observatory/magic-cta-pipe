@@ -1,5 +1,5 @@
 """
-Add wobble info to the LST database (by checking MAGIC runs).
+Add wobble offset info to the LST database (by checking MAGIC runs).
 
 Usage:
 $ wobble_db (-b YYYYMMDD -e YYYYMMDD)
@@ -68,8 +68,8 @@ def main():
         df = df[df["DATE"].astype(int) >= args.begin]
     if args.end != 0:
         df = df[df["DATE"].astype(int) <= args.end]
-    if "wobble" not in df_LST:
-        df_LST["wobble"] = np.nan
+    if "wobble_offset" not in df_LST:
+        df_LST["wobble_offset"] = np.nan
 
     date_lst = pd.to_datetime(df["DATE"], format="%Y%m%d")
 
@@ -108,18 +108,18 @@ def main():
                 wobble_run = wobble_run_info[2:6]
             else:
                 print(
-                    f"No string matching for wobble found in the name of MAGIC files for {date_magic[i]}, run {magic_runs[j]}, {source}. Check it manually!"
+                    f"No string matching for wobble offset found in the name of MAGIC files for {date_magic[i]}, run {magic_runs[j]}, {source}. Check it manually!"
                 )
                 continue
-            print("Wobble:", wobble_run)
+            print("wobble offset:", wobble_run)
             wobble.append(wobble_run)
         wobble = np.unique(wobble)
         if len(wobble) > 1:
-            print(f"More than one wobble value for LST run {lst_run}: check data!")
+            print(f"More than one wobble offset value for LST run {lst_run}: check data!")
         wobble_str = "[" + "".join(str(x) for x in wobble) + "]"
-        print(f"Wobble for LST run {lst_run}:", wobble_str)
-        df_LST["wobble"] = np.where(
-            df_LST["LST1_run"] == lst_run, wobble_str, df_LST["wobble"]
+        print(f"Wobble offset for LST run {lst_run}:", wobble_str)
+        df_LST["wobble_offset"] = np.where(
+            df_LST["LST1_run"] == lst_run, wobble_str, df_LST["wobble_offset"]
         )
     df_LST.to_hdf(
         out_h5,
