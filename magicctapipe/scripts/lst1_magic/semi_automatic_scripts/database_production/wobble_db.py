@@ -110,7 +110,7 @@ def main():
                 continue
             wobble_run_info = runs[0].split("/")[-1].split(source)[1]
             if "-W" in wobble_run_info:
-                wobble_run = wobble_run_info[2:6]
+                wobble_run = (wobble_run_info.split("W")[1])[0:4]
             else:
                 print(
                     f"No string matching for wobble offset found in the name of MAGIC files for {date_magic[i]}, run {magic_runs[j]}, {source}. Check it manually!"
@@ -123,7 +123,7 @@ def main():
             print(
                 f"More than one wobble offset value for LST run {lst_run}: check data!"
             )
-        wobble_str = "[" + "".join(str(x) for x in wobble) + "]"
+        wobble_str = "[" + ", ".join(str(x) for x in wobble) + "]"
         print(f"Wobble offset for LST run {lst_run}:", wobble_str)
         df_LST["wobble_offset"] = np.where(
             df_LST["LST1_run"] == lst_run, wobble_str, df_LST["wobble_offset"]
