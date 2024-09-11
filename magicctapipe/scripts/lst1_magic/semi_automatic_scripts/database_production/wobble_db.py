@@ -78,7 +78,7 @@ def main():
 
     date_magic = date_magic.dt.strftime("%Y/%m/%d").to_list()
     for i in range(len(df)):
-        magic_runs = (df["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(",")
+        magic_runs = (df["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").replace(' ','').split(",")
         lst_run = (df["LST1_run"].to_list())[i]
         wobble = []
         source = (df["source"].to_list())[i]
@@ -97,10 +97,17 @@ def main():
                     f"Neither M1 nor M2 files could be found for {date_magic[i]}, run {magic_runs[j]}, {source}. Check database and stored data!"
                 )
                 continue
-            wobble_run = runs[0].split("/")[-1].split(source)[1][2:6]
+            wobble_run_info = runs[0].split("/")[-1].split(source)[1]
+            if '-W' in wobble_run_info:
+                wobble_run=wobble_run_info[2:6]
+            else: 
+                print(f'No string matching for wobble found in the name of MAGIC files for {date_magic[i]}, run {magic_runs[j]}, {source}. Check it manually!')
+                continue
             print("Wobble:", wobble_run)
             wobble.append(wobble_run)
-
+        wobble=np.unique(wobble)
+        if len(wobble)>1:
+            print(f'More than one wobble value for LST run {lst_run}: check data!')
         wobble_str = "[" + "".join(str(x) for x in wobble) + "]"
         print(f"Wobble for LST run {lst_run}:", wobble_str)
         df_LST["wobble"] = np.where(
