@@ -115,7 +115,9 @@ def main():
             wobble.append(wobble_run)
         wobble = np.unique(wobble)
         if len(wobble) > 1:
-            print(f"More than one wobble offset value for LST run {lst_run}: check data!")
+            print(
+                f"More than one wobble offset value for LST run {lst_run}: check data!"
+            )
         wobble_str = "[" + "".join(str(x) for x in wobble) + "]"
         print(f"Wobble offset for LST run {lst_run}:", wobble_str)
         df_LST["wobble_offset"] = np.where(
