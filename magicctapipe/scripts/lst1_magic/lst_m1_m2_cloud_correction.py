@@ -153,8 +153,8 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
     for index in inds:
         event_id_lst = dl1_params["event_id_lst"][index]
         obs_id_lst = dl1_params["obs_id_lst"][index]
-        event_id = dl1_params["event_id_magic"][index]
-        obs_id = dl1_params["obs_id_magic"][index]
+        event_id = dl1_params["event_id"][index]
+        obs_id = dl1_params["obs_id"][index]
         event_id_magic = dl1_params["event_id_magic"][index]
         obs_id_magic = dl1_params["obs_id_magic"][index]
         timestamp = dl1_params["timestamp"][index]
@@ -162,7 +162,9 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         combo_type = dl1_params["combo_type"][index]
 
         if assigned_tel_ids["LST-1"] == tel_id:
-            event_id, obs_id = event_id_lst, obs_id_lst
+            event_id_image, obs_id_image = event_id_lst, obs_id_lst
+        else:
+            event_id_image, obs_id_image = event_id_magic, obs_id_magic
 
         pointing_az = dl1_params["pointing_az"][index]
         pointing_alt = dl1_params["pointing_alt"][index]
@@ -221,9 +223,9 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         trans_pixels = transl[ilayer]
 
         inds_img = np.where(
-            (dl1_images["event_id"] == event_id)
+            (dl1_images["event_id"] == event_id_image)
             & (dl1_images["tel_id"] == tel_id)
-            & (dl1_images["obs_id"] == obs_id)
+            & (dl1_images["obs_id"] == obs_id_image)
         )[0]
 
         if len(inds_img) == 0:
