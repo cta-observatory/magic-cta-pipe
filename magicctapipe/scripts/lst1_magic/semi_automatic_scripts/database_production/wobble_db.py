@@ -59,7 +59,7 @@ def main():
         config_dict["database_paths"]["MAGIC+LST1"],
         key=config_dict["database_keys"]["MAGIC+LST1"],
     )  # TODO: put this file in a shared folder
-    '''
+    """
     df2 = pd.read_hdf(
         config_dict["database_paths"]["MAGIC+LST1_bis"],
         key=config_dict["database_keys"]["MAGIC+LST1_bis"],
@@ -68,7 +68,7 @@ def main():
     df = df.sort_values(by=["DATE", "source"])
 
     df = df.reset_index(drop=True)
-    '''
+    """
     if args.begin != 0:
         df = df[df["DATE"].astype(int) >= args.begin]
     if args.end != 0:
