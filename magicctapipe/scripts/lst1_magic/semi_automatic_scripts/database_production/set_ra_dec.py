@@ -2,7 +2,7 @@
 Add, to LST database, infos about coordinates and extension of the sources and MC declination to be used to process the source
 
 Usage:
-$ set_ra_dec (-b YYYYMMDD -e YYYYMMDD -r ra_dict -d dec_dict -m mc_dec -p point_source_dict)
+$ set_ra_dec (-b YYYYMMDD -e YYYYMMDD -s source_dict -m mc_dec)
 """
 
 import argparse
