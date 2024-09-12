@@ -88,6 +88,14 @@ def main():
             out_h5,
             key=out_key,
         )
+        if "ra" in df_old:
+            df_cut["ra"] = np.nan
+        if "dec" in df_old:
+            df_cut["dec"] = np.nan
+        if "MC_dec" in df_old:
+            df_cut["MC_dec"] = np.nan
+        if "point_source" in df_old:
+            df_cut["point_source"] = np.nan
         df_cut = pd.concat([df_old, df_cut]).drop_duplicates(
             subset="LST1_run", keep="first"
         )
