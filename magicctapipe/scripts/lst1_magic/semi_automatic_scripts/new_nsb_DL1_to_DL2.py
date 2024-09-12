@@ -6,7 +6,7 @@ WorkingDirectory/DL2/
 and in the subdirectories therein.
 
 Usage:
-$ python DL1_to_DL2.py -c configuration_file.yaml
+$ python new_DL1_to_DL2.py -c configuration_file.yaml
 
 """
 import argparse
@@ -204,3 +204,6 @@ def main():
                 )
         print(launch_jobs)
         os.system(launch_jobs)
+        
+if __name__ == "__main__":
+    main()

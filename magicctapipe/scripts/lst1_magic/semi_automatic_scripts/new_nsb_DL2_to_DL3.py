@@ -5,7 +5,7 @@ the data level 3.
 
 
 Usage:
-$ python DL2_to_DL3.py -c configuration_file.yaml
+$ python new_DL2_to_DL3.py -c configuration_file.yaml
 
 """
 import argparse
