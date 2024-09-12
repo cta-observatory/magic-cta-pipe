@@ -96,13 +96,9 @@ def main():
         for j in range(len(magic_runs)):
             print("MAGIC run:", magic_runs[j])
             runs = glob.glob(
-                f"/fefs/onsite/common/MAGIC/data/M1/event/Calibrated/{date_magic[i]}/*{magic_runs[j]}*{source}*.root"
+                f"/fefs/onsite/common/MAGIC/data/M[12]/event/Calibrated/{date_magic[i]}/*{magic_runs[j]}*{source}*.root"
             )
 
-            if len(runs) < 1:
-                runs = glob.glob(
-                    f"/fefs/onsite/common/MAGIC/data/M2/event/Calibrated/{date_magic[i]}/*{magic_runs[j]}*{source}*.root"
-                )
             if len(runs) < 1:
                 print(
                     f"Neither M1 nor M2 files could be found for {date_magic[i]}, run {magic_runs[j]}, {source}. Check database and stored data!"
