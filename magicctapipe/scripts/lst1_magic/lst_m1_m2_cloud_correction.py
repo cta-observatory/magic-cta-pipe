@@ -12,8 +12,10 @@ $ python lst_m1_m2_cloud_correction.py
 """
 import argparse
 import logging
+import re
 
 import astropy.units as u
+import ctapipe
 import numpy as np
 import pandas as pd
 import yaml
@@ -28,6 +30,7 @@ from ctapipe.image import (
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table
 
+import magicctapipe
 from magicctapipe.io import save_pandas_data_in_table
 
 logger = logging.getLogger(__name__)
@@ -35,9 +38,41 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
+def save_cloud_correction_params(config, run_number):
+    """
+    Creates a log file and saves the cloud correction parameters from the config file and software information in the log file
+
+    Parameters
+    ----------
+    config : dict
+        Configuration for the LST-1 + MAGIC analysis
+    run_number : str
+        Number of the analysed run
+    """
+    cloud_correction = config.get("cloud_correction", {})
+    log_filename = f"correction_log_{run_number}.log"
+    logging.basicConfig(
+        filename=log_filename,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
+    logging.info(f"Cloud Correction Parameters for Run {run_number}:")
+    logging.info(f"{cloud_correction}")
+
+    with open(f"cloud_correction_params_{run_number}.yaml", "w") as f:
+        yaml.dump(cloud_correction, f, default_flow_style=False)
+
+    ctapipe_version = ctapipe.__version__
+    magicctapipe_version = magicctapipe.__version__
+
+    logging.info(f"ctapipe version: {ctapipe_version}")
+    logging.info(f"magicctapipe version: {magicctapipe_version}")
+
+
 def model0(imp, h, zd):
     """
-    Calculated the geometrical part of the model relating the emission height with the angular distance from the arrival direction
+    Calculates the geometrical part of the model relating the emission height with the angular distance from the arrival direction
 
     Parameters
     ----------
@@ -340,8 +375,13 @@ def main():
         else:
             raise ValueError(f"No optics data found for telescope: {telescope.name}")
 
+    run_number_match = re.search(r"Run\d+\.\d+", args.input_file)
+    run_number = run_number_match.group() if run_number_match else "unknown_run"
+
     with open(args.config_file, "r") as file:
         config = yaml.safe_load(file)
+
+    save_cloud_correction_params(config, run_number)
 
     tel_ids = config["mc_tel_ids"]
 
