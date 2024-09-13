@@ -105,40 +105,33 @@ def main():
                 coord = SkyCoord.from_name("CrabNebula")
             src_dec = coord.dec.degree
             src_ra = coord.ra.degree
-            df_LST["ra"] = np.where(df_LST["source"] == src, src_ra, df_LST["ra"])
-            df_LST["dec"] = np.where(df_LST["source"] == src, src_dec, df_LST["dec"])
+
+        except NameResolveError:
+            print(f"{i}: {src} not found in astropy. Looking to the dictionaries...")
+            if (
+                (src in source_dict.keys())
+                and (source_dict.get(src)[0] != "NaN")
+                and (source_dict.get(src)[1] != "NaN")
+            ):
+                src_ra = float(source_dict.get(src)[0])
+                src_dec = float(source_dict.get(src)[1])
+
+            else:
+                print(
+                    f"\t {i}: {src} RA and/or Dec not in the dictionary. Please update the dictionary"
+                )
+                src_ra = np.nan
+                src_dec = np.nan
+
+            i += 1
+        df_LST["ra"] = np.where(df_LST["source"] == src, src_ra, df_LST["ra"])
+        df_LST["dec"] = np.where(df_LST["source"] == src, src_dec, df_LST["dec"])
+        if not (np.isnan(src_dec)):
             df_LST["MC_dec"] = np.where(
                 df_LST["source"] == src,
                 float(dec_mc[np.argmin(np.abs(src_dec - dec_mc))]),
                 df_LST["MC_dec"],
             )
-        except NameResolveError:
-            print(f"{i}: {src} not found in astropy. Looking to the dictionaries...")
-            if (src in source_dict.keys()) and (source_dict.get(src)[0] != "NaN"):
-                src_ra = float(source_dict.get(src)[0])
-                df_LST["ra"] = np.where(df_LST["source"] == src, src_ra, df_LST["ra"])
-
-            else:
-                print(
-                    f"\t {i}: {src} RA not in the dictionaries. Please add it to the dictionaries"
-                )
-
-            if (src in source_dict.keys()) and (source_dict.get(src)[1] != "NaN"):
-                src_dec = float(source_dict.get(src)[1])
-                df_LST["dec"] = np.where(
-                    df_LST["source"] == src, src_dec, df_LST["dec"]
-                )
-                df_LST["MC_dec"] = np.where(
-                    df_LST["source"] == src,
-                    float(dec_mc[np.argmin(np.abs(src_dec - dec_mc))]),
-                    df_LST["MC_dec"],
-                )
-            else:
-                print(
-                    f"\t {i}: {src} Dec not in the dictionaries. Please add it to the dictionaries"
-                )
-
-            i += 1
     print("\n\nChecking if point source...\n\n")
     i = 0
     for src in sources:
