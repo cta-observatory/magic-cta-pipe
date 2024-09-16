@@ -12,7 +12,8 @@ $ python lst_m1_m2_cloud_correction.py
 """
 import argparse
 import logging
-import re
+import os
+from pathlib import Path
 
 import astropy.units as u
 import ctapipe
@@ -36,38 +37,6 @@ from magicctapipe.io import save_pandas_data_in_table
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
-
-
-def save_cloud_correction_params(config, run_number):
-    """
-    Creates a log file and saves the cloud correction parameters from the config file and software information in the log file
-
-    Parameters
-    ----------
-    config : dict
-        Configuration for the LST-1 + MAGIC analysis
-    run_number : str
-        Number of the analysed run
-    """
-    cloud_correction = config.get("cloud_correction", {})
-    log_filename = f"correction_log_{run_number}.log"
-    logging.basicConfig(
-        filename=log_filename,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-
-    logging.info(f"Cloud Correction Parameters for Run {run_number}:")
-    logging.info(f"{cloud_correction}")
-
-    with open(f"cloud_correction_params_{run_number}.yaml", "w") as f:
-        yaml.dump(cloud_correction, f, default_flow_style=False)
-
-    ctapipe_version = ctapipe.__version__
-    magicctapipe_version = magicctapipe.__version__
-
-    logging.info(f"ctapipe version: {ctapipe_version}")
-    logging.info(f"magicctapipe version: {magicctapipe_version}")
 
 
 def model0(imp, h, zd):
@@ -283,7 +252,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         if assigned_tel_ids["LST-1"] == tel_id:
             conc_params = concentration_parameters(
                 clean_camgeom, clean_image, hillas_params
-            )  # "For LST-1 we compute concentration from the cleaned image and for MAGIC from the full image to reproduce the current behaviour in the standard code
+            )  # "For LST-1 we compute concentration from the cleaned image and for MAGIC from the full image to reproduce the current behaviour in the standard code/home/natti/CTA/lodz_cluster/lstchain_10_11_test/scripts/new/outfiles/dl1_coincidence_stereo_0.75-0.85_03955
         else:
             conc_params = concentration_parameters(camgeom, corr_image, hillas_params)
 
@@ -337,9 +306,9 @@ def main():
     )
 
     parser.add_argument(
-        "--output_file",
+        "--output_dir",
         "-o",
-        dest="output_file",
+        dest="output_dir",
         type=str,
         default="./data",
         help="Path to a directory where to save an output corrected DL1 file",
@@ -375,13 +344,8 @@ def main():
         else:
             raise ValueError(f"No optics data found for telescope: {telescope.name}")
 
-    run_number_match = re.search(r"Run\d+\.\d+", args.input_file)
-    run_number = run_number_match.group() if run_number_match else "unknown_run"
-
     with open(args.config_file, "r") as file:
         config = yaml.safe_load(file)
-
-    save_cloud_correction_params(config, run_number)
 
     tel_ids = config["mc_tel_ids"]
 
@@ -392,6 +356,7 @@ def main():
             df = process_telescope_data(
                 args.input_file, config, tel_id, camgeom[tel_id], focal_eff[tel_id]
             )
+
             dfs.append(df)
 
     df_all = pd.concat(dfs, ignore_index=True)
@@ -419,11 +384,32 @@ def main():
 
     df_all = df_all.drop(columns=["deviation"], errors="ignore")
 
+    Path(args.output_dir).mkdir(exist_ok=True, parents=True)
+    input_file_name = Path(args.input_file).name
+    output_file_name = input_file_name.replace("dl1_stereo", "dl1_corr")
+    output_file = f"{args.output_dir}/{output_file_name}"
+
     save_pandas_data_in_table(
-        df_all, args.output_file, group_name="/events", table_name="parameters"
+        df_all, output_file, group_name="/events", table_name="parameters"
     )
 
-    subarray_info.to_hdf(args.output_file)
+    subarray_info.to_hdf(output_file)
+
+    correction_params = config.get("cloud_correction", {})
+
+    log_dir = args.output_dir
+    log_filename = "cloud_correction.log"
+    log_filepath = os.path.join(log_dir, log_filename)
+
+    logging.basicConfig(
+        filename=log_filepath,
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
+    logging.info(f"Correction parameters: {correction_params}")
+    logging.info(f"ctapipe version: {ctapipe.__version__}")
+    logging.info(f"magicctapipe version: {magicctapipe.__version__}")
 
     logger.info("\nDone.")
 
