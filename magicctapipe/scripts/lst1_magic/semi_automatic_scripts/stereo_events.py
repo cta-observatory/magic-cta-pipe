@@ -57,7 +57,12 @@ def configfile_stereo(target_dir, source_name, config_file):
         "mc_tel_ids": config_dict["mc_tel_ids"],
         "stereo_reco": config_dict["stereo_reco"],
     }
-    file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
+
+    conf_dir = f"{target_dir}/v{__version__}/{source_name}"
+    os.makedirs(conf_dir, exist_ok=True)
+
+    file_name = f"{conf_dir}/config_stereo.yaml"
+
     with open(file_name, "w") as f:
 
         yaml.dump(conf, f, default_flow_style=False)

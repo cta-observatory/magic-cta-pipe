@@ -66,7 +66,10 @@ def configfile_coincidence(target_dir, source_name, config_file):
         "event_coincidence": config_dict["event_coincidence"],
     }
 
-    file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
+    conf_dir = f"{target_dir}/v{__version__}/{source_name}"
+    os.makedirs(conf_dir, exist_ok=True)
+
+    file_name = f"{conf_dir}/config_coincidence.yaml"
 
     with open(file_name, "w") as f:
 
