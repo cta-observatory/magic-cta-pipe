@@ -57,13 +57,18 @@ def configfile_stereo(target_dir, source_name, config_file):
         "mc_tel_ids": config_dict["mc_tel_ids"],
         "stereo_reco": config_dict["stereo_reco"],
     }
-    file_name = f"{target_dir}/v{__version__}/{source_name}/config_stereo.yaml"
+
+    conf_dir = f"{target_dir}/v{__version__}/{source_name}"
+    os.makedirs(conf_dir, exist_ok=True)
+
+    file_name = f"{conf_dir}/config_stereo.yaml"
+
     with open(file_name, "w") as f:
 
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def bash_stereo(target_dir, source, env_name, cluster):
+def bash_stereo(target_dir, source, env_name, cluster, version):
 
     """
     This function generates the bashscripts for running the stereo analysis.
@@ -78,11 +83,13 @@ def bash_stereo(target_dir, source, env_name, cluster):
         Name of the environment
     cluster : str
         Cluster system
+    version : str
+        Version of the input (coincident) data
     """
 
     process_name = source
 
-    coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source}"
+    coincidence_DL1_dir = f"{target_dir}/v{version}/{source}"
 
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
     if cluster != "SLURM":
@@ -92,7 +99,7 @@ def bash_stereo(target_dir, source, env_name, cluster):
         return
     for nightLST in listOfNightsLST:
         night = nightLST.split("/")[-1]
-        stereoDir = f"{coincidence_DL1_dir}/DL1Stereo/{night}"
+        stereoDir = f"{target_dir}/v{__version__}/{source}/DL1Stereo/{night}"
         os.makedirs(f"{stereoDir}/logs", exist_ok=True)
         if not os.listdir(f"{nightLST}"):
             continue
@@ -166,6 +173,9 @@ def main():
     source = config["data_selection"]["source_name_output"]
 
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version == __version__
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -182,7 +192,7 @@ def main():
         # Below we run the analysis on the real data
 
         print("***** Generating the bashscript...")
-        bash_stereo(target_dir, source_name, env_name, cluster)
+        bash_stereo(target_dir, source_name, env_name, cluster, in_version)
 
         print("***** Submitting processess to the cluster...")
         print(f"Process name: {source_name}_stereo")
