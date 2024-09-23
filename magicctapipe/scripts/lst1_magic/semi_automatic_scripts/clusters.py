@@ -4,7 +4,7 @@ Module for generating bash script lines for running analysis in different cluste
 __all__ = ["slurm_lines", "rc_lines"]
 
 
-def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
+def slurm_lines(queue, job_name, array=None, mem=None, out_name=None, nice_parameter=None):
     """
     Function for creating the general lines that slurm scripts are starting with.
 
@@ -20,6 +20,8 @@ def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
         Requested memory. If None cluster default (5 GB) will be used
     out_name : None or str
         If the output should be written to a specific output file
+    nice_parameter : None or int
+        Job priority
 
     Returns
     -------
@@ -35,6 +37,7 @@ def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
         "#SBATCH -n 1\n\n",
         f"#SBATCH --output={out_name}.out\n" if out_name is not None else "",
         f"#SBATCH --error={out_name}.err\n\n" if out_name is not None else "",
+        f"#SBATCH --nice={nice_parameter}\n"
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",

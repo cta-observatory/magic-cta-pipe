@@ -73,7 +73,7 @@ def configfile_coincidence(target_dir, source_name, config_file):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, cluster):
+def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, cluster, Nice_parameter):
 
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -92,6 +92,8 @@ def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, c
         Name of the conda environment
     cluster : str
         Cluster system
+    Nice_parameter : int
+        Job priority
     """
 
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
@@ -143,6 +145,7 @@ def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, c
                     array=process_size,
                     mem="6g",
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
+                    nice_parameter=Nice_parameter,
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
@@ -194,6 +197,7 @@ def main():
     env_name = config["general"]["env_name"]
     LST_version = config["general"]["LST_version"]
     config_file = config["general"]["base_config_file"]
+    nice_parameter = config["general"]["nice"]
 
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
@@ -227,6 +231,7 @@ def main():
                 LST_version,
                 env_name,
                 cluster,
+                nice_parameter,
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")
