@@ -73,8 +73,9 @@ def configfile_coincidence(target_dir, source_name, config_file):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def linking_bash_lst(target_dir, LST_runs, source_name, LST_version, env_name, cluster, Nice_parameter):
-
+def linking_bash_lst(
+    target_dir, LST_runs, source_name, LST_version, env_name, cluster, Nice_parameter
+):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
 
