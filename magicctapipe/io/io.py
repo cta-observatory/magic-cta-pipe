@@ -1422,7 +1422,7 @@ def resource_file(filename):
     return files("magicctapipe").joinpath("resources", filename)
 
 def make_time_select(N_time_magic_start, N_time_magic_end, time_offset_width1, time_offset_width2):
-    time_offset_width1, time_offset_width2 = (
+            time_offset_width1, time_offset_width2 = (
                 time_offset_center - 1.6e-6,
                 time_offset_center + 1.6e-6,
             )
@@ -1464,7 +1464,7 @@ def make_time_select(N_time_magic_start, N_time_magic_end, time_offset_width1, t
                     time_offset_best[n] = initial_time_offset
                 else:
                     time_offset_best[n] = time_offset_best[n - 1]
-    return time_offsets
+            return time_offsets
 
 def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset=None):
     """

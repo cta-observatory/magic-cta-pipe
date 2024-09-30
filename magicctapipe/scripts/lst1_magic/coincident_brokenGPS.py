@@ -36,7 +36,15 @@ import numpy as np
 import pandas as pd
 
 from magicctapipe.io import find_offset
+import yaml
 
+file_dl1_dir = sys.argv[1]
+outdir = "time_offset"
+config = "config.yaml"
+
+with open(config, "r") as yml:
+    config = yaml.safe_load(yml)
+    
 file_dl1_dir = sys.argv[1]
 outdir = "time_offset"
 config = "../../config_dyn.yaml"
