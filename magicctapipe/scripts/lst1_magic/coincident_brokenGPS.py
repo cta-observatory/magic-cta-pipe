@@ -68,7 +68,7 @@ for lst_subrun_file in sorted(glob.glob(file_dl1_dir + "/LST1/dl1_LST*h5")):
     i = i + 1
 
 try:
-    os.mkdir(outdir)
+    os.makedirs(outdir, exist_ok=True) 
 except FileExistsError:
     pass
 
@@ -81,12 +81,14 @@ for magic_subrun_file in sorted(
     data_magic["trigger_time"] = (
         data_magic["time_sec"] + data_magic["time_nanosec"] * 1e-9
     )
-    data_magic_m1 = data_magic.query("tel_id==2")
-    data_magic_m1.reset_index(inplace=True,drop=True)
-    data_magic_m2 = data_magic.query("tel_id==3")
-    data_magic_m2.reset_index(inplace=True,drop=True)
+    tel_id_m1 = config["mc_tel_ids"]["MAGIC-I"]
+    tel_id_m2 = config["mc_tel_ids"]["MAGIC-II"]
+    # JS: better to read the tel_ids from the config file
+    data_magic_m1 = data_magic.query("tel_id==@tel_id_m1")
+    data_magic_m2 = data_magic.query("tel_id==@tel_id_m2")
     magic_subrun_base = magic_subrun_file.split("/")[-1].split(".h5")[0]
-
+    # JS: you use data_magic_m[12] only here, so you can add the query and reset index 
+    # lines from before the for loop inside the loop over the telescopes here.
     data_lst = df_lst_subrun_file_2
 
     for M1_M2 in ["M1", "M2"]:
@@ -94,7 +96,7 @@ for magic_subrun_file in sorted(
             data_magic = data_magic_m1
         else:
             data_magic = data_magic_m2
-
+        # JS: you just reset the index before the for loop, do you need to do it again?
         data_magic.reset_index(inplace=True,drop=True)
         min_t_magic, max_t_magic = min(data_magic["trigger_time"]), max(
             data_magic["trigger_time"]
@@ -111,9 +113,10 @@ for magic_subrun_file in sorted(
             else:
                 data_magic = data_magic.query("@min_t_lst < trigger_time < @max_t_lst")
                 data_magic.reset_index(inplace=True)#,drop=True)
+                # JS: no condition needed for min_t_lst < min_t_magic?
 
         if len(data_magic) > 0:
-            N_begin = data_magic.index[0] - data_magic.index[0]
+            N_begin = 0
             N_final = data_magic.index[-1] - data_magic.index[0]
 
             N_start_ = N_begin
@@ -136,6 +139,8 @@ for magic_subrun_file in sorted(
                         [
                             np.mean(t_magic_all),
                             time_offset_best,
+                            # JS: why is best offset saved twice in the same array ?
+                            # (the same also in a similar code below))
                             time_offset_best,
                             n_coincident,
                         ]
@@ -164,7 +169,10 @@ for magic_subrun_file in sorted(
                 (
                     t_magic_all,
                     time_offset_best,
-                    time_offset_best,
+                    # JS: you assign two different outputs of find_offset to the same variable 
+                    # time_offset_best. If you do not need one of the function outputs you can 
+                    # assign it to _
+                    _,
                     n_coincident,
                 ) = find_offset(
                     data_magic,
@@ -173,6 +181,9 @@ for magic_subrun_file in sorted(
                     N_end=N_end_of_run,
                     initial_time_offset=time_offset_center,
                 )
+                # JS: saving is the same as with output, just the name of the variable is 
+                # different, but maybe you can unify it and save after the if statement 
+                # without code repetition
                 np.save(
                     outfile2.replace("MAGIC", M1_M2),
                     np.array(
@@ -227,12 +238,12 @@ print(df_lst)
 
 def print_gti(df1, df2):
     """
-    This function search the correponting subrun files between LST and MAGIC.
+    This function searches the correponting subrun files between LST and MAGIC.
 
     Parameters
     ----------
     df1, df2 : str
-        Input files which contain the timestamo and run/subrun name of MAGIC and LST.
+        Input files which contain the timestamp and run/subrun name of MAGIC and LST.
 
     Returns
     -------
@@ -257,12 +268,15 @@ def print_gti(df1, df2):
                 s1, e1, s2, e2 = start1, stop1, start2, stop2
             else:
                 s1, e1, s2, e2 = start2, stop2, start1, stop1
-            if (s1 < s2) & (s2 < e1) == True:
+                # JS: the two cases seem to have the same commands, 
+                # you could make a single if with ((..) & (...)) | ((..) & (...)) condition
+            #if (s1 < s2) & (s2 < e1) == True:
+            if ((s1 < s2) & (s2 < e1)) | ((s1 < e2) & (e2 < e1)):
                 subrun_1.append(df1_["run"].values[0])
                 subrun_2.append(df2["run"].values[j])
-            elif (s1 < e2) & (e2 < e1) == True:
-                subrun_1.append(df1_["run"].values[0])
-                subrun_2.append(df2["run"].values[j])
+            #elif (s1 < e2) & (e2 < e1) == True:
+            #    subrun_1.append(df1_["run"].values[0])
+            #    subrun_2.append(df2["run"].values[j])
             j = j + 1
         i = i + 1
     return subrun_1, subrun_2
@@ -271,8 +285,10 @@ def print_gti(df1, df2):
 magic_run, lst_run = print_gti(df_magic, df_lst)
 df = pd.DataFrame({"magic_run": magic_run, "lst_run": lst_run})
 
-if os.path.isdir("log") == False:
-    os.mkdir("log")
+try:
+    os.makedirs(outdir, exist_ok=True) 
+except FileExistsError:
+    pass
 
 print("-- search subrun coincidence --")
 for i in range(0, len(df)):
@@ -370,6 +386,7 @@ for subrun_comb in subrun_combs:
                 outdir,
                 "-o",
                 file_dl1_dir
+                # JS: you can use f"...{...}...." string formating for more compact command
                 + "/dl1_coincidence"
                 + "/dl1_MAGIC.Run"
                 + magic_RunID

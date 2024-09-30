@@ -141,9 +141,9 @@ def telescope_positions(config):
         TEL_POSITIONS[k] = list(np.round(np.asarray(v) - average_xyz, 2)) * u.m
     return TEL_POSITIONS
 
-
+"""
 def func1(X, a, b):
-    """
+    
     The linear function to fit the MAGIC timestamp and difference from LST.
 
     Parameters
@@ -159,14 +159,14 @@ def func1(X, a, b):
     -------
     float
         The time offset value obtained from the MAGIC timestamp
-    """
+    
 
     Y = a + b * X
     return Y
-
+"""
 
 def event_coincidence(
-    input_file_lst, input_dir_magic, output_dir, input_dir_toff, config
+    input_file_lst, input_dir_magic, output_dir, input_dir_toff=None, config
 ):
     """
     Searches for coincident events from LST and MAGIC joint
@@ -260,7 +260,10 @@ def event_coincidence(
     timestamps_lst_arr = [timestamps_lst, timestamps_lst]
 
     # Loop over every telescope combination
-    tel_ids = np.unique(event_data_magic.index.get_level_values("tel_id"))
+    #tel_ids = np.unique(event_data_magic.index.get_level_values("tel_id"))
+    tel_id_m1 = config["mc_tel_ids"]["MAGIC-I"]
+    tel_id_m2 = config["mc_tel_ids"]["MAGIC-II"]
+    tel_ids = [tel_id_m1, tel_id_m2]
 
     for tel_id in tel_ids:
         tel_name = TEL_NAMES[tel_id]
@@ -275,16 +278,14 @@ def event_coincidence(
             files_toff = glob.glob(
                 input_dir_toff + "/*M" + str(tel_id - 1) + "*_detail.npy"
             )
-            # files_toff = glob.glob(input_dir_toff)
-            print(files_toff)
-            i = 0
-            for file_toff in files_toff:
+            # JS: you can use enumerate
+            for i, file_toff in enumerate(files_toff): #files_toff:
                 file_npy = np.load(file_toff)
                 if i == 0:
                     file_npy_ = file_npy
-                if i != 0:
+                else:
                     file_npy_ = np.hstack([file_npy, file_npy_])
-                i += 1
+                    
             df_toff = pd.DataFrame(
                 file_npy_.T, columns=["timestamp", "toff1", "toff2", "n"]
             )
@@ -292,10 +293,11 @@ def event_coincidence(
                 float(min(timestamps_magic)) / 1e9,
                 float(max(timestamps_magic)) / 1e9,
             )
-            timestamps_magic_min, timestamps_magic_max = (
-                timestamps_magic_min,
-                timestamps_magic_max,
-            )
+            # JS: why do you assign it to the same variables?
+            #timestamps_magic_min, timestamps_magic_max = (
+            #    timestamps_magic_min,
+            #    timestamps_magic_max,
+            #)
             df_toff = df_toff.query(
                 "@timestamps_magic_min<timestamp<@timestamps_magic_max"
             )
@@ -307,7 +309,11 @@ def event_coincidence(
             t0 = min(x)
             x = x - t0
             y = time_offset_plus[select]
-            popt, pcov = curve_fit(func1, x, y)
+            # JS: since you are doing linear fit np.polyfit(x, y, 1) or even better 
+            # Polynomial.fit should be simpler, probably faster and more relaible and will 
+            # not require defining func1
+            #popt, pcov = curve_fit(func1, x, y)
+            popt = np.polyfit(x, y, 1)
             zero_offset = popt[0]  # sec
             drift_speed = popt[1]  # sec/sec
 
@@ -329,7 +335,7 @@ def event_coincidence(
             t0_sec = np.array(t0_sec) * SEC2NSEC
             t0_sec = u.Quantity(t0_sec, unit="ns", dtype=int)
             timestamps_lst = timestamps_lst_arr[tel_id - 2] - t0_sec
-
+        # JS: this is using tel_id = 2 and 3 for MAGIC-I and MAGIC-II, better to read it from the config
         timestamps_magic = u.Quantity(timestamps_magic, unit="ns", dtype=int)
 
         df_magic["timestamp"] = timestamps_magic.to_value("s")
