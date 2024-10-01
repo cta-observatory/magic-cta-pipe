@@ -44,10 +44,7 @@ config = "config.yaml"
 
 with open(config, "r") as yml:
     config = yaml.safe_load(yml)
-    
-file_dl1_dir = sys.argv[1]
-outdir = "time_offset"
-config = "../../config_dyn.yaml"
+
 
 magic_run = int(
     pd.read_hdf(

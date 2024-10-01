@@ -1513,7 +1513,7 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
             # compute time difference with all the combinations
             comb_array = np.array(np.meshgrid(t_lst_all, t_magic_all)).reshape(2, -1)
             time_offsets = comb_array[0] - comb_array[1]
-            logger.info("size of combination array: ", np.shape(time_offsets))
+            logger.info(f"size of combination array: {time_offsets}")
             time_window = 500e-9
             b = np.array(
                 [np.sum(np.abs(time_offsets - T) < time_window) for T in time_offsets]
@@ -1521,9 +1521,9 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
             n_coincident = np.max(b)
             time_offset_best = np.mean(time_offsets[b == np.max(b)])
             std_b = np.std(b)
-            logger.info("time offset: ", time_offset_best)
-            logger.info("# of coincident events: ", n_coincident)
-            logger.info("standard deviation: ", std_b)
+            logger.info(f"time offset: {time_offset_best}")
+            logger.info(f"# of coincident events: {n_coincident}")
+            logger.info(f"standard deviation: {std_b}")
             return t_magic_all, N_start, time_offset_best, n_coincident
         else:
             logger.info("No event was found")
