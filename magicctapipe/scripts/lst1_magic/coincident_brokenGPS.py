@@ -45,6 +45,8 @@ config = "config.yaml"
 with open(config, "r") as yml:
     config = yaml.safe_load(yml)
 
+if os.path.isdir("log") == False:
+    os.mkdir("log")
 
 magic_run = int(
     pd.read_hdf(
@@ -59,8 +61,7 @@ lst_run = int(
 )
 magic_run, lst_run = str(magic_run).zfill(8), str(lst_run).zfill(5)
 
-i = 0
-for lst_subrun_file in sorted(glob.glob(file_dl1_dir + "/LST1/dl1_LST*h5")):
+for i, lst_subrun_file in enumerate(sorted(glob.glob(file_dl1_dir + "/LST1/dl1_LST*h5"))):
     df_lst_subrun_file = pd.read_hdf(
         lst_subrun_file, key="/dl1/event/telescope/parameters/LST_LSTCam"
     )
@@ -70,7 +71,6 @@ for lst_subrun_file in sorted(glob.glob(file_dl1_dir + "/LST1/dl1_LST*h5")):
         df_lst_subrun_file_2 = df_lst_subrun_file
     else:
         df_lst_subrun_file_2 = pd.concat([df_lst_subrun_file_2, df_lst_subrun_file])
-    i = i + 1
 
 try:
     os.makedirs(outdir, exist_ok=True) 
@@ -88,11 +88,11 @@ for magic_subrun_file in sorted(
     )
     tel_id_m1 = config["mc_tel_ids"]["MAGIC-I"]
     tel_id_m2 = config["mc_tel_ids"]["MAGIC-II"]
-    # JS: better to read the tel_ids from the config file
+    ## JS: better to read the tel_ids from the config file
     data_magic_m1 = data_magic.query("tel_id==@tel_id_m1")
     data_magic_m2 = data_magic.query("tel_id==@tel_id_m2")
     magic_subrun_base = magic_subrun_file.split("/")[-1].split(".h5")[0]
-    # JS: you use data_magic_m[12] only here, so you can add the query and reset index 
+    ## JS: you use data_magic_m[12] only here, so you can add the query and reset index 
     # lines from before the for loop inside the loop over the telescopes here.
     data_lst = df_lst_subrun_file_2
 
@@ -101,7 +101,7 @@ for magic_subrun_file in sorted(
             data_magic = data_magic_m1
         else:
             data_magic = data_magic_m2
-        # JS: you just reset the index before the for loop, do you need to do it again?
+        ## JS: you just reset the index before the for loop, do you need to do it again?
         data_magic.reset_index(inplace=True,drop=True)
         min_t_magic, max_t_magic = min(data_magic["trigger_time"]), max(
             data_magic["trigger_time"]
@@ -117,8 +117,15 @@ for magic_subrun_file in sorted(
                 )
             else:
                 data_magic = data_magic.query("@min_t_lst < trigger_time < @max_t_lst")
-                data_magic.reset_index(inplace=True)#,drop=True)
-                # JS: no condition needed for min_t_lst < min_t_magic?
+                ## JS: no condition needed for min_t_lst < min_t_magic?
+        else:
+            if max_t_magic < max_t_lst:
+                data_magic = data_magic.query(
+                    "@min_t_magic < trigger_time < @max_t_magic"
+                )
+            else:
+                data_magic = data_magic.query("@min_t_magic < trigger_time < @max_t_lst")
+        data_magic.reset_index(inplace=True)
 
         if len(data_magic) > 0:
             N_begin = 0
@@ -138,19 +145,21 @@ for magic_subrun_file in sorted(
             )
 
             if n_coincident != 0:
+                """
                 np.save(
                     outfile.replace("MAGIC", M1_M2),
                     np.array(
                         [
                             np.mean(t_magic_all),
                             time_offset_best,
-                            # JS: why is best offset saved twice in the same array ?
+                            ## JS: why is best offset saved twice in the same array ?
                             # (the same also in a similar code below))
-                            time_offset_best,
+                            _,
                             n_coincident,
                         ]
                     ),
                 )
+                """
                 time_offset_center = np.load(outfile.replace("MAGIC", M1_M2))[2]
                 N_end_of_run = N_final
                 print(
@@ -174,7 +183,7 @@ for magic_subrun_file in sorted(
                 (
                     t_magic_all,
                     time_offset_best,
-                    # JS: you assign two different outputs of find_offset to the same variable 
+                    ## JS: you assign two different outputs of find_offset to the same variable 
                     # time_offset_best. If you do not need one of the function outputs you can 
                     # assign it to _
                     _,
@@ -259,9 +268,9 @@ def print_gti(df1, df2):
         df2["start"],
         df2["stop"],
     )
-    i = 0
+    
     subrun_1, subrun_2 = [], []
-    for run_ in df1["run"].values:
+    for i, run_ in enumerate(df1["run"].values):
         df1_ = df1.query("run==@run_")
         start1, stop1 = df1_["start"], df1_["stop"]
         start1, stop1 = float(start1.iloc[0]), float(stop1.iloc[0])
@@ -273,7 +282,7 @@ def print_gti(df1, df2):
                 s1, e1, s2, e2 = start1, stop1, start2, stop2
             else:
                 s1, e1, s2, e2 = start2, stop2, start1, stop1
-                # JS: the two cases seem to have the same commands, 
+                ## JS: the two cases seem to have the same commands, 
                 # you could make a single if with ((..) & (...)) | ((..) & (...)) condition
             #if (s1 < s2) & (s2 < e1) == True:
             if ((s1 < s2) & (s2 < e1)) | ((s1 < e2) & (e2 < e1)):
@@ -283,7 +292,6 @@ def print_gti(df1, df2):
             #    subrun_1.append(df1_["run"].values[0])
             #    subrun_2.append(df2["run"].values[j])
             j = j + 1
-        i = i + 1
     return subrun_1, subrun_2
 
 
@@ -364,14 +372,7 @@ for subrun_comb in subrun_combs:
             # Make a MAGIC directory for input it in lst_magic_event_coincidence.py
             os.system(
                 "ln -s "
-                + pwd
-                + file_dl1_dir
-                + "/MAGIC/dl1_MAGIC.Run"
-                + magic_RunID
-                + "."
-                + magic_run
-                + ".h5 "
-                + magic_path
+                + f"{pwd}{file_dl1_dir}/MAGIC/dl1_MAGIC.Run{magic_RunID}.{magic_run}.h5 {magic_path}"
             )
 
         """
@@ -382,7 +383,7 @@ for subrun_comb in subrun_combs:
                 "python",
                 "lst1_magic_event_coincidence.py",
                 "-l",
-                lst_dir_name + "/dl1_LST-1.Run" + lst_RunID + "." + lst_run + ".h5",
+                f"{lst_dir_name}/dl1_LST-1.Run{lst_RunID}.{lst_run}.h5",
                 "-m",
                 magic_path,
                 "-c",
@@ -390,18 +391,8 @@ for subrun_comb in subrun_combs:
                 "-t",
                 outdir,
                 "-o",
-                file_dl1_dir
-                # JS: you can use f"...{...}...." string formating for more compact command
-                + "/dl1_coincidence"
-                + "/dl1_MAGIC.Run"
-                + magic_RunID
-                + "."
-                + magic_run
-                + "_LST-1.Run"
-                + lst_RunID
-                + "."
-                + lst_run
-                + ".h5",
+                f"{file_dl1_dir}/dl1_coincidence/dl1_MAGIC.Run{magic_RunID}.{magic_run}_LST-1.Run{lst_RunID}.{lst_run}.h5",
+                ## JS: you can use f"...{...}...." string formating for more compact command
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -410,13 +401,13 @@ for subrun_comb in subrun_combs:
 
         # Make a log file
         with open(
-            "log/coincidence_magic_" + magic_run + "_lst_" + lst_run + ".txt", "w"
+            f"log/coincidence_magic_{magic_run}_lst_{lst_run}.txt", "w"
         ) as f:
             f.write(output.stderr)
 
         if os.path.isdir(magic_path) == True:
             os.remove(
-                magic_path + "/dl1_MAGIC.Run" + magic_RunID + "." + magic_run + ".h5"
+                f"{magic_path}/dl1_MAGIC.Run{magic_RunID}.{magic_run}.h5"
             )
             os.rmdir(magic_path)
 
@@ -427,11 +418,11 @@ for subrun_comb in subrun_combs:
             [
                 "sbatch",
                 "job_wrapper.sh",
-                lst_dir_name + "/dl1_LST-1.Run" + lst_RunID + "." + lst_run + ".h5",
+                f"{lst_dir_name}/dl1_LST-1.Run{lst_RunID}.{lst_run}.h5",
                 magic_path,
                 config,
                 outdir,
-                file_dl1_dir + "/dl1_coincidence" + "/dl1_MAGIC.Run" + magic_RunID + "." + magic_run + "_LST-1.Run" + lst_RunID + "." + lst_run + ".h5",
+                f"{file_dl1_dir}/dl1_coincidence/dl1_MAGIC.Run{magic_RunID}.{magic_run}_LST-1.Run{lst_RunID}.{lst_run}.h5",
             ])
 
 
