@@ -4,9 +4,7 @@ Module for generating bash script lines for running analysis in different cluste
 __all__ = ["slurm_lines", "rc_lines"]
 
 
-def slurm_lines(
-    queue, job_name, nice_parameter, array=None, mem=None, out_name=None
-):
+def slurm_lines(queue, job_name, nice_parameter, array=None, mem=None, out_name=None):
 
     """
     Function for creating the general lines that slurm scripts are starting with.
