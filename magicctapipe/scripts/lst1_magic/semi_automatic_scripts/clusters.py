@@ -5,7 +5,7 @@ __all__ = ["slurm_lines", "rc_lines"]
 
 
 def slurm_lines(
-    queue, job_name, array=None, mem=None, out_name=None, nice_parameter
+    queue, job_name, nice_parameter, array=None, mem=None, out_name=None
 ):
 
     """
@@ -17,14 +17,14 @@ def slurm_lines(
         Name of the queue
     job_name : str
         Job name
+    nice_parameter : int
+        Job priority
     array : None or int
         If not none array of jobs from 0 to array will be made
     mem : None or str
         Requested memory. If None cluster default (5 GB) will be used
     out_name : None or str
         If the output should be written to a specific output file
-    nice_parameter : int
-        Job priority
 
     Returns
     -------

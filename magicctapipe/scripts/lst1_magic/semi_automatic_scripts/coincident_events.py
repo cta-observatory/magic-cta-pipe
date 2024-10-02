@@ -143,10 +143,10 @@ def linking_bash_lst(
                 slurm = slurm_lines(
                     queue="short",
                     job_name=f"{source_name}_coincidence",
+                    nice_parameter=nice,
                     array=process_size,
                     mem="6g",
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
-                    nice_parameter=nice,
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",

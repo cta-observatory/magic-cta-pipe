@@ -113,10 +113,10 @@ def bash_stereo(target_dir, source, env_name, cluster, nice):
         slurm = slurm_lines(
             queue="short",
             job_name=f"{process_name}_stereo",
+            nice_parameter=nice,
             array=process_size,
             mem="2g",
             out_name=f"{stereoDir}/logs/slurm-%x.%A_%a",
-            nice_parameter=nice,
         )
         rc = rc_lines(
             store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",

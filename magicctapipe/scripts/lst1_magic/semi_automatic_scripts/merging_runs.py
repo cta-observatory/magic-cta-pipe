@@ -66,9 +66,9 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, nice):
     lines = slurm_lines(
         queue="short",
         job_name=process_name,
+        nice_parameter=nice,
         mem="2g",
         out_name=f"{MAGIC_DL1_dir}/Merged/logs/slurm-%x.%j",
-        nice_parameter=nice,
     )
     os.makedirs(f"{MAGIC_DL1_dir}/Merged/logs", exist_ok=True)
 

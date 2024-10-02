@@ -64,9 +64,9 @@ def MergeStereo(target_dir, env_name, source, cluster, nice):
         slurm = slurm_lines(
             queue="short",
             job_name=f"{process_name}_stereo_merge",
+            nice_parameter=nice,
             mem="2g",
             out_name=f"{stereoMergeDir}/logs/slurm-%x.%A_%a",
-            nice_parameter=nice,
         )
         rc = rc_lines(
             store=f"{nightLST} ${{SLURM_JOB_ID}}", out=f"{stereoMergeDir}/logs/list"

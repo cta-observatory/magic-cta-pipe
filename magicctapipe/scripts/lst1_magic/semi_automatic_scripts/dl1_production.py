@@ -107,8 +107,8 @@ def lists_and_bash_gen_MAGIC(
     lines = slurm_lines(
         queue="short",
         job_name=process_name,
-        out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
         nice_parameter=nice,
+        out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
@@ -137,10 +137,10 @@ def lists_and_bash_gen_MAGIC(
                 slurm = slurm_lines(
                     queue="short",
                     job_name=process_name,
+                    nice_parameter=nice,
                     array=number_of_nodes,
                     mem="2g",
                     out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
-                    nice_parameter=nice,
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
