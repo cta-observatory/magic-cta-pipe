@@ -74,7 +74,7 @@ def configfile_coincidence(target_dir, source_name, config_file):
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, cluster, Nice_parameter
+    target_dir, LST_runs, source_name, LST_version, env_name, cluster, nice
 ):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -93,7 +93,7 @@ def linking_bash_lst(
         Name of the conda environment
     cluster : str
         Cluster system
-    Nice_parameter : int
+    nice : int or None
         Job priority
     """
 
@@ -146,7 +146,7 @@ def linking_bash_lst(
                     array=process_size,
                     mem="6g",
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
-                    nice_parameter=Nice_parameter,
+                    nice_parameter=nice,
                 )
                 rc = rc_lines(
                     store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",

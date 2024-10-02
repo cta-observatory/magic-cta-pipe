@@ -5,7 +5,7 @@ __all__ = ["slurm_lines", "rc_lines"]
 
 
 def slurm_lines(
-    queue, job_name, array=None, mem=None, out_name=None, nice_parameter=None
+    queue, job_name, array=None, mem=None, out_name=None, nice_parameter
 ):
 
     """
@@ -23,7 +23,7 @@ def slurm_lines(
         Requested memory. If None cluster default (5 GB) will be used
     out_name : None or str
         If the output should be written to a specific output file
-    nice_parameter : None or int
+    nice_parameter : int
         Job priority
 
     Returns
@@ -40,7 +40,7 @@ def slurm_lines(
         "#SBATCH -n 1\n\n",
         f"#SBATCH --output={out_name}.out\n" if out_name is not None else "",
         f"#SBATCH --error={out_name}.err\n\n" if out_name is not None else "",
-        f"#SBATCH --nice={nice_parameter}\n",
+        f"#SBATCH --nice={nice_parameter}\n" if out_name is not None else "",
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",

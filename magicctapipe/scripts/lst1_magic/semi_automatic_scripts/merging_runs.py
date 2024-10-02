@@ -33,7 +33,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, MAGIC_runs, env_name, source, cluster, Nice_parameter):
+def merge(target_dir, MAGIC_runs, env_name, source, cluster, nice):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py for real data
@@ -50,7 +50,7 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, Nice_parameter):
         Target name
     cluster : str
         Cluster system
-    Nice_parameter : int
+    nice : int or None
         Job priority
     """
 
@@ -68,7 +68,7 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, Nice_parameter):
         job_name=process_name,
         mem="2g",
         out_name=f"{MAGIC_DL1_dir}/Merged/logs/slurm-%x.%j",
-        nice_parameter=Nice_parameter,
+        nice_parameter=nice,
     )
     os.makedirs(f"{MAGIC_DL1_dir}/Merged/logs", exist_ok=True)
 

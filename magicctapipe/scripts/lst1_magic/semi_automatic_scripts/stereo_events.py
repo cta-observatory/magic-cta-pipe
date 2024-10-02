@@ -63,7 +63,7 @@ def configfile_stereo(target_dir, source_name, config_file):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def bash_stereo(target_dir, source, env_name, cluster, Nice_parameter):
+def bash_stereo(target_dir, source, env_name, cluster, nice):
 
     """
     This function generates the bashscripts for running the stereo analysis.
@@ -78,7 +78,7 @@ def bash_stereo(target_dir, source, env_name, cluster, Nice_parameter):
         Name of the environment
     cluster : str
         Cluster system
-    Nice_parameter : int
+    nice : int or None
         Job priority
     """
 
@@ -116,7 +116,7 @@ def bash_stereo(target_dir, source, env_name, cluster, Nice_parameter):
             array=process_size,
             mem="2g",
             out_name=f"{stereoDir}/logs/slurm-%x.%A_%a",
-            nice_parameter=Nice_parameter,
+            nice_parameter=nice,
         )
         rc = rc_lines(
             store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
