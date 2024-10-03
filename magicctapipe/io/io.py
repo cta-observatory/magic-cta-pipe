@@ -1542,10 +1542,6 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
                 time_offset_center = initial_time_offset
             N_start_2 = n * EVENT_STEP
             N_end_2 = (n + 1) * EVENT_STEP
-            #JS: what you do in each step is very similar to what you do at the beginning of 
-            #the function with initial_time_offset None, maybe you can extract this into a 
-            #separate function, or do the first case as 1 iteration case of multiple 
-            #iterations?
             time_offset_width1, time_offset_width2 = (
                 time_offset_center - 1.6e-6,
                 time_offset_center + 1.6e-6,

@@ -8,7 +8,7 @@ In this script we use the subrun files of MAGIC and LST as input files, and make
 It will take few tens of minutes to make each npy files. Basically, each MAGIC run contains ~10 subruns and so this step take few hours to be finished.
 
 Usage:
-$ python lst1_magic_event_coincidence.py data
+$ python coincident_brokenGPS.py data
 
 If you have some runs the input data directory should be separated for each run and use them to save the time, as like,
 data1/LST/
@@ -21,9 +21,9 @@ dl1_LST-1.Run17221.0000.h5 dl1_LST-1.Run17221.0001.h5 ...
 data2/MAGIC/
 dl1_MAGIC.Run05114134.001.h5 dl1_MAGIC.Run05114134.002.h5 ...
 
-$ python lst1_magic_event_coincidence.py data1
+$ python coincident_brokenGPS.py data1
 In parallel,
-$ python lst1_magic_event_coincidence.py data2
+$ python coincident_brokenGPS.py data2
 ...
 """
 
@@ -40,9 +40,9 @@ import yaml
 
 file_dl1_dir = sys.argv[1]
 outdir = "time_offset"
-config = "config.yaml"
+config_file = "config.yaml"
 
-with open(config, "r") as yml:
+with open(config_file, "r") as yml:
     config = yaml.safe_load(yml)
 
 if os.path.isdir("log") == False:
@@ -88,12 +88,9 @@ for magic_subrun_file in sorted(
     )
     tel_id_m1 = config["mc_tel_ids"]["MAGIC-I"]
     tel_id_m2 = config["mc_tel_ids"]["MAGIC-II"]
-    ## JS: better to read the tel_ids from the config file
     data_magic_m1 = data_magic.query("tel_id==@tel_id_m1")
     data_magic_m2 = data_magic.query("tel_id==@tel_id_m2")
     magic_subrun_base = magic_subrun_file.split("/")[-1].split(".h5")[0]
-    ## JS: you use data_magic_m[12] only here, so you can add the query and reset index 
-    # lines from before the for loop inside the loop over the telescopes here.
     data_lst = df_lst_subrun_file_2
 
     for M1_M2 in ["M1", "M2"]:
@@ -101,7 +98,6 @@ for magic_subrun_file in sorted(
             data_magic = data_magic_m1
         else:
             data_magic = data_magic_m2
-        ## JS: you just reset the index before the for loop, do you need to do it again?
         data_magic.reset_index(inplace=True,drop=True)
         min_t_magic, max_t_magic = min(data_magic["trigger_time"]), max(
             data_magic["trigger_time"]
@@ -117,7 +113,6 @@ for magic_subrun_file in sorted(
                 )
             else:
                 data_magic = data_magic.query("@min_t_lst < trigger_time < @max_t_lst")
-                ## JS: no condition needed for min_t_lst < min_t_magic?
         else:
             if max_t_magic < max_t_lst:
                 data_magic = data_magic.query(
@@ -134,8 +129,6 @@ for magic_subrun_file in sorted(
             N_start_ = N_begin
             N_end_ = N_start_ + 15
 
-            print(N_start_, N_end_)
-            print(data_magic[N_start_:N_end_]) 
             # This output file will be used for the next detailed offset search
             outfile = (
                 outdir + "/" + magic_subrun_base + "_" + str(N_start_) + "_init.npy"
@@ -145,30 +138,19 @@ for magic_subrun_file in sorted(
             )
 
             if n_coincident != 0:
-                """
                 np.save(
                     outfile.replace("MAGIC", M1_M2),
                     np.array(
                         [
                             np.mean(t_magic_all),
                             time_offset_best,
-                            ## JS: why is best offset saved twice in the same array ?
-                            # (the same also in a similar code below))
-                            _,
                             n_coincident,
                         ]
                     ),
                 )
-                """
-                time_offset_center = np.load(outfile.replace("MAGIC", M1_M2))[2]
+                time_offset_center = np.load(outfile.replace("MAGIC", M1_M2))[1]
                 N_end_of_run = N_final
-                print(
-                    "Simultaneous MAGIC+LST1 obs from MAGIC evt index",
-                    N_start_,
-                    "to",
-                    N_end_of_run,
-                )
-
+                
                 # This output file will be loaded by the lst_magic_event_coincidence.py
                 outfile2 = (
                     outdir
@@ -182,11 +164,8 @@ for magic_subrun_file in sorted(
                 )
                 (
                     t_magic_all,
-                    time_offset_best,
-                    ## JS: you assign two different outputs of find_offset to the same variable 
-                    # time_offset_best. If you do not need one of the function outputs you can 
-                    # assign it to _
                     _,
+                    time_offset_best,
                     n_coincident,
                 ) = find_offset(
                     data_magic,
@@ -195,16 +174,13 @@ for magic_subrun_file in sorted(
                     N_end=N_end_of_run,
                     initial_time_offset=time_offset_center,
                 )
-                # JS: saving is the same as with output, just the name of the variable is 
-                # different, but maybe you can unify it and save after the if statement 
-                # without code repetition
                 np.save(
                     outfile2.replace("MAGIC", M1_M2),
                     np.array(
-                        [t_magic_all, time_offset_best, time_offset_best, n_coincident]
+                        [t_magic_all, time_offset_best, n_coincident]
                     ),
                 )
-
+                
 # Create the coincident dl1 files
 magic_dir_name = file_dl1_dir + "/MAGIC/"
 lst_dir_name = file_dl1_dir + "/LST1/"
@@ -231,9 +207,7 @@ for magic_data in magic_dataset:
     run_m.append(int(data_magic["obs_id"].mean()))
 
 df_magic = pd.DataFrame({"start": start_m, "stop": stop_m, "run": run_m})
-df_magic = df_magic.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()#drop=True)
-
-print(df_magic)
+df_magic = df_magic.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()
 
 lst_dataset = glob.glob(lst_dir_name + "/*h5")
 lst_dataset = sorted(lst_dataset)
@@ -245,10 +219,7 @@ for lst_data in lst_dataset:
     run_l.append(int(data_lst["obs_id"].mean()))
 
 df_lst = pd.DataFrame({"start": start_l, "stop": stop_l, "run": run_l})
-df_lst = df_lst.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()#drop=True)
-
-print(df_lst)
-
+df_lst = df_lst.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()
 
 def print_gti(df1, df2):
     """
@@ -282,15 +253,9 @@ def print_gti(df1, df2):
                 s1, e1, s2, e2 = start1, stop1, start2, stop2
             else:
                 s1, e1, s2, e2 = start2, stop2, start1, stop1
-                ## JS: the two cases seem to have the same commands, 
-                # you could make a single if with ((..) & (...)) | ((..) & (...)) condition
-            #if (s1 < s2) & (s2 < e1) == True:
             if ((s1 < s2) & (s2 < e1)) | ((s1 < e2) & (e2 < e1)):
                 subrun_1.append(df1_["run"].values[0])
                 subrun_2.append(df2["run"].values[j])
-            #elif (s1 < e2) & (e2 < e1) == True:
-            #    subrun_1.append(df1_["run"].values[0])
-            #    subrun_2.append(df2["run"].values[j])
             j = j + 1
     return subrun_1, subrun_2
 
@@ -303,7 +268,6 @@ try:
 except FileExistsError:
     pass
 
-print("-- search subrun coincidence --")
 for i in range(0, len(df)):
     lst_RunID = str(df["lst_run"][i]).zfill(5)
     magic_RunID = str(df["magic_run"][i]).zfill(8)
@@ -361,8 +325,6 @@ for subrun_comb in subrun_combs:
     for i in range(len(df)):
         magic_run = df["magic_subrun"].values[i]
         lst_run = df["lst_subrun"].values[i]
-        print("--" + str(i + 1) + "/" + str(len(df)) + "--")
-        print("MAGIC: subrun:", magic_run, "&", "LST subrun:", lst_run)
         magic_run, lst_run = str(magic_run).zfill(3), str(lst_run).zfill(4)
         magic_path = (
             magic_dir_name + "/dl1_MAGIC.Run" + magic_RunID + "." + magic_run + "/"
@@ -375,7 +337,7 @@ for subrun_comb in subrun_combs:
                 + f"{pwd}{file_dl1_dir}/MAGIC/dl1_MAGIC.Run{magic_RunID}.{magic_run}.h5 {magic_path}"
             )
 
-        """
+        
         # Run the coincidence script
         # PLEASE REWRITE THIS according to your analysis environment (e.g., SLURM)
         output = subprocess.run(
@@ -387,18 +349,16 @@ for subrun_comb in subrun_combs:
                 "-m",
                 magic_path,
                 "-c",
-                config,
+                config_file,
                 "-t",
                 outdir,
                 "-o",
                 f"{file_dl1_dir}/dl1_coincidence/dl1_MAGIC.Run{magic_RunID}.{magic_run}_LST-1.Run{lst_RunID}.{lst_run}.h5",
-                ## JS: you can use f"...{...}...." string formating for more compact command
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
         )
-
         # Make a log file
         with open(
             f"log/coincidence_magic_{magic_run}_lst_{lst_run}.txt", "w"
@@ -420,12 +380,11 @@ for subrun_comb in subrun_combs:
                 "job_wrapper.sh",
                 f"{lst_dir_name}/dl1_LST-1.Run{lst_RunID}.{lst_run}.h5",
                 magic_path,
-                config,
+                config_file,
                 outdir,
                 f"{file_dl1_dir}/dl1_coincidence/dl1_MAGIC.Run{magic_RunID}.{magic_run}_LST-1.Run{lst_RunID}.{lst_run}.h5",
             ])
-
+        """
 
         ## job_wrapper.sh is,
         # python lst1_magic_event_coincidence.py -l $1 -m $2 -c $3 -t $4 -o $5
-        

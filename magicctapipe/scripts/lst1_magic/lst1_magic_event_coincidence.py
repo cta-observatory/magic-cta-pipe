@@ -141,32 +141,9 @@ def telescope_positions(config):
         TEL_POSITIONS[k] = list(np.round(np.asarray(v) - average_xyz, 2)) * u.m
     return TEL_POSITIONS
 
-"""
-def func1(X, a, b):
-    
-    The linear function to fit the MAGIC timestamp and difference from LST.
-
-    Parameters
-    ----------
-    X : numpy array
-        MAGIC timestamp
-    a : float
-        Intersept
-    b : float
-        Slope
-
-    Returns
-    -------
-    float
-        The time offset value obtained from the MAGIC timestamp
-    
-
-    Y = a + b * X
-    return Y
-"""
 
 def event_coincidence(
-    input_file_lst, input_dir_magic, output_dir, input_dir_toff=None, config
+    input_file_lst, input_dir_magic, output_dir, config, input_dir_toff=None
 ):
     """
     Searches for coincident events from LST and MAGIC joint
@@ -187,39 +164,39 @@ def event_coincidence(
     """
 
     config_coinc = config["event_coincidence"]
-
+    
     TEL_NAMES, _ = telescope_combinations(config)
-
+    
     TEL_POSITIONS = telescope_positions(config)
     # Load the input LST DL1 data file
     logger.info(f"\nInput LST DL1 data file: {input_file_lst}")
-
+    
     event_data_lst, subarray_lst = load_lst_dl1_data_file(input_file_lst)
-
+    
     # Load the input MAGIC DL1 data files
     logger.info(f"\nInput MAGIC directory: {input_dir_magic}")
-
+    
     event_data_magic, subarray_magic = load_magic_dl1_data_files(
         input_dir_magic, config
     )
-
+    
     # Exclude the parameters non-common to LST and MAGIC data
     timestamp_type_lst = config_coinc["timestamp_type_lst"]
     logger.info(f"\nLST timestamp type: {timestamp_type_lst}")
-
+    
     event_data_lst.rename(columns={timestamp_type_lst: "timestamp"}, inplace=True)
-
+    
     params_lst = set(event_data_lst.columns) ^ set(["timestamp"])
     params_magic = set(event_data_magic.columns) ^ set(["time_sec", "time_nanosec"])
     params_non_common = list(params_lst ^ params_magic)
-
+    
     event_data_lst.drop(params_non_common, axis=1, errors="ignore", inplace=True)
     event_data_magic.drop(params_non_common, axis=1, errors="ignore", inplace=True)
-
+    
     # Prepare for the event coincidence
     window_half_width = config_coinc["window_half_width"]
     logger.info(f"\nCoincidence window half width: {window_half_width}")
-
+    
     window_half_width = u.Quantity(window_half_width).to("ns")
     window_half_width = u.Quantity(window_half_width.round(), dtype=int)
     pre_offset_search = False
@@ -227,7 +204,7 @@ def event_coincidence(
         "pre_offset_search" in config_coinc
     ):  # looking for the boolean value of pre_offset_search in the configuration file
         pre_offset_search = config_coinc["pre_offset_search"]
-
+    
     if pre_offset_search:
         logger.info("\nPre offset search will be performed.")
         n_pre_offset_search_events = config_coinc[
@@ -237,12 +214,12 @@ def event_coincidence(
         logger.info("\noffset scan range defined in the config file will be used.")
         offset_start = u.Quantity(config_coinc["time_offset"]["start"])
         offset_stop = u.Quantity(config_coinc["time_offset"]["stop"])
-
+    
     event_data = pd.DataFrame()
     features = pd.DataFrame()
-
+    
     profiles = pd.DataFrame(data={"time_offset": []})
-
+    
     # Arrange the LST timestamps. They are stored in the UNIX format in
     # units of seconds with 17 digits, 10 digits for the integral part
     # and 7 digits for the fractional part (up to 100 ns order). For the
@@ -252,95 +229,79 @@ def event_coincidence(
     # the units of nanoseconds and then use the "int64" type, which can
     # keep a value up to ~20 digits. In order to precisely scale the
     # timestamps, here we use the `Decimal` module.
-
+    
     timestamps_lst = [Decimal(str(time)) for time in event_data_lst["timestamp"]]
     timestamps_lst = np.array(timestamps_lst) * SEC2NSEC
     timestamps_lst = u.Quantity(timestamps_lst, unit="ns", dtype=int)
     timestamps_lst_arr = []
     timestamps_lst_arr = [timestamps_lst, timestamps_lst]
-
+    
     # Loop over every telescope combination
-    #tel_ids = np.unique(event_data_magic.index.get_level_values("tel_id"))
     tel_id_m1 = config["mc_tel_ids"]["MAGIC-I"]
     tel_id_m2 = config["mc_tel_ids"]["MAGIC-II"]
     tel_ids = [tel_id_m1, tel_id_m2]
-
+    
     for tel_id in tel_ids:
         tel_name = TEL_NAMES[tel_id]
         df_magic = event_data_magic.query(f"tel_id == {tel_id}").copy()
-
+        
         # Arrange the MAGIC timestamps as same as the LST timestamps
         seconds = np.array([Decimal(str(time)) for time in df_magic["time_sec"]])
         nseconds = np.array([Decimal(str(time)) for time in df_magic["time_nanosec"]])
         timestamps_magic = seconds * SEC2NSEC + nseconds
-
+        
         if input_dir_toff is not None:
-            files_toff = glob.glob(
-                input_dir_toff + "/*M" + str(tel_id - 1) + "*_detail.npy"
-            )
-            # JS: you can use enumerate
-            for i, file_toff in enumerate(files_toff): #files_toff:
-                file_npy = np.load(file_toff)
-                if i == 0:
-                    file_npy_ = file_npy
-                else:
-                    file_npy_ = np.hstack([file_npy, file_npy_])
-                    
-            df_toff = pd.DataFrame(
-                file_npy_.T, columns=["timestamp", "toff1", "toff2", "n"]
-            )
-            timestamps_magic_min, timestamps_magic_max = (
-                float(min(timestamps_magic)) / 1e9,
-                float(max(timestamps_magic)) / 1e9,
-            )
-            # JS: why do you assign it to the same variables?
-            #timestamps_magic_min, timestamps_magic_max = (
-            #    timestamps_magic_min,
-            #    timestamps_magic_max,
-            #)
-            df_toff = df_toff.query(
-                "@timestamps_magic_min<timestamp<@timestamps_magic_max"
-            )
-            t_plus = df_toff["timestamp"].values
-            time_offset_plus = df_toff["toff1"].values
-            n_coinc_plus = df_toff["n"].values
-            select = n_coinc_plus > 7
-            x = t_plus[select]
-            t0 = min(x)
-            x = x - t0
-            y = time_offset_plus[select]
-            # JS: since you are doing linear fit np.polyfit(x, y, 1) or even better 
-            # Polynomial.fit should be simpler, probably faster and more relaible and will 
-            # not require defining func1
-            #popt, pcov = curve_fit(func1, x, y)
-            popt = np.polyfit(x, y, 1)
-            zero_offset = popt[0]  # sec
-            drift_speed = popt[1]  # sec/sec
-
-            df_magic["time_sec_sum"] = (
-                df_magic["time_sec"] + df_magic["time_nanosec"] * 1e-9 - t0
-            )
-            df_magic["time_shift"] = df_magic["time_sec_sum"] + (
-                zero_offset + df_magic["time_sec_sum"] * drift_speed
-            )
-            seconds = np.array([Decimal(str(time)) for time in df_magic["time_shift"]])
-
-            timestamps_magic = seconds * SEC2NSEC
-            # import matplotlib.pyplot as plt
-            # plt.scatter(x,y)
-            # plt.plot(np.linspace(min(x),max(x),100),(np.linspace(min(x),max(x),100)*drift_speed+zero_offset))
-            # plt.show()
-
-            t0_sec = [Decimal(str(time)) for time in [t0]]
-            t0_sec = np.array(t0_sec) * SEC2NSEC
-            t0_sec = u.Quantity(t0_sec, unit="ns", dtype=int)
-            timestamps_lst = timestamps_lst_arr[tel_id - 2] - t0_sec
-        # JS: this is using tel_id = 2 and 3 for MAGIC-I and MAGIC-II, better to read it from the config
+           files_toff = glob.glob(f"{input_dir_toff}/*M{str(tel_id - 1)}*_detail.npy")
+           for i, file_toff in enumerate(files_toff): #files_toff:
+               file_npy = np.load(file_toff)
+               if i == 0:
+                   file_npy_ = file_npy
+               else:
+                   file_npy_ = np.hstack([file_npy, file_npy_])
+                   
+           df_toff = pd.DataFrame(
+               file_npy_.T, columns=["timestamp", "toff1", "n"]
+           )
+           
+           timestamps_magic_min, timestamps_magic_max = (
+               float(min(timestamps_magic)) / 1e9,
+               float(max(timestamps_magic)) / 1e9,
+           )
+           df_toff = df_toff.query(
+               "@timestamps_magic_min<timestamp<@timestamps_magic_max"
+           )
+           t_plus = df_toff["timestamp"].values
+           time_offset_plus = df_toff["toff1"].values
+           n_coinc_plus = df_toff["n"].values
+           select = n_coinc_plus > 7
+           x = t_plus[select]
+           t0 = min(x)
+           x = x - t0
+           y = time_offset_plus[select]
+           popt = np.polyfit(x, y, 1)
+           zero_offset = popt[1]  # sec
+           drift_speed = popt[0]  # sec/sec
+           
+           df_magic["time_sec_sum"] = (
+               df_magic["time_sec"] + df_magic["time_nanosec"] * 1e-9 - t0
+           )
+           df_magic["time_shift"] = df_magic["time_sec_sum"] + (
+               zero_offset + df_magic["time_sec_sum"] * drift_speed
+           )
+           seconds = np.array([Decimal(str(time)) for time in df_magic["time_shift"]])
+           
+           timestamps_magic = seconds * SEC2NSEC
+           
+           t0_sec = [Decimal(str(time)) for time in [t0]]
+           t0_sec = np.array(t0_sec) * SEC2NSEC
+           t0_sec = u.Quantity(t0_sec, unit="ns", dtype=int)
+        
+        timestamps_lst = timestamps_lst_arr[tel_id - 2] - t0_sec
         timestamps_magic = u.Quantity(timestamps_magic, unit="ns", dtype=int)
-
+        
         df_magic["timestamp"] = timestamps_magic.to_value("s")
         df_magic.drop(["time_sec", "time_nanosec"], axis=1, inplace=True)
-
+    
         # Pre offset search is performed to define the offset scan region.
         # First, N events are extracted from largest intensity events for LST and
         # MAGIC. Then, it counts the number of coincident events within a defined
@@ -349,53 +310,53 @@ def event_coincidence(
             logger.info(
                 "\nPre offset search using large-intensity shower events is ongoing..."
             )
-
+        
             logger.info(
                 f"\nExtracting the {tel_name} events taken when LST observed for pre offset search..."
             )
-
+        
             time_lolim = timestamps_lst[0] - window_half_width
             time_uplim = timestamps_lst[-1] + window_half_width
             cond_lolim = timestamps_magic >= time_lolim
             cond_uplim = timestamps_magic <= time_uplim
-
+        
             mask_lst_obs_window = np.logical_and(cond_lolim, cond_uplim)
             n_events_magic = np.count_nonzero(mask_lst_obs_window)
-
+        
             if n_events_magic == 0:
                 logger.info(f"--> No {tel_name} events are found. Skipping...")
                 continue
-
+        
             logger.info(f"--> {n_events_magic} events are found.")
-
+        
             # Extract indexes of MAGIC large shower events
             index_large_intensity_magic = np.argsort(
                 df_magic["intensity"][mask_lst_obs_window]
             )[::-1][:n_pre_offset_search_events]
-
+        
             # If LST/MAGIC observations are not completely overlapped, only small
             # numbers of MAGIC events are left for the pre offset search.
             # To find large-intensity showers within the same time window,
             # time cut around MAGIC observations is applied to the LST data set.
             time_lolim = timestamps_magic[mask_lst_obs_window][0] - window_half_width
             time_uplim = timestamps_magic[mask_lst_obs_window][-1] + window_half_width
-
+        
             cond_lolim = timestamps_lst >= time_lolim
             cond_uplim = timestamps_lst <= time_uplim
-
+        
             mask_magic_obs_window = np.logical_and(cond_lolim, cond_uplim)
-
+        
             if np.count_nonzero(mask_magic_obs_window) == 0:
                 logger.info(
                     f"\nNo LST events are found around {tel_name} events. Skipping..."
                 )
                 continue
-
+        
             # Extract indexes of LST large shower events
             index_large_intensity_lst = np.argsort(
                 event_data_lst["intensity"][mask_magic_obs_window]
             )[::-1][:n_pre_offset_search_events]
-
+        
             # Crate an array of all combinations of [MAGIC timestamp, LST timestamp]
             timestamps_magic_lst_combination = np.array(
                 np.meshgrid(
@@ -407,17 +368,17 @@ def event_coincidence(
                     ].value,
                 )
             ).reshape(2, -1)
-
+        
             # Compute all combinations of time offset between MAGIC and LST
             time_offsets_pre_search = (
                 timestamps_magic_lst_combination[0]
                 - timestamps_magic_lst_combination[1]
             )
-
+        
             time_offsets_pre_search = u.Quantity(
                 time_offsets_pre_search.round(), unit="ns", dtype=int
             )
-
+        
             n_coincidences_pre_search = [
                 np.sum(
                     np.abs(time_offsets_pre_search - time_offset).value
@@ -425,156 +386,156 @@ def event_coincidence(
                 )
                 for time_offset in time_offsets_pre_search
             ]
-
+        
             n_coincidences_pre_search = np.array(n_coincidences_pre_search)
-
+        
             offset_at_max_pre_search = time_offsets_pre_search[
                 n_coincidences_pre_search == n_coincidences_pre_search.max()
             ].mean()
             offset_at_max_pre_search = offset_at_max_pre_search.to("us").round(1)
-
+        
             logger.info(
                 f"\nPre offset search finds {offset_at_max_pre_search} as a possible offset"
             )
-
+        
             # offset scan region is defined as 3 x half window width
             # around the offset_at_max to cover "full window width" which will
             # be used to compute weighted average of the time offset
             offset_start = offset_at_max_pre_search - 3 * window_half_width
             offset_stop = offset_at_max_pre_search + 3 * window_half_width
-
+        
         logger.info("\nTime offsets scan region:")
         logger.info(f"  start: {offset_start.to('us').round(1)}")
         logger.info(f"  stop: {offset_stop.to('us').round(1)}")
-
+        
         time_offsets = np.arange(
             start=offset_start.to_value("ns").round(),
             stop=offset_stop.to_value("ns").round(),
             step=TIME_ACCURACY.to_value("ns").round(),
         )
-
+        
         time_offsets = u.Quantity(time_offsets.round(), unit="ns", dtype=int)
-
+        
         # Extract the MAGIC events taken when LST observed
         logger.info(f"\nExtracting the {tel_name} events taken when LST observed...")
-
+        
         time_lolim = timestamps_lst[0] + time_offsets[0] - window_half_width
         time_uplim = timestamps_lst[-1] + time_offsets[-1] + window_half_width
         cond_lolim = timestamps_magic >= time_lolim
         cond_uplim = timestamps_magic <= time_uplim
-
+        
         mask = np.logical_and(cond_lolim, cond_uplim)
         n_events_magic = np.count_nonzero(mask)
-
+        
         if n_events_magic == 0:
             logger.info(f"--> No {tel_name} events are found. Skipping...")
             continue
-
+        
         logger.info(f"--> {n_events_magic} events are found.")
-
+        
         df_magic = df_magic.iloc[mask]
         timestamps_magic = timestamps_magic[mask]
-
-        # Start checking the event coincidence. The time offsets and the
-        # coincidence window are applied to the LST events, and the
-        # MAGIC events existing in the window, including the edges, are
-        # recognized as the coincident events. At first, we scan the
-        # number of coincident events in each time offset and find the
-        # offset maximizing the number of events. Then, we calculate the
-        # average offset weighted by the number of events around the
-        # maximizing offset. Finally, we again check the coincidence at
-        # the average offset and then keep the coincident events.
-
+                
+                # Start checking the event coincidence. The time offsets and the
+                # coincidence window are applied to the LST events, and the
+                # MAGIC events existing in the window, including the edges, are
+                # recognized as the coincident events. At first, we scan the
+                # number of coincident events in each time offset and find the
+                # offset maximizing the number of events. Then, we calculate the
+                # average offset weighted by the number of events around the
+                # maximizing offset. Finally, we again check the coincidence at
+                # the average offset and then keep the coincident events.
+                
         n_coincidences = []
-
+        
         logger.info("\nChecking the event coincidence...")
-
+        
         for time_offset in time_offsets:
             times_lolim = timestamps_lst + time_offset - window_half_width
             times_uplim = timestamps_lst + time_offset + window_half_width
-
+        
             cond_lolim = timestamps_magic.value >= times_lolim[:, np.newaxis].value
             cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
-
+        
             mask = np.logical_and(cond_lolim, cond_uplim)
             n_coincidence = np.count_nonzero(mask)
-
+        
             logger.info(
                 f"time offset: {time_offset.to('us'):.1f} --> {n_coincidence} events"
             )
-
+        
             n_coincidences.append(n_coincidence)
-
+        
         if not any(n_coincidences):
             logger.info("\nNo coincident events are found. Skipping...")
             continue
-
+        
         n_coincidences = np.array(n_coincidences)
-
+        
         # Sometimes there are more than one time offset maximizing the
         # number of coincidences, so here we calculate the mean of them
         offset_at_max = time_offsets[n_coincidences == n_coincidences.max()].mean()
-
+        
         # The half width of the average region is defined as the "full"
         # width of the coincidence window, since the width of the
         # coincidence distribution becomes larger than that of the
         # coincidence window due to the uncertainty of the timestamps
         offset_lolim = offset_at_max - 2 * window_half_width
         offset_uplim = offset_at_max + 2 * window_half_width
-
+        
         cond_lolim = time_offsets >= np.round(offset_lolim)
         cond_uplim = time_offsets <= np.round(offset_uplim)
-
+        
         mask = np.logical_and(cond_lolim, cond_uplim)
-
+        
         average_offset = np.average(time_offsets[mask], weights=n_coincidences[mask])
         average_offset = u.Quantity(average_offset.round(), dtype=int)
-
+        
         logger.info(f"\nAverage offset: {average_offset.to('us'):.3f}")
-
+        
         # Check again the coincidence at the average offset
         times_lolim = timestamps_lst + average_offset - window_half_width
         times_uplim = timestamps_lst + average_offset + window_half_width
-
+        
         cond_lolim = timestamps_magic.value >= times_lolim[:, np.newaxis].value
         cond_uplim = timestamps_magic.value <= times_uplim[:, np.newaxis].value
-
+        
         mask = np.logical_and(cond_lolim, cond_uplim)
-
+        
         n_events_at_avg = np.count_nonzero(mask)
         percentage = 100 * n_events_at_avg / n_events_magic
-
+        
         logger.info(f"--> Number of coincident events: {n_events_at_avg}")
         logger.info(f"--> Fraction over the {tel_name} events: {percentage:.1f}%")
-
+        
         # Keep only the LST events coincident with the MAGIC events,
         # and assign the MAGIC observation and event IDs to them
         indices_lst, indices_magic = np.where(mask)
-
+        
         multi_indices_magic = df_magic.iloc[indices_magic].index
         obs_ids_magic = multi_indices_magic.get_level_values("obs_id_magic")
         event_ids_magic = multi_indices_magic.get_level_values("event_id_magic")
-
+        
         df_lst = event_data_lst.iloc[indices_lst].copy()
         df_lst["obs_id_magic"] = obs_ids_magic
         df_lst["event_id_magic"] = event_ids_magic
         df_lst.reset_index(inplace=True)
         df_lst.set_index(["obs_id_magic", "event_id_magic", "tel_id"], inplace=True)
-
+        
         # Assign also the LST observation and event IDs to the MAGIC
         # events coincident with the LST events
         obs_ids_lst = df_lst["obs_id_lst"].to_numpy()
         event_ids_lst = df_lst["event_id_lst"].to_numpy()
-
+        
         df_magic.loc[multi_indices_magic, "obs_id_lst"] = obs_ids_lst
         df_magic.loc[multi_indices_magic, "event_id_lst"] = event_ids_lst
-
+        
         # Arrange the data frames
         coincidence_id = "1" + str(tel_id)  # Combination of the telescope IDs
-
+        
         if input_dir_toff is not None:
             df_magic["timestamp"] = df_magic["timestamp"] + t0
-
+        
         df_feature = pd.DataFrame(
             data={
                 "coincidence_id": [int(coincidence_id)],
@@ -589,81 +550,81 @@ def event_coincidence(
                 "n_events_magic": [n_events_magic],
             }
         )
-
+        
         df_profile = pd.DataFrame(
             data={
                 "time_offset": time_offsets.to_value("us").round(1),
                 f"n_coincidence_tel{coincidence_id}": n_coincidences,
             }
         )
-
+        
         event_data = pd.concat([event_data, df_lst, df_magic])
         features = pd.concat([features, df_feature])
         profiles = profiles.merge(df_profile, on="time_offset", how="outer")
         profiles = profiles.sort_values("time_offset")
-
+            
     if event_data.empty:
-        logger.info("\nNo coincident events are found. Exiting...")
-        sys.exit()
-
+            logger.info("\nNo coincident events are found. Exiting...")
+            sys.exit()
+        
     event_data.sort_index(inplace=True)
     event_data.drop_duplicates(inplace=True)
     if input_dir_toff is not None:
         event_data.drop(["time_sec_sum", "time_shift"], axis=1, inplace=True)
-
+    
     # It sometimes happen that even if it is a MAGIC-stereo event, only
     # M1 or M2 event is coincident with a LST event. In that case we
     # keep both M1 and M2 events, since they are recognized as the same
     # shower event by the MAGIC-stereo hardware trigger.
-
+    
     # We also keep the MAGIC-stereo events not coincident with any LST
     # events, since the stereo reconstruction is still feasible, but not
     # yet used for the high level analysis.
-
+    
     group_mean = event_data.groupby(["obs_id_magic", "event_id_magic"]).mean()
-
+    
     event_data["obs_id"] = group_mean["obs_id_lst"]
     event_data["event_id"] = group_mean["event_id_lst"]
-
+    
     indices = event_data[event_data["obs_id"].isna()].index
-
+    
     event_data.loc[indices, "obs_id"] = indices.get_level_values("obs_id_magic")
     event_data.loc[indices, "event_id"] = indices.get_level_values("event_id_magic")
-
+    
     event_data.reset_index(inplace=True)
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
-
+    
     event_data = get_stereo_events(event_data, config)
     event_data.reset_index(inplace=True)
-
+    
     event_data = event_data.astype({"obs_id": int, "event_id": int})
-
+    
     # Save the data in an output file
     if os.path.splitext(output_dir)[1] == ".h5":
         Path(os.path.dirname(output_dir)).mkdir(exist_ok=True, parents=True)
         output_file = output_dir
-
+    
     else:
         Path(output_dir).mkdir(exist_ok=True, parents=True)
-
+    
         input_file_name = Path(input_file_lst).name
-
+    
         output_file_name = input_file_name.replace("LST", "MAGIC_LST")
         output_file = f"{output_dir}/{output_file_name}"
-
+    
     save_pandas_data_in_table(
         event_data, output_file, group_name="/events", table_name="parameters", mode="w"
     )
-
+    
     save_pandas_data_in_table(
         features, output_file, group_name="/coincidence", table_name="feature", mode="a"
     )
-
+    
     save_pandas_data_in_table(
         profiles, output_file, group_name="/coincidence", table_name="profile", mode="a"
     )
-
+    
     # Create the subarray description with the telescope coordinates
     # relative to the center of the LST and MAGIC positions
     tel_descriptions = {}
@@ -676,14 +637,14 @@ def event_coincidence(
             raise Exception(
                 f"{v} is not a valid telescope name (check the config file). Only MAGIC and LST telescopes can be analyzed --> Valid telescope names are LST-[1-4] and MAGIC-[I-II] "
             )
-
+    
     subarray_lst_magic = SubarrayDescription(
         "LST-MAGIC-Array", TEL_POSITIONS, tel_descriptions
     )
-
+    
     # Save the subarray description
     subarray_lst_magic.to_hdf(output_file)
-
+    
     logger.info(f"\nOutput file: {output_file}")
 
 
@@ -752,8 +713,8 @@ def main():
         args.input_file_lst,
         args.input_dir_magic,
         args.output_dir,
-        args.input_dir_toff,
         config,
+        args.input_dir_toff,
     )
 
     logger.info("\nDone.")
