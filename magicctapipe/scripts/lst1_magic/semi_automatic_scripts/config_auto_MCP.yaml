@@ -29,6 +29,6 @@ general:
     nsb: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
     env_name: magic-lst  # name of the conda environment to be used to process data.
     cluster: "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
-    nice: 0 # Set the job priority (only positive value). A lower nice value increases the priority, while a higher value reduces it. Default value is equal 0. 
+    nice:  # Set the job priority (only positive value). A lower nice value increases the priority, while a higher value reduces it.
 
     

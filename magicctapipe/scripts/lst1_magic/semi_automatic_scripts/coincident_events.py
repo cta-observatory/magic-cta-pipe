@@ -198,7 +198,7 @@ def main():
     env_name = config["general"]["env_name"]
     LST_version = config["general"]["LST_version"]
     config_file = config["general"]["base_config_file"]
-    nice_parameter = config["general"]["nice"]
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]

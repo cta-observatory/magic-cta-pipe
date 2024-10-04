@@ -112,7 +112,7 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
-    nice_parameter = config["general"]["nice"]
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
