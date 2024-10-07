@@ -75,7 +75,7 @@ def config_file_gen(target_dir, source_name, config_file):
 
 
 def lists_and_bash_gen_MAGIC(
-    target_dir, telescope_ids, MAGIC_runs, source, env_name, cluster
+    target_dir, telescope_ids, MAGIC_runs, source, env_name, cluster, nice
 ):
 
     """
@@ -95,6 +95,8 @@ def lists_and_bash_gen_MAGIC(
         Name of the environment
     cluster : str
         Cluster system
+    nice : int or None
+        Job priority
     """
     if cluster != "SLURM":
         logger.warning(
@@ -105,6 +107,7 @@ def lists_and_bash_gen_MAGIC(
     lines = slurm_lines(
         queue="short",
         job_name=process_name,
+        nice_parameter=nice,
         out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
@@ -134,6 +137,7 @@ def lists_and_bash_gen_MAGIC(
                 slurm = slurm_lines(
                     queue="short",
                     job_name=process_name,
+                    nice_parameter=nice,
                     array=number_of_nodes,
                     mem="2g",
                     out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
@@ -220,6 +224,7 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     target_dir = Path(config["directories"]["workspace_dir"])
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -255,6 +260,7 @@ def main():
             source_name,
             env_name,
             cluster,
+            nice_parameter,
         )  # MAGIC real data
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             list_of_MAGIC_runs = glob.glob(f"{source_name}_MAGIC-*.sh")
