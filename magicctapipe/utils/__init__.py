@@ -1,5 +1,6 @@
 from .badpixels import MAGICBadPixelsCalc
 from .camera_geometry import reflected_camera_geometry_mars
+from .error_codes import GENERIC_ERROR_CODE, NO_EVENTS_WITHIN_MAXIMUM_DISTANCE
 from .functions import (
     HEIGHT_ORM,
     LAT_ORM,
@@ -20,6 +21,8 @@ from .gti import (
 __all__ = [
     "MAGICBadPixelsCalc",
     "reflected_camera_geometry_mars",
+    "GENERIC_ERROR_CODE",
+    "NO_EVENTS_WITHIN_MAXIMUM_DISTANCE",
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
