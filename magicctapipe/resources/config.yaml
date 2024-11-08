@@ -102,7 +102,7 @@ event_coincidence:
 
 
 stereo_reco:
-    quality_cuts: "(intensity > 50) & (width > 0)"
+    quality_cuts: "(intensity > 50) & (intensity > 80 or tel_id > 1) & (width > 0)" #"(intensity > 50) & (width > 0)"
     theta_uplim: "6 arcmin"
 
 
@@ -280,8 +280,8 @@ dl2_to_dl3:
     
 cloud_correction:
     specify_cloud: yes
-    base_height: "5900. m" 
-    thickness: "1320. m"
-    vertical_transmission: 1.0
+    max_gap_lidar_shots: "900 s"
+    lidar_report_file: "extracted_lidar_reports_test.csv"
     number_of_layers: 10
+
 

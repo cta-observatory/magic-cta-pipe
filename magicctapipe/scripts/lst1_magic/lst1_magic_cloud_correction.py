@@ -12,13 +12,14 @@ $ python lst_m1_m2_cloud_correction.py
 """
 import argparse
 import logging
-import os
+import time
 from pathlib import Path
 
 import astropy.units as u
 import ctapipe
 import numpy as np
 import pandas as pd
+import tables
 import yaml
 from astropy.coordinates import AltAz, SkyCoord
 from ctapipe.coordinates import TelescopeFrame
@@ -57,7 +58,7 @@ def model0(imp, h, zd):
     numpy ndarray
         Angular distance in units of degree
     """
-    d = h / np.cos(zd)
+    d = h / np.cos(np.deg2rad(zd))
     return np.arctan((imp / d).to("")).to_value("deg")
 
 
@@ -136,6 +137,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         Data frame of corrected DL1 parameters
     """
 
+    logger.info(f"\nChecking available image for telescope with ID: {tel_id}")
     assigned_tel_ids = config["mc_tel_ids"]
 
     correction_params = config.get("cloud_correction", {})
@@ -147,7 +149,15 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
     all_params_list = []
 
     dl1_params = read_table(input_file, "/events/parameters")
-    dl1_images = read_table(input_file, "/events/dl1/image_" + str(tel_id))
+
+    image_node_path = "/events/dl1/image_" + str(tel_id)
+
+    try:
+        dl1_images = read_table(input_file, image_node_path)
+        logger.info(f"Found images for telescope with ID {tel_id}. Processing...")
+    except tables.NoSuchNodeError:
+        logger.info(f"No image for telescope with ID {tel_id}. Skipping.")
+        return None
 
     m2deg = np.rad2deg(1) / focal_eff * u.degree
 
@@ -173,12 +183,11 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         pointing_az = dl1_params["pointing_az"][index]
         pointing_alt = dl1_params["pointing_alt"][index]
         zenith = 90.0 - np.rad2deg(pointing_alt)
-        psi = dl1_params["psi"][index] * u.deg
         time_diff = dl1_params["time_diff"][index]
         n_islands = dl1_params["n_islands"][index]
         signal_pixels = dl1_params["n_pixels"][index]
 
-        trans = trans0 ** (1 / np.cos(zenith))
+        trans = trans0 ** (1 / np.cos(np.deg2rad(zenith)))
         Hcl = np.linspace(Hc, Hc + dHc, nlayers)  # position of each layer
         transl = trans_height(Hcl, Hc, dHc, trans)  # transmissions of each layer
         transl = np.append(transl, transl[-1])
@@ -294,6 +303,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
 
 def main():
     """Main function."""
+    start_time = time.time()
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -379,6 +389,9 @@ def main():
             lambda x: x.value if isinstance(x, u.Quantity) else x
         )
 
+    df_all["psi"] = np.degrees(df_all["psi"])
+    df_all["phi"] = np.degrees(df_all["phi"])
+
     for col in columns_to_convert:
         df_all[col] = pd.to_numeric(df_all[col], errors="coerce")
 
@@ -397,19 +410,13 @@ def main():
 
     correction_params = config.get("cloud_correction", {})
 
-    log_dir = args.output_dir
-    log_filename = "cloud_correction.log"
-    log_filepath = os.path.join(log_dir, log_filename)
+    logger.info(f"Correction parameters: {correction_params}")
+    logger.info(f"ctapipe version: {ctapipe.__version__}")
+    logger.info(f"magicctapipe version: {magicctapipe.__version__}")
 
-    logging.basicConfig(
-        filename=log_filepath,
-        level=logging.INFO,
-        format="%(asctime)s - %(levelname)s - %(message)s",
-    )
-
-    logging.info(f"Correction parameters: {correction_params}")
-    logging.info(f"ctapipe version: {ctapipe.__version__}")
-    logging.info(f"magicctapipe version: {magicctapipe.__version__}")
+    process_time = time.time() - start_time
+    logger.info(f"\nProcess time: {process_time:.0f} [sec]\n")
+    logger.info(f"\nOutput file: {output_file}")
 
     logger.info("\nDone.")
 
