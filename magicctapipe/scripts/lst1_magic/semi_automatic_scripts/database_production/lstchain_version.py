@@ -1,5 +1,10 @@
 """
-Fill the lstchain_0.9 and lstchain_0.10 columns of the LST database (i.e., which version of data is on the IT cluster)
+Fills the lstchain_versions column of the LST database with a list of the versions of LST data which are stored on the IT cluster
+
+Moreover, it fills the last_lstchain_files column of the LST database with the path to the LST DL1 file processed with the last available lstchain version (the name and order of the versions to be considered is stored in the lstchain_versions variable here defined)
+
+Usage:
+$ lstchain_version
 """
 
 
@@ -7,6 +12,9 @@ import glob
 import os
 
 import pandas as pd
+import yaml
+
+from magicctapipe.io import resource_file
 
 lstchain_versions = ["v0.9", "v0.10"]
 __all__ = ["version_lstchain"]
@@ -14,7 +22,7 @@ __all__ = ["version_lstchain"]
 
 def version_lstchain(df_LST):
     """
-    Evaluates all the versions used to process a given file and the last version of a file
+    Evaluates (and store in the database) all the versions used to process a given file and the last version of a file
 
     Parameters
     ----------
@@ -61,17 +69,22 @@ def main():
     """
     Main function
     """
+    config_file = resource_file("database_config.yaml")
 
-    df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
-    )
+    with open(
+        config_file, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5 = config_dict["database_paths"]["LST"]
+    LST_key = config_dict["database_keys"]["LST"]
+    df_LST = pd.read_hdf(LST_h5, key=LST_key)
 
     version_lstchain(df_LST)
 
     df_LST.to_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,

@@ -1,5 +1,5 @@
 """
-This script creates the lists of MAGIC and LST runs (date and run number) from a dataframe in the .h5 format for a specific time range.
+This script creates the lists of MAGIC and LST runs (date and run number) from a dataframe in the .h5 format for a specific time range (or specific dates).
 """
 
 import argparse
@@ -11,11 +11,15 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from magicctapipe.io import resource_file
+
+__all__ = ["split_lst_date", "magic_date", "clear_files", "list_run"]
+
 
 def split_lst_date(df):
 
     """
-    This function appends to the provided dataframe, which contains the LST date as YYYYMMDD in one of the columns, four new columns: the LST year, month and day and the date as YYYY_MM_DD
+    This function appends to the provided dataframe, which contains the LST date as YYYYMMDD in one of the columns, four new columns: the LST year, month and day and the date as YYYY-MM-DD
 
     Parameters
     ----------
@@ -39,7 +43,7 @@ def split_lst_date(df):
 def magic_date(df):
 
     """
-    This function appends to the provided dataframe (which contains the LST date, year, month and day) a column with the MAGIC dates (in the YYYY_MM_DD format).
+    This function appends to the provided dataframe (which contains the LST date, year, month and day) a column with the MAGIC dates (in the YYYYMMDD format).
 
     Parameters
     ----------
@@ -52,15 +56,15 @@ def magic_date(df):
         The input dataframe with an added column.
     """
 
-    date_lst = pd.to_datetime(df["Date (LST convention)"], format="%Y_%m_%d")
+    date_lst = pd.to_datetime(df["DATE"], format="%Y%m%d")
     delta = pd.Timedelta("1 day")
     date_magic = date_lst + delta
-    date_magic = date_magic.dt.strftime("%Y-%m-%d")
+    date_magic = date_magic.dt.strftime("%Y%m%d")
     df["date_MAGIC"] = date_magic
     return df
 
 
-def clear_files(source_in, source_out, df):
+def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
 
     """
     This function deletes any file named XXXX_LST_runs.txt and XXXX_MAGIC_runs.txt from the working directory.
@@ -71,13 +75,20 @@ def clear_files(source_in, source_out, df):
         Target name in the database. If None, it stands for all the sources observed in a pre-set time interval.
     source_out : str
         Name tag for the target. Used only if source_in is not None.
-    df : :class:`pandas.DataFrame`
-        Dataframe of the joint MAGIC+LST-1 observations based on the .h5 table.
+    df_LST : :class:`pandas.DataFrame`
+        LST-1 dataframe of the joint MAGIC+LST-1 observations.
+    df_MAGIC1 : :class:`pandas.DataFrame`
+        MAGIC-1 dataframe of the joint MAGIC+LST-1 observations.
+    df_MAGIC2 : :class:`pandas.DataFrame`
+        MAGIC-2 dataframe of the joint MAGIC+LST-1 observations.
     """
 
     source_list = []
     if source_in is None:
-        source_list = np.unique(df["source"])
+        source_list = np.intersect1d(
+            np.intersect1d(np.unique(df_LST["source"]), np.unique(df_MAGIC1["source"])),
+            np.unique(df_MAGIC2["source"]),
+        )
     else:
         source_list.append(source_out)
 
@@ -97,7 +108,7 @@ def clear_files(source_in, source_out, df):
 def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_list=None):
 
     """
-    This function creates the MAGIC_runs.txt and LST_runs.txt files, which contain the list of runs (with corresponding dates) to be processed.
+    This function creates the *_MAGIC_runs.txt and *_LST_runs.txt files, which contain the list of runs (with corresponding dates) to be processed for a given source.
 
     Parameters
     ----------
@@ -126,6 +137,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         source_list.append(source_out)
 
     for source_name in source_list:
+
         file_list = [
             f"{source_name}_LST_runs.txt",
             f"{source_name}_MAGIC_runs.txt",
@@ -134,11 +146,16 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         run_listed = []
         if source_in is None:
             df_source = df[df["source"] == source_name]
+            print("Source: ", source_name)
         else:
             df_source = df[df["source"] == source_in]
+            print("Source: ", source_in)
 
         if is_LST:
             print("Finding LST runs...")
+            if len(df_source) == 0:
+                print("NO LST run found. Exiting...")
+                continue
             LST_run = df_source["LST1_run"].tolist()  # List with runs as strings
             LST_date = df_source["date_LST"].tolist()
             for k in range(len(df_source)):
@@ -156,6 +173,9 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
 
         if not is_LST:
             print("Finding MAGIC runs...")
+            if len(df_source) == 0:
+                print("NO MAGIC run found. Exiting...")
+                continue
             MAGIC_date = df_source["date_MAGIC"].tolist()
             M2_run = df_source["Run ID"].tolist()
             for k in range(len(df_source)):
@@ -168,15 +188,16 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
                     continue
 
                 with open(file_list[1], "a+") as f:
-                    f.write(f"{MAGIC_date[k].replace('-','_')},{int(M2_run[k])}\n")
+                    f.write(
+                        f"{MAGIC_date[k][0:4]}_{MAGIC_date[k][4:6]}_{MAGIC_date[k][6:8]},{int(M2_run[k])}\n"
+                    )
                 run_listed.append(int(M2_run[k]))
 
 
 def main():
 
     """
-    This function is automatically called when the script is launched.
-    It calls the functions above to create the files XXXXXX_LST_runs.txt and XXXXX_MAGIC_runs.txt for the desired targets.
+    Main function
     """
 
     parser = argparse.ArgumentParser()
@@ -186,8 +207,8 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
-        help="Path to a configuration file config_general.yaml",
+        default="./config_auto_MCP.yaml",
+        help="Path to a configuration file config_auto_MCP.yaml",
     )
 
     args = parser.parse_args()
@@ -195,16 +216,29 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
+    config_db = resource_file("database_config.yaml")
 
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5 = config_dict["database_paths"]["LST"]
+    LST_key = config_dict["database_keys"]["LST"]
+    MAGIC_h5 = config_dict["database_paths"]["MAGIC"]
+    MAGIC1_key = config_dict["database_keys"]["MAGIC-I"]
+    MAGIC2_key = config_dict["database_keys"]["MAGIC-II"]
     source_in = config["data_selection"]["source_name_database"]
     source_out = config["data_selection"]["source_name_output"]
+    if (source_out is None) and (source_in is not None):
+        source_out = source_in
     range = config["data_selection"]["time_range"]
     skip_LST = config["data_selection"]["skip_LST_runs"]
     skip_MAGIC = config["data_selection"]["skip_MAGIC_runs"]
 
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )  # TODO: put this file in a shared folder
     df_LST.dropna(subset=["LST1_run"], inplace=True)
     df_LST = split_lst_date(df_LST)
@@ -248,29 +282,27 @@ def main():
 
     df_LST = df_LST.reset_index()
     df_LST = df_LST.drop("index", axis=1)
-    clear_files(source_in, source_out, df_LST)
-    if len(df_LST) == 0:
-        print("NO LST run found. Exiting...")
-        return
-    list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
-    list_date_LST = np.unique(df_LST["date_LST"])
-    list_date_LST_low = [sub.replace("-", "_") for sub in list_date_LST]
-
     df_MAGIC1 = pd.read_hdf(
-        "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
-        key="MAGIC1/runs_M1",
+        MAGIC_h5,
+        key=MAGIC1_key,
     )
     df_MAGIC2 = pd.read_hdf(
-        "/fefs/aswg/workspace/joanna.wojtowicz/data/Common_MAGIC_LST1_data_MAGIC_RUNS.h5",
-        key="MAGIC2/runs_M2",
+        MAGIC_h5,
+        key=MAGIC2_key,
     )
 
-    df_MAGIC1 = df_MAGIC1[df_MAGIC1["Date (LST convention)"].isin(list_date_LST_low)]
-    df_MAGIC2 = df_MAGIC2[df_MAGIC2["Date (LST convention)"].isin(list_date_LST_low)]
+    list_date_LST = np.unique(df_LST["date_LST"])
+    list_date_LST_low = [int(sub.replace("-", "")) for sub in list_date_LST]
+
+    df_MAGIC1 = df_MAGIC1[df_MAGIC1["DATE"].isin(list_date_LST_low)]
+    df_MAGIC2 = df_MAGIC2[df_MAGIC2["DATE"].isin(list_date_LST_low)]
+
+    clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2)
+
+    list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
 
     df_MAGIC2 = magic_date(df_MAGIC2)
     df_MAGIC1 = magic_date(df_MAGIC1)
-    df_MAGIC2 = df_MAGIC2.rename(columns={"Source": "source"})
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
     if (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):

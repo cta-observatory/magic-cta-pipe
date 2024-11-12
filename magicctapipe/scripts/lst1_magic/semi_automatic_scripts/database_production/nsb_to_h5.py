@@ -1,7 +1,10 @@
 """
-Script to fill the 'nsb' column of the LST database. To be called after nsb_level.py
+Script to fill the 'nsb' column of the LST database by using the txt files produced by nsb_level
 
-Usage: python nsb_to_h5.py
+It also fills the error_code_nsb column by 0 if the NSB could be evaluated and is < 3.0, by 2 if the NSB is > 3.0 and by 1 if the NSB could not be evaluated (NSB = NaN)
+
+Usage:
+$ nsb_to_h5
 """
 
 import glob
@@ -9,6 +12,9 @@ import logging
 
 import numpy as np
 import pandas as pd
+import yaml
+
+from magicctapipe.io import resource_file
 
 __all__ = ["collect_nsb"]
 
@@ -19,7 +25,7 @@ logger.setLevel(logging.INFO)
 
 def collect_nsb(df_LST):
     """
-    Here we collect NSB values from .txt files and store them into the dataframe
+    Here we collect NSB values from txt files and store them into the dataframe
 
     Parameters
     ----------
@@ -43,6 +49,21 @@ def collect_nsb(df_LST):
 
         df_LST.loc[run, "nsb"] = float(nsb)
     df_LST = df_LST.reset_index()
+    df_LST = df_LST[
+        [
+            "DATE",
+            "source",
+            "LST1_run",
+            "MAGIC_stereo",
+            "MAGIC_trigger",
+            "MAGIC_HV",
+            "nsb",
+            "lstchain_versions",
+            "last_lstchain_file",
+            "processed_lstchain_file",
+            "error_code_nsb",
+        ]
+    ]
     return df_LST
 
 
@@ -51,10 +72,18 @@ def main():
     """
     Main function
     """
+    config_file = resource_file("database_config.yaml")
 
+    with open(
+        config_file, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+
+    LST_h5 = config_dict["database_paths"]["LST"]
+    LST_key = config_dict["database_keys"]["LST"]
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )
 
     df_new = collect_nsb(df_LST)
@@ -66,26 +95,9 @@ def main():
     df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
     df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
 
-    df_new = df_new[
-        [
-            "source",
-            "DATE",
-            "LST1_run",
-            "MAGIC_stereo",
-            "MAGIC_trigger",
-            "MAGIC_HV",
-            "nsb",
-            "lstchain_versions",
-            "last_lstchain_file",
-            "processed_lstchain_file",
-            "error_code_nsb",
-            "error_code_coincidence",
-            "error_code_stereo",
-        ]
-    ]
     df_new.to_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
         mode="w",
     )
 

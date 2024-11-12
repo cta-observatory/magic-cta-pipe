@@ -67,7 +67,6 @@ def write_data_to_table(input_file_mask, output_file):
         # Create a new table with the first input file
         with tables.open_file(input_files[0]) as f_input:
             event_data = f_input.root.events.parameters
-
             f_out.create_table(
                 "/events", "parameters", createparents=True, obj=event_data.read()
             )
@@ -87,6 +86,16 @@ def write_data_to_table(input_file_mask, output_file):
                 for attr in sim_config.attrs._f_list():
                     f_out.root.simulation.config.attrs[attr] = sim_config.attrs[attr]
 
+            if "/events/dl1/image" in f_input.root:
+                logger.info("Images will also be merged")
+                images = f_input.root.events.dl1.image
+
+                f_out.create_table(
+                    "/events/dl1", "image", createparents=True, obj=images.read()
+                )
+                for attr in images.attrs._f_list():
+                    f_out.root.events.dl1.image.attrs[attr] = images.attrs[attr]
+
         # Write the rest of the input files
         for input_file in input_files[1:]:
             logger.info(input_file)
@@ -94,6 +103,10 @@ def write_data_to_table(input_file_mask, output_file):
             with tables.open_file(input_file) as f_input:
                 event_data = f_input.root.events.parameters
                 f_out.root.events.parameters.append(event_data.read())
+
+                if "/events/dl1/image" in f_input.root:
+                    images = f_input.root.events.dl1.image
+                    f_out.root.events.dl1.image.append(images.read())
 
     # Save the subarray description of the first input file, assuming
     # that it is consistent with the others

@@ -1,16 +1,19 @@
 """
-Evaluates NSB level for a LST run
+Evaluates NSB level for a LST run (as a median over the NSB values for a subset of subruns)
+
+One txt file per run is created here: its content is a (date,run,NSB) n-tuple and its title contain an information about the NSB-bin to which the run belongs (according to the list of NSB values provided in the config file)
+
+Usage:
+$ LSTnsb (-c MCP_config) -i run -d date -l lstchain_config (-s N_subruns)
 """
 import argparse
 import glob
 import logging
-import os
 
 import numpy as np
+import pandas as pd
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
-
-from magicctapipe.io import resource_file
 
 __all__ = ["nsb"]
 
@@ -19,10 +22,37 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
+def update_mod(mod, n_sub, denominator, index, n_noise):
+    """
+    Function to update the step used to extract the subruns for the NSB evaluation
+
+    Parameters
+    ----------
+    mod : int
+        Sampling step
+    n_sub : int
+        Number of subruns in the run
+    denominator : int
+        Number of subruns to be used to evaluate NSB for a run
+    index : int
+        Index of the currently used subrun
+    n_noise : int
+        Number of NSB values already computed
+
+    Returns
+    -------
+    int
+        Sampling step
+    """
+    if (n_sub > denominator) and (denominator > n_noise):
+        mod = (n_sub - index) // (denominator - n_noise)
+    return mod
+
+
 def nsb(run_list, simtel, lst_config, run_number, denominator):
 
     """
-    Here we compute the NSB value for a run based on a subset of subruns.
+    Here we compute the NSB value for a run based on a subset of its subruns
 
     Parameters
     ----------
@@ -50,11 +80,12 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
             "There is no subrun matching the provided run number. Check the list of the LST runs (LST_runs.txt)"
         )
         return
-    if len(run_list) < denominator:
+    if len(run_list) <= denominator:
         mod = 1
     else:
         mod = len(run_list) // denominator
-    failed = 0
+
+    logger.info("NSB levels (sub-runs): \n")
     for ii in range(0, len(run_list)):
         subrun = run_list[ii].split(".")[-2]
         if mod == 0:
@@ -62,12 +93,35 @@ def nsb(run_list, simtel, lst_config, run_number, denominator):
         if ii % mod == 0:
             try:
                 a, _, _ = calculate_noise_parameters(simtel, run_list[ii], lst_config)
-                noise.append(a)
-                logger.info(a)
+                if a is not None:
+                    if a > 0.0:
+                        noise.append(a)
+                        logger.info(a)
+                    else:
+                        df_subrun = pd.read_hdf(
+                            run_list[ii],
+                            key="dl1/event/telescope/parameters/LST_LSTCam",
+                        )
+                        n_ped = len(df_subrun[df_subrun["event_type"] == 2])
+                        if n_ped > 0:
+                            noise.append(a)
+                            logger.info(a)
+                        else:
+                            mod = update_mod(
+                                mod, len(run_list), denominator, ii, len(noise)
+                            )
+                            logger.warning(
+                                f"NSB level could not be adequately evaluated for subrun {subrun} (missing pedestal events): skipping this subrun..."
+                            )
+                else:
+                    mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
+                    logger.warning(
+                        f"NSB level is None for subrun {subrun} (missing interleaved FF): skipping this subrun..."
+                    )
+
             except IndexError:
-                failed = failed + 1
-                if len(run_list) > denominator:
-                    mod = (len(run_list) - ii) // (denominator - len(noise))
+
+                mod = update_mod(mod, len(run_list), denominator, ii, len(noise))
                 logger.warning(
                     f"Subrun {subrun} caused an error in the NSB level evaluation for run {run_number}. Check reports before using it"
                 )
@@ -86,7 +140,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
+        default="../config_auto_MCP.yaml",
         help="Path to a configuration file",
     )
     parser.add_argument(
@@ -104,6 +158,13 @@ def main():
         help="Day of the run to be processed",
     )
     parser.add_argument(
+        "--lstchain-config",
+        "-l",
+        dest="lst_conf",
+        type=str,
+        help="lstchain configuration file",
+    )
+    parser.add_argument(
         "--denominator",
         "-s",
         dest="denominator",
@@ -116,42 +177,27 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    NSB_match = config["general"]["NSB_matching"]
     run_number = args.run
     date = args.day
     denominator = args.denominator
-    simtel = "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz"
-
+    lst_config = args.lst_conf
+    simtel = config["general"]["simtel_nsb"]
     nsb_list = config["general"]["nsb"]
     lst_version = config["general"]["LST_version"]
     lst_tailcut = config["general"]["LST_tailcut"]
     width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
-    nsb_limit.insert(0, 0)
-    conda_path = os.environ["CONDA_PREFIX"]
-    lstchain_modified = config["general"]["lstchain_modified_config"]
-    lst_config = (
-        str(conda_path)
-        + "/lib/python3.11/site-packages/lstchain/data/lstchain_standard_config.json"
-    )
-    if lstchain_modified:
-        lst_config = resource_file("lstchain_standard_config_modified.json")
-    print(lst_config)
-    if NSB_match:
-        LST_files = np.sort(glob.glob(f"nsb_LST_[0-9]*_{run_number}.txt"))
+    nsb_limit.insert(
+        0, -0.01
+    )  # arbitrary small negative number so that 0.0 > nsb_limit[0]
 
-        if len(LST_files) == 1:
-            logger.info(f"Run {run_number} already processed")
-            return
-    else:
-        LST_files = np.sort(glob.glob(f"nsb_LST_nsb_*{run_number}*.txt"))
+    LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
-        if len(LST_files) == 1:
-            logger.info(f"Run {run_number} already processed.")
-            return
+    if len(LST_files) == 1:
+        logger.info(f"Run {run_number} already processed")
+        return
 
-    # date_lst = date.split("_")[0] + date.split("_")[1] + date.split("_")[2]
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number, denominator)
@@ -161,19 +207,17 @@ def main():
         )
         return
     median_NSB = np.median(noise)
-    logger.info(f"Run n. {run_number}, nsb median {median_NSB}")
-    if NSB_match:
-        for j in range(0, len(nsb_list)):
-            if (median_NSB < nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
-                with open(f"nsb_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
-                    f.write(f"{date},{run_number},{median_NSB}\n")
-            if median_NSB > nsb_limit[-1]:
-                with open(f"nsb_LST_high_{run_number}.txt", "a+") as f:
-                    f.write(f"{date},{run_number},{median_NSB}\n")
+    logger.info("\n\n")
+    logger.info(f"Run n. {run_number}, NSB median {median_NSB}")
 
-    else:
-        with open(f"nsb_LST_nsb_{run_number}.txt", "a+") as f:
-            f.write(f"{median_NSB}\n")
+    for j in range(0, len(nsb_list)):
+        if (median_NSB <= nsb_limit[j + 1]) & (median_NSB > nsb_limit[j]):
+            with open(f"nsb_LST_{nsb_list[j]}_{run_number}.txt", "a+") as f:
+                f.write(f"{date},{run_number},{median_NSB}\n")
+        if median_NSB > nsb_limit[-1]:
+            with open(f"nsb_LST_high_{run_number}.txt", "a+") as f:
+                f.write(f"{date},{run_number},{median_NSB}\n")
+            break
 
 
 if __name__ == "__main__":
