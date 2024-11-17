@@ -60,7 +60,7 @@ def ST_NSB_List(target_dir, nsb_list, nsb_limit, source):
     # ST0320 ongoing -> 'service' end date
 
     "Loops over all runs of all nights"
-    Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/*"))
+    Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*"))
     for night in Nights_list:
         "Night period"
         night_date=night.split('/')[-1]
@@ -79,7 +79,7 @@ def ST_NSB_List(target_dir, nsb_list, nsb_limit, source):
                 ):
                 period = ST_list[p]
 
-        Run_list = glob.glob(f"{night}/Merged/*.h5")
+        Run_list = glob.glob(f"{night}/*.h5")
         for Run in Run_list:
             "getting the run NSB"
             print(Run)
@@ -95,7 +95,7 @@ def ST_NSB_List(target_dir, nsb_list, nsb_limit, source):
                     nsb = nsb_list[j]
             "Writing on output .txt file"
             if (nsb <= 3.1):
-                with open(f"{night}/Merged/logs/{period}_{nsb}.txt","a+") as file:
+                with open(f"{night}/logs/{period}_{nsb}.txt","a+") as file:
                     file.write(f"{Run}\n")
 
 
@@ -114,9 +114,9 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name):
     """
     
     process_name = source
-    Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/*"))
+    Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*"))
     for night in Nights_list:
-        File_list = glob.glob(f"{night}/Merged/logs/ST*.txt")
+        File_list = glob.glob(f"{night}/logs/ST*.txt")
         night_date=night.split('/')[-1]
         os.makedirs(f'{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs',exist_ok=True)
         for file in File_list:
@@ -127,29 +127,33 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name):
             nsb=file.split("/")[-1].split("_")[-1][:3]
             p=file.split("/")[-1].split("_")[0]           
             RFdir=f'/fefs/aswg/LST1MAGIC/mc/models/{p}/NSB{nsb}/v01.2/dec_2276/'
-            with open(f'{source}_DL1_to_DL2_{night_date}_{file.split("/")[-1].rstrip("txt")}sh', "w") as f:
-                f.write("#!/bin/sh\n\n")
-                f.write("#SBATCH -p long\n")
-                f.write("#SBATCH -J " + process_name + "\n")
-                f.write(f"#SBATCH --array=0-{process_size}%100\n")
-                f.write("#SBATCH --mem=90g\n")
-                f.write("#SBATCH -N 1\n\n")
-                f.write("ulimit -l unlimited\n")
-                f.write("ulimit -s unlimited\n")
-                f.write("ulimit -a\n\n")
-
-                f.write(
-                    f"SAMPLE_LIST=($(<{file}))\n"
-                )
-                f.write("SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n")
-                f.write(
-                    f"export LOG={target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs"
-                    + "/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n"
-                )
-                f.write(
+            slurm = slurm_lines(
+                queue="short",
+                job_name=f"{process_name}_DL1_to_DL2",
+                array=process_size,
+                mem="2g",
+                out_name=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/slurm-%x.%A_%a",
+            )
+            rc = rc_lines(
+                store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+                out="$OUTPUTDIR/logs/list",
+            )
+            
+            lines = (
+                slurm
+                + [
+                    f"SAMPLE_LIST=($(<{file}))\n",
+                    "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+                    f"export LOG={target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs",
+                    "/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n",
                     f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]} >$LOG 2>&1\n\n"
-                )
-
+                ]
+                + rc
+            )
+            with open(f'{source}_DL1_to_DL2_{night_date}_{file.split("/")[-1].rstrip("txt")}sh', "w") as f:
+                f.writelines(lines)
+                
+                
 
 
 def main():
@@ -195,14 +199,12 @@ def main():
         bash_DL1Stereo_to_DL2(target_dir,source_name, env_name)
         list_of_stereo_scripts = np.sort(glob.glob(f'{source_name}_DL1_to_DL2*.sh'))
         print(list_of_stereo_scripts)
+        if len(list_of_stereo_scripts) < 1:
+            logger.warning("No bash scripts for real data")
+            continue
+        launch_jobs = ""
         for n, run in enumerate(list_of_stereo_scripts):
-            if n == 0:
-                launch_jobs = f"stereo{n}=$(sbatch --parsable {run})"
-            else:
-                launch_jobs = (
-                    f"{launch_jobs} && stereo{n}=$(sbatch --parsable {run})"
-                )
-        print(launch_jobs)
+            launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
         os.system(launch_jobs)
         
 if __name__ == "__main__":
