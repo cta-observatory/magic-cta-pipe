@@ -3,10 +3,8 @@ This script creates the bashscripts necessary to apply "lst1_magic_dl2_to_dl3.py
 to the DL2. It also creates new subdirectories associated with
 the data level 3.
 
-
 Usage:
 $ python new_DL2_to_DL3.py -c configuration_file.yaml
-
 """
 import argparse
 import glob
@@ -16,30 +14,39 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+import pandas as pd
 import yaml
 
 from magicctapipe import __version__
 from magicctapipe.io import resource_file
+from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
+    rc_lines,
+    slurm_lines,
+)
+
+__all__ = ["configuration_DL3", "DL2_to_DL3"]
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configuration_DL3(target_dir, source_name, config_file):
+def configuration_DL3(target_dir, source_name, config_file, ra, dec):
     """
     This function creates the configuration file needed for the DL2 to DL3 conversion
 
     Parameters
     ----------
-    ids: list
-        list of telescope IDs
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    target_coords:
-        sorce coordinates
-    source: str
-        source name
+    source_name : str
+        Source name
+    config_file : str
+        Path to MCP configuration file (e.g., resources/config.yaml)
+    ra : float
+        Source RA
+    dec : float
+        Source Dec
     """
 
     if config_file == "":
@@ -51,8 +58,8 @@ def configuration_DL3(target_dir, source_name, config_file):
         config_dict = yaml.safe_load(fc)
     DL3_config = config_dict["dl2_to_dl3"]
     DL3_config["source_name"] = source_name
-    # DL3_config['source_ra']=ra
-    # DL3_config['source_dec']=dec
+    DL3_config["source_ra"] = ra
+    DL3_config["source_dec"] = dec
     conf = {
         "mc_tel_ids": config_dict["mc_tel_ids"],
         "dl2_to_dl3": DL3_config,
@@ -68,20 +75,30 @@ def configuration_DL3(target_dir, source_name, config_file):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def DL2_to_DL3(target_dir, source, env_name):
+def DL2_to_DL3(target_dir, source, env_name, IRF_dir, df_LST, cluster):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    source: str
-        source name
-    env_name: str
-        conda enviroment name
+    source : str
+        Source name
+    env_name : str
+        Conda enviroment name
+    IRF_dir : str
+        Path to the IRFs
+    df_LST : :class:`pandas.DataFrame`
+        Dataframe collecting the LST1 runs (produced by the create_LST_table script)
+    cluster : str
+        Cluster system
     """
-
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
+        return
     target_dir = str(target_dir)
 
     os.makedirs(target_dir + f"/v{__version__}/{source}/DL3/logs", exist_ok=True)
@@ -110,9 +127,10 @@ def DL2_to_DL3(target_dir, source, env_name):
             print("nsb = ", nsb)
             period = file.split("/")[-1].split("_")[0]
             print("period = ", period)
-
-            IRF_dir = f"/fefs/aswg/LST1MAGIC/mc/IRF/{period}/NSB{nsb}/GammaTest/v01.2/g_dyn_0.9_th_glo_0.2/dec_2276/"
-
+            dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
+            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/dec_{dec}/"
+            if (not os.path.isdir(IRFdir)) or (len(os.listdir(IRFdir)) == 0):
+                continue
             process_name = source
             output = target_dir + f"/v{__version__}/{source}/DL3"
 
@@ -135,12 +153,12 @@ def DL2_to_DL3(target_dir, source, env_name):
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                     f"export LOG={output}/logs",
                     "/DL2_to_DL3_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRF_dir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n",
+                    f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {output} --config-file {target_dir}/config_DL3.yaml >$LOG 2>&1\n\n",
                 ]
                 + rc
             )
             with open(
-                f'{source}_DL3_{nsb}_{period}_{night.split("/")[-1]}.sh', "w"
+                f'{source}_DL2_to_DL3_{nsb}_{period}_{night.split("/")[-1]}.sh', "w"
             ) as f:
                 f.writelines(lines)
 
@@ -166,8 +184,8 @@ def main():
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
 
-    telescope_ids = list(config["mc_tel_ids"].values())
     target_dir = Path(config["directories"]["workspace_dir"])
+    IRF_dir = config["directories"]["IRF"]
 
     print("***** Generating file config_DL3.yaml...")
     print("***** This file can be found in ", target_dir)
@@ -177,6 +195,20 @@ def main():
     env_name = config["general"]["env_name"]
     config_file = config["general"]["base_config_file"]
     cluster = config["general"]["cluster"]
+
+    config_db = resource_file("database_config.yaml")
+
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict_db = yaml.safe_load(fc)
+
+    LST_h5 = config_dict_db["database_paths"]["LST"]
+    LST_key = config_dict_db["database_keys"]["LST"]
+    df_LST = pd.read_hdf(
+        LST_h5,
+        key=LST_key,
+    )
 
     # cp the .txt files from DL1 stereo anaysis to be used again.
     DL1stereo_Nihts = np.sort(
@@ -195,12 +227,17 @@ def main():
     else:
         source_list = [source]
     for source_name in source_list:
-        configuration_DL3(telescope_ids, target_dir, target_coords, source_name)
-        DL2_to_DL3(target_dir, source_name, env_name)
-        list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_DL3*.sh"))
+        wobble_offset = df_LST[df_LST.source == source].iloc[0]["wobble_offset"]
+        if str(wobble_offset) != "0.4":
+            continue
+        ra = df_LST[df_LST.source == source].iloc[0]["ra"]
+        dec = df_LST[df_LST.source == source].iloc[0]["dec"]
+        configuration_DL3(target_dir, source_name, config_file, ra, dec)
+        DL2_to_DL3(target_dir, source_name, env_name, IRF_dir, df_LST, cluster)
+        list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
         print(list_of_stereo_scripts)
         if len(list_of_stereo_scripts) < 1:
-            logger.warning("No bash scripts for real data")
+            logger.warning(f"No bash scripts for {source_name}")
             continue
         launch_jobs = ""
         for n, run in enumerate(list_of_stereo_scripts):
