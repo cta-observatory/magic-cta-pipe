@@ -181,10 +181,10 @@ def main():
     date = args.day
     denominator = args.denominator
     lst_config = args.lst_conf
-    simtel = config["general"]["simtel_nsb"]
-    nsb_list = config["general"]["nsb"]
+    simtel = config["needed_parameters"]["simtel_nsb"]
+    nsb_list = config["needed_parameters"]["nsb"]
     lst_version = config["general"]["LST_version"]
-    lst_tailcut = config["general"]["LST_tailcut"]
+    lst_tailcut = config["needed_parameters"]["LST_tailcut"]
     width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]

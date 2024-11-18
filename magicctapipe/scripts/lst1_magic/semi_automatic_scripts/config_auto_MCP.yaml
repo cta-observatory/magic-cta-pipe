@@ -16,11 +16,17 @@ data_selection:
     
 general:
     base_config_file: ''    # path + name to a custom MCP config file. If not provided, the default config.yaml file will be used 
-    LST_version: "v0.10" # check the `processed_lstchain_file` version in the LST database!
+    LST_version: "v0.10" # check the `processed_lstchain_file` version in the LST database!    
+    env_name: magic-lst  # name of the conda environment to be used to process data.
+    cluster: "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
+
+needed_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis    
     LST_tailcut: "tailcut84"
     simtel_nsb: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
     lstchain_modified_config: true # use_flatfield_heuristic = True to evaluate NSB    
     nsb: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
-    env_name: magic-lst  # name of the conda environment to be used to process data.
-    cluster: "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
-    
+    lstchain_versions: ["v0.9", "v0.10"]
+    ST_list: ["ST0321A", "ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
+    ST_begin: ["2024_05_19","2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
+    ST_end: ["2026_01_01","2024_05_18", "2023_03_09", "2022_08_31", "2022_06_09", "2021_09_29"]
+    # ST0321 ongoing -> 'service' end date

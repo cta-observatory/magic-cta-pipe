@@ -120,7 +120,7 @@ def main():
         key=LST_key,
     )
     lstchain_v = config["general"]["LST_version"]
-    lstchain_modified = config["general"]["lstchain_modified_config"]
+    lstchain_modified = config["needed_parameters"]["lstchain_modified_config"]
     conda_path = os.environ["CONDA_PREFIX"]
     lst_config_orig = (
         str(conda_path)

@@ -32,7 +32,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def ST_NSB_List(target_dir, nsb_list, nsb_limit, source, df_LST):
+def ST_NSB_List(target_dir, nsb_list, nsb_limit, source, df_LST, ST_list, ST_begin, ST_end):
     """
     This function creates the lists of runs separeted by run period and NSB level.
 
@@ -47,16 +47,12 @@ def ST_NSB_List(target_dir, nsb_list, nsb_limit, source, df_LST):
     source:
         source name
     df_LST:
-
     """
 
     
 
-    "Period Lists"
-    ST_list = ["ST0321A", "ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
-    ST_begin = ["2024_05_19","2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
-    ST_end = ["2026_01_01","2024_05_18", "2023_03_09", "2022_08_31", "2022_06_09", "2021_09_29"]
-    # ST0321 ongoing -> 'service' end date
+    
+    
 
     "Loops over all runs of all nights"
     Nights_list = np.sort(
@@ -172,7 +168,7 @@ def main():
     Here we read the config_general.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser()["2026_01_01","2024_05_18", "2023_03_09", "2022_08_31", "2022_06_09", "2021_09_29"]
     parser.add_argument(
         "--config-file",
         "-c",
@@ -191,7 +187,10 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
     RF_dir=config["directories"]["RF"]
     env_name = config["general"]["env_name"]
-    nsb_list = config["general"]["nsb"]
+    ST_list= config["needed_parameters"]['ST_list']
+    ST_begin= config["needed_parameters"]['ST_begin']
+    ST_end= config["needed_parameters"]['ST_end']
+    nsb_list = config["needed_parameters"]["nsb"]
     width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
     width.append(0.25)
     nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
@@ -211,7 +210,7 @@ def main():
     else:
         source_list = [source]
     for source_name in source_list:
-        ST_NSB_List(target_dir, nsb_list, nsb_limit, source_name, df_LST)
+        ST_NSB_List(target_dir, nsb_list, nsb_limit, source_name, df_LST, ST_list, ST_begin, ST_end)
 
         bash_DL1Stereo_to_DL2(target_dir, source_name, env_name, cluster, RF_dir)
         list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
