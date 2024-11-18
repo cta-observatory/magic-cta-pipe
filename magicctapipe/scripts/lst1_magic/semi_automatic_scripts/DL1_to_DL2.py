@@ -1,25 +1,25 @@
 """
 This script creates the bashscripts necessary to apply "lst1_magic_dl1_stereo_to_dl2.py"
-to the DL1 stereo data (real and MC). It also creates new subdirectories associated with
-the data level 2. The DL2 files are saved at:
-WorkingDirectory/DL2/
-and in the subdirectories therein.
+to the DL1 stereo data. It also creates new subdirectories associated with
+the data level 2. 
 
 Usage:
-$ python new_DL1_to_DL2.py -c configuration_file.yaml
+$ DL1_to_DL2 -c configuration_file.yaml
 
 """
 import argparse
+import datetime
 import glob
 import logging
 import os
 import time
 from pathlib import Path
-import datetime 
+
 import joblib
 import numpy as np
 import pandas as pd
 import yaml
+
 from magicctapipe import __version__
 from magicctapipe.io import resource_file
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
@@ -32,7 +32,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def ST_NSB_List(target_dir, nsb_list, nsb_limit, source):
+def ST_NSB_List(target_dir, nsb_list, nsb_limit, source, df_LST):
     """
     This function creates the lists of runs separeted by run period and NSB level.
 
@@ -41,65 +41,64 @@ def ST_NSB_List(target_dir, nsb_list, nsb_limit, source):
     target_dir: str
         Path to the working directory
     nsb_list:
-    nsb_limit:
-    	
-    source:
-    	source name
-    """ 
 
-    "NSB dataframe"
-    df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
-    )
+    nsb_limit:
+
+    source:
+        source name
+    df_LST:
+
+    """
+
+    
 
     "Period Lists"
-    ST_list = ["ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
-    ST_begin = ["2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
-    ST_end = ["2025_01_30", "2023_03_09", "2022_08_31", "2022_06_09", "2021_09_29"]
-    # ST0320 ongoing -> 'service' end date
+    ST_list = ["ST0321A", "ST0320A", "ST0319A", "ST0318A", "ST0317A", "ST0316A"]
+    ST_begin = ["2024_05_19","2023_03_10", "2022_12_15", "2022_06_10", "2021_12_30", "2020_10_24"]
+    ST_end = ["2026_01_01","2024_05_18", "2023_03_09", "2022_08_31", "2022_06_09", "2021_09_29"]
+    # ST0321 ongoing -> 'service' end date
 
     "Loops over all runs of all nights"
-    Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*"))
+    Nights_list = np.sort(
+        glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
+    )
     for night in Nights_list:
         "Night period"
-        night_date=night.split('/')[-1]
-        print('night',night_date)
+        night_date = night.split("/")[-1]
+        print("night", night_date)
         date_lst = night_date[:4] + "_" + night_date[4:6] + "_" + night_date[6:8]
         print(date_lst)
-        date_magic = datetime.datetime.strptime(date_lst, "%Y_%m_%d") + datetime.timedelta(days=1)
-        print('dates', date_lst, str(date_magic))
+        date_magic = datetime.datetime.strptime(
+            date_lst, "%Y_%m_%d"
+        ) + datetime.timedelta(days=1)
+        print("dates", date_lst, str(date_magic))
         for p in range(len(ST_begin)):
-            if (
-                date_magic
-                >= datetime.datetime.strptime(ST_begin[p], "%Y_%m_%d")
-                ) and (
-                date_magic
-                <= datetime.datetime.strptime(ST_end[p], "%Y_%m_%d")
-                ):
+            if (date_magic >= datetime.datetime.strptime(ST_begin[p], "%Y_%m_%d")) and (
+                date_magic <= datetime.datetime.strptime(ST_end[p], "%Y_%m_%d")
+            ):
                 period = ST_list[p]
 
         Run_list = glob.glob(f"{night}/*.h5")
         for Run in Run_list:
             "getting the run NSB"
             print(Run)
-            run_str=Run.split('/')[-1].split('.')[1]
-            print('run', run_str)
-            run_LST_id = run_str.lstrip('Run')
-            print('run_lst', run_LST_id)
+            run_str = Run.split("/")[-1].split(".")[1]
+            print("run", run_str)
+            run_LST_id = run_str.lstrip("Run")
+            print("run_lst", run_LST_id)
             nsb = df_LST[df_LST["LST1_run"] == run_LST_id]["nsb"].tolist()[0]
-            print('nsb', nsb)
+            print("nsb", nsb)
             "rounding the NSB to the nearest MC nsb value"
-            for j in range(0, len(nsb_list)-1):
-                if (nsb < nsb_limit[j + 1]) & (nsb > nsb_limit[j]):
+            for j in range(0, len(nsb_list) - 1):
+                if (nsb <= nsb_limit[j + 1]) & (nsb > nsb_limit[j]):
                     nsb = nsb_list[j]
             "Writing on output .txt file"
-            if (nsb <= 3.1):
-                with open(f"{night}/logs/{period}_{nsb}.txt","a+") as file:
+            if nsb <= nsb_limit[-1]:
+                with open(f"{night}/logs/{period}_{nsb}.txt", "a+") as file:
                     file.write(f"{Run}\n")
 
 
-def bash_DL1Stereo_to_DL2(target_dir, source, env_name):
+def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST):
     """
     This function generates the bashscript for running the DL1Stereo to DL2 analisys.
 
@@ -108,25 +107,36 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name):
     target_dir : str
         Path to the working directory
     source:
-    	source name
+        source name
     env_name:
-    	conda enviroment name
+        conda enviroment name
     """
-    
+    if cluster != "SLURM":
+        logger.warning(
+            "Automatic processing not implemented for the cluster indicated in the config file"
+        )
+        return
     process_name = source
-    Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*"))
+    Nights_list = np.sort(
+        glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
+    )
     for night in Nights_list:
         File_list = glob.glob(f"{night}/logs/ST*.txt")
-        night_date=night.split('/')[-1]
-        os.makedirs(f'{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs',exist_ok=True)
+        night_date = night.split("/")[-1]
+        os.makedirs(
+            f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs", exist_ok=True
+        )
         for file in File_list:
             with open(file, "r") as f:
                 process_size = len(f.readlines()) - 1
             if process_size < 0:
                 continue
-            nsb=file.split("/")[-1].split("_")[-1][:3]
-            p=file.split("/")[-1].split("_")[0]           
-            RFdir=f'/fefs/aswg/LST1MAGIC/mc/models/{p}/NSB{nsb}/v01.2/dec_2276/'
+            nsb = file.split("/")[-1].split("_")[-1][:3]
+            p = file.split("/")[-1].split("_")[0]
+            dec=df_LST[df_LST.source == source].iloc[0]['MC_dec']
+            RFdir = f"{RF_dir}/{p}/NSB{nsb}/dec_{dec}/"
+            if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
+                continue
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
@@ -138,7 +148,7 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name):
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
                 out="$OUTPUTDIR/logs/list",
             )
-            
+
             lines = (
                 slurm
                 + [
@@ -146,14 +156,15 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name):
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                     f"export LOG={target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs",
                     "/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]} >$LOG 2>&1\n\n"
+                    f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]} >$LOG 2>&1\n\n",
                 ]
                 + rc
             )
-            with open(f'{source}_DL1_to_DL2_{night_date}_{file.split("/")[-1].rstrip("txt")}sh', "w") as f:
+            with open(
+                f'{source}_DL1_to_DL2_{night_date}_{file.split("/")[-1].rstrip("txt")}sh',
+                "w",
+            ) as f:
                 f.writelines(lines)
-                
-                
 
 
 def main():
@@ -178,6 +189,7 @@ def main():
         config = yaml.safe_load(f)
 
     target_dir = Path(config["directories"]["workspace_dir"])
+    RF_dir=config["directories"]["RF"]
     env_name = config["general"]["env_name"]
     nsb_list = config["general"]["nsb"]
     width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
@@ -188,24 +200,30 @@ def main():
     source = config["data_selection"]["source_name_output"]
 
     cluster = config["general"]["cluster"]
+    "LST dataframe"
+    df_LST = pd.read_hdf(
+        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
+        key="joint_obs",
+    )
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
     else:
         source_list = [source]
     for source_name in source_list:
-        ST_NSB_List(target_dir, nsb_list, nsb_limit, source_name)
+        ST_NSB_List(target_dir, nsb_list, nsb_limit, source_name, df_LST)
 
-        bash_DL1Stereo_to_DL2(target_dir,source_name, env_name)
-        list_of_stereo_scripts = np.sort(glob.glob(f'{source_name}_DL1_to_DL2*.sh'))
+        bash_DL1Stereo_to_DL2(target_dir, source_name, env_name, cluster, RF_dir)
+        list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
         print(list_of_stereo_scripts)
         if len(list_of_stereo_scripts) < 1:
-            logger.warning("No bash scripts for real data")
+            logger.warning(f"No bash scripts for {source_name}")
             continue
         launch_jobs = ""
         for n, run in enumerate(list_of_stereo_scripts):
             launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
         os.system(launch_jobs)
-        
+
+
 if __name__ == "__main__":
     main()

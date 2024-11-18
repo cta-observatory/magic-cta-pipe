@@ -2,7 +2,8 @@ directories:
     workspace_dir: "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/"  # Output directory where all the data products will be saved.
     MC_version: "" #MCP version used to process MC; if not provided, current MCP version will be used
     real_input_version: ""  #MCP version used to process input real data (to be used in case you want to run only the last steps of the analysis, using lower-level data previously processed); if not provided, current MCP version will be used 
-    
+    RF: ''
+    IRF: ''
 data_selection:
     source_name_database: "CrabNebula"  # MUST BE THE SAME AS IN THE DATABASE; Set to null to process all sources in the given time range.
     source_name_output: 'Crabtest'  # Name tag of your target. Used only if source_name_database != null.
