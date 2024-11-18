@@ -8,14 +8,14 @@ $ lstchain_version
 """
 
 
+import argparse
 import glob
 import os
-import argparse
+
 import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
-
 
 __all__ = ["version_lstchain"]
 
@@ -28,6 +28,8 @@ def version_lstchain(df_LST, lstchain_versions):
     ----------
     df_LST : :class:`pandas.DataFrame`
         Dataframe of the LST-1 observations.
+    lstchain_versions : list
+        List of the available lstchain varsions that can be processed by MCP (from older to newer)
     """
     for i, row in df_LST.iterrows():
 
@@ -83,7 +85,7 @@ def main():
         args.config_auto, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    lstchain_versions = config['needed_parameters']['lstchain_versions']
+    lstchain_versions = config["needed_parameters"]["lstchain_versions"]
     config_file = resource_file("database_config.yaml")
 
     with open(

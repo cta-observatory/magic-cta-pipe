@@ -1,18 +1,16 @@
 """
 This script creates the bashscripts necessary to apply "lst1_magic_dl1_stereo_to_dl2.py"
 to the DL1 stereo data. It also creates new subdirectories associated with
-the data level 2. 
+the data level 2.
 
 Usage:
 $ DL1_to_DL2 -c configuration_file.yaml
-
 """
 import argparse
 import datetime
 import glob
 import logging
 import os
-import time
 from pathlib import Path
 
 import joblib
@@ -27,32 +25,38 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     slurm_lines,
 )
 
+__all__ = ["ST_NSB_List", "bash_DL1Stereo_to_DL2"]
+
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def ST_NSB_List(target_dir, nsb_list, nsb_limit, source, df_LST, ST_list, ST_begin, ST_end):
+def ST_NSB_List(
+    target_dir, nsb_list, nsb_limit, source, df_LST, ST_list, ST_begin, ST_end
+):
     """
     This function creates the lists of runs separeted by run period and NSB level.
 
     Parameters
     ----------
-    target_dir: str
+    target_dir : str
         Path to the working directory
-    nsb_list:
-
-    nsb_limit:
-
-    source:
-        source name
-    df_LST:
+    nsb_list : list
+        List of the MC NSB values
+    nsb_limit : list
+        Edges of the NSB binning
+    source : str
+        Source name
+    df_LST : :class:`pandas.DataFrame`
+        Dataframe collecting the LST1 runs (produced by the create_LST_table script)
+    ST_list : list
+        List of the observastion periods
+    ST_begin : list
+        List of beginning dates for the observation periods
+    ST_end : list
+        List of ending dates for the observation periods
     """
-
-    
-
-    
-    
 
     "Loops over all runs of all nights"
     Nights_list = np.sort(
@@ -102,10 +106,16 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST)
     ----------
     target_dir : str
         Path to the working directory
-    source:
-        source name
-    env_name:
-        conda enviroment name
+    source : str
+        Source name
+    env_name : str
+        Conda enviroment name
+    cluster : str
+        Cluster system
+    RF_dir : str
+        Path to the RFs
+    df_LST : :class:`pandas.DataFrame`
+        Dataframe collecting the LST1 runs (produced by the create_LST_table script)
     """
     if cluster != "SLURM":
         logger.warning(
@@ -129,7 +139,7 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST)
                 continue
             nsb = file.split("/")[-1].split("_")[-1][:3]
             p = file.split("/")[-1].split("_")[0]
-            dec=df_LST[df_LST.source == source].iloc[0]['MC_dec']
+            dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
             RFdir = f"{RF_dir}/{p}/NSB{nsb}/dec_{dec}/"
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
                 continue
@@ -168,7 +178,14 @@ def main():
     Here we read the config_general.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()["2026_01_01","2024_05_18", "2023_03_09", "2022_08_31", "2022_06_09", "2021_09_29"]
+    parser = argparse.ArgumentParser()[
+        "2026_01_01",
+        "2024_05_18",
+        "2023_03_09",
+        "2022_08_31",
+        "2022_06_09",
+        "2021_09_29",
+    ]
     parser.add_argument(
         "--config-file",
         "-c",
@@ -185,11 +202,11 @@ def main():
         config = yaml.safe_load(f)
 
     target_dir = Path(config["directories"]["workspace_dir"])
-    RF_dir=config["directories"]["RF"]
+    RF_dir = config["directories"]["RF"]
     env_name = config["general"]["env_name"]
-    ST_list= config["needed_parameters"]['ST_list']
-    ST_begin= config["needed_parameters"]['ST_begin']
-    ST_end= config["needed_parameters"]['ST_end']
+    ST_list = config["needed_parameters"]["ST_list"]
+    ST_begin = config["needed_parameters"]["ST_begin"]
+    ST_end = config["needed_parameters"]["ST_end"]
     nsb_list = config["needed_parameters"]["nsb"]
     width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
     width.append(0.25)
@@ -199,10 +216,20 @@ def main():
     source = config["data_selection"]["source_name_output"]
 
     cluster = config["general"]["cluster"]
+
     "LST dataframe"
+    config_db = resource_file("database_config.yaml")
+
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict_db = yaml.safe_load(fc)
+
+    LST_h5 = config_dict_db["database_paths"]["LST"]
+    LST_key = config_dict_db["database_keys"]["LST"]
     df_LST = pd.read_hdf(
-        "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/observations_LST.h5",
-        key="joint_obs",
+        LST_h5,
+        key=LST_key,
     )
 
     if source_in is None:
@@ -210,7 +237,16 @@ def main():
     else:
         source_list = [source]
     for source_name in source_list:
-        ST_NSB_List(target_dir, nsb_list, nsb_limit, source_name, df_LST, ST_list, ST_begin, ST_end)
+        ST_NSB_List(
+            target_dir,
+            nsb_list,
+            nsb_limit,
+            source_name,
+            df_LST,
+            ST_list,
+            ST_begin,
+            ST_end,
+        )
 
         bash_DL1Stereo_to_DL2(target_dir, source_name, env_name, cluster, RF_dir)
         list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
