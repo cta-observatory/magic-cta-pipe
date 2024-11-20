@@ -141,6 +141,8 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST)
             p = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
             RFdir = f"{RF_dir}/{p}/NSB{nsb}/dec_{dec}/"
+            if source == "Boomerang-Ta":
+                RFdir = f"{RF_dir}/{p}/NSB{nsb}/dec_{dec}_high_density/"
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
                 continue
             slurm = slurm_lines(
