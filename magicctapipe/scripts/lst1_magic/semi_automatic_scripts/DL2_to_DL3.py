@@ -129,6 +129,8 @@ def DL2_to_DL3(target_dir, source, env_name, IRF_dir, df_LST, cluster):
             print("period = ", period)
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
             IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/dec_{dec}/"
+            if source == "Boomerang-Ta":
+                IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/dec_{dec}_high_density/"
             if (not os.path.isdir(IRFdir)) or (len(os.listdir(IRFdir)) == 0):
                 continue
             process_name = source
