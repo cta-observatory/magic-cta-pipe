@@ -3,7 +3,7 @@ from .camera_geometry import reflected_camera_geometry_mars
 from .error_codes import (
     GENERIC_ERROR_CODE,
     NO_COINCIDENT_EVENTS,
-    NO_EVENTS_WITHIN_MAXIMUM_DISTANCE
+    NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
 )
 from .functions import (
     HEIGHT_ORM,
