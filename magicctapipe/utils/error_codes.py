@@ -8,3 +8,4 @@ because of some problem during processing.
 
 GENERIC_ERROR_CODE = 1
 NO_EVENTS_WITHIN_MAXIMUM_DISTANCE = 2
+NO_COINCIDENT_EVENTS = 3
