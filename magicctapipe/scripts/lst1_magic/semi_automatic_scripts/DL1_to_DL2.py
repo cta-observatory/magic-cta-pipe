@@ -58,20 +58,17 @@ def ST_NSB_List(
         List of ending dates for the observation periods
     """
 
-    "Loops over all runs of all nights"
+    # Loops over all runs of all nights
     Nights_list = np.sort(
         glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
     )
     for night in Nights_list:
-        "Night period"
+        # Night period
         night_date = night.split("/")[-1]
-        print("night", night_date)
         date_lst = night_date[:4] + "_" + night_date[4:6] + "_" + night_date[6:8]
-        print(date_lst)
         date_magic = datetime.datetime.strptime(
             date_lst, "%Y_%m_%d"
         ) + datetime.timedelta(days=1)
-        print("dates", date_lst, str(date_magic))
         for p in range(len(ST_begin)):
             if (date_magic >= datetime.datetime.strptime(ST_begin[p], "%Y_%m_%d")) and (
                 date_magic <= datetime.datetime.strptime(ST_end[p], "%Y_%m_%d")
@@ -80,19 +77,15 @@ def ST_NSB_List(
 
         Run_list = glob.glob(f"{night}/*.h5")
         for Run in Run_list:
-            "getting the run NSB"
-            print(Run)
+            # getting the run NSB
             run_str = Run.split("/")[-1].split(".")[1]
-            print("run", run_str)
             run_LST_id = run_str.lstrip("Run")
-            print("run_lst", run_LST_id)
             nsb = df_LST[df_LST["LST1_run"] == run_LST_id]["nsb"].tolist()[0]
-            print("nsb", nsb)
-            "rounding the NSB to the nearest MC nsb value"
+            # rounding the NSB to the nearest MC nsb value
             for j in range(0, len(nsb_list) - 1):
                 if (nsb <= nsb_limit[j + 1]) & (nsb > nsb_limit[j]):
                     nsb = nsb_list[j]
-            "Writing on output .txt file"
+            # Writing on output .txt file
             if nsb <= nsb_limit[-1]:
                 with open(f"{night}/logs/{period}_{nsb}.txt", "a+") as file:
                     file.write(f"{Run}\n")
@@ -138,9 +131,9 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST)
             if process_size < 0:
                 continue
             nsb = file.split("/")[-1].split("_")[-1][:3]
-            p = file.split("/")[-1].split("_")[0]
+            period = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
-            RFdir = f"{RF_dir}/{p}/NSB{nsb}/dec_{dec}/"
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/dec_{dec}/"
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
                 continue
             slurm = slurm_lines(
@@ -178,14 +171,7 @@ def main():
     Here we read the config_general.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()[
-        "2026_01_01",
-        "2024_05_18",
-        "2023_03_09",
-        "2022_08_31",
-        "2022_06_09",
-        "2021_09_29",
-    ]
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config-file",
         "-c",
@@ -217,7 +203,7 @@ def main():
 
     cluster = config["general"]["cluster"]
 
-    "LST dataframe"
+    # LST dataframe
     config_db = resource_file("database_config.yaml")
 
     with open(
@@ -249,13 +235,12 @@ def main():
         )
 
         bash_DL1Stereo_to_DL2(target_dir, source_name, env_name, cluster, RF_dir)
-        list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
-        print(list_of_stereo_scripts)
-        if len(list_of_stereo_scripts) < 1:
+        list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
+        if len(list_of_dl2_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name}")
             continue
         launch_jobs = ""
-        for n, run in enumerate(list_of_stereo_scripts):
+        for n, run in enumerate(list_of_dl2_scripts):
             launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
         os.system(launch_jobs)
 

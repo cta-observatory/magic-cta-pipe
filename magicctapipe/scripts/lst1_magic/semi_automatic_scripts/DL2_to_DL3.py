@@ -99,9 +99,8 @@ def DL2_to_DL3(target_dir, source, env_name, IRF_dir, df_LST, cluster):
             "Automatic processing not implemented for the cluster indicated in the config file"
         )
         return
-    target_dir = str(target_dir)
-
-    os.makedirs(target_dir + f"/v{__version__}/{source}/DL3/logs", exist_ok=True)
+    
+    os.makedirs(f"{target_dir}/v{__version__}/{source}/DL3/logs", exist_ok=True)
 
     # Loop over all nights
     Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL2/*"))
@@ -124,15 +123,13 @@ def DL2_to_DL3(target_dir, source, env_name, IRF_dir, df_LST, cluster):
                     g.writelines(run_new)
 
             nsb = file.split("/")[-1].split("_")[-1][:3]
-            print("nsb = ", nsb)
             period = file.split("/")[-1].split("_")[0]
-            print("period = ", period)
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
             IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/dec_{dec}/"
             if (not os.path.isdir(IRFdir)) or (len(os.listdir(IRFdir)) == 0):
                 continue
             process_name = source
-            output = target_dir + f"/v{__version__}/{source}/DL3"
+            output = f"{target_dir}/v{__version__}/{source}/DL3"
 
             slurm = slurm_lines(
                 queue="short",
@@ -211,13 +208,12 @@ def main():
     )
 
     # cp the .txt files from DL1 stereo anaysis to be used again.
-    DL1stereo_Nihts = np.sort(
+    DL1stereo_Nights = np.sort(
         glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
     )
-    for night in DL1stereo_Nihts:
+    for night in DL1stereo_Nights:
         File_list = glob.glob(f"{night}/logs/ST*.txt")
         night_date = night.split("/")[-1]
-        print("night date ", night_date)
         for file in File_list:
             cp_dir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}"
             os.system(f"cp {file} {cp_dir}")
@@ -234,13 +230,12 @@ def main():
         dec = df_LST[df_LST.source == source].iloc[0]["dec"]
         configuration_DL3(target_dir, source_name, config_file, ra, dec)
         DL2_to_DL3(target_dir, source_name, env_name, IRF_dir, df_LST, cluster)
-        list_of_stereo_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
-        print(list_of_stereo_scripts)
-        if len(list_of_stereo_scripts) < 1:
+        list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
+        if len(list_of_dl3_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name}")
             continue
         launch_jobs = ""
-        for n, run in enumerate(list_of_stereo_scripts):
+        for n, run in enumerate(list_of_dl3_scripts):
             launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
         os.system(launch_jobs)
 
