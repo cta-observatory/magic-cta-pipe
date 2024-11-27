@@ -1325,7 +1325,11 @@ def load_irf_files(input_dir_irf):
             unique_bins = np.unique(irf_data[key], axis=0)
 
             if len(unique_bins) > 1:
-                raise RuntimeError(f"The binning of '{key}' do not match.")
+                if not np.all(np.abs(unique_bins - unique_bins[0]) < unique_bins[0]*1.e-15):
+                    raise RuntimeError(f"The binning of '{key}' do not match.")
+		else:
+                    logger.warning(f"The bins of '{key}' do not match, but the difference is within numerical precision, ignoring")
+                    irf_data[key] = unique_bins[0]
 
             else:
                 # Set the unique bins
