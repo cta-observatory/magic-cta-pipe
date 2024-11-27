@@ -99,7 +99,7 @@ def DL2_to_DL3(target_dir, source, env_name, IRF_dir, df_LST, cluster):
             "Automatic processing not implemented for the cluster indicated in the config file"
         )
         return
-    
+
     os.makedirs(f"{target_dir}/v{__version__}/{source}/DL3/logs", exist_ok=True)
 
     # Loop over all nights
