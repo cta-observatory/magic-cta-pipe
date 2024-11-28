@@ -21,8 +21,6 @@ import yaml
 from magicctapipe.io import resource_file
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
 
-from .lstchain_version import lstchain_versions
-
 __all__ = ["bash_scripts"]
 
 logger = logging.getLogger(__name__)
@@ -114,7 +112,7 @@ def main():
     env_name = config["general"]["env_name"]
 
     cluster = config["general"]["cluster"]
-
+    lstchain_versions = config["needed_parameters"]["lstchain_versions"]
     df_LST = pd.read_hdf(
         LST_h5,
         key=LST_key,
