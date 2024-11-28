@@ -91,7 +91,7 @@ def ST_NSB_List(
                     file.write(f"{Run}\n")
 
 
-def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST):
+def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v):
     """
     This function generates the bashscript for running the DL1Stereo to DL2 analisys.
 
@@ -109,6 +109,8 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST)
         Path to the RFs
     df_LST : :class:`pandas.DataFrame`
         Dataframe collecting the LST1 runs (produced by the create_LST_table script)
+    MC_v : str
+        Version of MC processing
     """
     if cluster != "SLURM":
         logger.warning(
@@ -133,7 +135,8 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST)
             nsb = file.split("/")[-1].split("_")[-1][:3]
             period = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
-            RFdir = f"{RF_dir}/{period}/NSB{nsb}/dec_{dec}/"
+            dec = str(dec).replace(".", "")
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}/"
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
                 continue
             slurm = slurm_lines(
@@ -200,6 +203,7 @@ def main():
     nsb_limit.insert(0, 0)
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
+    MC_v = config["directories"]["MC_version"]
 
     cluster = config["general"]["cluster"]
 
@@ -234,7 +238,7 @@ def main():
             ST_end,
         )
 
-        bash_DL1Stereo_to_DL2(target_dir, source_name, env_name, cluster, RF_dir)
+        bash_DL1Stereo_to_DL2(target_dir, source_name, env_name, cluster, RF_dir, df_LST, MC_v)
         list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
         if len(list_of_dl2_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name}")
