@@ -143,7 +143,7 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST,
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
                 array=process_size,
-                mem="2g",
+                mem="50g",
                 out_name=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/slurm-%x.%A_%a",
             )
             rc = rc_lines(
