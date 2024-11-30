@@ -238,7 +238,9 @@ def main():
             ST_end,
         )
 
-        bash_DL1Stereo_to_DL2(target_dir, source_name, env_name, cluster, RF_dir, df_LST, MC_v)
+        bash_DL1Stereo_to_DL2(
+            target_dir, source_name, env_name, cluster, RF_dir, df_LST, MC_v
+        )
         list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
         if len(list_of_dl2_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name}")
