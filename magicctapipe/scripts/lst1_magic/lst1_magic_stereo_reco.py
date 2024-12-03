@@ -59,7 +59,6 @@ from magicctapipe.io import (
 )
 from magicctapipe.utils import (
     NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
-    calculate_impact,
     calculate_mean_direction,
 )
 
@@ -329,7 +328,9 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             )
             continue
 
-        stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
+        reconstructor_name = "HillasReconstructor"
+
+        stereo_params = event.dl2.stereo.geometry[reconstructor_name]
 
         if not stereo_params.is_valid:
             logger.info(
@@ -341,17 +342,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         stereo_params.az.wrap_at("360 deg", inplace=True)
 
         for tel_id in tel_ids:
-            # Calculate the impact parameter
-            impact = calculate_impact(
-                shower_alt=stereo_params.alt,
-                shower_az=stereo_params.az,
-                core_x=stereo_params.core_x,
-                core_y=stereo_params.core_y,
-                tel_pos_x=tel_positions[tel_id][0],
-                tel_pos_y=tel_positions[tel_id][1],
-                tel_pos_z=tel_positions[tel_id][2],
-            )
-
             # Set the stereo parameters to the data frame
             params = {
                 "alt": stereo_params.alt.to_value("deg"),
@@ -360,8 +350,11 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 "az_uncert": stereo_params.az_uncert.to_value("deg"),
                 "core_x": stereo_params.core_x.to_value("m"),
                 "core_y": stereo_params.core_y.to_value("m"),
-                "impact": impact.to_value("m"),
+                "impact": event.dl2.tel[tel_id]
+                .impact[reconstructor_name]
+                .distance.to_value("m"),
                 "h_max": stereo_params.h_max.to_value("m"),
+                "is_valid": int(stereo_params.is_valid),
             }
 
             event_data.loc[(obs_id, event_id, tel_id), params.keys()] = params.values()
