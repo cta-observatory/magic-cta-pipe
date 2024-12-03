@@ -57,7 +57,10 @@ from magicctapipe.io import (
     get_stereo_events,
     save_pandas_data_in_table,
 )
-from magicctapipe.utils import calculate_mean_direction
+from magicctapipe.utils import (
+    NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
+    calculate_mean_direction,
+)
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
 
@@ -207,25 +210,28 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         theta_uplim = u.Quantity(config_stereo["theta_uplim"])
         mask = u.Quantity(theta, unit="deg") < theta_uplim
 
-        if all(mask):
-            logger.info(
-                "--> All the events were taken with smaller angular distances "
-                f"than the limit {theta_uplim}."
-            )
+        try:
+            if all(mask):
+                logger.info(
+                    "--> All the events were taken with smaller angular distances "
+                    f"than the limit {theta_uplim}."
+                )
 
-        elif not any(mask):
-            logger.info(
-                "--> All the events were taken with larger angular distances "
-                f"than the limit {theta_uplim}. Exiting..."
-            )
-            sys.exit()
+            elif not any(mask):
+                raise Exception(
+                    f"--> All the events were taken with larger angular distances "
+                    f"than the limit {theta_uplim}. Exiting..."
+                )
 
-        else:
-            logger.info(
-                f"--> Exclude {np.count_nonzero(mask)} stereo events whose "
-                f"angular distances are larger than the limit {theta_uplim}."
-            )
-            event_data = event_data.loc[theta[mask].index]
+            else:
+                logger.info(
+                    f"--> Exclude {np.count_nonzero(mask)} stereo events whose "
+                    f"angular distances are larger than the limit {theta_uplim}."
+                )
+                event_data = event_data.loc[theta[mask].index]
+        except Exception as e:
+            logger.error(f"{e}")
+            sys.exit(NO_EVENTS_WITHIN_MAXIMUM_DISTANCE)
 
         event_data.set_index("tel_id", append=True, inplace=True)
 

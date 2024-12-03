@@ -27,7 +27,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def MergeStereo(target_dir, env_name, source, cluster):
+def MergeStereo(target_dir, env_name, source, cluster, nice):
     """
     This function creates the bash scripts to run merge_hdf_files.py in all DL1Stereo subruns.
 
@@ -41,6 +41,8 @@ def MergeStereo(target_dir, env_name, source, cluster):
         Name of the target
     cluster : str
         Cluster system
+    nice : int or None
+        Job priority
     """
 
     process_name = source
@@ -62,6 +64,7 @@ def MergeStereo(target_dir, env_name, source, cluster):
         slurm = slurm_lines(
             queue="short",
             job_name=f"{process_name}_stereo_merge",
+            nice_parameter=nice,
             mem="2g",
             out_name=f"{stereoMergeDir}/logs/slurm-%x.%A_%a",
         )
@@ -109,6 +112,7 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -121,7 +125,7 @@ def main():
     for source_name in source_list:
 
         print("***** Merging DL1Stereo files run-wise...")
-        MergeStereo(target_dir, env_name, source_name, cluster)
+        MergeStereo(target_dir, env_name, source_name, cluster, nice_parameter)
 
         list_of_merge = glob.glob(f"{source_name}_StereoMerge_*.sh")
         if len(list_of_merge) < 1:
