@@ -12,6 +12,7 @@ $ python lst_m1_m2_cloud_correction.py
 """
 import argparse
 import logging
+import os
 import time
 from pathlib import Path
 
@@ -22,6 +23,7 @@ import pandas as pd
 import tables
 import yaml
 from astropy.coordinates import AltAz, SkyCoord
+from astropy.time import Time
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.image import (
     concentration_parameters,
@@ -31,6 +33,7 @@ from ctapipe.image import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table
+from scipy.interpolate import interp1d
 
 import magicctapipe
 from magicctapipe.io import save_pandas_data_in_table
@@ -112,6 +115,132 @@ def trans_height(x, Hc, dHc, trans):
     return t
 
 
+def lidar_cloud_interpolation(
+    mean_subrun_timestamp, max_gap_lidar_shots, lidar_report_file
+):
+    """
+    Retrieves or interpolates LIDAR cloud parameters based on the closest timestamps to an input mean timestamp of the processed subrun.
+
+    Parameters
+    -----------
+    mean_subrun_timestamp : int or float
+        The mean timestamp of the processed subrun (format: unix).
+
+    max_gap_lidar_shots : int or float
+        Maximum allowed time gap for interpolation (in seconds).
+
+    lidar_report_file : str
+        Path to the yaml file containing LIDAR laser reports with columns:
+        - "timestamp" (format: ISO 8601)
+        - "base_height", "top_height", "transmission", "lidar_zenith"
+
+    Returns
+    --------
+    tuple or None
+
+        A tuple containing interpolated or nearest values for:
+        - base_height (float): The base height of the cloud layer in meters.
+        - top_height (float): The top height of the cloud layer in meters.
+        - vertical_transmission (float): Transmission factor of the cloud layer adjusted for vertical angle.
+
+        If no nodes are found within the maximum allowed time gap, returns None.
+    """
+
+    if not os.path.isfile(lidar_report_file):
+        raise FileNotFoundError(f"LIDAR report file not found: {lidar_report_file}")
+
+    with open(lidar_report_file, "r") as f:
+        data = yaml.safe_load(f)
+
+    records = []
+    for entry in data["data"]:
+        timestamp = pd.to_datetime(entry["timestamp"], errors="coerce")
+        lidar_zenith = entry["lidar_zenith"]
+
+        lowest_transmission_layer = min(
+            entry["layers"], key=lambda layer: layer["transmission"]
+        )
+
+        records.append(
+            {
+                "timestamp": timestamp,
+                "lidar_zenith": lidar_zenith,
+                "base_height": lowest_transmission_layer["base_height"],
+                "top_height": lowest_transmission_layer["top_height"],
+                "transmission": lowest_transmission_layer["transmission"],
+            }
+        )
+
+    df = pd.DataFrame(records)
+
+    df["timestamp"] = pd.to_datetime(df["timestamp"], format="ISO8601")
+    df["unix_timestamp"] = df["timestamp"].astype(np.int64) / 10**9
+    df["time_diff"] = df["unix_timestamp"] - mean_subrun_timestamp
+
+    df["lidar_zenith"] = (pd.to_numeric(df["lidar_zenith"], errors="coerce")).to_numpy()
+    vertical_transmission = df["transmission"] * np.cos(np.deg2rad(df["lidar_zenith"]))
+    df["vertical_transmission"] = vertical_transmission
+
+    closest_node_before = df[
+        (df["time_diff"] < 0) & (np.abs(df["time_diff"]) <= max_gap_lidar_shots)
+    ].nlargest(1, "time_diff")
+    closest_node_after = df[
+        (df["time_diff"] > 0) & (np.abs(df["time_diff"]) <= max_gap_lidar_shots)
+    ].nsmallest(1, "time_diff")
+
+    # Check whether the conditions for interpolation are met or not
+    if not closest_node_before.empty and not closest_node_after.empty:
+        node_before = closest_node_before.iloc[0]
+        node_after = closest_node_after.iloc[0]
+        logger.info(
+            f"\nFound suitable interpolation nodes within the allowed temporal gap for timestamp {Time(mean_subrun_timestamp, format='unix').iso}"
+            f"\nUsing following interpolation nodes:\n"
+            f"\n******************** Node before ******************* \n{node_before}"
+            f"\n******************** Node after ******************** \n{node_after}"
+            f"\n\nInterpolation results:"
+        )
+
+        interp_values = {}
+        for param in ["base_height", "top_height", "vertical_transmission"]:
+            interp_func = interp1d(
+                [node_before["unix_timestamp"], node_after["unix_timestamp"]],
+                [node_before[param], node_after[param]],
+                kind="linear",
+                bounds_error=False,
+            )
+            interp_values[param] = interp_func(mean_subrun_timestamp)
+            logger.info(f"\t {param}: {interp_values[param]:.4f}")
+
+        return (
+            interp_values["base_height"],
+            interp_values["top_height"],
+            interp_values["vertical_transmission"],
+        )
+
+    # Handle cases where only one node is available
+    closest_node = (
+        closest_node_before if not closest_node_before.empty else closest_node_after
+    )
+
+    if closest_node is not None and not closest_node.empty:
+        closest = closest_node.iloc[0]
+        logger.info(
+            f"\nOnly one suitable LIDAR report found for timestamp {Time(mean_subrun_timestamp, format='unix').iso} "
+            f"within the maximum allowed temporal gap. \nSkipping interpolation. Using nearest node values instead."
+            f"\n\n{closest}"
+        )
+        return (
+            closest["base_height"],
+            closest["top_height"],
+            closest["vertical_transmission"],
+        )
+
+    logger.info(
+        f"\nNo node is within the maximum allowed temporal gap for timestamp {Time(mean_subrun_timestamp, format='unix').iso}. Exiting ..."
+    )
+    return None
+
+
 def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
     """
     Corrects LST-1 and MAGIC data affected by a cloud presence
@@ -137,13 +266,15 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         Data frame of corrected DL1 parameters
     """
 
-    logger.info(f"\nChecking available image for telescope with ID: {tel_id}")
     assigned_tel_ids = config["mc_tel_ids"]
 
     correction_params = config.get("cloud_correction", {})
-    Hc = u.Quantity(correction_params.get("base_height"))
-    dHc = u.Quantity(correction_params.get("thickness"))
-    trans0 = correction_params.get("vertical_transmission")
+    max_gap_lidar_shots = u.Quantity(
+        correction_params.get("max_gap_lidar_shots")
+    )  # set it to 900 seconds
+    lidar_report_file = correction_params.get(
+        "lidar_report_file"
+    )  # path to the lidar report
     nlayers = correction_params.get("number_of_layers")
 
     all_params_list = []
@@ -160,6 +291,23 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         return None
 
     m2deg = np.rad2deg(1) / focal_eff * u.degree
+
+    mean_subrun_timestamp = np.mean(dl1_params["timestamp"])
+    mean_subrun_zenith = np.mean(90.0 - np.rad2deg(dl1_params["pointing_alt"]))
+
+    cloud_params = lidar_cloud_interpolation(
+        mean_subrun_timestamp, max_gap_lidar_shots, lidar_report_file
+    )
+
+    Hc = u.Quantity(cloud_params[0], u.m)
+    dHc = u.Quantity(cloud_params[1] - cloud_params[0], u.m)
+    incl_trans = u.Quantity(cloud_params[2])
+    trans = incl_trans ** (
+        1 / np.cos(np.deg2rad(mean_subrun_zenith))
+    )  # vertical transmission
+    Hcl = np.linspace(Hc, Hc + dHc, nlayers)  # position of each layer
+    transl = trans_height(Hcl, Hc, dHc, trans)  # transmissions of each layer
+    transl = np.append(transl, transl[-1])
 
     inds = np.where(
         np.logical_and(dl1_params["intensity"] > 0.0, dl1_params["tel_id"] == tel_id)
@@ -182,21 +330,14 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
 
         pointing_az = dl1_params["pointing_az"][index]
         pointing_alt = dl1_params["pointing_alt"][index]
-        zenith = 90.0 - np.rad2deg(pointing_alt)
         time_diff = dl1_params["time_diff"][index]
         n_islands = dl1_params["n_islands"][index]
         signal_pixels = dl1_params["n_pixels"][index]
-
-        trans = trans0 ** (1 / np.cos(np.deg2rad(zenith)))
-        Hcl = np.linspace(Hc, Hc + dHc, nlayers)  # position of each layer
-        transl = trans_height(Hcl, Hc, dHc, trans)  # transmissions of each layer
-        transl = np.append(transl, transl[-1])
 
         alt_rad = np.deg2rad(dl1_params["alt"][index])
         az_rad = np.deg2rad(dl1_params["az"][index])
 
         impact = dl1_params["impact"][index] * u.m
-        psi = dl1_params["psi"][index] * u.deg
         cog_x = (dl1_params["x"][index] * m2deg).value * u.deg
         cog_y = (dl1_params["y"][index] * m2deg).value * u.deg
 
@@ -218,6 +359,8 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         src_x, src_y = -src_y, -src_x
         cog_x, cog_y = -cog_y, -cog_x
 
+        psi = np.arctan2(src_x - cog_x, src_y - cog_y)
+
         pix_x_tel = (camgeom.pix_x * m2deg).to(u.deg)
         pix_y_tel = (camgeom.pix_y * m2deg).to(u.deg)
 
@@ -230,7 +373,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         d2_src_pix = (src_x - pix_x_tel) ** 2 + (src_y - pix_y_tel) ** 2
 
         distance[d2_cog_pix > d2_cog_src + d2_src_pix] = 0
-        dist_corr_layer = model2(impact, Hcl, zenith) * u.deg
+        dist_corr_layer = model2(impact, Hcl, mean_subrun_zenith) * u.deg
 
         ilayer = np.digitize(distance, dist_corr_layer)
         trans_pixels = transl[ilayer]

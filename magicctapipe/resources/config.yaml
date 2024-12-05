@@ -102,7 +102,7 @@ event_coincidence:
 
 
 stereo_reco:
-    quality_cuts: "(intensity > 50) & (intensity > 80 or tel_id > 1) & (width > 0)" #"(intensity > 50) & (width > 0)"
+    quality_cuts: "(intensity > 50) & (width > 0)"
     theta_uplim: "6 arcmin"
 
 
@@ -279,9 +279,8 @@ dl2_to_dl3:
     source_dec: null  # used when the source name cannot be resolved
     
 cloud_correction:
-    specify_cloud: yes
     max_gap_lidar_shots: "900 s"
-    lidar_report_file: "extracted_lidar_reports_test.csv"
+    lidar_report_file: "/home/zywuckan/magic-cta-pipe/magicctapipe/resources/lidar_reports_clouds_ST.03.16.yaml"
     number_of_layers: 10
 
 
