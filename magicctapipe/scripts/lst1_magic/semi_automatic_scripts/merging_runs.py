@@ -125,7 +125,7 @@ def main():
     cluster = config["general"]["cluster"]
     in_version = config["directories"]["real_input_version"]
     if in_version == "":
-        in_version == __version__
+        in_version = __version__
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
