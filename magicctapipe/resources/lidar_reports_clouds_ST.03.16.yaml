@@ -1,0 +1,533 @@
+units:
+  timestamp: 'iso'
+  lidar_zenith: 'deg'
+  base_height: 'm'
+  top_height: 'm'
+  transmission: 'dimensionless'
+
+data:
+- timestamp: '2020-11-18 05:47:19'
+  lidar_zenith: 41.35
+  layers:
+  - base_height: 8083.39
+    top_height: 9504.9
+    transmission: 0.990278
+- timestamp: '2020-11-18 05:51:18'
+  lidar_zenith: 42.24
+  layers:
+  - base_height: 8280.29
+    top_height: 8830.14
+    transmission: 0.983246
+- timestamp: '2020-11-18 23:39:14'
+  lidar_zenith: 43.14
+  layers:
+  - base_height: 9081.92
+    top_height: 11583.4
+    transmission: 0.967012
+- timestamp: '2020-11-18 23:47:22'
+  lidar_zenith: 41.28
+  layers:
+  - base_height: 8662.92
+    top_height: 11455.4
+    transmission: 0.983271
+- timestamp: '2020-11-18 23:55:18'
+  lidar_zenith: 39.5
+  layers:
+  - base_height: 8704.25
+    top_height: 10239.4
+    transmission: 0.997521
+  - base_height: 10702.4
+    top_height: 11423.5
+    transmission: 0.982105
+- timestamp: '2020-11-19 00:07:19'
+  lidar_zenith: 36.17
+  layers:
+  - base_height: 9228.45
+    top_height: 11376.5
+    transmission: 0.97805
+- timestamp: '2020-11-19 00:11:20'
+  lidar_zenith: 35.23
+  layers:
+  - base_height: 9057.65
+    top_height: 12171.3
+    transmission: 0.946499
+- timestamp: '2020-11-20 05:28:57'
+  lidar_zenith: 38.29
+  layers:
+  - base_height: 3097.33
+    top_height: 6023.49
+    transmission: 0.272683
+- timestamp: '2020-11-21 03:28:16'
+  lidar_zenith: 11.82
+  layers:
+  - base_height: 6983.88
+    top_height: 7769.79
+    transmission: 0.96198
+- timestamp: '2020-11-21 03:32:13'
+  lidar_zenith: 12.73
+  layers:
+  - base_height: 2401.35
+    top_height: 8008.39
+    transmission: 0.993979
+- timestamp: '2020-11-21 03:36:15'
+  lidar_zenith: 13.61
+  layers:
+  - base_height: 3284.24
+    top_height: 7653.41
+    transmission: 0.978311
+- timestamp: '2020-11-21 03:40:12'
+  lidar_zenith: 14.55
+  layers:
+  - base_height: 3750.04
+    top_height: 7637.11
+    transmission: 0.997026
+- timestamp: '2020-11-21 03:44:13'
+  lidar_zenith: 15.47
+  layers:
+  - base_height: 2794.53
+    top_height: 7727.88
+    transmission: 0.995458
+- timestamp: '2020-11-21 03:52:14'
+  lidar_zenith: 17.98
+  layers:
+  - base_height: 6946.36
+    top_height: 9337.81
+    transmission: 0.996709
+- timestamp: '2020-11-21 04:00:19'
+  lidar_zenith: 19.84
+  layers:
+  - base_height: 6711.66
+    top_height: 7466.94
+    transmission: 0.995375
+- timestamp: '2020-11-21 04:04:18'
+  lidar_zenith: 20.75
+  layers:
+  - base_height: 3802.37
+    top_height: 6750.56
+    transmission: 0.996894
+  - base_height: 7031.1
+    top_height: 10039.4
+    transmission: 0.993838
+- timestamp: '2020-11-21 04:24:21'
+  lidar_zenith: 24.6
+  layers:
+  - base_height: 4503.69
+    top_height: 6890.61
+    transmission: 0.997654
+- timestamp: '2020-11-21 04:28:15'
+  lidar_zenith: 25.5
+  layers:
+  - base_height: 7197.54
+    top_height: 7662.89
+    transmission: 0.998542
+- timestamp: '2020-12-07 23:24:05'
+  lidar_zenith: 29.44
+  layers:
+  - base_height: 5782.58
+    top_height: 10741.3
+    transmission: 0.983072
+- timestamp: '2020-12-07 23:28:04'
+  lidar_zenith: 28.52
+  layers:
+  - base_height: 2337.05
+    top_height: 3253.23
+    transmission: 0.997173
+  - base_height: 4064.57
+    top_height: 8393.48
+    transmission: 0.995944
+- timestamp: '2020-12-08 00:08:02'
+  lidar_zenith: 19.27
+  layers:
+  - base_height: 3996.74
+    top_height: 4120.95
+    transmission: 0.994905
+  - base_height: 4494.68
+    top_height: 8271.34
+    transmission: 0.958404
+- timestamp: '2020-12-08 00:12:03'
+  lidar_zenith: 18.33
+  layers:
+  - base_height: 5703.4
+    top_height: 8499.75
+    transmission: 0.997426
+- timestamp: '2020-12-08 00:16:04'
+  lidar_zenith: 17.4
+  layers:
+  - base_height: 5237.92
+    top_height: 6690.51
+    transmission: 0.998836
+  - base_height: 6976.79
+    top_height: 8383.41
+    transmission: 0.99353
+- timestamp: '2020-12-08 00:20:03'
+  lidar_zenith: 16.48
+  layers:
+  - base_height: 6183.28
+    top_height: 8516.48
+    transmission: 0.942522
+- timestamp: '2020-12-08 00:24:04'
+  lidar_zenith: 14.98
+  layers:
+  - base_height: 4321.69
+    top_height: 9205.67
+    transmission: 0.998552
+- timestamp: '2020-12-08 00:28:03'
+  lidar_zenith: 14.06
+  layers:
+  - base_height: 4572.29
+    top_height: 10825.6
+    transmission: 0.97851
+- timestamp: '2020-12-08 00:32:17'
+  lidar_zenith: 13.08
+  layers:
+  - base_height: 5206.56
+    top_height: 11266.7
+    transmission: 0.978387
+- timestamp: '2020-12-08 00:36:07'
+  lidar_zenith: 12.2
+  layers:
+  - base_height: 6255.68
+    top_height: 11024.3
+    transmission: 0.983348
+- timestamp: '2020-12-08 00:40:02'
+  lidar_zenith: 11.29
+  layers:
+  - base_height: 4865.59
+    top_height: 8333.48
+    transmission: 0.994915
+- timestamp: '2020-12-08 00:44:03'
+  lidar_zenith: 10.93
+  layers:
+  - base_height: 2346.57
+    top_height: 8310.34
+    transmission: 0.993694
+- timestamp: '2020-12-08 00:48:03'
+  lidar_zenith: 10.01
+  layers:
+  - base_height: 4272.17
+    top_height: 8321.34
+    transmission: 0.979886
+- timestamp: '2020-12-08 00:52:06'
+  lidar_zenith: 9.11
+  layers:
+  - base_height: 2430.81
+    top_height: 3466.43
+    transmission: 0.998161
+  - base_height: 3762.64
+    top_height: 7869.89
+    transmission: 0.996369
+- timestamp: '2020-12-08 00:56:06'
+  lidar_zenith: 8.16
+  layers:
+  - base_height: 3724.66
+    top_height: 8364.42
+    transmission: 0.994163
+- timestamp: '2020-12-14 04:57:01'
+  lidar_zenith: 52.09
+  layers:
+  - base_height: 4192.5
+    top_height: 4626.91
+    transmission: 0.99579
+- timestamp: '2020-12-23 02:58:55'
+  lidar_zenith: 34.47
+  layers:
+  - base_height: 7348.87
+    top_height: 9279.59
+    transmission: 0.994382
+- timestamp: '2020-12-23 03:03:01'
+  lidar_zenith: 35.35
+  layers:
+  - base_height: 6943.06
+    top_height: 10142.6
+    transmission: 0.989766
+- timestamp: '2020-12-23 03:14:59'
+  lidar_zenith: 38.08
+  layers:
+  - base_height: 8771.97
+    top_height: 9054.62
+    transmission: 0.993417
+- timestamp: '2020-12-23 03:22:58'
+  lidar_zenith: 39.14
+  layers:
+  - base_height: 7229.97
+    top_height: 7806.03
+    transmission: 0.984449
+  - base_height: 8643.32
+    top_height: 8847.44
+    transmission: 0.99359
+- timestamp: '2020-12-23 03:26:57'
+  lidar_zenith: 40.03
+  layers:
+  - base_height: 8612.31
+    top_height: 9034.13
+    transmission: 0.984858
+- timestamp: '2020-12-23 03:42:57'
+  lidar_zenith: 44.31
+  layers:
+  - base_height: 7905.67
+    top_height: 8093.98
+    transmission: 0.993864
+- timestamp: '2020-12-23 03:46:56'
+  lidar_zenith: 45.19
+  layers:
+  - base_height: 7808.49
+    top_height: 8129.15
+    transmission: 0.998521
+- timestamp: '2020-12-23 03:50:55'
+  lidar_zenith: 46.07
+  layers:
+  - base_height: 7320.88
+    top_height: 8435.01
+    transmission: 0.954334
+- timestamp: '2020-12-23 04:22:58'
+  lidar_zenith: 53.1
+  layers:
+  - base_height: 6810.82
+    top_height: 8811.56
+    transmission: 0.634311
+- timestamp: '2020-12-23 04:26:59'
+  lidar_zenith: 53.98
+  layers:
+  - base_height: 5505.64
+    top_height: 8875.23
+    transmission: 0.550786
+- timestamp: '2020-12-23 04:31:05'
+  lidar_zenith: 54.87
+  layers:
+  - base_height: 5750.35
+    top_height: 8440.46
+    transmission: 0.694123
+- timestamp: '2021-03-11 20:41:58'
+  lidar_zenith: 19.43
+  layers:
+  - base_height: 5960.02
+    top_height: 8586.78
+    transmission: 0.944362
+- timestamp: '2021-03-11 20:45:58'
+  lidar_zenith: 20.34
+  layers:
+  - base_height: 6510.41
+    top_height: 8897.3
+    transmission: 0.977718
+- timestamp: '2021-03-11 20:50:01'
+  lidar_zenith: 21.26
+  layers:
+  - base_height: 3059.78
+    top_height: 9707.01
+    transmission: 0.960416
+- timestamp: '2021-03-11 20:54:00'
+  lidar_zenith: 22.17
+  layers:
+  - base_height: 4920.12
+    top_height: 6196.61
+    transmission: 0.998693
+  - base_height: 6474.43
+    top_height: 9053.89
+    transmission: 0.960237
+- timestamp: '2021-03-11 20:57:59'
+  lidar_zenith: 22.33
+  layers:
+  - base_height: 8202.81
+    top_height: 9693.81
+    transmission: 0.946716
+- timestamp: '2021-03-11 21:02:06'
+  lidar_zenith: 23.3
+  layers:
+  - base_height: 7984.35
+    top_height: 9103.63
+    transmission: 0.968782
+- timestamp: '2021-03-11 21:06:05'
+  lidar_zenith: 24.21
+  layers:
+  - base_height: 5785.97
+    top_height: 5949.72
+    transmission: 0.99856
+  - base_height: 6354.54
+    top_height: 10003.5
+    transmission: 0.847347
+- timestamp: '2021-03-11 21:10:06'
+  lidar_zenith: 25.1
+  layers:
+  - base_height: 7025.92
+    top_height: 10677.4
+    transmission: 0.676118
+- timestamp: '2021-03-11 21:14:05'
+  lidar_zenith: 26.02
+  layers:
+  - base_height: 6476.6
+    top_height: 9770.24
+    transmission: 0.537755
+- timestamp: '2021-03-11 21:22:05'
+  lidar_zenith: 28.55
+  layers:
+  - base_height: 7004.69
+    top_height: 10139.9
+    transmission: 0.544511
+- timestamp: '2021-03-11 21:26:00'
+  lidar_zenith: 29.44
+  layers:
+  - base_height: 6819.36
+    top_height: 10387.1
+    transmission: 0.741491
+- timestamp: '2021-03-11 21:30:05'
+  lidar_zenith: 30.35
+  layers:
+  - base_height: 6902.21
+    top_height: 9264.49
+    transmission: 0.758622
+- timestamp: '2021-03-11 21:34:00'
+  lidar_zenith: 31.25
+  layers:
+  - base_height: 6161.44
+    top_height: 6437.92
+    transmission: 0.995586
+  - base_height: 7063.36
+    top_height: 10114.7
+    transmission: 0.728179
+- timestamp: '2021-03-11 21:42:05'
+  lidar_zenith: 32.34
+  layers:
+  - base_height: 7358.49
+    top_height: 10179.9
+    transmission: 0.446966
+- timestamp: '2021-03-11 21:46:01'
+  lidar_zenith: 33.24
+  layers:
+  - base_height: 6542.9
+    top_height: 9804.14
+    transmission: 0.384501
+- timestamp: '2021-03-11 21:50:07'
+  lidar_zenith: 34.14
+  layers:
+  - base_height: 7096.26
+    top_height: 10552.6
+    transmission: 0.456605
+- timestamp: '2021-03-11 21:54:03'
+  lidar_zenith: 35.01
+  layers:
+  - base_height: 7022.38
+    top_height: 9500.14
+    transmission: 0.41693
+- timestamp: '2021-03-11 21:58:05'
+  lidar_zenith: 35.94
+  layers:
+  - base_height: 5660.39
+    top_height: 9546.18
+    transmission: 0.292292
+- timestamp: '2021-03-13 22:03:28'
+  lidar_zenith: 38.9
+  layers:
+  - base_height: 6630.79
+    top_height: 7377.42
+    transmission: 0.980601
+- timestamp: '2021-03-13 22:07:29'
+  lidar_zenith: 39.76
+  layers:
+  - base_height: 6056.41
+    top_height: 7546.81
+    transmission: 0.993576
+- timestamp: '2021-03-13 22:11:33'
+  lidar_zenith: 40.71
+  layers:
+  - base_height: 4209.05
+    top_height: 5217.55
+    transmission: 0.998153
+  - base_height: 5590.36
+    top_height: 8065.24
+    transmission: 0.65145
+- timestamp: '2021-03-13 22:15:32'
+  lidar_zenith: 41.59
+  layers:
+  - base_height: 5539.99
+    top_height: 8005.37
+    transmission: 0.579692
+- timestamp: '2021-03-13 22:19:34'
+  lidar_zenith: 43.19
+  layers:
+  - base_height: 5604.24
+    top_height: 7856.89
+    transmission: 0.523405
+- timestamp: '2021-03-13 22:23:34'
+  lidar_zenith: 44.07
+  layers:
+  - base_height: 5522.78
+    top_height: 7604.87
+    transmission: 0.552276
+- timestamp: '2021-03-13 22:27:33'
+  lidar_zenith: 44.98
+  layers:
+  - base_height: 5850.12
+    top_height: 8113.95
+    transmission: 0.559199
+- timestamp: '2021-03-13 22:31:34'
+  lidar_zenith: 45.87
+  layers:
+  - base_height: 5168.48
+    top_height: 7408.42
+    transmission: 0.747925
+- timestamp: '2021-03-13 22:35:35'
+  lidar_zenith: 46.76
+  layers:
+  - base_height: 5298.63
+    top_height: 7448.09
+    transmission: 0.608835
+- timestamp: '2021-03-13 22:39:36'
+  lidar_zenith: 46.92
+  layers:
+  - base_height: 5586.04
+    top_height: 7973.29
+    transmission: 0.629101
+- timestamp: '2021-03-13 22:43:39'
+  lidar_zenith: 47.78
+  layers:
+  - base_height: 5584.18
+    top_height: 7499.26
+    transmission: 0.725406
+- timestamp: '2021-03-13 22:47:40'
+  lidar_zenith: 48.62
+  layers:
+  - base_height: 5255.6
+    top_height: 7413.89
+    transmission: 0.740245
+- timestamp: '2021-03-13 22:51:38'
+  lidar_zenith: 49.56
+  layers:
+  - base_height: 5421.43
+    top_height: 7549.98
+    transmission: 0.707472
+- timestamp: '2021-03-13 22:55:39'
+  lidar_zenith: 50.44
+  layers:
+  - base_height: 5491.07
+    top_height: 7448.29
+    transmission: 0.782424
+- timestamp: '2021-03-13 23:11:41'
+  lidar_zenith: 53.95
+  layers:
+  - base_height: 5598.62
+    top_height: 7164.52
+    transmission: 0.942725
+- timestamp: '2021-03-13 23:15:40'
+  lidar_zenith: 54.8
+  layers:
+  - base_height: 5507.28
+    top_height: 7372.8
+    transmission: 0.907823
+- timestamp: '2021-03-15 20:50:00'
+  lidar_zenith: 24.09
+  layers:
+  - base_height: 3690.09
+    top_height: 6261.75
+    transmission: 0.992119
+- timestamp: '2021-03-15 21:02:08'
+  lidar_zenith: 27.58
+  layers:
+  - base_height: 2357.57
+    top_height: 6299.63
+    transmission: 0.994461
+- timestamp: '2021-03-15 21:21:59'
+  lidar_zenith: 31.35
+  layers:
+  - base_height: 6769.2
+    top_height: 7594.22
+    transmission: 0.993382

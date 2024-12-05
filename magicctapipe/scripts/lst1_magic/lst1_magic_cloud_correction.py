@@ -14,6 +14,7 @@ import argparse
 import logging
 import os
 import time
+import warnings
 from pathlib import Path
 
 import astropy.units as u
@@ -29,6 +30,8 @@ from ctapipe.image import (
     concentration_parameters,
     hillas_parameters,
     leakage_parameters,
+    number_of_islands,
+    tailcuts_clean,
     timing_parameters,
 )
 from ctapipe.instrument import SubarrayDescription
@@ -36,6 +39,7 @@ from ctapipe.io import read_table
 from scipy.interpolate import interp1d
 
 import magicctapipe
+from magicctapipe.image import MAGICClean
 from magicctapipe.io import save_pandas_data_in_table
 
 logger = logging.getLogger(__name__)
@@ -178,7 +182,7 @@ def lidar_cloud_interpolation(
     df["time_diff"] = df["unix_timestamp"] - mean_subrun_timestamp
 
     df["lidar_zenith"] = (pd.to_numeric(df["lidar_zenith"], errors="coerce")).to_numpy()
-    vertical_transmission = df["transmission"] * np.cos(np.deg2rad(df["lidar_zenith"]))
+    vertical_transmission = df["transmission"] ** np.cos(np.deg2rad(df["lidar_zenith"]))
     df["vertical_transmission"] = vertical_transmission
 
     closest_node_before = df[
@@ -241,24 +245,51 @@ def lidar_cloud_interpolation(
     return None
 
 
-def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
+def process_telescope_data(
+    dl1_params,
+    dl1_images,
+    config,
+    tel_id,
+    tel_ids,
+    camgeom,
+    focal_eff,
+    nlayers,
+    mean_subrun_zenith,
+    Hc,
+    dHc,
+    trans,
+):
     """
     Corrects LST-1 and MAGIC data affected by a cloud presence
 
     Parameters
     ----------
-    input_file : str
-        Path to an input .h5 DL1 file
+    dl1_params : str
+        Path to an input .h5 DL1 table with parameters
+    dl1_images : str
+        Path to an input .h5 DL1 table with images
     config : dict
         Configuration for the LST-1 + MAGIC analysis
     tel_id : numpy.int16
         LST-1 and MAGIC telescope ids
+    tel_ids : dict
+        List of LST-1 and MAGIC telescope names and ids from config file
     camgeom : ctapipe.instrument.camera.geometry.CameraGeometry
         An instance of the CameraGeometry class containing information about the
         camera's configuration, including pixel type, number of pixels, rotation
         angles, and the reference frame.
     focal_eff : astropy.units.quantity.Quantity
         Effective focal length
+    nlayers : astropy.units.quantity.Quantity
+        Array with heights of each cloud layer a.g.l.
+    mean_subrun_zenith : numpy.float64
+        Mean value of zenith per subran
+    Hc : astropy.units.quantity.Quantity
+        Height of the base of the cloud a.g.l.
+    dHc : astropy.units.quantity.Quantity
+        Cloud thickness
+    trans : numpy.float64
+        Transmission of the cloud
 
     Returns
     -------
@@ -266,45 +297,25 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         Data frame of corrected DL1 parameters
     """
 
-    assigned_tel_ids = config["mc_tel_ids"]
+    # AC LST
+    cleaning_level = {"LSTCam": (5, 10, 2)}
 
-    correction_params = config.get("cloud_correction", {})
-    max_gap_lidar_shots = u.Quantity(
-        correction_params.get("max_gap_lidar_shots")
-    )  # set it to 900 seconds
-    lidar_report_file = correction_params.get(
-        "lidar_report_file"
-    )  # path to the lidar report
-    nlayers = correction_params.get("number_of_layers")
+    # AC MAGIC
+    # Ignore runtime warnings appeared during the image cleaning
+    warnings.simplefilter("ignore", category=RuntimeWarning)
+    # Configure the MAGIC image cleaning
+    config_clean_magic = config["cloud_correction"]["additional_magic_cleaning"]
+    magic_clean = MAGICClean(camgeom, config_clean_magic)
+
+    unsuitable_mask = None
 
     all_params_list = []
 
-    dl1_params = read_table(input_file, "/events/parameters")
-
-    image_node_path = "/events/dl1/image_" + str(tel_id)
-
-    try:
-        dl1_images = read_table(input_file, image_node_path)
-        logger.info(f"Found images for telescope with ID {tel_id}. Processing...")
-    except tables.NoSuchNodeError:
-        logger.info(f"No image for telescope with ID {tel_id}. Skipping.")
+    if dl1_images is None:
         return None
 
     m2deg = np.rad2deg(1) / focal_eff * u.degree
 
-    mean_subrun_timestamp = np.mean(dl1_params["timestamp"])
-    mean_subrun_zenith = np.mean(90.0 - np.rad2deg(dl1_params["pointing_alt"]))
-
-    cloud_params = lidar_cloud_interpolation(
-        mean_subrun_timestamp, max_gap_lidar_shots, lidar_report_file
-    )
-
-    Hc = u.Quantity(cloud_params[0], u.m)
-    dHc = u.Quantity(cloud_params[1] - cloud_params[0], u.m)
-    incl_trans = u.Quantity(cloud_params[2])
-    trans = incl_trans ** (
-        1 / np.cos(np.deg2rad(mean_subrun_zenith))
-    )  # vertical transmission
     Hcl = np.linspace(Hc, Hc + dHc, nlayers)  # position of each layer
     transl = trans_height(Hcl, Hc, dHc, trans)  # transmissions of each layer
     transl = np.append(transl, transl[-1])
@@ -323,7 +334,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
         multiplicity = dl1_params["multiplicity"][index]
         combo_type = dl1_params["combo_type"][index]
 
-        if assigned_tel_ids["LST-1"] == tel_id:
+        if tel_ids["LST-1"] == tel_id:
             event_id_image, obs_id_image = event_id_lst, obs_id_lst
         else:
             event_id_image, obs_id_image = event_id_magic, obs_id_magic
@@ -388,25 +399,61 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
             raise ValueError("Error: 'inds_img' list is empty!")
         index_img = inds_img[0]
         image = dl1_images["image"][index_img]
-        cleanmask = dl1_images["image_mask"][index_img]
         peak_time = dl1_images["peak_time"][index_img]
         image /= trans_pixels
-        corr_image = image.copy()
 
-        clean_image = corr_image[cleanmask]
-        clean_camgeom = camgeom[cleanmask]
+        # additional cleaning
+        if tel_ids["LST-1"] == tel_id:
+
+            boundary, picture, min_neighbors = cleaning_level[
+                camgeom.name
+            ]  # .camera_name]
+
+            clean = tailcuts_clean(
+                camgeom,
+                image,
+                boundary_thresh=boundary,
+                picture_thresh=picture,
+                min_number_picture_neighbors=min_neighbors,
+            )
+
+            # Create a mask indicating which pixels survived the cleaning
+            clean_mask = np.zeros_like(image, dtype=bool)
+            clean_mask[clean] = True
+
+            if np.sum(clean_mask) == 0:
+                continue
+
+            # Apply the mask to relevant data arrays
+            clean_peak_time = peak_time[clean_mask]
+            clean_image = image[clean_mask]
+            clean_camgeom = camgeom[clean_mask]
+
+        else:
+
+            # Apply the MAGIC image cleaning
+            clean_mask, image, peak_time = magic_clean.clean_image(
+                event_image=image,
+                event_pulse_time=peak_time,
+                unsuitable_mask=unsuitable_mask,
+            )
+            n_islands, _ = number_of_islands(camgeom, clean_mask)
+
+            clean_camgeom = camgeom[clean_mask]
+            clean_image = image[clean_mask]
+            clean_peak_time = peak_time[clean_mask]
 
         hillas_params = hillas_parameters(clean_camgeom, clean_image)
         timing_params = timing_parameters(
-            clean_camgeom, clean_image, peak_time[cleanmask], hillas_params
+            clean_camgeom, clean_image, clean_peak_time, hillas_params
         )
-        leakage_params = leakage_parameters(camgeom, corr_image, cleanmask)
-        if assigned_tel_ids["LST-1"] == tel_id:
+        leakage_params = leakage_parameters(camgeom, image, clean_mask)
+        if tel_ids["LST-1"] == tel_id:
             conc_params = concentration_parameters(
                 clean_camgeom, clean_image, hillas_params
             )  # For LST-1 we compute concentration from the cleaned image and for MAGIC from the full image to reproduce the current behaviour in the standard code
         else:
-            conc_params = concentration_parameters(camgeom, corr_image, hillas_params)
+            conc_params = concentration_parameters(camgeom, clean_image, hillas_params)
 
         event_params = {
             **hillas_params,
@@ -502,15 +549,57 @@ def main():
 
     tel_ids = config["mc_tel_ids"]
 
-    dfs = []  # Initialize an empty list to store DataFrames
+    correction_params = config.get("cloud_correction", {})
+    max_gap_lidar_shots = u.Quantity(
+        correction_params.get("max_gap_lidar_shots")
+    )  # set it to 900 seconds
+    lidar_report_file = correction_params.get(
+        "lidar_report_file"
+    )  # path to the lidar report
+    nlayers = correction_params.get("number_of_layers")
+
+    dl1_params = read_table(args.input_file, "/events/parameters")
+
+    mean_subrun_timestamp = np.mean(dl1_params["timestamp"])
+    mean_subrun_zenith = np.mean(90.0 - np.rad2deg(dl1_params["pointing_alt"]))
+
+    cloud_params = lidar_cloud_interpolation(
+        mean_subrun_timestamp, max_gap_lidar_shots, lidar_report_file
+    )
+
+    Hc = u.Quantity(cloud_params[0], u.m)
+    dHc = u.Quantity(cloud_params[1] - cloud_params[0], u.m)
+    vertical_trans = u.Quantity(cloud_params[2])
+    trans = vertical_trans ** (1 / np.cos(np.deg2rad(mean_subrun_zenith)))
+
+    dfs = []
 
     for tel_name, tel_id in tel_ids.items():
         if tel_id != 0:  # Only process telescopes that have a non-zero ID
-            df = process_telescope_data(
-                args.input_file, config, tel_id, camgeom[tel_id], focal_eff[tel_id]
-            )
+            # Read images for each telescope
+            image_node_path = "/events/dl1/image_" + str(tel_id)
+            try:
+                dl1_images = read_table(args.input_file, image_node_path)
+            except tables.NoSuchNodeError:
+                logger.info(f"\nNo image for telescope with ID {tel_id}. Skipping.")
+                dl1_images = None
 
-            dfs.append(df)
+            df = process_telescope_data(
+                dl1_params,
+                dl1_images,
+                config,
+                tel_id,
+                tel_ids,
+                camgeom[tel_id],
+                focal_eff[tel_id],
+                nlayers,
+                mean_subrun_zenith,
+                Hc,
+                dHc,
+                trans,
+            )
+            if df is not None:
+                dfs.append(df)
 
     df_all = pd.concat(dfs, ignore_index=True)
 
@@ -548,6 +637,31 @@ def main():
     save_pandas_data_in_table(
         df_all, output_file, group_name="/events", table_name="parameters"
     )
+
+    with tables.open_file(output_file, mode="a") as f:
+        cloud_metadata_group = f.create_group("/", "weather", "Cloud parameters")
+
+        cloud_base_height_data = Hc.to_value(u.m)
+        cloud_base_height_array = f.create_array(
+            cloud_metadata_group,
+            "cloud_base_height",
+            np.array([cloud_base_height_data]),
+        )
+        cloud_base_height_array.attrs["unit"] = str(u.m)
+
+        cloud_thickness_data = dHc.to_value(u.m)
+        cloud_thickness_array = f.create_array(
+            cloud_metadata_group, "cloud_thickness", np.array([cloud_thickness_data])
+        )
+        cloud_thickness_array.attrs["unit"] = str(u.m)
+
+        cloud_vertical_trans_data = vertical_trans.to_value(u.dimensionless_unscaled)
+        cloud_vertical_trans_array = f.create_array(
+            cloud_metadata_group,
+            "cloud_vertical_transmission",
+            np.array([cloud_vertical_trans_data]),
+        )
+        cloud_vertical_trans_array.attrs["unit"] = str(u.dimensionless_unscaled)
 
     subarray_info.to_hdf(output_file)
 

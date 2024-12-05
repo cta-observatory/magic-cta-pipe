@@ -280,7 +280,21 @@ dl2_to_dl3:
     
 cloud_correction:
     max_gap_lidar_shots: "900 s"
-    lidar_report_file: "/home/zywuckan/magic-cta-pipe/magicctapipe/resources/lidar_reports_clouds_ST.03.16.yaml"
+    lidar_report_file: "../../resources/lidar_reports_clouds_ST.03.16.yaml"
     number_of_layers: 10
 
-
+    additional_lst_cleaning:
+        picture_thresh: 10
+        boundary_thresh: 5
+        keep_isolated_pixels: false
+        min_number_picture_neighbors: 2
+        
+    additional_magic_cleaning: 
+        use_time: true
+        use_sum: true
+        picture_thresh: 6
+        boundary_thresh: 3.5
+        max_time_off: 4.5
+        max_time_diff: 1.5
+        find_hotpixels: false
+        pedestal_type: "from_extractor_rndm"
