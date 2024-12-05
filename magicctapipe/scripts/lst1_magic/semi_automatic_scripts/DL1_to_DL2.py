@@ -92,7 +92,9 @@ def ST_NSB_List(
 
 
 
-def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v, dense_list):
+def bash_DL1Stereo_to_DL2(
+    target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v, dense_list
+):
     """
     This function generates the bashscript for running the DL1Stereo to DL2 analisys.
 
@@ -198,7 +200,7 @@ def main():
 
 
     args = parser.parse_args()
-    dense_list=[]
+    dense_list = []
     if args.dense_list is not None:
         with open(args.dense_list) as d:
             dense_list = d.readlines()
@@ -258,7 +260,7 @@ def main():
         )
 
         bash_DL1Stereo_to_DL2(
-          target_dir, source_name, env_name, cluster, RF_dir, df_LST, MC_v, dense_list
+            target_dir, source_name, env_name, cluster, RF_dir, df_LST, MC_v, dense_list
         )
         list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
         if len(list_of_dl2_scripts) < 1:

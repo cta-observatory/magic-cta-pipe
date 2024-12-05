@@ -75,7 +75,9 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def DL2_to_DL3(target_dir, source, env_name, IRF_dir, df_LST, cluster, MC_v, dense_list):
+def DL2_to_DL3(
+    target_dir, source, env_name, IRF_dir, df_LST, cluster, MC_v, dense_list
+):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
 
@@ -191,7 +193,7 @@ def main():
     )
 
     args = parser.parse_args()
-    dense_list=[]
+    dense_list = []
     if args.dense_list is not None:
         with open(args.dense_list) as d:
             dense_list = d.readlines()
@@ -250,7 +252,16 @@ def main():
         ra = df_LST[df_LST.source == source_name].iloc[0]["ra"]
         dec = df_LST[df_LST.source == source_name].iloc[0]["dec"]
         configuration_DL3(target_dir, source_name, config_file, ra, dec)
-        DL2_to_DL3(target_dir, source_name, env_name, IRF_dir, df_LST, cluster, MC_v, dense_list)
+        DL2_to_DL3(
+            target_dir,
+            source_name,
+            env_name,
+            IRF_dir,
+            df_LST,
+            cluster,
+            MC_v,
+            dense_list
+        )
         list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
         if len(list_of_dl3_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name}")
