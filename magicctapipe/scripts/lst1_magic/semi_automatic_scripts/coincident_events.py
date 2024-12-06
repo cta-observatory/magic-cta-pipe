@@ -77,9 +77,8 @@ def configfile_coincidence(target_dir, source_name, config_file):
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, cluster, version
+    target_dir, LST_runs, source_name, LST_version, env_name, cluster, version, nice
 ):
-
     """
     This function links the LST data paths to the working directory and creates bash scripts.
 
@@ -99,6 +98,8 @@ def linking_bash_lst(
         Cluster system
     version : str
         Version of the input (DL1 MAGIC runs) data
+    nice : int or None
+        Job priority
     """
 
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
@@ -147,6 +148,7 @@ def linking_bash_lst(
                 slurm = slurm_lines(
                     queue="short",
                     job_name=f"{source_name}_coincidence",
+                    nice_parameter=nice,
                     array=process_size,
                     mem="6g",
                     out_name=f"{outputdir}/logs/slurm-%x.%A_%a",
@@ -201,6 +203,7 @@ def main():
     env_name = config["general"]["env_name"]
     LST_version = config["general"]["LST_version"]
     config_file = config["general"]["base_config_file"]
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
@@ -238,6 +241,7 @@ def main():
                 env_name,
                 cluster,
                 in_version,
+                nice_parameter,
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")

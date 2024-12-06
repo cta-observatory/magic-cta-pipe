@@ -164,6 +164,10 @@ def main():
         timemax = str(config["data_selection"]["max"])
         timemin = datetime.strptime(timemin, "%Y_%m_%d")
         timemax = datetime.strptime(timemax, "%Y_%m_%d")
+    if "DL1/" in args.data_level:
+        tdelta = timedelta(days=1)
+        timemin = timemin + tdelta
+        timemax = timemax + tdelta
 
     all_todo = 0
     all_return = 0
