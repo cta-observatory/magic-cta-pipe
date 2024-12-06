@@ -33,8 +33,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, MAGIC_runs, env_name, source, cluster, version):
-
+def merge(target_dir, MAGIC_runs, env_name, source, cluster, version, nice):
     """
     This function creates the bash scripts to run merge_hdf_files.py for real data
 
@@ -52,6 +51,8 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, version):
         Cluster system
     version : str
         Version of the input (DL1 MAGIC subruns) data
+    nice : int or None
+        Job priority
     """
 
     process_name = f"merging_{source}"
@@ -67,6 +68,7 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, version):
     lines = slurm_lines(
         queue="short",
         job_name=process_name,
+        nice_parameter=nice,
         mem="2g",
         out_name=f"{MAGIC_out_dir}/Merged/logs/slurm-%x.%j",
     )
@@ -126,7 +128,8 @@ def main():
     in_version = config["directories"]["real_input_version"]
     if in_version == "":
         in_version = __version__
-
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
+    
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
@@ -151,6 +154,7 @@ def main():
             source_name,
             cluster,
             in_version,
+            nice_parameter,
         )  # generating the bash script to merge the subruns
 
         print("***** Running merge_hdf_files.py on the MAGIC data files...")

@@ -101,7 +101,7 @@ jobs:
           cat environment.yml
 
       - name: mamba setup
-        uses: mamba-org/setup-micromamba@v1
+        uses: mamba-org/setup-micromamba@v2
         with:
           environment-file: environment.yml
           cache-downloads: true
@@ -126,7 +126,7 @@ jobs:
           coverage run -m pytest -vra
           coverage xml
 
-      - uses: codecov/codecov-action@v4
+      - uses: codecov/codecov-action@v5
         if: contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
         with:
             fail_ci_if_error: true

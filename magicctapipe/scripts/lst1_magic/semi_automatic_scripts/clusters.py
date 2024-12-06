@@ -4,7 +4,10 @@ Module for generating bash script lines for running analysis in different cluste
 __all__ = ["slurm_lines", "rc_lines"]
 
 
-def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
+def slurm_lines(
+    queue, job_name, nice_parameter=None, array=None, mem=None, out_name=None
+):
+
     """
     Function for creating the general lines that slurm scripts are starting with.
 
@@ -14,6 +17,8 @@ def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
         Name of the queue
     job_name : str
         Job name
+    nice_parameter : int or None
+        Job priority
     array : None or int
         If not none array of jobs from 0 to array will be made
     mem : None or str
@@ -35,6 +40,7 @@ def slurm_lines(queue, job_name, array=None, mem=None, out_name=None):
         "#SBATCH -n 1\n\n",
         f"#SBATCH --output={out_name}.out\n" if out_name is not None else "",
         f"#SBATCH --error={out_name}.err\n\n" if out_name is not None else "",
+        f"#SBATCH --nice={nice_parameter}\n" if nice_parameter is not None else "",
         "ulimit -l unlimited\n",
         "ulimit -s unlimited\n",
         "ulimit -a\n\n",

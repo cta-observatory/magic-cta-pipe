@@ -68,8 +68,7 @@ def configfile_stereo(target_dir, source_name, config_file):
         yaml.dump(conf, f, default_flow_style=False)
 
 
-def bash_stereo(target_dir, source, env_name, cluster, version):
-
+def bash_stereo(target_dir, source, env_name, cluster, version, nice):
     """
     This function generates the bashscripts for running the stereo analysis.
 
@@ -85,6 +84,8 @@ def bash_stereo(target_dir, source, env_name, cluster, version):
         Cluster system
     version : str
         Version of the input (coincident) data
+    nice : int or None
+        Job priority
     """
 
     process_name = source
@@ -118,6 +119,7 @@ def bash_stereo(target_dir, source, env_name, cluster, version):
         slurm = slurm_lines(
             queue="short",
             job_name=f"{process_name}_stereo",
+            nice_parameter=nice,
             array=process_size,
             mem="2g",
             out_name=f"{stereoDir}/logs/slurm-%x.%A_%a",
@@ -176,6 +178,7 @@ def main():
     in_version = config["directories"]["real_input_version"]
     if in_version == "":
         in_version = __version__
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -192,7 +195,7 @@ def main():
         # Below we run the analysis on the real data
 
         print("***** Generating the bashscript...")
-        bash_stereo(target_dir, source_name, env_name, cluster, in_version)
+        bash_stereo(target_dir, source_name, env_name, cluster, in_version, nice_parameter)
 
         print("***** Submitting processess to the cluster...")
         print(f"Process name: {source_name}_stereo")
