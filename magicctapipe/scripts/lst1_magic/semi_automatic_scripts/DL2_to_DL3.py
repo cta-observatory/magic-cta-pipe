@@ -58,8 +58,8 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
         config_dict = yaml.safe_load(fc)
     DL3_config = config_dict["dl2_to_dl3"]
     DL3_config["source_name"] = source_name
-    DL3_config["source_ra"] = float(ra)
-    DL3_config["source_dec"] = float(dec)
+    DL3_config["source_ra"] = f'{ra} deg'
+    DL3_config["source_dec"] = f'{dec} deg'
     conf = {
         "mc_tel_ids": config_dict["mc_tel_ids"],
         "dl2_to_dl3": DL3_config,
