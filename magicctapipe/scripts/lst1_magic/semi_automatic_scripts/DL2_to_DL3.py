@@ -227,7 +227,7 @@ def main():
             File_list = glob.glob(f"{night}/logs/ST*.txt")
             night_date = night.split("/")[-1]
             for file in File_list:
-                cp_dir = f"{target_dir}/v{__version__}/{source_name}/DL2/{night_date}"
+                cp_dir = f"{target_dir}/v{__version__}/{source_name}/DL2/{night_date}/logs"
                 os.system(f"cp {file} {cp_dir}")
 
         ra = df_LST[df_LST.source == source_name].iloc[0]["ra"]
