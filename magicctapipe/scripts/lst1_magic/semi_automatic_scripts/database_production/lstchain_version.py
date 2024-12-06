@@ -8,6 +8,7 @@ $ lstchain_version
 """
 
 
+import argparse
 import glob
 import os
 
@@ -16,11 +17,10 @@ import yaml
 
 from magicctapipe.io import resource_file
 
-lstchain_versions = ["v0.9", "v0.10"]
 __all__ = ["version_lstchain"]
 
 
-def version_lstchain(df_LST):
+def version_lstchain(df_LST, lstchain_versions):
     """
     Evaluates (and store in the database) all the versions used to process a given file and the last version of a file
 
@@ -28,6 +28,8 @@ def version_lstchain(df_LST):
     ----------
     df_LST : :class:`pandas.DataFrame`
         Dataframe of the LST-1 observations.
+    lstchain_versions : list
+        List of the available lstchain varsions that can be processed by MCP (from older to newer)
     """
     for i, row in df_LST.iterrows():
 
@@ -69,6 +71,21 @@ def main():
     """
     Main function
     """
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_auto",
+        type=str,
+        default="../config_auto_MCP.yaml",
+        help="Path to a configuration file",
+    )
+    args = parser.parse_args()
+    with open(
+        args.config_auto, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config = yaml.safe_load(f)
+    lstchain_versions = config["needed_parameters"]["lstchain_versions"]
     config_file = resource_file("database_config.yaml")
 
     with open(
@@ -80,7 +97,7 @@ def main():
     LST_key = config_dict["database_keys"]["LST"]
     df_LST = pd.read_hdf(LST_h5, key=LST_key)
 
-    version_lstchain(df_LST)
+    version_lstchain(df_LST, lstchain_versions)
 
     df_LST.to_hdf(
         LST_h5,
