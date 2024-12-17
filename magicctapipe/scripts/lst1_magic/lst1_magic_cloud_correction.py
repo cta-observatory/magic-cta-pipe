@@ -30,7 +30,6 @@ from ctapipe.image import (
     concentration_parameters,
     hillas_parameters,
     leakage_parameters,
-    number_of_islands,
     tailcuts_clean,
     timing_parameters,
 )
@@ -258,6 +257,7 @@ def process_telescope_data(
     Hc,
     dHc,
     trans,
+    cmf,
 ):
     """
     Corrects LST-1 and MAGIC data affected by a cloud presence
@@ -290,6 +290,8 @@ def process_telescope_data(
         Cloud thickness
     trans : numpy.float64
         Transmission of the cloud
+    cmf : float
+        Multiplication factor for additional cleaning
 
     Returns
     -------
@@ -298,13 +300,33 @@ def process_telescope_data(
     """
 
     # AC LST
-    cleaning_level = {"LSTCam": (5, 10, 2)}
+    cleaning_level = config["LST"]["tailcuts_clean"]
+    # Multiply only non-boolean numerical values
+    config_clean_LST = {
+        key: (
+            value * cmf
+            if isinstance(value, (int, float)) and not isinstance(value, bool)
+            else value
+        )
+        for key, value in cleaning_level.items()
+    }
 
     # AC MAGIC
     # Ignore runtime warnings appeared during the image cleaning
     warnings.simplefilter("ignore", category=RuntimeWarning)
     # Configure the MAGIC image cleaning
-    config_clean_magic = config["cloud_correction"]["additional_magic_cleaning"]
+    config_clean = config["MAGIC"]["magic_clean"]
+    # Scale numeric values and set 'find_hotpixels' to False
+    config_clean_magic = {
+        key: (
+            False
+            if key == "find_hotpixels"
+            else value * cmf
+            if isinstance(value, (int, float)) and not isinstance(value, bool)
+            else value
+        )
+        for key, value in config_clean.items()
+    }
     magic_clean = MAGICClean(camgeom, config_clean_magic)
 
     unsuitable_mask = None
@@ -399,49 +421,58 @@ def process_telescope_data(
             raise ValueError("Error: 'inds_img' list is empty!")
         index_img = inds_img[0]
         image = dl1_images["image"][index_img]
+        clean_mask = dl1_images["image_mask"][index_img]
         peak_time = dl1_images["peak_time"][index_img]
         image /= trans_pixels
 
+        clean_image = image[clean_mask]
+        clean_camgeom = camgeom[clean_mask]
+        clean_peak_time = peak_time[clean_mask]
+
         # additional cleaning
-        if tel_ids["LST-1"] == tel_id:
+        if config["cloud_correction"]["use_additional_cleaning"]:
+            if tel_ids["LST-1"] == tel_id:
 
-            boundary, picture, min_neighbors = cleaning_level[
-                camgeom.name
-            ]  # .camera_name]
+                clean = tailcuts_clean(
+                    camgeom,
+                    image,
+                    boundary_thresh=config_clean_LST["boundary_thresh"],
+                    picture_thresh=config_clean_LST["picture_thresh"],
+                    min_number_picture_neighbors=config_clean_LST[
+                        "min_number_picture_neighbors"
+                    ],
+                )
+                # Create a mask indicating which pixels survived the cleaning
+                clean_mask = np.zeros_like(image, dtype=bool)
+                clean_mask[clean] = True
 
-            clean = tailcuts_clean(
-                camgeom,
-                image,
-                boundary_thresh=boundary,
-                picture_thresh=picture,
-                min_number_picture_neighbors=min_neighbors,
-            )
+                if np.sum(clean_mask) == 0:
+                    continue
 
-            # Create a mask indicating which pixels survived the cleaning
-            clean_mask = np.zeros_like(image, dtype=bool)
-            clean_mask[clean] = True
+                # Apply the mask to relevant data arrays
+                clean_peak_time = peak_time[clean_mask]
+                clean_image = image[clean_mask]
+                clean_camgeom = camgeom[clean_mask]
 
-            if np.sum(clean_mask) == 0:
-                continue
+            else:
 
-            # Apply the mask to relevant data arrays
-            clean_peak_time = peak_time[clean_mask]
-            clean_image = image[clean_mask]
-            clean_camgeom = camgeom[clean_mask]
+                # Apply the image cleaning
+                clean_mask, image, peak_time = magic_clean.clean_image(
+                    event_image=image,
+                    event_pulse_time=peak_time,
+                    unsuitable_mask=unsuitable_mask,
+                )
 
-        else:
+                # n_pixels = np.count_nonzero(clean_mask)
+                # n_islands, _ = number_of_islands(camgeom, clean_mask)
 
-            # Apply the MAGIC image cleaning
-            clean_mask, image, peak_time = magic_clean.clean_image(
-                event_image=image,
-                event_pulse_time=peak_time,
-                unsuitable_mask=unsuitable_mask,
-            )
-            n_islands, _ = number_of_islands(camgeom, clean_mask)
+                clean_camgeom = camgeom[clean_mask]  # camera_geom_masked
+                clean_image = image[clean_mask]  # image_masked
+                clean_peak_time = peak_time[clean_mask]  # signal_pixels
 
-            clean_camgeom = camgeom[clean_mask]
-            clean_image = image[clean_mask]
-            clean_peak_time = peak_time[clean_mask]
+                # Check if clean_image is empty or all zeros
+                if clean_image.size == 0 or not np.any(clean_image):
+                    continue  # Skip this iteration if clean_image is empty or all zeros
 
         hillas_params = hillas_parameters(clean_camgeom, clean_image)
         timing_params = timing_parameters(
@@ -557,6 +588,7 @@ def main():
         "lidar_report_file"
     )  # path to the lidar report
     nlayers = correction_params.get("number_of_layers")
+    cmf = correction_params.get("cleaning_multiplication_factor")
 
     dl1_params = read_table(args.input_file, "/events/parameters")
 
@@ -597,6 +629,7 @@ def main():
                 Hc,
                 dHc,
                 trans,
+                cmf,
             )
             if df is not None:
                 dfs.append(df)
