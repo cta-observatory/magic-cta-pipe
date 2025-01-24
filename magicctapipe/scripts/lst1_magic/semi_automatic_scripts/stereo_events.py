@@ -195,7 +195,9 @@ def main():
         # Below we run the analysis on the real data
 
         print("***** Generating the bashscript...")
-        bash_stereo(target_dir, source_name, env_name, cluster, in_version, nice_parameter)
+        bash_stereo(
+            target_dir, source_name, env_name, cluster, in_version, nice_parameter
+        )
 
         print("***** Submitting processess to the cluster...")
         print(f"Process name: {source_name}_stereo")
