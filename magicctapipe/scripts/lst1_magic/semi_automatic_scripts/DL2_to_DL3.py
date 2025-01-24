@@ -76,7 +76,7 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
 
 
 def DL2_to_DL3(
-    target_dir, source, env_name, IRF_dir, df_LST, cluster, MC_v, version, nice
+    target_dir, source, env_name, IRF_dir, df_LST, cluster, MC_v, version, nice, IRF_theta_cuts_type
 ):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
@@ -101,6 +101,8 @@ def DL2_to_DL3(
         Version of the input (stereo subruns) data
     nice : int or None
         Job priority
+    IRF_theta_cuts_type : str
+        Type of IRFS (global/dynamic)
     """
     if cluster != "SLURM":
         logger.warning(
@@ -136,7 +138,10 @@ def DL2_to_DL3(
             if np.isnan(dec):
                 continue
             dec = str(dec).replace(".", "")
-            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/g_dyn_0.9_th_glo_0.2/dec_{dec}/"
+            if IRF_theta_cuts_type == "global":
+                IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/g_dyn_0.9_th_glo_0.2/dec_{dec}/"
+            else:
+                IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/g_dyn_0.9_th_dyn_0.75/dec_{dec}/"
             if (not os.path.isdir(IRFdir)) or (len(os.listdir(IRFdir)) == 0):
                 continue
             process_name = source
@@ -209,6 +214,10 @@ def main():
         in_version = __version__
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
     MC_v = config["directories"]["MC_version"]
+    IRF_theta_cuts_type = config["general"]["IRF_theta_cuts_type"]
+    if IRF_theta_cuts_type not in ["dynamic", "global"]:
+        print("Wrong value set as IRF_theta_cuts_type, use only 'global' or 'dynamic'")
+        return
 
     config_db = resource_file("database_config.yaml")
 
@@ -261,6 +270,7 @@ def main():
             MC_v,
             in_version,
             nice_parameter,
+            IRF_theta_cuts_type
         )
         list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
         if len(list_of_dl3_scripts) < 1:
