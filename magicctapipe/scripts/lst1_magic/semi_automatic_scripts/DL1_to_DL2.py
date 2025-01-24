@@ -33,7 +33,7 @@ logger.setLevel(logging.INFO)
 
 
 def ST_NSB_List(
-    target_dir, nsb_list, nsb_limit, source, df_LST, ST_list, ST_begin, ST_end
+    target_dir, nsb_list, nsb_limit, source, df_LST, ST_list, ST_begin, ST_end, version
 ):
     """
     This function creates the lists of runs separeted by run period and NSB level.
@@ -56,11 +56,13 @@ def ST_NSB_List(
         List of beginning dates for the observation periods
     ST_end : list
         List of ending dates for the observation periods
+    version : str
+        Version of the input (stereo subruns) data
     """
 
     # Loops over all runs of all nights
     Nights_list = np.sort(
-        glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
+        glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
     )
     for night in Nights_list:
         # Night period
@@ -91,7 +93,9 @@ def ST_NSB_List(
                     file.write(f"{Run}\n")
 
 
-def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v):
+def bash_DL1Stereo_to_DL2(
+    target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v, version, nice
+):
     """
     This function generates the bashscript for running the DL1Stereo to DL2 analisys.
 
@@ -111,6 +115,10 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST,
         Dataframe collecting the LST1 runs (produced by the create_LST_table script)
     MC_v : str
         Version of MC processing
+    version : str
+        Version of the input (stereo subruns) data
+    nice : int or None
+        Job priority
     """
     if cluster != "SLURM":
         logger.warning(
@@ -119,7 +127,7 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST,
         return
     process_name = source
     Nights_list = np.sort(
-        glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
+        glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
     )
     for night in Nights_list:
         File_list = glob.glob(f"{night}/logs/ST*.txt")
@@ -135,6 +143,8 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST,
             nsb = file.split("/")[-1].split("_")[-1][:3]
             period = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
+            if np.isnan(dec):
+                continue
             dec = str(dec).replace(".", "")
             RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}/"
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
@@ -142,6 +152,7 @@ def bash_DL1Stereo_to_DL2(target_dir, source, env_name, cluster, RF_dir, df_LST,
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
+                nice_parameter=nice,
                 array=process_size,
                 mem="50g",
                 out_name=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/slurm-%x.%A_%a",
@@ -206,6 +217,10 @@ def main():
     MC_v = config["directories"]["MC_version"]
 
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     # LST dataframe
     config_db = resource_file("database_config.yaml")
@@ -236,10 +251,19 @@ def main():
             ST_list,
             ST_begin,
             ST_end,
+            in_version,
         )
 
         bash_DL1Stereo_to_DL2(
-            target_dir, source_name, env_name, cluster, RF_dir, df_LST, MC_v
+            target_dir,
+            source_name,
+            env_name,
+            cluster,
+            RF_dir,
+            df_LST,
+            MC_v,
+            in_version,
+            nice_parameter,
         )
         list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
         if len(list_of_dl2_scripts) < 1:

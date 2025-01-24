@@ -132,7 +132,9 @@ def main():
     for source_name in source_list:
 
         print("***** Merging DL1Stereo files run-wise...")
-        MergeStereo(target_dir, env_name, source_name, cluster, in_version, nice_parameter)
+        MergeStereo(
+            target_dir, env_name, source_name, cluster, in_version, nice_parameter
+        )
 
         list_of_merge = glob.glob(f"{source_name}_StereoMerge_*.sh")
         if len(list_of_merge) < 1:
