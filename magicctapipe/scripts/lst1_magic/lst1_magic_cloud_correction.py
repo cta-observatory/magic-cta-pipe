@@ -244,6 +244,65 @@ def lidar_cloud_interpolation(
     return None
 
 
+def clean_image_with_modified_thresholds(
+    event_image, event_pulse_time, unsuitable_mask, magic_clean, config_clean_magic, cmf
+):
+
+    """
+    Creates a wrapper function to modify the thresholds
+
+    Parameters
+    ----------
+    event_image : numpy.ndarray
+        Input array with event image
+
+    event_pulse_time : numpy.ndarray
+        Input array with event times
+
+    unsuitable_mask : numpy.ndarray
+        Array of unsuitable pixels
+
+    magic_clean : magicctapipe.image.cleaning.MAGICClean
+        Cleaning implementation	used by	MAGIC
+
+    config_clean_magic : dict
+        Cleaning parameters read from the config file
+
+    cmf : float
+        Multiplication factor for additional cleaning
+
+    Returns
+    -------
+    clean_mask : numpy.ndarray
+        Mask with pixels surviving the cleaning
+
+    image : numpy.ndarray
+        Image with surviving pixels
+
+    peak_time : numpy.ndarray
+        Times with only surviving pixels
+    """
+
+    # Multiply the thresholds by cmf
+    modified_picture_thresh = config_clean_magic["picture_thresh"] * cmf
+    modified_boundary_thresh = config_clean_magic["boundary_thresh"] * cmf
+
+    # Directly modify magic_clean instance variables with the modified thresholds
+    magic_clean.picture_thresh = modified_picture_thresh
+    magic_clean.boundary_thresh = modified_boundary_thresh
+
+    # Now call the clean_image method on the magic_clean instance with the modified thresholds
+    clean_mask, image, peak_time = magic_clean.clean_image(
+        event_image=event_image,
+        event_pulse_time=event_pulse_time,
+        unsuitable_mask=unsuitable_mask,
+        # picture_thresh=modified_picture_thresh,
+        # boundary_thresh=modified_boundary_thresh
+    )
+
+    return clean_mask, image, peak_time
+
+
 def process_telescope_data(
     dl1_params,
     dl1_images,
@@ -300,33 +359,14 @@ def process_telescope_data(
     """
 
     # AC LST
-    cleaning_level = config["LST"]["tailcuts_clean"]
-    # Multiply only non-boolean numerical values
-    config_clean_LST = {
-        key: (
-            value * cmf
-            if isinstance(value, (int, float)) and not isinstance(value, bool)
-            else value
-        )
-        for key, value in cleaning_level.items()
-    }
-
+    cleaning_level_lst = config["LST"]["tailcuts_clean"]
+    modified_boundary_thresh_lst = cleaning_level_lst["boundary_thresh"] * cmf
+    modified_picture_thresh_lst = cleaning_level_lst["picture_thresh"] * cmf
     # AC MAGIC
     # Ignore runtime warnings appeared during the image cleaning
     warnings.simplefilter("ignore", category=RuntimeWarning)
     # Configure the MAGIC image cleaning
-    config_clean = config["MAGIC"]["magic_clean"]
-    # Scale numeric values and set 'find_hotpixels' to False
-    config_clean_magic = {
-        key: (
-            False
-            if key == "find_hotpixels"
-            else value * cmf
-            if isinstance(value, (int, float)) and not isinstance(value, bool)
-            else value
-        )
-        for key, value in config_clean.items()
-    }
+    config_clean_magic = config["MAGIC"]["magic_clean"]
     magic_clean = MAGICClean(camgeom, config_clean_magic)
 
     unsuitable_mask = None
@@ -436,9 +476,9 @@ def process_telescope_data(
                 clean = tailcuts_clean(
                     camgeom,
                     image,
-                    boundary_thresh=config_clean_LST["boundary_thresh"],
-                    picture_thresh=config_clean_LST["picture_thresh"],
-                    min_number_picture_neighbors=config_clean_LST[
+                    boundary_thresh=modified_boundary_thresh_lst,
+                    picture_thresh=modified_picture_thresh_lst,
+                    min_number_picture_neighbors=cleaning_level_lst[
                         "min_number_picture_neighbors"
                     ],
                 )
@@ -456,24 +496,25 @@ def process_telescope_data(
 
             else:
 
-                # Apply the image cleaning
-                clean_mask, image, peak_time = magic_clean.clean_image(
+                # Now, use the wrapper function to clean the image
+                clean_mask, image, peak_time = clean_image_with_modified_thresholds(
                     event_image=image,
                     event_pulse_time=peak_time,
                     unsuitable_mask=unsuitable_mask,
+                    magic_clean=magic_clean,  # Pass the magic_clean instance here
+                    config_clean_magic=config_clean_magic,
+                    cmf=cmf,
                 )
 
-                # n_pixels = np.count_nonzero(clean_mask)
-                # n_islands, _ = number_of_islands(camgeom, clean_mask)
-
-                clean_camgeom = camgeom[clean_mask]  # camera_geom_masked
-                clean_image = image[clean_mask]  # image_masked
-                clean_peak_time = peak_time[clean_mask]  # signal_pixels
+                clean_camgeom = camgeom[clean_mask]
+                clean_image = image[clean_mask]
+                clean_peak_time = peak_time[clean_mask]
 
                 # Check if clean_image is empty or all zeros
                 if clean_image.size == 0 or not np.any(clean_image):
                     continue  # Skip this iteration if clean_image is empty or all zeros
 
+        # re-calculation of dl1 parameters
         hillas_params = hillas_parameters(clean_camgeom, clean_image)
         timing_params = timing_parameters(
             clean_camgeom, clean_image, clean_peak_time, hillas_params
