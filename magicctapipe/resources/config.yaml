@@ -279,9 +279,10 @@ dl2_to_dl3:
     source_dec: null  # used when the source name cannot be resolved
     
 cloud_correction:
-    specify_cloud: yes
-    base_height: "5900. m" 
-    thickness: "1320. m"
-    vertical_transmission: 1.0
+    max_gap_lidar_shots: "900 s"
+    lidar_report_file: "/home/natti/CTA/lodz_cluster/lstchain_10_11_test/scripts/pic_server/lidar_reports_clouds_ST.03.16.yaml"
     number_of_layers: 10
+    cleaning_multiplication_factor: 1.25 
+    use_additional_cleaning: True
+
 
