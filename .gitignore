@@ -52,6 +52,7 @@ distribute-*.tar.gz
 # Other generated files
 htmlcov
 .coverage
+.DS_Store
 
 # Sphinx documentation
 docs/api
