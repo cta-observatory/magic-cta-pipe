@@ -264,7 +264,7 @@ def main():
             f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & perfect_match_time_min > 0.1 & error_code_nsb=="0"',
             inplace=True,
         )
-        
+
     if range:
         min = str(config["data_selection"]["min"])
         max = str(config["data_selection"]["max"])
