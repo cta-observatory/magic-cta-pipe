@@ -2,7 +2,7 @@
 # coding: utf-8
 
 """
-This script processes LIDAR report files obtained with MARS-based software quate to extract cloud-reveant parameters present during the observations with MAGIC telescopes (if any), which can then be used to correct event images affected by the clouds using lst1_magic_cloud_correction.py script. 
+This script processes LIDAR report files obtained with MARS-based software quate to extract cloud-reveant parameters present during the observations with MAGIC telescopes (if any), which can then be used to correct event images affected by the clouds using lst1_magic_cloud_correction.py script.
 
 Usage:
 $ python lst1_magic_lidar_report_to_yaml.py
@@ -10,49 +10,57 @@ $ python lst1_magic_lidar_report_to_yaml.py
 --output-file "magic_lidar_report_clouds_CrabNebula.yaml"
 """
 
+import argparse
+import glob
+import logging
 import os
 import re
-import glob
-import argparse
 from datetime import datetime
+
 from ruamel.yaml import YAML
 from ruamel.yaml.scalarstring import SingleQuotedScalarString as SQS
-import logging
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
+
 def extract_data_from_file(input_filename):
     """
-    Extracts cloud-relevant data from a LIDAR report file (if any). 
-    
+    Extracts cloud-relevant data from a LIDAR report file (if any).
+
     Parameters
-    ----------
+    -----------
     input_filename : str
         The name of an input LIDAR  report file to process.
 
     Returns
-    -------
+    --------
     dict or None
         A dictionary with extracted data if valid cloud data is found, or None otherwise.
     """
-    
+
     try:
         with open(input_filename, "r") as file:
             content = file.read()
-            logger.info(f"\n----------------------------------------------------"
-                        f"\nProcessing file: {input_filename}")
+            logger.info(
+                f"\n----------------------------------------------------"
+                f"\nProcessing file: {input_filename}"
+            )
 
             if not re.search(r"ERROR_CODE:\s*4", content):
-                logger.info("No valid LIDAR report found (ERROR_CODE != 4). \nSkipping file.")
+                logger.info(
+                    "No valid LIDAR report found (ERROR_CODE != 4). \nSkipping file."
+                )
                 return None
 
             zenith_match = re.search(r"ZENITH_deg:\s*([\d.]+)", content)
             clouds_match = re.search(r"CLOUDS:\s*(\d+)", content)
 
             if not zenith_match or not clouds_match:
-                logger.warning("Required data fields missing (ZENITH and/or CLOUDS). \nSkipping file.")
+                logger.warning(
+                    "Required data fields missing (ZENITH and/or CLOUDS). \nSkipping file."
+                )
                 return None
 
             zenith = float(zenith_match.group(1))
@@ -71,58 +79,62 @@ def extract_data_from_file(input_filename):
             extracted_data = {
                 "timestamp": timestamp.strftime("%Y-%m-%d %H:%M:%S"),
                 "lidar_zenith": zenith,
-                "layers": layers
+                "layers": layers,
             }
-            
+
             return extracted_data
-            
+
     except Exception as e:
         logger.error(f"Error processing file '{input_filename}': {e}")
         return None
+
 
 def extract_cloud_layers(content, num_clouds):
     """
     Extracts cloud layer data from the input file containig LIDAR quate reports.
 
     Parameters
-    ----------
+    -----------
     content : str
         The content of the LIDAR report file.
     num_clouds : int
         The number of cloud layers.
 
     Returns
-    -------
+    --------
     list
         A list of dictionaries containing cloud layer parameters.
     """
-    
+
     layers = []
     for i in range(num_clouds):
         cloud_pattern = rf"CLOUD{i}\s*:\s*MEAN_HEIGHT:\s*([\d.]+)\s*\+\-\s*[\d.]+\s*BASE:\s*([\d.]+)\s*TOP:\s*([\d.]+)\s*FWHM:\s*[\d.]+\s*TRANS:\s*([\d.]+)"
         cloud_match = re.search(cloud_pattern, content)
         if cloud_match:
             mean_height, base, top, trans = cloud_match.groups()
-            layers.append({
-                "base_height": float(base),
-                "top_height": float(top),
-                "transmission": float(trans)
-            })
+            layers.append(
+                {
+                    "base_height": float(base),
+                    "top_height": float(top),
+                    "transmission": float(trans),
+                }
+            )
         else:
-            logger.warning(f"Cloud data not found.")
+            logger.warning("Cloud data not found.")
     return layers
+
 
 def extract_timestamp_from_filename(input_filename):
     """
     Extracts the timestamp from the input filename.
 
     Parameters
-    ----------
+    -----------
     input_filename : str
         The name of the input file.
 
     Returns
-    -------
+    --------
     datetime or None
         The extracted timestamp as a datetime object, or None if the format is incorrect.
     """
@@ -133,7 +145,9 @@ def extract_timestamp_from_filename(input_filename):
     match = re.match(pattern, basename)
 
     if not match:
-        logger.error(f"Unexpected filename format for timestamp in file: '{input_filename}'")
+        logger.error(
+            f"Unexpected filename format for timestamp in file: '{input_filename}'"
+        )
         logger.error("Expected format: 'magic_lidar.YYYYMMDD.HHMMSS.results'.")
         return None
 
@@ -142,22 +156,23 @@ def extract_timestamp_from_filename(input_filename):
 
     timestamp_str = f"{date_str}.{time_str}"
     return datetime.strptime(timestamp_str, "%Y%m%d.%H%M%S")
-    
+
 
 def write_to_yaml(data, output_filename):
     """
     Writes extracted cloud parameters to a YAML file, including units metadata.
 
     Parameters
-    ----------
+    -----------
     data : list
         A list of dictionaries, each containing cloud data for a specific timestamp.
     output_filename : str
         The name of the output YAML file.
 
-    Returns
+    Return
     -------
     None
+        This function returs nothing.
     """
     if not data:
         logger.info("No valid data found to write.")
@@ -171,7 +186,7 @@ def write_to_yaml(data, output_filename):
             "top_height": SQS("m"),
             "transmission": SQS("dimensionless"),
         },
-        "data": data
+        "data": data,
     }
 
     yaml = YAML()
@@ -179,22 +194,23 @@ def write_to_yaml(data, output_filename):
     yaml.sort_keys = False
 
     try:
-        with open(output_filename, 'w') as yaml_file:
+        with open(output_filename, "w") as yaml_file:
             yaml.dump(output_data, yaml_file)
             logger.info(f"\nData written to output file '{output_filename}'.")
     except IOError as e:
         logger.error(f"Failed to write data to '{output_filename}': {e}")
 
+
 def main():
     """Main function."""
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument(
         "-i",
         "--input-file",
         type=str,
         required=True,
-        help="Input file name or full path to input file. Wildcards allowed."
+        help="Input file name or full path to input file. Wildcards allowed.",
     )
 
     parser.add_argument(
@@ -202,9 +218,9 @@ def main():
         "--output-file",
         type=str,
         required=True,
-        help="Output YAML file name. One may provide full path where the output file should be created."
+        help="Output YAML file name. One may provide full path where the output file should be created.",
     )
-    
+
     args = parser.parse_args()
     results = []
 
@@ -216,10 +232,12 @@ def main():
     for filepath in files:
         basename = os.path.basename(filepath)
         if not re.match(r"^(magic_lidar\.)?(\d{8})\.(\d{6})\.results$", basename):
-            logger.error(f"Invalid filename format: '{basename}'. Expected format:"
-                         f"'magic_lidar.YYYYMMDD.HHMMSS.results'.")
+            logger.error(
+                f"Invalid filename format: '{basename}'. Expected format:"
+                f"'magic_lidar.YYYYMMDD.HHMMSS.results'."
+            )
             continue
-            
+
         data = extract_data_from_file(filepath)
         if data:
             results.append(data)
@@ -230,6 +248,7 @@ def main():
         logger.info("All data processed and written successfully.")
     else:
         logger.info("No valid LIDAR data extracted from input files.")
+
 
 if __name__ == "__main__":
     main()
