@@ -4,6 +4,7 @@ from .error_codes import (
     GENERIC_ERROR_CODE,
     NO_COINCIDENT_EVENTS,
     NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
+    NO_PROPER_LIDAR_REPORTS,
 )
 from .functions import (
     HEIGHT_ORM,
@@ -28,6 +29,7 @@ __all__ = [
     "GENERIC_ERROR_CODE",
     "NO_COINCIDENT_EVENTS",
     "NO_EVENTS_WITHIN_MAXIMUM_DISTANCE",
+    "NO_PROPER_LIDAR_REPORTS",
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
