@@ -13,6 +13,7 @@ $ python lst_m1_m2_cloud_correction.py
 import argparse
 import logging
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -41,6 +42,7 @@ from scipy.interpolate import interp1d
 import magicctapipe
 from magicctapipe.image import MAGICClean
 from magicctapipe.io import save_pandas_data_in_table
+from magicctapipe.utils import NO_PROPER_LIDAR_REPORTS
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
@@ -242,7 +244,7 @@ def lidar_cloud_interpolation(
     logger.info(
         f"\nNo node is within the maximum allowed temporal gap for timestamp {Time(mean_subrun_timestamp, format='unix').iso}. Exiting ..."
     )
-    return None
+    sys.exit(NO_PROPER_LIDAR_REPORTS)
 
 
 def clean_image_with_modified_thresholds(
