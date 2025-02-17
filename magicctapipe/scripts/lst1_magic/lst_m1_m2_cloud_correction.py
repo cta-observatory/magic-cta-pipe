@@ -470,7 +470,7 @@ def process_telescope_data(
             raise ValueError("Error: 'inds_img' list is empty!")
         index_img = inds_img[0]
         image = dl1_images["image"][index_img]
-        clean_mask = dl1_images["image_mask"][index_img]
+        clean_mask_file = dl1_images["image_mask"][index_img]
         peak_time = dl1_images["peak_time"][index_img]
         image /= trans_pixels
 
@@ -502,6 +502,12 @@ def process_telescope_data(
                 clean_mask = apply_dynamic_cleaning(
                     image, clean_mask, threshold, fraction
                 )
+
+                clean_mask = clean_mask * clean_mask_file
+
+                if np.sum(clean_mask) == 0:
+                    continue
+
                 clean_peak_time = peak_time[clean_mask]
                 clean_image = image[clean_mask]
                 clean_camgeom = camgeom[clean_mask]
