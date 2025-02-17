@@ -26,6 +26,7 @@ from astropy.coordinates import AltAz, SkyCoord
 from astropy.time import Time
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.image import (
+    apply_time_delta_cleaning,
     concentration_parameters,
     hillas_parameters,
     leakage_parameters,
@@ -34,6 +35,7 @@ from ctapipe.image import (
 )
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table
+from lstchain.image.cleaning import apply_dynamic_cleaning
 from scipy.interpolate import interp1d
 
 import magicctapipe
@@ -121,18 +123,18 @@ def lidar_cloud_interpolation(
     mean_subrun_timestamp, max_gap_lidar_shots, lidar_report_file
 ):
     """
-    Retrieves or interpolates LIDAR cloud parameters based on the closest timestamps to an input mean timestamp of the processed subrun.
+    Retrieves or interpolates LIDAR cloud parameters based on the closest timestamps to an input mean timestamp of the processed subrun. For the moment in the case of multiple clouds only the one with the lowest transmission is taken into account.
 
     Parameters
     -----------
-    mean_subrun_timestamp : int or float
+    mean_subrun_timestamp : int
         The mean timestamp of the processed subrun (format: unix).
 
-    max_gap_lidar_shots : int or float
+    max_gap_lidar_shots : float
         Maximum allowed time gap for interpolation (in seconds).
 
     lidar_report_file : str
-        Path to the yaml file containing LIDAR laser reports with columns:
+        Path to the yaml file created by lst1_magic_lidar_reports_to_yaml.py containing LIDAR laser reports with columns:
         - "timestamp" (format: ISO 8601)
         - "base_height", "top_height", "transmission", "lidar_zenith"
 
@@ -356,9 +358,20 @@ def process_telescope_data(
     """
 
     # AC LST
+
     cleaning_level_lst = config["LST"]["tailcuts_clean"]
     modified_boundary_thresh_lst = cleaning_level_lst["boundary_thresh"] * cmf
     modified_picture_thresh_lst = cleaning_level_lst["picture_thresh"] * cmf
+    keep_isolated_pixels = cleaning_level_lst["keep_isolated_pixels"]
+
+    use_time_delta_cleaning = config["LST"]["time_delta_cleaning"]
+    min_number_neighbors = use_time_delta_cleaning["min_number_neighbors"]
+    time_limit = use_time_delta_cleaning["time_limit"]
+
+    use_dynamic_cleaning = config["LST"]["dynamic_cleaning"]
+    threshold = use_dynamic_cleaning["threshold"]
+    fraction = use_dynamic_cleaning["fraction"]
+
     # AC MAGIC
     # Configure the MAGIC image cleaning
     config_clean_magic = config["MAGIC"]["magic_clean"]
@@ -466,23 +479,28 @@ def process_telescope_data(
                 image, dtype=bool
             )  # Assuming full mask if not defined
             if tel_ids["LST-1"] == tel_id:
-                clean = tailcuts_clean(
+                clean_mask = tailcuts_clean(
                     camgeom,
                     image,
                     boundary_thresh=modified_boundary_thresh_lst,
                     picture_thresh=modified_picture_thresh_lst,
+                    keep_isolated_pixels=keep_isolated_pixels,
                     min_number_picture_neighbors=cleaning_level_lst[
                         "min_number_picture_neighbors"
                     ],
                 )
-                # Create a mask indicating which pixels survived the cleaning
-                clean_mask = np.zeros_like(image, dtype=bool)
-                clean_mask[clean] = True
 
-                if np.sum(clean_mask) == 0:
-                    continue
+                clean_mask = apply_time_delta_cleaning(
+                    camgeom,
+                    clean_mask,
+                    peak_time,
+                    min_number_neighbors,
+                    time_limit,
+                )
 
-                # Apply the mask to relevant data arrays
+                clean_mask = apply_dynamic_cleaning(
+                    image, clean_mask, threshold, fraction
+                )
                 clean_peak_time = peak_time[clean_mask]
                 clean_image = image[clean_mask]
                 clean_camgeom = camgeom[clean_mask]
