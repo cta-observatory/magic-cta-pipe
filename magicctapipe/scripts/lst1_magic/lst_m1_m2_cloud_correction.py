@@ -360,7 +360,6 @@ def process_telescope_data(
     """
 
     # AC LST
-
     cleaning_level_lst = config["LST"]["tailcuts_clean"]
     modified_boundary_thresh_lst = cleaning_level_lst["boundary_thresh"] * cmf
     modified_picture_thresh_lst = cleaning_level_lst["picture_thresh"] * cmf
