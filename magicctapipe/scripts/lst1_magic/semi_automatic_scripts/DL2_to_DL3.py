@@ -111,7 +111,7 @@ def DL2_to_DL3(
         return
 
     
-
+    print('bash')
     # Loop over all nights
     LST_runs_and_dates = f"{source}_LST_runs.txt"
     LST_date=[]
@@ -119,9 +119,12 @@ def DL2_to_DL3(
         LST_date.append(str(i[0].replace('_', '')))
     LST_date=list(set(LST_date))
     File_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/logs/ST*.txt"))
+    print(File_list)
     for file in File_list:
+        print(file)
         night=file.split('_')[-1].replace('.txt','')
         if str(night) not in LST_date:
+            print('night')
             continue
         with open(file, "r") as f:
             runs = f.readlines()
@@ -158,11 +161,11 @@ def DL2_to_DL3(
             nice_parameter=nice,
             array=process_size,
             mem="1g",
-            out_name=f"{target_dir}/v{version}/{source}/DL3/logs/slurm-%x.%A_%a",
+            out_name=f"{target_dir}/v{__version__}/{source}/DL3/logs/slurm-%x.%A_%a",
         )
         rc = rc_lines(
             store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-            out=f"{target_dir}/v{version}/{source}/DL3/logs/list",
+            out=f"{target_dir}/v{__version__}/{source}/DL3/logs/list",
         )
 
         lines = (
@@ -248,18 +251,18 @@ def main():
     for source_name in source_list:
         wobble_offset = df_LST[df_LST.source == source_name].iloc[0]["wobble_offset"]
         if str(wobble_offset) != "[0.40]":
+            
             continue
         # cp the .txt files from DL1 stereo anaysis to be used again.
         DL2_Nights = np.sort(
-            glob.glob(f"{target_dir}/v{__version__}/{source_name}/DL2/*"
+            glob.glob(f"{target_dir}/v{in_version}/{source_name}/DL2/*"
         ))
         os.makedirs(f"{target_dir}/v{__version__}/{source_name}/DL3/logs", exist_ok=True)
         for night in DL2_Nights:
             File_list = glob.glob(f"{night}/logs/ST*.txt")
-            night_date = night.split("/")[-1]
             for file in File_list:
                 cp_dir = (
-                    f"{target_dir}/v{in_version}/{source_name}/DL3/logs"
+                    f"{target_dir}/v{__version__}/{source_name}/DL3/logs"
                 )
                 os.system(f"cp {file} {cp_dir}")
 
