@@ -49,6 +49,11 @@ def MergeStereo(target_dir, env_name, source, cluster, version, nice):
 
     process_name = source
     stereo_DL1_dir = f"{target_dir}/v{version}/{source}"
+    LST_runs_and_dates = f"{source}_LST_runs.txt"
+    LST_date=[]
+    for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
+        LST_date.append(str(i[0].replace('_', '')))
+    LST_date=list(set(LST_date))
     listOfNightsLST = np.sort(glob.glob(f"{stereo_DL1_dir}/DL1Stereo/*"))
     if cluster != "SLURM":
         logger.warning(
@@ -57,6 +62,8 @@ def MergeStereo(target_dir, env_name, source, cluster, version, nice):
         return
     for nightLST in listOfNightsLST:
         night = nightLST.split("/")[-1]
+        if str(night) not in LST_date:
+            continue
         stereoMergeDir = (
             f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/{night}"
         )

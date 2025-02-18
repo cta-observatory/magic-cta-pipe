@@ -66,7 +66,11 @@ def ST_NSB_List(
     )
     for night in Nights_list:
         # Night period
+        
         night_date = night.split("/")[-1]
+        os.makedirs(
+            f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs", exist_ok=True
+        )
         date_lst = night_date[:4] + "_" + night_date[4:6] + "_" + night_date[6:8]
         date_magic = datetime.datetime.strptime(
             date_lst, "%Y_%m_%d"
@@ -89,7 +93,7 @@ def ST_NSB_List(
                     nsb = nsb_list[j]
             # Writing on output .txt file
             if nsb <= nsb_limit[-1]:
-                with open(f"{night}/logs/{period}_{nsb}.txt", "a+") as file:
+                with open(f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs/{period}_{nsb}_{night_date}.txt", "a+") as file:
                     file.write(f"{Run}\n")
 
 
@@ -125,30 +129,47 @@ def bash_DL1Stereo_to_DL2(
             "Automatic processing not implemented for the cluster indicated in the config file"
         )
         return
+    print('bash')
     process_name = source
+    LST_runs_and_dates = f"{source}_LST_runs.txt"
+    LST_date=[]
+    for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
+        LST_date.append(str(i[0].replace('_', '')))
+    LST_date=list(set(LST_date))
+    print(LST_date)
     Nights_list = np.sort(
         glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
     )
+
     for night in Nights_list:
-        File_list = glob.glob(f"{night}/logs/ST*.txt")
         night_date = night.split("/")[-1]
-        os.makedirs(
-            f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs", exist_ok=True
-        )
+        print(night_date)
+        File_list = glob.glob(f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs/ST*.txt")
+        night_date = night.split("/")[-1]
+        if str(night_date) not in LST_date:
+            print('no date')
+            continue
+        
         for file in File_list:
+            print(file)
             with open(file, "r") as f:
                 process_size = len(f.readlines()) - 1
             if process_size < 0:
+                print('size')
                 continue
-            nsb = file.split("/")[-1].split("_")[-1][:3]
+            nsb = file.split("/")[-1].split("_")[1]
             period = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
             if np.isnan(dec):
+                print('dec')
                 continue
             dec = str(dec).replace(".", "")
-            RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}/"
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
+            print(RFdir)
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
+                print('rf')
                 continue
+            print('slurm')
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
@@ -159,7 +180,7 @@ def bash_DL1Stereo_to_DL2(
             )
             rc = rc_lines(
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                out="$OUTPUTDIR/logs/list",
+                out=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/logs/list",
             )
 
             lines = (
@@ -174,7 +195,7 @@ def bash_DL1Stereo_to_DL2(
                 + rc
             )
             with open(
-                f'{source}_DL1_to_DL2_{night_date}_{file.split("/")[-1].rstrip("txt")}sh',
+                f'{source}_DL1_to_DL2_{file.split("/")[-1].rstrip("txt")}sh',
                 "w",
             ) as f:
                 f.writelines(lines)
@@ -215,6 +236,8 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     MC_v = config["directories"]["MC_version"]
+    if MC_v == "":
+        MC_v = __version__
 
     cluster = config["general"]["cluster"]
     in_version = config["directories"]["real_input_version"]
