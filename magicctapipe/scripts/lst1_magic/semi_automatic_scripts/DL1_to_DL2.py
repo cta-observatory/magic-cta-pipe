@@ -185,7 +185,7 @@ def bash_DL1Stereo_to_DL2(
             )
             rc = rc_lines(
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                out=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/logs/list",
+                out=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/list",
             )
 
             lines = (

@@ -144,6 +144,7 @@ def main():
             sorted(
                 glob.glob(f"{indir}/[0-9]*/[0-9]*/logs")
                 + glob.glob(f"{indir}/[0-9]*/logs")
+                + glob.glob(f"{indir}/logs")
             )
         )
     ]
@@ -155,7 +156,7 @@ def main():
         print(f"Versions {versions}")
 
         print(
-            "Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo, DL1Stereo/Merged"
+            "Supported data types: DL1/M1, DL1/M2, DL1/Merged, DL1Coincident, DL1Stereo, DL1Stereo/Merged, DL2, DL3"
         )
         exit(1)
 
@@ -176,12 +177,14 @@ def main():
     all_mem = []
     total_time = 0
     all_jobs = []
+    
     for dir in dirs:
-        this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
-        this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
-        this_date = datetime.strptime(this_date_str, "%Y%m%d")
-        if timerange and (this_date < timemin or this_date > timemax):
-            continue
+        if args.data_level != 'DL3':
+            this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
+            this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
+            this_date = datetime.strptime(this_date_str, "%Y%m%d")
+            if timerange and (this_date < timemin or this_date > timemax):
+                continue
 
         print(dir)
         list_dl0 = ""
@@ -190,9 +193,21 @@ def main():
         for file in ins:
             if os.path.exists(f"{dir}/logs/{file}"):
                 list_dl0 = f"{dir}/logs/{file}"
+        
         if list_dl0 != "":
             with open(list_dl0, "r") as fp:
                 this_todo = len(fp.readlines())
+        elif args.data_level in ['DL2', 'DL3']:
+            files = glob.glob(f"{dir}/logs/ST*.txt")
+            if len(files)==0:
+                print(f"{RED}No ST* files {ENDC}")
+                this_todo = 0
+            else:   
+                this_todo=0
+                for f in files:
+                    with open(f, "r") as fp:
+                        this_todo = this_todo + len(fp.readlines())
+         
         else:
             print(f"{RED}No {ins} files {ENDC}")
             this_todo = 0
@@ -303,8 +318,15 @@ def main():
     if len(all_cpu) > 0:
         all_cpu = np.array(all_cpu)
         all_mem = np.array(all_mem)
+        max_mem=np.nan
+        max_cpu=np.nan
+        if len(all_mem)>0:
+            max_mem=all_mem.max()
+        if len(all_cpu)>0:
+            max_cpu=all_cpu.max()
+
         print(
-            f"CPU: median={np.median(all_cpu)}, max={all_cpu.max()}, total={total_time:.2f} CPU hrs; memory [M]: median={np.median(all_mem)}, max={all_mem.max()}"
+            f"CPU: median={np.median(all_cpu)}, max={max_cpu}, total={total_time:.2f} CPU hrs; memory [M]: median={np.median(all_mem)}, max={max_mem}"
         )
 
     if args.run_list is not None:
