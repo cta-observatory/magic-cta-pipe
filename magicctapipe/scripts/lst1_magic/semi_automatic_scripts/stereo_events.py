@@ -92,10 +92,10 @@ def bash_stereo(target_dir, source, env_name, cluster, version, nice):
 
     coincidence_DL1_dir = f"{target_dir}/v{version}/{source}"
     LST_runs_and_dates = f"{source}_LST_runs.txt"
-    LST_date=[]
+    LST_date = []
     for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
-        LST_date.append(str(i[0].replace('_', '')))
-    LST_date=list(set(LST_date))
+        LST_date.append(str(i[0].replace("_", "")))
+    LST_date = list(set(LST_date))
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
     if cluster != "SLURM":
         logger.warning(
