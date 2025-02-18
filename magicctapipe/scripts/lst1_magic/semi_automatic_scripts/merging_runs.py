@@ -129,7 +129,7 @@ def main():
     if in_version == "":
         in_version = __version__
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
-    
+
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
 
