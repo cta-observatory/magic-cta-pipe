@@ -177,9 +177,9 @@ def main():
     all_mem = []
     total_time = 0
     all_jobs = []
-    
+
     for dir in dirs:
-        if args.data_level != 'DL3':
+        if args.data_level != "DL3":
             this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
             this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
             this_date = datetime.strptime(this_date_str, "%Y%m%d")
@@ -193,95 +193,121 @@ def main():
         for file in ins:
             if os.path.exists(f"{dir}/logs/{file}"):
                 list_dl0 = f"{dir}/logs/{file}"
-        
+
         if list_dl0 != "":
             with open(list_dl0, "r") as fp:
                 this_todo = len(fp.readlines())
-        elif args.data_level in ['DL2', 'DL3']:
-            files = glob.glob(f"{dir}/logs/ST*.txt")
-            if len(files)==0:
+        elif args.data_level in ["DL2", "DL3"]:
+            if timerange and args.data_level == "DL3":
+                files = []
+                for date in (
+                    timemin + timedelta(n) for n in range(int((timemax - timemin).days))
+                ):
+                    date = int(date.strftime("%Y%m%d"))
+                    files = files + glob.glob(f"{dir}/logs/ST*_{date}.txt")
+
+            else:
+                files = glob.glob(f"{dir}/logs/ST*.txt")
+            if len(files) == 0:
                 print(f"{RED}No ST* files {ENDC}")
                 this_todo = 0
-            else:   
-                this_todo=0
+            else:
+                this_todo = 0
                 for f in files:
                     with open(f, "r") as fp:
                         this_todo = this_todo + len(fp.readlines())
-         
+
         else:
             print(f"{RED}No {ins} files {ENDC}")
             this_todo = 0
 
-        list_return = f"{dir}/logs/list_return.log"
+        if timerange and args.data_level == "DL3":
+            list_return = []
+            for date in (
+                timemin + timedelta(n) for n in range(int((timemax - timemin).days))
+            ):
+                date = int(date.strftime("%Y%m%d"))
+                list_return = list_return + glob.glob(
+                    f"{dir}/logs/list_*_{date}_return.log"
+                )
+
+        else:
+            list_return = glob.glob(f"{dir}/logs/list_*_return.log")
+
         this_good = 0
         this_cpu = []
         this_mem = []
+        this_return = 0
         try:
-            with open(list_return, "r") as fp:
-                returns = fp.readlines()
-                this_return = len(returns)
-                for line in returns:
-                    line = line.split()
-                    file_in = line[0]
-                    slurm_id = f"{line[1]}_{line[2]}" if len(line) == 4 else line[1]
-                    rc = line[-1]
+            for list in list_return:
+                with open(list, "r") as fp:
+                    returns = fp.readlines()
+                    this_return = len(returns)
+                    for line in returns:
+                        line = line.split()
+                        file_in = line[0]
+                        slurm_id = f"{line[1]}_{line[2]}" if len(line) == 4 else line[1]
+                        rc = line[-1]
 
-                    if args.run_list is not None:
-                        if ismagic:
-                            run_subrun = file_in.split("/")[-1].split("_")[2]
-                            this_run = int(run_subrun.split(".")[0])
-                            this_subrun = int(run_subrun.split(".")[1])
+                        if args.run_list is not None:
+                            if ismagic:
+                                run_subrun = file_in.split("/")[-1].split("_")[2]
+                                this_run = int(run_subrun.split(".")[0])
+                                this_subrun = int(run_subrun.split(".")[1])
+                            else:
+                                filename = file_in.split("/")[-1]
+                                this_run = filename.split(".")[1].replace("Run", "")
+                                this_subrun = int(filename.split(".")[2])
+
+                            rc_dicts[this_run][str(this_subrun)] = rc
+
+                        if rc == "0":
+                            this_good += 1
+                            # now check accounting
+                            if not args.no_accounting:
+                                out = run_shell(
+                                    f'sacct --format="JobID,CPUTime,MaxRSS" --units=M  -j {slurm_id}| tail -1'
+                                ).split()
+                                if len(out) == 3:
+                                    _, cpu, mem = out
+                                elif (
+                                    len(out) == 2
+                                ):  # MaxRSS sometimes is missing in the output
+                                    cpu = out[1]
+                                    mem = None
+                                else:
+                                    print("Unexpected sacct output: {out}")
+                                if cpu is not None:
+                                    hh, mm, ss = (int(x) for x in str(cpu).split(":"))
+                                    delta = timedelta(
+                                        days=hh // 24,
+                                        hours=hh % 24,
+                                        minutes=mm,
+                                        seconds=ss,
+                                    )
+                                    if slurm_id not in all_jobs:
+                                        total_time += delta.total_seconds() / 3600
+                                        all_jobs += [slurm_id]
+                                    this_cpu.append(delta)
+                                if mem is not None and mem.endswith("M"):
+                                    this_mem.append(float(mem[0:-1]))
+                                else:
+                                    print("Memory usage information is missing")
                         else:
-                            filename = file_in.split("/")[-1]
-                            this_run = filename.split(".")[1].replace("Run", "")
-                            this_subrun = int(filename.split(".")[2])
-
-                        rc_dicts[this_run][str(this_subrun)] = rc
-
-                    if rc == "0":
-                        this_good += 1
-                        # now check accounting
-                        if not args.no_accounting:
-                            out = run_shell(
-                                f'sacct --format="JobID,CPUTime,MaxRSS" --units=M  -j {slurm_id}| tail -1'
-                            ).split()
-                            if len(out) == 3:
-                                _, cpu, mem = out
-                            elif (
-                                len(out) == 2
-                            ):  # MaxRSS sometimes is missing in the output
-                                cpu = out[1]
-                                mem = None
-                            else:
-                                print("Unexpected sacct output: {out}")
-                            if cpu is not None:
-                                hh, mm, ss = (int(x) for x in str(cpu).split(":"))
-                                delta = timedelta(
-                                    days=hh // 24, hours=hh % 24, minutes=mm, seconds=ss
-                                )
-                                if slurm_id not in all_jobs:
-                                    total_time += delta.total_seconds() / 3600
-                                    all_jobs += [slurm_id]
-                                this_cpu.append(delta)
-                            if mem is not None and mem.endswith("M"):
-                                this_mem.append(float(mem[0:-1]))
-                            else:
-                                print("Memory usage information is missing")
-                    else:
-                        print(f"file {file_in} failed with error {rc}")
-                if len(this_cpu) > 0:
-                    all_cpu += this_cpu
-                    all_mem += this_mem
-                    this_cpu = np.array(this_cpu)
-                    this_mem = np.array(this_mem)
-                    mem_info = (
-                        f"memory [M]: median={np.median(this_mem)}, max={this_mem.max()}"
-                        if len(this_mem)
-                        else ""
-                    )
-                    print(
-                        f"CPU: median={np.median(this_cpu)}, max={this_cpu.max()}; {mem_info}"
-                    )
+                            print(f"file {file_in} failed with error {rc}")
+                    if len(this_cpu) > 0:
+                        all_cpu += this_cpu
+                        all_mem += this_mem
+                        this_cpu = np.array(this_cpu)
+                        this_mem = np.array(this_mem)
+                        mem_info = (
+                            f"memory [M]: median={np.median(this_mem)}, max={this_mem.max()}"
+                            if len(this_mem)
+                            else ""
+                        )
+                        print(
+                            f"CPU: median={np.median(this_cpu)}, max={this_cpu.max()}; {mem_info}"
+                        )
 
         except IOError:
             print(f"{RED}File {list_return} is missing{ENDC}")
@@ -318,12 +344,12 @@ def main():
     if len(all_cpu) > 0:
         all_cpu = np.array(all_cpu)
         all_mem = np.array(all_mem)
-        max_mem=np.nan
-        max_cpu=np.nan
-        if len(all_mem)>0:
-            max_mem=all_mem.max()
-        if len(all_cpu)>0:
-            max_cpu=all_cpu.max()
+        max_mem = np.nan
+        max_cpu = np.nan
+        if len(all_mem) > 0:
+            max_mem = all_mem.max()
+        if len(all_cpu) > 0:
+            max_cpu = all_cpu.max()
 
         print(
             f"CPU: median={np.median(all_cpu)}, max={max_cpu}, total={total_time:.2f} CPU hrs; memory [M]: median={np.median(all_mem)}, max={max_mem}"

@@ -183,7 +183,7 @@ def DL2_to_DL3(
         )
         rc = rc_lines(
             store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-            out=f"{target_dir}/v{__version__}/{source}/DL3/logs/list",
+            out=f"{target_dir}/v{__version__}/{source}/DL3/logs/list_{nsb}_{period}_{night}",
         )
 
         lines = (
@@ -192,7 +192,7 @@ def DL2_to_DL3(
                 f"SAMPLE_LIST=($(<{file}))\n",
                 "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                 f"export LOG={output}/logs",
-                "/DL2_to_DL3_${SLURM_ARRAY_TASK_ID}.log\n",
+                "/DL2_to_DL3_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                 f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {output} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
             ]
             + rc

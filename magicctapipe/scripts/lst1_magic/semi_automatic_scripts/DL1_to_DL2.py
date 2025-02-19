@@ -185,7 +185,7 @@ def bash_DL1Stereo_to_DL2(
             )
             rc = rc_lines(
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                out=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/list",
+                out=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/list_nsb_period",
             )
 
             lines = (
@@ -194,7 +194,7 @@ def bash_DL1Stereo_to_DL2(
                     f"SAMPLE_LIST=($(<{file}))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                     f"export LOG={target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs",
-                    "/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n",
+                    "/DL1_to_DL2_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
                     f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]} >$LOG 2>&1\n\n",
                 ]
                 + rc
