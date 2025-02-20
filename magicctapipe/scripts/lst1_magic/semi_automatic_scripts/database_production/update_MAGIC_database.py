@@ -241,11 +241,26 @@ def main():
         help="End of the time interval (in LST convention, format YYYYMMDD).",
     )
 
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
+
     args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config = yaml.safe_load(f)
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
 
-    config = resource_file("database_config.yaml")
+        config_db = resource_file("database_config.yaml")
 
-    with open(config, "rb") as bf:
+    with open(config_db, "rb") as bf:
         config_dict = yaml.safe_load(bf)
 
     df_path = config_dict["database_paths"]["MAGIC+LST1"]

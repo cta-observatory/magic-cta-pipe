@@ -86,10 +86,13 @@ def main():
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
     lstchain_versions = config["needed_parameters"]["lstchain_versions"]
-    config_file = resource_file("database_config.yaml")
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+
+        config_db = resource_file("database_config.yaml")
 
     with open(
-        config_file, "rb"
+        config_db, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 

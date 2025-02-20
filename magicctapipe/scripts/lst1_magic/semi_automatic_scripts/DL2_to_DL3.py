@@ -246,7 +246,10 @@ def main():
         print("Wrong value set as IRF_theta_cuts_type, use only 'global' or 'dynamic'")
         return
 
-    config_db = resource_file("database_config.yaml")
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"

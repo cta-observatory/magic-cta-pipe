@@ -41,12 +41,28 @@ def main():
         default=0,
         help="End date to update database (YYYYMMDD)",
     )
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
 
     args = parser.parse_args()
-    config_file = resource_file("database_config.yaml")
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config_general = yaml.safe_load(f)
+
+    config = config_general["general"]["base_db_config_file"]
+    if config == "":
+
+        config = resource_file("database_config.yaml")
 
     with open(
-        config_file, "rb"
+        config, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 

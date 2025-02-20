@@ -17,6 +17,7 @@ data_selection:
     
 general:
     base_config_file: ''    # path + name to a custom MCP config file. If not provided, the default config.yaml file will be used 
+    base_db_config_file: ''    # path + name to a custom config file containing path and keys to access MAGIC, LST and MAGIC+LST databases. If not provided, the default database_config.yaml file will be used 
     LST_version: "v0.10" # check the `processed_lstchain_file` version in the LST database!    
     env_name: magic-lst  # name of the conda environment to be used to process data.
     cluster: "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).

@@ -209,10 +209,25 @@ def main():
         default=date_max_default,
         help="End of the time interval (in LST convention, format YYYYMMDD).",
     )
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_general.yaml",
+        help="Path to a configuration file",
+    )
 
     args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config_general = yaml.safe_load(f)
 
-    config = resource_file("database_config.yaml")
+    config = config_general["general"]["base_db_config_file"]
+    if config == "":
+
+        config = resource_file("database_config.yaml")
 
     with open(config, "rb") as bf:
         config_dict = yaml.safe_load(bf)
