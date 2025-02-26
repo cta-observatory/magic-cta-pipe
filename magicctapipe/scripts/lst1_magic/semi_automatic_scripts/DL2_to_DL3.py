@@ -119,30 +119,23 @@ def DL2_to_DL3(
         )
         return
 
-    print("bash")
     # Loop over all nights
     LST_runs_and_dates = f"{source}_LST_runs.txt"
     LST_date = []
     for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
         LST_date.append(str(i[0].replace("_", "")))
     LST_date = list(set(LST_date))
-    File_list = np.sort(
-        glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/logs/ST*.txt")
-    )
-    print(File_list)
+    outdir = f"{target_dir}/v{__version__}/{source}/DL3/logs"
+    File_list = np.sort(glob.glob(f"{outdir}/ST*.txt"))
     for file in File_list:
-        print(file)
         night = file.split("_")[-1].replace(".txt", "")
         if str(night) not in LST_date:
-            print("night")
             continue
         with open(file, "r") as f:
             runs = f.readlines()
             process_size = len(runs) - 1
-            print(runs)
             run_new = []
             for run in runs:
-                print(run)
                 single_run_new = (
                     "/".join(run.split("/")[:-6])
                     + f"/v{version}/"
@@ -152,9 +145,7 @@ def DL2_to_DL3(
                     + "/"
                     + run.split("/")[-1].replace("dl1_stereo", "dl2").rstrip("\n")
                 )
-                print(single_run_new)
                 run_new.append(single_run_new)
-            print(run_new)
             with open(file, "w") as g:
                 g.writelines(run_new)
 
@@ -162,6 +153,7 @@ def DL2_to_DL3(
         period = file.split("/")[-1].split("_")[0]
         dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
         if np.isnan(dec):
+            print(f"MC_dec is NaN for {source}")
             continue
         dec = str(dec).replace(".", "")
         if IRF_theta_cuts_type == "global":
@@ -169,9 +161,9 @@ def DL2_to_DL3(
         else:
             IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/g_dyn_0.9_th_dyn_0.75/dec_{dec}/"
         if (not os.path.isdir(IRFdir)) or (len(os.listdir(IRFdir)) == 0):
+            print(f"no IRF availables in {IRFdir}")
             continue
         process_name = source
-        output = f"{target_dir}/v{__version__}/{source}/DL3"
 
         slurm = slurm_lines(
             queue="short",
@@ -179,21 +171,22 @@ def DL2_to_DL3(
             nice_parameter=nice,
             array=process_size,
             mem="1g",
-            out_name=f"{target_dir}/v{__version__}/{source}/DL3/logs/slurm-%x.%A_%a",
+            out_name=f"{outdir}/slurm-%x.%A_%a",
         )
         rc = rc_lines(
             store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-            out=f"{target_dir}/v{__version__}/{source}/DL3/logs/list_{nsb}_{period}_{night}",
+            out=f"{outdir}/list_{nsb}_{period}_{night}",
         )
+        out_file = outdir.rstrip("/logs")
 
         lines = (
             slurm
             + [
                 f"SAMPLE_LIST=($(<{file}))\n",
                 "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                f"export LOG={output}/logs",
+                f"export LOG={outdir}",
                 "/DL2_to_DL3_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {output} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
+                f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {out_file} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
             ]
             + rc
         )
@@ -204,7 +197,7 @@ def DL2_to_DL3(
 
 def main():
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
     parser = argparse.ArgumentParser()
@@ -213,7 +206,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
+        default="./config_auto_MCP.yaml",
         help="Path to a configuration file",
     )
 
@@ -270,24 +263,23 @@ def main():
     for source_name in source_list:
         wobble_offset = df_LST[df_LST.source == source_name].iloc[0]["wobble_offset"]
         if str(wobble_offset) != "[0.40]":
-
+            print(f"wobble offset is not (or not always) 0.40 for {source_name}")
             continue
         # cp the .txt files from DL1 stereo anaysis to be used again.
         DL2_Nights = np.sort(
             glob.glob(f"{target_dir}/v{in_version}/{source_name}/DL2/*")
         )
-        os.makedirs(
-            f"{target_dir}/v{__version__}/{source_name}/DL3/logs", exist_ok=True
-        )
+        outdir = f"{target_dir}/v{__version__}/{source_name}/DL3/logs"
+        os.makedirs(outdir, exist_ok=True)
         for night in DL2_Nights:
             File_list = glob.glob(f"{night}/logs/ST*.txt")
             for file in File_list:
-                cp_dir = f"{target_dir}/v{__version__}/{source_name}/DL3/logs"
-                os.system(f"cp {file} {cp_dir}")
+                os.system(f"cp {file} {outdir}")
 
         ra = df_LST[df_LST.source == source_name].iloc[0]["ra"]
         dec = df_LST[df_LST.source == source_name].iloc[0]["dec"]
         if np.isnan(dec) or np.isnan(ra):
+            print(f"source Ra and/or Dec is NaN for {source_name}")
             continue
 
         configuration_DL3(target_dir, source_name, config_file, ra, dec)

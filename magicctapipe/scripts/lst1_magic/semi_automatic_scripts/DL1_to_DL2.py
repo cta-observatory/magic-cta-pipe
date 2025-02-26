@@ -68,9 +68,8 @@ def ST_NSB_List(
         # Night period
 
         night_date = night.split("/")[-1]
-        os.makedirs(
-            f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs", exist_ok=True
-        )
+        outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
+        os.makedirs(outdir, exist_ok=True)
         date_lst = night_date[:4] + "_" + night_date[4:6] + "_" + night_date[6:8]
         date_magic = datetime.datetime.strptime(
             date_lst, "%Y_%m_%d"
@@ -94,7 +93,7 @@ def ST_NSB_List(
             # Writing on output .txt file
             if nsb <= nsb_limit[-1]:
                 with open(
-                    f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs/{period}_{nsb}_{night_date}.txt",
+                    f"{outdir}/{period}_{nsb}_{night_date}.txt",
                     "a+",
                 ) as file:
                     file.write(f"{Run}\n")
@@ -132,70 +131,61 @@ def bash_DL1Stereo_to_DL2(
             "Automatic processing not implemented for the cluster indicated in the config file"
         )
         return
-    print("bash")
     process_name = source
     LST_runs_and_dates = f"{source}_LST_runs.txt"
     LST_date = []
     for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
         LST_date.append(str(i[0].replace("_", "")))
     LST_date = list(set(LST_date))
-    print(LST_date)
     Nights_list = np.sort(
         glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
     )
 
     for night in Nights_list:
         night_date = night.split("/")[-1]
-        print(night_date)
-        File_list = glob.glob(
-            f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs/ST*.txt"
-        )
+        outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
+        File_list = glob.glob(f"{outdir}/ST*.txt")
         night_date = night.split("/")[-1]
         if str(night_date) not in LST_date:
-            print("no date")
             continue
 
         for file in File_list:
-            print(file)
             with open(file, "r") as f:
                 process_size = len(f.readlines()) - 1
             if process_size < 0:
-                print("size")
                 continue
             nsb = file.split("/")[-1].split("_")[1]
             period = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
             if np.isnan(dec):
-                print("dec")
+                print(f"MC_dec is NaN for {source}")
                 continue
             dec = str(dec).replace(".", "")
             RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
-            print(RFdir)
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
-                print("rf")
+                print(f"no RF availables in {RFdir}")
                 continue
-            print("slurm")
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
                 nice_parameter=nice,
                 array=process_size,
                 mem="50g",
-                out_name=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/slurm-%x.%A_%a",
+                out_name=f"{outdir}/slurm-%x.%A_%a",
             )
             rc = rc_lines(
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                out=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/list_nsb_period",
+                out=f"{outdir}/list_nsb_period",
             )
-
+            out_file = outdir.rstrip("/logs")
             lines = (
                 slurm
                 + [
                     f"SAMPLE_LIST=($(<{file}))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                    f"export LOG={target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs",
+                    f"export LOG={outdir}",
                     "/DL1_to_DL2_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]} >$LOG 2>&1\n\n",
+                    f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {out_file} >$LOG 2>&1\n\n",
                 ]
                 + rc
             )
@@ -208,7 +198,7 @@ def bash_DL1Stereo_to_DL2(
 
 def main():
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
     parser = argparse.ArgumentParser()
@@ -217,7 +207,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
+        default="./config_auto_MCP.yaml",
         help="Path to a configuration file",
     )
 
