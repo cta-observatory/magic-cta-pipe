@@ -161,6 +161,7 @@ def bash_DL1Stereo_to_DL2(
                 print(f"MC_dec is NaN for {source}")
                 continue
             dec = str(dec).replace(".", "")
+            dec = str(dec).replace("-", "min_")
             RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
             if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
                 print(f"no RF availables in {RFdir}")
