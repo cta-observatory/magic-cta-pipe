@@ -171,7 +171,7 @@ def DL2_to_DL3(
             job_name=f"{process_name}_DL2_to_DL3",
             nice_parameter=nice,
             array=process_size,
-            mem="1g",
+            mem="50g",
             out_name=f"{outdir}/slurm-%x.%A_%a",
         )
         rc = rc_lines(
