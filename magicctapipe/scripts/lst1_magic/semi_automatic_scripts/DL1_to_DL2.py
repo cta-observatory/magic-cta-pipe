@@ -176,7 +176,7 @@ def bash_DL1Stereo_to_DL2(
             )
             rc = rc_lines(
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                out=f"{outdir}/list_nsb_period",
+                out=f"{outdir}/list_{nsb}_{period}",
             )
             out_file = outdir.rstrip("/logs")
             lines = (
