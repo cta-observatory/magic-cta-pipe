@@ -242,7 +242,7 @@ def main():
             for list in list_return:
                 with open(list, "r") as fp:
                     returns = fp.readlines()
-                    this_return = len(returns)
+                    this_return += len(returns)
                     for line in returns:
                         line = line.split()
                         file_in = line[0]
