@@ -143,7 +143,7 @@ def DL2_to_DL3(
                     + "/DL2/"
                     + run.split("/")[-2]
                     + "/"
-                    + run.split("/")[-1].replace("dl1_stereo", "dl2").rstrip("\n")
+                    + run.split("/")[-1].replace("dl1_stereo", "dl2")
                 )
                 run_new.append(single_run_new)
             with open(file, "w") as g:
