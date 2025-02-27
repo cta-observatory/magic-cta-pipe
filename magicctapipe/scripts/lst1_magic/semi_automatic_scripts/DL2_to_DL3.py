@@ -156,6 +156,7 @@ def DL2_to_DL3(
             print(f"MC_dec is NaN for {source}")
             continue
         dec = str(dec).replace(".", "")
+        dec = str(dec).replace("-", "min_")
         if IRF_theta_cuts_type == "global":
             IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/g_dyn_0.9_th_glo_0.2/dec_{dec}/"
         else:
