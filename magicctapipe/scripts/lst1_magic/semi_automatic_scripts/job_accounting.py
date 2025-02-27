@@ -288,7 +288,7 @@ def main():
                                     if slurm_id not in all_jobs:
                                         total_time += delta.total_seconds() / 3600
                                         all_jobs += [slurm_id]
-                                    this_cpu.append(delta)
+                                    np.append(this_cpu, delta)
                                 if mem is not None and mem.endswith("M"):
                                     this_mem.append(float(mem[0:-1]))
                                 else:
