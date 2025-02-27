@@ -171,7 +171,7 @@ def bash_DL1Stereo_to_DL2(
                 job_name=f"{process_name}_DL1_to_DL2",
                 nice_parameter=nice,
                 array=process_size,
-                mem="50g",
+                mem="150g",
                 out_name=f"{outdir}/slurm-%x.%A_%a",
             )
             rc = rc_lines(
