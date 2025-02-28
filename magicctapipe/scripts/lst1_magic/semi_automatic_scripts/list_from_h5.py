@@ -261,7 +261,7 @@ def main():
         )
     else:
         df_LST.query(
-            f'source=="{source_in}"& MAGIC_trigger=="L3T" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
+            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
             inplace=True,
         )
 
