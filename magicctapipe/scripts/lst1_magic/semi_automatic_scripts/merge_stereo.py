@@ -27,7 +27,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def MergeStereo(target_dir, env_name, source, cluster, nice):
+def MergeStereo(target_dir, env_name, source, cluster, version, nice):
     """
     This function creates the bash scripts to run merge_hdf_files.py in all DL1Stereo subruns.
 
@@ -41,12 +41,14 @@ def MergeStereo(target_dir, env_name, source, cluster, nice):
         Name of the target
     cluster : str
         Cluster system
+    version : str
+        Version of the input (stereo subruns) data
     nice : int or None
         Job priority
     """
 
     process_name = source
-    stereo_DL1_dir = f"{target_dir}/v{__version__}/{source}"
+    stereo_DL1_dir = f"{target_dir}/v{version}/{source}"
     listOfNightsLST = np.sort(glob.glob(f"{stereo_DL1_dir}/DL1Stereo/*"))
     if cluster != "SLURM":
         logger.warning(
@@ -55,7 +57,9 @@ def MergeStereo(target_dir, env_name, source, cluster, nice):
         return
     for nightLST in listOfNightsLST:
         night = nightLST.split("/")[-1]
-        stereoMergeDir = f"{stereo_DL1_dir}/DL1Stereo/Merged/{night}"
+        stereoMergeDir = (
+            f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/{night}"
+        )
         os.makedirs(f"{stereoMergeDir}/logs", exist_ok=True)
 
         if len(glob.glob(f"{nightLST}/dl1_stereo*.h5")) < 1:
@@ -112,6 +116,9 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     if source_in is None:
@@ -125,7 +132,9 @@ def main():
     for source_name in source_list:
 
         print("***** Merging DL1Stereo files run-wise...")
-        MergeStereo(target_dir, env_name, source_name, cluster, nice_parameter)
+        MergeStereo(
+            target_dir, env_name, source_name, cluster, in_version, nice_parameter
+        )
 
         list_of_merge = glob.glob(f"{source_name}_StereoMerge_*.sh")
         if len(list_of_merge) < 1:
