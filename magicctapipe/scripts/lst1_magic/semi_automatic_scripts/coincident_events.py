@@ -16,6 +16,7 @@ import argparse
 import glob
 import logging
 import os
+import pandas as pd
 from datetime import date as dtdt
 from datetime import timedelta
 from pathlib import Path
@@ -74,7 +75,7 @@ def configfile_coincidence(target_dir, source_name, config_file):
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, cluster, nice
+    target_dir, LST_runs, source_name, LST_version, env_name, cluster, nice, df_LST
 ):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -95,6 +96,8 @@ def linking_bash_lst(
         Cluster system
     nice : int or None
         Job priority
+    df_LST : :class:`pandas.DataFrame`
+        Dataframe collecting the LST1 runs (produced by the create_LST_table script)
     """
 
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
@@ -120,8 +123,12 @@ def linking_bash_lst(
             if day_MAGIC == day_LST + delta:
 
                 lstObsDir = i[0].replace("_", "")
+                run_n=i[1]
+                tailcut=df_LST[df_LST.LST1_run == run_n].iloc[0]["tailcut"]
+                if tailcut=='':
+                    continue
                 inputdir = (
-                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/{tailcut}"
                 )
 
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
@@ -202,6 +209,22 @@ def main():
 
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+
+        config_db = resource_file("database_config.yaml")
+
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict_db = yaml.safe_load(fc)
+
+    LST_h5 = config_dict_db["database_paths"]["LST"]
+    LST_key = config_dict_db["database_keys"]["LST"]
+    df_LST = pd.read_hdf(
+        LST_h5,
+        key=LST_key,
+    )
 
     cluster = config["general"]["cluster"]
 
@@ -233,6 +256,7 @@ def main():
                 env_name,
                 cluster,
                 nice_parameter,
+                df_LST,
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")

@@ -61,6 +61,7 @@ def collect_nsb(df_LST):
             "lstchain_versions",
             "last_lstchain_file",
             "processed_lstchain_file",
+            "tailcut",
             "error_code_nsb",
         ]
     ]

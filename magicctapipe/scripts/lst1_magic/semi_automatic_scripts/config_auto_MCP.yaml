@@ -23,7 +23,6 @@ data_selection:
 general:
     base_config_file: ''    # path + name to a custom MCP config file. If not provided, the default config.yaml file will be used 
     LST_version: "v0.10" # check the `processed_lstchain_file` version in the LST database!
-    LST_tailcut: "tailcut84"
     simtel_nsb: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
     lstchain_modified_config: true # use_flatfield_heuristic = True to evaluate NSB    
     nsb: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]

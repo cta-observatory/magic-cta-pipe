@@ -81,6 +81,7 @@ def main():
     df_cut = df_cut.assign(lstchain_versions="[]")
     df_cut = df_cut.assign(last_lstchain_file="")
     df_cut = df_cut.assign(processed_lstchain_file="")
+    df_cut = df_cut.assign(tailcut="")
     df_cut = df_cut.assign(error_code_nsb=-1)
 
     if os.path.isfile(out_h5):
