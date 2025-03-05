@@ -154,11 +154,11 @@ Eventually, to merge DL1 stereo (LST) subruns into runs, we run the `merge_stere
 
 > $ merge_stereo (-c config_auto_MCP.yaml)
 
-### Random forest and DL1 to DL2
+### DL1 to DL2
 
 TBD.
 
-### Instrument response function and DL3
+### DL2 to DL3
 
 TBD.
 
