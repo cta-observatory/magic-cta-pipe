@@ -67,7 +67,10 @@ def configfile_coincidence(target_dir, source_name, config_file):
         "event_coincidence": config_dict["event_coincidence"],
     }
 
-    file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
+    conf_dir = f"{target_dir}/v{__version__}/{source_name}"
+    os.makedirs(conf_dir, exist_ok=True)
+
+    file_name = f"{conf_dir}/config_coincidence.yaml"
 
     with open(file_name, "w") as f:
 
@@ -75,7 +78,7 @@ def configfile_coincidence(target_dir, source_name, config_file):
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, cluster, nice, df_LST
+    target_dir, LST_runs, source_name, LST_version, env_name, cluster, version, nice, df_LST
 ):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -94,6 +97,8 @@ def linking_bash_lst(
         Name of the conda environment
     cluster : str
         Cluster system
+    version : str
+        Version of the input (DL1 MAGIC runs) data
     nice : int or None
         Job priority
     df_LST : :class:`pandas.DataFrame`
@@ -102,7 +107,7 @@ def linking_bash_lst(
 
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
-    MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
+    MAGIC_DL1_dir = f"{target_dir}/v{version}/{source_name}/DL1"
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/[0-9]*")]
     if cluster != "SLURM":
@@ -227,6 +232,9 @@ def main():
     )
 
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -255,6 +263,7 @@ def main():
                 LST_version,
                 env_name,
                 cluster,
+                in_version,
                 nice_parameter,
                 df_LST,
             )  # linking the data paths to current working directory
