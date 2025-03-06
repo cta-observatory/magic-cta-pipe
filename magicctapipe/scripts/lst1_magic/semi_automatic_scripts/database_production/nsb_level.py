@@ -162,16 +162,17 @@ def main():
         run_number = row["LST1_run"]
         date = row["DATE"]
 
-        tailcut=''
-        tailcut_list=[
-            i.split("/")[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut*")
+        tailcut = ""
+        tailcut_list = [
+            i.split("/")[-1]
+            for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut*")
         ]
-        
+
         for tail in tailcut_list:
-                if os.path.isfile(
-                    f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tail}/dl1_LST-1.Run{run}.h5"
-                ):
-                    tailcut=str(tail)
+            if os.path.isfile(
+                f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
+            ):
+                tailcut = str(tail)
 
         df_LST.loc[
             i, "processed_lstchain_file"

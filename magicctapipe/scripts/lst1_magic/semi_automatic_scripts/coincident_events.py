@@ -16,13 +16,13 @@ import argparse
 import glob
 import logging
 import os
-import pandas as pd
 from datetime import date as dtdt
 from datetime import timedelta
 from pathlib import Path
 
 import joblib
 import numpy as np
+import pandas as pd
 import yaml
 
 from magicctapipe import __version__
@@ -123,9 +123,9 @@ def linking_bash_lst(
             if day_MAGIC == day_LST + delta:
 
                 lstObsDir = i[0].replace("_", "")
-                run_n=i[1]
-                tailcut=df_LST[df_LST.LST1_run == run_n].iloc[0]["tailcut"]
-                if tailcut=='':
+                run_n = i[1]
+                tailcut = df_LST[df_LST.LST1_run == run_n].iloc[0]["tailcut"]
+                if tailcut == "":
                     continue
                 inputdir = (
                     f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/{tailcut}"

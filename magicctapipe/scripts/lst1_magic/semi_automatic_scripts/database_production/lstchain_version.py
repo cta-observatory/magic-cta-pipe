@@ -37,13 +37,14 @@ def version_lstchain(df_LST):
         date = row["DATE"]
         directories_version = [
             i.split("/")[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/v*")
-        ]       
-        tailcut_list=[]
+        ]
+        tailcut_list = []
 
         for vers in directories_version:
 
-            tailcut_list=[
-                i.split("/")[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{vers}/tailcut*")
+            tailcut_list = [
+                i.split("/")[-1]
+                for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{vers}/tailcut*")
             ]
             for tail in tailcut_list:
                 if os.path.isfile(
@@ -51,7 +52,6 @@ def version_lstchain(df_LST):
                 ):
                     if vers not in version:
                         version.append(vers)
-                    
 
         version = list(version)
         df_LST.loc[i, "lstchain_versions"] = str(version)
@@ -66,8 +66,11 @@ def version_lstchain(df_LST):
         if max_version is None:
             print(f"issue with lstchain versions for run {run}\n\n\n")
             continue
-        tailcut_list=[
-            i.split("/")[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut*")
+        tailcut_list = [
+            i.split("/")[-1]
+            for i in glob.glob(
+                f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut*"
+            )
         ]
         for tail in tailcut_list:
             if os.path.isfile(
