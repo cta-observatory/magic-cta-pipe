@@ -16,7 +16,7 @@ data_selection:
     time_range: True  # Search for all runs in a LST time range (e.g., 2020_01_01 -> 2022_01_01).
     min: "2023_11_17"
     max: "2024_03_03"   
-    date_list: ['2020-12-15','2021-03-11']  # LST list of days to be processed (only if time_range=False), format: YYYY_MM_DD.
+    date_list: ['2020-12-15','2021-03-11']  # LST list of days to be processed (only if time_range=False), format: YYYY-MM-DD.
     skip_LST_runs: [3216,3217]  # LST runs to ignore.
     skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
     
