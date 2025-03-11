@@ -87,9 +87,10 @@ def ST_NSB_List(
             run_LST_id = run_str.lstrip("Run")
             nsb = df_LST[df_LST["LST1_run"] == run_LST_id]["nsb"].tolist()[0]
             # rounding the NSB to the nearest MC nsb value
-            for j in range(0, len(nsb_list) - 1):
+            for j in range(0, len(nsb_list)):
                 if (nsb <= nsb_limit[j + 1]) & (nsb > nsb_limit[j]):
                     nsb = nsb_list[j]
+            
             # Writing on output .txt file
             if nsb <= nsb_limit[-1]:
                 with open(
