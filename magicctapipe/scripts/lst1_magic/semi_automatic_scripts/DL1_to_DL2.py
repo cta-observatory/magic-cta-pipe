@@ -90,7 +90,7 @@ def ST_NSB_List(
             for j in range(0, len(nsb_list)):
                 if (nsb <= nsb_limit[j + 1]) & (nsb > nsb_limit[j]):
                     nsb = nsb_list[j]
-            
+
             # Writing on output .txt file
             if nsb <= nsb_limit[-1]:
                 with open(
