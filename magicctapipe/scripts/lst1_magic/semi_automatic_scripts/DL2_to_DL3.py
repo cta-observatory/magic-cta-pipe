@@ -86,6 +86,7 @@ def DL2_to_DL3(
     version,
     nice,
     IRF_theta_cuts_type,
+    LST_date,
 ):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
@@ -112,6 +113,8 @@ def DL2_to_DL3(
         Job priority
     IRF_theta_cuts_type : str
         Type of IRFS (global/dynamic)
+    LST_date : list
+        List of the dates to be processed (from list_from_h5)
     """
     if cluster != "SLURM":
         logger.warning(
@@ -120,11 +123,6 @@ def DL2_to_DL3(
         return
 
     # Loop over all nights
-    LST_runs_and_dates = f"{source}_LST_runs.txt"
-    LST_date = []
-    for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
-        LST_date.append(str(i[0].replace("_", "")))
-    LST_date = list(set(LST_date))
     outdir = f"{target_dir}/v{__version__}/{source}/DL3/logs"
     File_list = np.sort(glob.glob(f"{outdir}/ST*.txt"))
     for file in File_list:
@@ -270,12 +268,18 @@ def main():
         DL2_Nights = np.sort(
             glob.glob(f"{target_dir}/v{in_version}/{source_name}/DL2/*")
         )
+        LST_runs_and_dates = f"{source_name}_LST_runs.txt"
+        LST_date = []
+        for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
+            LST_date.append(str(i[0].replace("_", "")))
+        LST_date = list(set(LST_date))
         outdir = f"{target_dir}/v{__version__}/{source_name}/DL3/logs"
         os.makedirs(outdir, exist_ok=True)
         for night in DL2_Nights:
-            File_list = glob.glob(f"{night}/logs/ST*.txt")
-            for file in File_list:
-                os.system(f"cp {file} {outdir}")
+            if night in LST_date:
+                File_list = glob.glob(f"{night}/logs/ST*.txt")
+                for file in File_list:
+                    os.system(f"cp {file} {outdir}")
 
         ra = df_LST[df_LST.source == source_name].iloc[0]["ra"]
         dec = df_LST[df_LST.source == source_name].iloc[0]["dec"]
@@ -295,6 +299,7 @@ def main():
             in_version,
             nice_parameter,
             IRF_theta_cuts_type,
+            LST_date,
         )
         list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
         if len(list_of_dl3_scripts) < 1:
