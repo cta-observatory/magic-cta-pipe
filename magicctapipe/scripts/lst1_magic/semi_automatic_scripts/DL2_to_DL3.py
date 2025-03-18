@@ -276,7 +276,7 @@ def main():
         outdir = f"{target_dir}/v{__version__}/{source_name}/DL3/logs"
         os.makedirs(outdir, exist_ok=True)
         for night in DL2_Nights:
-            if night in LST_date:
+            if night.split("/")[-1] in LST_date:
                 File_list = glob.glob(f"{night}/logs/ST*.txt")
                 for file in File_list:
                     os.system(f"cp {file} {outdir}")
