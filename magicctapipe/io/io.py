@@ -34,6 +34,7 @@ __all__ = [
     "check_input_list",
     "format_object",
     "get_dl2_mean",
+    "get_dl2_mean_nodrop",
     "get_stereo_events",
     "get_stereo_events_old",
     "load_dl2_data_file",
@@ -372,20 +373,9 @@ def get_stereo_events(
     if quality_cuts is not None:
         event_data_stereo.query(quality_cuts, inplace=True)
 
-    # exclude events in which more than one (LST-1) image gets matched to the same event
-    multimatch = event_data_stereo.groupby(group_index + ["tel_id"]).size() > 1
-    if sum(multimatch) > 0:
-        logger.info(f"{sum(multimatch)} events with multiple matches")
-        logger.info(event_data_stereo[multimatch])
-        if sum(multimatch) > 5:
-            logger.error("this is too much, exiting")
-            exit(11)
-        event_data_stereo = event_data_stereo[~multimatch]
-
     # Extract stereo events
     event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
     event_data_stereo.query("multiplicity > 1", inplace=True)
-
     if eval_multi_combo:
         # Check the total number of events
         n_events_total = len(event_data_stereo.groupby(group_index).size())
@@ -422,6 +412,7 @@ def get_stereo_events(
             value = f"{n_events:.0f} events ({percentage:.1f}%)"
 
             n_events_per_combo[key] = value
+
         event_data_stereo = event_data_stereo.astype({"combo_type": int})
 
         # Show the number of events per combination type
@@ -464,6 +455,121 @@ def get_dl2_mean(event_data, weight_type="simple", group_index=["obs_id", "event
         params = ["combo_type", "multiplicity", "true_energy", "true_alt", "true_az"]
     else:
         params = ["combo_type", "multiplicity", "timestamp"]
+
+    event_data_mean = event_data[params].groupby(group_index).mean()
+    event_data_mean = event_data_mean.astype({"combo_type": int, "multiplicity": int})
+
+    # Calculate the mean pointing direction
+    pnt_az_mean, pnt_alt_mean = calculate_mean_direction(
+        lon=event_data["pointing_az"], lat=event_data["pointing_alt"], unit="rad"
+    )
+
+    event_data_mean["pointing_alt"] = pnt_alt_mean
+    event_data_mean["pointing_az"] = pnt_az_mean
+
+    # Define the weights for the DL2 parameters
+    if weight_type == "simple":
+        energy_weights = 1
+        direction_weights = None
+        gammaness_weights = 1
+
+    elif weight_type == "variance":
+        energy_weights = 1 / event_data["reco_energy_var"]
+        direction_weights = 1 / event_data["reco_disp_var"]
+        gammaness_weights = 1 / event_data["gammaness_var"]
+
+    elif weight_type == "intensity":
+        energy_weights = event_data["intensity"]
+        direction_weights = event_data["intensity"]
+        gammaness_weights = event_data["intensity"]
+
+    else:
+        raise ValueError(f"Unknown weight type '{weight_type}'.")
+
+    # Calculate mean DL2 parameters
+    df_events = pd.DataFrame(
+        data={
+            "energy_weight": energy_weights,
+            "gammaness_weight": gammaness_weights,
+            "weighted_log_energy": np.log10(event_data["reco_energy"]) * energy_weights,
+            "weighted_gammaness": event_data["gammaness"] * gammaness_weights,
+        }
+    )
+
+    group_sum = df_events.groupby(group_index).sum()
+
+    log_energy_mean = group_sum["weighted_log_energy"] / group_sum["energy_weight"]
+    gammaness_mean = group_sum["weighted_gammaness"] / group_sum["gammaness_weight"]
+
+    reco_az_mean, reco_alt_mean = calculate_mean_direction(
+        lon=event_data["reco_az"],
+        lat=event_data["reco_alt"],
+        unit="deg",
+        weights=direction_weights,
+    )
+
+    event_data_mean["reco_energy"] = 10**log_energy_mean
+    event_data_mean["reco_alt"] = reco_alt_mean
+    event_data_mean["reco_az"] = reco_az_mean
+    event_data_mean["gammaness"] = gammaness_mean
+
+    # Transform the Alt/Az directions to the RA/Dec coordinate
+    if not is_simulation:
+        timestamps_mean = Time(event_data_mean["timestamp"], format="unix", scale="utc")
+
+        pnt_ra_mean, pnt_dec_mean = transform_altaz_to_radec(
+            alt=u.Quantity(pnt_alt_mean, unit="rad"),
+            az=u.Quantity(pnt_az_mean, unit="rad"),
+            obs_time=timestamps_mean,
+        )
+
+        reco_ra_mean, reco_dec_mean = transform_altaz_to_radec(
+            alt=u.Quantity(reco_alt_mean, unit="deg"),
+            az=u.Quantity(reco_az_mean, unit="deg"),
+            obs_time=timestamps_mean,
+        )
+
+        event_data_mean["pointing_ra"] = pnt_ra_mean.to_value("deg")
+        event_data_mean["pointing_dec"] = pnt_dec_mean.to_value("deg")
+        event_data_mean["reco_ra"] = reco_ra_mean.to_value("deg")
+        event_data_mean["reco_dec"] = reco_dec_mean.to_value("deg")
+
+    return event_data_mean
+
+def get_dl2_mean_nodrop(event_data, weight_type="simple", group_index=["obs_id", "event_id"]):
+    """
+    Gets mean DL2 parameters per shower event.
+
+    Parameters
+    ----------
+    event_data : pandas.DataFrame
+        Data frame of shower events
+    weight_type : str, optional
+        Type of the weights for telescope-wise DL2 parameters -
+        "simple" does not use any weights for calculations,
+        "variance" uses the inverse of the RF variance, and
+        "intensity" uses the linear-scale intensity parameter
+    group_index : list, optional
+        Index to group telescope events
+
+    Returns
+    -------
+    pandas.DataFrame
+        Data frame of the shower events with mean DL2 parameters plus some other variables that are usually not reported
+
+    Raises
+    ------
+    ValueError
+        If the input weight type is not known
+    """
+
+    is_simulation = "true_energy" in event_data.columns
+
+    # Create a mean data frame
+    if is_simulation:
+        params = ["combo_type", "multiplicity", "true_energy", "true_alt", "true_az"]
+    else:
+        params = ["combo_type", "multiplicity", "timestamp", "obs_id_magic","event_id_magic","obs_id_lst","event_id_lst"]
 
     event_data_mean = event_data[params].groupby(group_index).mean()
     event_data_mean = event_data_mean.astype({"combo_type": int, "multiplicity": int})
@@ -1325,15 +1431,7 @@ def load_irf_files(input_dir_irf):
             unique_bins = np.unique(irf_data[key], axis=0)
 
             if len(unique_bins) > 1:
-                if not np.all(
-                    np.abs(unique_bins - unique_bins[0]) < unique_bins[0] * 1.0e-15
-                ):
-                    raise RuntimeError(f"The binning of '{key}' do not match.")
-                else:
-                    logger.warning(
-                        f"The bins of '{key}' do not match, but the difference is within numerical precision, ignoring"
-                    )
-                    irf_data[key] = unique_bins[0]
+                raise RuntimeError(f"The binning of '{key}' do not match.")
 
             else:
                 # Set the unique bins
