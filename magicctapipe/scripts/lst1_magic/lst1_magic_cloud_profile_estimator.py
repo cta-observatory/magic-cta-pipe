@@ -36,7 +36,6 @@ import numpy as np
 import pandas as pd
 import tables
 import yaml
-from astropy.coordinates import SkyCoord
 from astropy.coordinates import AltAz, SkyCoord
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
