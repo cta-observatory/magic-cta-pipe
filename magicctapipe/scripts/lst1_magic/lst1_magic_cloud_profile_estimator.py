@@ -26,21 +26,21 @@ $ python lst1_magic_cloud_profile_estimator.py
 import argparse
 import logging
 import time
-import magicctapipe
-import ctapipe
 from pathlib import Path
 
 import astropy.units as u
-import tables
+import ctapipe
 import h5py
 import numpy as np
 import pandas as pd
+import tables
 import yaml
-
 from astropy.coordinates import AltAz, SkyCoord
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table
+
+import magicctapipe
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.StreamHandler())
