@@ -218,9 +218,6 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
     IRF_dir = config["directories"]["IRF"]
 
-    print("***** Generating file config_DL3.yaml...")
-    print("***** This file can be found in ", target_dir)
-
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     env_name = config["general"]["env_name"]
@@ -286,8 +283,10 @@ def main():
         if np.isnan(dec) or np.isnan(ra):
             print(f"source Ra and/or Dec is NaN for {source_name}")
             continue
-
+        print("***** Generating file config_DL3.yaml...")
+        print(f"***** This file can be found in {target_dir}/v{__version__}/{source_name}")
         configuration_DL3(target_dir, source_name, config_file, ra, dec)
+        print("***** Generating bash scripts...")
         DL2_to_DL3(
             target_dir,
             source_name,
