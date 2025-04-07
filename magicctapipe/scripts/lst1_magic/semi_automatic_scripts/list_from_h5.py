@@ -86,20 +86,18 @@ def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2, allowed_M_t
     """
 
     source_list = []
-    if source_in is None and len(allowed_M_tels)==2:
+    if source_in is None and len(allowed_M_tels) == 2:
         source_list = np.intersect1d(
             np.intersect1d(np.unique(df_LST["source"]), np.unique(df_MAGIC1["source"])),
             np.unique(df_MAGIC2["source"]),
         )
     elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 1:
         source_list = np.intersect1d(
-            np.unique(df_LST["source"]),
-            np.unique(df_MAGIC1["source"])
+            np.unique(df_LST["source"]), np.unique(df_MAGIC1["source"])
        )
     elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 2:
         source_list = np.intersect1d(
-            np.unique(df_LST["source"]),
-            np.unique(df_MAGIC2["source"])
+            np.unique(df_LST["source"]), np.unique(df_MAGIC2["source"])
        )
     else:
         source_list.append(source_out)
@@ -199,7 +197,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, allowed_M_
 
                 if (int(M2_run[k]) in skip_MAGIC) or (int(M2_run[k]) in run_listed):
                     continue
-                if len(allowed_M_tels)==2 and int(M2_run[k]) not in M1_run_list:
+                if len(allowed_M_tels) == 2 and int(M2_run[k]) not in M1_run_list:
                     continue
 
                 with open(file_list[1], "a+") as f:
@@ -269,17 +267,17 @@ def main():
     mask = processed_v == lstchain_version
     df_LST = df_LST[mask]
 
-    if source_in is None and len(allowed_M_tels)==2:
+    if source_in is None and len(allowed_M_tels) == 2:
         df_LST.query(
             f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
             inplace=True,
         )
-    elif source_in is None and len(allowed_M_tels)==1 and allowed_M_tels[0]==1:
+    elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 1:
         df_LST.query(
             f'MAGIC_trigger=="L1_M1" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
             inplace=True,
         )
-    elif source_in is None and len(allowed_M_tels)==1 and allowed_M_tels[0]==2:
+    elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 2:
         df_LST.query(
             f'MAGIC_trigger=="L1_M2" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
             inplace=True,
