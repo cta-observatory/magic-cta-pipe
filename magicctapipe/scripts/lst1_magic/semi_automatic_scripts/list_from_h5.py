@@ -242,7 +242,7 @@ def main():
     MAGIC2_key = config_dict["database_keys"]["MAGIC-II"]
     source_in = config["data_selection"]["source_name_database"]
     source_out = config["data_selection"]["source_name_output"]
-    allowed_M_tels = config["general"]["allowed_M_tels"]
+    allowed_M_tels = config["general"]["allowed_M_tels"] 
     if (source_out is None) and (source_in is not None):
         source_out = source_in
     range = config["data_selection"]["time_range"]
