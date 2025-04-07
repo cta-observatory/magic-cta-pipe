@@ -75,7 +75,7 @@ def config_file_gen(target_dir, source_name, config_file):
 
 
 def lists_and_bash_gen_MAGIC(
-    target_dir, telescope_ids, MAGIC_runs, source, env_name, cluster, nice
+    target_dir, telescope_ids, MAGIC_runs, source, env_name, cluster, nice, allowed_M_tels,
 ):
 
     """
@@ -97,6 +97,8 @@ def lists_and_bash_gen_MAGIC(
         Cluster system
     nice : int or None
         Job priority
+    allowed_M_tels : list
+        MAGIC telescopes allowed in the analysis.
     """
     if cluster != "SLURM":
         logger.warning(
@@ -114,7 +116,7 @@ def lists_and_bash_gen_MAGIC(
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         for i in MAGIC_runs:
-            for magic in [1, 2]:
+            for magic in allowed_M_tels:
                 # if 1 then magic is second from last, if 2 then last
                 if telescope_ids[magic - 3] > 0:
                     lines = [
@@ -124,7 +126,7 @@ def lists_and_bash_gen_MAGIC(
                     ]
                     f.writelines(lines)
 
-    for magic in [1, 2]:
+    for magic in allowed_M_tels:
         # if 1 then magic is second from last, if 2 then last
         if telescope_ids[magic - 3] > 0:
             for i in MAGIC_runs:
@@ -164,7 +166,7 @@ def lists_and_bash_gen_MAGIC(
                     f.writelines(lines)
 
 
-def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_name):
+def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_name, allowed_M_tels):
     """
     Here we create all subdirectories for a given workspace and target name.
 
@@ -178,6 +180,8 @@ def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_nam
         MAGIC dates and runs to be processed
     source_name : str
         Name of the target source
+    allowed_M_tels : list
+        MAGIC telescopes allowed in the analysis.
     """
 
     dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
@@ -187,7 +191,7 @@ def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_nam
     # MAGIC
     ###########################################
     for i in MAGIC_runs:
-        for magic in [1, 2]:
+        for magic in allowed_M_tels:
             if telescope_ids[magic - 3] > 0:
                 os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs", exist_ok=True)
 
@@ -225,6 +229,7 @@ def main():
     cluster = config["general"]["cluster"]
     target_dir = Path(config["directories"]["workspace_dir"])
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
+    allowed_M_tels = config["general"]["allowed_M_tels"]
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -247,7 +252,7 @@ def main():
         )
 
         directories_generator_real(
-            str(target_dir), telescope_ids, MAGIC_runs, source_name
+            str(target_dir), telescope_ids, MAGIC_runs, source_name, allowed_M_tels
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
         config_file_gen(target_dir, source_name, config_file)
 
@@ -261,6 +266,7 @@ def main():
             env_name,
             cluster,
             nice_parameter,
+            allowed_M_tels,
         )  # MAGIC real data
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             list_of_MAGIC_runs = glob.glob(f"{source_name}_MAGIC-*.sh")

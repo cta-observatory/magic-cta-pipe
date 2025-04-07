@@ -64,7 +64,7 @@ def magic_date(df):
     return df
 
 
-def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
+def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2, allowed_M_tels):
 
     """
     This function deletes any file named XXXX_LST_runs.txt and XXXX_MAGIC_runs.txt from the working directory.
@@ -81,14 +81,26 @@ def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
         MAGIC-1 dataframe of the joint MAGIC+LST-1 observations.
     df_MAGIC2 : :class:`pandas.DataFrame`
         MAGIC-2 dataframe of the joint MAGIC+LST-1 observations.
+    allowed_M_tels : list
+        MAGIC telescopes allowed in the analysis.
     """
 
     source_list = []
-    if source_in is None:
+    if source_in is None and len(allowed_M_tels)==2:
         source_list = np.intersect1d(
             np.intersect1d(np.unique(df_LST["source"]), np.unique(df_MAGIC1["source"])),
             np.unique(df_MAGIC2["source"]),
         )
+    elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 1:
+        source_list = np.intersect1d(
+            np.unique(df_LST["source"]),
+            np.unique(df_MAGIC1["source"])
+       )
+    elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 2:
+        source_list = np.intersect1d(
+            np.unique(df_LST["source"]),
+            np.unique(df_MAGIC2["source"])
+       )
     else:
         source_list.append(source_out)
 
@@ -105,7 +117,7 @@ def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2):
                 print(f"{j} deleted.")
 
 
-def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_list=None):
+def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, allowed_M_tels, M1_run_list=None):
 
     """
     This function creates the *_MAGIC_runs.txt and *_LST_runs.txt files, which contain the list of runs (with corresponding dates) to be processed for a given source.
@@ -124,9 +136,12 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
         List of the MAGIC runs to be ignored.
     is_LST : bool
         If you are looking for LST runs, set it to True. For MAGIC set False.
+    allowed_M_tels : list
+        MAGIC telescopes allowed in the analysis.
     M1_run_list : list
         If you are looking for MAGIC runs, pass the list of MAGIC-1 runs here, and the MAGIC-2 database as df.
-        Only the runs both in the list and in the data frame (i.e., stereo MAGIC observations) will be saved in the output txt files
+        If the analysis concerns both MAGIC only the runs both in the list and in the data frame 
+        (i.e., stereo MAGIC observations) will be saved in the output txt files.
     """
 
     source_list = []
@@ -184,7 +199,7 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
 
                 if (int(M2_run[k]) in skip_MAGIC) or (int(M2_run[k]) in run_listed):
                     continue
-                if int(M2_run[k]) not in M1_run_list:
+                if len(allowed_M_tels)==2 and int(M2_run[k]) not in M1_run_list:
                     continue
 
                 with open(file_list[1], "a+") as f:
@@ -192,7 +207,6 @@ def list_run(source_in, source_out, df, skip_LST, skip_MAGIC, is_LST, M1_run_lis
                         f"{MAGIC_date[k][0:4]}_{MAGIC_date[k][4:6]}_{MAGIC_date[k][6:8]},{int(M2_run[k])}\n"
                     )
                 run_listed.append(int(M2_run[k]))
-
 
 def main():
 
@@ -230,6 +244,7 @@ def main():
     MAGIC2_key = config_dict["database_keys"]["MAGIC-II"]
     source_in = config["data_selection"]["source_name_database"]
     source_out = config["data_selection"]["source_name_output"]
+    allowed_M_tels = config["general"]["allowed_M_tels"]
     if (source_out is None) and (source_in is not None):
         source_out = source_in
     range = config["data_selection"]["time_range"]
@@ -254,16 +269,37 @@ def main():
     mask = processed_v == lstchain_version
     df_LST = df_LST[mask]
 
-    if source_in is None:
+    if source_in is None and len(allowed_M_tels)==2:
         df_LST.query(
             f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
             inplace=True,
         )
-    else:
+    elif source_in is None and len(allowed_M_tels)==1 and allowed_M_tels[0]==1:
         df_LST.query(
-            f'source=="{source_in}"& MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
+            f'MAGIC_trigger=="L1_M1" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
             inplace=True,
         )
+    elif source_in is None and len(allowed_M_tels)==1 and allowed_M_tels[0]==2:
+        df_LST.query(
+            f'MAGIC_trigger=="L1_M2" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+            inplace=True,
+        )
+    else:
+        if len(allowed_M_tels) == 2:
+            df_LST.query(
+                f'source=="{source_in}" & MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
+                inplace=True,
+            )
+        elif len(allowed_M_tels) == 1 and allowed_M_tels[0] == 1:
+            df_LST.query(
+                f'source=="{source_in}" & MAGIC_trigger=="L1_M1" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+                inplace=True,
+            )
+        elif len(allowed_M_tels) == 1 and allowed_M_tels[0] == 2:
+            df_LST.query(
+                f'source=="{source_in}" & MAGIC_trigger=="L1_M2" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+                inplace=True,
+            )    
 
     if range:
         min = str(config["data_selection"]["min"])
@@ -297,18 +333,18 @@ def main():
     df_MAGIC1 = df_MAGIC1[df_MAGIC1["DATE"].isin(list_date_LST_low)]
     df_MAGIC2 = df_MAGIC2[df_MAGIC2["DATE"].isin(list_date_LST_low)]
 
-    clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2)
+    clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2, allowed_M_tels)
 
-    list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True)
+    list_run(source_in, source_out, df_LST, skip_LST, skip_MAGIC, True, allowed_M_tels)
 
     df_MAGIC2 = magic_date(df_MAGIC2)
     df_MAGIC1 = magic_date(df_MAGIC1)
 
     M1_runs = df_MAGIC1["Run ID"].tolist()
-    if (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):
+    if len(allowed_M_tels)==2 and (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):
         print("NO MAGIC stereo run found. Exiting...")
         return
-    list_run(source_in, source_out, df_MAGIC2, skip_LST, skip_MAGIC, False, M1_runs)
+    list_run(source_in, source_out, df_MAGIC2, skip_LST, skip_MAGIC, False, allowed_M_tels, M1_runs)
 
 
 if __name__ == "__main__":
