@@ -276,12 +276,12 @@ def main():
         )
     elif source_in is None and len(allowed_M_tels)==1 and allowed_M_tels[0]==1:
         df_LST.query(
-            f'MAGIC_trigger=="L1_M1" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+            MAGIC_trigger=="L1_M1" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0",
             inplace=True,
         )
     elif source_in is None and len(allowed_M_tels)==1 and allowed_M_tels[0]==2:
         df_LST.query(
-            f'MAGIC_trigger=="L1_M2" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+            MAGIC_trigger=="L1_M2" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0",
             inplace=True,
         )
     else:
