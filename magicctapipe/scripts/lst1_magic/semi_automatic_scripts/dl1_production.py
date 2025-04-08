@@ -75,7 +75,14 @@ def config_file_gen(target_dir, source_name, config_file):
 
 
 def lists_and_bash_gen_MAGIC(
-    target_dir, telescope_ids, MAGIC_runs, source, env_name, cluster, nice, allowed_M_tels,
+    target_dir,
+    telescope_ids,
+    MAGIC_runs,
+    source,
+    env_name,
+    cluster,
+    nice,
+    allowed_M_tels,
 ):
 
     """
@@ -166,7 +173,10 @@ def lists_and_bash_gen_MAGIC(
                     f.writelines(lines)
 
 
-def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_name, allowed_M_tels):
+def directories_generator_real(
+    target_dir, telescope_ids, MAGIC_runs, source_name, allowed_M_tels
+):
+
     """
     Here we create all subdirectories for a given workspace and target name.
 

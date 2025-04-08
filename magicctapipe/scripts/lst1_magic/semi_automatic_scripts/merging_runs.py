@@ -52,7 +52,7 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, nice, allowed_M_tel
         Cluster system
     nice : int or None
         Job priority
-   allowed_M_tels : list
+    allowed_M_tels : list
         MAGIC telescopes allowed in the analysis.
     """
 
@@ -126,7 +126,7 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
-    allowed_M_tels = config["general"]["allowed_M_tels"] 
+    allowed_M_tels = config["general"]["allowed_M_tels"]
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
