@@ -86,16 +86,16 @@ def clear_files(source_in, source_out, df_LST, df_MAGIC1, df_MAGIC2, allowed_M_t
     """
 
     source_list = []
-    if source_in is None and len(allowed_M_tels) == 2:
+    if source_in is None and allowed_M_tels == [1, 2]:
         source_list = np.intersect1d(
             np.intersect1d(np.unique(df_LST["source"]), np.unique(df_MAGIC1["source"])),
             np.unique(df_MAGIC2["source"]),
         )
-    elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 1:
+    elif source_in is None and allowed_M_tels == [1]:
         source_list = np.intersect1d(
             np.unique(df_LST["source"]), np.unique(df_MAGIC1["source"])
         )
-    elif source_in is None and len(allowed_M_tels) == 1 and allowed_M_tels[0] == 2:
+    elif source_in is None and allowed_M_tels == [2]:
         source_list = np.intersect1d(
             np.unique(df_LST["source"]), np.unique(df_MAGIC2["source"])
         )
@@ -147,7 +147,7 @@ def list_run(
         MAGIC telescopes allowed in the analysis.
     M1_run_list : list
         If you are looking for MAGIC runs, pass the list of MAGIC-1 runs here, and the MAGIC-2 database as df.
-        If the analysis concerns both MAGIC only the runs both in the list and in the data frame
+        If the analysis concerns both MAGIC, only the runs both in the list and in the data frame
         (i.e., stereo MAGIC observations) will be saved in the output txt files.
     """
 
@@ -270,7 +270,6 @@ def main():
         {"YY_LST": int, "MM_LST": int, "DD_LST": int, "nsb": float, "LST1_run": int}
     )
 
-    stereo = True
     lstchain_version = config["general"]["LST_version"]
 
     processed_v = df_LST["processed_lstchain_file"].str.split("/").str[-3]
@@ -278,20 +277,21 @@ def main():
     mask = processed_v == lstchain_version
     df_LST = df_LST[mask]
 
-    if source_in is None and len(allowed_M_tels) == 2:
-        df_LST.query(
-            f'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
-            inplace=True,
-        )
-    elif source_in is None and len(allowed_M_tels) == 1:
-        df_LST.query(
-            f'MAGIC_trigger=="L1_M{allowed_M_tels[0]}" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
-            inplace=True,
-        )
+    if source_in is None:
+        if len(allowed_M_tels) == 2:
+            df_LST.query(
+                'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == True | MAGIC_stereo == "True") & error_code_nsb=="0"',
+                inplace=True,
+            )
+        elif len(allowed_M_tels) == 1:
+            df_LST.query(
+                f'MAGIC_trigger=="L1_M{allowed_M_tels[0]}" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+                inplace=True,
+            )
     else:
         if len(allowed_M_tels) == 2:
             df_LST.query(
-                f'source=="{source_in}" & MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == {stereo} | MAGIC_stereo == "{stereo}") & error_code_nsb=="0"',
+                f'source=="{source_in}" & MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == True | MAGIC_stereo == "True") & error_code_nsb=="0"',
                 inplace=True,
             )
         elif len(allowed_M_tels) == 1:
