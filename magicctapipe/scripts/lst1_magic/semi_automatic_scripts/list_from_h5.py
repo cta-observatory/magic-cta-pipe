@@ -149,6 +149,7 @@ def list_run(
         If you are looking for MAGIC runs, pass the list of MAGIC-1 runs here, and the MAGIC-2 database as df.
         If the analysis concerns both MAGIC, only the runs both in the list and in the data frame
         (i.e., stereo MAGIC observations) will be saved in the output txt files.
+        If mono MAGIC data are to be processed, they should be provided as a df, and M1_run_list will then be ignored.
     """
 
     source_list = []
@@ -252,7 +253,7 @@ def main():
     MAGIC2_key = config_dict["database_keys"]["MAGIC-II"]
     source_in = config["data_selection"]["source_name_database"]
     source_out = config["data_selection"]["source_name_output"]
-    allowed_M_tels = config["general"]["allowed_M_tels"]
+    allowed_M_tels = sorted(config["general"]["allowed_M_tels"])
 
     if (source_out is None) and (source_in is not None):
         source_out = source_in
@@ -343,10 +344,13 @@ def main():
     if len(allowed_M_tels) == 2 and (len(M1_runs) == 0) or (len(df_MAGIC2) == 0):
         print("NO MAGIC stereo run found. Exiting...")
         return
+
+    df_MAGIC = df_MAGIC2 if 2 in allowed_M_tels else df_MAGIC1
+
     list_run(
         source_in,
         source_out,
-        df_MAGIC2,
+        df_MAGIC,
         skip_LST,
         skip_MAGIC,
         False,
