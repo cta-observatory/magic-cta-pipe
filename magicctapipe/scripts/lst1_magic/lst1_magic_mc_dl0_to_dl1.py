@@ -235,7 +235,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     if save_images:
         dl1cont = DL1CameraContainer(prefix="")
     with HDF5TableWriter(
-        output_file, group_name="/dl1/event/telescope", mode="w", add_prefix=True
+        output_file, group_name="", mode="w", add_prefix=True
     ) as writer:
         for event in event_source:
             if event.count % 100 == 0:
@@ -406,21 +406,21 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                 timing_params.prefix = ""
                 leakage_params.prefix = ""
                 writer.write(
-                    f"parameters/tel_00{tel_id}",
-                    (
+                    table_name=f"dl1/event/telescope/parameters/tel_00{tel_id}",
+                    containers=[
                         event_info,
                         hillas_params,
                         timing_params,
                         leakage_params,
                         conc_params,
-                    ),
+                    ],
                 )
                 if save_images:
-                    dl1cont.image = image
-                    dl1cont.peak_time = peak_time
+                    dl1cont.image = np.float32(image)
+                    dl1cont.peak_time = np.float32(peak_time)
                     dl1cont.image_mask = signal_pixels
                     dl1cont.is_valid = True
-                    writer.write(table_name=f"images/tel_00{tel_id}", containers=[event_info, dl1cont])
+                    writer.write(table_name=f"dl1/event/telescope/images/tel_00{tel_id}", containers=[event_info, dl1cont])
 
 
         n_events_processed = event.count + 1
