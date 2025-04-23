@@ -31,6 +31,7 @@ import numpy as np
 import yaml
 from astropy.coordinates import Angle, angular_separation
 from ctapipe.calib import CameraCalibrator
+from ctapipe.containers import DL1CameraContainer
 from ctapipe.image import (
     concentration_parameters,
     hillas_parameters,
@@ -230,9 +231,11 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
 
     # Loop over every shower event
     logger.info("\nProcessing the events...")
-
+    save_images = config.get("save_images", False)
+    if save_images:
+        dl1cont = DL1CameraContainer(prefix="")
     with HDF5TableWriter(
-        output_file, group_name="events", mode="w", add_prefix=True
+        output_file, group_name="/dl1/event/telescope", mode="w", add_prefix=True
     ) as writer:
         for event in event_source:
             if event.count % 100 == 0:
@@ -403,7 +406,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                 timing_params.prefix = ""
                 leakage_params.prefix = ""
                 writer.write(
-                    "parameters",
+                    f"parameters/tel_00{tel_id}",
                     (
                         event_info,
                         hillas_params,
@@ -412,6 +415,13 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                         conc_params,
                     ),
                 )
+                if save_images:
+                    dl1cont.image = image
+                    dl1cont.peak_time = peak_time
+                    dl1cont.image_mask = signal_pixels
+                    dl1cont.is_valid = True
+                    writer.write(table_name=f"images/tel_00{tel_id}", containers=[event_info, dl1cont])
+
 
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
