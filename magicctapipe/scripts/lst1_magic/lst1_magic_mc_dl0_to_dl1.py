@@ -543,7 +543,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
         process=meta.Process(
             type_="Simulation" ,
             subtype="",
-            id_=f'obs_id',
+            id_=f'{obs_id}',
         ),
         instrument=meta.Instrument()
         

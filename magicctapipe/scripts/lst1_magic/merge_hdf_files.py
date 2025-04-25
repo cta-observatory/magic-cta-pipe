@@ -33,6 +33,7 @@ import logging
 import re
 import time
 from pathlib import Path
+import h5py
 
 import numpy as np
 import tables
@@ -60,19 +61,66 @@ def write_data_to_table(input_file_mask, output_file):
     # Find the input files
     input_files = glob.glob(input_file_mask)
     input_files.sort()
+    subarray = SubarrayDescription.from_hdf(input_files[0])
+    tel_descriptions = subarray.tel
+    tel_ids=tel_descriptions.keys()
+    print(tel_ids)
 
     with tables.open_file(output_file, mode="w") as f_out:
         logger.info(f"\n{input_files[0]}")
 
         # Create a new table with the first input file
         with tables.open_file(input_files[0]) as f_input:
-            event_data = f_input.root.events.parameters
-            f_out.create_table(
-                "/events", "parameters", createparents=True, obj=event_data.read()
-            )
+            for tel_id in tel_ids:
+                if tel_id==1:
+                    event_data = f_input.root.dl1.event.telescope.parameters.tel_001
+                    event_image=f_input.root.dl1.event.telescope.images.tel_001
+                    point=f_input.root.configuration.telescope.pointing.tel_001
+                    
+                elif tel_id==2:
+                    event_data = f_input.root.dl1.event.telescope.parameters.tel_002
+                    event_image=f_input.root.dl1.event.telescope.images.tel_002
 
-            for attr in event_data.attrs._f_list():
-                f_out.root.events.parameters.attrs[attr] = event_data.attrs[attr]
+                    point=f_input.root.configuration.telescope.pointing.tel_002
+                   
+                if tel_id==3:
+                    event_data = f_input.root.dl1.event.telescope.parameters.tel_003
+                    event_image=f_input.root.dl1.event.telescope.images.tel_003
+                    point=f_input.root.configuration.telescope.pointing.tel_003
+                f_out.create_table(
+                    "/dl1/event/telescope/parameters", f"tel_00{tel_id}", createparents=True, obj=event_data.read()
+                )
+                f_out.create_table(
+                    "/dl1/event/telescope/images", f"tel_00{tel_id}", createparents=True, obj=event_image.read()
+                )
+                f_out.create_table(
+                    "/configuration/telescope/pointing", f"tel_00{tel_id}", createparents=True, obj=point.read()
+                )
+                
+                if tel_id==1:
+                    for attr in event_data.attrs._f_list():
+                        f_out.root.dl1.event.telescope.parameters.tel_001.attrs[attr] = event_data.attrs[attr]
+                    for attr in event_image.attrs._f_list():
+                        f_out.root.dl1.event.telescope.images.tel_001.attrs[attr] = event_image.attrs[attr]
+                    for attr in point.attrs._f_list():
+                        f_out.root.configuration.telescope.pointing.tel_001.attrs[attr] = point.attrs[attr]
+                    
+                elif tel_id==2:
+                    for attr in event_data.attrs._f_list():
+                        f_out.root.dl1.event.telescope.parameters.tel_002.attrs[attr] = event_data.attrs[attr]
+                    for attr in event_image.attrs._f_list():
+                        f_out.root.dl1.event.telescope.images.tel_002.attrs[attr] = event_image.attrs[attr]
+                    for attr in point.attrs._f_list():
+                        f_out.root.configuration.telescope.pointing.tel_002.attrs[attr] = point.attrs[attr]
+                
+                if tel_id==3:
+                    for attr in event_data.attrs._f_list():
+                        f_out.root.dl1.event.telescope.parameters.tel_003.attrs[attr] = event_data.attrs[attr]
+                    for attr in event_image.attrs._f_list():
+                        f_out.root.dl1.event.telescope.images.tel_003.attrs[attr] = event_image.attrs[attr]
+                    for attr in point.attrs._f_list():
+                        f_out.root.configuration.telescope.pointing.tel_003.attrs[attr] = point.attrs[attr]
+                    
 
             if "simulation" in f_input.root:
                 # Write the simulation configuration of the first input
@@ -85,28 +133,80 @@ def write_data_to_table(input_file_mask, output_file):
 
                 for attr in sim_config.attrs._f_list():
                     f_out.root.simulation.config.attrs[attr] = sim_config.attrs[attr]
+            shower=f_input.root.simulation.event.subarray.shower
+            f_out.create_table(
+                "/simulation/event/subarray", "shower", createparents=True, obj=shower.read()
+            )
+            for attr in shower.attrs._f_list():
+                f_out.root.simulation.event.subarray.shower.attrs[attr] = shower.attrs[attr]
 
-            if "/events/dl1/image" in f_input.root:
-                logger.info("Images will also be merged")
-                images = f_input.root.events.dl1.image
+            sub_tr=f_input.root.dl1.event.subarray.trigger
+            f_out.create_table(
+                "/dl1/event/subarray", "trigger", createparents=True, obj=sub_tr.read()
+            )
+            for attr in sub_tr.attrs._f_list():
+                f_out.root.dl1.event.subarray.trigger.attrs[attr] = sub_tr.attrs[attr]
+            sub_tel=f_input.root.dl1.event.telescope.trigger
+            f_out.create_table(
+                "/dl1/event/telescope", "trigger", createparents=True, obj=sub_tel.read()
+            )
+            for attr in sub_tel.attrs._f_list():
+                f_out.root.dl1.event.telescope.trigger.attrs[attr] = sub_tel.attrs[attr]
 
-                f_out.create_table(
-                    "/events/dl1", "image", createparents=True, obj=images.read()
-                )
-                for attr in images.attrs._f_list():
-                    f_out.root.events.dl1.image.attrs[attr] = images.attrs[attr]
 
+            sim_run=f_input.root.configuration.simulation.run
+            f_out.create_table(
+                "/configuration/simulation", "run", createparents=True, obj=sim_run.read()
+            )
+            for attr in sim_run.attrs._f_list():
+                f_out.root.configuration.simulation.run.attrs[attr] = sim_run.attrs[attr]
+        
+
+
+
+
+            
+               
         # Write the rest of the input files
         for input_file in input_files[1:]:
             logger.info(input_file)
 
             with tables.open_file(input_file) as f_input:
-                event_data = f_input.root.events.parameters
-                f_out.root.events.parameters.append(event_data.read())
+                event_data_1 = f_input.root.dl1.event.telescope.parameters.tel_001
+                f_out.root.dl1.event.telescope.parameters.tel_001.append(event_data_1.read())
+                event_data_2= f_input.root.dl1.event.telescope.parameters.tel_002
+                f_out.root.dl1.event.telescope.parameters.tel_002.append(event_data_2.read())
+                event_data_3= f_input.root.dl1.event.telescope.parameters.tel_003
+                f_out.root.dl1.event.telescope.parameters.tel_003.append(event_data_3.read())
+                event_image_1 = f_input.root.dl1.event.telescope.images.tel_001
+                f_out.root.dl1.event.telescope.images.tel_001.append(event_image_1.read())
+                event_image_2= f_input.root.dl1.event.telescope.images.tel_002
+                f_out.root.dl1.event.telescope.images.tel_002.append(event_image_2.read())
+                event_image_3= f_input.root.dl1.event.telescope.images.tel_003
+                f_out.root.dl1.event.telescope.images.tel_003.append(event_image_3.read())
+                point_1 = f_input.root.configuration.telescope.pointing.tel_001
+                f_out.root.configuration.telescope.pointing.tel_001.append(point_1.read())
+                point_2= f_input.root.configuration.telescope.pointing.tel_002
+                f_out.root.configuration.telescope.pointing.tel_002.append(point_2.read())
+                point_3= f_input.root.configuration.telescope.pointing.tel_003
+                f_out.root.configuration.telescope.pointing.tel_003.append(point_3.read())
 
-                if "/events/dl1/image" in f_input.root:
-                    images = f_input.root.events.dl1.image
-                    f_out.root.events.dl1.image.append(images.read())
+                show= f_input.root.simulation.event.subarray.shower
+                f_out.root.simulation.event.subarray.shower.append(show.read())
+                trs= f_input.root.dl1.event.subarray.trigger
+                f_out.root.dl1.event.subarray.trigger.append(trs.read())
+                trt= f_input.root.dl1.event.telescope.trigger
+                f_out.root.dl1.event.telescope.trigger.append(trt.read())
+                srun= f_input.root.configuration.simulation.run
+                f_out.root.configuration.simulation.run.append(srun.read())
+
+
+    with h5py.File(output_file, 'a') as out:
+        with h5py.File(input_files[0]) as inp:
+            for key, value in inp.attrs.items():
+            
+                out.attrs[key] = value
+                
 
     # Save the subarray description of the first input file, assuming
     # that it is consistent with the others
@@ -297,7 +397,7 @@ def main():
     )
 
     args = parser.parse_args()
-
+    
     # Merge the input files
     merge_hdf_files(args.input_dir, args.output_dir, args.run_wise, args.subrun_wise)
 
