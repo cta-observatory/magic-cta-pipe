@@ -20,18 +20,20 @@ $ python lst1_magic_mc_dl0_to_dl1.py
 (--output-dir dl1)
 (--config-file config_step1.yaml)
 """
-
+import h5py
 import argparse  # Parser for command-line options, arguments etc
 import logging  # Used to manage the log file
 import re
 import time
 from pathlib import Path
-
+from ctapipe.core import Map, Container, Field
+from astropy.io.misc.hdf5 import write_table_hdf5
 import numpy as np
 import yaml
+from astropy.time import Time
 from astropy.coordinates import Angle, angular_separation
 from ctapipe.calib import CameraCalibrator
-from ctapipe.containers import DL1CameraContainer
+from ctapipe.containers import DL1CameraContainer, TelescopeTriggerContainer, TriggerContainer, EventType, TelescopeConfigurationIndexContainer, EventIndexContainer, TelEventIndexContainer
 from ctapipe.image import (
     concentration_parameters,
     hillas_parameters,
@@ -41,12 +43,18 @@ from ctapipe.image import (
 )
 from ctapipe.instrument import FocalLengthKind
 from ctapipe.io import EventSource, HDF5TableWriter
-from traitlets.config import Config
+from ctapipe.io import metadata as meta
+from ctapipe.io.simteleventsource import parse_simtel_time, NANOSECONDS_PER_DAY
+from traitlets.config import Config, Instance
 
 from magicctapipe.image import MAGICClean
 from magicctapipe.image.calib import calibrate
 from magicctapipe.io import SimEventInfoContainer, check_input_list, format_object
 from magicctapipe.utils import calculate_disp, calculate_impact
+try:
+    from eventio import SimTelFile
+except ModuleNotFoundError:
+    SimTelFile = None
 
 __all__ = ["mc_dl0_to_dl1"]
 
@@ -104,10 +112,17 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
         ),  # Here we load the events for all telescopes with ID > 0.
         focal_length_choice=focal_length,
     )
+    sf=SimTelFile(
+        input_file,
+        allowed_telescopes=list(
+            filter(lambda check_id: check_id > 0, assigned_tel_ids.values())
+        ),
+    )
 
     obs_id = event_source.obs_ids[0]
     subarray = event_source.subarray
-
+    
+    
     tel_descriptions = subarray.tel
     tel_positions = subarray.positions
 
@@ -234,9 +249,11 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     save_images = config.get("save_images", False)
     if save_images:
         dl1cont = DL1CameraContainer(prefix="")
+    obs_id_global=None
     with HDF5TableWriter(
         output_file, group_name="", mode="w", add_prefix=True
     ) as writer:
+        list_pt_done=[]
         for event in event_source:
             if event.count % 100 == 0:
                 logger.info(f"{event.count} events")
@@ -249,6 +266,7 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
             )  # If both have trigger, then magic_stereo = True
 
             for tel_id in tels_with_trigger:
+
                 if (
                     tel_id in LSTs_IDs
                 ):  # If the ID is in the LST list, we call calibrate on the LST()
@@ -375,36 +393,24 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                 tels_with_trigger_binary_int = np.array(
                     [2 ** (tel_id) for tel_id in tels_with_trigger]
                 ).sum()
-
+                obs_id_global=event.index.obs_id
                 # Set the event information
-                event_info = SimEventInfoContainer(
+                event_info = TelEventIndexContainer(
                     obs_id=event.index.obs_id,
                     event_id=event.index.event_id,
-                    pointing_alt=event.pointing.tel[tel_id].altitude,
-                    pointing_az=event.pointing.tel[tel_id].azimuth,
-                    true_energy=event.simulation.shower.energy,
-                    true_alt=event.simulation.shower.alt,
-                    true_az=event.simulation.shower.az,
-                    true_disp=true_disp,
-                    true_core_x=event.simulation.shower.core_x,
-                    true_core_y=event.simulation.shower.core_y,
-                    true_impact=true_impact,
-                    off_axis=off_axis,
-                    n_pixels=n_pixels,
-                    n_islands=n_islands,
-                    magic_stereo=magic_stereo,
-                    tels_with_trigger=tels_with_trigger_binary_int,
+                   
                 )
-
+                
+                            
                 # Reset the telescope IDs
                 event_info.tel_id = tel_id
 
                 # Save the parameters to the output file
                 # Setting all the prefixes except of concentration to empty string
                 event_info.prefix = ""
-                hillas_params.prefix = ""
-                timing_params.prefix = ""
-                leakage_params.prefix = ""
+                hillas_params.prefix = "hillas"
+                timing_params.prefix = "timing"
+                leakage_params.prefix = "leakage"
                 writer.write(
                     table_name=f"dl1/event/telescope/parameters/tel_00{tel_id}",
                     containers=[
@@ -415,24 +421,143 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
                         conc_params,
                     ],
                 )
+               
                 if save_images:
                     dl1cont.image = np.float32(image)
                     dl1cont.peak_time = np.float32(peak_time)
                     dl1cont.image_mask = signal_pixels
                     dl1cont.is_valid = True
                     writer.write(table_name=f"dl1/event/telescope/images/tel_00{tel_id}", containers=[event_info, dl1cont])
+               
+            obs_id_pt = event.index.obs_id
+            
+            for tel_id_pt, pointing in event.pointing.tel.items():
+                if tel_id_pt not in list_pt_done:
+                    index_tel = TelescopeConfigurationIndexContainer(
+                        obs_id=obs_id_pt,
+                        tel_id=tel_id_pt,
+                    )
 
+                    writer.write(
+                        f"configuration/telescope/pointing/tel_{tel_id_pt:03d}", (index_tel, pointing)
+                    )
+                    list_pt_done.append(tel_id_pt)
+            ev_index = EventIndexContainer(
+                obs_id=event.index.obs_id,
+                event_id=event.index.event_id,
+            )
+            writer.write(
+                table_name="simulation/event/subarray/shower",
+                containers=[ev_index, event.simulation.shower],
+            )
+        for i, a_ev in enumerate(sf):
+            tel = Map(TelescopeTriggerContainer)
+            trigger = a_ev["trigger_information"]
+            central_time = parse_simtel_time(trigger["gps_time"])
+            tels_with_trigger_pad = np.array(trigger["triggered_telescopes"]).resize(3)
+            #print(trigger)
+            for tel_id_tr, time in zip(
+                trigger["triggered_telescopes"], trigger["trigger_times"]
+            ):
+                #print(tel_id_tr)
+                #print(time)
+                #
+                
+                
+                #print(central_time)
+                tr_time = Time(
+                    central_time.jd1,
+                    central_time.jd2 + time / NANOSECONDS_PER_DAY,
+                    scale=central_time.scale,
+                    format="jd",
+                )
+                #print(tr_time)
+                tel[tel_id_tr] =TelescopeTriggerContainer(time=tr_time,n_trigger_pixels=-1)
+                
+            tr_cont=TriggerContainer(
+                event_type=EventType.SUBARRAY,
+                time=central_time,
+                tels_with_trigger=tels_with_trigger_pad,
+                tel=tel,
+            )
+            
+            ev_index = EventIndexContainer(
+                obs_id=obs_id_global,
+                event_id=a_ev['event_id'],
+            )
+            
+                
+            ev_index.prefix = ""
+            
+            writer.write(
+                table_name="dl1/event/subarray/trigger",
+                containers=[ev_index, tr_cont],
+            )
+
+            for tel_id, trigger in tr_cont.tel.items():
+                ev_i =TelEventIndexContainer(
+                    obs_id=obs_id_global,
+                    event_id=a_ev['event_id'],
+                    tel_id=tel_id
+                )
+                ev_i.prefix = ""
+                writer.write(
+                    "dl1/event/telescope/trigger", (ev_i, trigger)
+                )
 
         n_events_processed = event.count + 1
         logger.info(f"\nIn total {n_events_processed} events are processed.")
+        class ExtraSimInfo(Container):
+            """just to contain obs_id"""
+
+            default_prefix = ""
+            obs_id = Field(0, "Simulation Run Identifier")
+        for obs_id, config in event_source.simulation_config.items():
+            extramc = ExtraSimInfo(obs_id=obs_id)
+            config.prefix = ""
+            extramc.prefix=''
+
+            writer.write("configuration/simulation/run", [extramc, config])
 
     # Save the subarray description
     subarray.to_hdf(output_file)
-
+    
     # Save the simulation configuration
     with HDF5TableWriter(output_file, group_name="simulation", mode="a") as writer:
         writer.write("config", sim_config)
+    
+    reference = meta.Reference(
+        activity=meta.Activity(start_time=str(Time.now()),
+            stop_time= str(Time.now())),
+        contact=meta.Contact(),        
+        product=meta.Product(
+            description="ctapipe Data Product",
+            data_category="Sim",
+            data_levels=['DL1_IMAGES','DL1_PARAMETERS'],
+            data_association="Subarray",
+            data_model_name="ASWG",
+            data_model_version='v6.0.0',
+            data_model_url="",
+            format="hdf5",
+        ),
+        process=meta.Process(
+            type_="Simulation" ,
+            subtype="",
+            id_=f'obs_id',
+        ),
+        instrument=meta.Instrument()
+        
+        
+    )
 
+    
+
+    headers = reference.to_dict()
+    
+    with h5py.File(output_file, 'a') as f:
+        for key, value in headers.items():
+            
+            f.attrs[key] = value 
     logger.info(f"\nOutput file: {output_file}")
 
 
