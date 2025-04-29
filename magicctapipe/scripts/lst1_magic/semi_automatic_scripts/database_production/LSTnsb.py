@@ -213,6 +213,7 @@ def main():
 
     tailcut = df_LST[df_LST.LST1_run == run_number].iloc[0]["tailcut"]
     if tailcut == "":
+        logger.warning(f'no tailcut information in the LST database for run {run_number}. Please check directories on the cluster and database')
         return
 
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{tailcut}"

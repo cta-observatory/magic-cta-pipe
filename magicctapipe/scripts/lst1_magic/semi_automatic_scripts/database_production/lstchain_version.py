@@ -64,7 +64,7 @@ def version_lstchain(df_LST):
                 max_version = lstchain_versions[j]
 
         if max_version is None:
-            print(f"issue with lstchain versions for run {run}\n\n\n")
+            print(f"issue with lstchain versions for run {run}\nAvailable versions: {version}, allowed versions: {lstchain_versions}\n\n\n")
             continue
         tailcut_list = [
             i.split("/")[-1]

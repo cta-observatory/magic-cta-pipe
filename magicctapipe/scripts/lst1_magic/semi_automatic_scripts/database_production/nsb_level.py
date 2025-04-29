@@ -186,7 +186,7 @@ def main():
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob("nsb_*_run_*.sh"))
     
-    if len(list_of_bash_scripts) < 0:
+    if len(list_of_bash_scripts) == 0:
         logger.warning(
             "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input dates"
         )
