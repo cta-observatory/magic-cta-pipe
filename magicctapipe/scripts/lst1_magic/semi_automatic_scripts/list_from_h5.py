@@ -281,23 +281,23 @@ def main():
     if source_in is None:
         if len(allowed_M_tels) == 2:
             df_LST.query(
-                'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == True | MAGIC_stereo == "True") & error_code_nsb=="0"',
+                'MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == True | MAGIC_stereo == "True") & perfect_match_time_min > 0.1 & error_code_nsb=="0"',
                 inplace=True,
             )
         elif len(allowed_M_tels) == 1:
             df_LST.query(
-                f'MAGIC_trigger=="L1_M{allowed_M_tels[0]}" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+                f'MAGIC_trigger=="L1_M{allowed_M_tels[0]}" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & perfect_match_time_min > 0.1 & error_code_nsb=="0"',
                 inplace=True,
             )
     else:
         if len(allowed_M_tels) == 2:
             df_LST.query(
-                f'source=="{source_in}" & MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == True | MAGIC_stereo == "True") & error_code_nsb=="0"',
+                f'source=="{source_in}" & MAGIC_trigger=="L3T" & MAGIC_HV=="Nominal" & (MAGIC_stereo == True | MAGIC_stereo == "True") & perfect_match_time_min > 0.1 & error_code_nsb=="0"',
                 inplace=True,
             )
         elif len(allowed_M_tels) == 1:
             df_LST.query(
-                f'source=="{source_in}" & MAGIC_trigger=="L1_M{allowed_M_tels[0]}" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & error_code_nsb=="0"',
+                f'source=="{source_in}" & MAGIC_trigger=="L1_M{allowed_M_tels[0]}" & MAGIC_HV=="Nominal" & (MAGIC_stereo == False | MAGIC_stereo == "False") & perfect_match_time_min > 0.1 & error_code_nsb=="0"',
                 inplace=True,
             )
 
