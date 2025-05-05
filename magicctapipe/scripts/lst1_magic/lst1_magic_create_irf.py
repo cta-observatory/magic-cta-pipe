@@ -23,14 +23,17 @@ and MAGIC, allowing for the events of all the telescope combinations.
 The "software(_only_3tel)" types are supposed for the software event
 coincidence with LST-mono and MAGIC-stereo observations, allowing for
 only the events triggering both M1 and M2. The "software" type allows
-for the events of the any 2-tel combinations except the MAGIC-stereo
+for the events of any 2-tel combinations except the MAGIC-stereo
 combination at the moment. The "software_only_3tel" type allows for only
 the events of the 3-tel combination. The "magic_only" type allows for
 only the events of the MAGIC-stereo combination.
 
-There are two types of gammaness and theta cuts, "global" and "dynamic".
+There are three types of gammaness and theta cuts, "global", "dynamic" and
+"custom".
 In case of the dynamic cuts, the optimal cut satisfying a given
 efficiency will be calculated for every energy bin.
+In case of custom cuts, the provided cuts with be applied to the
+target energy binning using the selected scipy.interpolate.interpd1d method.
 
 Usage:
 $ python lst1_magic_create_irf.py
@@ -74,7 +77,12 @@ from pyirf.spectral import (
     calculate_event_weights,
 )
 
-from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
+from magicctapipe.io import (
+    create_gh_cuts_hdu,
+    format_object,
+    get_custom_cuts,
+    load_mc_dl2_data_file,
+)
 
 __all__ = ["create_irf"]
 
@@ -109,6 +117,9 @@ def create_irf(
     ValueError
         If the input type of gammaness or theta cut is not known
     """
+
+    dynamic_keys = ["efficiency", "min_cut", "max_cut"]
+    custom_keys = ["custom_cuts", "interpolate_kind"]
 
     config_irf = config["create_irf"]
 
@@ -335,34 +346,47 @@ def create_irf(
             mask_gh = event_table_bkg["gammaness"] > cut_value_gh
             event_table_bkg = event_table_bkg[mask_gh]
 
-    elif cut_type_gh == "dynamic":
-        config_gh_cuts.pop("global_cut_value", None)
+    elif cut_type_gh == "dynamic" or "custom":
+        if cut_type_gh == "dynamic":
+            logger.info("\nDynamic gammaness cuts:")
+            logger.info(
+                format_object(
+                    {k: config_gh_cuts[k] for k in dynamic_keys if k in config_gh_cuts}
+                )
+            )
 
-        logger.info("\nDynamic gammaness cuts:")
-        logger.info(format_object(config_gh_cuts))
+            gh_efficiency = config_gh_cuts["efficiency"]
+            gh_cut_min = config_gh_cuts["min_cut"]
+            gh_cut_max = config_gh_cuts["max_cut"]
 
-        gh_efficiency = config_gh_cuts["efficiency"]
-        gh_cut_min = config_gh_cuts["min_cut"]
-        gh_cut_max = config_gh_cuts["max_cut"]
+            extra_header["GH_EFF"] = gh_efficiency
+            extra_header["GH_MIN"] = gh_cut_min
+            extra_header["GH_MAX"] = gh_cut_max
 
-        extra_header["GH_EFF"] = gh_efficiency
-        extra_header["GH_MIN"] = gh_cut_min
-        extra_header["GH_MAX"] = gh_cut_max
+            output_suffix = f"gh_dyn{gh_efficiency}"
 
-        output_suffix = f"gh_dyn{gh_efficiency}"
+            # Calculate dynamic gammaness cuts
+            gh_percentile = 100 * (1 - gh_efficiency)
 
-        # Calculate dynamic gammaness cuts
-        gh_percentile = 100 * (1 - gh_efficiency)
-
-        cut_table_gh = calculate_percentile_cut(
-            values=event_table_gamma["gammaness"],
-            bin_values=event_table_gamma["reco_energy"],
-            bins=energy_bins,
-            fill_value=gh_cut_min,
-            percentile=gh_percentile,
-            min_value=gh_cut_min,
-            max_value=gh_cut_max,
-        )
+            cut_table_gh = calculate_percentile_cut(
+                values=event_table_gamma["gammaness"],
+                bin_values=event_table_gamma["reco_energy"],
+                bins=energy_bins,
+                fill_value=gh_cut_min,
+                percentile=gh_percentile,
+                min_value=gh_cut_min,
+                max_value=gh_cut_max,
+            )
+        if cut_type_gh == "custom":
+            cut_table_gh = get_custom_cuts(config_gh_cuts, energy_bins)
+            extra_header["GH_CUTS"] = "Custom energy-dependent"
+            output_suffix = "gh_custom"
+            logger.info("\nCustom gammaness cuts.")
+            logger.info(
+                format_object(
+                    {k: config_gh_cuts[k] for k in custom_keys if k in config_gh_cuts}
+                )
+            )
 
         logger.info(f"\nGammaness-cut table:\n\n{cut_table_gh}")
 
@@ -422,34 +446,56 @@ def create_irf(
             mask_theta = event_table_gamma["theta"].to_value("deg") < cut_value_theta
             event_table_gamma = event_table_gamma[mask_theta]
 
-        elif cut_type_theta == "dynamic":
-            config_theta_cuts.pop("global_cut_value", None)
+        elif cut_type_theta == "dynamic" or "custom":
+            if cut_type_theta == "dynamic":
 
-            logger.info("\nDynamic theta cuts:")
-            logger.info(format_object(config_theta_cuts))
+                logger.info("\nDynamic theta cuts:")
+                logger.info(
+                    format_object(
+                        {
+                            k: config_theta_cuts[k]
+                            for k in dynamic_keys
+                            if k in config_theta_cuts
+                        }
+                    )
+                )
 
-            theta_efficiency = config_theta_cuts["efficiency"]
-            theta_cut_min = u.Quantity(config_theta_cuts["min_cut"])
-            theta_cut_max = u.Quantity(config_theta_cuts["max_cut"])
+                theta_efficiency = config_theta_cuts["efficiency"]
+                theta_cut_min = u.Quantity(config_theta_cuts["min_cut"])
+                theta_cut_max = u.Quantity(config_theta_cuts["max_cut"])
 
-            extra_header["TH_EFF"] = theta_efficiency
-            extra_header["TH_MIN"] = (theta_cut_min.to_value("deg"), "deg")
-            extra_header["TH_MAX"] = (theta_cut_max.to_value("deg"), "deg")
+                extra_header["TH_EFF"] = theta_efficiency
+                extra_header["TH_MIN"] = (theta_cut_min.to_value("deg"), "deg")
+                extra_header["TH_MAX"] = (theta_cut_max.to_value("deg"), "deg")
 
-            output_suffix += f"_theta_dyn{theta_efficiency}"
+                output_suffix += f"_theta_dyn{theta_efficiency}"
 
-            # Calculate dynamic theta cuts
-            theta_percentile = 100 * theta_efficiency
+                # Calculate dynamic theta cuts
+                theta_percentile = 100 * theta_efficiency
 
-            cut_table_theta = calculate_percentile_cut(
-                values=event_table_gamma["theta"],
-                bin_values=event_table_gamma["reco_energy"],
-                bins=energy_bins,
-                fill_value=theta_cut_max,
-                percentile=theta_percentile,
-                min_value=theta_cut_min,
-                max_value=theta_cut_max,
-            )
+                cut_table_theta = calculate_percentile_cut(
+                    values=event_table_gamma["theta"],
+                    bin_values=event_table_gamma["reco_energy"],
+                    bins=energy_bins,
+                    fill_value=theta_cut_max,
+                    percentile=theta_percentile,
+                    min_value=theta_cut_min,
+                    max_value=theta_cut_max,
+                )
+            if cut_type_theta == "custom":
+                cut_table_theta = get_custom_cuts(config_theta_cuts, energy_bins)
+                extra_header["THETA_CUTS"] = "Custom energy-dependent"
+                output_suffix += "_theta_custom"
+                logger.info("\nCustom theta cuts.")
+                logger.info(
+                    format_object(
+                        {
+                            k: config_theta_cuts[k]
+                            for k in custom_keys
+                            if k in config_theta_cuts
+                        }
+                    )
+                )
 
             logger.info(f"\nTheta-cut table:\n\n{cut_table_theta}")
 

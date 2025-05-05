@@ -1,13 +1,17 @@
 import glob
 
+import astropy.table
+import astropy.units as u
 import numpy as np
 import pandas as pd
 import pytest
+import yaml
 from ctapipe_io_lst import REFERENCE_LOCATION
 
 from magicctapipe.io.io import (
     check_input_list,
     format_object,
+    get_custom_cuts,
     get_dl2_mean,
     get_stereo_events,
     load_dl2_data_file,
@@ -151,6 +155,42 @@ class TestGeneral:
                     }
                 }
             )
+
+    def test_get_custom_cuts(self, config):
+        with open(config, "rb") as f:
+            config = yaml.safe_load(f)
+        # Create energy bins
+        config_eng_bins = config["create_irf"]["energy_bins"]
+        eng_bins_start = u.Quantity(config_eng_bins["start"])
+        eng_bins_stop = u.Quantity(config_eng_bins["stop"])
+
+        energy_bins = u.TeV * np.geomspace(
+            start=eng_bins_start.to_value("TeV").round(3),
+            stop=eng_bins_stop.to_value("TeV").round(3),
+            num=config_eng_bins["n_edges"],
+        )
+
+        # Load the cuts configs. 'cut_type' will be ignored
+        config_gh_irf = config["create_irf"]["gammaness"]
+        config_theta_irf = config["create_irf"]["theta"]
+
+        # Get the custom cuts without interpolating on energy_bins
+        cut_table_gh = get_custom_cuts(config_gh_irf, energy_bins)
+        cut_table_theta = get_custom_cuts(config_theta_irf, energy_bins)
+        assert isinstance(cut_table_gh, astropy.table.QTable)
+        assert isinstance(cut_table_theta, astropy.table.QTable)
+        assert cut_table_gh["low"].unit == "TeV"
+        assert cut_table_gh["high"].unit == "TeV"
+        assert cut_table_gh["center"].unit == "TeV"
+        assert cut_table_gh["cut"].unit == u.dimensionless_unscaled
+        assert cut_table_gh["cut"][15] == 0.5
+        assert cut_table_theta["cut"].unit == u.deg
+        assert cut_table_theta["cut"][15] == 0.3 * u.deg
+
+        # Get the custom cuts with linear interpolating on energy_bins
+        config_gh_irf["interpolate_kind"] = "linear"
+        cut_table_gh = get_custom_cuts(config_gh_irf, energy_bins)
+        assert np.isclose(cut_table_gh["cut"][15].value, 0.5074, atol=0.0001)
 
     def test_telescope_combinations(self, config_gen, config_gen_4lst):
         """
