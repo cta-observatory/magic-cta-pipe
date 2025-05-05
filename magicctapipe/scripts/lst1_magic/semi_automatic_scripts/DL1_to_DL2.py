@@ -1,5 +1,5 @@
 """
-This script creates the bashscripts necessary to apply "lst1_magic_dl1_stereo_to_dl2.py"
+This script creates the bash scripts necessary to apply "lst1_magic_dl1_stereo_to_dl2.py"
 to the DL1 stereo data. It also creates new subdirectories associated with
 the data level 2.
 
@@ -33,7 +33,7 @@ logger.setLevel(logging.INFO)
 
 
 def ST_NSB_List(
-    target_dir, nsb_list, nsb_limit, source, df_LST, ST_list, ST_begin, ST_end, version
+    target_dir, nsb_list, source, df_LST, ST_list, ST_begin, ST_end, version
 ):
     """
     This function creates the lists of runs separeted by run period and NSB level.
@@ -44,8 +44,6 @@ def ST_NSB_List(
         Path to the working directory
     nsb_list : list
         List of the MC NSB values
-    nsb_limit : list
-        Edges of the NSB binning
     source : str
         Source name
     df_LST : :class:`pandas.DataFrame`
@@ -59,6 +57,10 @@ def ST_NSB_List(
     version : str
         Version of the input (stereo subruns) data
     """
+    width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
+    nsb_limit = [0] + list(nsb_list + width)
+    print("width", width)
+    print("limit", nsb_limit)
 
     # Loops over all runs of all nights
     Nights_list = np.sort(
@@ -70,9 +72,9 @@ def ST_NSB_List(
         night_date = night.split("/")[-1]
         outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
         os.makedirs(outdir, exist_ok=True)
-        date_lst = night_date[:4] + "_" + night_date[4:6] + "_" + night_date[6:8]
+
         date_magic = datetime.datetime.strptime(
-            date_lst, "%Y_%m_%d"
+            night_date, "%Y%m%d"
         ) + datetime.timedelta(days=1)
         for p in range(len(ST_begin)):
             if (date_magic >= datetime.datetime.strptime(ST_begin[p], "%Y_%m_%d")) and (
@@ -132,6 +134,7 @@ def bash_DL1Stereo_to_DL2(
             "Automatic processing not implemented for the cluster indicated in the config file"
         )
         return
+
     process_name = source
     LST_runs_and_dates = f"{source}_LST_runs.txt"
     LST_date = []
@@ -161,18 +164,26 @@ def bash_DL1Stereo_to_DL2(
             if np.isnan(dec):
                 print(f"MC_dec is NaN for {source}")
                 continue
-            dec = str(dec).replace(".", "")
-            dec = str(dec).replace("-", "min_")
+            dec = str(dec).replace(".", "").replace("-", "min_")
+
             RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
-            if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
+            if len(glob.glob(f"{RFdir}/*joblib")) < 3:
                 print(f"no RF availables in {RFdir}")
                 continue
+            rfsize = 0
+            for file in glob.glob(f"{RFdir}/*joblib"):
+                print(file)
+                print(
+                    os.path.getsize(file), os.path.getsize(file) / (1024 * 1024 * 1024)
+                )
+                rfsize = rfsize + os.path.getsize(file) / (1024 * 1024 * 1024)
+            print("size", rfsize)
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
                 nice_parameter=nice,
                 array=process_size,
-                mem="150g",
+                mem=f"{rfsize+5}g",
                 out_name=f"{outdir}/slurm-%x.%A_%a",
             )
             rc = rc_lines(
@@ -226,10 +237,7 @@ def main():
     ST_begin = config["needed_parameters"]["ST_begin"]
     ST_end = config["needed_parameters"]["ST_end"]
     nsb_list = config["needed_parameters"]["nsb"]
-    width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
-    width.append(0.25)
-    nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
-    nsb_limit.insert(0, 0)
+
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     MC_v = config["directories"]["MC_version"]
@@ -245,7 +253,6 @@ def main():
     # LST dataframe
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
-
         config_db = resource_file("database_config.yaml")
 
     with open(
@@ -268,7 +275,6 @@ def main():
         ST_NSB_List(
             target_dir,
             nsb_list,
-            nsb_limit,
             source_name,
             df_LST,
             ST_list,

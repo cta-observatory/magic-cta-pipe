@@ -284,7 +284,9 @@ def main():
             print(f"source Ra and/or Dec is NaN for {source_name}")
             continue
         print("***** Generating file config_DL3.yaml...")
-        print(f"***** This file can be found in {target_dir}/v{__version__}/{source_name}")
+        print(
+            f"***** This file can be found in {target_dir}/v{__version__}/{source_name}"
+        )
         configuration_DL3(target_dir, source_name, config_file, ra, dec)
         print("***** Generating bash scripts...")
         DL2_to_DL3(
