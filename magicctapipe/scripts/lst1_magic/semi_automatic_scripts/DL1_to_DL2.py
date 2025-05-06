@@ -167,7 +167,7 @@ def bash_DL1Stereo_to_DL2(
             dec = str(dec).replace(".", "").replace("-", "min_")
 
             RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
-            if len(glob.glob(f"{RFdir}/*joblib")) < 3:
+            if (not os.path.isdir(RFdir)) or (len(glob.glob(f"{RFdir}/*joblib")) < 3):
                 print(f"no RF availables in {RFdir}")
                 continue
             rfsize = 0

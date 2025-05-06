@@ -1,5 +1,5 @@
 """
-This script creates the bashscripts necessary to apply "lst1_magic_dl2_to_dl3.py"
+This script creates the bash scripts necessary to apply "lst1_magic_dl2_to_dl3.py"
 to the DL2. It also creates new subdirectories associated with
 the data level 3.
 
@@ -71,7 +71,6 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
     file_name = f"{conf_dir}/config_DL3.yaml"
 
     with open(file_name, "w") as f:
-
         yaml.dump(conf, f, default_flow_style=False)
 
 
@@ -112,7 +111,7 @@ def DL2_to_DL3(
     nice : int or None
         Job priority
     IRF_theta_cuts_type : str
-        Type of IRFS (global/dynamic)
+        Type of IRFS (global/dynamic) and cut values/efficiencies
     LST_date : list
         List of the dates to be processed (from list_from_h5)
     """
@@ -153,20 +152,20 @@ def DL2_to_DL3(
         if np.isnan(dec):
             print(f"MC_dec is NaN for {source}")
             continue
-        dec = str(dec).replace(".", "")
-        dec = str(dec).replace("-", "min_")
+        dec = str(dec).replace(".", "").replace("-", "min_")
         if IRF_theta_cuts_type == "global":
             IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/g_dyn_0.9_th_glo_0.2/dec_{dec}/"
         else:
             IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/g_dyn_0.9_th_dyn_0.75/dec_{dec}/"
-        if (not os.path.isdir(IRFdir)) or (len(os.listdir(IRFdir)) == 0):
+        if (not os.path.isdir(IRFdir)) or (
+            len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
+        ):
             print(f"no IRF availables in {IRFdir}")
             continue
-        process_name = source
 
         slurm = slurm_lines(
             queue="short",
-            job_name=f"{process_name}_DL2_to_DL3",
+            job_name=f"{source}_DL2_to_DL3",
             nice_parameter=nice,
             array=process_size,
             mem="50g",
