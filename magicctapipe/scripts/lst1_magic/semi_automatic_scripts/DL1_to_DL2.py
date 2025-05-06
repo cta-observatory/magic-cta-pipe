@@ -171,19 +171,19 @@ def bash_DL1Stereo_to_DL2(
                 print(f"no RF availables in {RFdir}")
                 continue
             rfsize = 0
-            for file in glob.glob(f"{RFdir}/*joblib"):
-                print(file)
+            for rffile in glob.glob(f"{RFdir}/*joblib"):
+                print(rffile)
                 print(
-                    os.path.getsize(file), os.path.getsize(file) / (1024 * 1024 * 1024)
+                    os.path.getsize(rffile), os.path.getsize(rffile) / (1024 * 1024 * 1024)
                 )
-                rfsize = rfsize + os.path.getsize(file) / (1024 * 1024 * 1024)
+                rfsize = rfsize + os.path.getsize(rffile) / (1024 * 1024 * 1024)
             print("size", rfsize)
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
                 nice_parameter=nice,
                 array=process_size,
-                mem=f"{rfsize+5}g",
+                mem=f"{int(rfsize)+5}g",
                 out_name=f"{outdir}/slurm-%x.%A_%a",
             )
             rc = rc_lines(
