@@ -179,7 +179,7 @@ def main():
     all_jobs = []
 
     for dir in dirs:
-        
+
         this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
         this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
         this_date = datetime.strptime(this_date_str, "%Y%m%d")
@@ -198,7 +198,7 @@ def main():
             with open(list_dl0, "r") as fp:
                 this_todo = len(fp.readlines())
         elif args.data_level in ["DL2", "DL3"]:
-            
+
             files = glob.glob(f"{dir}/logs/ST*.txt")
             if len(files) == 0:
                 print(f"{RED}No ST* files {ENDC}")

@@ -32,9 +32,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def ST_NSB_List(
-    target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version
-):
+def ST_NSB_List(target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version):
     """
     This function creates the lists of runs separeted by run period and NSB level.
 
@@ -57,7 +55,7 @@ def ST_NSB_List(
     nsb_limit = [-0.01] + list(
         nsb_list + width
     )  # arbitrary small negative number so that 0.0 > nsb_limit[0]
-   
+
     # Loops over all runs of all nights
     Nights_list = np.sort(
         glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
@@ -72,18 +70,18 @@ def ST_NSB_List(
         date_magic = datetime.datetime.strptime(
             night_date, "%Y%m%d"
         ) + datetime.timedelta(days=1)
-        period=None
+        period = None
         for p_name, date_list in MAGIC_obs_periods.items():
-            for subp in range(0,len(date_list)):            
-                date_init= datetime.datetime.strptime(date_list[subp][0], "%Y_%m_%d")
-                date_end= datetime.datetime.strptime(date_list[subp][1], "%Y_%m_%d")
+            for subp in range(0, len(date_list)):
+                date_init = datetime.datetime.strptime(date_list[subp][0], "%Y_%m_%d")
+                date_end = datetime.datetime.strptime(date_list[subp][1], "%Y_%m_%d")
                 if (date_magic >= date_init) and (date_magic <= date_end):
-                    period=p_name
+                    period = p_name
 
         if period is None:
-            print(f'Could not identify MAGIC period for LST night {night_date}')
-            continue    
-        
+            print(f"Could not identify MAGIC period for LST night {night_date}")
+            continue
+
         Run_list = glob.glob(f"{night}/*.h5")
         for Run in Run_list:
             # getting the run NSB

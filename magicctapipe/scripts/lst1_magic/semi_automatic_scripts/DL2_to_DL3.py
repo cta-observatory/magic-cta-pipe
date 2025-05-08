@@ -122,16 +122,14 @@ def DL2_to_DL3(
         return
 
     # Loop over all nights
-    
-    DL3_Nights = np.sort(
-        glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/*")
-    )
+
+    DL3_Nights = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/*"))
     for dl3date in DL3_Nights:
         night = dl3date.split("/")[-1]
         outdir = f"{dl3date}/logs"
         File_list = np.sort(glob.glob(f"{outdir}/ST*.txt"))
         for file in File_list:
-            
+
             if str(night) not in LST_date:
                 continue
             with open(file, "r") as f:
@@ -159,9 +157,7 @@ def DL2_to_DL3(
                 print(f"MC_dec is NaN for {source}")
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
-            IRFdir = (
-                f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
-            )
+            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
 
             if (not os.path.isdir(IRFdir)) or (
                 len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
@@ -271,11 +267,13 @@ def main():
         for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
             LST_date.append(str(i[0].replace("_", "")))
         LST_date = list(set(LST_date))
-        
+
         for night in DL2_Nights:
-            nightdate=night.split("/")[-1]
+            nightdate = night.split("/")[-1]
             if nightdate in LST_date:
-                outdir = f"{target_dir}/v{__version__}/{source_name}/DL3/{nightdate}/logs"
+                outdir = (
+                    f"{target_dir}/v{__version__}/{source_name}/DL3/{nightdate}/logs"
+                )
                 os.makedirs(outdir, exist_ok=True)
                 File_list = glob.glob(f"{night}/logs/ST*.txt")
                 for file in File_list:
