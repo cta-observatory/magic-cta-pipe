@@ -123,76 +123,80 @@ def DL2_to_DL3(
 
     # Loop over all nights
     
-    
-    for file in File_list:
-        night = file.split("_")[-1].replace(".txt", "")
-        outdir = f"{target_dir}/v{__version__}/{source}/DL3/{night}/logs"
+    DL3_Nights = np.sort(
+        glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/*")
+    )
+    for dl3date in DL3_Nights:
+        night = dl3date.split("/")[-1]
+        outdir = f"{dl3date}/logs"
         File_list = np.sort(glob.glob(f"{outdir}/ST*.txt"))
-        if str(night) not in LST_date:
-            continue
-        with open(file, "r") as f:
-            runs = f.readlines()
-            process_size = len(runs) - 1
-            run_new = []
-            for run in runs:
-                single_run_new = (
-                    "/".join(run.split("/")[:-6])
-                    + f"/v{version}/"
-                    + run.split("/")[-5]
-                    + "/DL2/"
-                    + run.split("/")[-2]
-                    + "/"
-                    + run.split("/")[-1].replace("dl1_stereo", "dl2")
-                )
-                run_new.append(single_run_new)
-            with open(file, "w") as g:
-                g.writelines(run_new)
+        for file in File_list:
+            
+            if str(night) not in LST_date:
+                continue
+            with open(file, "r") as f:
+                runs = f.readlines()
+                process_size = len(runs) - 1
+                run_new = []
+                for run in runs:
+                    single_run_new = (
+                        "/".join(run.split("/")[:-6])
+                        + f"/v{version}/"
+                        + run.split("/")[-5]
+                        + "/DL2/"
+                        + run.split("/")[-2]
+                        + "/"
+                        + run.split("/")[-1].replace("dl1_stereo", "dl2")
+                    )
+                    run_new.append(single_run_new)
+                with open(file, "w") as g:
+                    g.writelines(run_new)
 
-        nsb = file.split("/")[-1].split("_")[1]
-        period = file.split("/")[-1].split("_")[0]
-        dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
-        if np.isnan(dec):
-            print(f"MC_dec is NaN for {source}")
-            continue
-        dec = str(dec).replace(".", "").replace("-", "min_")
-        IRFdir = (
-            f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
-        )
+            nsb = file.split("/")[-1].split("_")[1]
+            period = file.split("/")[-1].split("_")[0]
+            dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
+            if np.isnan(dec):
+                print(f"MC_dec is NaN for {source}")
+                continue
+            dec = str(dec).replace(".", "").replace("-", "min_")
+            IRFdir = (
+                f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
+            )
 
-        if (not os.path.isdir(IRFdir)) or (
-            len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
-        ):
-            print(f"no IRF availables in {IRFdir}")
-            continue
+            if (not os.path.isdir(IRFdir)) or (
+                len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
+            ):
+                print(f"no IRF availables in {IRFdir}")
+                continue
 
-        slurm = slurm_lines(
-            queue="short",
-            job_name=f"{source}_DL2_to_DL3",
-            nice_parameter=nice,
-            array=process_size,
-            mem="50g",
-            out_name=f"{outdir}/slurm-%x.%A_%a",
-        )
-        rc = rc_lines(
-            store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-            out=f"{outdir}/list_{nsb}_{period}_{night}",
-        )
-        out_file = outdir.rstrip("/logs")
+            slurm = slurm_lines(
+                queue="short",
+                job_name=f"{source}_DL2_to_DL3",
+                nice_parameter=nice,
+                array=process_size,
+                mem="50g",
+                out_name=f"{outdir}/slurm-%x.%A_%a",
+            )
+            rc = rc_lines(
+                store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
+                out=f"{outdir}/list_{nsb}_{period}_{night}",
+            )
+            out_file = outdir.rstrip("/logs")
 
-        lines = (
-            slurm
-            + [
-                f"SAMPLE_LIST=($(<{file}))\n",
-                "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                f"export LOG={outdir}",
-                "/DL2_to_DL3_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {out_file} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
-            ]
-            + rc
-        )
+            lines = (
+                slurm
+                + [
+                    f"SAMPLE_LIST=($(<{file}))\n",
+                    "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
+                    f"export LOG={outdir}",
+                    "/DL2_to_DL3_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                    f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {out_file} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
+                ]
+                + rc
+            )
 
-        with open(f"{source}_DL2_to_DL3_{nsb}_{period}_{night}.sh", "w") as f:
-            f.writelines(lines)
+            with open(f"{source}_DL2_to_DL3_{nsb}_{period}_{night}.sh", "w") as f:
+                f.writelines(lines)
 
 
 def main():
