@@ -58,7 +58,10 @@ def ST_NSB_List(
         Version of the input (stereo subruns) data
     """
     width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
-    nsb_limit = [0] + list(nsb_list + width)
+    nsb_limit = [-0.01] + list(
+        nsb_list + width
+    )  # arbitrary small negative number so that 0.0 > nsb_limit[0]
+
     print("width", width)
     print("limit", nsb_limit)
 
@@ -174,7 +177,8 @@ def bash_DL1Stereo_to_DL2(
             for rffile in glob.glob(f"{RFdir}/*joblib"):
                 print(rffile)
                 print(
-                    os.path.getsize(rffile), os.path.getsize(rffile) / (1024 * 1024 * 1024)
+                    os.path.getsize(rffile),
+                    os.path.getsize(rffile) / (1024 * 1024 * 1024),
                 )
                 rfsize = rfsize + os.path.getsize(rffile) / (1024 * 1024 * 1024)
             print("size", rfsize)

@@ -344,13 +344,8 @@ def main():
     if len(all_cpu) > 0:
         all_cpu = np.array(all_cpu)
         all_mem = np.array(all_mem)
-        max_mem = np.nan
-        max_cpu = np.nan
-        if len(all_mem) > 0:
-            max_mem = all_mem.max()
-        if len(all_cpu) > 0:
-            max_cpu = all_cpu.max()
-
+        max_mem = all_mem.max() if len(all_mem) else np.nan
+        max_cpu = all_cpu.max() if len(all_cpu) else np.nan
         print(
             f"CPU: median={np.median(all_cpu)}, max={max_cpu}, total={total_time:.2f} CPU hrs; memory [M]: median={np.median(all_mem)}, max={max_mem}"
         )

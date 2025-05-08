@@ -185,13 +185,10 @@ def main():
     nsb_list = config["expert_parameters"]["nsb"]
     lst_version = config["general"]["LST_version"]
     lst_tailcut = config["expert_parameters"]["LST_tailcut"]
-    width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
-    width.append(0.25)
-    nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
-    nsb_limit.insert(
-        0, -0.01
+    width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
+    nsb_limit = [-0.01] + list(
+        nsb_list + width
     )  # arbitrary small negative number so that 0.0 > nsb_limit[0]
-
     LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
     if len(LST_files) == 1:
