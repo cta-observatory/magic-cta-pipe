@@ -122,10 +122,12 @@ def DL2_to_DL3(
         return
 
     # Loop over all nights
-    outdir = f"{target_dir}/v{__version__}/{source}/DL3/logs"
-    File_list = np.sort(glob.glob(f"{outdir}/ST*.txt"))
+    
+    
     for file in File_list:
         night = file.split("_")[-1].replace(".txt", "")
+        outdir = f"{target_dir}/v{__version__}/{source}/DL3/{night}/logs"
+        File_list = np.sort(glob.glob(f"{outdir}/ST*.txt"))
         if str(night) not in LST_date:
             continue
         with open(file, "r") as f:
@@ -265,10 +267,12 @@ def main():
         for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
             LST_date.append(str(i[0].replace("_", "")))
         LST_date = list(set(LST_date))
-        outdir = f"{target_dir}/v{__version__}/{source_name}/DL3/logs"
-        os.makedirs(outdir, exist_ok=True)
+        
         for night in DL2_Nights:
-            if night.split("/")[-1] in LST_date:
+            nightdate=night.split("/")[-1]
+            if nightdate in LST_date:
+                outdir = f"{target_dir}/v{__version__}/{source_name}/DL3/{nightdate}/logs"
+                os.makedirs(outdir, exist_ok=True)
                 File_list = glob.glob(f"{night}/logs/ST*.txt")
                 for file in File_list:
                     os.system(f"cp {file} {outdir}")

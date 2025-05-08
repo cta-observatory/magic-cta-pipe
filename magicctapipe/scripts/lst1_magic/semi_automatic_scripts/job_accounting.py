@@ -179,12 +179,12 @@ def main():
     all_jobs = []
 
     for dir in dirs:
-        if args.data_level != "DL3":
-            this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
-            this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
-            this_date = datetime.strptime(this_date_str, "%Y%m%d")
-            if timerange and (this_date < timemin or this_date > timemax):
-                continue
+        
+        this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
+        this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
+        this_date = datetime.strptime(this_date_str, "%Y%m%d")
+        if timerange and (this_date < timemin or this_date > timemax):
+            continue
 
         print(dir)
         list_dl0 = ""
@@ -198,16 +198,8 @@ def main():
             with open(list_dl0, "r") as fp:
                 this_todo = len(fp.readlines())
         elif args.data_level in ["DL2", "DL3"]:
-            if timerange and args.data_level == "DL3":
-                files = []
-                for date in (
-                    timemin + timedelta(n) for n in range(int((timemax - timemin).days))
-                ):
-                    date = int(date.strftime("%Y%m%d"))
-                    files = files + glob.glob(f"{dir}/logs/ST*_{date}.txt")
-
-            else:
-                files = glob.glob(f"{dir}/logs/ST*.txt")
+            
+            files = glob.glob(f"{dir}/logs/ST*.txt")
             if len(files) == 0:
                 print(f"{RED}No ST* files {ENDC}")
                 this_todo = 0
@@ -221,18 +213,7 @@ def main():
             print(f"{RED}No {ins} files {ENDC}")
             this_todo = 0
 
-        if timerange and args.data_level == "DL3":
-            list_return = []
-            for date in (
-                timemin + timedelta(n) for n in range(int((timemax - timemin).days))
-            ):
-                date = int(date.strftime("%Y%m%d"))
-                list_return = list_return + glob.glob(
-                    f"{dir}/logs/list_*_{date}_return.log"
-                )
-
-        else:
-            list_return = glob.glob(f"{dir}/logs/list_*_return.log")
+        list_return = glob.glob(f"{dir}/logs/list_*_return.log")
 
         this_good = 0
         this_cpu = []
