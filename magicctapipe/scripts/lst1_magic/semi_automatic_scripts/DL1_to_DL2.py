@@ -33,7 +33,7 @@ logger.setLevel(logging.INFO)
 
 
 def ST_NSB_List(
-    target_dir, nsb_list, source, df_LST, ST_list, ST_begin, ST_end, version
+    target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version
 ):
     """
     This function creates the lists of runs separeted by run period and NSB level.
@@ -48,12 +48,8 @@ def ST_NSB_List(
         Source name
     df_LST : :class:`pandas.DataFrame`
         Dataframe collecting the LST1 runs (produced by the create_LST_table script)
-    ST_list : list
-        List of the observastion periods
-    ST_begin : list
-        List of beginning dates for the observation periods
-    ST_end : list
-        List of ending dates for the observation periods
+    MAGIC_obs_periods : dict
+        Dictionary of MAGIC observation periods (key = name of period, value = list of begin/end dates)
     version : str
         Version of the input (stereo subruns) data
     """
@@ -79,12 +75,19 @@ def ST_NSB_List(
         date_magic = datetime.datetime.strptime(
             night_date, "%Y%m%d"
         ) + datetime.timedelta(days=1)
-        for p in range(len(ST_begin)):
-            if (date_magic >= datetime.datetime.strptime(ST_begin[p], "%Y_%m_%d")) and (
-                date_magic <= datetime.datetime.strptime(ST_end[p], "%Y_%m_%d")
-            ):
-                period = ST_list[p]
+        period=None
+        print(MAGIC_obs_periods.items())
+        for p_name, date_list in MAGIC_obs_periods.items():
+            for subp in range(0,len(date_list)):            
+                date_init= datetime.datetime.strptime(date_list[subp][0], "%Y_%m_%d")
+                date_end= datetime.datetime.strptime(date_list[subp][1], "%Y_%m_%d")
+                if (date_magic >= date_init) and (date_magic <= date_end):
+                    period=p_name
 
+        if period is None:
+            print(f'Could not identify MAGIC period for LST night {night_date}')
+            continue    
+        
         Run_list = glob.glob(f"{night}/*.h5")
         for Run in Run_list:
             # getting the run NSB
@@ -237,9 +240,7 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
     RF_dir = config["directories"]["RF"]
     env_name = config["general"]["env_name"]
-    ST_list = config["expert_parameters"]["ST_list"]
-    ST_begin = config["expert_parameters"]["ST_begin"]
-    ST_end = config["expert_parameters"]["ST_end"]
+    MAGIC_obs_periods = config["expert_parameters"]["MAGIC_obs_periods"]
     nsb_list = config["expert_parameters"]["nsb"]
 
     source_in = config["data_selection"]["source_name_database"]
@@ -281,9 +282,7 @@ def main():
             nsb_list,
             source_name,
             df_LST,
-            ST_list,
-            ST_begin,
-            ST_end,
+            MAGIC_obs_periods,
             in_version,
         )
 
