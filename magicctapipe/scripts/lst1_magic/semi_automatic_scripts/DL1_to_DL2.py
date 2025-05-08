@@ -57,10 +57,7 @@ def ST_NSB_List(
     nsb_limit = [-0.01] + list(
         nsb_list + width
     )  # arbitrary small negative number so that 0.0 > nsb_limit[0]
-
-    print("width", width)
-    print("limit", nsb_limit)
-
+   
     # Loops over all runs of all nights
     Nights_list = np.sort(
         glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
@@ -76,7 +73,6 @@ def ST_NSB_List(
             night_date, "%Y%m%d"
         ) + datetime.timedelta(days=1)
         period=None
-        print(MAGIC_obs_periods.items())
         for p_name, date_list in MAGIC_obs_periods.items():
             for subp in range(0,len(date_list)):            
                 date_init= datetime.datetime.strptime(date_list[subp][0], "%Y_%m_%d")
@@ -178,13 +174,7 @@ def bash_DL1Stereo_to_DL2(
                 continue
             rfsize = 0
             for rffile in glob.glob(f"{RFdir}/*joblib"):
-                print(rffile)
-                print(
-                    os.path.getsize(rffile),
-                    os.path.getsize(rffile) / (1024 * 1024 * 1024),
-                )
                 rfsize = rfsize + os.path.getsize(rffile) / (1024 * 1024 * 1024)
-            print("size", rfsize)
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
