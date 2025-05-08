@@ -84,7 +84,7 @@ def DL2_to_DL3(
     MC_v,
     version,
     nice,
-    IRF_theta_cuts_type,
+    IRF_cuts_type,
     LST_date,
 ):
     """
@@ -110,8 +110,8 @@ def DL2_to_DL3(
         Version of the input (stereo subruns) data
     nice : int or None
         Job priority
-    IRF_theta_cuts_type : str
-        Type of IRFS (global/dynamic) and cut values/efficiencies
+    IRF_cuts_type : str
+        Type of IRFS to be used: global cuts (with cut value) or dynamic cuts (with efficiencies)
     LST_date : list
         List of the dates to be processed (from list_from_h5)
     """
@@ -153,10 +153,8 @@ def DL2_to_DL3(
             print(f"MC_dec is NaN for {source}")
             continue
         dec = str(dec).replace(".", "").replace("-", "min_")
-        if IRF_theta_cuts_type == "global":
-            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/g_dyn_0.9_th_glo_0.2/dec_{dec}/"
-        else:
-            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/g_dyn_0.9_th_dyn_0.75/dec_{dec}/"
+        IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
+        
         if (not os.path.isdir(IRFdir)) or (
             len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
         ):
@@ -229,11 +227,7 @@ def main():
     MC_v = config["directories"]["MC_version"]
     if MC_v == "":
         MC_v = __version__
-    IRF_theta_cuts_type = config["general"]["IRF_theta_cuts_type"]
-    if IRF_theta_cuts_type not in ["dynamic", "global"]:
-        print("Wrong value set as IRF_theta_cuts_type, use only 'global' or 'dynamic'")
-        return
-
+    IRF_cuts_type = config["general"]["IRF_cuts_type"]
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
 
@@ -298,7 +292,7 @@ def main():
             MC_v,
             in_version,
             nice_parameter,
-            IRF_theta_cuts_type,
+            IRF_cuts_type,
             LST_date,
         )
         list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))

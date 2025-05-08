@@ -85,7 +85,7 @@ def main():
         args.config_auto, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    lstchain_versions = config["needed_parameters"]["lstchain_versions"]
+    lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
 

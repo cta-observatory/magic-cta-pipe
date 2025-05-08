@@ -2,8 +2,8 @@ directories:
     workspace_dir: "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/"  # Output directory where all the data products will be saved.
     MC_version: "" #MCP version used to process MC; if not provided, current MCP version will be used
     real_input_version: ""  #MCP version used to process input real data (to be used in case you want to run only the last steps of the analysis, using lower-level data previously processed); if not provided, current MCP version will be used 
-    RF: ''
-    IRF: ''
+    RF: '/fefs/aswg/LST1MAGIC/mc/models/'
+    IRF: '/fefs/aswg/LST1MAGIC/mc/IRF/'
     
 data_selection:
     source_name_database: "CrabNebula"  # MUST BE THE SAME AS IN THE DATABASE; Set to null to process all sources in the given time range.
@@ -22,9 +22,9 @@ general:
     env_name: magic-lst  # name of the conda environment to be used to process data.
     cluster: "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
     nice:  # Set the job priority (only positive integer value). A lower nice value increases the priority, while a higher value reduces it.
-    IRF_theta_cuts_type: "global" # "dynamic", "global"
+    IRF_cuts_type: "g_dyn_0.9_th_glo_0.2" # see name of directories in the cluster
 
-needed_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis    
+expert_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis    
     LST_tailcut: "tailcut84"
     simtel_nsb: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
     lstchain_modified_config: true # use_flatfield_heuristic = True to evaluate NSB    

@@ -233,10 +233,10 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
     RF_dir = config["directories"]["RF"]
     env_name = config["general"]["env_name"]
-    ST_list = config["needed_parameters"]["ST_list"]
-    ST_begin = config["needed_parameters"]["ST_begin"]
-    ST_end = config["needed_parameters"]["ST_end"]
-    nsb_list = config["needed_parameters"]["nsb"]
+    ST_list = config["expert_parameters"]["ST_list"]
+    ST_begin = config["expert_parameters"]["ST_begin"]
+    ST_end = config["expert_parameters"]["ST_end"]
+    nsb_list = config["expert_parameters"]["nsb"]
 
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
