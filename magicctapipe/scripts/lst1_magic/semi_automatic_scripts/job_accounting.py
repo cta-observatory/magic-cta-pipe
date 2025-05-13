@@ -202,7 +202,7 @@ def main():
             files = glob.glob(f"{dir}/logs/ST*.txt")
             this_todo = 0
             if len(files) == 0:
-                print(f"{RED}No ST* files {ENDC}")                
+                print(f"{RED}No ST* files {ENDC}")
             else:
                 for f in files:
                     with open(f, "r") as fp:
