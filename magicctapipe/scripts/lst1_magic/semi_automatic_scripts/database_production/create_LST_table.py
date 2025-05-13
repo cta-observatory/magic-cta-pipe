@@ -74,6 +74,7 @@ def main():
         "MAGIC_stereo",
         "MAGIC_trigger",
         "MAGIC_HV",
+        "perfect_match_time_min",
     ]
     df_cut = df[needed_cols]
 

@@ -33,7 +33,8 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, MAGIC_runs, env_name, source, cluster, version, nice):
+def merge(target_dir, MAGIC_runs, env_name, source, cluster, version, nice, allowed_M_tels):
+
     """
     This function creates the bash scripts to run merge_hdf_files.py for real data
 
@@ -53,6 +54,8 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, version, nice):
         Version of the input (DL1 MAGIC subruns) data
     nice : int or None
         Job priority
+    allowed_M_tels : list
+        MAGIC telescopes allowed in the analysis.
     """
 
     process_name = f"merging_{source}"
@@ -76,7 +79,7 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, version, nice):
 
     with open(f"{source}_Merge_MAGIC.sh", "w") as f:
         f.writelines(lines)
-        for magic in [1, 2]:
+        for magic in allowed_M_tels:
             for i in MAGIC_runs:
                 # Here is a difference w.r.t. original code. If only one telescope data are available they will be merged now for this telescope
                 indir = f"{MAGIC_in_dir}/M{magic}/{i[0]}/{i[1]}"
@@ -129,6 +132,7 @@ def main():
     if in_version == "":
         in_version = __version__
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
+    allowed_M_tels = sorted(config["general"]["allowed_M_tels"])
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -155,6 +159,7 @@ def main():
             cluster,
             in_version,
             nice_parameter,
+            allowed_M_tels,
         )  # generating the bash script to merge the subruns
 
         print("***** Running merge_hdf_files.py on the MAGIC data files...")
