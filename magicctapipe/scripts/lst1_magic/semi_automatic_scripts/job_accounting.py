@@ -200,14 +200,13 @@ def main():
         elif args.data_level in ["DL2", "DL3"]:
 
             files = glob.glob(f"{dir}/logs/ST*.txt")
+            this_todo = 0
             if len(files) == 0:
-                print(f"{RED}No ST* files {ENDC}")
-                this_todo = 0
+                print(f"{RED}No ST* files {ENDC}")                
             else:
-                this_todo = 0
                 for f in files:
                     with open(f, "r") as fp:
-                        this_todo = this_todo + len(fp.readlines())
+                        this_todo += len(fp.readlines())
 
         else:
             print(f"{RED}No {ins} files {ENDC}")
