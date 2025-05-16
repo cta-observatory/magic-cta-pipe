@@ -33,7 +33,9 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, MAGIC_runs, env_name, source, cluster, version, nice, allowed_M_tels):
+def merge(
+    target_dir, MAGIC_runs, env_name, source, cluster, version, nice, allowed_M_tels
+):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py for real data
