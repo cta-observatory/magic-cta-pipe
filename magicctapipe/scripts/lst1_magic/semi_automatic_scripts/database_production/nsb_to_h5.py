@@ -7,6 +7,7 @@ Usage:
 $ nsb_to_h5
 """
 
+import argparse
 import glob
 import logging
 
@@ -73,10 +74,27 @@ def main():
     """
     Main function
     """
-    config_file = resource_file("database_config.yaml")
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_auto_MCP.yaml",
+        help="Path to a configuration file",
+    )
+
+    args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config = yaml.safe_load(f)
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
-        config_file, "rb"
+        config_db, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
