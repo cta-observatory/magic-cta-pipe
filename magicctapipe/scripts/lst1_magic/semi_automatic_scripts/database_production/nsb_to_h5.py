@@ -58,6 +58,7 @@ def collect_nsb(df_LST):
             "MAGIC_stereo",
             "MAGIC_trigger",
             "MAGIC_HV",
+            "perfect_match_time_min",
             "nsb",
             "lstchain_versions",
             "last_lstchain_file",

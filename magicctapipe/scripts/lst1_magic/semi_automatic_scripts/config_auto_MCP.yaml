@@ -11,7 +11,7 @@ data_selection:
     time_range: True  # Search for all runs in a LST time range (e.g., 2020_01_01 -> 2022_01_01).
     min: "2023_11_17"
     max: "2024_03_03"   
-    date_list: ['2020_12_15','2021_03_11']  # LST list of days to be processed (only if time_range=False), format: YYYY_MM_DD.
+    date_list: ['2020-12-15','2021-03-11']  # LST list of days to be processed (only if time_range=False), format: YYYY-MM-DD.
     skip_LST_runs: [3216,3217]  # LST runs to ignore.
     skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
     
@@ -23,6 +23,7 @@ general:
     cluster: "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
     nice:  # Set the job priority (only positive integer value). A lower nice value increases the priority, while a higher value reduces it.
     IRF_cuts_type: "g_dyn_0.9_th_glo_0.2" # see name of directories in the cluster
+    allowed_M_tels: [1, 2] #MAGIC telescopes used for analysis. Default: [1,2] which coresponds to M1 and M2. The list must not be empty!
 
 expert_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis    
     LST_tailcut: "tailcut84"
