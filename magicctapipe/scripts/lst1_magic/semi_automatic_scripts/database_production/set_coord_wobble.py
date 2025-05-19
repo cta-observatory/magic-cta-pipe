@@ -1,12 +1,13 @@
 """
-Add, to LST database, infos about coordinates and extension of the sources and MC declination to be used to process the source
+Add, to LST database, infos about coordinates, wobble offset (by checking MAGIC runs) and extension of the sources and MC declination to be used to process the source
 
 Usage:
-$ set_ra_dec (-b YYYYMMDD -e YYYYMMDD -s source_dict -m mc_dec)
+$ set_coord_wobble (-b YYYYMMDD -e YYYYMMDD -s source_dict -m mc_dec -c config_file)
 """
 
 import argparse
 import json
+import glob
 
 import numpy as np
 import pandas as pd
@@ -87,7 +88,7 @@ def main():
         LST_h5,
         key=LST_key,
     )
-    for field in ["ra", "dec", "MC_dec", "point_source"]:
+    for field in ["ra", "dec", "MC_dec", "point_source", "wobble_offset"]:
         if field not in df_LST:
             df_LST[field] = np.nan
 
@@ -155,6 +156,54 @@ def main():
                 f"\t {i}: {src} extension information not in the dictionaries. Please add it to the dictionaries"
             )
             i += 1
+    print("\n\nRetrieving wobble offset...\n\n")
+    date_lst = pd.to_datetime(df_LST["DATE"], format="%Y%m%d")
+
+    delta = pd.Timedelta("1 day")
+    date_magic = date_lst + delta
+
+    date_magic = date_magic.dt.strftime("%Y/%m/%d").to_list()
+
+    for i in range(len(df_LST)):
+        magic_runs = (df_LST["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(", ")
+        lst_run = (df_LST["LST1_run"].to_list())[i]
+        wobble = []
+        source = (df_LST["source"].to_list())[i]
+        for j in range(len(magic_runs)):
+            print("MAGIC run:", magic_runs[j])
+            runs = glob.glob(
+                f"/fefs/onsite/common/MAGIC/data/M[12]/event/Calibrated/{date_magic[i]}/*{magic_runs[j]}*{source}*.root"
+            )
+
+            if len(runs) < 1:
+                print(
+                    f"Neither M1 nor M2 files could be found for {date_magic[i]}, run {magic_runs[j]}, {source}. Check database and stored data!"
+                )
+                continue
+            wobble_run_info = runs[0].split("/")[-1].split(source)[1]
+            if "-W" in wobble_run_info:
+                wobble_run = (wobble_run_info.split("W")[-1])[0:4]
+            else:
+                print(
+                    f"No string matching for wobble offset found in the name of MAGIC files for {date_magic[i]}, run {magic_runs[j]}, {source}. Check it manually!"
+                )
+                continue
+            print("wobble offset:", wobble_run)
+            wobble.append(wobble_run)
+        wobble = np.unique(wobble)
+        print(wobble)
+        if len(wobble) > 1:
+            print(
+                f"More than one wobble offset value for LST run {lst_run}: check data!"
+            )
+        wobble_str = str(wobble).replace(" ", ", ")
+        print(f"Wobble offset for LST run {lst_run}:", wobble_str)
+        df_LST["wobble_offset"] = np.where(
+            df_LST["LST1_run"] == lst_run, wobble_str, df_LST["wobble_offset"]
+        )
+   
+
+
     df_LST = pd.concat([df_LST, df_LST_full]).drop_duplicates(
         subset="LST1_run", keep="first"
     )
