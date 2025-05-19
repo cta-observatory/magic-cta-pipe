@@ -74,16 +74,7 @@ def main():
         config_dict["database_paths"]["MAGIC+LST1"],
         key=config_dict["database_keys"]["MAGIC+LST1"],
     )  # TODO: put this file in a shared folder
-    """
-    df2 = pd.read_hdf(
-        config_dict["database_paths"]["MAGIC+LST1_bis"],
-        key=config_dict["database_keys"]["MAGIC+LST1_bis"],
-    )  # TODO: put this file in a shared folder
-    df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
-    df = df.sort_values(by=["DATE", "source"])
-
-    df = df.reset_index(drop=True)
-    """
+   
     if args.begin != 0:
         df = df[df["DATE"].astype(int) >= args.begin]
     if args.end != 0:
@@ -102,8 +93,7 @@ def main():
             (df["MAGIC_runs"].to_list())[i]
             .rstrip("]")
             .lstrip("[")
-            .replace(" ", "")
-            .split(",")
+            .split(", ")
         )
         lst_run = (df["LST1_run"].to_list())[i]
         wobble = []
@@ -121,7 +111,7 @@ def main():
                 continue
             wobble_run_info = runs[0].split("/")[-1].split(source)[1]
             if "-W" in wobble_run_info:
-                wobble_run = (wobble_run_info.split("W")[1])[0:4]
+                wobble_run = (wobble_run_info.split("W")[-1])[0:4]
             else:
                 print(
                     f"No string matching for wobble offset found in the name of MAGIC files for {date_magic[i]}, run {magic_runs[j]}, {source}. Check it manually!"
@@ -130,11 +120,12 @@ def main():
             print("wobble offset:", wobble_run)
             wobble.append(wobble_run)
         wobble = np.unique(wobble)
+        print(wobble)
         if len(wobble) > 1:
             print(
                 f"More than one wobble offset value for LST run {lst_run}: check data!"
             )
-        wobble_str = "[" + ", ".join(str(x) for x in wobble) + "]"
+        wobble_str = str(wobble).replace(" ", ", ")
         print(f"Wobble offset for LST run {lst_run}:", wobble_str)
         df_LST["wobble_offset"] = np.where(
             df_LST["LST1_run"] == lst_run, wobble_str, df_LST["wobble_offset"]

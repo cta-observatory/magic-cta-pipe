@@ -117,6 +117,8 @@ def main():
             coord = SkyCoord.from_name(src)
             if src == "Crab":
                 coord = SkyCoord.from_name("CrabNebula")
+                # astropy retrieves two slightly different coordinates, in SkyCoord, for 'Crab' and 'CrabNebula,
+                # but these two lables correspond to the same pointings for MAGIC and LST
             src_dec = coord.dec.degree
             src_ra = coord.ra.degree
 
@@ -146,7 +148,7 @@ def main():
                 float(dec_mc[np.argmin(np.abs(src_dec - dec_mc))]),
                 df_LST["MC_dec"],
             )
-    print("\n\nChecking if point source...\n\n")
+    print("\n\nChecking if point-like source...\n\n")
     i = 0
     for src in sources:
         if (src in source_dict.keys()) and (source_dict.get(src)[2] != "NaN"):
