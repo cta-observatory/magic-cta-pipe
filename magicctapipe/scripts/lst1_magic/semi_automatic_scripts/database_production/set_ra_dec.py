@@ -87,14 +87,10 @@ def main():
         LST_h5,
         key=LST_key,
     )
-    if "ra" not in df_LST:
-        df_LST["ra"] = np.nan
-    if "dec" not in df_LST:
-        df_LST["dec"] = np.nan
-    if "MC_dec" not in df_LST:
-        df_LST["MC_dec"] = np.nan
-    if "point_source" not in df_LST:
-        df_LST["point_source"] = np.nan
+    for field in ["ra", "dec", "MC_dec", "point_source"]:
+        if field not in df_LST:
+            df_LST[field] = np.nan
+
     df_LST_full = df_LST.copy(deep=True)
     if args.begin != 0:
         df_LST = df_LST[df_LST["DATE"].astype(int) >= args.begin]
@@ -103,11 +99,9 @@ def main():
 
     sources = np.unique(df_LST["source"])
     with open(args.source) as f:
-        dict_source = f.read()
+        source_dict = json.load(f)
     with open(args.dec_mc) as f:
-        mc_dec = f.read()
-    source_dict = json.loads(dict_source)
-    dec_mc = np.asarray(json.loads(mc_dec)).astype(np.float64)
+        dec_mc = np.asarray(json.load(f)).astype(np.float64)
     print("MC declinations: \t", dec_mc)
     print("\n\nChecking RA/Dec...\n\n")
     i = 0
