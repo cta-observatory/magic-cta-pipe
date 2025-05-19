@@ -173,9 +173,7 @@ def main():
     date_magic = date_magic.dt.strftime("%Y/%m/%d").to_list()
     
     for i in range(len(df)):
-        magic_runs = (
-            (df["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(", ")
-        )
+        magic_runs = ((df["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(", "))
         lst_run = (df["LST1_run"].to_list())[i]
         wobble = []
         source = (df["source"].to_list())[i]
