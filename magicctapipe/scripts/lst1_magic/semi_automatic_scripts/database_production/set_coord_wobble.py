@@ -157,20 +157,28 @@ def main():
             )
             i += 1
     print("\n\nRetrieving wobble offset...\n\n")
-    date_lst = pd.to_datetime(df_LST["DATE"], format="%Y%m%d")
+    df = pd.read_hdf(
+        config_dict["database_paths"]["MAGIC+LST1"],
+        key=config_dict["database_keys"]["MAGIC+LST1"],
+    )  # TODO: put this file in a shared folder
+    if args.begin != 0:
+        df = df[df["DATE"].astype(int) >= args.begin]
+    if args.end != 0:
+        df = df[df["DATE"].astype(int) <= args.end]
+    date_lst = pd.to_datetime(df["DATE"], format="%Y%m%d")
 
     delta = pd.Timedelta("1 day")
     date_magic = date_lst + delta
 
     date_magic = date_magic.dt.strftime("%Y/%m/%d").to_list()
-
-    for i in range(len(df_LST)):
+    
+    for i in range(len(df)):
         magic_runs = (
-            (df_LST["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(", ")
+            (df["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(", ")
         )
-        lst_run = (df_LST["LST1_run"].to_list())[i]
+        lst_run = (df["LST1_run"].to_list())[i]
         wobble = []
-        source = (df_LST["source"].to_list())[i]
+        source = (df["source"].to_list())[i]
         for j in range(len(magic_runs)):
             print("MAGIC run:", magic_runs[j])
             runs = glob.glob(
