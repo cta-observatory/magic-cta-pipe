@@ -6,8 +6,8 @@ $ set_coord_wobble (-b YYYYMMDD -e YYYYMMDD -s source_dict -m mc_dec -c config_f
 """
 
 import argparse
-import json
 import glob
+import json
 
 import numpy as np
 import pandas as pd
@@ -165,7 +165,9 @@ def main():
     date_magic = date_magic.dt.strftime("%Y/%m/%d").to_list()
 
     for i in range(len(df_LST)):
-        magic_runs = (df_LST["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(", ")
+        magic_runs = (
+            (df_LST["MAGIC_runs"].to_list())[i].rstrip("]").lstrip("[").split(", ")
+        )
         lst_run = (df_LST["LST1_run"].to_list())[i]
         wobble = []
         source = (df_LST["source"].to_list())[i]
@@ -201,8 +203,6 @@ def main():
         df_LST["wobble_offset"] = np.where(
             df_LST["LST1_run"] == lst_run, wobble_str, df_LST["wobble_offset"]
         )
-   
-
 
     df_LST = pd.concat([df_LST, df_LST_full]).drop_duplicates(
         subset="LST1_run", keep="first"
