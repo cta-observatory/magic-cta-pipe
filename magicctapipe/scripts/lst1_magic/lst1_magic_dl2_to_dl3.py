@@ -54,6 +54,7 @@ from magicctapipe.io import (
     load_dl2_data_file,
     load_irf_files,
 )
+from magicctapipe.utils import OUTSIDE_INTERPOLATION_RANGE
 
 __all__ = ["dl2_to_dl3"]
 
@@ -157,6 +158,25 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3.pop("interpolation_method")
     logger.info(f"\nInterpolation method: {interpolation_method}")
+    if (scheme == "cosZd") and (interpolation_method != "nearest"):
+        coszd_margin = 0.02
+        mincoszd = min(irf_data["grid_points"])
+        maxcoszd = max(irf_data["grid_points"])
+        if (pnt_coszd_mean < mincoszd and pnt_coszd_mean > mincoszd - coszd_margin) or (
+            pnt_coszd_mean > maxcoszd and pnt_coszd_mean < maxcoszd + coszd_margin
+        ):
+            logger.warning(
+                f"point {target_point} outside of IRF ranges, but within {coszd_margin}. Falling back to nearest point"
+            )
+            interpolation_method = "nearest"
+        if (
+            pnt_coszd_mean < mincoszd - coszd_margin
+            or pnt_coszd_mean > maxcoszd + coszd_margin
+        ):
+            logger.error(
+                f"point {target_point} outside of IRF range, more then {coszd_margin}, exiting"
+            )
+            exit(OUTSIDE_INTERPOLATION_RANGE)
 
     extra_header["IRF_INTP"] = interpolation_method
 
