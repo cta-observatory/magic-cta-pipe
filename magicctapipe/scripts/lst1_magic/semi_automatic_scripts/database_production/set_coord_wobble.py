@@ -5,7 +5,6 @@ Usage:
 $ set_coord_wobble (-b YYYYMMDD -e YYYYMMDD -s source_dict -m mc_dec -c config_file)
 """
 
-import argparse
 import glob
 import json
 
@@ -16,6 +15,7 @@ from astropy.coordinates import SkyCoord
 from astropy.coordinates.name_resolve import NameResolveError
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parser
 
 
 def main():
@@ -24,24 +24,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--begin-date",
-        "-b",
-        dest="begin",
-        type=int,
-        default=0,
-        help="First date to update database (YYYYMMDD)",
-    )
-    parser.add_argument(
-        "--end-date",
-        "-e",
-        dest="end",
-        type=int,
-        default=0,
-        help="End date to update database (YYYYMMDD)",
-    )
+    parser = auto_MCP_parser(add_dates=True)
     parser.add_argument(
         "--dict-source",
         "-s",
@@ -57,14 +40,6 @@ def main():
         type=str,
         default="./dec_mc.json",
         help="File with list of MC declinations",
-    )
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
     )
 
     args = parser.parse_args()

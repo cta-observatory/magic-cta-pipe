@@ -6,7 +6,6 @@ the data level 3.
 Usage:
 $ python new_DL2_to_DL3.py -c configuration_file.yaml
 """
-import argparse
 import glob
 import logging
 import os
@@ -23,6 +22,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["configuration_DL3", "DL2_to_DL3"]
 
@@ -200,21 +200,7 @@ def main():
     Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
+    config = auto_MCP_parse_config()
 
     target_dir = Path(config["directories"]["workspace_dir"])
     IRF_dir = config["directories"]["IRF"]

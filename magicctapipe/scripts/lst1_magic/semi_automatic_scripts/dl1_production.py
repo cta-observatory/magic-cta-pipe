@@ -13,7 +13,6 @@ No LST data is used here.
 Standard usage:
 $ dl1_production (-c config_file.yaml)
 """
-import argparse
 import glob
 import logging
 import os
@@ -29,6 +28,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = [
     "config_file_gen",
@@ -207,22 +207,7 @@ def main():
 
     # Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file
 
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
+    config = auto_MCP_parse_config()
 
     env_name = config["general"]["env_name"]
     config_file = config["general"]["base_config_file"]

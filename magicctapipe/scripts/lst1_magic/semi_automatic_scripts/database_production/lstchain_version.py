@@ -7,8 +7,6 @@ Usage:
 $ lstchain_version
 """
 
-
-import argparse
 import glob
 import os
 
@@ -16,6 +14,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["version_lstchain"]
 
@@ -71,20 +70,7 @@ def main():
     """
     Main function
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_auto",
-        type=str,
-        default="../config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-    args = parser.parse_args()
-    with open(
-        args.config_auto, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
+    config = auto_MCP_parse_config()
     lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
