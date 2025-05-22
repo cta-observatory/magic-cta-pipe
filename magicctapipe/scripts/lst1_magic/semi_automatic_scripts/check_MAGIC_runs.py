@@ -10,7 +10,6 @@ In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2.
 'YYYY', 'MM', and 'DD' specify the date.
 """
 
-import argparse
 import os
 from datetime import datetime, timedelta
 
@@ -18,6 +17,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = [
     "fix_lists_and_convert",
@@ -186,7 +186,7 @@ def main():
 
     """Main function."""
 
-    parser = argparse.ArgumentParser()
+    parser = auto_MCP_parser()
 
     date_min_default = "20191101"
     current_datetime = datetime.now()
@@ -208,14 +208,6 @@ def main():
         type=str,
         default=date_max_default,
         help="End of the time interval (in LST convention, format YYYYMMDD).",
-    )
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
     )
 
     args = parser.parse_args()

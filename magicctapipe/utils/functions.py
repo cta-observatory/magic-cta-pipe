@@ -1,8 +1,11 @@
 """
 Miscellanea functions
 """
+import argparse
+
 import numpy as np
 import pandas as pd
+import yaml
 from astropy import units as u
 from astropy.coordinates import (
     AltAz,
@@ -20,6 +23,8 @@ __all__ = [
     "calculate_mean_direction",
     "calculate_off_coordinates",
     "transform_altaz_to_radec",
+    "auto_MCP_parser",
+    "auto_MCP_parse_config",
     "LON_ORM",
     "LAT_ORM",
     "HEIGHT_ORM",
@@ -343,3 +348,66 @@ def transform_altaz_to_radec(alt, az, obs_time):
     dec = event_coord.dec
 
     return ra, dec
+
+
+def auto_MCP_parser(add_dates=False):
+    """
+    This is being used in many autoMCP scripts so it is extracted here.
+
+    Parameters
+    ----------
+    add_dates : bool
+        If the begin-date end-date options should be added
+
+    Returns
+    -------
+    argparse.ArgumentParser
+        Parser with default options
+    """
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config_auto_MCP.yaml",
+        help="Path to a configuration file config_auto_MCP.yaml",
+    )
+    if add_dates:
+        parser.add_argument(
+            "--begin-date",
+            "-b",
+            dest="begin",
+            type=int,
+            default=0,
+            help="First date to update database (YYYYMMDD)",
+        )
+        parser.add_argument(
+            "--end-date",
+            "-e",
+            dest="end",
+            type=int,
+            default=0,
+            help="End date to update database (YYYYMMDD)",
+        )
+
+    return parser
+
+
+def auto_MCP_parse_config():
+    """
+    Most of the scripts just need to parse the config, this automatizes it.
+    Parameters
+    ----------
+
+    Returns
+    -------
+    dict
+        Config dictionary
+    """
+    parser = auto_MCP_parser()
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:
+        config = yaml.safe_load(f)
+    return config

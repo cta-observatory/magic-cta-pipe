@@ -6,7 +6,6 @@ For the moment it ignores date_list and skip_*_runs
 
 It can also update the h5 file with the list of runs to process
 """
-import argparse
 import glob
 import json
 import os
@@ -19,6 +18,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe import __version__
+from magicctapipe.utils import auto_MCP_parser
 
 GREEN = "\033[32m"
 YELLOW = "\033[33m"
@@ -50,16 +50,7 @@ def main():
     """
     Function counts the number of jobs that should have been submitted, and checks the output of the logs to see how many finished successfully, and how many failed.
     """
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file config_auto_MCP.yaml",
-    )
+    parser = auto_MCP_parser()
 
     parser.add_argument(
         "--data-level",

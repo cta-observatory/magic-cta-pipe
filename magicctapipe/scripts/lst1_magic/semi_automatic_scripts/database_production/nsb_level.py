@@ -7,7 +7,6 @@ Usage:
 $ nsb_level (-c config.yaml -b YYYY_MM_DD -e YYYY_MM_DD)
 """
 
-import argparse
 import glob
 import json
 import logging
@@ -20,6 +19,7 @@ import yaml
 
 from magicctapipe.io import resource_file
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["bash_scripts"]
 
@@ -72,15 +72,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="../config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
+    parser = auto_MCP_parser()
     parser.add_argument(
         "--begin-date",
         "-b",

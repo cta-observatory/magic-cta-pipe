@@ -10,7 +10,6 @@ Usage:
 $ merging_runs (-c config.yaml)
 """
 
-import argparse
 import glob
 import logging
 import os
@@ -18,13 +17,13 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-import yaml
 
 from magicctapipe import __version__
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["merge"]
 
@@ -108,22 +107,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
-
+    config = auto_MCP_parse_config()
     target_dir = Path(config["directories"]["workspace_dir"])
 
     env_name = config["general"]["env_name"]

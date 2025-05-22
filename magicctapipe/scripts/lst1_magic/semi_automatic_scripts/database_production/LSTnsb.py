@@ -6,7 +6,6 @@ One txt file per run is created here: its content is a (date,run,NSB) n-tuple an
 Usage:
 $ LSTnsb (-c MCP_config) -i run -d date -l lstchain_config (-s N_subruns)
 """
-import argparse
 import glob
 import logging
 
@@ -14,6 +13,8 @@ import numpy as np
 import pandas as pd
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
+
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["nsb"]
 
@@ -134,15 +135,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="../config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
+    parser = auto_MCP_parser()
     parser.add_argument(
         "--input-run",
         "-i",
