@@ -158,10 +158,14 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3.pop("interpolation_method")
     logger.info(f"\nInterpolation method: {interpolation_method}")
-    if (scheme == "cosZd") and (interpolation_method != "nearest"):
+    if interpolation_method != "nearest":
         coszd_margin = 0.02
-        mincoszd = min(irf_data["grid_points"])
-        maxcoszd = max(irf_data["grid_points"])
+        if scheme == "cosZd":
+            coszds = irf_data["grid_points"]
+        else:
+            coszds = irf_data["grid_points"][:, 0]
+        mincoszd = min(coszds)
+        maxcoszd = max(coszds)
         if (pnt_coszd_mean < mincoszd and pnt_coszd_mean > mincoszd - coszd_margin) or (
             pnt_coszd_mean > maxcoszd and pnt_coszd_mean < maxcoszd + coszd_margin
         ):
