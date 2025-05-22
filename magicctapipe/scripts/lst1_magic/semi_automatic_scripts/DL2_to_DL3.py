@@ -4,7 +4,7 @@ to the DL2. It also creates new subdirectories associated with
 the data level 3.
 
 Usage:
-$ python new_DL2_to_DL3.py -c configuration_file.yaml
+$ python new_DL2_to_DL3.py -c configuration_file.yaml -d list_dense.txt
 """
 import argparse
 import glob
@@ -86,6 +86,7 @@ def DL2_to_DL3(
     nice,
     IRF_cuts_type,
     LST_date,
+    dense_list
 ):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
@@ -114,6 +115,8 @@ def DL2_to_DL3(
         Type of IRFS to be used: global cuts (with cut value) or dynamic cuts (with efficiencies)
     LST_date : list
         List of the dates to be processed (from list_from_h5)
+    dense_list : list
+        List of sources that use the dense MC training line
     """
     if cluster != "SLURM":
         logger.warning(
@@ -158,7 +161,8 @@ def DL2_to_DL3(
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
             IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
-
+            if source in dense_list:
+                IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/{IRF_cuts_type}/dec_{dec}_high_density/"    
             if (not os.path.isdir(IRFdir)) or (
                 len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
             ):
@@ -210,7 +214,20 @@ def main():
         help="Path to a configuration file",
     )
 
+    parser.add_argument(
+        "--dense_MC_sources",
+        "-d",
+        dest="dense_list",
+        type=str,
+        help="File with name of sources to be processed with the dense MC train line",
+    )
+
     args = parser.parse_args()
+    dense_list = []
+    if args.dense_list is not None:
+        with open(args.dense_list) as d:
+            dense_list = d.readlines()
+
     with open(
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
@@ -289,6 +306,7 @@ def main():
             f"***** This file can be found in {target_dir}/v{__version__}/{source_name}"
         )
         configuration_DL3(target_dir, source_name, config_file, ra, dec)
+
         print("***** Generating bash scripts...")
         DL2_to_DL3(
             target_dir,
@@ -302,6 +320,7 @@ def main():
             nice_parameter,
             IRF_cuts_type,
             LST_date,
+            dense_list,
         )
         list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
         if len(list_of_dl3_scripts) < 1:
