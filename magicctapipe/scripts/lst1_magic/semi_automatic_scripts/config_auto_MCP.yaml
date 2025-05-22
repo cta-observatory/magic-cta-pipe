@@ -2,31 +2,41 @@ directories:
     workspace_dir: "/fefs/aswg/workspace/elisa.visentin/auto_MCP_PR/"  # Output directory where all the data products will be saved.
     MC_version: "" #MCP version used to process MC; if not provided, current MCP version will be used
     real_input_version: ""  #MCP version used to process input real data (to be used in case you want to run only the last steps of the analysis, using lower-level data previously processed); if not provided, current MCP version will be used 
-    RF: ''
-    IRF: ''
+    RF: '/fefs/aswg/LST1MAGIC/mc/models/'
+    IRF: '/fefs/aswg/LST1MAGIC/mc/IRF/'
+    
 data_selection:
     source_name_database: "CrabNebula"  # MUST BE THE SAME AS IN THE DATABASE; Set to null to process all sources in the given time range.
     source_name_output: 'Crabtest'  # Name tag of your target. Used only if source_name_database != null.
     time_range: True  # Search for all runs in a LST time range (e.g., 2020_01_01 -> 2022_01_01).
     min: "2023_11_17"
     max: "2024_03_03"   
-    date_list: ['2020_12_15','2021_03_11']  # LST list of days to be processed (only if time_range=False), format: YYYY_MM_DD.
+    date_list: ['2020-12-15','2021-03-11']  # LST list of days to be processed (only if time_range=False), format: YYYY-MM-DD.
     skip_LST_runs: [3216,3217]  # LST runs to ignore.
     skip_MAGIC_runs: [5094658]  # MAGIC runs to ignore.
     
 general:
     base_config_file: ''    # path + name to a custom MCP config file. If not provided, the default config.yaml file will be used 
-    LST_version: "v0.10" # check the `processed_lstchain_file` version in the LST database!    
+    base_db_config_file: ''    # path + name to a custom config file containing path and keys to access MAGIC, LST and MAGIC+LST databases. If not provided, the default database_config.yaml file will be used 
+    LST_version: "v0.10" # check the `processed_lstchain_file` version in the LST database!
     env_name: magic-lst  # name of the conda environment to be used to process data.
     cluster: "SLURM"  # cluster management system on which data are processed. At the moment we have only SLURM available, in the future maybe also condor (PIC, CNAF).
+    nice:  # Set the job priority (only positive integer value). A lower nice value increases the priority, while a higher value reduces it.
+    IRF_cuts_type: "g_dyn_0.9_th_glo_0.2" # see name of directories in the cluster
+    allowed_M_tels: [1, 2] #MAGIC telescopes used for analysis. Default: [1,2] which coresponds to M1 and M2. The list must not be empty!
 
-needed_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis    
+expert_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis    
     LST_tailcut: "tailcut84"
     simtel_nsb: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
     lstchain_modified_config: true # use_flatfield_heuristic = True to evaluate NSB    
     nsb: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
     lstchain_versions: ["v0.9", "v0.10"]
-    ST_list: ["ST0321A", "ST0320A", "ST0319A", "ST0318A", "M20318A", "ST0318A", "ST0317A", "ST0316A"]
-    ST_begin: ["2024_05_19","2023_03_10","2023_01_07", "2022_12_15", "2022_09_04", "2022_06_10", "2021_12_30", "2020_10_24"]
-    ST_end: ["2026_01_01","2024_05_18", "2023_03_09", "2023_01_06", "2022_12_14", "2022_08_31", "2022_06_09", "2021_09_29"]
-    # ST0321 ongoing -> 'service' end date
+    MAGIC_obs_periods:
+        ST0316A: [["2020_10_24", "2021_09_29"]]
+        ST0317A: [["2021_12_30", "2022_06_09"]]
+        ST0318A: [["2022_06_10", "2022_08_31"], ["2022_12_15", "2023_01_06"]]
+        M20318A: [["2022_09_04", "2022_12_14"]]
+        ST0319A: [["2023_01_07", "2023_03_09"]]
+        ST0320A: [["2023_03_10", "2024_05_18"]]
+        ST0321A: [["2024_05_19", "2026_01_01"]]
+        # ST0321 ongoing -> 'service' end date

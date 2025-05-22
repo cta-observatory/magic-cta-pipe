@@ -81,6 +81,7 @@ from magicctapipe.io import (
     save_pandas_data_in_table,
     telescope_combinations,
 )
+from magicctapipe.utils import NO_COINCIDENT_EVENTS
 
 __all__ = ["event_coincidence", "telescope_positions"]
 
@@ -525,7 +526,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
 
     if event_data.empty:
         logger.info("\nNo coincident events are found. Exiting...")
-        sys.exit()
+        sys.exit(NO_COINCIDENT_EVENTS)
 
     event_data.sort_index(inplace=True)
     event_data.drop_duplicates(inplace=True)

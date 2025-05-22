@@ -68,7 +68,14 @@ def config_file_gen(target_dir, source_name, config_dict):
 
 
 def lists_and_bash_gen_MAGIC(
-    target_dir, telescope_ids, MAGIC_runs, source, env_name, cluster
+    target_dir,
+    telescope_ids,
+    MAGIC_runs,
+    source,
+    env_name,
+    cluster,
+    nice,
+    allowed_M_tels,
 ):
 
     """
@@ -88,6 +95,10 @@ def lists_and_bash_gen_MAGIC(
         Name of the environment
     cluster : str
         Cluster system
+    nice : int or None
+        Job priority
+    allowed_M_tels : list
+        MAGIC telescopes allowed in the analysis.
     """
     if cluster != "SLURM":
         logger.warning(
@@ -98,13 +109,14 @@ def lists_and_bash_gen_MAGIC(
     lines = slurm_lines(
         queue="short",
         job_name=process_name,
+        nice_parameter=nice,
         out_name=f"{target_dir}/v{__version__}/{source}/DL1/slurm-linkMAGIC-%x.%j",
     )
 
     with open(f"{source}_linking_MAGIC_data_paths.sh", "w") as f:
         f.writelines(lines)
         for i in MAGIC_runs:
-            for magic in [1, 2]:
+            for magic in allowed_M_tels:
                 # if 1 then magic is second from last, if 2 then last
                 if telescope_ids[magic - 3] > 0:
                     lines = [
@@ -114,7 +126,7 @@ def lists_and_bash_gen_MAGIC(
                     ]
                     f.writelines(lines)
 
-    for magic in [1, 2]:
+    for magic in allowed_M_tels:
         # if 1 then magic is second from last, if 2 then last
         if telescope_ids[magic - 3] > 0:
             for i in MAGIC_runs:
@@ -127,6 +139,7 @@ def lists_and_bash_gen_MAGIC(
                 slurm = slurm_lines(
                     queue="short",
                     job_name=process_name,
+                    nice_parameter=nice,
                     array=number_of_nodes,
                     mem="2g",
                     out_name=f"{target_dir}/v{__version__}/{source}/DL1/M{magic}/{i[0]}/{i[1]}/logs/slurm-%x.%A_%a",
@@ -153,7 +166,10 @@ def lists_and_bash_gen_MAGIC(
                     f.writelines(lines)
 
 
-def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_name):
+def directories_generator_real(
+    target_dir, telescope_ids, MAGIC_runs, source_name, allowed_M_tels
+):
+
     """
     Here we create all subdirectories for a given workspace and target name.
 
@@ -167,6 +183,8 @@ def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_nam
         MAGIC dates and runs to be processed
     source_name : str
         Name of the target source
+    allowed_M_tels : list
+        MAGIC telescopes allowed in the analysis.
     """
 
     dl1_dir = str(f"{target_dir}/v{__version__}/{source_name}/DL1")
@@ -176,7 +194,7 @@ def directories_generator_real(target_dir, telescope_ids, MAGIC_runs, source_nam
     # MAGIC
     ###########################################
     for i in MAGIC_runs:
-        for magic in [1, 2]:
+        for magic in allowed_M_tels:
             if telescope_ids[magic - 3] > 0:
                 os.makedirs(f"{dl1_dir}/M{magic}/{i[0]}/{i[1]}/logs", exist_ok=True)
 
@@ -212,6 +230,8 @@ def main():
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
     target_dir = Path(config["directories"]["workspace_dir"])
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
+    allowed_M_tels = sorted(config["general"]["allowed_M_tels"])
 
     if config_file == "":
         config_file = resource_file("config.yaml")
@@ -242,7 +262,7 @@ def main():
         )
 
         directories_generator_real(
-            str(target_dir), telescope_ids, MAGIC_runs, source_name
+            str(target_dir), telescope_ids, MAGIC_runs, source_name, allowed_M_tels
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
         config_file_gen(target_dir, source_name, config_dict)
 
@@ -255,6 +275,8 @@ def main():
             source_name,
             env_name,
             cluster,
+            nice_parameter,
+            allowed_M_tels,
         )  # MAGIC real data
         if (telescope_ids[-2] > 0) or (telescope_ids[-1] > 0):
             list_of_MAGIC_runs = glob.glob(f"{source_name}_MAGIC-*.sh")

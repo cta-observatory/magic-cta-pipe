@@ -57,7 +57,10 @@ from magicctapipe.io import (
     get_stereo_events,
     save_pandas_data_in_table,
 )
-from magicctapipe.utils import calculate_impact, calculate_mean_direction
+from magicctapipe.utils import (
+    NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
+    calculate_mean_direction,
+)
 
 __all__ = ["calculate_pointing_separation", "stereo_reconstruction"]
 
@@ -207,25 +210,28 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         theta_uplim = u.Quantity(config_stereo["theta_uplim"])
         mask = u.Quantity(theta, unit="deg") < theta_uplim
 
-        if all(mask):
-            logger.info(
-                "--> All the events were taken with smaller angular distances "
-                f"than the limit {theta_uplim}."
-            )
+        try:
+            if all(mask):
+                logger.info(
+                    "--> All the events were taken with smaller angular distances "
+                    f"than the limit {theta_uplim}."
+                )
 
-        elif not any(mask):
-            logger.info(
-                "--> All the events were taken with larger angular distances "
-                f"than the limit {theta_uplim}. Exiting..."
-            )
-            sys.exit()
+            elif not any(mask):
+                raise Exception(
+                    f"--> All the events were taken with larger angular distances "
+                    f"than the limit {theta_uplim}. Exiting..."
+                )
 
-        else:
-            logger.info(
-                f"--> Exclude {np.count_nonzero(mask)} stereo events whose "
-                f"angular distances are larger than the limit {theta_uplim}."
-            )
-            event_data = event_data.loc[theta[mask].index]
+            else:
+                logger.info(
+                    f"--> Exclude {np.count_nonzero(mask)} stereo events whose "
+                    f"angular distances are larger than the limit {theta_uplim}."
+                )
+                event_data = event_data.loc[theta[mask].index]
+        except Exception as e:
+            logger.error(f"{e}")
+            sys.exit(NO_EVENTS_WITHIN_MAXIMUM_DISTANCE)
 
         event_data.set_index("tel_id", append=True, inplace=True)
 
@@ -322,7 +328,9 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
             )
             continue
 
-        stereo_params = event.dl2.stereo.geometry["HillasReconstructor"]
+        reconstructor_name = "HillasReconstructor"
+
+        stereo_params = event.dl2.stereo.geometry[reconstructor_name]
 
         if not stereo_params.is_valid:
             logger.info(
@@ -334,17 +342,6 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
         stereo_params.az.wrap_at("360 deg", inplace=True)
 
         for tel_id in tel_ids:
-            # Calculate the impact parameter
-            impact = calculate_impact(
-                shower_alt=stereo_params.alt,
-                shower_az=stereo_params.az,
-                core_x=stereo_params.core_x,
-                core_y=stereo_params.core_y,
-                tel_pos_x=tel_positions[tel_id][0],
-                tel_pos_y=tel_positions[tel_id][1],
-                tel_pos_z=tel_positions[tel_id][2],
-            )
-
             # Set the stereo parameters to the data frame
             params = {
                 "alt": stereo_params.alt.to_value("deg"),
@@ -353,8 +350,11 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
                 "az_uncert": stereo_params.az_uncert.to_value("deg"),
                 "core_x": stereo_params.core_x.to_value("m"),
                 "core_y": stereo_params.core_y.to_value("m"),
-                "impact": impact.to_value("m"),
+                "impact": event.dl2.tel[tel_id]
+                .impact[reconstructor_name]
+                .distance.to_value("m"),
                 "h_max": stereo_params.h_max.to_value("m"),
+                "is_valid": int(stereo_params.is_valid),
             }
 
             event_data.loc[(obs_id, event_id, tel_id), params.keys()] = params.values()

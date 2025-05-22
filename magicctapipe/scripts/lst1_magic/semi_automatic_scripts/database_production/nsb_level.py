@@ -100,7 +100,9 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    config_db = resource_file("database_config.yaml")
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"
@@ -112,13 +114,13 @@ def main():
     env_name = config["general"]["env_name"]
 
     cluster = config["general"]["cluster"]
-    lstchain_versions = config["needed_parameters"]["lstchain_versions"]
+    lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     df_LST = pd.read_hdf(
         LST_h5,
         key=LST_key,
     )
     lstchain_v = config["general"]["LST_version"]
-    lstchain_modified = config["needed_parameters"]["lstchain_modified_config"]
+    lstchain_modified = config["expert_parameters"]["lstchain_modified_config"]
     conda_path = os.environ["CONDA_PREFIX"]
     lst_config_orig = (
         str(conda_path)

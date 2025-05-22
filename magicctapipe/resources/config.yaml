@@ -5,8 +5,6 @@ mc_tel_ids:
     LST-4: 0
     MAGIC-I: 2
     MAGIC-II: 3
-
-
 LST:
     image_extractor:
         type: "LocalPeakWindowSum"
@@ -279,3 +277,19 @@ dl2_to_dl3:
     source_name: "Crab"
     source_ra: null  # used when the source name cannot be resolved
     source_dec: null  # used when the source name cannot be resolved
+
+
+cloud_correction:
+    specify_cloud: yes
+    base_height: "5900. m"
+    thickness: "1320. m"
+    vertical_transmission: 1.0
+    number_of_layers: 10
+
+
+cloud_estimator:
+    quality_cuts: "(impact > 0) & (total_uncert <= 10) & (n_pixels > 20) & ((slope < -5)| (slope > 5)) & (slope < 15) & (slope > -15)"
+    max_offset: "0.2 deg"
+    start_altitude: "3 km"
+    end_altitude: "15 km"
+    n_bins_altitude: 121

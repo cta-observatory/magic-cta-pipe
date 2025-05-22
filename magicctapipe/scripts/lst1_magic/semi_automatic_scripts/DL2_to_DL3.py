@@ -1,5 +1,5 @@
 """
-This script creates the bashscripts necessary to apply "lst1_magic_dl2_to_dl3.py"
+This script creates the bash scripts necessary to apply "lst1_magic_dl2_to_dl3.py"
 to the DL2. It also creates new subdirectories associated with
 the data level 3.
 
@@ -58,8 +58,8 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
         config_dict = yaml.safe_load(fc)
     DL3_config = config_dict["dl2_to_dl3"]
     DL3_config["source_name"] = source_name
-    DL3_config["source_ra"] = float(ra)
-    DL3_config["source_dec"] = float(dec)
+    DL3_config["source_ra"] = f"{ra} deg"
+    DL3_config["source_dec"] = f"{dec} deg"
     conf = {
         "mc_tel_ids": config_dict["mc_tel_ids"],
         "dl2_to_dl3": DL3_config,
@@ -71,12 +71,22 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
     file_name = f"{conf_dir}/config_DL3.yaml"
 
     with open(file_name, "w") as f:
-
         yaml.dump(conf, f, default_flow_style=False)
 
 
 def DL2_to_DL3(
-    target_dir, source, env_name, IRF_dir, df_LST, cluster, MC_v, dense_list
+    target_dir,
+    source,
+    env_name,
+    IRF_dir,
+    df_LST,
+    cluster,
+    MC_v,
+    version,
+    nice,
+    IRF_cuts_type,
+    LST_date,
+    dense_list
 ):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
@@ -97,6 +107,14 @@ def DL2_to_DL3(
         Cluster system
     MC_v : str
         Version of MC processing
+    version : str
+        Version of the input (stereo subruns) data
+    nice : int or None
+        Job priority
+    IRF_cuts_type : str
+        Type of IRFS to be used: global cuts (with cut value) or dynamic cuts (with efficiencies)
+    LST_date : list
+        List of the dates to be processed (from list_from_h5)
     dense_list : list
         List of sources that use the dense MC training line
     """
@@ -106,72 +124,84 @@ def DL2_to_DL3(
         )
         return
 
-    os.makedirs(f"{target_dir}/v{__version__}/{source}/DL3/logs", exist_ok=True)
-
     # Loop over all nights
-    Nights_list = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL2/*"))
-    for night in Nights_list:
-        # Loop over every run:
-        File_list = np.sort(glob.glob(f"{night}/logs/ST*.txt"))
+
+    DL3_Nights = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/*"))
+    for dl3date in DL3_Nights:
+        night = dl3date.split("/")[-1]
+        outdir = f"{dl3date}/logs"
+        File_list = np.sort(glob.glob(f"{outdir}/ST*.txt"))
         for file in File_list:
+
+            if str(night) not in LST_date:
+                continue
             with open(file, "r") as f:
                 runs = f.readlines()
                 process_size = len(runs) - 1
-                run_new = [
-                    run.split("DL1Stereo")[0]
-                    + "DL2"
-                    + run.split("DL1Stereo")[1]
-                    .replace("dl1_stereo", "dl2")
-                    .replace("/Merged", "")
-                    for run in runs
-                ]
+                run_new = []
+                for run in runs:
+                    single_run_new = (
+                        "/".join(run.split("/")[:-6])
+                        + f"/v{version}/"
+                        + run.split("/")[-5]
+                        + "/DL2/"
+                        + run.split("/")[-2]
+                        + "/"
+                        + run.split("/")[-1].replace("dl1_stereo", "dl2")
+                    )
+                    run_new.append(single_run_new)
                 with open(file, "w") as g:
                     g.writelines(run_new)
 
-            nsb = file.split("/")[-1].split("_")[-1][:3]
+            nsb = file.split("/")[-1].split("_")[1]
             period = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
-            dec = str(dec).replace(".", "")
-            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/g_dyn_0.9_th_glo_0.2/dec_{dec}/"
-            if source in dense_list:
-                IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/g_dyn_0.9_th_glo_0.2/dec_{dec}_high_density/"
-            if (not os.path.isdir(IRFdir)) or (len(os.listdir(IRFdir)) == 0):
+            if np.isnan(dec):
+                print(f"MC_dec is NaN for {source}")
                 continue
-            process_name = source
-            output = f"{target_dir}/v{__version__}/{source}/DL3"
+            dec = str(dec).replace(".", "").replace("-", "min_")
+            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
+            if source in dense_list:
+                IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/{IRF_cuts_type}/dec_{dec}_high_density/"    
+            if (not os.path.isdir(IRFdir)) or (
+                len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
+            ):
+                print(f"no IRF availables in {IRFdir}")
+                continue
 
             slurm = slurm_lines(
                 queue="short",
-                job_name=f"{process_name}_DL2_to_DL3",
+                job_name=f"{source}_DL2_to_DL3",
+                nice_parameter=nice,
                 array=process_size,
-                mem="1g",
-                out_name=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/slurm-%x.%A_%a",
+                mem="50g",
+                out_name=f"{outdir}/slurm-%x.%A_%a",
             )
             rc = rc_lines(
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                out="$OUTPUTDIR/logs/list",
+                out=f"{outdir}/list_{nsb}_{period}_{night}",
             )
+            out_file = outdir.rstrip("/logs")
 
             lines = (
                 slurm
                 + [
                     f"SAMPLE_LIST=($(<{file}))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                    f"export LOG={output}/logs",
-                    "/DL2_to_DL3_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {output} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
+                    f"export LOG={outdir}",
+                    "/DL2_to_DL3_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                    f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {out_file} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
                 ]
                 + rc
             )
-            with open(
-                f'{source}_DL2_to_DL3_{nsb}_{period}_{night.split("/")[-1]}.sh', "w"
-            ) as f:
+
+            with open(f"{source}_DL2_to_DL3_{nsb}_{period}_{night}.sh", "w") as f:
                 f.writelines(lines)
 
 
 def main():
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
     parser = argparse.ArgumentParser()
@@ -180,7 +210,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
+        default="./config_auto_MCP.yaml",
         help="Path to a configuration file",
     )
 
@@ -206,17 +236,23 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
     IRF_dir = config["directories"]["IRF"]
 
-    print("***** Generating file config_DL3.yaml...")
-    print("***** This file can be found in ", target_dir)
-
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     env_name = config["general"]["env_name"]
     config_file = config["general"]["base_config_file"]
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
     MC_v = config["directories"]["MC_version"]
+    if MC_v == "":
+        MC_v = __version__
+    IRF_cuts_type = config["general"]["IRF_cuts_type"]
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
 
-    config_db = resource_file("database_config.yaml")
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"
@@ -237,21 +273,41 @@ def main():
     for source_name in source_list:
         wobble_offset = df_LST[df_LST.source == source_name].iloc[0]["wobble_offset"]
         if str(wobble_offset) != "[0.40]":
+            print(f"wobble offset is not (or not always) 0.40 for {source_name}")
             continue
         # cp the .txt files from DL1 stereo anaysis to be used again.
-        DL1stereo_Nights = np.sort(
-            glob.glob(f"{target_dir}/v{__version__}/{source_name}/DL1Stereo/Merged/*")
+        DL2_Nights = np.sort(
+            glob.glob(f"{target_dir}/v{in_version}/{source_name}/DL2/*")
         )
-        for night in DL1stereo_Nights:
-            File_list = glob.glob(f"{night}/logs/ST*.txt")
-            night_date = night.split("/")[-1]
-            for file in File_list:
-                cp_dir = f"{target_dir}/v{__version__}/{source_name}/DL2/{night_date}"
-                os.system(f"cp {file} {cp_dir}")
+        LST_runs_and_dates = f"{source_name}_LST_runs.txt"
+        LST_date = []
+        for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
+            LST_date.append(str(i[0].replace("_", "")))
+        LST_date = list(set(LST_date))
+
+        for night in DL2_Nights:
+            nightdate = night.split("/")[-1]
+            if nightdate in LST_date:
+                outdir = (
+                    f"{target_dir}/v{__version__}/{source_name}/DL3/{nightdate}/logs"
+                )
+                os.makedirs(outdir, exist_ok=True)
+                File_list = glob.glob(f"{night}/logs/ST*.txt")
+                for file in File_list:
+                    os.system(f"cp {file} {outdir}")
 
         ra = df_LST[df_LST.source == source_name].iloc[0]["ra"]
         dec = df_LST[df_LST.source == source_name].iloc[0]["dec"]
+        if np.isnan(dec) or np.isnan(ra):
+            print(f"source Ra and/or Dec is NaN for {source_name}")
+            continue
+        print("***** Generating file config_DL3.yaml...")
+        print(
+            f"***** This file can be found in {target_dir}/v{__version__}/{source_name}"
+        )
         configuration_DL3(target_dir, source_name, config_file, ra, dec)
+
+        print("***** Generating bash scripts...")
         DL2_to_DL3(
             target_dir,
             source_name,
@@ -260,7 +316,11 @@ def main():
             df_LST,
             cluster,
             MC_v,
-            dense_list
+            in_version,
+            nice_parameter,
+            IRF_cuts_type,
+            LST_date,
+            dense_list,
         )
         list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
         if len(list_of_dl3_scripts) < 1:

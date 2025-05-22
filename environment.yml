@@ -6,7 +6,7 @@ dependencies:
   - python=3.11
   - pip
   - numpy
-  - astropy=5
+  - astropy-base=5
   - black
   - nbsphinx
   - ctapipe=0.19.2
@@ -27,7 +27,7 @@ dependencies:
   - pre-commit
   - toml
   - tomli
-  - protobuf=3.20
+  - protozfits=2.5
   - pydata-sphinx-theme
   - pyparsing
   - psutil
@@ -48,4 +48,4 @@ dependencies:
   - pymongo
   - pyirf~=0.10.0
   - ctapipe-io-magic~=0.5.4
-  - lstchain~=0.10.5
+  - lstchain>=0.10.5,<0.10.12

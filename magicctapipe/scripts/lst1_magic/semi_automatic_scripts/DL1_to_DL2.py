@@ -1,5 +1,5 @@
 """
-This script creates the bashscripts necessary to apply "lst1_magic_dl1_stereo_to_dl2.py"
+This script creates the bash scripts necessary to apply "lst1_magic_dl1_stereo_to_dl2.py"
 to the DL1 stereo data. It also creates new subdirectories associated with
 the data level 2.
 
@@ -32,9 +32,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def ST_NSB_List(
-    target_dir, nsb_list, nsb_limit, source, df_LST, ST_list, ST_begin, ST_end
-):
+def ST_NSB_List(target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version):
     """
     This function creates the lists of runs separeted by run period and NSB level.
 
@@ -44,36 +42,45 @@ def ST_NSB_List(
         Path to the working directory
     nsb_list : list
         List of the MC NSB values
-    nsb_limit : list
-        Edges of the NSB binning
     source : str
         Source name
     df_LST : :class:`pandas.DataFrame`
         Dataframe collecting the LST1 runs (produced by the create_LST_table script)
-    ST_list : list
-        List of the observastion periods
-    ST_begin : list
-        List of beginning dates for the observation periods
-    ST_end : list
-        List of ending dates for the observation periods
+    MAGIC_obs_periods : dict
+        Dictionary of MAGIC observation periods (key = name of period, value = list of begin/end dates)
+    version : str
+        Version of the input (stereo subruns) data
     """
+    width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
+    nsb_limit = [-0.01] + list(
+        nsb_list + width
+    )  # arbitrary small negative number so that 0.0 > nsb_limit[0]
 
     # Loops over all runs of all nights
     Nights_list = np.sort(
-        glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
+        glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
     )
     for night in Nights_list:
         # Night period
+
         night_date = night.split("/")[-1]
-        date_lst = night_date[:4] + "_" + night_date[4:6] + "_" + night_date[6:8]
+        outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
+        os.makedirs(outdir, exist_ok=True)
+
         date_magic = datetime.datetime.strptime(
-            date_lst, "%Y_%m_%d"
+            night_date, "%Y%m%d"
         ) + datetime.timedelta(days=1)
-        for p in range(len(ST_begin)):
-            if (date_magic >= datetime.datetime.strptime(ST_begin[p], "%Y_%m_%d")) and (
-                date_magic <= datetime.datetime.strptime(ST_end[p], "%Y_%m_%d")
-            ):
-                period = ST_list[p]
+        period = None
+        for p_name, date_list in MAGIC_obs_periods.items():
+            for date1, date2 in date_list:
+                date_init = datetime.datetime.strptime(date1, "%Y_%m_%d")
+                date_end = datetime.datetime.strptime(date2, "%Y_%m_%d")
+                if (date_magic >= date_init) and (date_magic <= date_end):
+                    period = p_name
+
+        if period is None:
+            print(f"Could not identify MAGIC period for LST night {night_date}")
+            continue
 
         Run_list = glob.glob(f"{night}/*.h5")
         for Run in Run_list:
@@ -82,18 +89,21 @@ def ST_NSB_List(
             run_LST_id = run_str.lstrip("Run")
             nsb = df_LST[df_LST["LST1_run"] == run_LST_id]["nsb"].tolist()[0]
             # rounding the NSB to the nearest MC nsb value
-            for j in range(0, len(nsb_list) - 1):
+            for j in range(0, len(nsb_list)):
                 if (nsb <= nsb_limit[j + 1]) & (nsb > nsb_limit[j]):
                     nsb = nsb_list[j]
+
             # Writing on output .txt file
             if nsb <= nsb_limit[-1]:
-                with open(f"{night}/logs/{period}_{nsb}.txt", "a+") as file:
+                with open(
+                    f"{outdir}/{period}_{nsb}_{night_date}.txt",
+                    "a+",
+                ) as file:
                     file.write(f"{Run}\n")
 
 
-
 def bash_DL1Stereo_to_DL2(
-    target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v, dense_list
+    target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v, version, nice, dense_list
 ):
     """
     This function generates the bashscript for running the DL1Stereo to DL2 analisys.
@@ -114,6 +124,10 @@ def bash_DL1Stereo_to_DL2(
         Dataframe collecting the LST1 runs (produced by the create_LST_table script)
     MC_v : str
         Version of MC processing
+    version : str
+        Version of the input (stereo subruns) data
+    nice : int or None
+        Job priority
     dense_list : list
         List of sources that use the dense MC training line
     """
@@ -122,55 +136,75 @@ def bash_DL1Stereo_to_DL2(
             "Automatic processing not implemented for the cluster indicated in the config file"
         )
         return
+
     process_name = source
+    LST_runs_and_dates = f"{source}_LST_runs.txt"
+    LST_date = []
+    for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
+        LST_date.append(str(i[0].replace("_", "")))
+    LST_date = list(set(LST_date))
     Nights_list = np.sort(
-        glob.glob(f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/*")
+        glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
     )
+
     for night in Nights_list:
-        File_list = glob.glob(f"{night}/logs/ST*.txt")
         night_date = night.split("/")[-1]
-        os.makedirs(
-            f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs", exist_ok=True
-        )
+        outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
+        File_list = glob.glob(f"{outdir}/ST*.txt")
+        night_date = night.split("/")[-1]
+        if str(night_date) not in LST_date:
+            continue
+
         for file in File_list:
             with open(file, "r") as f:
                 process_size = len(f.readlines()) - 1
             if process_size < 0:
                 continue
-            nsb = file.split("/")[-1].split("_")[-1][:3]
+            nsb = file.split("/")[-1].split("_")[1]
             period = file.split("/")[-1].split("_")[0]
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
-            dec = str(dec).replace(".", "")
-            RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}/"
+            if np.isnan(dec):
+                print(f"MC_dec is NaN for {source}")
+                continue
+            dec = str(dec).replace(".", "").replace("-", "min_")
+
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
             if source in dense_list:
                 RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}_high_density/"
-            if (not os.path.isdir(RFdir)) or (len(os.listdir(RFdir)) == 0):
+            
+            if (not os.path.isdir(RFdir)) or (len(glob.glob(f"{RFdir}/*joblib")) < 3):
+                print(f"no RF availables in {RFdir}")
                 continue
+            rfsize = 0
+            for rffile in glob.glob(f"{RFdir}/disp*joblib"):
+                rfsize = rfsize + os.path.getsize(rffile) / (1024 * 1024 * 1024)
+            rfsize = (rfsize * 1.75) + 2
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{process_name}_DL1_to_DL2",
+                nice_parameter=nice,
                 array=process_size,
-                mem="50g",
-                out_name=f"{target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs/slurm-%x.%A_%a",
+                mem=f"{int(rfsize)}g",
+                out_name=f"{outdir}/slurm-%x.%A_%a",
             )
             rc = rc_lines(
                 store="$SAMPLE ${SLURM_ARRAY_JOB_ID} ${SLURM_ARRAY_TASK_ID}",
-                out="$OUTPUTDIR/logs/list",
+                out=f"{outdir}/list_{nsb}_{period}",
             )
-
+            out_file = outdir.rstrip("/logs")
             lines = (
                 slurm
                 + [
                     f"SAMPLE_LIST=($(<{file}))\n",
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
-                    f"export LOG={target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]}/logs",
-                    "/DL1_to_DL2_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {target_dir}/v{__version__}/{source}/DL2/{night.split('/')[-1]} >$LOG 2>&1\n\n",
+                    f"export LOG={outdir}",
+                    "/DL1_to_DL2_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
+                    f"conda run -n {env_name} lst1_magic_dl1_stereo_to_dl2 --input-file-dl1 $SAMPLE --input-dir-rfs {RFdir} --output-dir {out_file} >$LOG 2>&1\n\n",
                 ]
                 + rc
             )
             with open(
-                f'{source}_DL1_to_DL2_{night_date}_{file.split("/")[-1].rstrip("txt")}sh',
+                f'{source}_DL1_to_DL2_{file.split("/")[-1].rstrip("txt")}sh',
                 "w",
             ) as f:
                 f.writelines(lines)
@@ -178,7 +212,7 @@ def bash_DL1Stereo_to_DL2(
 
 def main():
     """
-    Here we read the config_general.yaml file and call the functions defined above.
+    Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
     parser = argparse.ArgumentParser()
@@ -187,7 +221,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
+        default="./config_auto_MCP.yaml",
         help="Path to a configuration file",
     )
     parser.add_argument(
@@ -214,22 +248,25 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
     RF_dir = config["directories"]["RF"]
     env_name = config["general"]["env_name"]
-    ST_list = config["needed_parameters"]["ST_list"]
-    ST_begin = config["needed_parameters"]["ST_begin"]
-    ST_end = config["needed_parameters"]["ST_end"]
-    nsb_list = config["needed_parameters"]["nsb"]
-    width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
-    width.append(0.25)
-    nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
-    nsb_limit.insert(0, 0)
+    MAGIC_obs_periods = config["expert_parameters"]["MAGIC_obs_periods"]
+    nsb_list = config["expert_parameters"]["nsb"]
+
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     MC_v = config["directories"]["MC_version"]
+    if MC_v == "":
+        MC_v = __version__
 
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
+    nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     # LST dataframe
-    config_db = resource_file("database_config.yaml")
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"
@@ -251,16 +288,23 @@ def main():
         ST_NSB_List(
             target_dir,
             nsb_list,
-            nsb_limit,
             source_name,
             df_LST,
-            ST_list,
-            ST_begin,
-            ST_end,
+            MAGIC_obs_periods,
+            in_version,
         )
 
         bash_DL1Stereo_to_DL2(
-            target_dir, source_name, env_name, cluster, RF_dir, df_LST, MC_v, dense_list
+            target_dir,
+            source_name,
+            env_name,
+            cluster,
+            RF_dir,
+            df_LST,
+            MC_v,
+            in_version,
+            nice_parameter,
+            dense_list,
         )
         list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
         if len(list_of_dl2_scripts) < 1:
