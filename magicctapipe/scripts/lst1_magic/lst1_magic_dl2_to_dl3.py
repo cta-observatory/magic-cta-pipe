@@ -30,7 +30,7 @@ import numpy as np
 import yaml
 from astropy import units as u
 from astropy.coordinates import Angle
-from astropy.coordinates.angle_utilities import angular_separation
+from astropy.coordinates.angles.utils import angular_separation
 from astropy.io import fits
 from astropy.table import QTable
 from pyirf.cuts import evaluate_binned_cut
