@@ -68,6 +68,7 @@ import pandas as pd
 import yaml
 from astropy import units as u
 from astropy.table import vstack
+from astropy.coordinates import EarthLocation
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table, write_table
 from lstchain.io import HDF5_ZSTD_FILTERS
@@ -94,6 +95,8 @@ SEC2NSEC = Decimal("1e9")
 
 # The final digit of timestamps
 TIME_ACCURACY = 100 * u.ns
+
+REFERENCE_LOCATION = EarthLocation.of_site('lapalma')
 
 
 def telescope_positions(config):
@@ -616,7 +619,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             )
 
     subarray_lst_magic = SubarrayDescription(
-        "LST-MAGIC-Array", TEL_POSITIONS, tel_descriptions
+        "LST-MAGIC-Array", TEL_POSITIONS, tel_descriptions, REFERENCE_LOCATION
     )
 
     # Save the subarray description
