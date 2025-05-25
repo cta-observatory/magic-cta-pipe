@@ -67,8 +67,8 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
-from astropy.table import vstack
 from astropy.coordinates import EarthLocation
+from astropy.table import vstack
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table, write_table
 from lstchain.io import HDF5_ZSTD_FILTERS
@@ -96,7 +96,7 @@ SEC2NSEC = Decimal("1e9")
 # The final digit of timestamps
 TIME_ACCURACY = 100 * u.ns
 
-REFERENCE_LOCATION = EarthLocation.of_site('lapalma')
+REFERENCE_LOCATION = EarthLocation.of_site("lapalma")
 
 
 def telescope_positions(config):

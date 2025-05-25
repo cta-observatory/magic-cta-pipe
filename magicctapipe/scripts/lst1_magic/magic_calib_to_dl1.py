@@ -45,8 +45,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 from astropy import units as u
-from astropy.coordinates import angular_separation, EarthLocation    
-
+from astropy.coordinates import EarthLocation, angular_separation
 from ctapipe.containers import DL1CameraContainer
 from ctapipe.image import (
     concentration_parameters,
@@ -87,7 +86,7 @@ TEL_COMBINATIONS = {
     "M1_M2": [2, 3],  # combo_type = 3
 }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
-REFERENCE_LOCATION = EarthLocation.of_site('lapalma')
+REFERENCE_LOCATION = EarthLocation.of_site("lapalma")
 
 
 def magic_calib_to_dl1(
@@ -207,7 +206,10 @@ def magic_calib_to_dl1(
         }
 
         subarray_magic = SubarrayDescription(
-            "MAGIC-LST-Array", tel_positions_magic_lst, tel_descriptions_magic_lst, REFERENCE_LOCATION,
+            "MAGIC-LST-Array",
+            tel_positions_magic_lst,
+            tel_descriptions_magic_lst,
+            REFERENCE_LOCATION,
         )
     else:
         tel_positions_magic = {
@@ -221,7 +223,10 @@ def magic_calib_to_dl1(
         }
 
         subarray_magic = SubarrayDescription(
-            "MAGIC-Array", tel_positions_magic, tel_descriptions_magic, REFERENCE_LOCATION,
+            "MAGIC-Array",
+            tel_positions_magic,
+            tel_descriptions_magic,
+            REFERENCE_LOCATION,
         )
 
     save_images = config.get("save_images", False)
