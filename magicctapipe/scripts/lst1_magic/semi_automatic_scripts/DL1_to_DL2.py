@@ -148,7 +148,7 @@ def bash_DL1Stereo_to_DL2(
     for night in Nights_list:
         night_date = night.split("/")[-1]
         outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
-        File_list = glob.glob(f"{outdir}/ST*.txt")
+        File_list = glob.glob(f"{outdir}/*.txt")
         night_date = night.split("/")[-1]
         if str(night_date) not in LST_date:
             continue
