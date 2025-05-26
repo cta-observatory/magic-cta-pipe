@@ -7,7 +7,6 @@ Usage:
 $ create_LST_table (-b YYYYMMDD -e YYYYMMDD)
 """
 
-import argparse
 import os
 
 import numpy as np
@@ -15,6 +14,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parser
 
 
 def main():
@@ -23,30 +23,20 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--begin-date",
-        "-b",
-        dest="begin",
-        type=int,
-        default=0,
-        help="First date to update database (YYYYMMDD)",
-    )
-    parser.add_argument(
-        "--end-date",
-        "-e",
-        dest="end",
-        type=int,
-        default=0,
-        help="End date to update database (YYYYMMDD)",
-    )
-
+    parser = auto_MCP_parser(add_dates=True)
     args = parser.parse_args()
-    config_file = resource_file("database_config.yaml")
+    print(args)
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config_general = yaml.safe_load(f)
+
+    config = config_general["general"]["base_db_config_file"]
+    if config == "":
+        config = resource_file("database_config.yaml")
 
     with open(
-        config_file, "rb"
+        config, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 
@@ -74,6 +64,7 @@ def main():
         "MAGIC_stereo",
         "MAGIC_trigger",
         "MAGIC_HV",
+        "perfect_match_time_min",
     ]
     df_cut = df[needed_cols]
 
@@ -89,16 +80,9 @@ def main():
             out_h5,
             key=out_key,
         )
-        if "ra" in df_old:
-            df_cut["ra"] = np.nan
-        if "dec" in df_old:
-            df_cut["dec"] = np.nan
-        if "MC_dec" in df_old:
-            df_cut["MC_dec"] = np.nan
-        if "point_source" in df_old:
-            df_cut["point_source"] = np.nan
-        if "wobble_offset" in df_old:
-            df_cut["wobble_offset"] = np.nan
+        for field in ["ra", "dec", "MC_dec", "point_source", "wobble_offset"]:
+            if field in df_old:
+                df_cut[field] = np.nan
         df_cut = pd.concat([df_old, df_cut]).drop_duplicates(
             subset="LST1_run", keep="first"
         )

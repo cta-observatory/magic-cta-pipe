@@ -15,7 +15,6 @@ In this path, 'tel_id' refers to the telescope ID, which must be either 1 or 2.
 'YYYY', 'MM', and 'DD' specify the date.
 """
 
-import argparse
 import os
 from datetime import datetime, timedelta
 
@@ -24,6 +23,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["fix_lists_and_convert", "table_magic_runs", "update_tables"]
 
@@ -217,7 +217,7 @@ def main():
 
     """Main function."""
 
-    parser = argparse.ArgumentParser()
+    parser = auto_MCP_parser()
 
     date_min_default = "20191101"
     current_datetime = datetime.now()
@@ -242,10 +242,16 @@ def main():
     )
 
     args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config = yaml.safe_load(f)
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
 
-    config = resource_file("database_config.yaml")
+        config_db = resource_file("database_config.yaml")
 
-    with open(config, "rb") as bf:
+    with open(config_db, "rb") as bf:
         config_dict = yaml.safe_load(bf)
 
     df_path = config_dict["database_paths"]["MAGIC+LST1"]

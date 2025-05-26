@@ -6,7 +6,6 @@ One txt file per run is created here: its content is a (date,run,NSB) n-tuple an
 Usage:
 $ LSTnsb (-c MCP_config) -i run -d date -l lstchain_config (-s N_subruns)
 """
-import argparse
 import glob
 import logging
 
@@ -15,6 +14,8 @@ import pandas as pd
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 from magicctapipe.io import resource_file
+
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["nsb"]
 
@@ -135,15 +136,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="../config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
+    parser = auto_MCP_parser()
     parser.add_argument(
         "--input-run",
         "-i",
@@ -182,16 +175,14 @@ def main():
     date = args.day
     denominator = args.denominator
     lst_config = args.lst_conf
-    simtel = config["general"]["simtel_nsb"]
-    nsb_list = config["general"]["nsb"]
+    simtel = config["expert_parameters"]["simtel_nsb"]
+    nsb_list = config["expert_parameters"]["nsb"]
     lst_version = config["general"]["LST_version"]
-    width = [a / 2 - b / 2 for a, b in zip(nsb_list[1:], nsb_list[:-1])]
-    width.append(0.25)
-    nsb_limit = [a + b for a, b in zip(nsb_list[:], width[:])]
-    nsb_limit.insert(
-        0, -0.01
+    lst_tailcut = config["expert_parameters"]["LST_tailcut"]
+    width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
+    nsb_limit = [-0.01] + list(
+        nsb_list + width
     )  # arbitrary small negative number so that 0.0 > nsb_limit[0]
-
     LST_files = np.sort(glob.glob(f"nsb_LST_*_{run_number}.txt"))
 
     if len(LST_files) == 1:

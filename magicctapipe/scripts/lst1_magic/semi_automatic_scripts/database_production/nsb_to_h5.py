@@ -15,6 +15,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["collect_nsb"]
 
@@ -57,6 +58,7 @@ def collect_nsb(df_LST):
             "MAGIC_stereo",
             "MAGIC_trigger",
             "MAGIC_HV",
+            "perfect_match_time_min",
             "nsb",
             "lstchain_versions",
             "last_lstchain_file",
@@ -73,10 +75,13 @@ def main():
     """
     Main function
     """
-    config_file = resource_file("database_config.yaml")
+    config = auto_MCP_parse_config()
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
-        config_file, "rb"
+        config_db, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
 

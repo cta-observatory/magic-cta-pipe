@@ -7,7 +7,6 @@ Usage:
 $ stereo_events (-c config.yaml)
 """
 
-import argparse
 import glob
 import logging
 import os
@@ -23,6 +22,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["configfile_stereo", "bash_stereo"]
 
@@ -91,7 +91,11 @@ def bash_stereo(target_dir, source, env_name, cluster, version, nice):
     process_name = source
 
     coincidence_DL1_dir = f"{target_dir}/v{version}/{source}"
-
+    LST_runs_and_dates = f"{source}_LST_runs.txt"
+    LST_date = []
+    for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
+        LST_date.append(str(i[0].replace("_", "")))
+    LST_date = list(set(LST_date))
     listOfNightsLST = np.sort(glob.glob(f"{coincidence_DL1_dir}/DL1Coincident/*"))
     if cluster != "SLURM":
         logger.warning(
@@ -99,7 +103,10 @@ def bash_stereo(target_dir, source, env_name, cluster, version, nice):
         )
         return
     for nightLST in listOfNightsLST:
+
         night = nightLST.split("/")[-1]
+        if str(night) not in LST_date:
+            continue
         stereoDir = f"{target_dir}/v{__version__}/{source}/DL1Stereo/{night}"
         os.makedirs(f"{stereoDir}/logs", exist_ok=True)
         if not os.listdir(f"{nightLST}"):
@@ -150,22 +157,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
-
+    config = auto_MCP_parse_config()
     target_dir = Path(config["directories"]["workspace_dir"])
 
     env_name = config["general"]["env_name"]
