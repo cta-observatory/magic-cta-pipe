@@ -47,3 +47,6 @@ dependencies:
   - uproot
   - pymongo
   - pyirf
+  - pip:
+      - lstchain
+      - git+https://github.com/Elisa-Visentin/ctapipe_io_magic@ctapipe_0.25#egg=ctapipe_io_magic
