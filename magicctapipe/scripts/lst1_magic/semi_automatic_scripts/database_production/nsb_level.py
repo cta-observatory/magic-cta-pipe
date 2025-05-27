@@ -7,7 +7,6 @@ Usage:
 $ nsb_level (-c config.yaml -b YYYY_MM_DD -e YYYY_MM_DD)
 """
 
-import argparse
 import glob
 import json
 import logging
@@ -20,8 +19,7 @@ import yaml
 
 from magicctapipe.io import resource_file
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
-
-from .lstchain_version import lstchain_versions
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["bash_scripts"]
 
@@ -74,15 +72,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="../config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
+    parser = auto_MCP_parser()
     parser.add_argument(
         "--begin-date",
         "-b",
@@ -102,7 +92,9 @@ def main():
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    config_db = resource_file("database_config.yaml")
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"
@@ -114,13 +106,13 @@ def main():
     env_name = config["general"]["env_name"]
 
     cluster = config["general"]["cluster"]
-
+    lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     df_LST = pd.read_hdf(
         LST_h5,
         key=LST_key,
     )
     lstchain_v = config["general"]["LST_version"]
-    lstchain_modified = config["general"]["lstchain_modified_config"]
+    lstchain_modified = config["expert_parameters"]["lstchain_modified_config"]
     conda_path = os.environ["CONDA_PREFIX"]
     lst_config_orig = (
         str(conda_path)

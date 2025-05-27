@@ -4,7 +4,6 @@ This scripts merges LST DL1Stereo subruns into runs
 Usage:
 $ merge_stereo (-c config_file.yaml)
 """
-import argparse
 import glob
 import logging
 import os
@@ -12,13 +11,13 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-import yaml
 
 from magicctapipe import __version__
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["MergeStereo"]
 
@@ -27,7 +26,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def MergeStereo(target_dir, env_name, source, cluster, nice):
+def MergeStereo(target_dir, env_name, source, cluster, version, nice):
     """
     This function creates the bash scripts to run merge_hdf_files.py in all DL1Stereo subruns.
 
@@ -41,12 +40,19 @@ def MergeStereo(target_dir, env_name, source, cluster, nice):
         Name of the target
     cluster : str
         Cluster system
+    version : str
+        Version of the input (stereo subruns) data
     nice : int or None
         Job priority
     """
 
     process_name = source
-    stereo_DL1_dir = f"{target_dir}/v{__version__}/{source}"
+    stereo_DL1_dir = f"{target_dir}/v{version}/{source}"
+    LST_runs_and_dates = f"{source}_LST_runs.txt"
+    LST_date = []
+    for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
+        LST_date.append(str(i[0].replace("_", "")))
+    LST_date = list(set(LST_date))
     listOfNightsLST = np.sort(glob.glob(f"{stereo_DL1_dir}/DL1Stereo/*"))
     if cluster != "SLURM":
         logger.warning(
@@ -55,7 +61,11 @@ def MergeStereo(target_dir, env_name, source, cluster, nice):
         return
     for nightLST in listOfNightsLST:
         night = nightLST.split("/")[-1]
-        stereoMergeDir = f"{stereo_DL1_dir}/DL1Stereo/Merged/{night}"
+        if str(night) not in LST_date:
+            continue
+        stereoMergeDir = (
+            f"{target_dir}/v{__version__}/{source}/DL1Stereo/Merged/{night}"
+        )
         os.makedirs(f"{stereoMergeDir}/logs", exist_ok=True)
 
         if len(glob.glob(f"{nightLST}/dl1_stereo*.h5")) < 1:
@@ -89,22 +99,7 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
-
+    config = auto_MCP_parse_config()
     target_dir = Path(config["directories"]["workspace_dir"])
 
     env_name = config["general"]["env_name"]
@@ -112,6 +107,9 @@ def main():
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
 
     if source_in is None:
@@ -125,7 +123,9 @@ def main():
     for source_name in source_list:
 
         print("***** Merging DL1Stereo files run-wise...")
-        MergeStereo(target_dir, env_name, source_name, cluster, nice_parameter)
+        MergeStereo(
+            target_dir, env_name, source_name, cluster, in_version, nice_parameter
+        )
 
         list_of_merge = glob.glob(f"{source_name}_StereoMerge_*.sh")
         if len(list_of_merge) < 1:
