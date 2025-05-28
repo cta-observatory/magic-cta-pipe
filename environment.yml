@@ -49,4 +49,4 @@ dependencies:
   - pyirf
   - pip:
       - lstchain
-      - git+https://github.com/Elisa-Visentin/ctapipe_io_magic@ctapipe_0.25#egg=ctapipe_io_magic
+      - git+https://github.com/cta-observatory/ctapipe_io_magic@ctapipe_25
