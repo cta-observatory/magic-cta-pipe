@@ -10,7 +10,7 @@ dependencies:
   - black
   - nbsphinx
   - ctapipe>=0.25.0
-  - gammapy=1.1
+  - gammapy=1.3
   - ctaplot
   - h5py
   - ipython
