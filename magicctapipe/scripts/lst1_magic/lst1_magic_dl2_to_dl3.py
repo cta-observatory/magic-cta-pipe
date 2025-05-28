@@ -185,7 +185,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     extra_header["IRF_INTP"] = interpolation_method
 
     hdus = fits.HDUList([fits.PrimaryHDU()])
-
+    
     # Create an event HDU
     logger.info("\nCreating an event HDU...")
 
@@ -206,8 +206,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     pnt_hdu = create_pointing_hdu(event_table)
 
     hdus.append(pnt_hdu)
-
-
+    
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
     if len(irf_data["grid_points"]) > 2:
