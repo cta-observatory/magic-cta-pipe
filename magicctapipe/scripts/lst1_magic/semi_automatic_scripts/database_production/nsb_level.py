@@ -164,8 +164,10 @@ def main():
                 f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
             ):
                 tailcut.append(tail)
-        if len(tailcut)>1:
-            print(f'more than one tailcut for the latest ({max_common}) lstchain version for run {run_number}. Tailcut = {tailcut}. Skipping...')
+        if len(tailcut) > 1:
+            print(
+                f"more than one tailcut for the latest ({max_common}) lstchain version for run {run_number}. Tailcut = {tailcut}. Skipping..."
+            )
             continue
 
         df_LST.loc[

@@ -8,15 +8,15 @@ $ LSTnsb (-c MCP_config) -i run -d date -l lstchain_config (-s N_subruns)
 """
 import glob
 import logging
+import sys
 
 import numpy as np
 import pandas as pd
-import sys
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
 from magicctapipe.io import resource_file
-from magicctapipe.utils import auto_MCP_parser, NO_TAILCUT
+from magicctapipe.utils import NO_TAILCUT, auto_MCP_parser
 
 __all__ = ["nsb"]
 
