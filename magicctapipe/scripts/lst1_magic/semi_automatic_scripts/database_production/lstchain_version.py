@@ -75,11 +75,18 @@ def version_lstchain(df_LST, lstchain_versions):
                 f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut*"
             )
         ]
+        tail_file = []
         for tail in tailcut_list:
             if os.path.isfile(
                 f"/fefs/aswg/data/real/DL1/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
             ):
+                tail_file.append(tail)
                 name = f"/fefs/aswg/data/real/DL1/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
+        if len(tail_file) > 1:
+            print(
+                f"More than one tailcut for the latest ({max_version}) lstchain version for run {run}. Tailcut = {tail_file}. Skipping..."
+            )
+            continue
 
         df_LST.loc[i, "last_lstchain_file"] = name
 
