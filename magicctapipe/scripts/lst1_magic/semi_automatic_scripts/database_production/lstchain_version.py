@@ -39,14 +39,20 @@ def version_lstchain(df_LST, lstchain_versions):
         directories_version = [
             i.split("/")[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/v*")
         ]
+        tailcut_list = []
 
         for vers in directories_version:
 
-            if os.path.isfile(
-                f"/fefs/aswg/data/real/DL1/{date}/{vers}/tailcut84/dl1_LST-1.Run{run}.h5"
-            ):
-                if vers not in version:
-                    version.append(vers)
+            tailcut_list = [
+                i.split("/")[-1]
+                for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{vers}/tailcut*")
+            ]
+            for tail in tailcut_list:
+                if os.path.isfile(
+                    f"/fefs/aswg/data/real/DL1/{date}/{vers}/{tail}/dl1_LST-1.Run{run}.h5"
+                ):
+                    if vers not in version:
+                        version.append(vers)
 
         version = list(version)
         df_LST.loc[i, "lstchain_versions"] = str(version)
@@ -59,8 +65,28 @@ def version_lstchain(df_LST, lstchain_versions):
                 max_version = lstchain_versions[j]
 
         if max_version is None:
-            raise ValueError("issue with lstchain versions")
-        name = f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut84/dl1_LST-1.Run{run}.h5"
+            print(
+                f"issue with lstchain versions for run {run}\nAvailable versions: {version}, allowed versions: {lstchain_versions}\n\n\n"
+            )
+            continue
+        tailcut_list = [
+            i.split("/")[-1]
+            for i in glob.glob(
+                f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut*"
+            )
+        ]
+        tail_file = []
+        for tail in tailcut_list:
+            if os.path.isfile(
+                f"/fefs/aswg/data/real/DL1/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
+            ):
+                tail_file.append(tail)
+                name = f"/fefs/aswg/data/real/DL1/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
+        if len(tail_file) > 1:
+            print(
+                f"More than one tailcut for the latest ({max_version}) lstchain version for run {run}. Tailcut = {tail_file}. Skipping..."
+            )
+            continue
 
         df_LST.loc[i, "last_lstchain_file"] = name
 

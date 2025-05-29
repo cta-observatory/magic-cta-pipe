@@ -8,13 +8,15 @@ $ LSTnsb (-c MCP_config) -i run -d date -l lstchain_config (-s N_subruns)
 """
 import glob
 import logging
+import sys
 
 import numpy as np
 import pandas as pd
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
-from magicctapipe.utils import auto_MCP_parser
+from magicctapipe.io import resource_file
+from magicctapipe.utils import NO_TAILCUT, auto_MCP_parser
 
 __all__ = ["nsb"]
 
@@ -177,7 +179,6 @@ def main():
     simtel = config["expert_parameters"]["simtel_nsb"]
     nsb_list = config["expert_parameters"]["nsb"]
     lst_version = config["general"]["LST_version"]
-    lst_tailcut = config["expert_parameters"]["LST_tailcut"]
     width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
     nsb_limit = [-0.01] + list(
         nsb_list + width
@@ -187,8 +188,30 @@ def main():
     if len(LST_files) == 1:
         logger.info(f"Run {run_number} already processed")
         return
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
-    inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict_db = yaml.safe_load(fc)
+
+    LST_h5 = config_dict_db["database_paths"]["LST"]
+    LST_key = config_dict_db["database_keys"]["LST"]
+    df_LST = pd.read_hdf(
+        LST_h5,
+        key=LST_key,
+    )
+
+    tailcut = df_LST[df_LST.LST1_run == run_number].iloc[0]["tailcut"]
+    if tailcut == "":
+        logger.warning(
+            f"No tailcut information in the LST database for run {run_number}. Please check directories on the cluster and database"
+        )
+        sys.exit(NO_TAILCUT)
+
+    inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number, denominator)
     if len(noise) == 0:

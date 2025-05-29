@@ -63,6 +63,7 @@ def collect_nsb(df_LST):
             "lstchain_versions",
             "last_lstchain_file",
             "processed_lstchain_file",
+            "tailcut",
             "error_code_nsb",
         ]
     ]
@@ -96,7 +97,9 @@ def main():
     df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
 
     df_new.loc[df_new["error_code_nsb"].isna(), "error_code_nsb"] = "1"
-
+    df_new.loc[
+        (df_new["error_code_nsb"].isna()) & (df_new["tailcut"] == ""), "error_code_nsb"
+    ] = "3"
     df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
     df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
 

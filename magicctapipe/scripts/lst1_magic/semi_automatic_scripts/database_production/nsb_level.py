@@ -148,15 +148,32 @@ def main():
         max_common = common_v[-1]
 
         if lstchain_v != str(max_common):
-
             continue
 
         run_number = row["LST1_run"]
         date = row["DATE"]
 
+        tailcut = []
+        tailcut_list = [
+            i.split("/")[-1]
+            for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut*")
+        ]
+
+        for tail in tailcut_list:
+            if os.path.isfile(
+                f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
+            ):
+                tailcut.append(tail)
+        if len(tailcut) > 1:
+            print(
+                f"more than one tailcut for the latest ({max_common}) lstchain version for run {run_number}. Tailcut = {tailcut}. Skipping..."
+            )
+            continue
+
         df_LST.loc[
             i, "processed_lstchain_file"
-        ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
+        ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tailcut[0]}/dl1_LST-1.Run{run_number}.h5"
+        df_LST.loc[i, "tailcut"] = str(tailcut[0])
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
         bash_scripts(run_number, date, args.config_file, env_name, cluster, lst_config)
@@ -165,7 +182,7 @@ def main():
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob("nsb_*_run_*.sh"))
 
-    if len(list_of_bash_scripts) < 1:
+    if len(list_of_bash_scripts) == 0:
         logger.warning(
             "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input dates"
         )
