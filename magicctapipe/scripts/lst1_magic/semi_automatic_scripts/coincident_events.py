@@ -78,7 +78,15 @@ def configfile_coincidence(target_dir, source_name, config_file):
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, cluster, version, nice, df_LST
+    target_dir,
+    LST_runs,
+    source_name,
+    LST_version,
+    env_name,
+    cluster,
+    version,
+    nice,
+    df_LST,
 ):
     """
     This function links the LST data paths to the working directory and creates bash scripts.

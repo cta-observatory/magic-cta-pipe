@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
-from magicctapipe.io import resource_file
 
+from magicctapipe.io import resource_file
 from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["nsb"]
@@ -178,7 +178,6 @@ def main():
     simtel = config["expert_parameters"]["simtel_nsb"]
     nsb_list = config["expert_parameters"]["nsb"]
     lst_version = config["general"]["LST_version"]
-    lst_tailcut = config["expert_parameters"]["LST_tailcut"]
     width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
     nsb_limit = [-0.01] + list(
         nsb_list + width
@@ -204,7 +203,9 @@ def main():
 
     tailcut = df_LST[df_LST.LST1_run == run_number].iloc[0]["tailcut"]
     if tailcut == "":
-        logger.warning(f'no tailcut information in the LST database for run {run_number}. Please check directories on the cluster and database')
+        logger.warning(
+            f"no tailcut information in the LST database for run {run_number}. Please check directories on the cluster and database"
+        )
         return
 
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{tailcut}"

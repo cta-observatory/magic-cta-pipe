@@ -146,7 +146,7 @@ def main():
         common_v = [value for value in lstchain_versions if value in list_v]
 
         max_common = common_v[-1]
-        
+
         if lstchain_v != str(max_common):
 
             continue
@@ -165,7 +165,7 @@ def main():
                 f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
             ):
                 tailcut = str(tail)
-        
+
         df_LST.loc[
             i, "processed_lstchain_file"
         ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tailcut}/dl1_LST-1.Run{run_number}.h5"
@@ -177,7 +177,7 @@ def main():
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob("nsb_*_run_*.sh"))
-    
+
     if len(list_of_bash_scripts) == 0:
         logger.warning(
             "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input dates"
@@ -192,7 +192,7 @@ def main():
         subset="LST1_run", keep="first"
     )
     df_LST = df_LST.sort_values(by=["DATE", "source", "LST1_run"])
-    
+
     launch_jobs = ""
     for n, run in enumerate(list_of_bash_scripts):
         launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"

@@ -97,7 +97,9 @@ def main():
     df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
 
     df_new.loc[df_new["error_code_nsb"].isna(), "error_code_nsb"] = "1"
-    df_new.loc[(df_new["error_code_nsb"].isna())&(df_new["tailcut"]==""), "error_code_nsb"] = "3"
+    df_new.loc[
+        (df_new["error_code_nsb"].isna()) & (df_new["tailcut"] == ""), "error_code_nsb"
+    ] = "3"
     df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
     df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
 
