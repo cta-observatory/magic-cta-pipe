@@ -220,7 +220,6 @@ def main():
     IRF_cuts_type = config["general"]["IRF_cuts_type"]
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
-
         config_db = resource_file("database_config.yaml")
 
     with open(

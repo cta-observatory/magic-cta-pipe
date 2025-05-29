@@ -248,7 +248,6 @@ def main():
         config = yaml.safe_load(f)
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
-
         config_db = resource_file("database_config.yaml")
 
     with open(config_db, "rb") as bf:

@@ -187,7 +187,9 @@ def main():
     if len(LST_files) == 1:
         logger.info(f"Run {run_number} already processed")
         return
-    config_db = resource_file("database_config.yaml")
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"

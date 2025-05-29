@@ -218,7 +218,6 @@ def main():
 
     config = config_general["general"]["base_db_config_file"]
     if config == "":
-
         config = resource_file("database_config.yaml")
 
     with open(config, "rb") as bf:
