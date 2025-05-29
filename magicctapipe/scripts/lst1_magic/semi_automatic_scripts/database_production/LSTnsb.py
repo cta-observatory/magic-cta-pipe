@@ -11,11 +11,12 @@ import logging
 
 import numpy as np
 import pandas as pd
+import sys
 import yaml
 from lstchain.image.modifier import calculate_noise_parameters
 
 from magicctapipe.io import resource_file
-from magicctapipe.utils import auto_MCP_parser
+from magicctapipe.utils import auto_MCP_parser, NO_TAILCUT
 
 __all__ = ["nsb"]
 
@@ -206,9 +207,9 @@ def main():
     tailcut = df_LST[df_LST.LST1_run == run_number].iloc[0]["tailcut"]
     if tailcut == "":
         logger.warning(
-            f"no tailcut information in the LST database for run {run_number}. Please check directories on the cluster and database"
+            f"No tailcut information in the LST database for run {run_number}. Please check directories on the cluster and database"
         )
-        return
+        sys.exit(NO_TAILCUT)
 
     inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
