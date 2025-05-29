@@ -6,7 +6,6 @@ the data level 2.
 Usage:
 $ DL1_to_DL2 -c configuration_file.yaml -d list_dense.txt
 """
-import argparse
 import datetime
 import glob
 import logging
@@ -24,6 +23,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["ST_NSB_List", "bash_DL1Stereo_to_DL2"]
 
@@ -150,7 +150,7 @@ def bash_DL1Stereo_to_DL2(
     for night in Nights_list:
         night_date = night.split("/")[-1]
         outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
-        File_list = glob.glob(f"{outdir}/ST*.txt")
+        File_list = glob.glob(f"{outdir}/*.txt")
         night_date = night.split("/")[-1]
         if str(night_date) not in LST_date:
             continue
@@ -215,15 +215,7 @@ def main():
     Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
+    parser = argparse.ArgumentParser()   
     parser.add_argument(
         "--dense_MC_sources",
         "-d",
@@ -232,19 +224,13 @@ def main():
         help="File with name of sources to be processed with the dense MC train line",
     )
 
-
     args = parser.parse_args()
     dense_list = []
     if args.dense_list is not None:
         with open(args.dense_list) as d:
             dense_list = d.readlines()
 
-
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
-
+    config = auto_MCP_parse_config()
     target_dir = Path(config["directories"]["workspace_dir"])
     RF_dir = config["directories"]["RF"]
     env_name = config["general"]["env_name"]

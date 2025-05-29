@@ -7,7 +7,6 @@ Usage:
 $ nsb_to_h5
 """
 
-import argparse
 import glob
 import logging
 
@@ -16,6 +15,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["collect_nsb"]
 
@@ -63,6 +63,7 @@ def collect_nsb(df_LST):
             "lstchain_versions",
             "last_lstchain_file",
             "processed_lstchain_file",
+            "tailcut",
             "error_code_nsb",
         ]
     ]
@@ -74,21 +75,7 @@ def main():
     """
     Main function
     """
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
+    config = auto_MCP_parse_config()
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
         config_db = resource_file("database_config.yaml")
@@ -110,7 +97,9 @@ def main():
     df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
 
     df_new.loc[df_new["error_code_nsb"].isna(), "error_code_nsb"] = "1"
-
+    df_new.loc[
+        (df_new["error_code_nsb"].isna()) & (df_new["tailcut"] == ""), "error_code_nsb"
+    ] = "3"
     df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
     df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
 

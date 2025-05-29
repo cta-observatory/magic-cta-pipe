@@ -7,7 +7,6 @@ Usage:
 $ create_LST_table (-b YYYYMMDD -e YYYYMMDD)
 """
 
-import argparse
 import os
 
 import numpy as np
@@ -15,6 +14,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parser
 
 
 def main():
@@ -23,34 +23,9 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--begin-date",
-        "-b",
-        dest="begin",
-        type=int,
-        default=0,
-        help="First date to update database (YYYYMMDD)",
-    )
-    parser.add_argument(
-        "--end-date",
-        "-e",
-        dest="end",
-        type=int,
-        default=0,
-        help="End date to update database (YYYYMMDD)",
-    )
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
+    parser = auto_MCP_parser(add_dates=True)
     args = parser.parse_args()
+    print(args)
     with open(
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
@@ -97,6 +72,7 @@ def main():
     df_cut = df_cut.assign(lstchain_versions="[]")
     df_cut = df_cut.assign(last_lstchain_file="")
     df_cut = df_cut.assign(processed_lstchain_file="")
+    df_cut = df_cut.assign(tailcut="")
     df_cut = df_cut.assign(error_code_nsb=-1)
 
     if os.path.isfile(out_h5):
