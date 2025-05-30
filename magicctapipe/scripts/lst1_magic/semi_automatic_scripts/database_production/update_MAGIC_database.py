@@ -217,29 +217,11 @@ def main():
 
     """Main function."""
 
-    parser = auto_MCP_parser()
+    parser = auto_MCP_parser(add_dates=True)
 
     date_min_default = "20191101"
     current_datetime = datetime.now()
     date_max_default = current_datetime.strftime("%Y%m%d")
-
-    parser.add_argument(
-        "--date-min",
-        "-m",
-        dest="date_min",
-        type=str,
-        default=date_min_default,
-        help="Start of the time interval (in LST convention, format YYYYMMDD).",
-    )
-
-    parser.add_argument(
-        "--date-max",
-        "-M",
-        dest="date_max",
-        type=str,
-        default=date_max_default,
-        help="End of the time interval (in LST convention, format YYYYMMDD).",
-    )
 
     args = parser.parse_args()
     with open(
@@ -268,8 +250,8 @@ def main():
 
     if file_exists:
 
-        date_min = args.date_min
-        date_max = args.date_max
+        date_min = args.begin if args.begin != 0 else date_min_default
+        date_max = args.end if args.end != 0 else date_max_default
 
         print("Updating database...")
 

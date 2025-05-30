@@ -381,7 +381,7 @@ def auto_MCP_parser(add_dates=False):
             dest="begin",
             type=int,
             default=0,
-            help="First date to update database (YYYYMMDD)",
+            help="Begin date in LST convention (YYYYMMDD)",
         )
         parser.add_argument(
             "--end-date",
@@ -389,7 +389,7 @@ def auto_MCP_parser(add_dates=False):
             dest="end",
             type=int,
             default=0,
-            help="End date to update database (YYYYMMDD)",
+            help="End date in LST convention (YYYYMMDD)",
         )
 
     return parser

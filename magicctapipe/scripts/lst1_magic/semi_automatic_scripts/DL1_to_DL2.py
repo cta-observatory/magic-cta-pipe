@@ -4,7 +4,7 @@ to the DL1 stereo data. It also creates new subdirectories associated with
 the data level 2.
 
 Usage:
-$ DL1_to_DL2 -c configuration_file.yaml
+$ DL1_to_DL2 -c configuration_file.yaml (-d list_dense.txt)
 """
 import datetime
 import glob
@@ -23,7 +23,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
-from magicctapipe.utils import auto_MCP_parse_config
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["ST_NSB_List", "bash_DL1Stereo_to_DL2"]
 
@@ -103,7 +103,16 @@ def ST_NSB_List(target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version
 
 
 def bash_DL1Stereo_to_DL2(
-    target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v, version, nice
+    target_dir,
+    source,
+    env_name,
+    cluster,
+    RF_dir,
+    df_LST,
+    MC_v,
+    version,
+    nice,
+    dense_list,
 ):
     """
     This function generates the bashscript for running the DL1Stereo to DL2 analisys.
@@ -128,6 +137,8 @@ def bash_DL1Stereo_to_DL2(
         Version of the input (stereo subruns) data
     nice : int or None
         Job priority
+    dense_list : list
+        List of sources that use the dense MC training line
     """
     if cluster != "SLURM":
         logger.warning(
@@ -166,7 +177,8 @@ def bash_DL1Stereo_to_DL2(
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
 
-            RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
+
             if (not os.path.isdir(RFdir)) or (len(glob.glob(f"{RFdir}/*joblib")) < 3):
                 print(f"no RF availables in {RFdir}")
                 continue
@@ -210,7 +222,24 @@ def main():
     Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
-    config = auto_MCP_parse_config()
+    parser = auto_MCP_parser()
+    parser.add_argument(
+        "--dense_MC_sources",
+        "-d",
+        dest="dense_list",
+        type=str,
+        help="File with name of sources to be processed with the dense MC train line",
+    )
+
+    args = parser.parse_args()
+    with open(args.config_file, "rb") as f:
+        config = yaml.safe_load(f)
+
+    dense_list = []
+    if args.dense_list is not None:
+        with open(args.dense_list) as d:
+            dense_list = d.read().splitlines()
+
     target_dir = Path(config["directories"]["workspace_dir"])
     RF_dir = config["directories"]["RF"]
     env_name = config["general"]["env_name"]
@@ -270,6 +299,7 @@ def main():
             MC_v,
             in_version,
             nice_parameter,
+            dense_list,
         )
         list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
         if len(list_of_dl2_scripts) < 1:

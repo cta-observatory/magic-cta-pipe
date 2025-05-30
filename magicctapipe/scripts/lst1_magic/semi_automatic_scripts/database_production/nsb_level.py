@@ -11,7 +11,6 @@ import glob
 import json
 import logging
 import os
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -72,21 +71,8 @@ def main():
     Main function
     """
 
-    parser = auto_MCP_parser()
-    parser.add_argument(
-        "--begin-date",
-        "-b",
-        dest="begin_date",
-        type=str,
-        help="Begin date to start NSB evaluation from the database.",
-    )
-    parser.add_argument(
-        "--end-date",
-        "-e",
-        dest="end_date",
-        type=str,
-        help="End date to start NSB evaluation from the database.",
-    )
+    parser = auto_MCP_parser(add_dates=True)
+
     args = parser.parse_args()
     with open(
         args.config_file, "rb"
@@ -126,14 +112,10 @@ def main():
         json.dump(lst_dict, outfile)
     lst_config = "lstchain.json"
 
-    min = datetime.strptime(args.begin_date, "%Y_%m_%d")
-    max = datetime.strptime(args.end_date, "%Y_%m_%d")
-    lst = pd.to_datetime(df_LST["DATE"].str.replace("_", "-"))
-    df_LST["date"] = lst
-    df_LST = df_LST[df_LST["date"] >= min]
-    df_LST = df_LST[df_LST["date"] <= max]
-
-    df_LST = df_LST.drop(columns="date")
+    if args.begin != 0:
+        df_LST = df_LST[df_LST["DATE"].astype(int) >= args.begin]
+    if args.end != 0:
+        df_LST = df_LST[df_LST["DATE"].astype(int) <= args.end]
 
     print("***** Generating bashscripts...")
     for i, row in df_LST.iterrows():
