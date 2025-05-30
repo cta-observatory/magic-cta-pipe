@@ -15,6 +15,7 @@ from .gadf import (
 from .io import (
     check_input_list,
     format_object,
+    get_custom_cuts,
     get_dl2_mean,
     get_stereo_events,
     get_stereo_events_old,
@@ -40,6 +41,7 @@ __all__ = [
     "create_gti_hdu",
     "create_pointing_hdu",
     "format_object",
+    "get_custom_cuts",
     "get_dl2_mean",
     "get_stereo_events",
     "get_stereo_events_old",
