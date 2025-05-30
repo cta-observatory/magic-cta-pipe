@@ -6,7 +6,6 @@ the data level 3.
 Usage:
 $ python new_DL2_to_DL3.py -c configuration_file.yaml (-d list_dense.txt)
 """
-import argparse
 import glob
 import logging
 import os
@@ -23,7 +22,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
-from magicctapipe.utils import auto_MCP_parse_config
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["configuration_DL3", "DL2_to_DL3"]
 
@@ -203,7 +202,7 @@ def main():
     Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()
+    parser = auto_MCP_parser()
     parser.add_argument(
         "--dense_MC_sources",
         "-d",
@@ -213,12 +212,13 @@ def main():
     )
 
     args = parser.parse_args()
+    with open(args.config_file, "rb") as f:
+        config = yaml.safe_load(f)
+
     dense_list = []
     if args.dense_list is not None:
         with open(args.dense_list) as d:
             dense_list = d.read().splitlines()
-
-    config = auto_MCP_parse_config()
 
     target_dir = Path(config["directories"]["workspace_dir"])
     IRF_dir = config["directories"]["IRF"]
