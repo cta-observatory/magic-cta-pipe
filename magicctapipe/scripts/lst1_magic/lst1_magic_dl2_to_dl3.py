@@ -30,7 +30,7 @@ import numpy as np
 import yaml
 from astropy import units as u
 from astropy.coordinates import Angle
-from astropy.coordinates.angle_utilities import angular_separation
+from astropy.coordinates.angles.utils import angular_separation
 from astropy.io import fits
 from astropy.table import QTable
 from pyirf.cuts import evaluate_binned_cut
@@ -185,6 +185,27 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     extra_header["IRF_INTP"] = interpolation_method
 
     hdus = fits.HDUList([fits.PrimaryHDU()])
+
+    # Create an event HDU
+    logger.info("\nCreating an event HDU...")
+
+    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
+
+    hdus.append(event_hdu)
+
+    # Create a GTI table
+    logger.info("Creating a GTI HDU...")
+
+    gti_hdu = create_gti_hdu(event_table)
+
+    hdus.append(gti_hdu)
+
+    # Create a pointing table
+    logger.info("Creating a pointing HDU...")
+
+    pnt_hdu = create_pointing_hdu(event_table)
+
+    hdus.append(pnt_hdu)
 
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
@@ -390,27 +411,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         )
 
         event_table = event_table[mask_gh]
-
-    # Create an event HDU
-    logger.info("\nCreating an event HDU...")
-
-    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
-
-    hdus.append(event_hdu)
-
-    # Create a GTI table
-    logger.info("Creating a GTI HDU...")
-
-    gti_hdu = create_gti_hdu(event_table)
-
-    hdus.append(gti_hdu)
-
-    # Create a pointing table
-    logger.info("Creating a pointing HDU...")
-
-    pnt_hdu = create_pointing_hdu(event_table)
-
-    hdus.append(pnt_hdu)
 
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
