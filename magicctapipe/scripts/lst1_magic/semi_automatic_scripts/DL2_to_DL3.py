@@ -4,8 +4,9 @@ to the DL2. It also creates new subdirectories associated with
 the data level 3.
 
 Usage:
-$ python new_DL2_to_DL3.py -c configuration_file.yaml -d list_dense.txt
+$ python new_DL2_to_DL3.py -c configuration_file.yaml (-d list_dense.txt)
 """
+import argparse
 import glob
 import logging
 import os
@@ -86,7 +87,7 @@ def DL2_to_DL3(
     nice,
     IRF_cuts_type,
     LST_date,
-    dense_list
+    dense_list,
 ):
     """
     This function creates the bash scripts to run lst1_magic_dl2_to_dl3.py on the real data.
@@ -160,9 +161,7 @@ def DL2_to_DL3(
                 print(f"MC_dec is NaN for {source}")
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
-            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}/"
-            if source in dense_list:
-                IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/{IRF_cuts_type}/dec_{dec}_high_density/"    
+            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/{IRF_cuts_type}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
             if (not os.path.isdir(IRFdir)) or (
                 len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
             ):
@@ -204,7 +203,7 @@ def main():
     Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()    
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dense_MC_sources",
         "-d",
@@ -217,7 +216,7 @@ def main():
     dense_list = []
     if args.dense_list is not None:
         with open(args.dense_list) as d:
-            dense_list = d.readlines()
+            dense_list = d.read().splitlines()
 
     config = auto_MCP_parse_config()
 

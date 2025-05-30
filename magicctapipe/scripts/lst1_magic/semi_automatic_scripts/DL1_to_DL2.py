@@ -4,8 +4,9 @@ to the DL1 stereo data. It also creates new subdirectories associated with
 the data level 2.
 
 Usage:
-$ DL1_to_DL2 -c configuration_file.yaml -d list_dense.txt
+$ DL1_to_DL2 -c configuration_file.yaml (-d list_dense.txt)
 """
+import argparse
 import datetime
 import glob
 import logging
@@ -103,7 +104,16 @@ def ST_NSB_List(target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version
 
 
 def bash_DL1Stereo_to_DL2(
-    target_dir, source, env_name, cluster, RF_dir, df_LST, MC_v, version, nice, dense_list
+    target_dir,
+    source,
+    env_name,
+    cluster,
+    RF_dir,
+    df_LST,
+    MC_v,
+    version,
+    nice,
+    dense_list,
 ):
     """
     This function generates the bashscript for running the DL1Stereo to DL2 analisys.
@@ -168,10 +178,8 @@ def bash_DL1Stereo_to_DL2(
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
 
-            RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}/"
-            if source in dense_list:
-                RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}_high_density/"
-            
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
+
             if (not os.path.isdir(RFdir)) or (len(glob.glob(f"{RFdir}/*joblib")) < 3):
                 print(f"no RF availables in {RFdir}")
                 continue
@@ -215,7 +223,7 @@ def main():
     Here we read the config_auto_MCP.yaml file and call the functions defined above.
     """
 
-    parser = argparse.ArgumentParser()   
+    parser = argparse.ArgumentParser()
     parser.add_argument(
         "--dense_MC_sources",
         "-d",
@@ -228,7 +236,7 @@ def main():
     dense_list = []
     if args.dense_list is not None:
         with open(args.dense_list) as d:
-            dense_list = d.readlines()
+            dense_list = d.read().splitlines()
 
     config = auto_MCP_parse_config()
     target_dir = Path(config["directories"]["workspace_dir"])
