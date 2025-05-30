@@ -45,7 +45,8 @@ from pathlib import Path
 import numpy as np
 import yaml
 from astropy import units as u
-from astropy.coordinates import EarthLocation, angular_separation
+from astropy.coordinates import angular_separation
+from ctapipe_io_lst.constants import REFERENCE_LOCATION
 from ctapipe.containers import DL1CameraContainer
 from ctapipe.image import (
     concentration_parameters,
@@ -85,8 +86,6 @@ TEL_COMBINATIONS = {
     "LST1_M2": [1, 3],  # combo_type = 2
     "M1_M2": [2, 3],  # combo_type = 3
 }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
-
-REFERENCE_LOCATION = EarthLocation.of_site("lapalma")
 
 
 def magic_calib_to_dl1(
