@@ -258,7 +258,7 @@ def get_custom_cuts(config, energy_bins):
     Parameters
     ----------
     config : dict
-        Dictionary containing the custom cuts and the interpolation tragedy.
+        Dictionary containing the custom cuts and the interpolation strategy.
         Required entries are a sub-dictionary 'custom_cuts' and a field
         'interpolate_kind' used in scipy.interpolate.interp1d.
     energy_bins : astropy.units.Quantity

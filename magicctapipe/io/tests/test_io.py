@@ -177,14 +177,13 @@ class TestGeneral:
         # Get the custom cuts without interpolating on energy_bins
         cut_table_gh = get_custom_cuts(config_gh_irf, energy_bins)
         cut_table_theta = get_custom_cuts(config_theta_irf, energy_bins)
-        assert isinstance(cut_table_gh, astropy.table.QTable)
-        assert isinstance(cut_table_theta, astropy.table.QTable)
-        assert cut_table_gh["low"].unit == "TeV"
-        assert cut_table_gh["high"].unit == "TeV"
-        assert cut_table_gh["center"].unit == "TeV"
+        for cut_table in (cut_table_gh, cut_table_theta):
+            assert isinstance(cut_table, astropy.table.QTable)
+            assert cut_table["low"].unit == "TeV"
+            assert cut_table["high"].unit == "TeV"
+            assert cut_table["center"].unit == "TeV"
         assert cut_table_gh["cut"].unit == u.dimensionless_unscaled
         assert cut_table_gh["cut"][15] == 0.5
-        assert cut_table_theta["cut"].unit == u.deg
         assert cut_table_theta["cut"][15] == 0.3 * u.deg
 
         # Get the custom cuts with linear interpolating on energy_bins
