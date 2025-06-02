@@ -32,7 +32,9 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def ST_NSB_List(target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version, LST_date):
+def ST_NSB_List(
+    target_dir, nsb_list, source, df_LST, MAGIC_obs_periods, version, LST_date
+):
     """
     This function creates the lists of runs separeted by run period and NSB level.
 
@@ -151,7 +153,7 @@ def bash_DL1Stereo_to_DL2(
             "Automatic processing not implemented for the cluster indicated in the config file"
         )
         return
-   
+
     Nights_list = np.sort(
         glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
     )
@@ -162,7 +164,7 @@ def bash_DL1Stereo_to_DL2(
             continue
         outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
         File_list = glob.glob(f"{outdir}/*.txt")
-        
+
         for file in File_list:
             with open(file, "r") as f:
                 process_size = len(f.readlines()) - 1
