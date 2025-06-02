@@ -5,6 +5,7 @@ from .error_codes import (
     NO_COINCIDENT_EVENTS,
     NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
     NO_TAILCUT,
+    OUTSIDE_INTERPOLATION_RANGE,
 )
 from .functions import (
     HEIGHT_ORM,
@@ -32,6 +33,7 @@ __all__ = [
     "NO_COINCIDENT_EVENTS",
     "NO_EVENTS_WITHIN_MAXIMUM_DISTANCE",
     "NO_TAILCUT",
+    "OUTSIDE_INTERPOLATION_RANGE",
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
