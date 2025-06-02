@@ -153,7 +153,6 @@ def main():
         wobble = []
         source = (df["source"].to_list())[i]
         for j in range(len(magic_runs)):
-            print("MAGIC run:", magic_runs[j])
             runs = glob.glob(
                 f"/fefs/onsite/common/MAGIC/data/M[12]/event/Calibrated/{date_magic[i]}/*{magic_runs[j]}*{source}*.root"
             )
@@ -171,16 +170,13 @@ def main():
                     f"No string matching for wobble offset found in the name of MAGIC files for {date_magic[i]}, run {magic_runs[j]}, {source}. Check it manually!"
                 )
                 continue
-            print("wobble offset:", wobble_run)
             wobble.append(wobble_run)
         wobble = np.unique(wobble)
-        print(wobble)
         if len(wobble) > 1:
             print(
                 f"More than one wobble offset value for LST run {lst_run}: check data!"
             )
         wobble_str = str(wobble).replace(" ", ", ")
-        print(f"Wobble offset for LST run {lst_run}:", wobble_str)
         df_LST["wobble_offset"] = np.where(
             df_LST["LST1_run"] == lst_run, wobble_str, df_LST["wobble_offset"]
         )
