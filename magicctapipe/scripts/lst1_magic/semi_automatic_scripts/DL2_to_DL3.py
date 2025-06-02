@@ -160,7 +160,7 @@ def DL2_to_DL3(
                 print(f"MC_dec is NaN for {source}")
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
-            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/{MC_v}/{IRF_cuts_type}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
+            IRFdir = f"{IRF_dir}/{period}/NSB{nsb}/GammaTest/v{MC_v}/{IRF_cuts_type}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
             if (not os.path.isdir(IRFdir)) or (
                 len(glob.glob(f"{IRFdir}/irf_*fits.gz")) < 1
             ):
