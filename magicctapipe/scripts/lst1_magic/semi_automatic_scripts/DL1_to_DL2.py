@@ -177,7 +177,7 @@ def bash_DL1Stereo_to_DL2(
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
 
-            RFdir = f"{RF_dir}/{period}/NSB{nsb}/{MC_v}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
 
             if (not os.path.isdir(RFdir)) or (len(glob.glob(f"{RFdir}/*joblib")) < 3):
                 print(f"no RF availables in {RFdir}")
