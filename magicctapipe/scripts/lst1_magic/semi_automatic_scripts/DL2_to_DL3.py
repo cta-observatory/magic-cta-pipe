@@ -140,6 +140,10 @@ def DL2_to_DL3(
                 process_size = len(runs) - 1
                 run_new = []
                 for run in runs:
+                    wobble_offset = df_LST[df_LST.LST1_run == run].iloc[0]["wobble_offset"]
+                    if str(wobble_offset) != "['0.40']":
+                        print(f"wobble offset is not (or not always) 0.40 for {source}, run {run}")
+                        continue
                     single_run_new = (
                         "/".join(run.split("/")[:-6])
                         + f"/v{version}/"
@@ -256,11 +260,7 @@ def main():
         source_list = joblib.load("list_sources.dat")
     else:
         source_list = [source]
-    for source_name in source_list:
-        wobble_offset = df_LST[df_LST.source == source_name].iloc[0]["wobble_offset"]
-        if str(wobble_offset) != "['0.40']":
-            print(f"wobble offset is not (or not always) 0.40 for {source_name}")
-            continue
+    for source_name in source_list:        
         # cp the .txt files from DL1 stereo anaysis to be used again.
         DL2_Nights = np.sort(
             glob.glob(f"{target_dir}/v{in_version}/{source_name}/DL2/*")
