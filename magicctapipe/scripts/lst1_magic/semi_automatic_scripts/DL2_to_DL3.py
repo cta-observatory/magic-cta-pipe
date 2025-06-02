@@ -140,9 +140,10 @@ def DL2_to_DL3(
                 process_size = len(runs) - 1
                 run_new = []
                 for run in runs:
-                    wobble_offset = df_LST[df_LST.LST1_run == run].iloc[0]["wobble_offset"]
+                    run_number=run.split("/")[-1].split(".")[-2].split("n")[-1]
+                    wobble_offset = df_LST[df_LST.LST1_run == run_number].iloc[0]["wobble_offset"]
                     if str(wobble_offset) != "['0.40']":
-                        print(f"wobble offset is not (or not always) 0.40 for {source}, run {run}")
+                        print(f"wobble offset is not (or not always) 0.40 for {source}, run {run_number}")
                         continue
                     single_run_new = (
                         "/".join(run.split("/")[:-6])
