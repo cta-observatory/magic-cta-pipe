@@ -256,18 +256,34 @@ create_irf:
         n_edges: 21
 
     gammaness:
-        cut_type: "dynamic"  # select "global" or "dynamic"
+        cut_type: "dynamic"  # select "global" or "dynamic" or "custom"
         global_cut_value: 0.8  # used for the global cut
         efficiency: 0.9  # used for the dynamic cuts
         min_cut: 0.05  # used for the dynamic cuts
         max_cut: 0.85  # used for the dynamic cuts
+        custom_cuts: {  # used for custom cuts
+          energy_bins: [0.01, 0.1, 1, 10, 100],
+          energy_unit: "TeV",
+          cut: [0.4, 0.45, 0.50, 0.55],
+          cut_unit: "",
+        }
+        interpolate_kind: "nearest"  # used for custom cuts, option for scipy.interpolate.interp1d
+                                     # Standard values are "nearest", "linear" and "cubic"
 
     theta:
-        cut_type: "dynamic"  # select "global" or "dynamic"
+        cut_type: "dynamic"  # select "global" or "dynamic" or "custom"
         global_cut_value: "0.2 deg"  # used for the global cut
         efficiency: 0.75  # used for the dynamic cuts
         min_cut: "0.1 deg"  # used for the dynamic cuts
         max_cut: "0.25 deg"  # used for the dynamic cuts
+        custom_cuts: {  # used for custom cuts
+          energy_bins: [0.01, 0.1, 1, 10, 100],
+          energy_unit: "TeV",
+          cut: [0.4, 0.35, 0.30, 0.25],
+          cut_unit: "deg",
+        }
+        interpolate_kind: "nearest"  # used for custom cuts, option for scipy.interpolate.interp1d
+                                     # Standard values are "nearest", "linear" and "cubic"
 
 
 dl2_to_dl3:
