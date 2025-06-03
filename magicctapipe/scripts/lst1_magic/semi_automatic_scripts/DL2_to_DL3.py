@@ -136,8 +136,7 @@ def DL2_to_DL3(
             if str(night) not in LST_date:
                 continue
             with open(file, "r") as f:
-                runs = f.readlines()
-                process_size = len(runs) - 1
+                runs = f.readlines()                
                 run_new = []
                 for run in runs:
                     run_number = run.split("/")[-1].split(".")[-2].split("n")[-1]
@@ -159,6 +158,7 @@ def DL2_to_DL3(
                         + run.split("/")[-1].replace("dl1_stereo", "dl2")
                     )
                     run_new.append(single_run_new)
+                process_size = len(run_new) - 1
                 with open(file, "w") as g:
                     g.writelines(run_new)
 
