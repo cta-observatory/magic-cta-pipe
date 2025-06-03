@@ -161,7 +161,7 @@ def DL2_to_DL3(
                 process_size = len(run_new) - 1
                 with open(file, "w") as g:
                     g.writelines(run_new)
-            
+
             nsb = file.split("/")[-1].split("_")[1]
             period = file.split("/")[-1].split("_")[0]
             if process_size < 0:
