@@ -164,8 +164,10 @@ def DL2_to_DL3(
             
             nsb = file.split("/")[-1].split("_")[1]
             period = file.split("/")[-1].split("_")[0]
-            if process_size == 0:
-                print(f"No runs to be processed for {source}, NSB {nsb}, period {period}")
+            if process_size < 0:
+                print(
+                    f"No runs to be processed for {source}, NSB {nsb}, period {period}"
+                )
                 continue
             dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
             if np.isnan(dec):
