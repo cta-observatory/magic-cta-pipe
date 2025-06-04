@@ -25,8 +25,7 @@ general:
     IRF_cuts_type: "g_dyn_0.9_th_glo_0.2" # see name of directories in the cluster
     allowed_M_tels: [1, 2] #MAGIC telescopes used for analysis. Default: [1,2] which coresponds to M1 and M2. The list must not be empty!
 
-expert_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis    
-    LST_tailcut: "tailcut84"
+expert_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU ARE DOING! They are needed for a meaningful and complete analysis 
     simtel_nsb: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
     lstchain_modified_config: true # use_flatfield_heuristic = True to evaluate NSB    
     nsb: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
