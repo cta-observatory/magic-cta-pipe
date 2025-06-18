@@ -31,7 +31,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def configuration_DL3(target_dir, source_name, config_file, ra, dec):
+def configuration_DL3(target_dir, source_name, config_file, ra, dec, IRF_cuts_type):
     """
     This function creates the configuration file needed for the DL2 to DL3 conversion
 
@@ -47,6 +47,8 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
         Source RA
     dec : float
         Source Dec
+    IRF_cuts_type : str
+        Type of IRFS to be used: global cuts (with cut value) or dynamic cuts (with efficiencies)
     """
 
     if config_file == "":
@@ -68,7 +70,7 @@ def configuration_DL3(target_dir, source_name, config_file, ra, dec):
     conf_dir = f"{target_dir}/v{__version__}/{source_name}"
     os.makedirs(conf_dir, exist_ok=True)
 
-    file_name = f"{conf_dir}/config_DL3.yaml"
+    file_name = f"{conf_dir}/config_DL3_{IRF_cuts_type}.yaml"
 
     with open(file_name, "w") as f:
         yaml.dump(conf, f, default_flow_style=False)
@@ -126,7 +128,7 @@ def DL2_to_DL3(
 
     # Loop over all nights
 
-    DL3_Nights = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/*"))
+    DL3_Nights = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL3_{IRF_cuts_type}/*"))
     for dl3date in DL3_Nights:
         night = dl3date.split("/")[-1]
         outdir = f"{dl3date}/logs"
@@ -202,12 +204,12 @@ def DL2_to_DL3(
                     "SAMPLE=${SAMPLE_LIST[${SLURM_ARRAY_TASK_ID}]}\n",
                     f"export LOG={outdir}",
                     "/DL2_to_DL3_${SLURM_ARRAY_JOB_ID}_${SLURM_ARRAY_TASK_ID}.log\n",
-                    f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {out_file} --config-file {target_dir}/v{__version__}/{source}/config_DL3.yaml >$LOG 2>&1\n\n",
+                    f"conda run -n {env_name} lst1_magic_dl2_to_dl3 --input-file-dl2 $SAMPLE --input-dir-irf {IRFdir} --output-dir {out_file} --config-file {target_dir}/v{__version__}/{source}/config_DL3_{IRF_cuts_type}.yaml >$LOG 2>&1\n\n",
                 ]
                 + rc
             )
 
-            with open(f"{source}_DL2_to_DL3_{nsb}_{period}_{night}.sh", "w") as f:
+            with open(f"{source}_DL2_{IRF_cuts_type}_{nsb}_{period}_{night}.sh", "w") as f:
                 f.writelines(lines)
 
 
@@ -285,7 +287,7 @@ def main():
             nightdate = night.split("/")[-1]
             if nightdate in LST_date:
                 outdir = (
-                    f"{target_dir}/v{__version__}/{source_name}/DL3/{nightdate}/logs"
+                    f"{target_dir}/v{__version__}/{source_name}/DL3_{IRF_cuts_type}/{nightdate}/logs"
                 )
                 os.makedirs(outdir, exist_ok=True)
                 File_list = glob.glob(f"{night}/logs/*.txt")
@@ -297,11 +299,11 @@ def main():
         if np.isnan(dec) or np.isnan(ra):
             print(f"source Ra and/or Dec is NaN for {source_name}")
             continue
-        print("***** Generating file config_DL3.yaml...")
+        print("***** Generating file config_DL3*.yaml...")
         print(
             f"***** This file can be found in {target_dir}/v{__version__}/{source_name}"
         )
-        configuration_DL3(target_dir, source_name, config_file, ra, dec)
+        configuration_DL3(target_dir, source_name, config_file, ra, dec, IRF_cuts_type)
 
         print("***** Generating bash scripts...")
         DL2_to_DL3(
@@ -318,7 +320,7 @@ def main():
             LST_date,
             dense_list,
         )
-        list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3*.sh"))
+        list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3_{IRF_cuts_type}*.sh"))
         if len(list_of_dl3_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name}")
             continue
