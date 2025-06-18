@@ -136,6 +136,7 @@ def main():
                 glob.glob(f"{indir}/[0-9]*/[0-9]*/logs")
                 + glob.glob(f"{indir}/[0-9]*/logs")
                 + glob.glob(f"{indir}/logs")
+                + glob.glob(f"{indir}/g_*/[0-9]*/logs")
             )
         )
     ]
@@ -171,7 +172,7 @@ def main():
 
     for dir in dirs:
 
-        this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
+        this_date_str = re.sub(f".+/{args.data_level}/*g*.*/", "", dir)
         this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
         this_date = datetime.strptime(this_date_str, "%Y%m%d")
         if timerange and (this_date < timemin or this_date > timemax):
