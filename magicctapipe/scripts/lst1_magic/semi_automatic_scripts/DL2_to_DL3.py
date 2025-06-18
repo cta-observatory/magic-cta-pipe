@@ -128,7 +128,9 @@ def DL2_to_DL3(
 
     # Loop over all nights
 
-    DL3_Nights = np.sort(glob.glob(f"{target_dir}/v{__version__}/{source}/DL3_{IRF_cuts_type}/*"))
+    DL3_Nights = np.sort(
+        glob.glob(f"{target_dir}/v{__version__}/{source}/DL3_{IRF_cuts_type}/*")
+    )
     for dl3date in DL3_Nights:
         night = dl3date.split("/")[-1]
         outdir = f"{dl3date}/logs"
@@ -209,7 +211,9 @@ def DL2_to_DL3(
                 + rc
             )
 
-            with open(f"{source}_DL2_{IRF_cuts_type}_{nsb}_{period}_{night}.sh", "w") as f:
+            with open(
+                f"{source}_DL2_{IRF_cuts_type}_{nsb}_{period}_{night}.sh", "w"
+            ) as f:
                 f.writelines(lines)
 
 
@@ -286,9 +290,7 @@ def main():
         for night in DL2_Nights:
             nightdate = night.split("/")[-1]
             if nightdate in LST_date:
-                outdir = (
-                    f"{target_dir}/v{__version__}/{source_name}/DL3_{IRF_cuts_type}/{nightdate}/logs"
-                )
+                outdir = f"{target_dir}/v{__version__}/{source_name}/DL3_{IRF_cuts_type}/{nightdate}/logs"
                 os.makedirs(outdir, exist_ok=True)
                 File_list = glob.glob(f"{night}/logs/*.txt")
                 for file in File_list:
@@ -320,7 +322,9 @@ def main():
             LST_date,
             dense_list,
         )
-        list_of_dl3_scripts = np.sort(glob.glob(f"{source_name}_DL2_to_DL3_{IRF_cuts_type}*.sh"))
+        list_of_dl3_scripts = np.sort(
+            glob.glob(f"{source_name}_DL2_to_DL3_{IRF_cuts_type}*.sh")
+        )
         if len(list_of_dl3_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name}")
             continue
