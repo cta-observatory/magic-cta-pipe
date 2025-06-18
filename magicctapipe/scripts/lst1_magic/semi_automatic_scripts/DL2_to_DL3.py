@@ -129,7 +129,7 @@ def DL2_to_DL3(
     # Loop over all nights
 
     DL3_Nights = np.sort(
-        glob.glob(f"{target_dir}/v{__version__}/{source}/DL3_{IRF_cuts_type}/*")
+        glob.glob(f"{target_dir}/v{__version__}/{source}/DL3/{IRF_cuts_type}/*")
     )
     for dl3date in DL3_Nights:
         night = dl3date.split("/")[-1]
@@ -212,7 +212,7 @@ def DL2_to_DL3(
             )
 
             with open(
-                f"{source}_DL2_{IRF_cuts_type}_{nsb}_{period}_{night}.sh", "w"
+                f"{source}_DL2_to_DL3_{IRF_cuts_type}_{nsb}_{period}_{night}.sh", "w"
             ) as f:
                 f.writelines(lines)
 
@@ -290,7 +290,7 @@ def main():
         for night in DL2_Nights:
             nightdate = night.split("/")[-1]
             if nightdate in LST_date:
-                outdir = f"{target_dir}/v{__version__}/{source_name}/DL3_{IRF_cuts_type}/{nightdate}/logs"
+                outdir = f"{target_dir}/v{__version__}/{source_name}/DL3/{IRF_cuts_type}/{nightdate}/logs"
                 os.makedirs(outdir, exist_ok=True)
                 File_list = glob.glob(f"{night}/logs/*.txt")
                 for file in File_list:
