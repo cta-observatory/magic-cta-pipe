@@ -101,7 +101,7 @@ def main():
     """
     Main function
     """
-    config = auto_MCP_parse_config()
+    config = auto_MCP_parse_config(add_dates=True)
     lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
