@@ -14,7 +14,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
-from magicctapipe.utils import auto_MCP_parse_config
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["version_lstchain"]
 
@@ -101,7 +101,13 @@ def main():
     """
     Main function
     """
-    config = auto_MCP_parse_config(add_dates=True)
+    parser = auto_MCP_parser(add_dates=True)
+    args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config = yaml.safe_load(f)
+
     lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":
