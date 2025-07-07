@@ -29,7 +29,7 @@ def version_lstchain(df_LST):
     df_LST : :class:`pandas.DataFrame`
         Dataframe of the LST-1 observations.
     """
-    cut_date=20250601
+    cut_date = 20250601
     for i, row in df_LST.iterrows():
 
         version = []
@@ -37,9 +37,9 @@ def version_lstchain(df_LST):
         run = format(int(run), "05d")
         date = row["DATE"]
         if int(date) < cut_date:
-            base_path="/fefs/aswg/data/real/DL1"
+            base_path = "/fefs/aswg/data/real/DL1"
         else:
-            base_path="/fefs/onsite/data/lst-pipe/LSTN-01/DL1"
+            base_path = "/fefs/onsite/data/lst-pipe/LSTN-01/DL1"
         directories_version = [
             i.split("/")[-1] for i in glob.glob(f"{base_path}/{date}/v*")
         ]

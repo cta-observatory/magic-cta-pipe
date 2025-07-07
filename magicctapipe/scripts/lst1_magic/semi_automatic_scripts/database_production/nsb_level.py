@@ -98,7 +98,7 @@ def main():
         help="End date to start NSB evaluation from the database.",
     )
     args = parser.parse_args()
-    cut_date=20250601
+    cut_date = 20250601
     with open(
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
@@ -109,7 +109,7 @@ def main():
         config_db, "rb"
     ) as fc:  # "rb" mode opens the file in binary format for reading
         config_dict = yaml.safe_load(fc)
-    
+
     LST_h5 = config_dict["database_paths"]["LST"]
     LST_key = config_dict["database_keys"]["LST"]
     env_name = config["general"]["env_name"]
@@ -162,7 +162,7 @@ def main():
 
         run_number = row["LST1_run"]
         date = row["DATE"]
-        if int(date) < cut_date: 
+        if int(date) < cut_date:
             df_LST.loc[
                 i, "processed_lstchain_file"
             ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
