@@ -68,9 +68,9 @@ import pandas as pd
 import yaml
 from astropy import units as u
 from astropy.table import vstack
-from ctapipe_io_lst.constants import REFERENCE_LOCATION
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table, write_table
+from ctapipe_io_magic.constants import REFERENCE_LOCATION
 from lstchain.io import HDF5_ZSTD_FILTERS
 from lstchain.io.io import dl1_images_lstcam_key
 
