@@ -100,6 +100,7 @@ def linking_bash_lst(
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
     MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
+    cut_date=dtdt(2025, 6, 1)
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/[0-9]*")]
     if cluster != "SLURM":
@@ -120,9 +121,15 @@ def linking_bash_lst(
             if day_MAGIC == day_LST + delta:
 
                 lstObsDir = i[0].replace("_", "")
-                inputdir = (
-                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
-                )
+                if day_LST < cut_date:
+                    inputdir = (
+                        f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                    )
+                else: 
+                    inputdir = (
+                        f"/fefs/onsite/data/lst-pipe/LSTN-01/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                    )
+
 
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
                 os.makedirs(f"{outputdir}/logs", exist_ok=True)

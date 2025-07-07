@@ -29,20 +29,25 @@ def version_lstchain(df_LST):
     df_LST : :class:`pandas.DataFrame`
         Dataframe of the LST-1 observations.
     """
+    cut_date=20250601
     for i, row in df_LST.iterrows():
 
         version = []
         run = row["LST1_run"]
         run = format(int(run), "05d")
         date = row["DATE"]
+        if int(date) < cut_date:
+            base_path="/fefs/aswg/data/real/DL1"
+        else:
+            base_path="/fefs/onsite/data/lst-pipe/LSTN-01/DL1"
         directories_version = [
-            i.split("/")[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/v*")
+            i.split("/")[-1] for i in glob.glob(f"{base_path}/{date}/v*")
         ]
 
         for vers in directories_version:
 
             if os.path.isfile(
-                f"/fefs/aswg/data/real/DL1/{date}/{vers}/tailcut84/dl1_LST-1.Run{run}.h5"
+                f"{base_path}/{date}/{vers}/tailcut84/dl1_LST-1.Run{run}.h5"
             ):
                 if vers not in version:
                     version.append(vers)
@@ -59,7 +64,7 @@ def version_lstchain(df_LST):
 
         if max_version is None:
             raise ValueError("issue with lstchain versions")
-        name = f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut84/dl1_LST-1.Run{run}.h5"
+        name = f"{base_path}/{date}/{max_version}/tailcut84/dl1_LST-1.Run{run}.h5"
 
         df_LST.loc[i, "last_lstchain_file"] = name
 

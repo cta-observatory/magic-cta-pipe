@@ -181,6 +181,7 @@ def main():
     date = args.day
     denominator = args.denominator
     lst_config = args.lst_conf
+    cut_date=20250601
     simtel = config["general"]["simtel_nsb"]
     nsb_list = config["general"]["nsb"]
     lst_version = config["general"]["LST_version"]
@@ -197,8 +198,10 @@ def main():
     if len(LST_files) == 1:
         logger.info(f"Run {run_number} already processed")
         return
-
-    inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
+    if int(date) < cut_date:
+        inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{lst_tailcut}"
+    else:
+        inputdir = f"/fefs/onsite/data/lst-pipe/LSTN-01/DL1/{date}/{lst_version}/{lst_tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number, denominator)
     if len(noise) == 0:
