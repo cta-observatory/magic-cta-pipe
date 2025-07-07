@@ -74,6 +74,7 @@ def main():
     parser = auto_MCP_parser(add_dates=True)
 
     args = parser.parse_args()
+    cut_date=20250601
     with open(
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
@@ -134,16 +135,19 @@ def main():
 
         run_number = row["LST1_run"]
         date = row["DATE"]
-
+        if int(date) < cut_date:
+            base_path="/fefs/aswg/data/real/DL1"
+        else:
+            base_path="/fefs/onsite/data/lst-pipe/LSTN-01/DL1"
         tailcut = []
         tailcut_list = [
             i.split("/")[-1]
-            for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut*")
+            for i in glob.glob(f"{base_path}/{date}/{max_common}/tailcut*")
         ]
 
         for tail in tailcut_list:
             if os.path.isfile(
-                f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
+                f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
             ):
                 tailcut.append(tail)
         if len(tailcut) > 1:
@@ -152,9 +156,11 @@ def main():
             )
             continue
 
+        
         df_LST.loc[
             i, "processed_lstchain_file"
-        ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tailcut[0]}/dl1_LST-1.Run{run_number}.h5"
+        ] = f"{base_path}/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
+       
         df_LST.loc[i, "tailcut"] = str(tailcut[0])
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
