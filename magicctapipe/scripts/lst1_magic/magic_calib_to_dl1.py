@@ -46,7 +46,6 @@ import numpy as np
 import yaml
 from astropy import units as u
 from astropy.coordinates import angular_separation
-from ctapipe_io_lst.constants import REFERENCE_LOCATION
 from ctapipe.containers import DL1CameraContainer
 from ctapipe.image import (
     concentration_parameters,
@@ -59,6 +58,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_lst import LSTEventSource
 from ctapipe_io_magic import MAGICEventSource
+from ctapipe_io_magic.constants import REFERENCE_LOCATION
 
 from magicctapipe.image import MAGICClean
 from magicctapipe.io import (
