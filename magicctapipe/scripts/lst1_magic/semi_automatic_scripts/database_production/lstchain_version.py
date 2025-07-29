@@ -112,7 +112,7 @@ def main():
     df_LST = pd.read_hdf(LST_h5, key=LST_key)
 
     version_lstchain(df_LST, lstchain_versions)
-    df_LST = df_LST.sort_values(by=["DATE", "source"])
+    df_LST = df_LST.sort_values(by=["DATE", "source", "LST1_run"])
     df_LST.to_hdf(
         LST_h5,
         key=LST_key,
