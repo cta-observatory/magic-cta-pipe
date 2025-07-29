@@ -102,7 +102,7 @@ def main():
     ] = "3"
     df_new.loc[df_new["nsb"].notna(), "error_code_nsb"] = "0"
     df_new.loc[df_new["nsb"] > 3.0, "error_code_nsb"] = "2"
-
+    df_new = df_new.sort_values(by=["DATE", "source", "LST1_run"])
     df_new.to_hdf(
         LST_h5,
         key=LST_key,
