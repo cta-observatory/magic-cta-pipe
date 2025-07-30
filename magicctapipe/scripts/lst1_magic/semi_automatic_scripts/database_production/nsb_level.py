@@ -184,7 +184,7 @@ def main():
         launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
     os.system(launch_jobs)
-    df_LST = df_LST[df_LST['source'].notna()]
+    df_LST = df_LST[df_LST["source"].notna()]
     df_LST.to_hdf(
         LST_h5,
         key=LST_key,

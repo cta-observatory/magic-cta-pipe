@@ -185,7 +185,7 @@ def main():
         subset="LST1_run", keep="first"
     )
     df_LST = df_LST.sort_values(by=["DATE", "source", "LST1_run"])
-    df_LST = df_LST[df_LST['source'].notna()]
+    df_LST = df_LST[df_LST["source"].notna()]
     df_LST.to_hdf(
         LST_h5,
         key=LST_key,
