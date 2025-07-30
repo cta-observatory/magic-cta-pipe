@@ -95,7 +95,7 @@ def main():
             df_cut[col] = df_cut[col].fillna(False)
         elif "_rc" in col:
             df_cut[col] = df_cut[col].fillna("{}")
-
+    df_cut = df_cut[df_cut['source'].notna()]
     df_cut.to_hdf(
         out_h5,
         key=out_key,
