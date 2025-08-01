@@ -12,7 +12,6 @@ event files.
 Usage:
 $ coincident_events (-c config)
 """
-import argparse
 import glob
 import logging
 import os
@@ -22,6 +21,7 @@ from pathlib import Path
 
 import joblib
 import numpy as np
+import pandas as pd
 import yaml
 
 from magicctapipe import __version__
@@ -30,6 +30,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["configfile_coincidence", "linking_bash_lst"]
 
@@ -66,7 +67,10 @@ def configfile_coincidence(target_dir, source_name, config_file):
         "event_coincidence": config_dict["event_coincidence"],
     }
 
-    file_name = f"{target_dir}/v{__version__}/{source_name}/config_coincidence.yaml"
+    conf_dir = f"{target_dir}/v{__version__}/{source_name}"
+    os.makedirs(conf_dir, exist_ok=True)
+
+    file_name = f"{conf_dir}/config_coincidence.yaml"
 
     with open(file_name, "w") as f:
 
@@ -74,7 +78,15 @@ def configfile_coincidence(target_dir, source_name, config_file):
 
 
 def linking_bash_lst(
-    target_dir, LST_runs, source_name, LST_version, env_name, cluster, nice
+    target_dir,
+    LST_runs,
+    source_name,
+    LST_version,
+    env_name,
+    cluster,
+    version,
+    nice,
+    df_LST,
 ):
     """
     This function links the LST data paths to the working directory and creates bash scripts.
@@ -93,13 +105,17 @@ def linking_bash_lst(
         Name of the conda environment
     cluster : str
         Cluster system
+    version : str
+        Version of the input (DL1 MAGIC runs) data
     nice : int or None
         Job priority
+    df_LST : :class:`pandas.DataFrame`
+        Dataframe collecting the LST1 runs (produced by the create_LST_table script)
     """
 
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
-    MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source_name}/DL1"
+    MAGIC_DL1_dir = f"{target_dir}/v{version}/{source_name}/DL1"
 
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/[0-9]*")]
     if cluster != "SLURM":
@@ -120,8 +136,12 @@ def linking_bash_lst(
             if day_MAGIC == day_LST + delta:
 
                 lstObsDir = i[0].replace("_", "")
+                run_n = i[1]
+                tailcut = df_LST[df_LST.LST1_run == run_n].iloc[0]["tailcut"]
+                if tailcut == "":
+                    continue
                 inputdir = (
-                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/tailcut84"
+                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/{tailcut}"
                 )
 
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
@@ -177,22 +197,7 @@ def main():
     """
     Main function
     """
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
+    config = auto_MCP_parse_config()
     target_dir = Path(config["directories"]["workspace_dir"])
 
     env_name = config["general"]["env_name"]
@@ -202,8 +207,26 @@ def main():
 
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
+
+    with open(
+        config_db, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict_db = yaml.safe_load(fc)
+
+    LST_h5 = config_dict_db["database_paths"]["LST"]
+    LST_key = config_dict_db["database_keys"]["LST"]
+    df_LST = pd.read_hdf(
+        LST_h5,
+        key=LST_key,
+    )
 
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -232,7 +255,9 @@ def main():
                 LST_version,
                 env_name,
                 cluster,
+                in_version,
                 nice_parameter,
+                df_LST,
             )  # linking the data paths to current working directory
 
             print("***** Submitting processess to the cluster...")

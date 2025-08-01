@@ -10,7 +10,6 @@ Usage:
 $ merging_runs (-c config.yaml)
 """
 
-import argparse
 import glob
 import logging
 import os
@@ -18,13 +17,13 @@ from pathlib import Path
 
 import joblib
 import numpy as np
-import yaml
 
 from magicctapipe import __version__
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["merge"]
 
@@ -33,7 +32,9 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def merge(target_dir, MAGIC_runs, env_name, source, cluster, nice, allowed_M_tels):
+def merge(
+    target_dir, MAGIC_runs, env_name, source, cluster, version, nice, allowed_M_tels
+):
 
     """
     This function creates the bash scripts to run merge_hdf_files.py for real data
@@ -50,6 +51,8 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, nice, allowed_M_tel
         Target name
     cluster : str
         Cluster system
+    version : str
+        Version of the input (DL1 MAGIC subruns) data
     nice : int or None
         Job priority
     allowed_M_tels : list
@@ -58,7 +61,8 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, nice, allowed_M_tel
 
     process_name = f"merging_{source}"
 
-    MAGIC_DL1_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
+    MAGIC_in_dir = f"{target_dir}/v{version}/{source}/DL1/"
+    MAGIC_out_dir = f"{target_dir}/v{__version__}/{source}/DL1/"
 
     if cluster != "SLURM":
         logger.warning(
@@ -70,18 +74,18 @@ def merge(target_dir, MAGIC_runs, env_name, source, cluster, nice, allowed_M_tel
         job_name=process_name,
         nice_parameter=nice,
         mem="2g",
-        out_name=f"{MAGIC_DL1_dir}/Merged/logs/slurm-%x.%j",
+        out_name=f"{MAGIC_out_dir}/Merged/logs/slurm-%x.%j",
     )
-    os.makedirs(f"{MAGIC_DL1_dir}/Merged/logs", exist_ok=True)
+    os.makedirs(f"{MAGIC_out_dir}/Merged/logs", exist_ok=True)
 
     with open(f"{source}_Merge_MAGIC.sh", "w") as f:
         f.writelines(lines)
         for magic in allowed_M_tels:
             for i in MAGIC_runs:
                 # Here is a difference w.r.t. original code. If only one telescope data are available they will be merged now for this telescope
-                indir = f"{MAGIC_DL1_dir}/M{magic}/{i[0]}/{i[1]}"
+                indir = f"{MAGIC_in_dir}/M{magic}/{i[0]}/{i[1]}"
                 if os.path.exists(f"{indir}"):
-                    outdir = f"{MAGIC_DL1_dir}/Merged/{i[0]}"
+                    outdir = f"{MAGIC_out_dir}/Merged/{i[0]}"
                     os.makedirs(f"{outdir}/logs", exist_ok=True)
 
                     f.write(
@@ -103,28 +107,16 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
-
+    config = auto_MCP_parse_config()
     target_dir = Path(config["directories"]["workspace_dir"])
 
     env_name = config["general"]["env_name"]
     source_in = config["data_selection"]["source_name_database"]
     source = config["data_selection"]["source_name_output"]
     cluster = config["general"]["cluster"]
+    in_version = config["directories"]["real_input_version"]
+    if in_version == "":
+        in_version = __version__
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
     allowed_M_tels = sorted(config["general"]["allowed_M_tels"])
 
@@ -151,6 +143,7 @@ def main():
             env_name,
             source_name,
             cluster,
+            in_version,
             nice_parameter,
             allowed_M_tels,
         )  # generating the bash script to merge the subruns
