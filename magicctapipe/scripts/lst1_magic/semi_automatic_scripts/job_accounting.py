@@ -212,7 +212,7 @@ def main():
         this_mem = []
         this_return = 0
         for list in list_return:
-            try:            
+            try:
                 with open(list, "r") as fp:
                     returns = fp.readlines()
                     this_return += len(returns)
@@ -268,7 +268,7 @@ def main():
                                     print("Memory usage information is missing")
                         else:
                             print(f"file {file_in} failed with error {rc}")
-                    
+
                     all_cpu += this_cpu
                     all_mem += this_mem
                     this_cpu = np.array(this_cpu)
