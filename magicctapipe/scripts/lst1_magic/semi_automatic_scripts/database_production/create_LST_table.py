@@ -102,8 +102,8 @@ def main():
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,
-            "last_lstchain_file": 90,
-            "processed_lstchain_file": 90,
+            "last_lstchain_file": 100,
+            "processed_lstchain_file": 100,
         },
     )
 

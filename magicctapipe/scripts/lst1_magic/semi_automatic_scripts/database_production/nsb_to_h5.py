@@ -108,6 +108,11 @@ def main():
         LST_h5,
         key=LST_key,
         mode="w",
+        min_itemsize={
+            "lstchain_versions": 20,
+            "last_lstchain_file": 100,
+            "processed_lstchain_file": 100,
+        },
     )
 
 
