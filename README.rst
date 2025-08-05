@@ -43,12 +43,12 @@ first, to isolate the installed version and dependencies from your master enviro
 
 Since version 0.5.1, *magic-cta-pipe* is on conda-forge (`here <https://anaconda.org/conda-forge/magic-cta-pipe>`), which is the easiest way to install it.
 
-To install into an exisiting environment, just do:
+To install into an exisiting environment, just do::
 
     # or conda
     $ mamba install -c conda-forge magic-cta-pipe
 
-or, to create a new environment:
+or, to create a new environment::
 
     # or conda
     mamba create -c conda-forge -n magicio python=3.11 magic-cta-pipe
