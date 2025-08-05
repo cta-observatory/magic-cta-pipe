@@ -51,7 +51,7 @@ To install into an exisiting environment, just do::
 or, to create a new environment::
 
     # or conda
-    mamba create -c conda-forge -n magicio python=3.11 magic-cta-pipe
+    mamba create -c conda-forge -n mcp python=3.11 magic-cta-pipe
 
 Alternatively, the following command will set up a conda virtual environment, add the necessary package channels, and install *magic-cta-pipe* and its dependencies::
 
