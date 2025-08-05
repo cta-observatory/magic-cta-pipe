@@ -41,7 +41,7 @@ The very first step to reduce MAGIC-LST data is to have remote access/credential
 *magic-cta-pipe* and its dependencies may be installed using the *Anaconda* or *Miniconda* package system (if you have mamba installed, we recommend you to use it instead of conda, so that the installation process will be much faster; if you don't have anaconda/miniconda/miniforge, please install one of them into your workspace directory). We recommend creating a conda virtual environment
 first, to isolate the installed version and dependencies from your master environment (this is optional).
 
-Since version 0.5.1, *magic-cta-pipe* is on conda-forge (`here <https://anaconda.org/conda-forge/magic-cta-pipe>`), which is the easiest way to install it.
+Since version 0.5.1, *magic-cta-pipe* is on conda-forge (`here <https://anaconda.org/conda-forge/magic-cta-pipe>`_), which is the easiest way to install it.
 
 To install into an exisiting environment, just do::
 
