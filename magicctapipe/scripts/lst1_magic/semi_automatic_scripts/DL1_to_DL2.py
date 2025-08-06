@@ -45,7 +45,7 @@ def ST_NSB_List(
     nsb_list : list
         List of the MC NSB values
     source : str
-        Source name
+        Source name (output name tag)
     df_LST : :class:`pandas.DataFrame`
         Dataframe collecting the LST1 runs (produced by the create_LST_table script)
     MAGIC_obs_periods : dict
@@ -127,8 +127,8 @@ def bash_DL1Stereo_to_DL2(
     ----------
     target_dir : str
         Path to the working directory
-    source : str
-        Source name
+    source : tuple
+        Entry of dictionary mapping name of source in the database to output name of the target
     env_name : str
         Conda enviroment name
     cluster : str
@@ -155,14 +155,14 @@ def bash_DL1Stereo_to_DL2(
         return
 
     Nights_list = np.sort(
-        glob.glob(f"{target_dir}/v{version}/{source}/DL1Stereo/Merged/*")
+        glob.glob(f"{target_dir}/v{version}/{source[1]}/DL1Stereo/Merged/*")
     )
 
     for night in Nights_list:
         night_date = night.split("/")[-1]
         if str(night_date) not in LST_date:
             continue
-        outdir = f"{target_dir}/v{__version__}/{source}/DL2/{night_date}/logs"
+        outdir = f"{target_dir}/v{__version__}/{source[1]}/DL2/{night_date}/logs"
         File_list = glob.glob(f"{outdir}/*.txt")
 
         for file in File_list:
@@ -172,13 +172,13 @@ def bash_DL1Stereo_to_DL2(
                 continue
             nsb = file.split("/")[-1].split("_")[1]
             period = file.split("/")[-1].split("_")[0]
-            dec = df_LST[df_LST.source == source].iloc[0]["MC_dec"]
+            dec = df_LST[df_LST.source == source[0]].iloc[0]["MC_dec"]
             if np.isnan(dec):
-                print(f"MC_dec is NaN for {source}")
+                print(f"MC_dec is NaN for {source[0]}")
                 continue
             dec = str(dec).replace(".", "").replace("-", "min_")
 
-            RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}{'_high_density' if source in dense_list else ''}/"
+            RFdir = f"{RF_dir}/{period}/NSB{nsb}/v{MC_v}/dec_{dec}{'_high_density' if source[0] in dense_list else ''}/"
 
             if (not os.path.isdir(RFdir)) or (len(glob.glob(f"{RFdir}/*joblib")) < 3):
                 print(f"no RF availables in {RFdir}")
@@ -189,7 +189,7 @@ def bash_DL1Stereo_to_DL2(
             rfsize = (rfsize * 1.75) + 2
             slurm = slurm_lines(
                 queue="short",
-                job_name=f"{source}_DL1_to_DL2",
+                job_name=f"{source[1]}_DL1_to_DL2",
                 nice_parameter=nice,
                 array=process_size,
                 mem=f"{int(rfsize)}g",
@@ -212,7 +212,7 @@ def bash_DL1Stereo_to_DL2(
                 + rc
             )
             with open(
-                f'{source}_DL1_to_DL2_{file.split("/")[-1].rstrip("txt")}sh',
+                f'{source[1]}_DL1_to_DL2_{file.split("/")[-1].rstrip("txt")}sh',
                 "w",
             ) as f:
                 f.writelines(lines)
@@ -275,13 +275,16 @@ def main():
         LST_h5,
         key=LST_key,
     )
-
+    source_dict = {}
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
-    else:
-        source_list = [source]
-    for source_name in source_list:
-        LST_runs_and_dates = f"{source_name}_LST_runs.txt"
+        source_dict = {key: key for key in source_list}
+
+    else:        
+        source_dict = {source_in: source}
+
+    for source_name_couple in source_dict.items():
+        LST_runs_and_dates = f"{source_name_couple[1]}_LST_runs.txt"
         LST_date = []
         for i in np.genfromtxt(LST_runs_and_dates, dtype=str, delimiter=",", ndmin=2):
             LST_date.append(str(i[0].replace("_", "")))
@@ -289,7 +292,7 @@ def main():
         ST_NSB_List(
             target_dir,
             nsb_list,
-            source_name,
+            source_name_couple[1],
             df_LST,
             MAGIC_obs_periods,
             in_version,
@@ -298,7 +301,7 @@ def main():
 
         bash_DL1Stereo_to_DL2(
             target_dir,
-            source_name,
+            source_name_couple,
             env_name,
             cluster,
             RF_dir,
@@ -309,9 +312,9 @@ def main():
             dense_list,
             LST_date,
         )
-        list_of_dl2_scripts = np.sort(glob.glob(f"{source_name}_DL1_to_DL2*.sh"))
+        list_of_dl2_scripts = np.sort(glob.glob(f"{source_name_couple[1]}_DL1_to_DL2*.sh"))
         if len(list_of_dl2_scripts) < 1:
-            logger.warning(f"No bash scripts for {source_name}")
+            logger.warning(f"No bash scripts for {source_name_couple[1]}")
             continue
         launch_jobs = ""
         for n, run in enumerate(list_of_dl2_scripts):
