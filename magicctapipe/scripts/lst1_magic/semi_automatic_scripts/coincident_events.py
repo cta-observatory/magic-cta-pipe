@@ -137,7 +137,7 @@ def linking_bash_lst(
 
                 lstObsDir = i[0].replace("_", "")
                 run_n = i[1]
-                tailcut = df_LST[df_LST.LST1_run == run_n].iloc[0]["tailcut"]
+                tailcut = df_LST[df_LST.LST1_run == str(run_n).zfill(5)].iloc[0]["tailcut"]
                 if tailcut == "":
                     continue
                 inputdir = (
