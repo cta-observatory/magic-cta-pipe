@@ -280,7 +280,7 @@ def main():
         source_list = joblib.load("list_sources.dat")
         source_dict = {key: key for key in source_list}
 
-    else:        
+    else:
         source_dict = {source_in: source}
 
     for source_name_couple in source_dict.items():
@@ -312,7 +312,9 @@ def main():
             dense_list,
             LST_date,
         )
-        list_of_dl2_scripts = np.sort(glob.glob(f"{source_name_couple[1]}_DL1_to_DL2*.sh"))
+        list_of_dl2_scripts = np.sort(
+            glob.glob(f"{source_name_couple[1]}_DL1_to_DL2*.sh")
+        )
         if len(list_of_dl2_scripts) < 1:
             logger.warning(f"No bash scripts for {source_name_couple[1]}")
             continue

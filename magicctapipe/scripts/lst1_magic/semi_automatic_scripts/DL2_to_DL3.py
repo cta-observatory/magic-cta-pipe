@@ -278,7 +278,7 @@ def main():
         source_list = joblib.load("list_sources.dat")
         source_dict = {key: key for key in source_list}
 
-    else:        
+    else:
         source_dict = {source_in: source}
     for source_name_couple in source_dict.items():
         # cp the .txt files from DL1 stereo anaysis to be used again.
@@ -309,7 +309,9 @@ def main():
         print(
             f"***** This file can be found in {target_dir}/v{__version__}/{source_name_couple[1]}"
         )
-        configuration_DL3(target_dir, source_name_couple, config_file, ra, dec, IRF_cuts_type)
+        configuration_DL3(
+            target_dir, source_name_couple, config_file, ra, dec, IRF_cuts_type
+        )
 
         print("***** Generating bash scripts...")
         DL2_to_DL3(
