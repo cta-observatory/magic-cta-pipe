@@ -270,23 +270,22 @@ def main():
                             print(f"file {file_in} failed with error {rc}")                    
 
             except IOError:
-                print(f"{RED}File {list} is missing or cannot be opened{ENDC}")
-                this_return = 0
+                print(f"{RED}File {list} is missing or cannot be opened{ENDC}")               
                 
-            all_cpu += this_cpu
-            all_mem += this_mem
-            this_cpu = np.array(this_cpu)
-            this_mem = np.array(this_mem)
-            mem_info = (
-                f"memory [M]: median={np.median(this_mem)}, max={this_mem.max()}"
-                if len(this_mem)
-                else ""
-            )
-            print(
-                f"CPU: median={np.median(this_cpu)}, max={this_cpu.max()}; {mem_info}"
-                if len(this_cpu)
-                else ""
-            )
+        all_cpu += this_cpu
+        all_mem += this_mem
+        this_cpu = np.array(this_cpu)
+        this_mem = np.array(this_mem)
+        mem_info = (
+            f"memory [M]: median={np.median(this_mem)}, max={this_mem.max()}"
+            if len(this_mem)
+            else ""
+        )
+        print(
+            f"CPU: median={np.median(this_cpu)}, max={this_cpu.max()}; {mem_info}"
+            if len(this_cpu)
+            else ""
+        )
 
         all_todo += this_todo
         all_return += this_return
