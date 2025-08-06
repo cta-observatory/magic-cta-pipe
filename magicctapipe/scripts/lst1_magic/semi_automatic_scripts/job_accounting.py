@@ -267,11 +267,11 @@ def main():
                                 else:
                                     print("Memory usage information is missing")
                         else:
-                            print(f"file {file_in} failed with error {rc}")                    
+                            print(f"file {file_in} failed with error {rc}")
 
             except IOError:
-                print(f"{RED}File {list} is missing or cannot be opened{ENDC}")               
-                
+                print(f"{RED}File {list} is missing or cannot be opened{ENDC}")
+
         all_cpu += this_cpu
         all_mem += this_mem
         this_cpu = np.array(this_cpu)
