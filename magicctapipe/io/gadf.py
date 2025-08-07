@@ -9,6 +9,7 @@ from astropy.coordinates import SkyCoord
 from astropy.io import fits
 from astropy.table import QTable
 from astropy.time import Time
+from ctapipe_io_lst import REFERENCE_LOCATION
 from pyirf.binning import split_bin_lo_hi
 
 from .. import __version__ as MCP_VERSION
@@ -215,6 +216,8 @@ def create_event_hdu(
             ("N_TELS", np.max(event_table["multiplicity"])),
             ("TELLIST", instruments),
             ("INSTRUME", instruments),
+            ("GEOLON", REFERENCE_LOCATION.lon.to_value(u.deg), "deg"),
+            ("GEOLAT", REFERENCE_LOCATION.lat.to_value(u.deg), "deg"),
             ("RA_PNT", event_table["pointing_ra"][0].value, "deg"),
             ("DEC_PNT", event_table["pointing_dec"][0].value, "deg"),
             ("ALT_PNT", event_table["pointing_alt"][0].to_value("deg"), "deg"),
