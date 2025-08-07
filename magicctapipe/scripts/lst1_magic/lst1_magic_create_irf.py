@@ -23,14 +23,17 @@ and MAGIC, allowing for the events of all the telescope combinations.
 The "software(_only_3tel)" types are supposed for the software event
 coincidence with LST-mono and MAGIC-stereo observations, allowing for
 only the events triggering both M1 and M2. The "software" type allows
-for the events of the any 2-tel combinations except the MAGIC-stereo
+for the events of any 2-tel combinations except the MAGIC-stereo
 combination at the moment. The "software_only_3tel" type allows for only
 the events of the 3-tel combination. The "magic_only" type allows for
 only the events of the MAGIC-stereo combination.
 
-There are two types of gammaness and theta cuts, "global" and "dynamic".
+There are three types of gammaness and theta cuts, "global", "dynamic" and
+"custom".
 In case of the dynamic cuts, the optimal cut satisfying a given
 efficiency will be calculated for every energy bin.
+In case of custom cuts, the provided cuts with be applied to the
+target energy binning using the selected scipy.interpolate.interpd1d method.
 
 Usage:
 $ python lst1_magic_create_irf.py
@@ -74,7 +77,12 @@ from pyirf.spectral import (
     calculate_event_weights,
 )
 
-from magicctapipe.io import create_gh_cuts_hdu, format_object, load_mc_dl2_data_file
+from magicctapipe.io import (
+    create_gh_cuts_hdu,
+    format_object,
+    get_custom_cuts,
+    load_mc_dl2_data_file,
+)
 
 __all__ = ["create_irf"]
 
@@ -109,6 +117,9 @@ def create_irf(
     ValueError
         If the input type of gammaness or theta cut is not known
     """
+
+    dynamic_keys = ["efficiency", "min_cut", "max_cut"]
+    custom_keys = ["custom_cuts", "interpolate_kind"]
 
     config_irf = config["create_irf"]
 
@@ -336,10 +347,12 @@ def create_irf(
             event_table_bkg = event_table_bkg[mask_gh]
 
     elif cut_type_gh == "dynamic":
-        config_gh_cuts.pop("global_cut_value", None)
-
         logger.info("\nDynamic gammaness cuts:")
-        logger.info(format_object(config_gh_cuts))
+        logger.info(
+            format_object(
+                {k: config_gh_cuts[k] for k in dynamic_keys if k in config_gh_cuts}
+            )
+        )
 
         gh_efficiency = config_gh_cuts["efficiency"]
         gh_cut_min = config_gh_cuts["min_cut"]
@@ -364,6 +377,20 @@ def create_irf(
             max_value=gh_cut_max,
         )
 
+    elif cut_type_gh == "custom":
+        cut_table_gh = get_custom_cuts(config_gh_cuts, energy_bins)
+        extra_header["GH_CUTS"] = "Custom energy-dependent"
+        output_suffix = "gh_custom"
+        logger.info("\nCustom gammaness cuts.")
+        logger.info(
+            format_object(
+                {k: config_gh_cuts[k] for k in custom_keys if k in config_gh_cuts}
+            )
+        )
+    else:
+        raise ValueError(f"Unknown gammaness-cut type '{cut_type_gh}'.")
+
+    if cut_type_gh == "dynamic" or "custom":
         logger.info(f"\nGammaness-cut table:\n\n{cut_table_gh}")
 
         # Apply the dynamic gammaness cuts
@@ -401,9 +428,6 @@ def create_irf(
 
         irf_hdus.append(hdu_gh_cuts)
 
-    else:
-        raise ValueError(f"Unknown gammaness-cut type '{cut_type_gh}'.")
-
     if is_point_like:
         # Apply the theta cut
         config_theta_cuts = config_irf["theta"]
@@ -423,10 +447,17 @@ def create_irf(
             event_table_gamma = event_table_gamma[mask_theta]
 
         elif cut_type_theta == "dynamic":
-            config_theta_cuts.pop("global_cut_value", None)
 
             logger.info("\nDynamic theta cuts:")
-            logger.info(format_object(config_theta_cuts))
+            logger.info(
+                format_object(
+                    {
+                        k: config_theta_cuts[k]
+                        for k in dynamic_keys
+                        if k in config_theta_cuts
+                    }
+                )
+            )
 
             theta_efficiency = config_theta_cuts["efficiency"]
             theta_cut_min = u.Quantity(config_theta_cuts["min_cut"])
@@ -450,7 +481,24 @@ def create_irf(
                 min_value=theta_cut_min,
                 max_value=theta_cut_max,
             )
+        elif cut_type_theta == "custom":
+            cut_table_theta = get_custom_cuts(config_theta_cuts, energy_bins)
+            extra_header["THETA_CUTS"] = "Custom energy-dependent"
+            output_suffix += "_theta_custom"
+            logger.info("\nCustom theta cuts.")
+            logger.info(
+                format_object(
+                    {
+                        k: config_theta_cuts[k]
+                        for k in custom_keys
+                        if k in config_theta_cuts
+                    }
+                )
+            )
+        else:
+            raise ValueError(f"Unknown theta-cut type '{cut_type_theta}'.")
 
+        if cut_type_theta == "dynamic" or "custom":
             logger.info(f"\nTheta-cut table:\n\n{cut_table_theta}")
 
             # Apply the dynamic theta cuts
@@ -478,9 +526,6 @@ def create_irf(
             )
 
             irf_hdus.append(hdu_rad_max)
-
-        else:
-            raise ValueError(f"Unknown theta-cut type '{cut_type_theta}'.")
 
     # Create an effective-area HDU
     logger.info("\nCreating an effective-area HDU...")

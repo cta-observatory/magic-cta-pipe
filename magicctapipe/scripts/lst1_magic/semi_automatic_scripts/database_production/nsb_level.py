@@ -7,12 +7,10 @@ Usage:
 $ nsb_level (-c config.yaml -b YYYY_MM_DD -e YYYY_MM_DD)
 """
 
-import argparse
 import glob
 import json
 import logging
 import os
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -20,8 +18,7 @@ import yaml
 
 from magicctapipe.io import resource_file
 from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import slurm_lines
-
-from .lstchain_version import lstchain_versions
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["bash_scripts"]
 
@@ -74,35 +71,16 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="../config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-    parser.add_argument(
-        "--begin-date",
-        "-b",
-        dest="begin_date",
-        type=str,
-        help="Begin date to start NSB evaluation from the database.",
-    )
-    parser.add_argument(
-        "--end-date",
-        "-e",
-        dest="end_date",
-        type=str,
-        help="End date to start NSB evaluation from the database.",
-    )
+    parser = auto_MCP_parser(add_dates=True)
+
     args = parser.parse_args()
     with open(
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
         config = yaml.safe_load(f)
-    config_db = resource_file("database_config.yaml")
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"
@@ -114,13 +92,13 @@ def main():
     env_name = config["general"]["env_name"]
 
     cluster = config["general"]["cluster"]
-
+    lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     df_LST = pd.read_hdf(
         LST_h5,
         key=LST_key,
     )
     lstchain_v = config["general"]["LST_version"]
-    lstchain_modified = config["general"]["lstchain_modified_config"]
+    lstchain_modified = config["expert_parameters"]["lstchain_modified_config"]
     conda_path = os.environ["CONDA_PREFIX"]
     lst_config_orig = (
         str(conda_path)
@@ -134,14 +112,10 @@ def main():
         json.dump(lst_dict, outfile)
     lst_config = "lstchain.json"
 
-    min = datetime.strptime(args.begin_date, "%Y_%m_%d")
-    max = datetime.strptime(args.end_date, "%Y_%m_%d")
-    lst = pd.to_datetime(df_LST["DATE"].str.replace("_", "-"))
-    df_LST["date"] = lst
-    df_LST = df_LST[df_LST["date"] >= min]
-    df_LST = df_LST[df_LST["date"] <= max]
-
-    df_LST = df_LST.drop(columns="date")
+    if args.begin != 0:
+        df_LST = df_LST[df_LST["DATE"].astype(int) >= args.begin]
+    if args.end != 0:
+        df_LST = df_LST[df_LST["DATE"].astype(int) <= args.end]
 
     print("***** Generating bashscripts...")
     for i, row in df_LST.iterrows():
@@ -156,15 +130,32 @@ def main():
         max_common = common_v[-1]
 
         if lstchain_v != str(max_common):
-
             continue
 
         run_number = row["LST1_run"]
         date = row["DATE"]
 
+        tailcut = []
+        tailcut_list = [
+            i.split("/")[-1]
+            for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut*")
+        ]
+
+        for tail in tailcut_list:
+            if os.path.isfile(
+                f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
+            ):
+                tailcut.append(tail)
+        if len(tailcut) > 1:
+            print(
+                f"more than one tailcut for the latest ({max_common}) lstchain version for run {run_number}. Tailcut = {tailcut}. Skipping..."
+            )
+            continue
+
         df_LST.loc[
             i, "processed_lstchain_file"
-        ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
+        ] = f"/fefs/aswg/data/real/DL1/{date}/{max_common}/{tailcut[0]}/dl1_LST-1.Run{run_number}.h5"
+        df_LST.loc[i, "tailcut"] = str(tailcut[0])
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
         bash_scripts(run_number, date, args.config_file, env_name, cluster, lst_config)
@@ -173,7 +164,7 @@ def main():
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")
     list_of_bash_scripts = np.sort(glob.glob("nsb_*_run_*.sh"))
 
-    if len(list_of_bash_scripts) < 1:
+    if len(list_of_bash_scripts) == 0:
         logger.warning(
             "No bash script has been produced to evaluate the NSB level for the provided LST runs. Please check the input dates"
         )
@@ -193,15 +184,15 @@ def main():
         launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
     os.system(launch_jobs)
-
+    df_LST = df_LST[df_LST["source"].notna()]
     df_LST.to_hdf(
         LST_h5,
         key=LST_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,
-            "last_lstchain_file": 90,
-            "processed_lstchain_file": 90,
+            "last_lstchain_file": 100,
+            "processed_lstchain_file": 100,
         },
     )
 

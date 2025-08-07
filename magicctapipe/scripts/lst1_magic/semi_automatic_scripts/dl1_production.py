@@ -13,7 +13,6 @@ No LST data is used here.
 Standard usage:
 $ dl1_production (-c config_file.yaml)
 """
-import argparse
 import glob
 import logging
 import os
@@ -29,6 +28,7 @@ from magicctapipe.scripts.lst1_magic.semi_automatic_scripts.clusters import (
     rc_lines,
     slurm_lines,
 )
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = [
     "config_file_gen",
@@ -41,7 +41,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def config_file_gen(target_dir, source_name, config_file):
+def config_file_gen(target_dir, source_name, config_dict):
 
     """
     Here we create the configuration file needed for transforming DL0 into DL1
@@ -52,16 +52,9 @@ def config_file_gen(target_dir, source_name, config_file):
         Directory to store the results
     source_name : str
         Name of the target source
-    config_file : str
-        Path to MCP configuration file (e.g., resources/config.yaml)
+    config_dict : dict
+        Dictionary of a configuration file (e.g., resources/config.yaml)
     """
-
-    if config_file == "":
-        config_file = resource_file("config.yaml")
-    with open(
-        config_file, "rb"
-    ) as fc:  # "rb" mode opens the file in binary format for reading
-        config_dict = yaml.safe_load(fc)
 
     conf = {
         "mc_tel_ids": config_dict["mc_tel_ids"],
@@ -214,24 +207,8 @@ def main():
 
     # Here we are simply collecting the parameters from the command line, as input file, output directory, and configuration file
 
-    parser = argparse.ArgumentParser()
+    config = auto_MCP_parse_config()
 
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
-
-    telescope_ids = list(config["mc_tel_ids"].values())
     env_name = config["general"]["env_name"]
     config_file = config["general"]["base_config_file"]
     source_in = config["data_selection"]["source_name_database"]
@@ -240,6 +217,14 @@ def main():
     target_dir = Path(config["directories"]["workspace_dir"])
     nice_parameter = config["general"]["nice"] if "nice" in config["general"] else None
     allowed_M_tels = sorted(config["general"]["allowed_M_tels"])
+
+    if config_file == "":
+        config_file = resource_file("config.yaml")
+    with open(
+        config_file, "rb"
+    ) as fc:  # "rb" mode opens the file in binary format for reading
+        config_dict = yaml.safe_load(fc)
+    telescope_ids = list(config_dict["mc_tel_ids"].values())
 
     if source_in is None:
         source_list = joblib.load("list_sources.dat")
@@ -264,7 +249,7 @@ def main():
         directories_generator_real(
             str(target_dir), telescope_ids, MAGIC_runs, source_name, allowed_M_tels
         )  # Here we create all the necessary directories in the given workspace and collect the main directory of the target
-        config_file_gen(target_dir, source_name, config_file)
+        config_file_gen(target_dir, source_name, config_dict)
 
         # Below we run the analysis on the MAGIC data
 

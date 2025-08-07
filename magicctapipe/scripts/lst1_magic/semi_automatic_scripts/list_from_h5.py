@@ -2,7 +2,6 @@
 This script creates the lists of MAGIC and LST runs (date and run number) from a dataframe in the .h5 format for a specific time range (or specific dates).
 """
 
-import argparse
 import os
 from datetime import datetime
 
@@ -12,6 +11,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
+from magicctapipe.utils import auto_MCP_parse_config
 
 __all__ = ["split_lst_date", "magic_date", "clear_files", "list_run"]
 
@@ -223,23 +223,10 @@ def main():
     Main function
     """
 
-    parser = argparse.ArgumentParser()
-
-    parser.add_argument(
-        "--config-file",
-        "-c",
-        dest="config_file",
-        type=str,
-        default="./config_auto_MCP.yaml",
-        help="Path to a configuration file config_auto_MCP.yaml",
-    )
-
-    args = parser.parse_args()
-    with open(
-        args.config_file, "rb"
-    ) as f:  # "rb" mode opens the file in binary format for reading
-        config = yaml.safe_load(f)
-    config_db = resource_file("database_config.yaml")
+    config = auto_MCP_parse_config()
+    config_db = config["general"]["base_db_config_file"]
+    if config_db == "":
+        config_db = resource_file("database_config.yaml")
 
     with open(
         config_db, "rb"
