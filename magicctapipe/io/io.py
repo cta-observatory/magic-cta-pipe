@@ -673,7 +673,7 @@ def load_lst_dl1_data_file(input_file):
     except OSError:
         logger.warning(
             "SubarrayDescription couldn't be loaded from the LST-1 file.\n"
-            "It is likely not from lstchain v0.10. A default one will replace it."
+            "It is likely not from lstchain v0.10/v0.11. A default one will replace it."
         )
         subarray = LSTEventSource.create_subarray(
             tel_id=1, reference_location=REFERENCE_LOCATION
