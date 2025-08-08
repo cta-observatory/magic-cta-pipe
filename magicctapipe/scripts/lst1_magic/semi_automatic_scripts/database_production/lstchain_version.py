@@ -14,7 +14,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
-from magicctapipe.utils import auto_MCP_parse_config
+from magicctapipe.utils import auto_MCP_parser
 
 __all__ = ["version_lstchain"]
 
@@ -30,14 +30,19 @@ def version_lstchain(df_LST, lstchain_versions):
     lstchain_versions : list
         List of the available lstchain varsions that can be processed by MCP (from older to newer)
     """
+    cut_date=20250601
     for i, row in df_LST.iterrows():
 
         version = []
         run = row["LST1_run"]
         run = format(int(run), "05d")
         date = row["DATE"]
+        if int(date) < cut_date:
+            base_path="/fefs/aswg/data/real/DL1"
+        else:
+            base_path="/fefs/onsite/data/lst-pipe/LSTN-01/DL1"
         directories_version = [
-            i.split("/")[-1] for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/v*")
+            i.split("/")[-1] for i in glob.glob(f"{base_path}/{date}/v*")
         ]
         tailcut_list = []
 
@@ -45,11 +50,11 @@ def version_lstchain(df_LST, lstchain_versions):
 
             tailcut_list = [
                 i.split("/")[-1]
-                for i in glob.glob(f"/fefs/aswg/data/real/DL1/{date}/{vers}/tailcut*")
+                for i in glob.glob(f"{base_path}/{date}/{vers}/tailcut*")
             ]
             for tail in tailcut_list:
                 if os.path.isfile(
-                    f"/fefs/aswg/data/real/DL1/{date}/{vers}/{tail}/dl1_LST-1.Run{run}.h5"
+                    f"{base_path}/{date}/{vers}/{tail}/dl1_LST-1.Run{run}.h5"
                 ):
                     if vers not in version:
                         version.append(vers)
@@ -72,16 +77,16 @@ def version_lstchain(df_LST, lstchain_versions):
         tailcut_list = [
             i.split("/")[-1]
             for i in glob.glob(
-                f"/fefs/aswg/data/real/DL1/{date}/{max_version}/tailcut*"
+                f"{base_path}/{date}/{max_version}/tailcut*"
             )
         ]
         tail_file = []
         for tail in tailcut_list:
             if os.path.isfile(
-                f"/fefs/aswg/data/real/DL1/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
+                f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
             ):
                 tail_file.append(tail)
-                name = f"/fefs/aswg/data/real/DL1/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
+                name = f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
         if len(tail_file) > 1:
             print(
                 f"More than one tailcut for the latest ({max_version}) lstchain version for run {run}. Tailcut = {tail_file}. Skipping..."
@@ -96,7 +101,13 @@ def main():
     """
     Main function
     """
-    config = auto_MCP_parse_config()
+    parser = auto_MCP_parser(add_dates=True)
+    args = parser.parse_args()
+    with open(
+        args.config_file, "rb"
+    ) as f:  # "rb" mode opens the file in binary format for reading
+        config = yaml.safe_load(f)
+
     lstchain_versions = config["expert_parameters"]["lstchain_versions"]
     config_db = config["general"]["base_db_config_file"]
     if config_db == "":

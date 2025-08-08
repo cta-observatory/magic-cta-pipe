@@ -176,6 +176,7 @@ def main():
     date = args.day
     denominator = args.denominator
     lst_config = args.lst_conf
+    cut_date=20250601
     simtel = config["expert_parameters"]["simtel_nsb"]
     nsb_list = config["expert_parameters"]["nsb"]
     lst_version = config["general"]["LST_version"]
@@ -211,7 +212,10 @@ def main():
         )
         sys.exit(NO_TAILCUT)
 
-    inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{tailcut}"
+    if int(date) < cut_date:
+        inputdir = f"/fefs/aswg/data/real/DL1/{date}/{lst_version}/{tailcut}"
+    else:
+        inputdir = f"/fefs/onsite/data/lst-pipe/LSTN-01/DL1/{date}/{lst_version}/{tailcut}"
     run_list = np.sort(glob.glob(f"{inputdir}/dl1*Run*{run_number}.*.h5"))
     noise = nsb(run_list, simtel, lst_config, run_number, denominator)
     if len(noise) == 0:
