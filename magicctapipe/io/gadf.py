@@ -218,6 +218,7 @@ def create_event_hdu(
             ("INSTRUME", instruments),
             ("GEOLON", REFERENCE_LOCATION.lon.to_value(u.deg), "deg"),
             ("GEOLAT", REFERENCE_LOCATION.lat.to_value(u.deg), "deg"),
+            ("ALTITUDE", round(REFERENCE_LOCATION.height.to_value(u.m), 2), "m"),
             ("RA_PNT", event_table["pointing_ra"][0].value, "deg"),
             ("DEC_PNT", event_table["pointing_dec"][0].value, "deg"),
             ("ALT_PNT", event_table["pointing_alt"][0].to_value("deg"), "deg"),
