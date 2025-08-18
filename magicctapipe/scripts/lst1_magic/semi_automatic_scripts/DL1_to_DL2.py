@@ -173,7 +173,9 @@ def bash_DL1Stereo_to_DL2(
                     for line in inf:
                         if line not in runs_written:
                             outf.write(line)
-                            runs_written.add(line) 
+                            runs_written.add(line)
+                        else:
+                            print(f"WARNING: {line} already written in the list of files to be processed") 
             os.rename(f"{file}_out", file)
             with open(file, "r") as f:
                 process_size = len(f.readlines()) - 1

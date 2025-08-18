@@ -214,7 +214,16 @@ def main():
         for list in list_return:
             try:
                 with open(list, "r") as fp:
-                    returns = fp.readlines()
+                    returns_orig = fp.readlines()
+                    returns_back = returns_orig.reverse()
+                    returns = []
+                    returns_drop = []
+                    for ret in returns_back:
+                        if ret.split()[0] not in returns_drop:
+                            returns.append(ret)
+                            returns_drop.append(ret.split()[0])
+                    if len(returns)<len(returns_orig):
+                        print(f"{YELLOW}Duplicated lines (i.e., corresponding to same processed file) in {list}{ENDC}")
                     this_return += len(returns)
                     for line in returns:
                         line = line.split()
