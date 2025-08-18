@@ -185,7 +185,6 @@ def main():
     lst_config = args.lst_conf
     simtel = config["expert_parameters"]["simtel_nsb"]
     nsb_list = config["expert_parameters"]["nsb"]
-    lst_version = config["general"]["LST_version"]
     width = np.diff(nsb_list, append=[nsb_list[-1] + 0.5]) / 2.0
     nsb_limit = [-0.01] + list(
         nsb_list + width

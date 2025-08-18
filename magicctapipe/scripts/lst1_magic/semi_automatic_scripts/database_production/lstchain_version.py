@@ -31,14 +31,17 @@ def version_lstchain(df_LST, lstchain_versions):
     lstchain_versions : list
         List of the available lstchain varsions that can be processed by MCP (from older to newer)
     """
-    
+
     for i, row in df_LST.iterrows():
 
         version = []
         run = row["LST1_run"]
         run = format(int(run), "05d")
         date = row["DATE"]
-        for base_path in ["/fefs/aswg/data/real/DL1", "/fefs/onsite/data/lst-pipe/LSTN-01/DL1"]:
+        for base_path in [
+            "/fefs/aswg/data/real/DL1",
+            "/fefs/onsite/data/lst-pipe/LSTN-01/DL1",
+        ]:
             if not os.path.isdir(f"{base_path}/{date}"):
                 continue
             directories_version = [
@@ -75,22 +78,25 @@ def version_lstchain(df_LST, lstchain_versions):
             )
             continue
         tail_file = []
-        for base_path in ["/fefs/aswg/data/real/DL1", "/fefs/onsite/data/lst-pipe/LSTN-01/DL1"]:
+        for base_path in [
+            "/fefs/aswg/data/real/DL1",
+            "/fefs/onsite/data/lst-pipe/LSTN-01/DL1",
+        ]:
             if not os.path.isdir(f"{base_path}/{date}/{max_version}"):
                 continue
             tailcut_list = [
                 i.split("/")[-1]
-                for i in glob.glob(
-                    f"{base_path}/{date}/{max_version}/tailcut*"
-                )
+                for i in glob.glob(f"{base_path}/{date}/{max_version}/tailcut*")
             ]
-            
+
             for tail in tailcut_list:
                 if os.path.isfile(
                     f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
                 ):
                     tail_file.append(tail)
-                    name = f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
+                    name = (
+                        f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
+                    )
         if len(np.unique(tail_file)) > 1:
             print(
                 f"More than one tailcut for the latest ({max_version}) lstchain version for run {run}. Tailcut = {tail_file}. Skipping..."

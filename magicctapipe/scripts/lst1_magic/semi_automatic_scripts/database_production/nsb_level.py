@@ -46,7 +46,7 @@ def bash_scripts(run, date, config, env_name, cluster, lst_config, inputdir):
     lst_config : str
         Configuration file lstchain
     inputdir : str
-        Path where LST DL1 file is located 
+        Path where LST DL1 file is located
     """
     if cluster != "SLURM":
         logger.warning(
@@ -137,10 +137,13 @@ def main():
         run_number = row["LST1_run"]
         date = row["DATE"]
         tailcut = []
-        for base_path in ["/fefs/aswg/data/real/DL1", "/fefs/onsite/data/lst-pipe/LSTN-01/DL1"]:
+        for base_path in [
+            "/fefs/aswg/data/real/DL1",
+            "/fefs/onsite/data/lst-pipe/LSTN-01/DL1",
+        ]:
             if not os.path.isdir(f"{base_path}/{date}/{max_common}"):
                 continue
-            
+
             tailcut_list = [
                 i.split("/")[-1]
                 for i in glob.glob(f"{base_path}/{date}/{max_common}/tailcut*")
@@ -151,24 +154,23 @@ def main():
                     f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
                 ):
                     tailcut.append(tail)
-                    name=f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
+                    name = f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
         if len(np.unique(tailcut)) > 1:
             print(
                 f"more than one tailcut for the latest ({max_common}) lstchain version for run {run_number}. Tailcut = {tailcut}. Skipping..."
             )
             continue
 
-        
-        df_LST.loc[
-            i, "processed_lstchain_file"
-        ] = name
+        df_LST.loc[i, "processed_lstchain_file"] = name
 
-        inputdir = os.path.dirname(name) 
+        inputdir = os.path.dirname(name)
 
         df_LST.loc[i, "tailcut"] = str(tailcut[0])
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
-        bash_scripts(run_number, date, args.config_file, env_name, cluster, lst_config, inputdir)
+        bash_scripts(
+            run_number, date, args.config_file, env_name, cluster, lst_config, inputdir
+        )
 
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")

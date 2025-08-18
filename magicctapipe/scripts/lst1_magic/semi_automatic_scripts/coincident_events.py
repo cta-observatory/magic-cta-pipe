@@ -116,7 +116,7 @@ def linking_bash_lst(
     coincidence_DL1_dir = f"{target_dir}/v{__version__}/{source_name}"
 
     MAGIC_DL1_dir = f"{target_dir}/v{version}/{source_name}/DL1"
-    
+
     dates = [os.path.basename(x) for x in glob.glob(f"{MAGIC_DL1_dir}/Merged/[0-9]*")]
     if cluster != "SLURM":
         logger.warning(
@@ -140,10 +140,12 @@ def linking_bash_lst(
                 tailcut = df_LST[df_LST.LST1_run == run_n].iloc[0]["tailcut"]
                 if tailcut == "":
                     continue
-                inputfile_run = df_LST[df_LST.LST1_run == run_n].iloc[0]["processed_lstchain_file"]
+                inputfile_run = df_LST[df_LST.LST1_run == run_n].iloc[0][
+                    "processed_lstchain_file"
+                ]
                 if inputfile_run == "":
                     continue
-                inputdir = os.path.dirname(inputfile_run)                
+                inputdir = os.path.dirname(inputfile_run)
 
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
                 os.makedirs(f"{outputdir}/logs", exist_ok=True)
