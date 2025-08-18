@@ -9,6 +9,7 @@ $ check_coord_db (-c config_auto_MCP.yaml)
 """
 
 import glob
+import json
 import math
 
 import numpy as np
@@ -30,6 +31,14 @@ def main():
     """
 
     parser = auto_MCP_parser()
+    parser.add_argument(
+        "--mc-dec",
+        "-m",
+        dest="dec_mc",
+        type=str,
+        default="./dec_mc.json",
+        help="File with list of MC declinations",
+    )
     args = parser.parse_args()
 
     with open(
@@ -112,6 +121,12 @@ def main():
         )
         dec_file = coord["MRawRunHeader.fSourceDEC"][0] / seconds_per_hour
 
+        # check RF declination line
+        with open(args.dec_mc) as f:
+            dec_mc = np.asarray(json.load(f)).astype(np.float64)
+
+        mc_dec_file = float(dec_mc[np.argmin(np.abs(dec_file - dec_mc))])
+        mc_dec_db = lst_df.loc[lst_df["LST1_run"] == lst_run]["MC_dec"].values[0]
         if (math.isclose(ra_db, ra_file, abs_tol=0.02)) and (
             math.isclose(dec_db, dec_file, abs_tol=0.02)
         ):
@@ -121,7 +136,17 @@ def main():
                 f"Coordinates not equal in MAGIC Calibrated files and in LST database for {source}"
             )
             print(
-                f"Database RA = {ra_db}, DEC ={dec_db}; MAGIC ROOT files RA = {ra_file}, DEC = {dec_file}\n\n"
+                f"Database RA = {ra_db}, DEC ={dec_db}; MAGIC ROOT files RA = {ra_file}, DEC = {dec_file}"
+            )
+        if math.isclose(mc_dec_file, mc_dec_db, abs_tol=0.01):
+            print("\n\n")
+            continue
+        else:
+            print(
+                f"Estimated RF declination line from MAGIC Calibrated files is not the same as the one in LST database for {source}"
+            )
+            print(
+                f"From database MC_dec = {mc_dec_db}; from MAGIC ROOT files MC_dec {mc_dec_file}\n\n"
             )
 
 
