@@ -222,8 +222,10 @@ def main():
                         if ret.split()[0] not in returns_drop:
                             returns.append(ret)
                             returns_drop.append(ret.split()[0])
-                    if len(returns)<len(returns_orig):
-                        print(f"{YELLOW}Duplicated lines (i.e., corresponding to same processed file) in {list}{ENDC}")
+                    if len(returns) < len(returns_orig):
+                        print(
+                            f"{YELLOW}Duplicated lines (i.e., corresponding to same processed file) in {list}{ENDC}"
+                        )
                     this_return += len(returns)
                     for line in returns:
                         line = line.split()
