@@ -27,7 +27,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def bash_scripts(run, date, config, env_name, cluster, lst_config):
+def bash_scripts(run, date, config, env_name, cluster, lst_config, inputdir):
 
     """Here we create the bash scripts (one per LST run)
 
@@ -45,6 +45,8 @@ def bash_scripts(run, date, config, env_name, cluster, lst_config):
         Cluster system
     lst_config : str
         Configuration file lstchain
+    inputdir : str
+        Path where LST DL1 file is located 
     """
     if cluster != "SLURM":
         logger.warning(
@@ -57,7 +59,7 @@ def bash_scripts(run, date, config, env_name, cluster, lst_config):
         out_name=f"slurm-nsb_{run}-%x.%j",
     )
     lines = slurm + [
-        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} -l {lst_config} > nsblog_{date}_{run}_",
+        f"conda run -n  {env_name} LSTnsb -c {config} -i {run} -d {date} -l {lst_config} -p {inputdir} > nsblog_{date}_{run}_",
         "${SLURM_JOB_ID}.log 2>&1 \n\n",
     ]
 
@@ -74,7 +76,6 @@ def main():
     parser = auto_MCP_parser(add_dates=True)
 
     args = parser.parse_args()
-    cut_date=20250601
     with open(
         args.config_file, "rb"
     ) as f:  # "rb" mode opens the file in binary format for reading
@@ -135,22 +136,23 @@ def main():
 
         run_number = row["LST1_run"]
         date = row["DATE"]
-        if int(date) < cut_date:
-            base_path="/fefs/aswg/data/real/DL1"
-        else:
-            base_path="/fefs/onsite/data/lst-pipe/LSTN-01/DL1"
         tailcut = []
-        tailcut_list = [
-            i.split("/")[-1]
-            for i in glob.glob(f"{base_path}/{date}/{max_common}/tailcut*")
-        ]
+        for base_path in ["/fefs/aswg/data/real/DL1", "/fefs/onsite/data/lst-pipe/LSTN-01/DL1"]:
+            if not os.path.isdir(f"{base_path}/{date}/{max_common}"):
+                continue
+            
+            tailcut_list = [
+                i.split("/")[-1]
+                for i in glob.glob(f"{base_path}/{date}/{max_common}/tailcut*")
+            ]
 
-        for tail in tailcut_list:
-            if os.path.isfile(
-                f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
-            ):
-                tailcut.append(tail)
-        if len(tailcut) > 1:
+            for tail in tailcut_list:
+                if os.path.isfile(
+                    f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
+                ):
+                    tailcut.append(tail)
+                    name=f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
+        if len(np.unique(tailcut)) > 1:
             print(
                 f"more than one tailcut for the latest ({max_common}) lstchain version for run {run_number}. Tailcut = {tailcut}. Skipping..."
             )
@@ -159,12 +161,14 @@ def main():
         
         df_LST.loc[
             i, "processed_lstchain_file"
-        ] = f"{base_path}/{date}/{max_common}/tailcut84/dl1_LST-1.Run{run_number}.h5"
-       
+        ] = name
+
+        inputdir = os.path.dirname(name) 
+
         df_LST.loc[i, "tailcut"] = str(tailcut[0])
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
-        bash_scripts(run_number, date, args.config_file, env_name, cluster, lst_config)
+        bash_scripts(run_number, date, args.config_file, env_name, cluster, lst_config, inputdir)
 
     print("Process name: nsb")
     print("To check the jobs submitted to the cluster, type: squeue -n nsb")

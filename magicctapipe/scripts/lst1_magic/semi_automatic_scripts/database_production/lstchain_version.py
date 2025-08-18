@@ -10,6 +10,7 @@ $ lstchain_version
 import glob
 import os
 
+import numpy as np
 import pandas as pd
 import yaml
 
@@ -73,6 +74,7 @@ def version_lstchain(df_LST, lstchain_versions):
                 f"issue with lstchain versions for run {run}\nAvailable versions: {version}, allowed versions: {lstchain_versions}\n\n\n"
             )
             continue
+        tail_file = []
         for base_path in ["/fefs/aswg/data/real/DL1", "/fefs/onsite/data/lst-pipe/LSTN-01/DL1"]:
             if not os.path.isdir(f"{base_path}/{date}/{max_version}"):
                 continue
@@ -82,18 +84,18 @@ def version_lstchain(df_LST, lstchain_versions):
                     f"{base_path}/{date}/{max_version}/tailcut*"
                 )
             ]
-            tail_file = []
+            
             for tail in tailcut_list:
                 if os.path.isfile(
                     f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
                 ):
                     tail_file.append(tail)
                     name = f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
-            if len(tail_file) > 1:
-                print(
-                    f"More than one tailcut for the latest ({max_version}) lstchain version for run {run}. Tailcut = {tail_file}. Skipping..."
-                )
-                continue
+        if len(np.unique(tail_file)) > 1:
+            print(
+                f"More than one tailcut for the latest ({max_version}) lstchain version for run {run}. Tailcut = {tail_file}. Skipping..."
+            )
+            continue
 
         df_LST.loc[i, "last_lstchain_file"] = name
 

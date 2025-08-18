@@ -140,7 +140,7 @@ def linking_bash_lst(
                 tailcut = df_LST[df_LST.LST1_run == run_n].iloc[0]["tailcut"]
                 if tailcut == "":
                     continue
-                inputfile_run = df_LST[df_LST.LST1_run == run_n].iloc[0]["processed_file"]
+                inputfile_run = df_LST[df_LST.LST1_run == run_n].iloc[0]["processed_lstchain_file"]
                 if inputfile_run == "":
                     continue
                 inputdir = os.path.dirname(inputfile_run)                
