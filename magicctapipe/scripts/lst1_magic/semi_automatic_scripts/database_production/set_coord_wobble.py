@@ -83,14 +83,16 @@ def main():
     i = 0
     for src in sources:
         if (
-             (src in source_dict.keys())
-             and (source_dict.get(src)[0] != "NaN")
-             and (source_dict.get(src)[1] != "NaN")
+            (src in source_dict.keys())
+            and (source_dict.get(src)[0] != "NaN")
+            and (source_dict.get(src)[1] != "NaN")
         ):
-             src_ra = float(source_dict.get(src)[0])
-             src_dec = float(source_dict.get(src)[1])
+            src_ra = float(source_dict.get(src)[0])
+            src_dec = float(source_dict.get(src)[1])
         else:
-            print(f"{i}: {src} Ra and/or Dec not found in the dictionary. Trying with astropy...")
+            print(
+                f"{i}: {src} Ra and/or Dec not found in the dictionary. Trying with astropy..."
+            )
             try:
                 coord = SkyCoord.from_name(src)
                 if src == "Crab":
@@ -101,7 +103,9 @@ def main():
                 src_ra = coord.ra.degree
 
             except NameResolveError:
-                print(f"\t{i}: {src} coordinates not found neither in the dictionaries nor through astropy.")
+                print(
+                    f"\t{i}: {src} coordinates not found neither in the dictionaries nor through astropy."
+                )
                 src_ra = np.nan
                 src_dec = np.nan
 
