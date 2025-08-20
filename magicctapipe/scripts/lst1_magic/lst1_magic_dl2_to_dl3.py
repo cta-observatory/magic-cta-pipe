@@ -214,7 +214,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         extname="EFFECTIVE AREA",
         **extra_header,
     )
-    
+
     # Interpolate the energy dispersion with a custom way,
     # TBD: use pyirf quantile interpolation instead
     logger.info("Interpolating the energy dispersion...")
