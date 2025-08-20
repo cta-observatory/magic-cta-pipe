@@ -196,15 +196,15 @@ def main():
         launch_jobs += (" && " if n > 0 else "") + f"sbatch {run}"
 
     os.system(launch_jobs)
-
+    df_LST = df_LST[df_LST["source"].notna()]
     df_LST.to_hdf(
         LST_h5,
         key=LST_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,
-            "last_lstchain_file": 90,
-            "processed_lstchain_file": 90,
+            "last_lstchain_file": 100,
+            "processed_lstchain_file": 100,
         },
     )
 

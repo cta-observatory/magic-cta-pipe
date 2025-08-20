@@ -184,14 +184,16 @@ def main():
     df_LST = pd.concat([df_LST, df_LST_full]).drop_duplicates(
         subset="LST1_run", keep="first"
     )
+    df_LST = df_LST.sort_values(by=["DATE", "source", "LST1_run"])
+    df_LST = df_LST[df_LST["source"].notna()]
     df_LST.to_hdf(
         LST_h5,
         key=LST_key,
         mode="w",
         min_itemsize={
             "lstchain_versions": 20,
-            "last_lstchain_file": 90,
-            "processed_lstchain_file": 90,
+            "last_lstchain_file": 100,
+            "processed_lstchain_file": 100,
         },
     )
 

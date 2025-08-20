@@ -232,7 +232,7 @@ intersphinx_mapping = {
     "cython": ("https://docs.cython.org/en/latest/", None),
     "iminuit": ("https://scikit-hep.org/iminuit/", None),
     "traitlets": ("https://traitlets.readthedocs.io/en/stable/", None),
-    "ctapipe": ("https://ctapipe.readthedocs.io/en/v0.19.2/", None),
+    "ctapipe": ("https://ctapipe.readthedocs.io/en/v0.25.0/", None),
     "pyirf": ("https://pyirf.readthedocs.io/en/stable/", None),
 }
 

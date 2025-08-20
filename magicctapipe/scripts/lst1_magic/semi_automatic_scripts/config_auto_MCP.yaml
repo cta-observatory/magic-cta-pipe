@@ -29,7 +29,7 @@ expert_parameters: # DON'T CHANGE THESE VALUES, UNLESS YOU REALLY KNOW WHAT YOU 
     simtel_nsb: "/fefs/aswg/data/mc/DL0/LSTProd2/TestDataset/sim_telarray/node_theta_14.984_az_355.158_/output_v1.4/simtel_corsika_theta_14.984_az_355.158_run10.simtel.gz" # simtel file (DL0) to evaluate NSB
     lstchain_modified_config: true # use_flatfield_heuristic = True to evaluate NSB    
     nsb: [0.5, 1.0, 1.5, 2.0, 2.5, 3.0]
-    lstchain_versions: ["v0.9", "v0.10"]
+    lstchain_versions: ["v0.9", "v0.10", "v0.11"] #versions (from older to newer) that can be processed through this pipeline. If more than one version is available for a file, the last/more recent one will be processed.
     MAGIC_obs_periods:
         ST0316A: [["2020_10_24", "2021_09_29"]]
         ST0317A: [["2021_12_30", "2022_06_09"]]

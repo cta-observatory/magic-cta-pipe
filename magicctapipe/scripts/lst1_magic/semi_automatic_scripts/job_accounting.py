@@ -135,7 +135,6 @@ def main():
             sorted(
                 glob.glob(f"{indir}/[0-9]*/[0-9]*/logs")
                 + glob.glob(f"{indir}/[0-9]*/logs")
-                + glob.glob(f"{indir}/logs")
                 + glob.glob(f"{indir}/g_*/[0-9]*/logs")
             )
         )
@@ -171,8 +170,10 @@ def main():
     all_jobs = []
 
     for dir in dirs:
-
-        this_date_str = re.sub(f".+/{args.data_level}/*g*.*/", "", dir)
+        if args.data_level == "DL3":
+            this_date_str = re.sub(f".+/{args.data_level}/*g*.*/", "", dir)
+        else:
+            this_date_str = re.sub(f".+/{args.data_level}/", "", dir)
         this_date_str = re.sub(r"\D", "", this_date_str.split("/")[0])
         this_date = datetime.strptime(this_date_str, "%Y%m%d")
         if timerange and (this_date < timemin or this_date > timemax):
@@ -204,14 +205,14 @@ def main():
             print(f"{RED}No {ins} files {ENDC}")
             this_todo = 0
 
-        list_return = glob.glob(f"{dir}/logs/list_*_return.log")
+        list_return = glob.glob(f"{dir}/logs/list_*return.log")
 
         this_good = 0
         this_cpu = []
         this_mem = []
         this_return = 0
-        try:
-            for list in list_return:
+        for list in list_return:
+            try:
                 with open(list, "r") as fp:
                     returns = fp.readlines()
                     this_return += len(returns)
@@ -260,30 +261,31 @@ def main():
                                     if slurm_id not in all_jobs:
                                         total_time += delta.total_seconds() / 3600
                                         all_jobs += [slurm_id]
-                                    np.append(this_cpu, delta)
+                                    this_cpu.append(delta)
                                 if mem is not None and mem.endswith("M"):
                                     this_mem.append(float(mem[0:-1]))
                                 else:
                                     print("Memory usage information is missing")
                         else:
                             print(f"file {file_in} failed with error {rc}")
-                    if len(this_cpu) > 0:
-                        all_cpu += this_cpu
-                        all_mem += this_mem
-                        this_cpu = np.array(this_cpu)
-                        this_mem = np.array(this_mem)
-                        mem_info = (
-                            f"memory [M]: median={np.median(this_mem)}, max={this_mem.max()}"
-                            if len(this_mem)
-                            else ""
-                        )
-                        print(
-                            f"CPU: median={np.median(this_cpu)}, max={this_cpu.max()}; {mem_info}"
-                        )
 
-        except IOError:
-            print(f"{RED}File {list_return} is missing{ENDC}")
-            this_return = 0
+            except IOError:
+                print(f"{RED}File {list} is missing or cannot be opened{ENDC}")
+
+        all_cpu += this_cpu
+        all_mem += this_mem
+        this_cpu = np.array(this_cpu)
+        this_mem = np.array(this_mem)
+        mem_info = (
+            f"memory [M]: median={np.median(this_mem)}, max={this_mem.max()}"
+            if len(this_mem)
+            else ""
+        )
+        print(
+            f"CPU: median={np.median(this_cpu)}, max={this_cpu.max()}; {mem_info}"
+            if len(this_cpu)
+            else ""
+        )
 
         all_todo += this_todo
         all_return += this_return

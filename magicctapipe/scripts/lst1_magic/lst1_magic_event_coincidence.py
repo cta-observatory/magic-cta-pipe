@@ -70,6 +70,7 @@ from astropy import units as u
 from astropy.table import vstack
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table, write_table
+from ctapipe_io_magic.constants import REFERENCE_LOCATION
 from lstchain.io import HDF5_ZSTD_FILTERS
 from lstchain.io.io import dl1_images_lstcam_key
 
@@ -616,7 +617,7 @@ def event_coincidence(input_file_lst, input_dir_magic, output_dir, config):
             )
 
     subarray_lst_magic = SubarrayDescription(
-        "LST-MAGIC-Array", TEL_POSITIONS, tel_descriptions
+        "LST-MAGIC-Array", TEL_POSITIONS, tel_descriptions, REFERENCE_LOCATION
     )
 
     # Save the subarray description
