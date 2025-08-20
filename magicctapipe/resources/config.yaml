@@ -5,8 +5,6 @@ mc_tel_ids:
     LST-4: 0
     MAGIC-I: 2
     MAGIC-II: 3
-
-
 LST:
     image_extractor:
         type: "LocalPeakWindowSum"
@@ -15,10 +13,10 @@ LST:
 
     increase_nsb:
         use: true
-        extra_noise_in_dim_pixels: 1.27
-        extra_bias_in_dim_pixels: 0.665
+        extra_noise_in_dim_pixels: 1.6
+        extra_bias_in_dim_pixels: 0.52
         transition_charge: 8
-        extra_noise_in_bright_pixels: 2.08
+        extra_noise_in_bright_pixels: 1.92
 
     increase_psf:
         use: false
@@ -53,6 +51,20 @@ MAGIC:
         use: true
         factor: 1.143
 
+    increase_nsb_m1:
+        use: true
+        extra_noise_in_dim_pixels: 0.04
+        extra_bias_in_dim_pixels: 0.60
+        transition_charge: 8
+        extra_noise_in_bright_pixels: 0.80
+
+    increase_nsb_m2:
+        use: true
+        extra_noise_in_dim_pixels: 0.07
+        extra_bias_in_dim_pixels: 0.14
+        transition_charge: 8
+        extra_noise_in_bright_pixels: 0.82
+
     magic_clean:
         use_time: true
         use_sum: true
@@ -68,6 +80,7 @@ MAGIC:
         tailcut: [12, 8]
         ring_completeness_threshold: 25
 
+save_images: false
 
 event_coincidence:
     # History of the time offset between LST-1 and MAGIC
@@ -243,18 +256,34 @@ create_irf:
         n_edges: 21
 
     gammaness:
-        cut_type: "dynamic"  # select "global" or "dynamic"
+        cut_type: "dynamic"  # select "global" or "dynamic" or "custom"
         global_cut_value: 0.8  # used for the global cut
         efficiency: 0.9  # used for the dynamic cuts
         min_cut: 0.05  # used for the dynamic cuts
         max_cut: 0.85  # used for the dynamic cuts
+        custom_cuts: {  # used for custom cuts
+          energy_bins: [0.01, 0.1, 1, 10, 100],
+          energy_unit: "TeV",
+          cut: [0.4, 0.45, 0.50, 0.55],
+          cut_unit: "",
+        }
+        interpolate_kind: "nearest"  # used for custom cuts, option for scipy.interpolate.interp1d
+                                     # Standard values are "nearest", "linear" and "cubic"
 
     theta:
-        cut_type: "dynamic"  # select "global" or "dynamic"
+        cut_type: "dynamic"  # select "global" or "dynamic" or "custom"
         global_cut_value: "0.2 deg"  # used for the global cut
         efficiency: 0.75  # used for the dynamic cuts
         min_cut: "0.1 deg"  # used for the dynamic cuts
         max_cut: "0.25 deg"  # used for the dynamic cuts
+        custom_cuts: {  # used for custom cuts
+          energy_bins: [0.01, 0.1, 1, 10, 100],
+          energy_unit: "TeV",
+          cut: [0.4, 0.35, 0.30, 0.25],
+          cut_unit: "deg",
+        }
+        interpolate_kind: "nearest"  # used for custom cuts, option for scipy.interpolate.interp1d
+                                     # Standard values are "nearest", "linear" and "cubic"
 
 
 dl2_to_dl3:
@@ -264,3 +293,19 @@ dl2_to_dl3:
     source_name: "Crab"
     source_ra: null  # used when the source name cannot be resolved
     source_dec: null  # used when the source name cannot be resolved
+
+
+cloud_correction:
+    specify_cloud: yes
+    base_height: "5900. m"
+    thickness: "1320. m"
+    vertical_transmission: 1.0
+    number_of_layers: 10
+
+
+cloud_estimator:
+    quality_cuts: "(impact > 0) & (total_uncert <= 10) & (n_pixels > 20) & ((slope < -5)| (slope > 5)) & (slope < 15) & (slope > -15)"
+    max_offset: "0.2 deg"
+    start_altitude: "3 km"
+    end_altitude: "15 km"
+    n_bins_altitude: 121

@@ -27,17 +27,14 @@ Check out the :doc:`user-guide/index` section for the analysis steps, including 
 
 .. note::
 
-   At the moment of the release v0.4.1 of *magic-cta-pipe*, some LST-1 data are processed with *cta-lstchain* v0.9.x,
-   while the most recent ones are processed with v0.10.x.
-   According to this, if you need to analyze joint data where the version of LST-1 data is different, then:
+   At the moment of the release v0.4.0 of *magic-cta-pipe*, some LST-1 data are processed with *cta-lstchain* v0.9.x,
+   while the most recent ones are processed with v0.10.x. v0.4.2 of *magic-cta-pipe* and more recent releases allow to read in LST data files
+   created with both v0.9.x and v0.10.x, so that you do not need to use different versions of *magic-cta-pipe* to
+   process LST data.
 
-   * if LST-1 data were processed with *cta-lstchain* v0.9.x, you need to use *magic-cta-pipe* v0.3.1
-   * if LST-1 data were processed with *cta-lstchain* v0.10.x, you need to use *magic-cta-pipe* v0.4.1
-
-   Note that there are quite a lot of differences between v0.3.1 and v0.4.1, like for the telescope combinations definition,
+   Note that there are quite a lot of differences between v0.3.1 and v0.4.x, like for the telescope combinations definition,
    the way IRF are created (due to different *pyirf* versions) and so on. Therefore it may not be straightforward to stack the
-   data at high level. Once all the LST-1 DL1 data will be reprocessed, *magic-cta-pipe* v0.4.1 will be the only version to use
-   for the joint analysis.
+   data at high level. We recommend to use only releases more recent than v0.4.2 for the processing, so that there will be no mismatches during the analysis.
 
 Contents
 --------

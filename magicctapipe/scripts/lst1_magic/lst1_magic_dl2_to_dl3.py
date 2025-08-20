@@ -54,6 +54,7 @@ from magicctapipe.io import (
     load_dl2_data_file,
     load_irf_files,
 )
+from magicctapipe.utils import OUTSIDE_INTERPOLATION_RANGE
 
 __all__ = ["dl2_to_dl3"]
 
@@ -157,10 +158,54 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Prepare for the IRF interpolations
     interpolation_method = config_dl3.pop("interpolation_method")
     logger.info(f"\nInterpolation method: {interpolation_method}")
+    if interpolation_method != "nearest":
+        coszd_margin = 0.02
+        if scheme == "cosZd":
+            coszds = irf_data["grid_points"]
+        else:
+            coszds = irf_data["grid_points"][:, 0]
+        mincoszd = min(coszds)
+        maxcoszd = max(coszds)
+        if (pnt_coszd_mean < mincoszd and pnt_coszd_mean > mincoszd - coszd_margin) or (
+            pnt_coszd_mean > maxcoszd and pnt_coszd_mean < maxcoszd + coszd_margin
+        ):
+            logger.warning(
+                f"point {target_point} outside of IRF ranges, but within {coszd_margin}. Falling back to nearest point"
+            )
+            interpolation_method = "nearest"
+        if (
+            pnt_coszd_mean < mincoszd - coszd_margin
+            or pnt_coszd_mean > maxcoszd + coszd_margin
+        ):
+            logger.error(
+                f"point {target_point} outside of IRF range, more then {coszd_margin}, exiting"
+            )
+            exit(OUTSIDE_INTERPOLATION_RANGE)
 
     extra_header["IRF_INTP"] = interpolation_method
 
     hdus = fits.HDUList([fits.PrimaryHDU()])
+
+    # Create an event HDU
+    logger.info("\nCreating an event HDU...")
+
+    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
+
+    hdus.append(event_hdu)
+
+    # Create a GTI table
+    logger.info("Creating a GTI HDU...")
+
+    gti_hdu = create_gti_hdu(event_table)
+
+    hdus.append(gti_hdu)
+
+    # Create a pointing table
+    logger.info("Creating a pointing HDU...")
+
+    pnt_hdu = create_pointing_hdu(event_table)
+
+    hdus.append(pnt_hdu)
 
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
@@ -366,27 +411,6 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         )
 
         event_table = event_table[mask_gh]
-
-    # Create an event HDU
-    logger.info("\nCreating an event HDU...")
-
-    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
-
-    hdus.append(event_hdu)
-
-    # Create a GTI table
-    logger.info("Creating a GTI HDU...")
-
-    gti_hdu = create_gti_hdu(event_table)
-
-    hdus.append(gti_hdu)
-
-    # Create a pointing table
-    logger.info("Creating a pointing HDU...")
-
-    pnt_hdu = create_pointing_hdu(event_table)
-
-    hdus.append(pnt_hdu)
 
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)

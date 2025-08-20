@@ -22,6 +22,7 @@ from lstchain.reco.utils import add_delta_t_key
 from pyirf.binning import join_bin_lo_hi
 from pyirf.simulations import SimulatedEventsInfo
 from pyirf.utils import calculate_source_fov_offset, calculate_theta
+from scipy.interpolate import interp1d
 
 try:
     from importlib.resources import files
@@ -33,6 +34,7 @@ from ..utils import calculate_mean_direction, transform_altaz_to_radec
 __all__ = [
     "check_input_list",
     "format_object",
+    "get_custom_cuts",
     "get_dl2_mean",
     "get_stereo_events",
     "get_stereo_events_old",
@@ -248,6 +250,53 @@ def format_object(input_object):
     string = string.replace("'", "").replace(",", "")
 
     return string
+
+
+def get_custom_cuts(config, energy_bins):
+    """
+    Extract and interpolate custom, energy-dependent cuts for the IRFs creation.
+
+    Parameters
+    ----------
+    config : dict
+        Dictionary containing the custom cuts and the interpolation strategy.
+        Required entries are a sub-dictionary 'custom_cuts' and a field
+        'interpolate_kind' used in scipy.interpolate.interp1d.
+    energy_bins : astropy.units.Quantity
+        Energy bin edges targeted in the IRFs
+
+    Returns
+    -------
+    astropy.table.QTable
+        Custom cut table in target 'energy_bins'
+    """
+    cut_table = QTable()
+    interpolate_kind = config["interpolate_kind"]
+    energy_bins_cuts = config["custom_cuts"]["energy_bins"] * u.Unit(
+        config["custom_cuts"]["energy_unit"]
+    )
+    energy_bins_cuts_center = 0.5 * (energy_bins_cuts[:-1] + energy_bins_cuts[1:]).to(
+        energy_bins.unit
+    )
+    cuts = config["custom_cuts"]["cut"] * u.Unit(config["custom_cuts"]["cut_unit"])
+
+    cut_table["low"] = energy_bins[:-1]
+    cut_table["high"] = energy_bins[1:]
+    cut_table["center"] = 0.5 * (cut_table["low"] + cut_table["high"])
+    f_cut = interp1d(
+        energy_bins_cuts_center,
+        cuts,
+        kind=interpolate_kind,
+        bounds_error=False,
+        fill_value=(cuts[0], cuts[-1]),
+        assume_sorted=True,
+    )
+
+    cut_table["cut"] = f_cut(cut_table["center"]) * u.Unit(
+        config["custom_cuts"]["cut_unit"]
+    )
+
+    return cut_table
 
 
 def get_stereo_events_old(
@@ -1326,7 +1375,15 @@ def load_irf_files(input_dir_irf):
             unique_bins = np.unique(irf_data[key], axis=0)
 
             if len(unique_bins) > 1:
-                raise RuntimeError(f"The binning of '{key}' do not match.")
+                if not np.all(
+                    np.abs(unique_bins - unique_bins[0]) < unique_bins[0] * 1.0e-15
+                ):
+                    raise RuntimeError(f"The binning of '{key}' do not match.")
+                else:
+                    logger.warning(
+                        f"The bins of '{key}' do not match, but the difference is within numerical precision, ignoring"
+                    )
+                    irf_data[key] = unique_bins[0]
 
             else:
                 # Set the unique bins

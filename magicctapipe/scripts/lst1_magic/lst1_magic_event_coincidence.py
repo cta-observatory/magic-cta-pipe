@@ -69,6 +69,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy import units as u
+from astropy.table import vstack
 from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import read_table, write_table
 from lstchain.io import HDF5_ZSTD_FILTERS
@@ -82,6 +83,7 @@ from magicctapipe.io import (
     save_pandas_data_in_table,
     telescope_combinations,
 )
+from magicctapipe.utils import NO_COINCIDENT_EVENTS
 
 __all__ = ["event_coincidence", "telescope_positions"]
 
@@ -176,6 +178,8 @@ def event_coincidence(
     logger.info(f"\nInput LST DL1 data file: {input_file_lst}")
 
     event_data_lst, subarray_lst = load_lst_dl1_data_file(input_file_lst)
+    if save_images:
+        l_image = read_table(input_file_lst, dl1_images_lstcam_key)
 
     if save_images:
         l_image = read_table(input_file_lst, dl1_images_lstcam_key)
@@ -583,8 +587,8 @@ def event_coincidence(
         profiles = profiles.sort_values("time_offset")
 
     if event_data.empty:
-            logger.info("\nNo coincident events are found. Exiting...")
-            sys.exit()
+        logger.info("\nNo coincident events are found. Exiting...")
+        sys.exit(NO_COINCIDENT_EVENTS)
 
     event_data.sort_index(inplace=True)
     event_data.drop_duplicates(inplace=True)
@@ -643,6 +647,29 @@ def event_coincidence(
     save_pandas_data_in_table(
         profiles, output_file, group_name="/coincidence", table_name="profile", mode="a"
     )
+    if save_images:
+        iimage = [["LST-1", l_image], ["MAGIC-I", m1_image], ["MAGIC-II", m2_image]]
+        for name, image in iimage:
+            tel_id = config["mc_tel_ids"][name]
+            # first we need to prune the table to keep only the images corresponding to stereo events
+            mask = np.zeros(len(image), dtype=bool)
+            tag = "lst" if name == "LST-1" else "magic"
+            obs_evt_ids = event_data.query(f"tel_id=={tel_id}")[
+                [f"obs_id_{tag}", f"event_id_{tag}"]
+            ].to_numpy()
+            for obs_id, evt_id in obs_evt_ids:
+                this_mask = np.logical_and(
+                    image["obs_id"] == obs_id, image["event_id"] == evt_id
+                )
+                mask = np.logical_or(mask, this_mask)
+            logger.info(f"found {sum(mask)} images of {name}")
+            write_table(
+                image[mask],
+                output_file,
+                f"/events/dl1/image_{tel_id}",
+                overwrite=True,
+                filters=HDF5_ZSTD_FILTERS,
+            )
 
     if save_images:
         iimage = [["LST-1", l_image], ["MAGIC-I", m1_image], ["MAGIC-II", m2_image]]

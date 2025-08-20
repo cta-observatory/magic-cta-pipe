@@ -1,9 +1,18 @@
 from .badpixels import MAGICBadPixelsCalc
 from .camera_geometry import reflected_camera_geometry_mars
+from .error_codes import (
+    GENERIC_ERROR_CODE,
+    NO_COINCIDENT_EVENTS,
+    NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
+    NO_TAILCUT,
+    OUTSIDE_INTERPOLATION_RANGE,
+)
 from .functions import (
     HEIGHT_ORM,
     LAT_ORM,
     LON_ORM,
+    auto_MCP_parse_config,
+    auto_MCP_parser,
     calculate_disp,
     calculate_impact,
     calculate_mean_direction,
@@ -20,6 +29,11 @@ from .gti import (
 __all__ = [
     "MAGICBadPixelsCalc",
     "reflected_camera_geometry_mars",
+    "GENERIC_ERROR_CODE",
+    "NO_COINCIDENT_EVENTS",
+    "NO_EVENTS_WITHIN_MAXIMUM_DISTANCE",
+    "NO_TAILCUT",
+    "OUTSIDE_INTERPOLATION_RANGE",
     "identify_time_edges",
     "intersect_time_intervals",
     "GTIGenerator",
@@ -29,6 +43,8 @@ __all__ = [
     "calculate_mean_direction",
     "calculate_off_coordinates",
     "transform_altaz_to_radec",
+    "auto_MCP_parser",
+    "auto_MCP_parse_config",
     "LON_ORM",
     "LAT_ORM",
     "HEIGHT_ORM",
