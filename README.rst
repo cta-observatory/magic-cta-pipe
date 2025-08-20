@@ -11,10 +11,13 @@ Repository for the analysis of MAGIC and MAGIC+LST1 data, based on `ctapipe <htt
 * Code: https://github.com/cta-observatory/magic-cta-pipe
 * Docs (preliminary): https://magic-cta-pipe.readthedocs.io/
 
-v0.5.6 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
+v0.6.0-alpha is based on *ctapipe* v0.25.x and *cta-lstchain* v0.11
+
+v0.6.0-alpha is a *magic-cta-pipe* pre-release, first one that should be compatible with ctapipe 0.25. Note that calculation of some of the event parameters (leakage and height of the shower maximum) is different w.r.t. ctapipe 0.19, which means that one should not mix data and MCs processed with <=0.5 and >=0.6 versions of MCP
+
+The last stable release, v0.5.6 of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
 See `here <https://magic-cta-pipe.readthedocs.io/en/latest/user-guide/magic-lst-scripts.html>`_ for more details on how to run the analysis.
 
-v0.5.6 is based on *ctapipe* v0.19.x and *cta-lstchain* v0.10.x (with 5<=x<12).
 
 **NOTE ON OLD RELEASES**
 
