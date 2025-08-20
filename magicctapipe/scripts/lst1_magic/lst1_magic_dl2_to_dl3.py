@@ -411,11 +411,11 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         )
 
         event_table = event_table[mask_gh]
-        
+
     if len(event_table) == 0:
         logger.info("\nNo events surviving gammaness cut")
         return
-      
+
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
