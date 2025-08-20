@@ -184,28 +184,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     extra_header["IRF_INTP"] = interpolation_method
 
-    hdus = fits.HDUList([fits.PrimaryHDU()])
-
-    # Create an event HDU
-    logger.info("\nCreating an event HDU...")
-
-    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
-
-    hdus.append(event_hdu)
-
-    # Create a GTI table
-    logger.info("Creating a GTI HDU...")
-
-    gti_hdu = create_gti_hdu(event_table)
-
-    hdus.append(gti_hdu)
-
-    # Create a pointing table
-    logger.info("Creating a pointing HDU...")
-
-    pnt_hdu = create_pointing_hdu(event_table)
-
-    hdus.append(pnt_hdu)
+    hdus = fits.HDUList([fits.PrimaryHDU()])    
 
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
@@ -235,8 +214,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         extname="EFFECTIVE AREA",
         **extra_header,
     )
-    hdus.append(aeff_hdu)
-
+    
     # Interpolate the energy dispersion with a custom way,
     # TBD: use pyirf quantile interpolation instead
     logger.info("Interpolating the energy dispersion...")
@@ -271,9 +249,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         fov_offset_bins=irf_data["fov_offset_bins"],
         point_like=True,
         extname="ENERGY DISPERSION",
-    )
-
-    hdus.append(edisp_hdu)
+    )   
 
     if "psf_table" in irf_data:
         # Interpolate the PSF table with a custom way, since there is a
@@ -308,9 +284,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             fov_offset_bins=irf_data["fov_offset_bins"],
             extname="PSF",
             **extra_header,
-        )
-
-        hdus.append(psf_hdu)
+        )        
 
     if "background" in irf_data:
         # Interpolate the background model
@@ -331,9 +305,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
             extname="BACKGROUND",
-        )
-
-        hdus.append(bkg_hdu)
+        )        
 
     if "gh_cuts" in irf_data:
         # Interpolate the dynamic gammaness cuts
@@ -357,9 +329,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
             **extra_header,
-        )
-
-        hdus.append(gh_cuts_hdu)
+        )        
 
     if "rad_max" in irf_data:
         # Interpolate the dynamic theta cuts
@@ -382,9 +352,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             point_like=True,
             extname="RAD_MAX",
             **extra_header,
-        )
-
-        hdus.append(rad_max_hdu)
+        )        
 
     if "GH_CUT" in extra_header:
         # Apply the global gammaness cut
@@ -411,11 +379,38 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         )
 
         event_table = event_table[mask_gh]
-
+        
     if len(event_table) == 0:
         logger.info("\nNo events surviving gammaness cut")
         return
 
+    # Create an event HDU
+    logger.info("\nCreating an event HDU...")
+
+    event_hdu = create_event_hdu(event_table, on_time, deadc, **config_dl3)
+
+    hdus.append(event_hdu)
+
+    # Create a GTI table
+    logger.info("Creating a GTI HDU...")
+
+    gti_hdu = create_gti_hdu(event_table)
+
+    hdus.append(gti_hdu)
+
+    # Create a pointing table
+    logger.info("Creating a pointing HDU...")
+
+    pnt_hdu = create_pointing_hdu(event_table)
+
+    hdus.append(pnt_hdu)
+    hdus.append(aeff_hdu)
+    hdus.append(edisp_hdu)
+    hdus.append(psf_hdu)
+    hdus.append(bkg_hdu)
+    hdus.append(gh_cuts_hdu)
+    hdus.append(rad_max_hdu)
+    
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
