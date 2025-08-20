@@ -184,7 +184,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
 
     extra_header["IRF_INTP"] = interpolation_method
 
-    hdus = fits.HDUList([fits.PrimaryHDU()])    
+    hdus = fits.HDUList([fits.PrimaryHDU()])
 
     # Interpolate the effective area
     logger.info("\nInterpolating the effective area...")
@@ -249,7 +249,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         fov_offset_bins=irf_data["fov_offset_bins"],
         point_like=True,
         extname="ENERGY DISPERSION",
-    )   
+    )
 
     if "psf_table" in irf_data:
         # Interpolate the PSF table with a custom way, since there is a
@@ -284,7 +284,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             fov_offset_bins=irf_data["fov_offset_bins"],
             extname="PSF",
             **extra_header,
-        )        
+        )
 
     if "background" in irf_data:
         # Interpolate the background model
@@ -305,7 +305,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
             extname="BACKGROUND",
-        )        
+        )
 
     if "gh_cuts" in irf_data:
         # Interpolate the dynamic gammaness cuts
@@ -329,7 +329,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
             **extra_header,
-        )        
+        )
 
     if "rad_max" in irf_data:
         # Interpolate the dynamic theta cuts
@@ -352,7 +352,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             point_like=True,
             extname="RAD_MAX",
             **extra_header,
-        )        
+        )
 
     if "GH_CUT" in extra_header:
         # Apply the global gammaness cut
@@ -379,7 +379,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         )
 
         event_table = event_table[mask_gh]
-        
+
     if len(event_table) == 0:
         logger.info("\nNo events surviving gammaness cut")
         return
@@ -410,7 +410,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     hdus.append(bkg_hdu)
     hdus.append(gh_cuts_hdu)
     hdus.append(rad_max_hdu)
-    
+
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
 
