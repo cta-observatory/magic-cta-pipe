@@ -129,7 +129,12 @@ def main():
         mc_dec_file = float(dec_mc[np.argmin(np.abs(dec_file - dec_mc))])
         mc_dec_db = lst_df.loc[lst_df["LST1_run"] == lst_run]["MC_dec"].values[0]
         if (
-            angular_separation(lon1=ra_file, lat1=dec_file, lon2=ra_db, lat2=dec_db)
+            angular_separation(
+                lon1=math.radians(ra_file),
+                lat1=math.radians(dec_file),
+                lon2=math.radians(ra_db),
+                lat2=math.radians(dec_db),
+            )
             < 0.02
         ):
             continue
