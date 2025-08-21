@@ -211,10 +211,21 @@ def main():
         this_cpu = []
         this_mem = []
         this_return = 0
-        for list in list_return:
+        for list_r in list_return:
             try:
-                with open(list, "r") as fp:
-                    returns = fp.readlines()
+                with open(list_r, "r") as fp:
+                    returns_orig = fp.readlines()
+                    returns_back = list(reversed(returns_orig))
+                    returns = []
+                    returns_drop = []
+                    for ret in returns_back:
+                        if ret.split()[0] not in returns_drop:
+                            returns.append(ret)
+                            returns_drop.append(ret.split()[0])
+                    if len(returns) < len(returns_orig):
+                        print(
+                            f"{YELLOW}Duplicated lines (i.e., corresponding to same processed file) in {list_r}{ENDC}"
+                        )
                     this_return += len(returns)
                     for line in returns:
                         line = line.split()
@@ -270,7 +281,7 @@ def main():
                             print(f"file {file_in} failed with error {rc}")
 
             except IOError:
-                print(f"{RED}File {list} is missing or cannot be opened{ENDC}")
+                print(f"{RED}File {list_r} is missing or cannot be opened{ENDC}")
 
         all_cpu += this_cpu
         all_mem += this_mem
