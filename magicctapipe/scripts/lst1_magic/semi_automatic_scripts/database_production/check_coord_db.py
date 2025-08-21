@@ -5,7 +5,7 @@ with the ones stored in one of the MAGIC files for each
 source. Note: only one MAGIC subrun per source is used!
 
 Usage:
-$ check_coord_db (-c config_auto_MCP.yaml)
+$ check_coord_db (-c config_auto_MCP.yaml -m dec_mc.json)
 """
 
 import glob
@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 import uproot
 import yaml
+from astropy.coordinates import angular_separation
 
 from magicctapipe.io import resource_file
 from magicctapipe.utils import auto_MCP_parser
@@ -127,8 +128,9 @@ def main():
 
         mc_dec_file = float(dec_mc[np.argmin(np.abs(dec_file - dec_mc))])
         mc_dec_db = lst_df.loc[lst_df["LST1_run"] == lst_run]["MC_dec"].values[0]
-        if (math.isclose(ra_db, ra_file, abs_tol=0.02)) and (
-            math.isclose(dec_db, dec_file, abs_tol=0.02)
+        if (
+            angular_separation(lon1=ra_file, lat1=dec_file, lon2=ra_db, lat2=dec_db)
+            < 0.02
         ):
             continue
         else:
