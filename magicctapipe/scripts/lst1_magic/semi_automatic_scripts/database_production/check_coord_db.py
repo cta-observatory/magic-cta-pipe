@@ -133,7 +133,7 @@ def main():
                 lat1=math.radians(dec_file),
                 lon2=math.radians(ra_db),
                 lat2=math.radians(dec_db),
-            ) < math.radians(0.02):
+        ) < math.radians(0.02):
             continue
         else:
             print(
