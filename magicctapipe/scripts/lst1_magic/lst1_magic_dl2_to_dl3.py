@@ -406,10 +406,14 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     hdus.append(pnt_hdu)
     hdus.append(aeff_hdu)
     hdus.append(edisp_hdu)
-    hdus.append(psf_hdu)
-    hdus.append(bkg_hdu)
-    hdus.append(gh_cuts_hdu)
-    hdus.append(rad_max_hdu)
+    if "psf_table" in irf_data:
+        hdus.append(psf_hdu)
+    if "background" in irf_data:
+        hdus.append(bkg_hdu)
+    if "gh_cuts" in irf_data:
+        hdus.append(gh_cuts_hdu)
+    if "rad_max" in irf_data:
+        hdus.append(rad_max_hdu)
 
     # Save the data in an output file
     Path(output_dir).mkdir(exist_ok=True, parents=True)
