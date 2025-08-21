@@ -54,7 +54,7 @@ from magicctapipe.io import (
     load_dl2_data_file,
     load_irf_files,
 )
-from magicctapipe.utils import OUTSIDE_INTERPOLATION_RANGE, NO_DL2_GAMMANESS_CUT
+from magicctapipe.utils import NO_DL2_GAMMANESS_CUT, OUTSIDE_INTERPOLATION_RANGE
 
 __all__ = ["dl2_to_dl3"]
 
