@@ -54,7 +54,10 @@ from magicctapipe.io import (
     load_dl2_data_file,
     load_irf_files,
 )
-from magicctapipe.utils import OUTSIDE_INTERPOLATION_RANGE
+from magicctapipe.utils import (
+    OUTSIDE_INTERPOLATION_RANGE,
+    NO_DL2_GAMMANESS_CUT,
+)
 
 __all__ = ["dl2_to_dl3"]
 
@@ -381,8 +384,8 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         event_table = event_table[mask_gh]
 
     if len(event_table) == 0:
-        logger.info("\nNo events surviving gammaness cut")
-        return
+        logger.info("\nNo events surviving gammaness cut. Exiting...")
+        exit(NO_DL2_GAMMANESS_CUT)
 
     # Create an event HDU
     logger.info("\nCreating an event HDU...")
