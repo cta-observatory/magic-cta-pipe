@@ -300,6 +300,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
             # Apply the RFs
             reco_params = apply_rfs(event_data, energy_regressor)
+            if len(reco_params) == 0:
+                continue
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del energy_regressor
@@ -321,6 +323,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
             # Apply the RFs
             reco_params = apply_rfs(event_data, disp_regressor)
+            if len(reco_params) == 0:
+                continue
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
         # Reconstruct the arrival directions with the DISP method
@@ -348,6 +352,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
 
             # Apply the RFs
             reco_params = apply_rfs(event_data, event_classifier)
+            if len(reco_params) == 0:
+                continue
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
 
     del event_classifier
