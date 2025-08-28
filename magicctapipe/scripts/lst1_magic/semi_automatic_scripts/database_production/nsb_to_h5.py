@@ -65,6 +65,11 @@ def collect_nsb(df_LST):
             "processed_lstchain_file",
             "tailcut",
             "error_code_nsb",
+            "ra",
+            "dec",
+            "MC_dec",
+            "point_source",
+            "wobble_offset",
         ]
     ]
     return df_LST
