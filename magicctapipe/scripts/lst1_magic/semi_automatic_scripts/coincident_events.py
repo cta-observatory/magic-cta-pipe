@@ -142,9 +142,12 @@ def linking_bash_lst(
                 ]
                 if tailcut == "":
                     continue
-                inputdir = (
-                    f"/fefs/aswg/data/real/DL1/{lstObsDir}/{LST_version}/{tailcut}"
-                )
+                inputfile_run = df_LST[df_LST.LST1_run == run_n].iloc[0][
+                    "processed_lstchain_file"
+                ]
+                if inputfile_run == "":
+                    continue
+                inputdir = os.path.dirname(inputfile_run)
 
                 outputdir = f"{coincidence_DL1_dir}/DL1Coincident/{lstObsDir}"
                 os.makedirs(f"{outputdir}/logs", exist_ok=True)
