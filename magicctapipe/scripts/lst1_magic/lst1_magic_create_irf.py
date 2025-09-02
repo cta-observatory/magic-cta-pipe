@@ -390,7 +390,7 @@ def create_irf(
     else:
         raise ValueError(f"Unknown gammaness-cut type '{cut_type_gh}'.")
 
-    if cut_type_gh == "dynamic" or "custom":
+    if cut_type_gh == "dynamic" or cut_type_gh == "custom":
         logger.info(f"\nGammaness-cut table:\n\n{cut_table_gh}")
 
         # Apply the dynamic gammaness cuts
@@ -498,7 +498,7 @@ def create_irf(
         else:
             raise ValueError(f"Unknown theta-cut type '{cut_type_theta}'.")
 
-        if cut_type_theta == "dynamic" or "custom":
+        if cut_type_theta == "dynamic" or cut_type_theta == "custom":
             logger.info(f"\nTheta-cut table:\n\n{cut_table_theta}")
 
             # Apply the dynamic theta cuts
