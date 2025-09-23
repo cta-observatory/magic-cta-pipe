@@ -94,7 +94,9 @@ def calculate_pointing_separation(event_data, config):
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
     LSTs_IDs = LSTs_IDs[LSTs_IDs > 0].tolist()  # Here we list only the LSTs in use
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
-    MAGICs_IDs = MAGICs_IDs[MAGICs_IDs > 0].tolist()  # Here we list only the MAGICs in use
+    MAGICs_IDs = MAGICs_IDs[
+        MAGICs_IDs > 0
+    ].tolist()  # Here we list only the MAGICs in use
 
     # Extract LST events
     df_lst = event_data.query(f"tel_id == {LSTs_IDs}")
