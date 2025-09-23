@@ -180,7 +180,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
     if magic_only_analysis:
         tel_id = np.asarray(list(assigned_tel_ids.values())[:])
-        used_id = tel_id[tel_id != 0]
+        used_id = tel_id[tel_id != 0].tolist()
         magic_ids = [item for item in used_id if item not in LSTs_IDs]
         event_data.query(
             f"tel_id in {magic_ids}", inplace=True
