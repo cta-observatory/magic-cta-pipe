@@ -98,7 +98,9 @@ def version_lstchain(df_LST, lstchain_versions):
                     name = (
                         f"{base_path}/{date}/{max_version}/{tail}/dl1_LST-1.Run{run}.h5"
                     )
-        if len(np.unique(tail_file)) > 1:  # WARNING: if same date and version exist in both base dirs, only newest one considered
+        if (
+            len(np.unique(tail_file)) > 1
+        ):  # WARNING: if same date and version exist in both base dirs, only newest one considered
             print(
                 f"More than one tailcut for the latest ({max_version}) lstchain version for run {run}. Tailcut = {tail_file}. Skipping..."
             )
