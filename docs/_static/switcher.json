@@ -10,6 +10,11 @@
         "url": "https://magic-cta-pipe.readthedocs.io/en/stable/"
     },
     {
+        "name": "v0.6.0",
+        "version": "v0.6.0",
+        "url": "https://magic-cta-pipe.readthedocs.io/en/v0.6.0/"
+    },
+    {
         "name": "v0.5.7",
         "version": "v0.5.7",
         "url": "https://magic-cta-pipe.readthedocs.io/en/v0.5.7/"
