@@ -9,7 +9,7 @@ dependencies:
   - astropy-base
   - black
   - nbsphinx
-  - ctapipe>=0.25.0
+  - ctapipe>=0.25.0,<0.26
   - ctapipe-io-magic=0.5.7
   - lstchain>=0.11.0
   - gammapy=1.3
