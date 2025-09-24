@@ -143,7 +143,7 @@ def main():
         ]:
             if not os.path.isdir(f"{base_path}/{date}/{max_common}"):
                 continue
-
+            tailcut = []
             tailcut_list = [
                 i.split("/")[-1]
                 for i in glob.glob(f"{base_path}/{date}/{max_common}/tailcut*")
@@ -155,7 +155,7 @@ def main():
                 ):
                     tailcut.append(tail)
                     name = f"{base_path}/{date}/{max_common}/{tail}/dl1_LST-1.Run{run_number}.h5"
-        if len(np.unique(tailcut)) > 1:
+        if len(np.unique(tailcut)) > 1:  # WARNING: if same date and version exist in both base dirs, only newest one considered
             print(
                 f"more than one tailcut for the latest ({max_common}) lstchain version for run {run_number}. Tailcut = {tailcut}. Skipping..."
             )
@@ -164,8 +164,10 @@ def main():
         df_LST.loc[i, "processed_lstchain_file"] = name
 
         inputdir = os.path.dirname(name)
-
-        df_LST.loc[i, "tailcut"] = str(tailcut[0])
+        if len(tailcut) >0:
+            df_LST.loc[i, "tailcut"] = str(tailcut[0])
+        else:
+            df_LST.loc[i, "tailcut"] = ""
         df_LST.loc[i, "error_code_nsb"] = np.nan
 
         bash_scripts(
