@@ -199,7 +199,10 @@ def bash_DL1Stereo_to_DL2(
             rfsize = 0
             for rffile in glob.glob(f"{RFdir}/disp*joblib"):
                 rfsize = rfsize + os.path.getsize(rffile) / (1024 * 1024 * 1024)
-            rfsize = (rfsize * 1.75) + 2
+            if period[0] == "M":
+                rfsize = (rfsize * 1.75) + 12
+            else:
+                rfsize = (rfsize * 1.75) + 2
             slurm = slurm_lines(
                 queue="short",
                 job_name=f"{source[1]}_DL1_to_DL2",
