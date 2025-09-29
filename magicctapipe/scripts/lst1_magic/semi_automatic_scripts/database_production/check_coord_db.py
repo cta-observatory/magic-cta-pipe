@@ -59,7 +59,7 @@ def main():
     lst_h5 = config_dict["database_paths"]["LST"]
     lst_key = config_dict["database_keys"]["LST"]
     lst_df = pd.read_hdf(lst_h5, lst_key)
-    df = pd.read_hdf(
+    df1 = pd.read_hdf(
         config_dict["database_paths"]["MAGIC+LST1"],
         key=config_dict["database_keys"]["MAGIC+LST1"],
     )  # TODO: put this file in a shared folder
@@ -67,10 +67,12 @@ def main():
         config_dict["database_paths"]["MAGIC+LST1_bis"],
         key=config_dict["database_keys"]["MAGIC+LST1_bis"],
     )  # TODO: put this file in a shared folder
-    df = pd.concat([df, df2]).drop_duplicates(subset="LST1_run", keep="first")
+    df = pd.concat([df1, df2]).drop_duplicates(subset="LST1_run", keep="first")
 
     df = df.drop_duplicates(subset=["source"])
+    df = df.sort_values(by=["DATE", "source"])
     df = df.reset_index()
+
 
     date_lst = pd.to_datetime(df["DATE"], format="%Y%m%d")
 

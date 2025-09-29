@@ -204,12 +204,16 @@ def main():
 
     with open(config, "rb") as bf:
         config_dict = yaml.safe_load(bf)
-    df_path = config_dict["database_paths"]["MAGIC+LST1"]
-    df_key = config_dict["database_keys"]["MAGIC+LST1"]
-    df = pd.read_hdf(
-        df_path,
-        key=df_key,
-    )
+    df1 = pd.read_hdf(
+        config_dict["database_paths"]["MAGIC+LST1"],
+        key=config_dict["database_keys"]["MAGIC+LST1"],
+    )  # TODO: put this file in a shared folder
+    df2 = pd.read_hdf(
+        config_dict["database_paths"]["MAGIC+LST1_bis"],
+        key=config_dict["database_keys"]["MAGIC+LST1_bis"],
+    )  # TODO: put this file in a shared folder
+    df = pd.concat([df1, df2]).drop_duplicates(subset="LST1_run", keep="first")
+    df = df.sort_values(by=["DATE", "source"])
 
     tel_id = [1, 2]
     date_min = args.begin if args.begin != 0 else date_min_default
