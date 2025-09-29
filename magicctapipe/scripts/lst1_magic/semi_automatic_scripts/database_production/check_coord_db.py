@@ -73,7 +73,6 @@ def main():
     df = df.sort_values(by=["DATE", "source"])
     df = df.reset_index()
 
-
     date_lst = pd.to_datetime(df["DATE"], format="%Y%m%d")
 
     delta = pd.Timedelta("1 day")
