@@ -19,7 +19,7 @@ import yaml
 from astropy.coordinates import angular_separation
 
 from magicctapipe.io import resource_file
-from magicctapipe.utils import auto_MCP_parser
+from magicctapipe.utils import auto_MCP_parser, load_merge_databases
 
 degrees_per_hour = 15.0
 seconds_per_hour = 3600.0
@@ -59,18 +59,15 @@ def main():
     lst_h5 = config_dict["database_paths"]["LST"]
     lst_key = config_dict["database_keys"]["LST"]
     lst_df = pd.read_hdf(lst_h5, lst_key)
-    df1 = pd.read_hdf(
+
+    df = load_merge_databases(
         config_dict["database_paths"]["MAGIC+LST1"],
-        key=config_dict["database_keys"]["MAGIC+LST1"],
-    )  # TODO: put this file in a shared folder
-    df2 = pd.read_hdf(
         config_dict["database_paths"]["MAGIC+LST1_bis"],
-        key=config_dict["database_keys"]["MAGIC+LST1_bis"],
-    )  # TODO: put this file in a shared folder
-    df = pd.concat([df1, df2]).drop_duplicates(subset="LST1_run", keep="first")
+        config_dict["database_keys"]["MAGIC+LST1"],
+        config_dict["database_keys"]["MAGIC+LST1_bis"],
+    )
 
     df = df.drop_duplicates(subset=["source"])
-    df = df.sort_values(by=["DATE", "source"])
     df = df.reset_index()
 
     date_lst = pd.to_datetime(df["DATE"], format="%Y%m%d")
