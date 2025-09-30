@@ -133,12 +133,7 @@ def main():
             i += 1
     print("\n\nRetrieving wobble offset...\n\n")
 
-    df = load_merge_databases(
-        config_dict["database_paths"]["MAGIC+LST1"],
-        config_dict["database_paths"]["MAGIC+LST1_bis"],
-        config_dict["database_keys"]["MAGIC+LST1"],
-        config_dict["database_keys"]["MAGIC+LST1_bis"],
-    )
+    df = load_merge_databases(config_dict)
 
     if args.begin != 0:
         df = df[df["DATE"].astype(int) >= args.begin]

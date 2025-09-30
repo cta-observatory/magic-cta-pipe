@@ -235,12 +235,7 @@ def main():
     with open(config_db, "rb") as bf:
         config_dict = yaml.safe_load(bf)
 
-    df = load_merge_databases(
-        config_dict["database_paths"]["MAGIC+LST1"],
-        config_dict["database_paths"]["MAGIC+LST1_bis"],
-        config_dict["database_keys"]["MAGIC+LST1"],
-        config_dict["database_keys"]["MAGIC+LST1_bis"],
-    )
+    df = load_merge_databases(config_dict)
 
     # Set "" to generate a new database.
     previous_database_path = config_dict["database_paths"]["MAGIC"]

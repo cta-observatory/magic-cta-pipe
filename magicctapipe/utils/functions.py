@@ -414,20 +414,14 @@ def auto_MCP_parse_config():
     return config
 
 
-def load_merge_databases(path1, path2, key1, key2):
+def load_merge_databases(config_dict):
     """
     Function to load and merge the twodatabases for joint observations
 
     Parameters
     ----------
-    path1 : str
-        Path to first database
-    path2 : str
-        Path to second database
-    key1 : str
-        Key to first database
-    key2 : str
-        Key to second database
+    config_dict : dict
+        Dictionary containing paths and keys to the databases
 
     Returns
     -------
@@ -435,12 +429,12 @@ def load_merge_databases(path1, path2, key1, key2):
         Dataframe joining the two databases
     """
     df1 = pd.read_hdf(
-        path1,
-        key=key1,
+        config_dict["database_paths"]["MAGIC+LST1"],
+        key=config_dict["database_keys"]["MAGIC+LST1"],
     )
     df2 = pd.read_hdf(
-        path2,
-        key=key2,
+        config_dict["database_paths"]["MAGIC+LST1_bis"],
+        key=config_dict["database_keys"]["MAGIC+LST1_bis"],
     )
     df = pd.concat([df1, df2]).drop_duplicates(subset="LST1_run", keep="first")
     df = df.sort_values(by=["DATE", "source"])

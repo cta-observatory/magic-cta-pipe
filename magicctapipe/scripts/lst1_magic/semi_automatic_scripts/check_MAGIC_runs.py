@@ -204,12 +204,8 @@ def main():
 
     with open(config, "rb") as bf:
         config_dict = yaml.safe_load(bf)
-    df = load_merge_databases(
-        config_dict["database_paths"]["MAGIC+LST1"],
-        config_dict["database_paths"]["MAGIC+LST1_bis"],
-        config_dict["database_keys"]["MAGIC+LST1"],
-        config_dict["database_keys"]["MAGIC+LST1_bis"],
-    )
+
+    df = load_merge_databases(config_dict)
 
     tel_id = [1, 2]
     date_min = args.begin if args.begin != 0 else date_min_default
