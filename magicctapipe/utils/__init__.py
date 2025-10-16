@@ -5,9 +5,9 @@ from .error_codes import (
     NO_COINCIDENT_EVENTS,
     NO_DL2_GAMMANESS_CUT,
     NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
+    NO_MAGIC_EVENTS,
     NO_TAILCUT,
     OUTSIDE_INTERPOLATION_RANGE,
-    NO_MAGIC_EVENTS,
 )
 from .functions import (
     HEIGHT_ORM,
@@ -35,6 +35,7 @@ __all__ = [
     "NO_COINCIDENT_EVENTS",
     "NO_DL2_GAMMANESS_CUT",
     "NO_EVENTS_WITHIN_MAXIMUM_DISTANCE",
+    "NO_MAGIC_EVENTS",
     "NO_TAILCUT",
     "OUTSIDE_INTERPOLATION_RANGE",
     "identify_time_edges",
