@@ -7,6 +7,7 @@ from .error_codes import (
     NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
     NO_TAILCUT,
     OUTSIDE_INTERPOLATION_RANGE,
+    NO_MAGIC_EVENTS,
 )
 from .functions import (
     HEIGHT_ORM,
