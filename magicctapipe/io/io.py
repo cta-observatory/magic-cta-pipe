@@ -6,6 +6,7 @@ import glob
 import logging
 import pprint
 import re
+import sys
 
 import numpy as np
 import pandas as pd
@@ -29,7 +30,7 @@ try:
 except ImportError:
     from importlib_resources import files
 
-from ..utils import calculate_mean_direction, transform_altaz_to_radec, NO_MAGIC_EVENTS
+from ..utils import NO_MAGIC_EVENTS, calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
     "check_input_list",
@@ -750,7 +751,7 @@ def load_magic_dl1_data_files(input_dir, config):
         data_list.append(df_events)
 
     if len(df_events) == 0:
-        logger.error('no MAGIC events, exiting')
+        logger.error("no MAGIC events, exiting")
         sys.exit(NO_MAGIC_EVENTS)
 
     event_data = pd.concat(data_list)
