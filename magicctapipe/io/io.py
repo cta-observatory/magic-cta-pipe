@@ -741,7 +741,7 @@ def load_magic_dl1_data_files(input_dir, config):
         try:
             df_events = pd.read_hdf(input_file, key="events/parameters")
         except KeyError:
-            logger.warning('File {input_file} has no "events/parameters" key, skipping')
+            logger.warning(f'File {input_file} has no "events/parameters" key, skipping')
             continue
         # check if subarrays are matching
         subarray_other = SubarrayDescription.from_hdf(input_file)
