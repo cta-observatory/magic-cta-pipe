@@ -6,6 +6,7 @@ import glob
 import logging
 import pprint
 import re
+import sys
 
 import numpy as np
 import pandas as pd
@@ -29,7 +30,7 @@ try:
 except ImportError:
     from importlib_resources import files
 
-from ..utils import calculate_mean_direction, transform_altaz_to_radec
+from ..utils import NO_MAGIC_EVENTS, calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
     "check_input_list",
@@ -737,14 +738,23 @@ def load_magic_dl1_data_files(input_dir, config):
     for input_file in input_files:
         logger.info(input_file)
 
-        df_events = pd.read_hdf(input_file, key="events/parameters")
-
+        try:
+            df_events = pd.read_hdf(input_file, key="events/parameters")
+        except KeyError:
+            logger.warning(
+                f'File {input_file} has no "events/parameters" key, skipping'
+            )
+            continue
         # check if subarrays are matching
         subarray_other = SubarrayDescription.from_hdf(input_file)
         if subarray_other != subarray:
             raise IOError(f"Subarrays do not match for file: {input_file}")
 
         data_list.append(df_events)
+
+    if len(data_list) == 0:
+        logger.error("no MAGIC events, exiting")
+        sys.exit(NO_MAGIC_EVENTS)
 
     event_data = pd.concat(data_list)
 
