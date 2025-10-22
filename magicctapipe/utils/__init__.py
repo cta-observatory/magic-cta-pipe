@@ -3,7 +3,9 @@ from .camera_geometry import reflected_camera_geometry_mars
 from .error_codes import (
     GENERIC_ERROR_CODE,
     NO_COINCIDENT_EVENTS,
+    NO_DL2_GAMMANESS_CUT,
     NO_EVENTS_WITHIN_MAXIMUM_DISTANCE,
+    NO_MAGIC_EVENTS,
     NO_TAILCUT,
     OUTSIDE_INTERPOLATION_RANGE,
 )
@@ -31,7 +33,9 @@ __all__ = [
     "reflected_camera_geometry_mars",
     "GENERIC_ERROR_CODE",
     "NO_COINCIDENT_EVENTS",
+    "NO_DL2_GAMMANESS_CUT",
     "NO_EVENTS_WITHIN_MAXIMUM_DISTANCE",
+    "NO_MAGIC_EVENTS",
     "NO_TAILCUT",
     "OUTSIDE_INTERPOLATION_RANGE",
     "identify_time_edges",
