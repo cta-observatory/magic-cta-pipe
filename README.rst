@@ -13,11 +13,7 @@ Repository for the analysis of MAGIC and MAGIC+LST1 data, based on `ctapipe <htt
 
 The latest stable release, v0.6.0, of *magic-cta-pipe* provides all the functionalities to perform a MAGIC+LST-1 or a MAGIC-only analysis. Both types of analyses can be performed using the scripts within the *lst1_magic* folder.
 See `here <https://magic-cta-pipe.readthedocs.io/en/latest/user-guide/magic-lst-scripts.html>`_ for more details on how to run the analysis.
->>>>>>> master
 
-
-
-See `here <https://magic-cta-pipe.readthedocs.io/en/latest/user-guide/magic-lst-scripts.html>`_ for more details on how to run the analysis.
 
 **NOTE ON OLD RELEASES**
 
