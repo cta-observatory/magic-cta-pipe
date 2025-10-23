@@ -17,7 +17,7 @@ import pandas as pd
 import yaml
 
 from magicctapipe.io import resource_file
-from magicctapipe.utils import auto_MCP_parser
+from magicctapipe.utils import auto_MCP_parser, load_merge_databases
 
 __all__ = [
     "fix_lists_and_convert",
@@ -204,12 +204,8 @@ def main():
 
     with open(config, "rb") as bf:
         config_dict = yaml.safe_load(bf)
-    df_path = config_dict["database_paths"]["MAGIC+LST1"]
-    df_key = config_dict["database_keys"]["MAGIC+LST1"]
-    df = pd.read_hdf(
-        df_path,
-        key=df_key,
-    )
+
+    df = load_merge_databases(config_dict)
 
     tel_id = [1, 2]
     date_min = args.begin if args.begin != 0 else date_min_default

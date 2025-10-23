@@ -25,6 +25,7 @@ __all__ = [
     "transform_altaz_to_radec",
     "auto_MCP_parser",
     "auto_MCP_parse_config",
+    "load_merge_databases",
     "LON_ORM",
     "LAT_ORM",
     "HEIGHT_ORM",
@@ -411,3 +412,30 @@ def auto_MCP_parse_config():
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
     return config
+
+
+def load_merge_databases(config_dict):
+    """
+    Function to load and merge the twodatabases for joint observations
+
+    Parameters
+    ----------
+    config_dict : dict
+        Dictionary containing paths and keys to the databases
+
+    Returns
+    -------
+    pandas.DataFrame
+        Dataframe joining the two databases
+    """
+    df1 = pd.read_hdf(
+        config_dict["database_paths"]["MAGIC+LST1"],
+        key=config_dict["database_keys"]["MAGIC+LST1"],
+    )
+    df2 = pd.read_hdf(
+        config_dict["database_paths"]["MAGIC+LST1_bis"],
+        key=config_dict["database_keys"]["MAGIC+LST1_bis"],
+    )
+    df = pd.concat([df1, df2]).drop_duplicates(subset="LST1_run", keep="first")
+    df = df.sort_values(by=["DATE", "source"])
+    return df

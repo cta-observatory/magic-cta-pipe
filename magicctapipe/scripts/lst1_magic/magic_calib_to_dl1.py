@@ -58,6 +58,7 @@ from ctapipe.instrument import SubarrayDescription
 from ctapipe.io import HDF5TableWriter
 from ctapipe_io_lst import LSTEventSource
 from ctapipe_io_magic import MAGICEventSource
+from ctapipe_io_magic.constants import REFERENCE_LOCATION
 
 from magicctapipe.image import MAGICClean
 from magicctapipe.io import (
@@ -204,7 +205,10 @@ def magic_calib_to_dl1(
         }
 
         subarray_magic = SubarrayDescription(
-            "MAGIC-LST-Array", tel_positions_magic_lst, tel_descriptions_magic_lst
+            "MAGIC-LST-Array",
+            tel_positions_magic_lst,
+            tel_descriptions_magic_lst,
+            REFERENCE_LOCATION,
         )
     else:
         tel_positions_magic = {
@@ -218,7 +222,10 @@ def magic_calib_to_dl1(
         }
 
         subarray_magic = SubarrayDescription(
-            "MAGIC-Array", tel_positions_magic, tel_descriptions_magic
+            "MAGIC-Array",
+            tel_positions_magic,
+            tel_descriptions_magic,
+            REFERENCE_LOCATION,
         )
 
     save_images = config.get("save_images", False)

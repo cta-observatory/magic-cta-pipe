@@ -92,9 +92,11 @@ def calculate_pointing_separation(event_data, config):
         "mc_tel_ids"
     ]  # This variable becomes a dictionary, e.g.: {'LST-1': 1, 'LST-2': 0, 'LST-3': 0, 'LST-4': 0, 'MAGIC-I': 2, 'MAGIC-II': 3}
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
-    LSTs_IDs = list(LSTs_IDs[LSTs_IDs > 0])  # Here we list only the LSTs in use
+    LSTs_IDs = LSTs_IDs[LSTs_IDs > 0].tolist()  # Here we list only the LSTs in use
     MAGICs_IDs = np.asarray(list(assigned_tel_ids.values())[4:6])
-    MAGICs_IDs = list(MAGICs_IDs[MAGICs_IDs > 0])  # Here we list only the MAGICs in use
+    MAGICs_IDs = MAGICs_IDs[
+        MAGICs_IDs > 0
+    ].tolist()  # Here we list only the MAGICs in use
 
     # Extract LST events
     df_lst = event_data.query(f"tel_id == {LSTs_IDs}")
@@ -178,7 +180,7 @@ def stereo_reconstruction(input_file, output_dir, config, magic_only_analysis=Fa
 
     if magic_only_analysis:
         tel_id = np.asarray(list(assigned_tel_ids.values())[:])
-        used_id = tel_id[tel_id != 0]
+        used_id = tel_id[tel_id != 0].tolist()
         magic_ids = [item for item in used_id if item not in LSTs_IDs]
         event_data.query(
             f"tel_id in {magic_ids}", inplace=True
