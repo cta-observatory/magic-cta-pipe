@@ -196,8 +196,8 @@ def mc_dl0_to_dl1(input_file, output_dir, config, focal_length):
     particle_id = int(re.findall(regex, corsika_inputcard)[0])
     particle_type = PARTICLE_TYPES.get(particle_id, "unknown")
 
-    zenith = 90 - sim_config["max_alt"].to_value("deg")
-    azimuth = Angle(sim_config["max_az"]).wrap_at("360 deg").degree
+    zenith = np.float64(90 - sim_config["max_alt"].to_value("deg"))
+    azimuth = np.float64(Angle(sim_config["max_az"]).wrap_at("360 deg").degree)
     logger.info(np.asarray(list(assigned_tel_ids.values())))
     LSTs_IDs = np.asarray(list(assigned_tel_ids.values())[0:4])
     LSTs_in_use = (

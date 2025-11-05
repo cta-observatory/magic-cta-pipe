@@ -15,7 +15,7 @@ from astropy.coordinates import SkyCoord
 from astropy.coordinates.name_resolve import NameResolveError
 
 from magicctapipe.io import resource_file
-from magicctapipe.utils import auto_MCP_parser
+from magicctapipe.utils import auto_MCP_parser, load_merge_databases
 
 
 def main():
@@ -132,10 +132,9 @@ def main():
             )
             i += 1
     print("\n\nRetrieving wobble offset...\n\n")
-    df = pd.read_hdf(
-        config_dict["database_paths"]["MAGIC+LST1"],
-        key=config_dict["database_keys"]["MAGIC+LST1"],
-    )  # TODO: put this file in a shared folder
+
+    df = load_merge_databases(config_dict)
+
     if args.begin != 0:
         df = df[df["DATE"].astype(int) >= args.begin]
     if args.end != 0:

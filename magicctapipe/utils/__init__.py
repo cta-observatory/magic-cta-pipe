@@ -19,6 +19,7 @@ from .functions import (
     calculate_impact,
     calculate_mean_direction,
     calculate_off_coordinates,
+    load_merge_databases,
     transform_altaz_to_radec,
 )
 from .gti import (
@@ -49,6 +50,7 @@ __all__ = [
     "transform_altaz_to_radec",
     "auto_MCP_parser",
     "auto_MCP_parse_config",
+    "load_merge_databases",
     "LON_ORM",
     "LAT_ORM",
     "HEIGHT_ORM",
