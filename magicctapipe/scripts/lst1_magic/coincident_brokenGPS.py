@@ -29,8 +29,10 @@ $ python coincident_brokenGPS.py data2
 
 import glob
 import os
+import re
 import subprocess
 import sys
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -132,7 +134,12 @@ for magic_subrun_file in sorted(
 
             # This output file will be used for the next detailed offset search
             outfile = (
-                outdir + "/" + magic_subrun_base + "_" + str(N_start_) + "_init.npy"
+                outdir
+                + "/"
+                + magic_subrun_base.replace("MAGIC", M1_M2)
+                + "_"
+                + str(N_start_)
+                + "_init.npy"
             )
             t_magic_all, N_start_out, time_offset_best, n_coincident = find_offset(
                 data_magic, data_lst, N_start=N_start_, N_end=N_end_
@@ -140,7 +147,7 @@ for magic_subrun_file in sorted(
 
             if n_coincident != 0:
                 np.save(
-                    outfile.replace("MAGIC", M1_M2),
+                    outfile,
                     np.array(
                         [
                             np.mean(t_magic_all),
@@ -149,7 +156,7 @@ for magic_subrun_file in sorted(
                         ]
                     ),
                 )
-                time_offset_center = np.load(outfile.replace("MAGIC", M1_M2))[1]
+                time_offset_center = np.load(outfile)[1]
                 N_end_of_run = N_final
 
                 # This output file will be loaded by the lst_magic_event_coincidence.py
@@ -203,10 +210,38 @@ for magic_data in magic_dataset:
 df_magic = pd.DataFrame({"start": start_m, "stop": stop_m, "run": run_m})
 df_magic = df_magic.groupby("run").agg({"start": "min", "stop": "max"}).reset_index()
 
+# Parse information from the input file names
+regex_run = re.compile(r"(\S+Run)(\d+)\.h5", re.IGNORECASE)
+regex_subrun = re.compile(r"(\S+Run)(\d+)\.(\d+)\.h5", re.IGNORECASE)
+
 lst_dataset = glob.glob(lst_dir_name + "/*h5")
 lst_dataset = sorted(lst_dataset)
+lst_dataset_used = []
 
-for lst_data in lst_dataset:
+run_id = []
+for input_file in lst_dataset:
+    if re.fullmatch(regex_run, input_file):
+        input_file_name = Path(input_file).name
+        parser = re.findall(regex_run, input_file_name)[0]
+        run_id.append(parser[1])
+        matched_file = "".join(map(str, re.findall(regex_run, input_file)[0])) + ".h5"
+        lst_dataset_used.append(matched_file)
+
+for input_file in lst_dataset:
+    if re.fullmatch(regex_subrun, input_file):
+        input_file_name = Path(input_file).name
+        parser = re.findall(regex_subrun, input_file_name)[0]
+        if parser[1] not in run_id:
+            matched_file = (
+                re.findall(regex_subrun, input_file)[0][0]
+                + re.findall(regex_subrun, input_file)[0][1]
+                + "."
+                + re.findall(regex_subrun, input_file)[0][2]
+                + ".h5"
+            )
+            lst_dataset_used.append(matched_file)
+
+for lst_data in lst_dataset_used:
     data_lst = pd.read_hdf(lst_data, key="/dl1/event/telescope/parameters/LST_LSTCam")
     start_l.append(min(data_lst["trigger_time"]))
     stop_l.append(max(data_lst["trigger_time"]))
@@ -276,7 +311,8 @@ for i in range(0, len(df)):
         )
         start_l_subrun.append(min(data_lst["trigger_time"]))
         stop_l_subrun.append(max(data_lst["trigger_time"]))
-        subrun = int(input_file.split(".")[-2])
+        subrun = re.findall(r"\d+", input_file.split(".")[-2])[0]
+        subrun = int(subrun)
         subrun_l.append(subrun)
     df_lst_subrun = pd.DataFrame(
         {"start": start_l_subrun, "stop": stop_l_subrun, "run": subrun_l}

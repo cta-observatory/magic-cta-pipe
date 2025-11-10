@@ -6,6 +6,7 @@ import glob
 import logging
 import pprint
 import re
+import sys
 
 import numpy as np
 import pandas as pd
@@ -29,7 +30,7 @@ try:
 except ImportError:
     from importlib_resources import files
 
-from ..utils import calculate_mean_direction, transform_altaz_to_radec
+from ..utils import NO_MAGIC_EVENTS, calculate_mean_direction, transform_altaz_to_radec
 
 __all__ = [
     "check_input_list",
@@ -738,6 +739,14 @@ def load_magic_dl1_data_files(input_dir, config):
     for input_file in input_files:
         logger.info(input_file)
 
+        try:
+            df_events = pd.read_hdf(input_file, key="events/parameters")
+        except KeyError:
+            logger.warning(
+                f'File {input_file} has no "events/parameters" key, skipping'
+            )
+            continue
+
         df_events = pd.read_hdf(input_file, key="events/parameters")
 
         # check if subarrays are matching
@@ -746,6 +755,10 @@ def load_magic_dl1_data_files(input_dir, config):
             raise IOError(f"Subarrays do not match for file: {input_file}")
 
         data_list.append(df_events)
+
+    if len(data_list) == 0:
+        logger.error("no MAGIC events, exiting")
+        sys.exit(NO_MAGIC_EVENTS)
 
     event_data = pd.concat(data_list)
 
@@ -1488,7 +1501,7 @@ def make_time_select(
     time_offset_width2=None,
 ):
     """
-    Find the time offset between MAGIC and LST.
+    Helper function used for computations in find_offset.
 
     Parameters
     ----------
@@ -1498,20 +1511,20 @@ def make_time_select(
         Input filename for LST
     N_start, N_end : int
         Start and stop event number for MAGIC event
-    time_offset_width1 : int
+    time_offset_width1 : float
         Start time of the time window for search the time offset
-    time_offset_width2 : int
+    time_offset_width2 : float
         Stop time of the time window for search the time offset
 
     Returns
     -------
     t_magic_ave : float
-        The average the MAGIC timestamp
-    event_id_magic_ave : float
+        The average MAGIC timestamp in sec
+    event_id_magic_ave : int
         The average of the MAGIC event ID
     time_offset_best : float
         The best time offset found from the combination
-    n_coincident : float
+    n_coincident : int
         The coincidence event number
     """
     select = data_lst_["event_type"] == 32
@@ -1561,14 +1574,14 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
 
     Returns
     -------
-    t_magic_ave : float
-        The average the MAGIC timestamp
-    event_id_magic_ave : float
-        The average of the MAGIC event ID
-    time_offset_best : float
-        The best time offset found from the combination
-    n_coincident : float
-        The coincidence event number
+    t_magic_ave_array : float
+        The array of the MAGIC timestamp
+    event_id_magic_ave_array : int
+        The array of the MAGIC event ID
+    time_offset_best_array : float
+        The array of the best time offset found from the combination
+    n_coincident_array : int
+        The array of coincidence event number
     """
 
     if initial_time_offset is None:
@@ -1581,7 +1594,12 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
             < (data_magic_["trigger_time"].values[N_end] + time_offset_width2)
         )
         if max(time_select) == True:
-            t_magic_all, N_start, time_offset_best, n_coincident = make_time_select(
+            (
+                t_magic_all_array,
+                N_start_array,
+                time_offset_best_array,
+                n_coincident_array,
+            ) = make_time_select(
                 data_magic_,
                 data_lst_,
                 N_start,
@@ -1589,10 +1607,15 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
                 time_offset_width1,
                 time_offset_width2,
             )
-            logger.info(f"time offset: {time_offset_best}")
-            logger.info(f"# of coincident events: {n_coincident}")
+            logger.info(f"time offset: {time_offset_best_array}")
+            logger.info(f"# of coincident events: {n_coincident_array}")
             # logger.info(f"standard deviation: {std_b}")
-            return t_magic_all, N_start, time_offset_best, n_coincident
+            return (
+                t_magic_all_array,
+                N_start_array,
+                time_offset_best_array,
+                n_coincident_array,
+            )
         else:
             logger.info("No event was found")
             return 0, 0, 0, 0
@@ -1600,36 +1623,22 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
     else:
         EVENT_STEP = 15
         N_ITR = len(data_magic_["trigger_time"].values[N_start:N_end]) // EVENT_STEP
-        t_magic_ave = np.zeros(N_ITR)
-        event_id_magic_ave = np.zeros(N_ITR)
-        time_offset_best = np.zeros(N_ITR)
-        n_coincident = np.zeros(N_ITR)
+        t_magic_ave_array = np.zeros(N_ITR)
+        event_id_magic_ave_array = np.zeros(N_ITR, dtype="int32")
+        time_offset_best_array = np.zeros(N_ITR)
+        n_coincident_array = np.zeros(N_ITR, dtype="int32")
         last_time_offset = initial_time_offset
 
         for n in range(N_ITR):
             N_start_2 = n * EVENT_STEP
             N_end_2 = (n + 1) * EVENT_STEP
 
-            if n == 0:
+            if n == 0 or n_coincident_array[n - 1] == 0:
                 (
-                    t_magic_ave[n],
-                    event_id_magic_ave[n],
-                    time_offset_best[n],
-                    n_coincident[n],
-                ) = make_time_select(
-                    data_magic_,
-                    data_lst_,
-                    N_start_2,
-                    N_end_2,
-                    initial_time_offset - 1.6e-6,
-                    initial_time_offset + 1.6e-6,
-                )
-            elif n_coincident[n - 1] == 0:
-                (
-                    t_magic_ave[n],
-                    event_id_magic_ave[n],
-                    time_offset_best[n],
-                    n_coincident[n],
+                    t_magic_ave_array[n],
+                    event_id_magic_ave_array[n],
+                    time_offset_best_array[n],
+                    n_coincident_array[n],
                 ) = make_time_select(
                     data_magic_,
                     data_lst_,
@@ -1640,20 +1649,25 @@ def find_offset(data_magic_, data_lst_, N_start=0, N_end=20, initial_time_offset
                 )
             else:
                 (
-                    t_magic_ave[n],
-                    event_id_magic_ave[n],
-                    time_offset_best[n],
-                    n_coincident[n],
+                    t_magic_ave_array[n],
+                    event_id_magic_ave_array[n],
+                    time_offset_best_array[n],
+                    n_coincident_array[n],
                 ) = make_time_select(
                     data_magic_,
                     data_lst_,
                     N_start_2,
                     N_end_2,
-                    time_offset_best[n - 1] - 1.6e-6,
-                    time_offset_best[n - 1] + 1.6e-6,
+                    time_offset_best_array[n - 1] - 1.6e-6,
+                    time_offset_best_array[n - 1] + 1.6e-6,
                 )
-                last_time_offset = time_offset_best[n - 1]
+                last_time_offset = time_offset_best_array[n - 1]
             logger.info(
-                f"new time offset = {time_offset_best[n]}, drift  = {int((time_offset_best[n] - time_offset_best[n - 1]) * 1e9)} ns, n_coinc = {n_coincident[n]}"
+                f"new time offset = {time_offset_best_array[n]}, drift  = {int((time_offset_best_array[n] - time_offset_best_array[n - 1]) * 1e9)} ns, n_coinc = {n_coincident_array[n]}"
             )
-        return t_magic_ave, event_id_magic_ave, time_offset_best, n_coincident
+        return (
+            t_magic_ave_array,
+            event_id_magic_ave_array,
+            time_offset_best_array,
+            n_coincident_array,
+        )

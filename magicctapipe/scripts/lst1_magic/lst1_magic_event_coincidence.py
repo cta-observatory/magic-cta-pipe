@@ -289,7 +289,6 @@ def event_coincidence(
             df_toff = df_toff.query(
                 "@timestamps_lst_min < timestamp < @timestamps_lst_max"
             )
-            df_toff.to_csv("test.csv", index=None)
             t_plus = df_toff["timestamp"].values
             time_offset_plus = df_toff["toff1"].values
             n_coinc_plus = df_toff["n"].values
