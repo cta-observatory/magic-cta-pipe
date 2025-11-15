@@ -747,8 +747,6 @@ def load_magic_dl1_data_files(input_dir, config):
             )
             continue
 
-        df_events = pd.read_hdf(input_file, key="events/parameters")
-
         # check if subarrays are matching
         subarray_other = SubarrayDescription.from_hdf(input_file)
         if subarray_other != subarray:
