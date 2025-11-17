@@ -14,6 +14,7 @@ from .gadf import (
 )
 from .io import (
     check_input_list,
+    find_offset,
     format_object,
     get_custom_cuts,
     get_dl2_mean,
@@ -55,4 +56,5 @@ __all__ = [
     "save_pandas_data_in_table",
     "telescope_combinations",
     "resource_file",
+    "find_offset",
 ]

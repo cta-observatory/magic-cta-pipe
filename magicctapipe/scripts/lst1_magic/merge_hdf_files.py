@@ -156,6 +156,9 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
     regex_run = re.compile(r"(\S+run)(\d+)\.h5", re.IGNORECASE)
     regex_subrun = re.compile(r"(\S+run)(\d+)\.(\d+)\.h5", re.IGNORECASE)
     regex_run_merged = re.compile(r"(\S+run)(\d+)_to_(\d+)\.h5", re.IGNORECASE)
+    regex_subrun_indv_magic_lst = re.compile(
+        r"dl1_MAGIC\.Run(\d+)\.(\d+)_LST-1\.Run(\d+)\.(\d+)\.h5", re.IGNORECASE
+    )
 
     file_names = []
     run_ids = []
@@ -170,10 +173,17 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             run_ids.append(parser[1])
 
         elif re.fullmatch(regex_subrun, input_file_name):
-            parser = re.findall(regex_subrun, input_file_name)[0]
-            file_names.append(parser[0])
-            run_ids.append(parser[1])
-            subrun_ids.append(parser[2])
+            if re.fullmatch(regex_subrun_indv_magic_lst, input_file_name):
+                parser = re.findall(regex_subrun_indv_magic_lst, input_file_name)[0]
+                file_names.append("dl1_MAGIC_LST-1.Run")
+                run_ids.append(parser[0])
+                subrun_ids.append(parser[1])
+
+            else:
+                parser = re.findall(regex_subrun, input_file_name)[0]
+                file_names.append(parser[0])
+                run_ids.append(parser[1])
+                subrun_ids.append(parser[2])
 
         elif re.fullmatch(regex_run_merged, input_file_name):
             parser = re.findall(regex_run_merged, input_file_name)[0]
@@ -214,7 +224,6 @@ def merge_hdf_files(input_dir, output_dir=None, run_wise=False, subrun_wise=Fals
             )
 
             subrun_ids_unique = subrun_ids_unique[counts > 1]
-
             for subrun_id in subrun_ids_unique:
                 file_mask = f"{input_dir}/*Run{run_id}.{subrun_id}.h5"
                 output_file = f"{output_dir}/{output_file_name}{run_id}.{subrun_id}.h5"
