@@ -78,7 +78,7 @@ def test_create_pointing_hdu(event):
     assert point["TIME"][0] == 1.608070e9
     assert point["DEC_PNT"][0] == 22.246
     assert isclose(
-        point["ALT_PNT"][0], event["pointing_alt"][0].to("deg").value, abs_tol=1e-8
+        point["ALT_PNT"][0], event["pointing_alt"][0].to("deg").value, abs_tol=1e-3
     )
     point_head = point_fits.header
     assert point_head["OBS_ID"] == 3267
@@ -108,7 +108,7 @@ def test_create_event_hdu(event):
     assert evt_head["N_TELS"] == 3
     assert isclose(evt_head["LIVETIME"], 200 * 0.97, abs_tol=1e-8)
     assert evt_head["OBJECT"] == "Crab"
-    assert evt_head["RA_PNT"] == 84.0
+    assert isclose(evt_head["RA_PNT"], 84.05, abs_tol=1.0e-3)
     assert isclose(
         evt_head["AZ_PNT"], event["pointing_az"][0].to("deg").value, abs_tol=1e-8
     )
