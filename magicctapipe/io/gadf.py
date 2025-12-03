@@ -7,6 +7,7 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.io import fits
+from astropy.stats import circmean
 from astropy.table import QTable
 from astropy.time import Time
 from ctapipe_io_lst import REFERENCE_LOCATION
@@ -16,6 +17,7 @@ from .. import __version__ as MCP_VERSION
 from ..utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
 
 __all__ = [
+    "average_run_pointing",
     "create_gh_cuts_hdu",
     "create_event_hdu",
     "create_gti_hdu",
@@ -190,6 +192,8 @@ def create_event_hdu(
         }
     )
 
+    mean_ra, mean_dec, mean_alt, mean_az = average_run_pointing(event_table)
+
     # Create a header
     header = fits.Header(
         cards=[
@@ -219,10 +223,10 @@ def create_event_hdu(
             ("GEOLON", REFERENCE_LOCATION.lon.to_value(u.deg), "deg"),
             ("GEOLAT", REFERENCE_LOCATION.lat.to_value(u.deg), "deg"),
             ("ALTITUDE", round(REFERENCE_LOCATION.height.to_value(u.m), 2), "m"),
-            ("RA_PNT", event_table["pointing_ra"][0].value, "deg"),
-            ("DEC_PNT", event_table["pointing_dec"][0].value, "deg"),
-            ("ALT_PNT", event_table["pointing_alt"][0].to_value("deg"), "deg"),
-            ("AZ_PNT", event_table["pointing_az"][0].to_value("deg"), "deg"),
+            ("RA_PNT", mean_ra.to_value("deg"), "deg"),
+            ("DEC_PNT", mean_dec.to_value("deg"), "deg"),
+            ("ALT_PNT", mean_alt.to_value("deg"), "deg"),
+            ("AZ_PNT", mean_az.to_value("deg"), "deg"),
             ("RA_OBJ", source_coord.ra.to_value("deg"), "deg"),
             ("DEC_OBJ", source_coord.dec.to_value("deg"), "deg"),
             ("FOVALIGN", "RADEC"),
@@ -280,6 +284,42 @@ def create_gti_hdu(event_table):
     return gti_hdu
 
 
+def average_run_pointing(
+    event_table, exclude_fraction_first=0.15, exclude_fraction_last=0.05
+):
+    """
+    Calculates the average pointing (in RA/Dec and Alt/Az coordinates) excluding the beginning and
+    the end of the run
+
+    Parameters
+    ----------
+    event_table : astropy.table.table.QTable
+        Table of the DL2 events surviving gammaness cuts
+    exclude_fraction_first : float
+        Fraction of events from the beginning of the run excluded for calculation of average position
+    exclude_fraction_last : float
+        Fraction of events from the beginning of the run excluded for calculation of average position
+
+    Returns
+    -------
+    astropy.units.quantity.Quantity
+        Average RA
+    astropy.units.quantity.Quantity
+        Average Dec
+    astropy.units.quantity.Quantity
+        Average Alt
+    astropy.units.quantity.Quantity
+        Average Az
+    """
+    first = int(len(event_table) * exclude_fraction_first)
+    last = int(len(event_table) * (1 - exclude_fraction_last))
+    mean_ra = circmean(event_table["pointing_ra"][first:last])
+    mean_dec = event_table["pointing_dec"][first:last].mean()
+    mean_alt = event_table["pointing_alt"][first:last].mean()
+    mean_az = circmean(event_table["pointing_az"][first:last])
+    return mean_ra, mean_dec, mean_alt, mean_az
+
+
 def create_pointing_hdu(event_table):
     """
     Creates a fits binary table HDU for the pointing direction.
@@ -294,17 +334,17 @@ def create_pointing_hdu(event_table):
     astropy.io.fits.hdu.table.BinTableHDU
         Pointing HDU
     """
-
     mjdreff, mjdrefi = np.modf(MJDREF.mjd)
+    mean_ra, mean_dec, mean_alt, mean_az = average_run_pointing(event_table)
 
     # Create a table
     qtable = QTable(
         data={
             "TIME": u.Quantity(event_table["timestamp"][0], ndmin=1),
-            "RA_PNT": u.Quantity(event_table["pointing_ra"][0], ndmin=1),
-            "DEC_PNT": u.Quantity(event_table["pointing_dec"][0], ndmin=1),
-            "ALT_PNT": u.Quantity(event_table["pointing_alt"][0].to("deg"), ndmin=1),
-            "AZ_PNT": u.Quantity(event_table["pointing_az"][0].to("deg"), ndmin=1),
+            "RA_PNT": u.Quantity(mean_ra, ndmin=1),
+            "DEC_PNT": u.Quantity(mean_dec, ndmin=1),
+            "ALT_PNT": u.Quantity(mean_alt.to("deg"), ndmin=1),
+            "AZ_PNT": u.Quantity(mean_az.to("deg"), ndmin=1),
         }
     )
 
