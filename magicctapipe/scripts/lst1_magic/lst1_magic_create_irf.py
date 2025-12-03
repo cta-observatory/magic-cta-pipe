@@ -423,6 +423,7 @@ def create_irf(
             gh_cuts=gh_cuts,
             reco_energy_bins=energy_bins,
             fov_offset_bins=fov_offset_bins,
+            point_like=is_point_like,
             **extra_header,
         )
 

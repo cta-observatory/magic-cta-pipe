@@ -31,7 +31,9 @@ MJDREF = Time(0, format="unix", scale="utc")
 
 
 @u.quantity_input(reco_energy_bins=u.TeV, fov_offset_bins=u.deg)
-def create_gh_cuts_hdu(gh_cuts, reco_energy_bins, fov_offset_bins, **header_cards):
+def create_gh_cuts_hdu(
+    gh_cuts, reco_energy_bins, fov_offset_bins, point_like, **header_cards
+):
     """
     Creates a fits binary table HDU for dynamic gammaness cuts.
 
@@ -44,6 +46,8 @@ def create_gh_cuts_hdu(gh_cuts, reco_energy_bins, fov_offset_bins, **header_card
         Bin edges in the reconstructed energy
     fov_offset_bins : astropy.units.quantity.Quantity
         Bin edges in the field of view offset
+    point_like : bool
+        Meaning: true = IRFs are point-like, false = IRFS are full-enclosure
     **header_cards : dict
         Additional metadata to add to the header
 
@@ -73,7 +77,7 @@ def create_gh_cuts_hdu(gh_cuts, reco_energy_bins, fov_offset_bins, **header_card
             ("CREATOR", f"magicctapipe v{MCP_VERSION}"),
             ("HDUCLAS1", "RESPONSE"),
             ("HDUCLAS2", "GH_CUTS"),
-            ("HDUCLAS3", "POINT-LIKE"),
+            ("HDUCLAS3", "POINT-LIKE" if point_like else "FULL-ENCLOSURE"),
             ("HDUCLAS4", "GH_CUTS_2D"),
             ("DATE", Time.now().utc.iso),
         ]

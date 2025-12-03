@@ -206,11 +206,12 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         aeff_interp = irf_data["effective_area"][0]
         print("skipping interpolation since only one point is given")
 
+    point_like = irf_data["effective_area"].shape[-1] == 1
     aeff_hdu = create_aeff2d_hdu(
         effective_area=aeff_interp,
         true_energy_bins=irf_data["energy_bins"],
         fov_offset_bins=irf_data["fov_offset_bins"],
-        point_like=True,
+        point_like=point_like,
         extname="EFFECTIVE AREA",
         **extra_header,
     )
@@ -247,7 +248,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
         true_energy_bins=irf_data["energy_bins"],
         migration_bins=irf_data["migration_bins"],
         fov_offset_bins=irf_data["fov_offset_bins"],
-        point_like=True,
+        point_like=point_like,
         extname="ENERGY DISPERSION",
     )
 
@@ -328,6 +329,7 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
             gh_cuts=gh_cuts_interp,
             reco_energy_bins=irf_data["energy_bins"],
             fov_offset_bins=irf_data["fov_offset_bins"],
+            point_like=point_like,
             **extra_header,
         )
 
