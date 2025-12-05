@@ -366,10 +366,12 @@ def create_irf(
 
         # Calculate dynamic gammaness cuts
         gh_percentile = 100 * (1 - gh_efficiency)
-
+        withinfov = (
+            event_table_gamma["true_source_fov_offset"].to("deg") < fov_offset_bins[-1]
+        ) * (event_table_gamma["true_source_fov_offset"].to("deg") > fov_offset_bins[0])
         cut_table_gh = calculate_percentile_cut(
-            values=event_table_gamma["gammaness"],
-            bin_values=event_table_gamma["reco_energy"],
+            values=event_table_gamma[withinfov]["gammaness"],
+            bin_values=event_table_gamma[withinfov]["reco_energy"],
             bins=energy_bins,
             fill_value=gh_cut_min,
             percentile=gh_percentile,
@@ -473,9 +475,16 @@ def create_irf(
             # Calculate dynamic theta cuts
             theta_percentile = 100 * theta_efficiency
 
+            withinfov = (
+                event_table_gamma["true_source_fov_offset"].to("deg")
+                < fov_offset_bins[-1]
+            ) * (
+                event_table_gamma["true_source_fov_offset"].to("deg")
+                > fov_offset_bins[0]
+            )
             cut_table_theta = calculate_percentile_cut(
-                values=event_table_gamma["theta"],
-                bin_values=event_table_gamma["reco_energy"],
+                values=event_table_gamma[withinfov]["theta"],
+                bin_values=event_table_gamma[withinfov]["reco_energy"],
                 bins=energy_bins,
                 fill_value=theta_cut_max,
                 percentile=theta_percentile,
