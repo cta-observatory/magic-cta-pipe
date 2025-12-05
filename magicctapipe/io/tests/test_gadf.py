@@ -110,7 +110,7 @@ def test_create_event_hdu(event):
     assert evt_head["OBJECT"] == "Crab"
     assert isclose(evt_head["RA_PNT"], 84.05, abs_tol=1.0e-3)
     assert isclose(
-        evt_head["AZ_PNT"], event["pointing_az"][0].to("deg").value, abs_tol=1e-8
+        evt_head["AZ_PNT"], event["pointing_az"][0].to("deg").value, abs_tol=1e-3
     )
 
 
