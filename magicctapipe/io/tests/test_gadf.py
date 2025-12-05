@@ -80,7 +80,7 @@ def test_create_pointing_hdu(event):
     assert point["TIME"][0] == 1.608070e9
     assert point["DEC_PNT"][0] == 22.246
     assert isclose(
-        point["ALT_PNT"][0], event["pointing_alt"][0].to("deg").value, abs_tol=1e-3
+        point["ALT_PNT"][0], event["pointing_alt"][0].to("deg").value, abs_tol=1e-8
     )
     point_head = point_fits.header
     assert point_head["OBS_ID"] == 3267
