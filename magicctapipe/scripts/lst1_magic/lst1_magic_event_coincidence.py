@@ -287,7 +287,7 @@ def event_coincidence(
             )
 
             df_toff = df_toff.query(
-                "@timestamps_lst_min < timestamp < @timestamps_lst_max"
+                f"{timestamps_lst_min} < timestamp < {timestamps_lst_max}"
             )
             t_plus = df_toff["timestamp"].values
             time_offset_plus = df_toff["toff1"].values
