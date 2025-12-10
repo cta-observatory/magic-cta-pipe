@@ -29,9 +29,9 @@ from pathlib import Path
 import numpy as np
 import yaml
 from astropy import units as u
-from astropy.coordinates import Angle
 from astropy.coordinates.angles.utils import angular_separation
 from astropy.io import fits
+from astropy.stats import circmean
 from astropy.table import QTable
 from pyirf.cuts import evaluate_binned_cut
 from pyirf.interpolation import GridDataInterpolator
@@ -106,19 +106,10 @@ def dl2_to_dl3(input_file_dl2, input_dir_irf, output_dir, config):
     # Calculate the mean pointing direction for the target point of the
     # IRF interpolation. Please note that the azimuth could make a full
     # 2 pi turn, whose mean angle may indicate an opposite direction.
-    # Thus, here we calculate the STDs of the azimuth angles with two
-    # ranges, i.e., 0 <= az < 360 deg and -180 <= az < 180 deg, and then
-    # calculate the mean with the range of smaller STD.
+    # Thus, here we use circmean function for it
 
     pnt_coszd_mean = np.sin(event_table["pointing_alt"]).mean().value
-
-    pnt_az_wrap_360deg = Angle(event_table["pointing_az"]).wrap_at("360 deg")
-    pnt_az_wrap_180deg = Angle(event_table["pointing_az"]).wrap_at("180 deg")
-
-    if pnt_az_wrap_360deg.std() <= pnt_az_wrap_180deg.std():
-        pnt_az_mean = pnt_az_wrap_360deg.mean().to_value("rad")
-    else:
-        pnt_az_mean = pnt_az_wrap_180deg.mean().wrap_at("360 deg").to_value("rad")
+    pnt_az_mean = circmean(event_table["pointing_az"]).to_value("rad")
 
     distances = (
         angular_separation(
