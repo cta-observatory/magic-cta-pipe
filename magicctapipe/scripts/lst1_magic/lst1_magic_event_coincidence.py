@@ -269,26 +269,27 @@ def event_coincidence(
         seconds = np.array([Decimal(str(time)) for time in df_magic["time_sec"]])
         nseconds = np.array([Decimal(str(time)) for time in df_magic["time_nanosec"]])
         timestamps_magic = seconds * SEC2NSEC + nseconds
-
         if input_dir_toff is not None:
             files_toff = glob.glob(f"{input_dir_toff}/*M{str(tel_id - 1)}*_detail.npy")
+            files_npy = []
             for i, file_toff in enumerate(files_toff):  # files_toff:
                 file_npy = np.load(file_toff)
-                if i == 0:
-                    file_npy_ = file_npy
-                else:
-                    file_npy_ = np.hstack([file_npy, file_npy_])
-
+                files_npy.append(file_npy)
+                # if i == 0:
+                #    file_npy_ = file_npy
+                # else:
+                #    file_npy_ = np.hstack([file_npy, file_npy_])
+            file_npy_ = np.hstack(files_npy)
+            logger.info(file_npy_)
             df_toff = pd.DataFrame(file_npy_.T, columns=["timestamp", "toff1", "n"])
-
             timestamps_lst_min, timestamps_lst_max = (  # noqa: F841
                 float(min(timestamps_lst_org.value)) / 1e9,
                 float(max(timestamps_lst_org.value)) / 1e9,
             )
-
             df_toff = df_toff.query(
                 f"{timestamps_lst_min} < timestamp < {timestamps_lst_max}"
             )
+            logger.info(df_toff)
             t_plus = df_toff["timestamp"].values
             time_offset_plus = df_toff["toff1"].values
             n_coinc_plus = df_toff["n"].values

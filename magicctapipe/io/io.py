@@ -1541,17 +1541,32 @@ def make_time_select(
         comb_array = np.array(np.meshgrid(t_lst_all, t_magic_all)).reshape(2, -1)
         time_offsets = comb_array[0] - comb_array[1]
         time_window = 500e-9
-        b = np.array(
-            [np.sum(np.abs(time_offsets - T) < time_window) for T in time_offsets]
-        )
-        n_coincident = np.max(b)
-        time_offset_best = np.mean(time_offsets[b == np.max(b)])
+
+        # original method should have a complexity of len (time_offsets)^2
+        # b = np.array(
+        #    [np.sum(np.abs(time_offsets - T) < time_window) for T in time_offsets]
+        # )
+        # n_coincident = np.max(b)
+        # time_offset_best = np.mean(time_offsets[b == np.max(b)])
+
+        # method 2
+        # should have complexity of
+        # len(time_offsets) * ln (len(time_offsets)) # sorting
+        # len(time_offsets) * n_coincident # searching for
+        offsets_sorted = np.sort(time_offsets)
+        diffs = np.diff(offsets_sorted)
+        n_coincident = 1
+        while np.min(diffs) <= 2 * time_window:
+            n_coincident += 1
+            diffs = offsets_sorted[n_coincident:] - offsets_sorted[:-n_coincident]
+            # e.g. n_coin=3, time diffs 1-3, 2-4, 3-5, ...
+        pos = np.argmin(diffs)
+        time_offset_best = offsets_sorted[pos : pos + n_coincident + 1].mean()
     else:
         t_magic_ave = np.mean(data_magic_["trigger_time"].values)
         event_id_magic_ave = np.mean(data_magic_["event_id"].values[N_start:N_end])
         n_coincident = 0
         time_offset_best = 0
-
     return t_magic_ave, event_id_magic_ave, time_offset_best, n_coincident
 
 

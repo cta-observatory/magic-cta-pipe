@@ -93,7 +93,6 @@ for magic_subrun_file in sorted(
     data_magic_m2 = data_magic.query("tel_id==@tel_id_m2")
     magic_subrun_base = magic_subrun_file.split("/")[-1].split(".h5")[0]
     data_lst = df_lst_subrun_file_2
-
     for M1_M2 in ["M1", "M2"]:
         if M1_M2 == "M1":
             data_magic = data_magic_m1
@@ -106,7 +105,6 @@ for magic_subrun_file in sorted(
         min_t_lst, max_t_lst = min(data_lst["trigger_time"]), max(
             data_lst["trigger_time"]
         )
-
         if min_t_magic < min_t_lst:
             if max_t_magic < max_t_lst:
                 data_magic = data_magic.query(
@@ -292,7 +290,6 @@ def print_gti(df1, df2):
 
 magic_run, lst_run = print_gti(df_magic, df_lst)
 df = pd.DataFrame({"magic_run": magic_run, "lst_run": lst_run})
-
 os.makedirs(outdir, exist_ok=True)
 
 for i in range(0, len(df)):
@@ -369,8 +366,9 @@ for subrun_comb in subrun_combs:
         # PLEASE REWRITE THIS according to your analysis environment (e.g., SLURM)
         output = subprocess.run(
             [
-                "python",
-                "lst1_magic_event_coincidence.py",
+                #                "python",
+                #                "lst1_magic_event_coincidence.py",
+                "lst1_magic_event_coincidence",
                 "-l",
                 f"{lst_dir_name}/dl1_LST-1.Run{lst_RunID}.{lst_run}.h5",
                 "-m",
