@@ -1552,7 +1552,7 @@ def make_time_select(
         # method 2
         # should have complexity of
         # len(time_offsets) * ln (len(time_offsets)) # sorting
-        # len(time_offsets) * n_coincident # searching for
+        # len(time_offsets) * n_coincident # searching for highest n_coincident
         offsets_sorted = np.sort(time_offsets)
         diffs = np.diff(offsets_sorted)
         n_coincident = 1
@@ -1561,7 +1561,9 @@ def make_time_select(
             diffs = offsets_sorted[n_coincident:] - offsets_sorted[:-n_coincident]
             # e.g. n_coin=3, time diffs 1-3, 2-4, 3-5, ...
         pos = np.argmin(diffs)
-        time_offset_best = offsets_sorted[pos : pos + n_coincident + 1].mean()
+        # median seem to work a bit better than the mean
+        # (and more consistent with the original method
+        time_offset_best = np.median(offsets_sorted[pos : pos + n_coincident])
     else:
         t_magic_ave = np.mean(data_magic_["trigger_time"].values)
         event_id_magic_ave = np.mean(data_magic_["event_id"].values[N_start:N_end])
