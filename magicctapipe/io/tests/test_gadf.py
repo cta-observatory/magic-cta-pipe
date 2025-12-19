@@ -60,7 +60,9 @@ def event():
 
 
 def test_create_gh_cuts_hdu(gammaness_cut, energy_bins, fov_bins, header):
-    g_cuts_fits = create_gh_cuts_hdu(gammaness_cut, energy_bins, fov_bins, **header)
+    g_cuts_fits = create_gh_cuts_hdu(
+        gammaness_cut, energy_bins, fov_bins, True, **header
+    )
     g_cuts = g_cuts_fits.data
     assert np.allclose(g_cuts["ENERG_LO"][0], np.array([0.1, 1.0, 10.0]))
     assert np.allclose(g_cuts["ENERG_HI"][0], np.array([1.0, 10.0, 100.0]))
