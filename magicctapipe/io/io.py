@@ -46,6 +46,7 @@ __all__ = [
     "load_mc_dl2_data_file",
     "load_train_data_files",
     "load_train_data_files_tel",
+    "query_data",
     "save_pandas_data_in_table",
     "telescope_combinations",
     "resource_file",
@@ -71,6 +72,74 @@ TIME_DIFF_UPLIM = 1.0 * u.s
 # The LST-1 and MAGIC readout dead times
 DEAD_TIME_LST = 7.6 * u.us
 DEAD_TIME_MAGIC = 26 * u.us
+
+
+def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
+    """
+    Function to select data (both real and MC) according to the event_type
+
+    Parameters
+    ----------
+
+    df_events : pandas.core.frame.DataFrame
+        Dataframe of the events
+    event_type : str
+        Type of events to be selected
+        'software' : Stadard MAGIC+LST-1 case; remove magic-only events
+        'trigger_3tels_or_more' : at least three telescopes triggered
+        'trigger_no_magic_stereo' : no need for both MAGIC to trigger, to be used if more than one LST is used; remove MAGIC-only data if they exist
+        'magic_only' : only M1_M2 events selected
+        'hardware' : hardware trigger
+    magic_only : int or None
+        Index of the M1_M2 combination (if it exist, otherwise it is equal to None)
+    three_or_more : list
+        List of combination indexes for combinations with at least 3 telescopes
+    is_mc : bool
+        True if this function is called on MC
+
+    Returns
+    -------
+
+    pandas.core.frame.DataFrame
+        Dataframe of events after query
+    """
+    if event_type == "software":
+        if magic_only is not None:
+
+            if is_mc:
+                df_events.query(
+                    f"(combo_type != {magic_only}) & (magic_stereo == True)",
+                    inplace=True,
+                )
+            else:
+                df_events.query(f"combo_type != {magic_only}", inplace=True)
+
+        else:
+            logger.warning(
+                'Requested event type and provided telescopes IDs are not consistent; "software" must be used in case of standard MAGIC+LST-1 analyses'
+            )
+            return
+
+    elif event_type == "trigger_3tels_or_more":
+        df_events.query(f"combo_type == {three_or_more}", inplace=True)
+
+    elif event_type == "trigger_no_magic_stereo":
+        if magic_only is not None:
+            df_events.query(f"combo_type != {magic_only}", inplace=True)
+
+    elif event_type == "magic_only":
+        if magic_only is not None:
+            df_events.query(f"combo_type == {magic_only}", inplace=True)
+        else:
+            logger.warning(
+                "MAGIC-only analysis requested, but inconsistent with the provided telescope IDs: check the configuration file"
+            )
+            return
+    elif event_type != "hardware":
+        raise ValueError(f"Unknown event type '{event_type}'.")
+
+    return df_events
+
 
 
 def check_input_list(config):
@@ -959,7 +1028,9 @@ def load_train_data_files_tel(
     return data_train
 
 
-def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
+def load_mc_dl2_data_file(
+    config, input_file, quality_cuts, event_type, weight_type_dl2
+):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
@@ -994,27 +1065,30 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
         If the input event type is not known
     """
 
+
+    _, TEL_COMBINATIONS = telescope_combinations(config)
+    logger.info(TEL_COMBINATIONS)
+    three_or_more = []
+    magic_only = None
+    for n, combination in enumerate(TEL_COMBINATIONS.values()):
+        if len(combination) >= 3:
+            three_or_more.append(n)
+    for n, combination in enumerate(TEL_COMBINATIONS.keys()):
+        if combination in ["MAGIC-II_MAGIC-I", "MAGIC-I_MAGIC-II"]:
+            magic_only = n
+            break
     # Load the input file
     df_events = pd.read_hdf(input_file, key="events/parameters")
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
-    df_events = get_stereo_events_old(df_events, quality_cuts)
+    df_events = get_stereo_events(
+        df_events, config, quality_cuts, eval_multi_combo=False
+    )
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
-    if event_type == "software":
-        # The events of the MAGIC-stereo combination are excluded
-        df_events.query("(combo_type < 3) & (magic_stereo == True)", inplace=True)
-
-    elif event_type == "software_only_3tel":
-        df_events.query("combo_type == 1", inplace=True)
-
-    elif event_type == "magic_only":
-        df_events.query("combo_type == 3", inplace=True)
-
-    elif event_type != "hardware":
-        raise ValueError(f"Unknown event type '{event_type}'.")
+    df_events = query_data(df_events, event_type, magic_only, three_or_more, True)
 
     n_events = len(df_events.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
@@ -1090,7 +1164,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     return event_table, pointing, sim_info
 
 
-def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
+def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type_dl2):
     """
     Loads a DL2 data file for processing to DL3.
 
@@ -1125,33 +1199,30 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
         If the input event type is not known
     """
 
+
+    _, TEL_COMBINATIONS = telescope_combinations(config)
+    three_or_more = []
+    magic_only = None
+    for n, combination in enumerate(TEL_COMBINATIONS.values()):
+        if len(combination) >= 3:
+            three_or_more.append(n)
+    for n, combination in enumerate(TEL_COMBINATIONS.keys()):
+        if combination in ["MAGIC-II_MAGIC-I", "MAGIC-I_MAGIC-II"]:
+            magic_only = n
+            break
+
     # Load the input file
     event_data = pd.read_hdf(input_file, key="events/parameters")
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
-    event_data = get_stereo_events_old(event_data, quality_cuts)
+    event_data = get_stereo_events(
+        event_data, config, quality_cuts, eval_multi_combo=False
+    )
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
-    if event_type == "software":
-        # The events of the MAGIC-stereo combination are excluded
-        event_data.query("combo_type < 3", inplace=True)
-
-    elif event_type == "software_only_3tel":
-        event_data.query("combo_type == 1", inplace=True)
-
-    elif event_type == "magic_only":
-        event_data.query("combo_type == 3", inplace=True)
-
-    elif event_type == "hardware":
-        logger.warning(
-            "WARNING: Please confirm that this type is correct for the input data, "
-            "since the hardware trigger between LST-1 and MAGIC may NOT be used."
-        )
-
-    else:
-        raise ValueError(f"Unknown event type '{event_type}'.")
+    event_data = query_data(event_data, event_type, magic_only, three_or_more, False)
 
     n_events = len(event_data.groupby(["obs_id", "event_id"]).size())
     logger.info(f"--> {n_events} stereo events")
