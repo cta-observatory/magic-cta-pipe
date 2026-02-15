@@ -321,7 +321,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
             disp_regressor.load(input_file_disp)
 
             # Apply the RFs
-            reco_params = apply_rfs(event_data, energy_regressor, config)
+            reco_params = apply_rfs(event_data, disp_regressor, config)
             if len(reco_params) == 0:
                 continue
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
