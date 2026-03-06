@@ -14,6 +14,7 @@ $ python lst1_magic_dl1_stereo_to_dl2.py
 --input-file-dl1 dl1_stereo/dl1_stereo_LST-1_MAGIC.Run03265.0040.h5
 --input-dir-rfs rfs
 (--output-dir dl2)
+(--config-file config.yaml)
 """
 
 import argparse
@@ -440,7 +441,7 @@ def main():
         "-c",
         dest="config_file",
         type=str,
-        default="./config_general.yaml",
+        default="./config.yaml",
         help="Path to a configuration file",
     )
 
