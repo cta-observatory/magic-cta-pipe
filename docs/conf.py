@@ -227,7 +227,7 @@ intersphinx_mapping = {
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "pytables": ("http://www.pytables.org/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
     "matplotlib": ("https://matplotlib.org/stable", None),
     "cython": ("https://docs.cython.org/en/latest/", None),
     "iminuit": ("https://scikit-hep.org/iminuit/", None),
