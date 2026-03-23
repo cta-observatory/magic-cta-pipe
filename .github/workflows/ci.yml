@@ -64,7 +64,9 @@ jobs:
           python -c 'import magicctapipe; print(magicctapipe.__version__)'
 
       - name: Build docs
-        run: make doc
+        run: |
+           make clean
+           make doc
 
   tests:
     if: contains(fromJSON('["documentation-only", "auto-MCP-only"]'), github.event.pull_request.labels.*.name) == false
