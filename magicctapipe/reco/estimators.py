@@ -59,7 +59,7 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data : pandas.DataFrame
             Data frame of shower events
         """
 
@@ -95,12 +95,12 @@ class EnergyRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data : pandas.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        pandas.core.frame.DataFrame
+        pandas.DataFrame
             Data frame of the shower events with reconstructed energies
         """
 
@@ -220,7 +220,7 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data : pandas.DataFrame
             Data frame of shower events
         """
 
@@ -255,12 +255,12 @@ class DispRegressor:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data : pandas.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        pandas.core.frame.DataFrame
+        pandas.DataFrame
             Data frame of the shower events with the DISP parameter
         """
 
@@ -378,7 +378,7 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data : pandas.DataFrame
             Data frame of shower events
         """
 
@@ -413,12 +413,12 @@ class EventClassifier:
 
         Parameters
         ----------
-        event_data : pandas.core.frame.DataFrame
+        event_data : pandas.DataFrame
             Data frame of shower events
 
         Returns
         -------
-        pandas.core.frame.DataFrame
+        pandas.DataFrame
             Data frame of the shower events with the gammaness
         """
 

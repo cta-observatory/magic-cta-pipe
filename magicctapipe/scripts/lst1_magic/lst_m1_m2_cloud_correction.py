@@ -128,7 +128,7 @@ def process_telescope_data(input_file, config, tel_id, camgeom, focal_eff):
 
     Returns
     -------
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         Data frame of corrected DL1 parameters
     """
 
