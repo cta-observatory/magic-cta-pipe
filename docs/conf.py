@@ -223,7 +223,7 @@ html_theme = "pydata_sphinx_theme"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.11", None),
-    "numpy": ("https://numpy.org/doc/2.2/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
     "scipy": ("https://docs.scipy.org/doc/scipy/", None),
     "astropy": ("https://docs.astropy.org/en/stable/", None),
     "pytables": ("http://www.pytables.org/", None),
