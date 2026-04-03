@@ -130,7 +130,7 @@ def train_energy_regressor(input_dir, output_dir, config, use_unsigned_features=
     logger.info(f"\nInput directory: {input_dir}")
 
     event_data_train = load_train_data_files(
-        input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
+        input_dir, config, gamma_offaxis["min"], gamma_offaxis["max"]
     )
 
     # Configure the energy regressor
@@ -202,7 +202,7 @@ def train_disp_regressor(input_dir, output_dir, config, use_unsigned_features=Fa
     logger.info(f"\nInput directory: {input_dir}")
 
     event_data_train = load_train_data_files(
-        input_dir, gamma_offaxis["min"], gamma_offaxis["max"]
+        input_dir, config, gamma_offaxis["min"], gamma_offaxis["max"]
     )
 
     # Configure the DISP regressor
@@ -278,14 +278,18 @@ def train_event_classifier(
     logger.info(f"\nInput gamma MC directory: {input_dir_gamma}")
 
     event_data_gamma = load_train_data_files(
-        input_dir_gamma, gamma_offaxis["min"], gamma_offaxis["max"], EVENT_CLASS_GAMMA
+        input_dir_gamma,
+        config,
+        gamma_offaxis["min"],
+        gamma_offaxis["max"],
+        EVENT_CLASS_GAMMA,
     )
 
     # Load the input proton MC data files
     logger.info(f"\nInput proton MC directory: {input_dir_proton}")
 
     event_data_proton = load_train_data_files(
-        input_dir_proton, true_event_class=EVENT_CLASS_PROTON
+        input_dir_proton, config, true_event_class=EVENT_CLASS_PROTON
     )
 
     # Configure the event classifier

@@ -313,32 +313,35 @@ class TestStereoMC:
             assert np.all(data["intensity"] > 50)
             assert len(data) > 0
 
-    def test_load_train_data_files(self, p_stereo, gamma_stereo):
+    def test_load_train_data_files(self, p_stereo, gamma_stereo, config_gen):
         """
         Check dictionary of the combo types
         """
 
         for stereo in [p_stereo, gamma_stereo]:
-            events = load_train_data_files(str(stereo[0]))
+            events = load_train_data_files(str(stereo[0]), config_gen)
             assert list(events.keys()) == ["LST1_M1", "LST1_M1_M2", "LST1_M2", "M1_M2"]
             data = events["LST1_M1"]
             assert np.all(data["combo_type"] == 0)
             assert "off_axis" in data.columns
             assert "true_event_class" not in data.columns
 
-    def test_load_train_data_files_off(self, gamma_stereo):
+    def test_load_train_data_files_off(self, gamma_stereo, config_gen):
         """
         Check off-axis cut
         """
         events = load_train_data_files(
-            str(gamma_stereo[0]), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+            str(gamma_stereo[0]),
+            config_gen,
+            offaxis_min="0.2 deg",
+            offaxis_max="0.5 deg",
         )
         data = events["LST1_M1"]
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
         assert len(data) > 0
 
-    def test_load_train_data_files_exc(self, temp_train_exc):
+    def test_load_train_data_files_exc(self, temp_train_exc, config_gen):
         """
         Check on exceptions
         """
@@ -347,7 +350,7 @@ class TestStereoMC:
             FileNotFoundError,
             match="Could not find any DL1-stereo data files in the input directory.",
         ):
-            _ = load_train_data_files(str(temp_train_exc))
+            _ = load_train_data_files(str(temp_train_exc), config_gen)
 
     def test_load_train_data_files_tel(self, p_stereo, gamma_stereo, config_gen):
         """
@@ -408,14 +411,14 @@ def test_exist_dl2_mc(p_dl2, gamma_dl2):
 
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 class TestDL2MC:
-    def test_load_mc_dl2_data_file(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file(self, p_dl2, gamma_dl2, config_gen):
         """
         Checks on default loading
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
         for file in dl2_mc:
             data, point, _ = load_mc_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                str(file), config_gen, "width>0", "software", "simple"
             )
             assert "pointing_alt" in data.colnames
             assert "theta" in data.colnames
@@ -424,31 +427,31 @@ class TestDL2MC:
             assert point[0] >= 0
             assert point[0] <= 90
 
-    def test_load_mc_dl2_data_file_cut(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file_cut(self, config_gen, p_dl2, gamma_dl2):
         """
         Check on quality cuts
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
         for file in dl2_mc:
             data, _, _ = load_mc_dl2_data_file(
-                str(file), "gammaness>0.1", "software", "simple"
+                str(file), config_gen, "gammaness>0.1", "software", "simple"
             )
             assert np.all(data["gammaness"] > 0.1)
             assert len(data) > 0
 
-    def test_load_mc_dl2_data_file_opt(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file_opt(self, p_dl2, gamma_dl2, config_gen):
         """
         Check on event_type
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
         for file in dl2_mc:
             data_s, _, _ = load_mc_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                str(file), config_gen, "width>0", "software", "simple"
             )
             assert np.all(data_s["combo_type"] < 3)
             assert len(data_s) > 0
 
-    def test_load_mc_dl2_data_file_exc(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file_exc(self, p_dl2, gamma_dl2, config_gen):
         """
         Check on event_type exceptions
         """
@@ -460,7 +463,7 @@ class TestDL2MC:
                 match=f"Unknown event type '{event_type}'.",
             ):
                 _, _, _ = load_mc_dl2_data_file(
-                    str(file), "width>0", event_type, "simple"
+                    str(file), config_gen, "width>0", event_type, "simple"
                 )
 
     def test_get_dl2_mean_mc(self, p_dl2, gamma_dl2):
@@ -733,13 +736,13 @@ def test_exist_dl2(real_dl2):
 
 @pytest.mark.dependency(depends=["test_exist_dl2"])
 class TestDL2Data:
-    def test_load_dl2_data_file(self, real_dl2):
+    def test_load_dl2_data_file(self, real_dl2, config_gen):
         """
         Checks on default loading
         """
         for file in real_dl2.glob("*"):
             data, on, dead = load_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                str(file), config_gen, "width>0", "software", "simple"
             )
             assert "pointing_alt" in data.colnames
             assert "timestamp" in data.colnames
@@ -748,29 +751,29 @@ class TestDL2Data:
             assert on > 0
             assert dead > 0
 
-    def test_load_dl2_data_file_cut(self, real_dl2):
+    def test_load_dl2_data_file_cut(self, real_dl2, config_gen):
         """
         Check on quality cuts
         """
         for file in real_dl2.glob("*"):
             data, _, _ = load_dl2_data_file(
-                str(file), "gammaness<0.9", "software", "simple"
+                str(file), config_gen, "gammaness<0.9", "software", "simple"
             )
             assert np.all(data["gammaness"] < 0.9)
             assert len(data) > 0
 
-    def test_load_dl2_data_file_opt(self, real_dl2):
+    def test_load_dl2_data_file_opt(self, real_dl2, config_gen):
         """
         Check on event_type
         """
         for file in real_dl2.glob("*"):
             data_s, _, _ = load_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                str(file), config_gen, "width>0", "software", "simple"
             )
             assert np.all(data_s["combo_type"] < 3)
             assert len(data_s) > 0
 
-    def test_load_dl2_data_file_exc(self, real_dl2):
+    def test_load_dl2_data_file_exc(self, real_dl2, config_gen):
         """
         Check on event_type exceptions
         """
@@ -780,7 +783,9 @@ class TestDL2Data:
                 ValueError,
                 match=f"Unknown event type '{event_type}'.",
             ):
-                _, _, _ = load_dl2_data_file(str(file), "width>0", event_type, "simple")
+                _, _, _ = load_dl2_data_file(
+                    str(file), config_gen, "width>0", event_type, "simple"
+                )
 
     def test_get_dl2_mean_real(self, real_dl2):
         """

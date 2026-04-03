@@ -783,7 +783,7 @@ def load_magic_dl1_data_files(input_dir, config):
 
 
 def load_train_data_files(
-    input_dir, offaxis_min=None, offaxis_max=None, true_event_class=None
+    input_dir, config, offaxis_min=None, offaxis_max=None, true_event_class=None
 ):
     """
     Loads DL1-stereo data files and separates the shower events per
@@ -793,6 +793,8 @@ def load_train_data_files(
     ----------
     input_dir : str
         Path to a directory where input DL1-stereo files are stored
+    config : dict
+        Yaml file with information about the telescope IDs.
     offaxis_min : str, optional
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
@@ -814,12 +816,8 @@ def load_train_data_files(
         If any DL1-stereo data files are not found in the input
         directory
     """
-    TEL_COMBINATIONS = {
-        "LST1_M1": [1, 2],  # combo_type = 0
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
-        "LST1_M2": [1, 3],  # combo_type = 2
-        "M1_M2": [2, 3],  # combo_type = 3
-    }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
+    _, TEL_COMBINATIONS = telescope_combinations(config)
+    # TEL_COMBINATIONS = {k.replace("MAGIC-II", "M2").replace("MAGIC-I","M1").replace("LST-","LST"): v for k,v in TEL_COMBINATIONS.items()}
 
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
@@ -858,7 +856,7 @@ def load_train_data_files(
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
 
-    event_data = get_stereo_events_old(event_data, group_index=GROUP_INDEX_TRAIN)
+    event_data = get_stereo_events(event_data, config, group_index=GROUP_INDEX_TRAIN)
 
     data_train = {}
 
@@ -959,7 +957,9 @@ def load_train_data_files_tel(
     return data_train
 
 
-def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
+def load_mc_dl2_data_file(
+    input_file, config, quality_cuts, event_type, weight_type_dl2
+):
     """
     Loads a MC DL2 data file for creating the IRFs.
 
@@ -967,6 +967,8 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     ----------
     input_file : str
         Path to an input MC DL2 data file
+    config : dict
+        Yaml file with information about the telescope IDs.
     quality_cuts : str
         Quality cuts applied to the input events
     event_type : str
@@ -999,7 +1001,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     df_events.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     df_events.sort_index(inplace=True)
 
-    df_events = get_stereo_events_old(df_events, quality_cuts)
+    df_events = get_stereo_events(df_events, config, quality_cuts)
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
@@ -1090,7 +1092,7 @@ def load_mc_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2)
     return event_table, pointing, sim_info
 
 
-def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
+def load_dl2_data_file(input_file, config, quality_cuts, event_type, weight_type_dl2):
     """
     Loads a DL2 data file for processing to DL3.
 
@@ -1098,6 +1100,8 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     ----------
     input_file : str
         Path to an input DL2 data file
+    config : dict
+        Yaml file with information about the telescope IDs.
     quality_cuts : str
         Quality cuts applied to the input events
     event_type : str
@@ -1130,7 +1134,7 @@ def load_dl2_data_file(input_file, quality_cuts, event_type, weight_type_dl2):
     event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
     event_data.sort_index(inplace=True)
 
-    event_data = get_stereo_events_old(event_data, quality_cuts)
+    event_data = get_stereo_events(event_data, config, quality_cuts)
 
     logger.info(f"\nExtracting the events of the '{event_type}' type...")
 
