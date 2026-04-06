@@ -61,6 +61,7 @@ import glob
 import logging
 import sys
 import time
+import re
 from decimal import Decimal
 from pathlib import Path
 
@@ -740,6 +741,16 @@ def main():
     )
 
     args = parser.parse_args()
+
+    file_regex = re.search(r"Run(\d{5}).h5", args.input_file_lst)
+
+    if file_regex is not None:
+        logger.error(
+            "\nRunning event coincidence on a merged LST-1 DL1 file. "
+            "Please run the script on LST-1 DL1 subrun files, otherwise you may "
+            "run into memory issues. Exiting."
+        )
+        sys.exit(1)
 
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
