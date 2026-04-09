@@ -141,7 +141,6 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
     return df_events
 
 
-
 def check_input_list(config):
     """
     This function checks if the input telescope list is organized as follows:
@@ -1036,6 +1035,8 @@ def load_mc_dl2_data_file(
 
     Parameters
     ----------
+    config : dict
+        Configuration for the LST-1 + MAGIC analysis
     input_file : str
         Path to an input MC DL2 data file
     quality_cuts : str
@@ -1064,7 +1065,6 @@ def load_mc_dl2_data_file(
     ValueError
         If the input event type is not known
     """
-
 
     _, TEL_COMBINATIONS = telescope_combinations(config)
     logger.info(TEL_COMBINATIONS)
@@ -1170,6 +1170,8 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
 
     Parameters
     ----------
+    config : dict
+        Configuration for the LST-1 + MAGIC analysis
     input_file : str
         Path to an input DL2 data file
     quality_cuts : str
@@ -1198,7 +1200,6 @@ def load_dl2_data_file(config, input_file, quality_cuts, event_type, weight_type
     ValueError
         If the input event type is not known
     """
-
 
     _, TEL_COMBINATIONS = telescope_combinations(config)
     three_or_more = []

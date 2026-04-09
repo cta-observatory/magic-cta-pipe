@@ -12,10 +12,10 @@ from astropy.table import QTable
 from astropy.time import Time
 from ctapipe_io_lst import REFERENCE_LOCATION
 from pyirf.binning import split_bin_lo_hi
-from .io import telescope_combinations
 
 from .. import __version__ as MCP_VERSION
 from ..utils.functions import HEIGHT_ORM, LAT_ORM, LON_ORM
+from .io import telescope_combinations
 
 __all__ = [
     "average_run_pointing",
@@ -101,6 +101,8 @@ def create_event_hdu(
     ----------
     event_table : astropy.table.table.QTable
         Table of the DL2 events surviving gammaness cuts
+    config : dict
+        Configuration for the LST-1 + MAGIC analysis
     on_time : astropy.table.table.QTable
         ON time of the input data
     deadc : float

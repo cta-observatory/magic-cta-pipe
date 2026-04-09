@@ -57,6 +57,8 @@ def apply_rfs(event_data, estimator, config):
         Data frame of shower events
     estimator : magicctapipe.reco.estimator
         Trained regressor or classifier
+    config : dict
+        Configuration for the LST-1 + MAGIC analysis
 
     Returns
     -------
@@ -86,6 +88,8 @@ def reconstruct_arrival_direction(event_data, tel_descriptions, config):
         Data frame of shower events
     tel_descriptions : dict
         Telescope descriptions
+    config : dict
+        Configuration for the LST-1 + MAGIC analysis
 
     Returns
     -------
@@ -260,6 +264,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
         Path to a directory where trained RFs are stored
     output_dir : str
         Path to a directory where to save an output DL2 data file
+    config : dict
+        Configuration for the LST-1 + MAGIC analysis
     """
     TEL_NAMES, _ = telescope_combinations(config)
     # Load the input DL1-stereo data file

@@ -21,6 +21,8 @@ class EnergyRegressor:
 
     Parameters
     ----------
+    TEL_NAMES : dict
+        Dictionary with telescope IDs and names.
     settings : dict
         Settings of RF regressors
     features : list
@@ -35,6 +37,8 @@ class EnergyRegressor:
 
         Parameters
         ----------
+        TEL_NAMES : dict
+            Dictionary with telescope IDs and names.
         settings : dict
             Settings of RF regressors
         features : list
@@ -183,6 +187,8 @@ class DispRegressor:
 
     Parameters
     ----------
+    TEL_NAMES : dict
+        Dictionary with telescope IDs and names.
     settings : dict
         Settings of RF regressors
     features : list
@@ -197,6 +203,8 @@ class DispRegressor:
 
         Parameters
         ----------
+        TEL_NAMES : dict
+            Dictionary with telescope IDs and names.
         settings : dict
             Settings of RF regressors
         features : list
@@ -341,6 +349,8 @@ class EventClassifier:
 
     Parameters
     ----------
+    TEL_NAMES : dict
+        Dictionary with telescope IDs and names.
     settings : dict
         Settings of RF classifiers
     features : list
@@ -355,6 +365,8 @@ class EventClassifier:
 
         Parameters
         ----------
+        TEL_NAMES : dict
+            Dictionary with telescope IDs and names.
         settings : dict
             Settings of RF classifiers
         features : list
