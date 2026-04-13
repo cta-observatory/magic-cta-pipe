@@ -38,7 +38,6 @@ __all__ = [
     "get_custom_cuts",
     "get_dl2_mean",
     "get_stereo_events",
-    "get_stereo_events_old",
     "load_dl2_data_file",
     "load_irf_files",
     "load_lst_dl1_data_file",
@@ -366,89 +365,6 @@ def get_custom_cuts(config, energy_bins):
     )
 
     return cut_table
-
-
-def get_stereo_events_old(
-    event_data, quality_cuts=None, group_index=["obs_id", "event_id"]
-):
-    """
-    Gets the stereo events surviving specified quality cuts.
-
-    It also adds the telescope multiplicity `multiplicity` and
-    combination types `combo_type` to the output data frame.
-
-    Parameters
-    ----------
-    event_data : pandas.DataFrame
-        Data frame of shower events
-    quality_cuts : str, optional
-        Quality cuts applied to the input data
-    group_index : list, optional
-        Index to group telescope events
-
-    Returns
-    -------
-    pandas.DataFrame
-        Data frame of the stereo events surviving the quality cuts
-    """
-    TEL_COMBINATIONS = {
-        "LST1_M1": [1, 2],  # combo_type = 0
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
-        "LST1_M2": [1, 3],  # combo_type = 2
-        "M1_M2": [2, 3],  # combo_type = 3
-    }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
-    event_data_stereo = event_data.copy()
-
-    # Apply the quality cuts
-    if quality_cuts is not None:
-        event_data_stereo.query(quality_cuts, inplace=True)
-
-    # Extract stereo events
-    event_data_stereo["multiplicity"] = event_data_stereo.groupby(group_index).size()
-    event_data_stereo.query("multiplicity == [2, 3]", inplace=True)
-
-    # Check the total number of events
-    n_events_total = len(event_data_stereo.groupby(group_index).size())
-    logger.info(f"\nIn total {n_events_total} stereo events are found:")
-
-    n_events_per_combo = {}
-
-    # Loop over every telescope combination type
-    for combo_type, (tel_combo, tel_ids) in enumerate(TEL_COMBINATIONS.items()):
-        multiplicity = len(tel_ids)
-
-        df_events = event_data_stereo.query(
-            f"(tel_id == {tel_ids}) & (multiplicity == {multiplicity})"
-        ).copy()
-
-        # Here we recalculate the multiplicity and apply the cut again,
-        # since with the above cut the events belonging to other
-        # combination types are also extracted. For example, in case of
-        # tel_id = [1, 2], the tel 1 events of the combination [1, 3]
-        # and the tel 2 events of the combination [2, 3] remain in the
-        # data frame, whose multiplicity will be recalculated as 1 and
-        # so will be removed with the following cuts.
-
-        df_events["multiplicity"] = df_events.groupby(group_index).size()
-        df_events.query(f"multiplicity == {multiplicity}", inplace=True)
-
-        # Assign the combination type
-        event_data_stereo.loc[df_events.index, "combo_type"] = combo_type
-
-        n_events = len(df_events.groupby(group_index).size())
-        percentage = 100 * n_events / n_events_total
-
-        key = f"{tel_combo} (type {combo_type})"
-        value = f"{n_events:.0f} events ({percentage:.1f}%)"
-
-        n_events_per_combo[key] = value
-
-    event_data_stereo = event_data_stereo.astype({"combo_type": int})
-
-    # Show the number of events per combination type
-    logger.info(format_object(n_events_per_combo))
-
-    return event_data_stereo
 
 
 def get_stereo_events(
@@ -851,7 +767,7 @@ def load_magic_dl1_data_files(input_dir, config):
 
 
 def load_train_data_files(
-    input_dir, offaxis_min=None, offaxis_max=None, true_event_class=None
+    input_dir, config, offaxis_min=None, offaxis_max=None, true_event_class=None
 ):
     """
     Loads DL1-stereo data files and separates the shower events per
@@ -861,6 +777,8 @@ def load_train_data_files(
     ----------
     input_dir : str
         Path to a directory where input DL1-stereo files are stored
+    config : dict
+        Yaml file with information about the telescope IDs.
     offaxis_min : str, optional
         Minimum shower off-axis angle allowed, whose format should be
         acceptable by `astropy.units.quantity.Quantity`
@@ -882,13 +800,8 @@ def load_train_data_files(
         If any DL1-stereo data files are not found in the input
         directory
     """
-    TEL_COMBINATIONS = {
-        "LST1_M1": [1, 2],  # combo_type = 0
-        "LST1_M1_M2": [1, 2, 3],  # combo_type = 1
-        "LST1_M2": [1, 3],  # combo_type = 2
-        "M1_M2": [2, 3],  # combo_type = 3
-    }  # TODO: REMOVE WHEN SWITCHING TO THE NEW RFs IMPLEMENTTATION (1 RF PER TELESCOPE)
 
+    TEL_NAMES, TEL_COMBINATIONS = telescope_combinations(config)
     # Find the input files
     file_mask = f"{input_dir}/dl1_stereo_*.h5"
 
@@ -926,7 +839,7 @@ def load_train_data_files(
     if true_event_class is not None:
         event_data["true_event_class"] = true_event_class
 
-    event_data = get_stereo_events_old(event_data, group_index=GROUP_INDEX_TRAIN)
+    event_data = get_stereo_events(event_data, config, group_index=GROUP_INDEX_TRAIN)
 
     data_train = {}
 

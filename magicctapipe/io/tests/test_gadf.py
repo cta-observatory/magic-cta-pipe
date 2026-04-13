@@ -95,8 +95,8 @@ def test_create_gti_hdu(event):
     assert gti_head["TIMESYS"] == "UTC"
 
 
-def test_create_event_hdu(event):
-    evt_fits = create_event_hdu(event, 200 * u.s, 0.97, "Crab")
+def test_create_event_hdu(event, config_gen):
+    evt_fits = create_event_hdu(event, config_gen, 200 * u.s, 0.97, "Crab")
     evt = evt_fits.data
     assert np.array_equal(evt["EVENT_ID"], np.array([1, 2, 3]))
     assert np.array_equal(evt["RA"], np.array([84.2, 83.8, 84.0]))
@@ -114,9 +114,9 @@ def test_create_event_hdu(event):
     )
 
 
-def test_create_event_hdu_exc(event):
+def test_create_event_hdu_exc(event, config_gen):
     with pytest.raises(
         ValueError,
         match="The input RA/Dec coordinate is set to `None`.",
     ):
-        _ = create_event_hdu(event, 200 * u.s, 0.97, "abc")
+        _ = create_event_hdu(event, config_gen, 200 * u.s, 0.97, "abc")

@@ -79,6 +79,11 @@ def temp_rf(tmp_path_factory):
 
 
 @pytest.fixture(scope="session")
+def temp_rf_tel(tmp_path_factory):
+    return tmp_path_factory.mktemp("RF_tel")
+
+
+@pytest.fixture(scope="session")
 def temp_DL2_gamma(tmp_path_factory):
     return tmp_path_factory.mktemp("DL2_gammas")
 
@@ -106,6 +111,11 @@ def temp_DL1_gamma_test_monly(tmp_path_factory):
 @pytest.fixture(scope="session")
 def temp_rf_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("RF_monly")
+
+
+@pytest.fixture(scope="session")
+def temp_rf_monly_tel(tmp_path_factory):
+    return tmp_path_factory.mktemp("RF_monly_tel")
 
 
 @pytest.fixture(scope="session")
@@ -246,6 +256,64 @@ def temp_DL3_monly(tmp_path_factory):
 """
 Custom data
 """
+
+
+@pytest.fixture(scope="session")
+def query_test_1(temp_DL2_test):
+    """
+    Toy DL2
+    """
+    path = temp_DL2_test / "query_test_1.h5"
+    data = Table()
+    data["event_id"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    data["combo_type"] = [1, 3, 3, 2, 2, 0, 1, 2, 3, 0, 1, 2]
+    data["magic_stereo"] = [
+        True,
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+    ]
+    write_table_hdf5(
+        data, str(path), "/events/parameters", overwrite=True, serialize_meta=False
+    )
+    return path
+
+
+@pytest.fixture(scope="session")
+def query_test_2(temp_DL2_test):
+    """
+    Toy DL2
+    """
+    path = temp_DL2_test / "query_test_2.h5"
+    data = Table()
+    data["event_id"] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    data["combo_type"] = [1, 6, 3, 4, 2, 3, 1, 2, 3, 5, 1, 2]
+    data["magic_stereo"] = [
+        True,
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+    ]
+    write_table_hdf5(
+        data, str(path), "/events/parameters", overwrite=True, serialize_meta=False
+    )
+    return path
 
 
 @pytest.fixture(scope="session")
@@ -624,9 +692,32 @@ def RF(gamma_stereo, p_stereo, temp_rf, config):
             "--train-disp",
             "--train-classifier",
             "--use-unsigned",
+            "--train-combo",
         ]
     )
     return temp_rf
+
+
+@pytest.fixture(scope="session")
+def RF_tel(gamma_stereo, p_stereo, temp_rf_tel, config):
+    """
+    Produce RFs
+    """
+
+    subprocess.run(
+        [
+            "lst1_magic_train_rfs",
+            f"-g{str(gamma_stereo[0])}",
+            f"-p{str(p_stereo[0])}",
+            f"-o{str(temp_rf_tel)}",
+            f"-c{str(config)}",
+            "--train-energy",
+            "--train-disp",
+            "--train-classifier",
+            "--use-unsigned",
+        ]
+    )
+    return temp_rf_tel
 
 
 @pytest.fixture(scope="session")
@@ -646,9 +737,33 @@ def RF_monly(gamma_stereo_monly, p_stereo_monly, temp_rf_monly, config_monly):
             "--train-disp",
             "--train-classifier",
             "--use-unsigned",
+            "--train-combo",
         ]
     )
     return temp_rf_monly
+
+
+@pytest.fixture(scope="session")
+def RF_monly_tel(gamma_stereo_monly, p_stereo_monly, temp_rf_monly_tel, config_monly):
+    """
+    Produce RFs
+    """
+
+    subprocess.run(
+        [
+            "lst1_magic_train_rfs",
+            f"-g{str(gamma_stereo_monly[0])}",
+            f"-p{str(p_stereo_monly[0])}",
+            f"-o{str(temp_rf_monly_tel)}",
+            f"-c{str(config_monly)}",
+            "--train-energy",
+            "--train-disp",
+            "--train-classifier",
+            "--use-unsigned",
+            "--train-combo",
+        ]
+    )
+    return temp_rf_monly_tel
 
 
 @pytest.fixture(scope="session")
@@ -685,6 +800,7 @@ def gamma_dl2(temp_DL1_gamma_test, RF, temp_DL2_gamma):
     return temp_DL2_gamma
 
 
+# TODO DL2, irfs and SL3 with rf per tel: check readeing old Rfs and IRfs with new tel names
 @pytest.fixture(scope="session")
 def gamma_dl2_monly(temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly):
     """
