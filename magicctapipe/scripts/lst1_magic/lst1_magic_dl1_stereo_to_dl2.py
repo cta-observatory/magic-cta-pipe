@@ -54,7 +54,7 @@ def apply_rfs(event_data, estimator, config, reco_combo=False):
 
     Parameters
     ----------
-    event_data : pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of shower events
     estimator : magicctapipe.reco.estimator
         Trained regressor or classifier
@@ -65,7 +65,7 @@ def apply_rfs(event_data, estimator, config, reco_combo=False):
 
     Returns
     -------
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         Data frame of the shower events with reconstructed parameters
     """
     _, TEL_COMBINATIONS = telescope_combinations(config)
@@ -90,7 +90,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions, config):
 
     Parameters
     ----------
-    event_data : pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of shower events
     tel_descriptions : dict
         Telescope descriptions
@@ -99,7 +99,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions, config):
 
     Returns
     -------
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         Data frame of the shower events with reconstructed directions
     """
 

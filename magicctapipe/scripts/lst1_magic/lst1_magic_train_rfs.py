@@ -77,14 +77,14 @@ def get_events_at_random(event_data, n_events_random):
 
     Parameters
     ----------
-    event_data : pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of shower events
     n_events_random : int
         Number of events to be extracted randomly
 
     Returns
     -------
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         Data frame of the shower events extracted randomly
     """
 

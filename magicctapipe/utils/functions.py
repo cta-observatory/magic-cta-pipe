@@ -175,21 +175,21 @@ def calculate_mean_direction(lon, lat, unit, weights=None):
 
     Parameters
     ----------
-    lon : pandas.core.series.Series
+    lon : pandas.Series
         Longitude in a spherical coordinate
-    lat : pandas.core.series.Series
+    lat : pandas.Series
         Latitude in a spherical coordinate
     unit : str
         Unit of the input (and output) angles -
         "deg", "degree", "rad" or "radian" are allowed
-    weights : pandas.core.series.Series
+    weights : pandas.Series
         Weights for the input directions
 
     Returns
     -------
-    lon_mean : pandas.core.series.Series
+    lon_mean : pandas.Series
         Longitude of the mean direction
-    lat_mean : pandas.core.series.Series
+    lat_mean : pandas.Series
         Latitude of the mean direction
     """
 
