@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line, and also
 # from the environment for the first two.
-SPHINXOPTS    = -W --keep-going -n --color
+SPHINXOPTS    = -E -W --keep-going -n --color
 SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = magic-cta-pipe
 SOURCEDIR     = .

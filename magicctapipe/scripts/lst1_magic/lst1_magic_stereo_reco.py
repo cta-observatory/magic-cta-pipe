@@ -76,14 +76,14 @@ def calculate_pointing_separation(event_data, config):
 
     Parameters
     ----------
-    event_data : pandas.core.frame.DataFrame
+    event_data : pandas.DataFrame
         Data frame of LST and MAGIC events
     config : dict
         Configuration for the LST + MAGIC analysis
 
     Returns
     -------
-    pandas.core.series.Series
+    pandas.Series
         Angular distance of the LST array and MAGIC pointing directions
         in units of degree
     """
