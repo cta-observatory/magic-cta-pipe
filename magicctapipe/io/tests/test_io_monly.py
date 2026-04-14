@@ -89,8 +89,8 @@ class TestStereoMC:
 
         for stereo in [p_stereo_monly, gamma_stereo_monly]:
             events = load_train_data_files(str(stereo[0]), config_gen)
-            assert list(events.keys()) == ["M1_M2"]
-            data = events["M1_M2"]
+            assert list(events.keys()) == ["MAGIC-I_MAGIC-II"]
+            data = events["MAGIC-I_MAGIC-II"]
             assert np.all(data["combo_type"] == 3)
             assert "off_axis" in data.columns
             assert "true_event_class" not in data.columns
@@ -105,7 +105,7 @@ class TestStereoMC:
             offaxis_min="0.2 deg",
             offaxis_max="0.5 deg",
         )
-        data = events["M1_M2"]
+        data = events["MAGIC-I_MAGIC-II"]
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
         assert len(data) > 0

@@ -15,6 +15,7 @@ $ python lst1_magic_dl1_stereo_to_dl2.py
 --input-dir-rfs rfs
 (--output-dir dl2)
 (--config-file config.yaml)
+(--reco-combo)
 """
 
 import argparse
@@ -46,7 +47,7 @@ logger.addHandler(logging.StreamHandler())
 logger.setLevel(logging.INFO)
 
 
-def apply_rfs(event_data, estimator, config):
+def apply_rfs(event_data, estimator, config, reco_combo=False):
     """
     Applies trained RFs to DL1-stereo events, whose telescope
     combination type is same as the RFs.
@@ -59,17 +60,22 @@ def apply_rfs(event_data, estimator, config):
         Trained regressor or classifier
     config : dict
         Configuration for the LST-1 + MAGIC analysis
+    reco_combo : bool
+        If True, reconstructs using RF per telescope per telescope combination, if False, use RF per telescope
 
     Returns
     -------
     pandas.core.frame.DataFrame
         Data frame of the shower events with reconstructed parameters
     """
-
+    _, TEL_COMBINATIONS = telescope_combinations(config)
     tel_ids = list(estimator.telescope_rfs.keys())
+    if reco_combo:
+        combo_type = list(TEL_COMBINATIONS.values()).index(tel_ids)
+        df_events = event_data.query(f"combo_type == {combo_type}")
 
-    # Extract the events of the same telescope combination type
-    df_events = event_data.query(f"tel_id == {tel_ids[0]}")
+    else:
+        df_events = event_data.query(f"tel_id == {tel_ids[0]}")
 
     # Apply the RFs
     reco_params = estimator.predict(df_events)
@@ -251,7 +257,9 @@ def reconstruct_arrival_direction(event_data, tel_descriptions, config):
     return reco_params
 
 
-def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
+def dl1_stereo_to_dl2(
+    input_file_dl1, input_dir_rfs, output_dir, config, reco_combo=False
+):
     """
     Processes DL1-stereo events and reconstructs the DL2 parameters with
     trained RFs.
@@ -266,6 +274,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
         Path to a directory where to save an output DL2 data file
     config : dict
         Configuration for the LST-1 + MAGIC analysis
+    reco_combo : bool
+        If True, reconstructs using RF per telescope per telescope combination, if False, use RF per telescope
     """
     TEL_NAMES, _ = telescope_combinations(config)
     # Load the input DL1-stereo data file
@@ -305,7 +315,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
             energy_regressor.load(input_file_energy)
 
             # Apply the RFs
-            reco_params = apply_rfs(event_data, energy_regressor, config)
+            reco_params = apply_rfs(event_data, energy_regressor, config, reco_combo)
             if len(reco_params) == 0:
                 continue
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
@@ -328,7 +338,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
             disp_regressor.load(input_file_disp)
 
             # Apply the RFs
-            reco_params = apply_rfs(event_data, disp_regressor, config)
+            reco_params = apply_rfs(event_data, disp_regressor, config, reco_combo)
             if len(reco_params) == 0:
                 continue
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
@@ -359,7 +369,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
             event_classifier.load(input_file_class)
 
             # Apply the RFs
-            reco_params = apply_rfs(event_data, event_classifier, config)
+            reco_params = apply_rfs(event_data, event_classifier, config, reco_combo)
             if len(reco_params) == 0:
                 continue
             event_data.loc[reco_params.index, reco_params.columns] = reco_params
@@ -451,12 +461,25 @@ def main():
         help="Path to a configuration file",
     )
 
+    parser.add_argument(
+        "--reco-combo",
+        dest="reco_combo",
+        action="store_true",
+        help="Use RFs per tel. combination instead of per telescope",
+    )
+
     args = parser.parse_args()
     with open(args.config_file, "rb") as f:
         config = yaml.safe_load(f)
 
     # Process the input data
-    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir, config)
+    dl1_stereo_to_dl2(
+        args.input_file_dl1,
+        args.input_dir_rfs,
+        args.output_dir,
+        config,
+        args.reco_combo,
+    )
 
     logger.info("\nDone.")
 

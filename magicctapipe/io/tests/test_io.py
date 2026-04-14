@@ -475,14 +475,6 @@ def test_exist_rf(RF):
     assert len(glob.glob(f"{RF}/*")) == 12
 
 
-def test_exist_rf_tel(RF_tel):
-    """
-    Check if RFs produced
-    """
-
-    assert len(glob.glob(f"{RF_tel}/*")) == 9
-
-
 @pytest.mark.dependency(depends=["test_exist_rf"])
 def test_exist_dl2_mc(p_dl2, gamma_dl2):
     """
@@ -491,6 +483,25 @@ def test_exist_dl2_mc(p_dl2, gamma_dl2):
 
     assert len(glob.glob(f"{p_dl2}/*")) == 1
     assert len(glob.glob(f"{gamma_dl2}/*")) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
+def test_exist_rf_tel(RF_tel):
+    """
+    Check if RFs produced
+    """
+
+    assert len(glob.glob(f"{RF_tel}/*")) == 9
+
+
+@pytest.mark.dependency(depends=["test_exist_rf_tel"])
+def test_exist_dl2_mc_tel(p_dl2_tel, gamma_dl2_tel):
+    """
+    Check if DL2 MC produced
+    """
+
+    assert len(glob.glob(f"{p_dl2_tel}/*")) == 1
+    assert len(glob.glob(f"{gamma_dl2_tel}/*")) == 1
 
 
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
@@ -578,6 +589,90 @@ class TestDL2MC:
         Check on exceptions (weight type)
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
+        for file in dl2_mc:
+            weight = "abc"
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            with pytest.raises(ValueError, match=f"Unknown weight type '{weight}'."):
+                _ = get_dl2_mean(event_data, weight_type=weight)
+
+
+@pytest.mark.dependency(depends=["test_exist_dl2_mc_tel"])
+class TestDL2MCtel:
+    def test_load_mc_dl2_data_file_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Checks on default loading
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            data, point, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert "pointing_alt" in data.colnames
+            assert "theta" in data.colnames
+            assert "true_source_fov_offset" in data.colnames
+            assert data["true_energy"].unit == "TeV"
+            assert point[0] >= 0
+            assert point[0] <= 90
+
+    def test_load_mc_dl2_data_file_cut_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on quality cuts
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            data, _, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "gammaness>0.1", "software", "simple"
+            )
+            assert np.all(data["gammaness"] > 0.1)
+            assert len(data) > 0
+
+    def test_load_mc_dl2_data_file_opt_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on event_type
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            data_s, _, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert np.all(data_s["combo_type"] < 3)
+            assert len(data_s) > 0
+
+    def test_load_mc_dl2_data_file_exc_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on event_type exceptions
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            event_type = "abc"
+            with pytest.raises(
+                ValueError,
+                match=f"Unknown event type '{event_type}'.",
+            ):
+                _, _, _ = load_mc_dl2_data_file(
+                    config_gen, str(file), "width>0", event_type, "simple"
+                )
+
+    def test_get_dl2_mean_mc_tel(self, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on MC DL2
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            events = get_dl2_mean(event_data)
+            assert "true_energy" in events.columns
+            assert events["multiplicity"].dtype == int
+
+    def test_get_dl2_mean_exc_tel(self, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on exceptions (weight type)
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
         for file in dl2_mc:
             weight = "abc"
             event_data = pd.read_hdf(str(file), key="events/parameters")
@@ -809,6 +904,7 @@ class TestStereoData:
             assert len(data) > 0
 
 
+# TODO DL2 & co real data
 @pytest.mark.dependency(depends=["test_exist_coincidence_stereo", "test_exist_rf"])
 def test_exist_dl2(real_dl2):
     """
@@ -816,6 +912,16 @@ def test_exist_dl2(real_dl2):
     """
 
     assert len(glob.glob(f"{real_dl2}/*")) == 1
+
+
+# TODO DL2 & co real data
+@pytest.mark.dependency(depends=["test_exist_coincidence_stereo", "test_exist_rf_tel"])
+def test_exist_dl2_tel(real_dl2_tel):
+    """
+    Check if DL2 exist
+    """
+
+    assert len(glob.glob(f"{real_dl2_tel}/*")) == 1
 
 
 @pytest.mark.dependency(depends=["test_exist_dl2"])
@@ -876,6 +982,71 @@ class TestDL2Data:
         Check on real data DL2
         """
         for file in real_dl2.glob("*"):
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            events = get_dl2_mean(event_data)
+            assert "timestamp" in events.columns
+
+
+@pytest.mark.dependency(depends=["test_exist_dl2_tel"])
+class TestDL2Data_tel:
+    def test_load_dl2_data_file_tel(self, config_gen, real_dl2_tel):
+        """
+        Checks on default loading
+        """
+        for file in real_dl2_tel.glob("*"):
+            data, on, dead = load_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert "pointing_alt" in data.colnames
+            assert "timestamp" in data.colnames
+            assert data["reco_energy"].unit == "TeV"
+            assert on.unit == "s"
+            assert on > 0
+            assert dead > 0
+
+    def test_load_dl2_data_file_cut_tel(self, config_gen, real_dl2_tel):
+        """
+        Check on quality cuts
+        """
+        for file in real_dl2_tel.glob("*"):
+            data, _, _ = load_dl2_data_file(
+                config_gen, str(file), "gammaness<0.9", "software", "simple"
+            )
+            assert np.all(data["gammaness"] < 0.9)
+            assert len(data) > 0
+
+    def test_load_dl2_data_file_opt_tel(self, config_gen, real_dl2_tel):
+        """
+        Check on event_type
+        """
+        for file in real_dl2_tel.glob("*"):
+            data_s, _, _ = load_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert np.all(data_s["combo_type"] < 3)
+            assert len(data_s) > 0
+
+    def test_load_dl2_data_file_exc_tel(self, config_gen, real_dl2_tel):
+        """
+        Check on event_type exceptions
+        """
+        for file in real_dl2_tel.glob("*"):
+            event_type = "abc"
+            with pytest.raises(
+                ValueError,
+                match=f"Unknown event type '{event_type}'.",
+            ):
+                _, _, _ = load_dl2_data_file(
+                    config_gen, str(file), "width>0", event_type, "simple"
+                )
+
+    def test_get_dl2_mean_real_tel(self, real_dl2_tel):
+        """
+        Check on real data DL2
+        """
+        for file in real_dl2_tel.glob("*"):
             event_data = pd.read_hdf(str(file), key="events/parameters")
             event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
             event_data.sort_index(inplace=True)
