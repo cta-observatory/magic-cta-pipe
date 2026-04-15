@@ -68,11 +68,11 @@ def calibrate(
         raise ValueError(
             "Check the provided parameters and the telescope type; LST calibration not possible if gamera_geoms not provided"
         )
-    if (not is_lst) and (not isinstance(magic_clean[tel_id]), MAGICClean):
+    if (not is_lst) and (not isinstance(magic_clean[tel_id], MAGICClean)):
         raise ValueError(
             "Check the provided magic_clean parameter; MAGIC calibration not possible if magic_clean not a dictionary of MAGICClean objects"
         )
-    if (is_lst) and (not isinstance(camera_geoms[tel_id]), CameraGeometry):
+    if (is_lst) and (not isinstance(camera_geoms[tel_id], CameraGeometry)):
         raise ValueError(
             "Check the provided camera_geoms parameter; LST calibration not possible if camera_geoms not a dictionary of CameraGeometry objects"
         )
