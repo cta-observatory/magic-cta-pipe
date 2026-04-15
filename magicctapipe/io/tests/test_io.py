@@ -690,6 +690,14 @@ def test_exist_irf(IRF):
 
     assert len(glob.glob(f"{IRF}/*")) == 1
 
+@pytest.mark.dependency(depends=["test_exist_dl2_mc_tel"])
+def test_exist_irf_tel(IRF_tel):
+    """
+    Check if IRFs produced
+    """
+
+    assert len(glob.glob(f"{IRF_tel}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_irf"])
 class TestIRF:
@@ -754,6 +762,71 @@ class TestIRF:
             match="Could not find any IRF data files in the input directory.",
         ):
             _, _ = load_irf_files(str(temp_irf_exc))
+
+
+@pytest.mark.dependency(depends=["test_exist_irf_tel"])
+class TestIRFtel:
+    def test_load_irf_files_tel(self, IRF_tel):
+        """
+        Check on IRF dictionaries
+        """
+
+        irf, header = load_irf_files(str(IRF_tel))
+        assert set(list(irf.keys())).issubset(
+            set(
+                [
+                    "grid_points",
+                    "effective_area",
+                    "energy_dispersion",
+                    "psf_table",
+                    "background",
+                    "gh_cuts",
+                    "rad_max",
+                    "energy_bins",
+                    "fov_offset_bins",
+                    "migration_bins",
+                    "source_offset_bins",
+                    "bkg_fov_offset_bins",
+                    "file_names",
+                ]
+            )
+        )
+        assert len(irf["effective_area"][0][0]) > 0
+        assert "psf_table" not in list(irf.keys())
+        assert "background" not in list(irf.keys())
+        assert set(list(header.keys())).issubset(
+            set(
+                [
+                    "TELESCOP",
+                    "INSTRUME",
+                    "FOVALIGN",
+                    "QUAL_CUT",
+                    "EVT_TYPE",
+                    "DL2_WEIG",
+                    "IRF_OBST",
+                    "GH_CUT",
+                    "GH_EFF",
+                    "GH_MIN",
+                    "GH_MAX",
+                    "RAD_MAX",
+                    "TH_EFF",
+                    "TH_MIN",
+                    "TH_MAX",
+                ]
+            )
+        )
+        assert header["DL2_WEIG"] == "simple"
+        assert header["EVT_TYPE"] == "software"
+
+    def test_load_irf_files_exc_tel(self, temp_irf_exc_tel):
+        """
+        Check on exception (FileNotFound)
+        """
+        with pytest.raises(
+            FileNotFoundError,
+            match="Could not find any IRF data files in the input directory.",
+        ):
+            _, _ = load_irf_files(str(temp_irf_exc_tel))
 
 
 class TestDL1LST:
@@ -1070,3 +1143,20 @@ def test_exist_index(real_index):
     """
 
     assert len(glob.glob(f"{real_index}/*index*")) == 2
+
+@pytest.mark.dependency(depends=["test_exist_dl2_tel", "test_exist_irf_tel"])
+def test_exist_dl3_tel(real_dl3_tel):
+    """
+    Check if DL3 exist
+    """
+
+    assert len(glob.glob(f"{real_dl3_tel}/dl3*")) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_dl3_tel"])
+def test_exist_index_tel(real_index_tel):
+    """
+    Check if indexes created
+    """
+
+    assert len(glob.glob(f"{real_index_tel}/*index*")) == 2
