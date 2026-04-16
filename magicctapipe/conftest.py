@@ -97,6 +97,7 @@ def temp_DL2_gamma_tel(tmp_path_factory):
 def temp_irf(tmp_path_factory):
     return tmp_path_factory.mktemp("IRF")
 
+
 @pytest.fixture(scope="session")
 def temp_irf_tel(tmp_path_factory):
     return tmp_path_factory.mktemp("IRF_tel")
@@ -140,6 +141,10 @@ def temp_DL2_gamma_monly_tel(tmp_path_factory):
 @pytest.fixture(scope="session")
 def temp_irf_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("IRF_monly")
+
+@pytest.fixture(scope="session")
+def temp_irf_monly_tel(tmp_path_factory):
+    return tmp_path_factory.mktemp("IRF_monly_tel")
 
 
 @pytest.fixture(scope="session")
@@ -206,6 +211,7 @@ def temp_train_exc(tmp_path_factory):
 def temp_irf_exc(tmp_path_factory):
     return tmp_path_factory.mktemp("irf_exc")
 
+
 @pytest.fixture(scope="session")
 def temp_irf_exc_tel(tmp_path_factory):
     return tmp_path_factory.mktemp("irf_exc_tel")
@@ -249,6 +255,7 @@ def temp_DL2_real_tel(tmp_path_factory):
 @pytest.fixture(scope="session")
 def temp_DL3(tmp_path_factory):
     return tmp_path_factory.mktemp("DL3")
+
 
 @pytest.fixture(scope="session")
 def temp_DL3_tel(tmp_path_factory):
@@ -963,6 +970,8 @@ def IRF(gamma_dl2, config, temp_irf):
             ]
         )
     return temp_irf
+
+
 @pytest.fixture(scope="session")
 def IRF_tel(gamma_dl2_tel, config, temp_irf_tel):
     """
@@ -997,6 +1006,23 @@ def IRF_monly(gamma_dl2_monly, config_monly, temp_irf_monly):
             ]
         )
     return temp_irf_monly
+
+@pytest.fixture(scope="session")
+def IRF_monly_tel(gamma_dl2_monly_tel, config_monly, temp_irf_monly_tel):
+    """
+    Produce IRFs
+    """
+
+    for file in gamma_dl2_monly_tel.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_create_irf",
+                f"-g{str(file)}",
+                f"-o{str(temp_irf_monly_tel)}",
+                f"-c{str(config_monly)}",
+            ]
+        )
+    return temp_irf_monly_tel
 
 
 @pytest.fixture(scope="session")
@@ -1350,6 +1376,7 @@ def real_dl3(real_dl2, IRF, temp_DL3, config):
         )
     return temp_DL3
 
+
 @pytest.fixture(scope="session")
 def real_dl3_tel(real_dl2_tel, IRF_tel, temp_DL3_tel, config):
     """
@@ -1367,7 +1394,6 @@ def real_dl3_tel(real_dl2_tel, IRF_tel, temp_DL3_tel, config):
             ]
         )
     return temp_DL3_tel
-
 
 
 @pytest.fixture(scope="session")
@@ -1402,6 +1428,7 @@ def real_index(real_dl3):
         ]
     )
     return real_dl3
+
 
 @pytest.fixture(scope="session")
 def real_index_tel(real_dl3_tel):

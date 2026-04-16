@@ -690,6 +690,7 @@ def test_exist_irf(IRF):
 
     assert len(glob.glob(f"{IRF}/*")) == 1
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2_mc_tel"])
 def test_exist_irf_tel(IRF_tel):
     """
@@ -1143,6 +1144,7 @@ def test_exist_index(real_index):
     """
 
     assert len(glob.glob(f"{real_index}/*index*")) == 2
+
 
 @pytest.mark.dependency(depends=["test_exist_dl2_tel", "test_exist_irf_tel"])
 def test_exist_dl3_tel(real_dl3_tel):
