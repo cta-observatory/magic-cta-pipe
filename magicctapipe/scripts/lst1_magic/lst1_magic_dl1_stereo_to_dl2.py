@@ -25,12 +25,13 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from astropy import units as u
 from astropy.coordinates import AltAz, SkyCoord, angular_separation
 from ctapipe.coordinates import TelescopeFrame
 from ctapipe.instrument import SubarrayDescription
 
-from magicctapipe.io import get_stereo_events_old, save_pandas_data_in_table
+from magicctapipe.io import get_stereo_events, save_pandas_data_in_table
 from magicctapipe.reco import DispRegressor, EnergyRegressor, EventClassifier
 
 __all__ = ["apply_rfs", "reconstruct_arrival_direction", "dl1_stereo_to_dl2"]
@@ -247,7 +248,7 @@ def reconstruct_arrival_direction(event_data, tel_descriptions):
     return reco_params
 
 
-def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
+def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir, config):
     """
     Processes DL1-stereo events and reconstructs the DL2 parameters with
     trained RFs.
@@ -260,6 +261,8 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
         Path to a directory where trained RFs are stored
     output_dir : str
         Path to a directory where to save an output DL2 data file
+    config : dict
+        Yaml file with information about the telescope IDs.
     """
 
     # Load the input DL1-stereo data file
@@ -272,7 +275,7 @@ def dl1_stereo_to_dl2(input_file_dl1, input_dir_rfs, output_dir):
     is_simulation = "true_energy" in event_data.columns
     logger.info(f"\nIs simulation: {is_simulation}")
 
-    event_data = get_stereo_events_old(event_data)
+    event_data = get_stereo_events(event_data, config)
 
     subarray = SubarrayDescription.from_hdf(input_file_dl1)
     tel_descriptions = subarray.tel
@@ -434,10 +437,22 @@ def main():
         help="Path to a directory where to save an output DL2 data file",
     )
 
+    parser.add_argument(
+        "--config-file",
+        "-c",
+        dest="config_file",
+        type=str,
+        default="./config.yaml",
+        help="Path to a configuration file",
+    )
+
     args = parser.parse_args()
 
+    with open(args.config_file, "rb") as f:
+        config = yaml.safe_load(f)
+
     # Process the input data
-    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir)
+    dl1_stereo_to_dl2(args.input_file_dl1, args.input_dir_rfs, args.output_dir, config)
 
     logger.info("\nDone.")
 
