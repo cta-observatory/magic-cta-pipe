@@ -978,7 +978,6 @@ class TestStereoData:
             assert len(data) > 0
 
 
-# TODO DL2 & co real data
 @pytest.mark.dependency(depends=["test_exist_coincidence_stereo", "test_exist_rf"])
 def test_exist_dl2(real_dl2):
     """
@@ -988,7 +987,6 @@ def test_exist_dl2(real_dl2):
     assert len(glob.glob(f"{real_dl2}/*")) == 1
 
 
-# TODO DL2 & co real data
 @pytest.mark.dependency(depends=["test_exist_coincidence_stereo", "test_exist_rf_tel"])
 def test_exist_dl2_tel(real_dl2_tel):
     """

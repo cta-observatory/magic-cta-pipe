@@ -148,6 +148,7 @@ def test_exist_rf(RF_monly):
 
     assert len(glob.glob(f"{RF_monly}/*")) == 3
 
+
 @pytest.mark.dependency(depends=["test_exist_rf"])
 def test_exist_dl2_mc(p_dl2_monly, gamma_dl2_monly):
     """
@@ -156,6 +157,7 @@ def test_exist_dl2_mc(p_dl2_monly, gamma_dl2_monly):
 
     assert len(glob.glob(f"{p_dl2_monly}/*")) == 1
     assert len(glob.glob(f"{gamma_dl2_monly}/*")) == 1
+
 
 @pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
 def test_exist_rf_tel(RF_monly_tel):
@@ -166,8 +168,6 @@ def test_exist_rf_tel(RF_monly_tel):
     assert len(glob.glob(f"{RF_monly_tel}/*")) == 6
 
 
-
-
 @pytest.mark.dependency(depends=["test_exist_rf_tel"])
 def test_exist_dl2_mc_tel(p_dl2_monly_tel, gamma_dl2_monly_tel):
     """
@@ -176,7 +176,6 @@ def test_exist_dl2_mc_tel(p_dl2_monly_tel, gamma_dl2_monly_tel):
 
     assert len(glob.glob(f"{p_dl2_monly_tel}/*")) == 1
     assert len(glob.glob(f"{gamma_dl2_monly_tel}/*")) == 1
-
 
 
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
@@ -286,9 +285,12 @@ class TestDL2MC:
             with pytest.raises(ValueError, match=f"Unknown weight type '{weight}'."):
                 _ = get_dl2_mean(event_data, weight_type=weight)
 
+
 @pytest.mark.dependency(depends=["test_exist_dl2_mc_tel"])
 class TestDL2MC_tel:
-    def test_load_mc_dl2_data_file_tel(self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel):
+    def test_load_mc_dl2_data_file_tel(
+        self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel
+    ):
         """
         Checks on default loading
         """
@@ -306,7 +308,9 @@ class TestDL2MC_tel:
             assert point[0] >= 0
             assert point[0] <= 90
 
-    def test_load_mc_dl2_data_file_cut_tel(self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel):
+    def test_load_mc_dl2_data_file_cut_tel(
+        self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel
+    ):
         """
         Check on quality cuts
         """
@@ -320,7 +324,9 @@ class TestDL2MC_tel:
             assert np.all(data["gammaness"] > 0.1)
             assert len(data) > 0
 
-    def test_load_mc_dl2_data_file_opt_tel(self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel):
+    def test_load_mc_dl2_data_file_opt_tel(
+        self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel
+    ):
         """
         Check on event_type
         """
@@ -336,7 +342,9 @@ class TestDL2MC_tel:
             assert np.all(data_m["combo_type"] == 3)
             assert len(data_m) > 0
 
-    def test_load_mc_dl2_data_file_exc_tel(self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel):
+    def test_load_mc_dl2_data_file_exc_tel(
+        self, config_gen, p_dl2_monly_tel, gamma_dl2_monly_tel
+    ):
         """
         Check on event_type exceptions
         """
@@ -384,7 +392,6 @@ class TestDL2MC_tel:
                 _ = get_dl2_mean(event_data, weight_type=weight)
 
 
-
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 def test_exist_irf(IRF_monly):
     """
@@ -402,7 +409,7 @@ def test_exist_irf_tel(IRF_monly_tel):
 
     assert len(glob.glob(f"{IRF_monly_tel}/*")) == 1
 
-    
+
 @pytest.mark.dependency(depends=["test_exist_irf"])
 class TestIRF:
     def test_load_irf_files(self, IRF_monly):
@@ -511,7 +518,6 @@ class TestIRFtel:
         )
         assert header["DL2_WEIG"] == "simple"
         assert header["EVT_TYPE"] == "magic_only"
-
 
 
 @pytest.mark.dependency()

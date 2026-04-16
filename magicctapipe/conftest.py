@@ -142,6 +142,7 @@ def temp_DL2_gamma_monly_tel(tmp_path_factory):
 def temp_irf_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("IRF_monly")
 
+
 @pytest.fixture(scope="session")
 def temp_irf_monly_tel(tmp_path_factory):
     return tmp_path_factory.mktemp("IRF_monly_tel")
@@ -880,7 +881,7 @@ def gamma_dl2_tel(temp_DL1_gamma_test, RF_tel, temp_DL2_gamma_tel, config):
     return temp_DL2_gamma_tel
 
 
-# TODO DL2, irfs and SL3 with rf per tel: check readeing old Rfs and IRfs with new tel names
+# TODO  check readeing old Rfs and IRfs with new tel names
 @pytest.fixture(scope="session")
 def gamma_dl2_monly(
     temp_DL1_gamma_test_monly, RF_monly, temp_DL2_gamma_monly, config_monly
@@ -1006,6 +1007,7 @@ def IRF_monly(gamma_dl2_monly, config_monly, temp_irf_monly):
             ]
         )
     return temp_irf_monly
+
 
 @pytest.fixture(scope="session")
 def IRF_monly_tel(gamma_dl2_monly_tel, config_monly, temp_irf_monly_tel):
