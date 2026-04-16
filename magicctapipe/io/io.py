@@ -80,7 +80,7 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
     Parameters
     ----------
 
-    df_events : pandas.core.frame.DataFrame
+    df_events : pandas.DataFrame
         Dataframe of the events
     event_type : str
         Type of events to be selected
@@ -99,7 +99,7 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
     Returns
     -------
 
-    pandas.core.frame.DataFrame
+    pandas.DataFrame
         Dataframe of events after query
     """
     if event_type == "software":
