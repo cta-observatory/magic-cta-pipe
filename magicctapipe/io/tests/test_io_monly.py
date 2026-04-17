@@ -602,6 +602,15 @@ def test_exist_dl2(real_dl2_monly):
     assert len(glob.glob(f"{real_dl2_monly}/*")) == 1
 
 
+@pytest.mark.dependency(depends=["test_exist_stereo", "test_exist_rf_tel"])
+def test_exist_dl2_tel(real_dl2_monly_tel):
+    """
+    Check if DL2 exist
+    """
+
+    assert len(glob.glob(f"{real_dl2_monly_tel}/*")) == 1
+
+
 @pytest.mark.dependency(depends=["test_exist_dl2"])
 class TestDL2Data:
     def test_load_dl2_data_file(self, config_gen, real_dl2_monly):
@@ -669,6 +678,73 @@ class TestDL2Data:
             assert "timestamp" in events.columns
 
 
+@pytest.mark.dependency(depends=["test_exist_dl2_tel"])
+class TestDL2Datatel:
+    def test_load_dl2_data_file_tel(self, config_gen, real_dl2_monly_tel):
+        """
+        Checks on default loading
+        """
+        for file in real_dl2_monly_tel.glob("*"):
+            data, on, dead = load_dl2_data_file(
+                config_gen, str(file), "width>0", "magic_only", "simple"
+            )
+            assert "pointing_alt" in data.colnames
+            assert "timestamp" in data.colnames
+            assert data["reco_energy"].unit == "TeV"
+            assert on.unit == "s"
+            assert on > 0
+            assert dead > 0
+
+    def test_load_dl2_data_file_cut_tel(self, config_gen, real_dl2_monly_tel):
+        """
+        Check on quality cuts
+        """
+        for file in real_dl2_monly_tel.glob("*"):
+            data, _, _ = load_dl2_data_file(
+                config_gen, str(file), "gammaness<0.9", "magic_only", "simple"
+            )
+            assert np.all(data["gammaness"] < 0.9)
+            assert len(data) > 0
+
+    def test_load_dl2_data_file_opt_tel(self, config_gen, real_dl2_monly_tel):
+        """
+        Check on event_type
+        """
+        for file in real_dl2_monly_tel.glob("*"):
+
+            data_m, _, _ = load_dl2_data_file(
+                config_gen, str(file), "width>0", "magic_only", "simple"
+            )
+
+            assert np.all(data_m["combo_type"] == 3)
+            assert len(data_m) > 0
+
+    def test_load_dl2_data_file_exc_tel(self, config_gen, real_dl2_monly_tel):
+        """
+        Check on event_type exceptions
+        """
+        for file in real_dl2_monly_tel.glob("*"):
+            event_type = "abc"
+            with pytest.raises(
+                ValueError,
+                match=f"Unknown event type '{event_type}'.",
+            ):
+                _, _, _ = load_dl2_data_file(
+                    config_gen, str(file), "width>0", event_type, "simple"
+                )
+
+    def test_get_dl2_mean_real_tel(self, real_dl2_monly_tel):
+        """
+        Check on real data DL2
+        """
+        for file in real_dl2_monly_tel.glob("*"):
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            events = get_dl2_mean(event_data)
+            assert "timestamp" in events.columns
+
+
 @pytest.mark.dependency(depends=["test_exist_dl2", "test_exist_irf"])
 def test_exist_dl3(real_dl3_monly):
     """
@@ -685,3 +761,21 @@ def test_exist_index(real_index_monly):
     """
 
     assert len(glob.glob(f"{real_index_monly}/*index*")) == 2
+
+
+@pytest.mark.dependency(depends=["test_exist_dl2_tel", "test_exist_irf_tel"])
+def test_exist_dl3_tel(real_dl3_monly_tel):
+    """
+    Check if DL3 exist
+    """
+
+    assert len(glob.glob(f"{real_dl3_monly_tel}/dl3*")) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_dl3_tel"])
+def test_exist_index_tel(real_index_monly_tel):
+    """
+    Check if indexes created
+    """
+
+    assert len(glob.glob(f"{real_index_monly_tel}/*index*")) == 2

@@ -298,6 +298,11 @@ def temp_DL3_monly(tmp_path_factory):
     return tmp_path_factory.mktemp("DL3_monly")
 
 
+@pytest.fixture(scope="session")
+def temp_DL3_monly_tel(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL3_monly_tel")
+
+
 """
 Custom data
 """
@@ -1418,6 +1423,27 @@ def real_dl3_monly(real_dl2_monly, IRF_monly, temp_DL3_monly, config_monly):
 
 
 @pytest.fixture(scope="session")
+def real_dl3_monly_tel(
+    real_dl2_monly_tel, IRF_monly_tel, temp_DL3_monly_tel, config_monly
+):
+    """
+    Produce a DL3 file
+    """
+
+    for file in real_dl2_monly_tel.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl2_to_dl3",
+                f"-d{str(file)}",
+                f"-i{str(IRF_monly_tel)}",
+                f"-o{str(temp_DL3_monly_tel)}",
+                f"-c{str(config_monly)}",
+            ]
+        )
+    return temp_DL3_monly_tel
+
+
+@pytest.fixture(scope="session")
 def real_index(real_dl3):
     """
     Produce indexes
@@ -1460,3 +1486,18 @@ def real_index_monly(real_dl3_monly):
         ]
     )
     return real_dl3_monly
+
+
+@pytest.fixture(scope="session")
+def real_index_monly_tel(real_dl3_monly_tel):
+    """
+    Produce indexes
+    """
+
+    subprocess.run(
+        [
+            "create_dl3_index_files",
+            f"-i{str(real_dl3_monly_tel)}",
+        ]
+    )
+    return real_dl3_monly_tel
