@@ -1,3 +1,4 @@
+import os
 import subprocess
 from math import trunc
 
@@ -51,7 +52,23 @@ DL1_LST_data = [
     "dl1_LST-1.Run15337.0002.h5"
 ]
 DL1_LST_old_lstchain = "dl1_LST-1.Run03265.0094.h5"
-
+RF_old_files = [
+    "disp_regressors_LST1_M1_M2_unsigned.joblib",
+    "disp_regressors_LST1_M1_unsigned.joblib",
+    "disp_regressors_LST1_M2_unsigned.joblib",
+    "disp_regressors_M1_M2_unsigned.joblib",
+    "energy_regressors_LST1_M1_M2_unsigned.joblib",
+    "energy_regressors_LST1_M1_unsigned.joblib",
+    "energy_regressors_LST1_M2_unsigned.joblib",
+    "energy_regressors_M1_M2_unsigned.joblib",
+    "event_classifiers_LST1_M1_M2_unsigned.joblib",
+    "event_classifiers_LST1_M1_unsigned.joblib",
+    "event_classifiers_LST1_M2_unsigned.joblib",
+    "event_classifiers_M1_M2_unsigned.joblib",
+]
+IRF_old_files = [
+    "irf_zd_16.087deg_az_108.09deg_software_gh_dyn0.9_theta_dyn0.75.fits.gz"
+]
 
 """
 Temporary paths
@@ -303,6 +320,21 @@ def temp_DL3_monly_tel(tmp_path_factory):
     return tmp_path_factory.mktemp("DL3_monly_tel")
 
 
+@pytest.fixture(scope="session")
+def temp_DL2_old(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL2_old")
+
+
+@pytest.fixture(scope="session")
+def temp_DL3_old(tmp_path_factory):
+    return tmp_path_factory.mktemp("DL3_old")
+
+
+@pytest.fixture(scope="session")
+def temp_index_old(tmp_path_factory):
+    return tmp_path_factory.mktemp("index_old")
+
+
 """
 Custom data
 """
@@ -549,6 +581,38 @@ def config_calib():
     with open(config_path, "rb") as f:
         config = yaml.safe_load(f)
     return config
+
+
+@pytest.fixture(scope="session")
+def RF_old(base_url, env_prefix):
+    Rfs = []
+    for file in RF_old_files:
+        download_path = download_file_cached(
+            name=f"RF/{file}",
+            cache_name="magicctapipe",
+            env_prefix=env_prefix,
+            auth=True,
+            default_url=base_url,
+            progress=True,
+        )
+        Rfs.append(download_path)
+    return Rfs
+
+
+@pytest.fixture(scope="session")
+def IRF_old(base_url, env_prefix):
+    Irfs = []
+    for file in IRF_old_files:
+        download_path = download_file_cached(
+            name=f"IRF/{file}",
+            cache_name="magicctapipe",
+            env_prefix=env_prefix,
+            auth=True,
+            default_url=base_url,
+            progress=True,
+        )
+        Irfs.append(download_path)
+    return Irfs
 
 
 """
@@ -1345,6 +1409,26 @@ def real_dl2_monly(stereo_monly, RF_monly, temp_DL2_real_monly, config_monly):
 
 
 @pytest.fixture(scope="session")
+def real_dl2_old(coincidence_stereo, RF_old, temp_DL2_old, config):
+    """
+    Produce a DL2 file
+    """
+
+    for file in coincidence_stereo.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl1_stereo_to_dl2",
+                f"-d{str(file)}",
+                f"-r{str(os.path.dirname(RF_old[0]))}",
+                f"-o{str(temp_DL2_old)}",
+                f"-c{str(config)}",
+                "--reco-combo",
+            ]
+        )
+    return temp_DL2_old
+
+
+@pytest.fixture(scope="session")
 def real_dl2_monly_tel(
     stereo_monly, RF_monly_tel, temp_DL2_real_monly_tel, config_monly
 ):
@@ -1382,6 +1466,25 @@ def real_dl3(real_dl2, IRF, temp_DL3, config):
             ]
         )
     return temp_DL3
+
+
+@pytest.fixture(scope="session")
+def real_dl3_old(real_dl2_old, IRF_old, temp_DL3_old, config):
+    """
+    Produce a DL3 file
+    """
+
+    for file in real_dl2_old.glob("*"):
+        subprocess.run(
+            [
+                "lst1_magic_dl2_to_dl3",
+                f"-d{str(file)}",
+                f"-i{str(os.path.dirname(IRF_old[0]))}",
+                f"-o{str(temp_DL3_old)}",
+                f"-c{str(config)}",
+            ]
+        )
+    return temp_DL3_old
 
 
 @pytest.fixture(scope="session")
@@ -1456,6 +1559,21 @@ def real_index(real_dl3):
         ]
     )
     return real_dl3
+
+
+@pytest.fixture(scope="session")
+def real_index_old(real_dl3_old):
+    """
+    Produce indexes
+    """
+
+    subprocess.run(
+        [
+            "create_dl3_index_files",
+            f"-i{str(real_dl3_old)}",
+        ]
+    )
+    return real_dl3_old
 
 
 @pytest.fixture(scope="session")

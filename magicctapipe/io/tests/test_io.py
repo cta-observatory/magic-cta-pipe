@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
+from astropy.io import fits
 from ctapipe_io_lst import REFERENCE_LOCATION
 
 from magicctapipe.io.io import (
@@ -987,6 +988,21 @@ def test_exist_dl2(real_dl2):
     assert len(glob.glob(f"{real_dl2}/*")) == 1
 
 
+@pytest.mark.dependency(depends=["test_exist_coincidence_stereo"])
+def test_exist_dl2_old(real_dl2_old):
+    """
+    Check if DL2 exist
+    """
+
+    assert len(glob.glob(f"{real_dl2_old}/*")) == 1
+    for file in real_dl2_old.glob("*"):
+        event_data = pd.read_hdf(str(file), key="events/parameters")
+        assert len(event_data) > 0
+        assert list(np.unique(event_data["combo_type"])) == [0, 1, 2, 3]
+        assert "pointing_alt" in event_data.columns
+        assert "timestamp" in event_data.columns
+
+
 @pytest.mark.dependency(depends=["test_exist_coincidence_stereo", "test_exist_rf_tel"])
 def test_exist_dl2_tel(real_dl2_tel):
     """
@@ -1135,6 +1151,20 @@ def test_exist_dl3(real_dl3):
     assert len(glob.glob(f"{real_dl3}/dl3*")) == 1
 
 
+@pytest.mark.dependency(depends=["test_exist_dl2_old"])
+def test_exist_dl3_old(real_dl3_old):
+    """
+    Check if DL3 exist
+    """
+
+    assert len(glob.glob(f"{real_dl3_old}/dl3*")) == 1
+    for file in real_dl3_old.glob("dl3*"):
+        hdul = fits.open(file)
+        assert hdul[1].header["TELLIST"] == "LST-1_MAGIC-I_MAGIC-II"
+        assert hdul[1].header["OBJECT"] == "Crab"
+        assert len(hdul[1].data) > 0
+
+
 @pytest.mark.dependency(depends=["test_exist_dl3"])
 def test_exist_index(real_index):
     """
@@ -1142,6 +1172,19 @@ def test_exist_index(real_index):
     """
 
     assert len(glob.glob(f"{real_index}/*index*")) == 2
+
+
+@pytest.mark.dependency(depends=["test_exist_dl3_old"])
+def test_exist_index_old(real_index_old):
+    """
+    Check if DL3 exist
+    """
+
+    assert len(glob.glob(f"{real_index_old}/*index*")) == 2
+    with fits.open(f"{real_index_old}/hdu-index.fits.gz") as hdul:
+        assert len(hdul[1].data) == 6
+    with fits.open(f"{real_index_old}/obs-index.fits.gz") as hdul:
+        assert len(hdul[1].data) == 1
 
 
 @pytest.mark.dependency(depends=["test_exist_dl2_tel", "test_exist_irf_tel"])
