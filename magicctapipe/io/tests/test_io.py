@@ -1,4 +1,5 @@
 import glob
+import logging
 
 import astropy.table
 import astropy.units as u
@@ -6,6 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 import yaml
+from astropy.io import fits
 from ctapipe_io_lst import REFERENCE_LOCATION
 
 from magicctapipe.io.io import (
@@ -21,12 +23,77 @@ from magicctapipe.io.io import (
     load_mc_dl2_data_file,
     load_train_data_files,
     load_train_data_files_tel,
+    query_data,
     save_pandas_data_in_table,
     telescope_combinations,
 )
 
+LOGGER = logging.getLogger(__name__)
+
 
 class TestGeneral:
+    def test_query_data(self, query_test_1, query_test_2, caplog):
+
+        query_test = pd.read_hdf(query_test_1, key="/events/parameters")
+        data = query_data(query_test, "software", 3, [], True)
+        assert np.allclose(np.array(data["event_id"]), np.array([0, 3, 5, 10, 11]))
+
+        query_test = pd.read_hdf(query_test_1, key="/events/parameters")
+        data = query_data(query_test, "software", 3, [], False)
+        assert np.allclose(
+            np.array(data["event_id"]), np.array([0, 3, 4, 5, 6, 7, 9, 10, 11])
+        )
+
+        with caplog.at_level(logging.WARNING):
+            query_test = pd.read_hdf(query_test_1, key="/events/parameters")
+            data = query_data(query_test, "software", None, [], False)
+        assert (
+            'Requested event type and provided telescopes IDs are not consistent; "software" must be used in case of standard MAGIC+LST-1 analyses'
+            in caplog.text
+        )
+
+        query_test = pd.read_hdf(query_test_2, key="/events/parameters")
+        data = query_data(query_test, "trigger_3tels_or_more", None, [4, 5, 6], False)
+        assert np.allclose(np.array(data["event_id"]), np.array([1, 3, 9]))
+
+        query_test = pd.read_hdf(query_test_2, key="/events/parameters")
+        data = query_data(query_test, "trigger_no_magic_stereo", None, [], False)
+        assert np.allclose(
+            np.array(data["event_id"]), np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+        )
+
+        query_test = pd.read_hdf(query_test_2, key="/events/parameters")
+        data = query_data(query_test, "trigger_no_magic_stereo", 3, [], False)
+        assert np.allclose(
+            np.array(data["event_id"]), np.array([0, 1, 3, 4, 6, 7, 9, 10, 11])
+        )
+
+        with caplog.at_level(logging.WARNING):
+            query_test = pd.read_hdf(query_test_2, key="/events/parameters")
+            data = query_data(query_test, "magic_only", None, [], False)
+        assert (
+            "MAGIC-only analysis requested, but inconsistent with the provided telescope IDs: check the configuration file"
+            in caplog.text
+        )
+
+        query_test = pd.read_hdf(query_test_2, key="/events/parameters")
+        data = query_data(query_test, "magic_only", 3, [], False)
+        assert np.allclose(np.array(data["event_id"]), np.array([2, 5, 8]))
+
+        query_test = pd.read_hdf(query_test_2, key="/events/parameters")
+        data = query_data(query_test, "hardware", None, [], False)
+        assert np.allclose(
+            np.array(data["event_id"]), np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11])
+        )
+
+        query_test = pd.read_hdf(query_test_2, key="/events/parameters")
+        event_type = "abc"
+        with pytest.raises(
+            ValueError,
+            match=f"Unknown event type '{event_type}'.",
+        ):
+            _ = query_data(query_test, event_type, None, [], False)
+
     def test_check_input_list(self):
         """
         Test on different dictionaries
@@ -199,11 +266,17 @@ class TestGeneral:
         LSTs, LSTs_comb = telescope_combinations(config_gen_4lst)
         assert M_LST == {1: "LST-1", 2: "MAGIC-I", 3: "MAGIC-II"}
         assert M_LST_comb == {
-            "LST-1_MAGIC-I": [1, 2],
-            "LST-1_MAGIC-I_MAGIC-II": [1, 2, 3],
-            "LST-1_MAGIC-II": [1, 3],
-            "MAGIC-I_MAGIC-II": [2, 3],
+            "LST-1_MAGIC-I": [1, 2],  # combo_type = 0
+            "LST-1_MAGIC-I_MAGIC-II": [1, 2, 3],  # combo_type = 1
+            "LST-1_MAGIC-II": [1, 3],  # combo_type = 2
+            "MAGIC-I_MAGIC-II": [2, 3],  # combo_type = 3
         }
+        assert list(M_LST_comb.keys()) == [
+            "LST-1_MAGIC-I",
+            "LST-1_MAGIC-I_MAGIC-II",
+            "LST-1_MAGIC-II",
+            "MAGIC-I_MAGIC-II",
+        ]
         assert LSTs == {1: "LST-1", 3: "LST-2", 2: "LST-3", 5: "LST-4"}
         assert LSTs_comb == {
             "LST-1_LST-2": [1, 3],
@@ -313,32 +386,39 @@ class TestStereoMC:
             assert np.all(data["intensity"] > 50)
             assert len(data) > 0
 
-    def test_load_train_data_files(self, p_stereo, gamma_stereo):
+    def test_load_train_data_files(self, p_stereo, gamma_stereo, config_gen):
         """
         Check dictionary of the combo types
         """
-
         for stereo in [p_stereo, gamma_stereo]:
-            events = load_train_data_files(str(stereo[0]))
-            assert list(events.keys()) == ["LST1_M1", "LST1_M1_M2", "LST1_M2", "M1_M2"]
-            data = events["LST1_M1"]
+            events = load_train_data_files(str(stereo[0]), config_gen)
+            assert list(events.keys()) == [
+                "LST-1_MAGIC-I",
+                "LST-1_MAGIC-I_MAGIC-II",
+                "LST-1_MAGIC-II",
+                "MAGIC-I_MAGIC-II",
+            ]
+            data = events["LST-1_MAGIC-I"]
             assert np.all(data["combo_type"] == 0)
             assert "off_axis" in data.columns
             assert "true_event_class" not in data.columns
 
-    def test_load_train_data_files_off(self, gamma_stereo):
+    def test_load_train_data_files_off(self, gamma_stereo, config_gen):
         """
         Check off-axis cut
         """
         events = load_train_data_files(
-            str(gamma_stereo[0]), offaxis_min="0.2 deg", offaxis_max="0.5 deg"
+            str(gamma_stereo[0]),
+            config_gen,
+            offaxis_min="0.2 deg",
+            offaxis_max="0.5 deg",
         )
-        data = events["LST1_M1"]
+        data = events["LST-1_MAGIC-I"]
         assert np.all(data["off_axis"] >= 0.2)
         assert np.all(data["off_axis"] <= 0.5)
         assert len(data) > 0
 
-    def test_load_train_data_files_exc(self, temp_train_exc):
+    def test_load_train_data_files_exc(self, temp_train_exc, config_gen):
         """
         Check on exceptions
         """
@@ -347,7 +427,7 @@ class TestStereoMC:
             FileNotFoundError,
             match="Could not find any DL1-stereo data files in the input directory.",
         ):
-            _ = load_train_data_files(str(temp_train_exc))
+            _ = load_train_data_files(str(temp_train_exc), config_gen)
 
     def test_load_train_data_files_tel(self, p_stereo, gamma_stereo, config_gen):
         """
@@ -384,7 +464,7 @@ class TestStereoMC:
             FileNotFoundError,
             match="Could not find any DL1-stereo data files in the input directory.",
         ):
-            _ = load_train_data_files(str(temp_train_exc), config_gen)
+            _ = load_train_data_files_tel(str(temp_train_exc), config_gen)
 
 
 @pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
@@ -394,6 +474,12 @@ def test_exist_rf(RF):
     """
 
     assert len(glob.glob(f"{RF}/*")) == 12
+    assert len(glob.glob(f"{RF}/energy*LST-1_MAGIC-I_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF}/disp*LST-1_MAGIC-I_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF}/event*LST-1_MAGIC-I_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF}/energy*LST-1_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF}/disp*LST-1_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF}/event*LST-1_unsigned.joblib")) == 0
 
 
 @pytest.mark.dependency(depends=["test_exist_rf"])
@@ -406,16 +492,41 @@ def test_exist_dl2_mc(p_dl2, gamma_dl2):
     assert len(glob.glob(f"{gamma_dl2}/*")) == 1
 
 
+@pytest.mark.dependency(depends=["test_exist_dl1_stereo_mc"])
+def test_exist_rf_tel(RF_tel):
+    """
+    Check if RFs produced
+    """
+
+    assert len(glob.glob(f"{RF_tel}/*")) == 9
+    assert len(glob.glob(f"{RF_tel}/energy*LST-1_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF_tel}/disp*LST-1_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF_tel}/event*LST-1_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF_tel}/energy*LST-1_MAGIC-I_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF_tel}/disp*LST-1_MAGIC-I_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF_tel}/event*LST-1_MAGIC-I_unsigned.joblib")) == 0
+
+
+@pytest.mark.dependency(depends=["test_exist_rf_tel"])
+def test_exist_dl2_mc_tel(p_dl2_tel, gamma_dl2_tel):
+    """
+    Check if DL2 MC produced
+    """
+
+    assert len(glob.glob(f"{p_dl2_tel}/*")) == 1
+    assert len(glob.glob(f"{gamma_dl2_tel}/*")) == 1
+
+
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 class TestDL2MC:
-    def test_load_mc_dl2_data_file(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file(self, config_gen, p_dl2, gamma_dl2):
         """
         Checks on default loading
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
         for file in dl2_mc:
             data, point, _ = load_mc_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                config_gen, str(file), "width>0", "software", "simple"
             )
             assert "pointing_alt" in data.colnames
             assert "theta" in data.colnames
@@ -424,31 +535,31 @@ class TestDL2MC:
             assert point[0] >= 0
             assert point[0] <= 90
 
-    def test_load_mc_dl2_data_file_cut(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file_cut(self, config_gen, p_dl2, gamma_dl2):
         """
         Check on quality cuts
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
         for file in dl2_mc:
             data, _, _ = load_mc_dl2_data_file(
-                str(file), "gammaness>0.1", "software", "simple"
+                config_gen, str(file), "gammaness>0.1", "software", "simple"
             )
             assert np.all(data["gammaness"] > 0.1)
             assert len(data) > 0
 
-    def test_load_mc_dl2_data_file_opt(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file_opt(self, config_gen, p_dl2, gamma_dl2):
         """
         Check on event_type
         """
         dl2_mc = [p for p in gamma_dl2.glob("*")] + [p for p in p_dl2.glob("*")]
         for file in dl2_mc:
             data_s, _, _ = load_mc_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                config_gen, str(file), "width>0", "software", "simple"
             )
             assert np.all(data_s["combo_type"] < 3)
             assert len(data_s) > 0
 
-    def test_load_mc_dl2_data_file_exc(self, p_dl2, gamma_dl2):
+    def test_load_mc_dl2_data_file_exc(self, config_gen, p_dl2, gamma_dl2):
         """
         Check on event_type exceptions
         """
@@ -460,7 +571,7 @@ class TestDL2MC:
                 match=f"Unknown event type '{event_type}'.",
             ):
                 _, _, _ = load_mc_dl2_data_file(
-                    str(file), "width>0", event_type, "simple"
+                    config_gen, str(file), "width>0", event_type, "simple"
                 )
 
     def test_get_dl2_mean_mc(self, p_dl2, gamma_dl2):
@@ -500,6 +611,90 @@ class TestDL2MC:
                 _ = get_dl2_mean(event_data, weight_type=weight)
 
 
+@pytest.mark.dependency(depends=["test_exist_dl2_mc_tel"])
+class TestDL2MCtel:
+    def test_load_mc_dl2_data_file_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Checks on default loading
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            data, point, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert "pointing_alt" in data.colnames
+            assert "theta" in data.colnames
+            assert "true_source_fov_offset" in data.colnames
+            assert data["true_energy"].unit == "TeV"
+            assert point[0] >= 0
+            assert point[0] <= 90
+
+    def test_load_mc_dl2_data_file_cut_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on quality cuts
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            data, _, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "gammaness>0.1", "software", "simple"
+            )
+            assert np.all(data["gammaness"] > 0.1)
+            assert len(data) > 0
+
+    def test_load_mc_dl2_data_file_opt_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on event_type
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            data_s, _, _ = load_mc_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert np.all(data_s["combo_type"] < 3)
+            assert len(data_s) > 0
+
+    def test_load_mc_dl2_data_file_exc_tel(self, config_gen, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on event_type exceptions
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            event_type = "abc"
+            with pytest.raises(
+                ValueError,
+                match=f"Unknown event type '{event_type}'.",
+            ):
+                _, _, _ = load_mc_dl2_data_file(
+                    config_gen, str(file), "width>0", event_type, "simple"
+                )
+
+    def test_get_dl2_mean_mc_tel(self, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on MC DL2
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            events = get_dl2_mean(event_data)
+            assert "true_energy" in events.columns
+            assert events["multiplicity"].dtype == int
+
+    def test_get_dl2_mean_exc_tel(self, p_dl2_tel, gamma_dl2_tel):
+        """
+        Check on exceptions (weight type)
+        """
+        dl2_mc = [p for p in gamma_dl2_tel.glob("*")] + [p for p in p_dl2_tel.glob("*")]
+        for file in dl2_mc:
+            weight = "abc"
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            with pytest.raises(ValueError, match=f"Unknown weight type '{weight}'."):
+                _ = get_dl2_mean(event_data, weight_type=weight)
+
+
 @pytest.mark.dependency(depends=["test_exist_dl2_mc"])
 def test_exist_irf(IRF):
     """
@@ -507,6 +702,15 @@ def test_exist_irf(IRF):
     """
 
     assert len(glob.glob(f"{IRF}/*")) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_dl2_mc_tel"])
+def test_exist_irf_tel(IRF_tel):
+    """
+    Check if IRFs produced
+    """
+
+    assert len(glob.glob(f"{IRF_tel}/*")) == 1
 
 
 @pytest.mark.dependency(depends=["test_exist_irf"])
@@ -572,6 +776,71 @@ class TestIRF:
             match="Could not find any IRF data files in the input directory.",
         ):
             _, _ = load_irf_files(str(temp_irf_exc))
+
+
+@pytest.mark.dependency(depends=["test_exist_irf_tel"])
+class TestIRFtel:
+    def test_load_irf_files_tel(self, IRF_tel):
+        """
+        Check on IRF dictionaries
+        """
+
+        irf, header = load_irf_files(str(IRF_tel))
+        assert set(list(irf.keys())).issubset(
+            set(
+                [
+                    "grid_points",
+                    "effective_area",
+                    "energy_dispersion",
+                    "psf_table",
+                    "background",
+                    "gh_cuts",
+                    "rad_max",
+                    "energy_bins",
+                    "fov_offset_bins",
+                    "migration_bins",
+                    "source_offset_bins",
+                    "bkg_fov_offset_bins",
+                    "file_names",
+                ]
+            )
+        )
+        assert len(irf["effective_area"][0][0]) > 0
+        assert "psf_table" not in list(irf.keys())
+        assert "background" not in list(irf.keys())
+        assert set(list(header.keys())).issubset(
+            set(
+                [
+                    "TELESCOP",
+                    "INSTRUME",
+                    "FOVALIGN",
+                    "QUAL_CUT",
+                    "EVT_TYPE",
+                    "DL2_WEIG",
+                    "IRF_OBST",
+                    "GH_CUT",
+                    "GH_EFF",
+                    "GH_MIN",
+                    "GH_MAX",
+                    "RAD_MAX",
+                    "TH_EFF",
+                    "TH_MIN",
+                    "TH_MAX",
+                ]
+            )
+        )
+        assert header["DL2_WEIG"] == "simple"
+        assert header["EVT_TYPE"] == "software"
+
+    def test_load_irf_files_exc_tel(self, temp_irf_exc_tel):
+        """
+        Check on exception (FileNotFound)
+        """
+        with pytest.raises(
+            FileNotFoundError,
+            match="Could not find any IRF data files in the input directory.",
+        ):
+            _, _ = load_irf_files(str(temp_irf_exc_tel))
 
 
 class TestDL1LST:
@@ -731,15 +1000,39 @@ def test_exist_dl2(real_dl2):
     assert len(glob.glob(f"{real_dl2}/*")) == 1
 
 
+@pytest.mark.dependency(depends=["test_exist_coincidence_stereo"])
+def test_exist_dl2_old(real_dl2_old):
+    """
+    Check if DL2 exist
+    """
+
+    assert len(glob.glob(f"{real_dl2_old}/*")) == 1
+    for file in real_dl2_old.glob("*"):
+        event_data = pd.read_hdf(str(file), key="events/parameters")
+        assert len(event_data) > 0
+        assert list(np.unique(event_data["combo_type"])) == [0, 1, 2, 3]
+        assert "pointing_alt" in event_data.columns
+        assert "timestamp" in event_data.columns
+
+
+@pytest.mark.dependency(depends=["test_exist_coincidence_stereo", "test_exist_rf_tel"])
+def test_exist_dl2_tel(real_dl2_tel):
+    """
+    Check if DL2 exist
+    """
+
+    assert len(glob.glob(f"{real_dl2_tel}/*")) == 1
+
+
 @pytest.mark.dependency(depends=["test_exist_dl2"])
 class TestDL2Data:
-    def test_load_dl2_data_file(self, real_dl2):
+    def test_load_dl2_data_file(self, config_gen, real_dl2):
         """
         Checks on default loading
         """
         for file in real_dl2.glob("*"):
             data, on, dead = load_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                config_gen, str(file), "width>0", "software", "simple"
             )
             assert "pointing_alt" in data.colnames
             assert "timestamp" in data.colnames
@@ -748,29 +1041,29 @@ class TestDL2Data:
             assert on > 0
             assert dead > 0
 
-    def test_load_dl2_data_file_cut(self, real_dl2):
+    def test_load_dl2_data_file_cut(self, config_gen, real_dl2):
         """
         Check on quality cuts
         """
         for file in real_dl2.glob("*"):
             data, _, _ = load_dl2_data_file(
-                str(file), "gammaness<0.9", "software", "simple"
+                config_gen, str(file), "gammaness<0.9", "software", "simple"
             )
             assert np.all(data["gammaness"] < 0.9)
             assert len(data) > 0
 
-    def test_load_dl2_data_file_opt(self, real_dl2):
+    def test_load_dl2_data_file_opt(self, config_gen, real_dl2):
         """
         Check on event_type
         """
         for file in real_dl2.glob("*"):
             data_s, _, _ = load_dl2_data_file(
-                str(file), "width>0", "software", "simple"
+                config_gen, str(file), "width>0", "software", "simple"
             )
             assert np.all(data_s["combo_type"] < 3)
             assert len(data_s) > 0
 
-    def test_load_dl2_data_file_exc(self, real_dl2):
+    def test_load_dl2_data_file_exc(self, config_gen, real_dl2):
         """
         Check on event_type exceptions
         """
@@ -780,13 +1073,80 @@ class TestDL2Data:
                 ValueError,
                 match=f"Unknown event type '{event_type}'.",
             ):
-                _, _, _ = load_dl2_data_file(str(file), "width>0", event_type, "simple")
+                _, _, _ = load_dl2_data_file(
+                    config_gen, str(file), "width>0", event_type, "simple"
+                )
 
     def test_get_dl2_mean_real(self, real_dl2):
         """
         Check on real data DL2
         """
         for file in real_dl2.glob("*"):
+            event_data = pd.read_hdf(str(file), key="events/parameters")
+            event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
+            event_data.sort_index(inplace=True)
+            events = get_dl2_mean(event_data)
+            assert "timestamp" in events.columns
+
+
+@pytest.mark.dependency(depends=["test_exist_dl2_tel"])
+class TestDL2Data_tel:
+    def test_load_dl2_data_file_tel(self, config_gen, real_dl2_tel):
+        """
+        Checks on default loading
+        """
+        for file in real_dl2_tel.glob("*"):
+            data, on, dead = load_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert "pointing_alt" in data.colnames
+            assert "timestamp" in data.colnames
+            assert data["reco_energy"].unit == "TeV"
+            assert on.unit == "s"
+            assert on > 0
+            assert dead > 0
+
+    def test_load_dl2_data_file_cut_tel(self, config_gen, real_dl2_tel):
+        """
+        Check on quality cuts
+        """
+        for file in real_dl2_tel.glob("*"):
+            data, _, _ = load_dl2_data_file(
+                config_gen, str(file), "gammaness<0.9", "software", "simple"
+            )
+            assert np.all(data["gammaness"] < 0.9)
+            assert len(data) > 0
+
+    def test_load_dl2_data_file_opt_tel(self, config_gen, real_dl2_tel):
+        """
+        Check on event_type
+        """
+        for file in real_dl2_tel.glob("*"):
+            data_s, _, _ = load_dl2_data_file(
+                config_gen, str(file), "width>0", "software", "simple"
+            )
+            assert np.all(data_s["combo_type"] < 3)
+            assert len(data_s) > 0
+
+    def test_load_dl2_data_file_exc_tel(self, config_gen, real_dl2_tel):
+        """
+        Check on event_type exceptions
+        """
+        for file in real_dl2_tel.glob("*"):
+            event_type = "abc"
+            with pytest.raises(
+                ValueError,
+                match=f"Unknown event type '{event_type}'.",
+            ):
+                _, _, _ = load_dl2_data_file(
+                    config_gen, str(file), "width>0", event_type, "simple"
+                )
+
+    def test_get_dl2_mean_real_tel(self, real_dl2_tel):
+        """
+        Check on real data DL2
+        """
+        for file in real_dl2_tel.glob("*"):
             event_data = pd.read_hdf(str(file), key="events/parameters")
             event_data.set_index(["obs_id", "event_id", "tel_id"], inplace=True)
             event_data.sort_index(inplace=True)
@@ -803,6 +1163,20 @@ def test_exist_dl3(real_dl3):
     assert len(glob.glob(f"{real_dl3}/dl3*")) == 1
 
 
+@pytest.mark.dependency(depends=["test_exist_dl2_old"])
+def test_exist_dl3_old(real_dl3_old):
+    """
+    Check if DL3 exist
+    """
+
+    assert len(glob.glob(f"{real_dl3_old}/dl3*")) == 1
+    for file in real_dl3_old.glob("dl3*"):
+        hdul = fits.open(file)
+        assert hdul[1].header["TELLIST"] == "LST-1_MAGIC-I_MAGIC-II"
+        assert hdul[1].header["OBJECT"] == "Crab"
+        assert len(hdul[1].data) > 0
+
+
 @pytest.mark.dependency(depends=["test_exist_dl3"])
 def test_exist_index(real_index):
     """
@@ -810,3 +1184,34 @@ def test_exist_index(real_index):
     """
 
     assert len(glob.glob(f"{real_index}/*index*")) == 2
+
+
+@pytest.mark.dependency(depends=["test_exist_dl3_old"])
+def test_exist_index_old(real_index_old):
+    """
+    Check if DL3 exist
+    """
+
+    assert len(glob.glob(f"{real_index_old}/*index*")) == 2
+    with fits.open(f"{real_index_old}/hdu-index.fits.gz") as hdul:
+        assert len(hdul[1].data) == 6
+    with fits.open(f"{real_index_old}/obs-index.fits.gz") as hdul:
+        assert len(hdul[1].data) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_dl2_tel", "test_exist_irf_tel"])
+def test_exist_dl3_tel(real_dl3_tel):
+    """
+    Check if DL3 exist
+    """
+
+    assert len(glob.glob(f"{real_dl3_tel}/dl3*")) == 1
+
+
+@pytest.mark.dependency(depends=["test_exist_dl3_tel"])
+def test_exist_index_tel(real_index_tel):
+    """
+    Check if indexes created
+    """
+
+    assert len(glob.glob(f"{real_index_tel}/*index*")) == 2

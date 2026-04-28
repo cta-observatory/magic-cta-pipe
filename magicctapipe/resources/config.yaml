@@ -1,10 +1,10 @@
 mc_tel_ids:
     LST-1: 1
-    LST-2: 0
-    LST-3: 0
-    LST-4: 0
-    MAGIC-I: 2
-    MAGIC-II: 3
+    LST-2: 2
+    LST-3: 3
+    LST-4: 4
+    MAGIC-I: 0
+    MAGIC-II: 0
 LST:
     image_extractor:
         type: "LocalPeakWindowSum"
@@ -12,7 +12,7 @@ LST:
         window_width: 8
 
     increase_nsb:
-        use: true
+        use: false
         extra_noise_in_dim_pixels: 1.6
         extra_bias_in_dim_pixels: 0.52
         transition_charge: 8
@@ -23,8 +23,8 @@ LST:
         fraction: null
 
     tailcuts_clean:
-        picture_thresh: 8
-        boundary_thresh: 4
+        picture_thresh: 4
+        boundary_thresh: 2
         keep_isolated_pixels: false
         min_number_picture_neighbors: 2
 

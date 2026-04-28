@@ -108,7 +108,7 @@ def calibrate(
             rng = np.random.default_rng(event.index.event_id)
             # Add extra noise in pixels
             image = add_noise_in_pixels(rng, image, **config[nsb_dict])
-            config[nsb_dict]["use"] = increase_nsb
+        config[nsb_dict]["use"] = increase_nsb
 
     if is_lst:
         increase_psf = config["increase_psf"]["use"]
