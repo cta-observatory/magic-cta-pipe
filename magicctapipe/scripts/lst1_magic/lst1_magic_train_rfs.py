@@ -192,7 +192,8 @@ def train_energy_regressor(
             importances = dict(zip(energy_regressor.features, importances))
             logger.info(f"\n{TEL_NAMES[tel_id_combo]} feature importance:")
             logger.info(format_object(importances))
-
+        if not train_combo:
+            tel_id_combo = TEL_NAMES[tel_id_combo]
         # Save the trained RFs
         if use_unsigned_features:
             output_file = (
@@ -292,7 +293,8 @@ def train_disp_regressor(
             importances = dict(zip(disp_regressor.features, importances))
             logger.info(f"\n{TEL_NAMES[tel_id_combo]} feature importance:")
             logger.info(format_object(importances))
-
+        if not train_combo:
+            tel_id_combo = TEL_NAMES[tel_id_combo]
         # Save the trained RFs to an output file
         if use_unsigned_features:
             output_file = f"{output_dir}/disp_regressors_{tel_id_combo}_unsigned.joblib"
@@ -433,7 +435,8 @@ def train_event_classifier(
             importances = dict(zip(event_classifier.features, importances))
             logger.info(f"\n{TEL_NAMES[tel_id_combo]} feature importance:")
             logger.info(format_object(importances))
-
+        if not train_combo:
+            tel_id_combo = TEL_NAMES[tel_id_combo]
         # Save the trained RFs to an output file
         if use_unsigned_features:
             output_file = (

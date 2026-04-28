@@ -474,6 +474,12 @@ def test_exist_rf(RF):
     """
 
     assert len(glob.glob(f"{RF}/*")) == 12
+    assert len(glob.glob(f"{RF}/energy*LST-1_MAGIC-I_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF}/disp*LST-1_MAGIC-I_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF}/event*LST-1_MAGIC-I_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF}/energy*LST-1_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF}/disp*LST-1_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF}/event*LST-1_unsigned.joblib")) == 0
 
 
 @pytest.mark.dependency(depends=["test_exist_rf"])
@@ -493,6 +499,12 @@ def test_exist_rf_tel(RF_tel):
     """
 
     assert len(glob.glob(f"{RF_tel}/*")) == 9
+    assert len(glob.glob(f"{RF_tel}/energy*LST-1_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF_tel}/disp*LST-1_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF_tel}/event*LST-1_unsigned.joblib")) == 1
+    assert len(glob.glob(f"{RF_tel}/energy*LST-1_MAGIC-I_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF_tel}/disp*LST-1_MAGIC-I_unsigned.joblib")) == 0
+    assert len(glob.glob(f"{RF_tel}/event*LST-1_MAGIC-I_unsigned.joblib")) == 0
 
 
 @pytest.mark.dependency(depends=["test_exist_rf_tel"])
