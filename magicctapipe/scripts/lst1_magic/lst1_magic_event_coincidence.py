@@ -272,20 +272,16 @@ def event_coincidence(
 
         if input_dir_toff is not None:
             files_toff = glob.glob(f"{input_dir_toff}/*M{str(tel_id - 1)}*_detail.npy")
+            files_npy = []
             for i, file_toff in enumerate(files_toff):  # files_toff:
                 file_npy = np.load(file_toff)
-                if i == 0:
-                    file_npy_ = file_npy
-                else:
-                    file_npy_ = np.hstack([file_npy, file_npy_])
-
+                files_npy.append(file_npy)
+            file_npy_ = np.hstack(files_npy)
             df_toff = pd.DataFrame(file_npy_.T, columns=["timestamp", "toff1", "n"])
-
             timestamps_lst_min, timestamps_lst_max = (  # noqa: F841
                 float(min(timestamps_lst_org.value)) / 1e9,
                 float(max(timestamps_lst_org.value)) / 1e9,
             )
-
             df_toff = df_toff.query(
                 f"{timestamps_lst_min} < timestamp < {timestamps_lst_max}"
             )

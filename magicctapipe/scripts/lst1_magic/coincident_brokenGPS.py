@@ -369,8 +369,7 @@ for subrun_comb in subrun_combs:
         # PLEASE REWRITE THIS according to your analysis environment (e.g., SLURM)
         output = subprocess.run(
             [
-                "python",
-                "lst1_magic_event_coincidence.py",
+                "lst1_magic_event_coincidence",
                 "-l",
                 f"{lst_dir_name}/dl1_LST-1.Run{lst_RunID}.{lst_run}.h5",
                 "-m",
