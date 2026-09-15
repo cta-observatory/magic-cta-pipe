@@ -1,5 +1,4 @@
 import glob
-import logging
 
 import astropy.table
 import astropy.units as u
@@ -28,8 +27,6 @@ from magicctapipe.io.io import (
     telescope_combinations,
 )
 
-LOGGER = logging.getLogger(__name__)
-
 
 class TestGeneral:
     def test_query_data(self, query_test_1, query_test_2, caplog):
@@ -44,13 +41,9 @@ class TestGeneral:
             np.array(data["event_id"]), np.array([0, 3, 4, 5, 6, 7, 9, 10, 11])
         )
 
-        with caplog.at_level(logging.WARNING):
+        with pytest.raises(Exception):
             query_test = pd.read_hdf(query_test_1, key="/events/parameters")
             data = query_data(query_test, "software", None, [], False)
-        assert (
-            'Requested event type and provided telescopes IDs are not consistent; "software" must be used in case of standard MAGIC+LST-1 analyses'
-            in caplog.text
-        )
 
         query_test = pd.read_hdf(query_test_2, key="/events/parameters")
         data = query_data(query_test, "trigger_3tels_or_more", None, [4, 5, 6], False)
@@ -68,13 +61,9 @@ class TestGeneral:
             np.array(data["event_id"]), np.array([0, 1, 3, 4, 6, 7, 9, 10, 11])
         )
 
-        with caplog.at_level(logging.WARNING):
+        with pytest.raises(Exception):
             query_test = pd.read_hdf(query_test_2, key="/events/parameters")
             data = query_data(query_test, "magic_only", None, [], False)
-        assert (
-            "MAGIC-only analysis requested, but inconsistent with the provided telescope IDs: check the configuration file"
-            in caplog.text
-        )
 
         query_test = pd.read_hdf(query_test_2, key="/events/parameters")
         data = query_data(query_test, "magic_only", 3, [], False)

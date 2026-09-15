@@ -117,7 +117,7 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
             logger.warning(
                 'Requested event type and provided telescopes IDs are not consistent; "software" must be used in case of standard MAGIC+LST-1 analyses'
             )
-            return
+            raise (Exception)
 
     elif event_type == "trigger_3tels_or_more":
         df_events.query(f"combo_type == {three_or_more}", inplace=True)
@@ -133,7 +133,7 @@ def query_data(df_events, event_type, magic_only, three_or_more, is_mc):
             logger.warning(
                 "MAGIC-only analysis requested, but inconsistent with the provided telescope IDs: check the configuration file"
             )
-            return
+            raise (Exception)
     elif event_type != "hardware":
         raise ValueError(f"Unknown event type '{event_type}'.")
 
