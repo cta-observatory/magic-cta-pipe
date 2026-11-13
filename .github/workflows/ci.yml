@@ -18,10 +18,10 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@v7
         with:
           python-version: 3.12
       - uses: pre-commit/action@v3.0.1
@@ -32,10 +32,10 @@ jobs:
     if: contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: 3.12
 
@@ -47,12 +47,12 @@ jobs:
   docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: 3.12
 
@@ -84,7 +84,7 @@ jobs:
         shell: bash -leo pipefail {0}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -128,7 +128,7 @@ jobs:
           coverage run -m pytest -vra
           coverage xml
 
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v7
         if: contains(github.event.pull_request.labels.*.name, 'documentation-only') == false
         with:
             fail_ci_if_error: true
