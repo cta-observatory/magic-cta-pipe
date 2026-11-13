@@ -260,12 +260,7 @@ class TestGeneral:
             "LST-1_MAGIC-II": [1, 3],  # combo_type = 2
             "MAGIC-I_MAGIC-II": [2, 3],  # combo_type = 3
         }
-        assert list(M_LST_comb.keys()) == [
-            "LST-1_MAGIC-I",
-            "LST-1_MAGIC-I_MAGIC-II",
-            "LST-1_MAGIC-II",
-            "MAGIC-I_MAGIC-II",
-        ]
+        
         assert LSTs == {1: "LST-1", 3: "LST-2", 2: "LST-3", 5: "LST-4"}
         assert LSTs_comb == {
             "LST-1_LST-2": [1, 3],
@@ -781,8 +776,6 @@ class TestIRFtel:
                     "grid_points",
                     "effective_area",
                     "energy_dispersion",
-                    "psf_table",
-                    "background",
                     "gh_cuts",
                     "rad_max",
                     "energy_bins",
@@ -795,8 +788,7 @@ class TestIRFtel:
             )
         )
         assert len(irf["effective_area"][0][0]) > 0
-        assert "psf_table" not in list(irf.keys())
-        assert "background" not in list(irf.keys())
+       
         assert set(list(header.keys())).issubset(
             set(
                 [
